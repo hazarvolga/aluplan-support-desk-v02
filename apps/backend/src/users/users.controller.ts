@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 
@@ -31,6 +32,12 @@ export class UsersController {
     @ApiOperation({ summary: 'Create user (Admin only)' })
     create(@Body() dto: CreateUserDto) {
         return this.usersService.create(dto);
+    }
+
+    @Patch('profile')
+    @ApiOperation({ summary: 'Update own user profile' })
+    updateProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
+        return this.usersService.updateProfile(req.user.id, dto);
     }
 
     @Roles('admin')

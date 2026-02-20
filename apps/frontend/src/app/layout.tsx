@@ -15,7 +15,7 @@ import { AuthProvider } from '@/components/auth/role-guard';
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="tr" suppressHydrationWarning>
-            <body>
+            <body suppressHydrationWarning>
                 <AuthProvider>
                     {children}
                 </AuthProvider>

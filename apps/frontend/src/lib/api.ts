@@ -113,6 +113,7 @@ export const api = {
         list: () => request<any[]>('/users'),
         get: (id: string) => request<any>(`/users/${id}`),
         create: (body: any) => request<any>('/users', { method: 'POST', body: JSON.stringify(body) }),
+        updateProfile: (body: any) => request<any>('/users/profile', { method: 'PATCH', body: JSON.stringify(body) }),
         update: (id: string, body: any) => request<any>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
         delete: (id: string) => request<any>(`/users/${id}`, { method: 'DELETE' }),
     },
@@ -128,7 +129,11 @@ export const api = {
     },
     customers: {
         list: () => request<any[]>('/customers'),
-        get: (id: string) => request<any>(`/customers/${id}`),
+        getById: (id: string) => request<any>(`/customers/${id}`),
+        update: (id: string, body: any) => request<any>(`/customers/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        bulkDelete: (ids: string[]) => request<any>('/customers/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+        resetPassword: (id: string) => request<any>(`/customers/${id}/reset-password`, { method: 'POST' }),
+        import: (data: any[]) => request<any>('/customers/import', { method: 'POST', body: JSON.stringify(data) }),
     },
     settings: {
         list: (decrypt = false) => request<any[]>(`/settings${decrypt ? '?decrypt=true' : ''}`),

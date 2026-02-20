@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Ticket, BookOpen, Bot,
-    MessageSquareQuote, Settings, LogOut, ChevronRight, Users,
+    MessageSquareQuote, Settings, LogOut, ChevronRight, Users, User
 } from 'lucide-react';
 
 import { api } from '@/lib/api';
@@ -19,6 +19,7 @@ const ADMIN_NAV = [
     { href: '/kb-approvals', icon: MessageSquareQuote, label: 'AI Onayları' },
     { href: '/customers', icon: Users, label: 'Müşteriler' },
     { href: '/users', icon: Settings, label: 'Ekip' },
+    { href: '/profile', icon: User, label: 'Profil' },
 ];
 
 const CUSTOMER_NAV = [
@@ -26,6 +27,7 @@ const CUSTOMER_NAV = [
     { href: '/my-tickets', icon: Ticket, label: 'Taleplerim' },
     { href: '/knowledge-base', icon: BookOpen, label: 'Bilgi Bankası' },
     { href: '/ai', icon: Bot, label: 'AI Asistan' },
+    { href: '/profile', icon: User, label: 'Profil' },
 ];
 
 export function Sidebar() {
