@@ -3,6 +3,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { Ticket, TicketStatus } from '@aluplan/database';
 import { AiQueryService } from './ai-query.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmbeddingService } from './embedding.service';
 
 @Injectable()
 export class AiAutoResolverService {
@@ -11,6 +12,7 @@ export class AiAutoResolverService {
     constructor(
         private readonly aiQueryService: AiQueryService,
         private readonly prisma: PrismaService,
+        private readonly embeddingService: EmbeddingService,
     ) { }
 
     @OnEvent('ticket.created', { async: true })
@@ -64,6 +66,45 @@ export class AiAutoResolverService {
             }
         } catch (error) {
             this.logger.error(`❌ Failed to auto-resolve ticket ${ticket.ticketNumber}`, error.stack);
+        }
+    }
+
+    /**
+     * Listener triggered when a ticket feedback represents a high score (>=4).
+     * Extracts useful context from the ticket and saves to embeddings.
+     */
+    @OnEvent('ticket.kb_summarize', { async: true })
+    async handleTicketSummarize(ticket: Ticket) {
+        if (!ticket.satisfactionScore || ticket.satisfactionScore < 4) return;
+
+        try {
+            this.logger.log(`🤖 Reading high-rated ticket ${ticket.ticketNumber} for RAG AI...`);
+
+            // Get all messages from this ticket
+            const messages = await this.prisma.ticketMessage.findMany({
+                where: { ticketId: ticket.id },
+                orderBy: { createdAt: 'asc' }
+            });
+
+            if (messages.length === 0) return;
+
+            // Simple concatenation for now (subject + description + messages)
+            const conversation = messages.map(m => `[${m.isInternal ? 'Admin' : 'Customer'}]: ${m.message}`).join('\n\n');
+            const totalContent = `TICKET: ${ticket.subject}\nISSUE: ${ticket.description || ''}\n\nCONVERSATION:\n${conversation}`;
+
+            // Pass this context to the embedding service to index
+            await this.embeddingService.indexTicket(ticket.id, totalContent);
+
+            // Mark the ticket as having been added to knowledge base
+            await this.prisma.ticket.update({
+                where: { id: ticket.id },
+                data: { knowledgeBaseAdded: true }
+            });
+
+            this.logger.log(`✅ Ticket ${ticket.ticketNumber} context saved to Vector DB.`);
+
+        } catch (error) {
+            this.logger.error(`❌ Failed to extract context for ticket ${ticket.ticketNumber}`, error.stack);
         }
     }
 }

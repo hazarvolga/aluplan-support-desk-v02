@@ -22,6 +22,7 @@ import { OmniChannelModule } from './omni-channel/omni-channel.module';
 import { BullModule } from '@nestjs/bullmq';
 import { KnowledgePoolModule } from './knowledge-pool/knowledge-pool.module';
 import configuration, { validate } from './config/configuration';
+import { ProductsModule } from './products/products.module';
 
 @Module({
     imports: [
@@ -59,6 +60,7 @@ import configuration, { validate } from './config/configuration';
         MacrosModule,
         OmniChannelModule,
         KnowledgePoolModule,
+        ProductsModule,
     ],
     providers: [NotificationsGateway],
 })

@@ -13,6 +13,7 @@ import { AddMessageDto } from './dto/add-message.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { TicketStatus, TicketPriority, Prisma } from '@aluplan/database';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AiQueryService } from '../ai/ai-query.service';
 
 const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
     NEW: [TicketStatus.OPEN],
@@ -32,6 +33,7 @@ export class TicketsService {
         private readonly prisma: PrismaService,
         private readonly slaService: SlaService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly aiQueryService: AiQueryService,
     ) { }
 
     // =============================================
@@ -74,10 +76,31 @@ export class TicketsService {
 
         this.logger.log(`🎫 Created ticket ${ticket.ticketNumber} (${priority})`);
 
+        // Option A + C Logic: If the user provided a productId, do auto-tagging
+        if (dto.productId) {
+            // we run this async so that the frontend feels "zero friction" fast response
+            this.runAutoTaggingAsync(ticket.id, dto.productId, `${dto.subject}\n\n${dto.description || ''}`);
+        }
+
         // Emit event for Autonomous Resolution Engine
         this.eventEmitter.emit('ticket.created', ticket);
 
         return ticket;
+    }
+
+    private async runAutoTaggingAsync(ticketId: string, productId: string, text: string) {
+        try {
+            const aiTags = await this.aiQueryService.smartTagTicket(productId, text);
+            if (aiTags.tags.length > 0) {
+                await this.prisma.ticket.update({
+                    where: { id: ticketId },
+                    data: { suggestedCategories: aiTags.tags }
+                });
+                this.logger.log(`🤖 Auto-tagged ticket ${ticketId} with categories: ${aiTags.tags.join(', ')}`);
+            }
+        } catch (error) {
+            this.logger.error(`❌ Auto-tagging failed for ticket ${ticketId}`, error.stack);
+        }
     }
 
     // =============================================

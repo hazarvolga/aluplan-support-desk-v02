@@ -114,6 +114,57 @@ export class EmbeddingService {
         this.logger.log(`📐 Indexed pool embedding for source ${sourceId}`);
     }
 
+    /**
+     * Store embedding for a concluded and highly rated Ticket.
+     */
+    async indexTicket(ticketId: string, content: string): Promise<void> {
+        const result = await this.ollama.embed(content);
+        if (!result) {
+            this.logger.warn(`⚠️ Skipping ticket embedding for ${ticketId} — Ollama unavailable`);
+            return;
+        }
+
+        await this.prisma.$executeRaw`
+      INSERT INTO ticket_embeddings (id, ticket_id, embedding, model_name)
+      VALUES (gen_random_uuid(), ${ticketId}::uuid, ${JSON.stringify(result.embedding)}::vector, ${result.model})
+    `;
+        this.logger.log(`📐 Indexed embedding for high-rated ticket ${ticketId}`);
+    }
+
+    /**
+     * Search high-rated tickets by semantic similarity.
+     */
+    async searchTickets(query: string, limit = 3): Promise<Array<{ ticketId: string; subject: string; similarity: number }>> {
+        const embResult = await this.ollama.embed(query);
+        if (!embResult) return [];
+
+        const vectorStr = JSON.stringify(embResult.embedding);
+
+        const rows = await this.prisma.$queryRaw<
+            Array<{
+                ticket_id: string;
+                subject: string;
+                similarity: number;
+            }>
+        >`
+      SELECT
+        t.id AS ticket_id,
+        t.subject,
+        1 - (te.embedding <=> ${vectorStr}::vector) AS similarity
+      FROM ticket_embeddings te
+      JOIN tickets t ON t.id = te.ticket_id
+      WHERE 1 - (te.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
+      ORDER BY similarity DESC
+      LIMIT ${limit}
+    `;
+
+        return rows.map((r) => ({
+            ticketId: r.ticket_id,
+            subject: r.subject,
+            similarity: Number(r.similarity),
+        }));
+    }
+
     async reindexAll(): Promise<{ indexed: number; failed: number }> {
         const articles = await this.prisma.knowledgeArticle.findMany({
             where: { status: 'PUBLISHED' },

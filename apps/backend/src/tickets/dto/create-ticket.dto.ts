@@ -27,4 +27,9 @@ export class CreateTicketDto {
     @IsUUID()
     @IsOptional()
     interactionId?: string;
+
+    @ApiPropertyOptional({ description: 'ID of the related product for smart AI triage' })
+    @IsUUID()
+    @IsOptional()
+    productId?: string;
 }

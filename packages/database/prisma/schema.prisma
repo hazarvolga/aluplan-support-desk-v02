@@ -387,6 +387,8 @@ model Ticket {
   priority        TicketPriority @default(MEDIUM)
   assignedTo      String?        @map("assigned_to") @db.Uuid
   tags            String[]       @default([])
+  productId       String?        @map("product_id") @db.Uuid
+  suggestedCategories String[]   @default([]) @map("suggested_categories")
 
   // SLA Fields
   slaResponseDue  DateTime?  @map("sla_response_due")
@@ -413,8 +415,10 @@ model Ticket {
   creator       User?         @relation("TicketCreatedBy", fields: [userId], references: [id])
   assignee      User?         @relation("TicketAssignedTo", fields: [assignedTo], references: [id])
   interaction   AiInteraction? @relation(fields: [interactionId], references: [id])
+  product       Product?      @relation(fields: [productId], references: [id])
   messages      TicketMessage[]
   escalations   TicketEscalation[]
+  embeddings    TicketEmbedding[]
 
   @@index([status], map: "idx_tickets_status")
   @@index([assignedTo], map: "idx_tickets_assigned")
@@ -615,4 +619,48 @@ model KnowledgePoolEmbedding {
 
   @@index([sourceId], map: "idx_kpe_source")
   @@map("knowledge_pool_embeddings")
+}
+
+// -----------------------------------------------------
+// DIRECTORY / PRODUCTS (Smart Ticket Tagging)
+// -----------------------------------------------------
+
+model Product {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  categories  ProductCategory[]
+  tickets     Ticket[]
+
+  @@map("products")
+}
+
+model ProductCategory {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  name        String
+  keywords    String[] @default([]) // Keywords for AI context matching
+  isActive    Boolean  @default(true) @map("is_active")
+
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId], map: "idx_product_categories_product")
+  @@map("product_categories")
+}
+
+model TicketEmbedding {
+  id                   String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticketId             String                  @map("ticket_id") @db.Uuid
+  embedding            Unsupported("vector(768)")
+  modelName            String                  @map("model_name") @db.VarChar(100)
+  createdAt            DateTime                @default(now()) @map("created_at")
+
+  ticket               Ticket                  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId], map: "idx_ticket_embeddings_ticket")
+  @@map("ticket_embeddings")
 }
