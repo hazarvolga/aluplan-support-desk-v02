@@ -97,7 +97,7 @@ export default function UsersPage() {
                                     <div className="font-medium">{user.fullName}</div>
                                 </TableCell>
                                 <TableCell>
-                                    {user.roles.map((r: any) => (
+                                    {(user.roles || user.userRoles || []).map((r: any) => (
                                         <Badge key={r.role.id} variant="outline" className="mr-1">
                                             {r.role.name}
                                         </Badge>

@@ -55,7 +55,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
             fullName: user?.fullName || '',
             email: user?.email || '',
             password: '',
-            role: user?.roles?.[0]?.role?.name || 'support_agent',
+            role: (user?.roles || user?.userRoles)?.[0]?.role?.name || 'support_agent',
         },
     });
 
