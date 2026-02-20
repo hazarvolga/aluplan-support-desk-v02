@@ -145,6 +145,9 @@ export const api = {
         resetPassword: (id: string) => request<any>(`/customers/${id}/reset-password`, { method: 'POST' }),
         import: (data: any[]) => request<any>('/customers/import', { method: 'POST', body: JSON.stringify(data) }),
     },
+    products: {
+        list: () => request<any[]>('/products'),
+    },
     settings: {
         list: (decrypt = false) => request<any[]>(`/settings${decrypt ? '?decrypt=true' : ''}`),
         upsert: (body: any) => request<any>('/settings', { method: 'POST', body: JSON.stringify(body) }),

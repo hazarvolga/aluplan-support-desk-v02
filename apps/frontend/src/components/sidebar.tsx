@@ -18,6 +18,7 @@ const ADMIN_NAV = [
     { href: '/ai', icon: Bot, label: 'AI Asistan' },
     { href: '/kb-approvals', icon: MessageSquareQuote, label: 'AI Onayları' },
     { href: '/customers', icon: Users, label: 'Müşteriler' },
+    { href: '/products', icon: BookOpen, label: 'Ürünler & Modüller' },
     { href: '/users', icon: Settings, label: 'Ekip' },
     { href: '/profile', icon: User, label: 'Profil' },
 ];
