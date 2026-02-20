@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { BookOpen, Plus, CheckCircle2, Clock, XCircle, Search, BarChart3 } from 'lucide-react';
+import { BookOpen, Plus, CheckCircle2, Clock, XCircle, Search, BarChart3, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     DRAFT: { label: 'DRAFT', color: 'border-border text-muted-foreground bg-muted/5' },
@@ -92,9 +93,10 @@ export default function KnowledgeBasePage() {
                     <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
                 </div>
             ) : articles.length === 0 ? (
-                <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-                    <BookOpen className="h-12 w-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
-                    <p className="text-slate-500 dark:text-slate-400">Makale bulunamadı</p>
+                <div className="border border-border/40 bg-muted/5 p-12 flex flex-col items-center justify-center text-center">
+                    <BookOpen className="h-8 w-8 text-muted-foreground/30 mb-4" />
+                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">KAYIT_BULUNAMADI</h3>
+                    <p className="text-[10px] font-mono text-muted-foreground/60 mt-2 uppercase tracking-tighter">Query returned zero matching results in the database.</p>
                 </div>
             ) : (
                 <div className="divide-y divide-border/20 border-t border-b border-border/40">

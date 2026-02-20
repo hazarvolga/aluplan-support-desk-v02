@@ -5,7 +5,7 @@ import { getSocket } from '@/lib/socket';
 import {
     Ticket, Clock, Shield, User as UserIcon, Send,
     Paperclip, Download, MoreVertical, CheckCircle2,
-    AlertTriangle, MessageSquare, Loader2, Bot, Star
+    AlertTriangle, MessageSquare, Loader2, Bot, Star, X
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

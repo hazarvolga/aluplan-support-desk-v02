@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!token) {
             setUser(null);
             setLoading(false);
-            if (!pathname.startsWith('/login') && !pathname.startsWith('/register')) {
+            if (pathname !== '/' && !pathname.startsWith('/login') && !pathname.startsWith('/register')) {
                 router.push('/login');
             }
             return;
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
             localStorage.removeItem('access_token');
             setUser(null);
-            if (!pathname.startsWith('/login') && !pathname.startsWith('/register')) {
+            if (pathname !== '/' && !pathname.startsWith('/login') && !pathname.startsWith('/register')) {
                 router.push('/login');
             }
         } finally {
@@ -63,6 +63,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         fetchUser();
     }, [pathname]);
+
+    useEffect(() => {
+        if (!loading && user) {
+            if (pathname === '/' || pathname.startsWith('/login')) {
+                const userRoles = (user?.roles || []).map(r => r.toLowerCase());
+                router.push(userRoles.includes('customer') ? '/my-tickets' : '/dashboard');
+            }
+        }
+    }, [user, loading, pathname, router]);
 
     return (
         <AuthContext.Provider value={{ user, loading, logout }}>
