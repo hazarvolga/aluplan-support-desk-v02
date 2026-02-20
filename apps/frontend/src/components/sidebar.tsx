@@ -16,7 +16,7 @@ const ADMIN_NAV = [
     { href: '/knowledge-base', icon: BookOpen, label: 'Bilgi Bankası' },
     { href: '/knowledge-pool', icon: BookOpen, label: 'Bilgi Havuzu' },
     { href: '/ai', icon: Bot, label: 'AI Asistan' },
-    { href: '/faq', icon: MessageSquareQuote, label: 'FAQ' },
+    { href: '/kb-approvals', icon: MessageSquareQuote, label: 'AI Onayları' },
     { href: '/customers', icon: Users, label: 'Müşteriler' },
     { href: '/users', icon: Settings, label: 'Ekip' },
 ];
@@ -31,10 +31,19 @@ const CUSTOMER_NAV = [
 export function Sidebar() {
     const pathname = usePathname();
     const [user, setUser] = useState<any>(null);
+    const [pendingCount, setPendingCount] = useState(0);
 
     useEffect(() => {
         api.auth.me().then(setUser).catch(() => { });
     }, []);
+
+    useEffect(() => {
+        if (user && !user.roles.includes('customer')) {
+            api.faq.list('PENDING_REVIEW').then(res => {
+                setPendingCount(Array.isArray(res) ? res.length : (res.data?.length || 0));
+            }).catch(() => { });
+        }
+    }, [user]);
 
     const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
     const isCustomer = userRoles.includes('customer');
@@ -69,6 +78,11 @@ export function Sidebar() {
                         >
                             <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-white' : 'text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white transition-colors'}`} />
                             <span className="flex-1">{label}</span>
+                            {label === 'AI Onayları' && pendingCount > 0 && (
+                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${active ? 'bg-white/20 text-white' : 'bg-orange-500/10 text-orange-500'}`}>
+                                    {pendingCount}
+                                </span>
+                            )}
                             {active && (
                                 <div className="absolute -left-1 w-1.5 h-6 bg-white rounded-full" />
                             )}

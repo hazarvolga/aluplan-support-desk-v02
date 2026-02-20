@@ -9,6 +9,7 @@ const STATUS_COLORS: Record<string, string> = {
     OPEN: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
     IN_PROGRESS: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     PENDING_CUSTOMER: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    PENDING_CUSTOMER_REVIEW: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     RESOLVED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     CLOSED: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
 };
@@ -93,7 +94,16 @@ export default function TicketsPage() {
                                     onClick={() => window.location.href = `/tickets/${t.id}`}
                                 >
                                     <td className="px-6 py-4 font-mono text-slate-500 dark:text-slate-400 text-xs">{t.ticketNumber}</td>
-                                    <td className="px-6 py-4 text-slate-900 dark:text-white font-medium max-w-xs truncate">{t.subject}</td>
+                                    <td className="px-6 py-4 text-slate-900 dark:text-white font-medium max-w-xs truncate">
+                                        <div className="flex items-center gap-2">
+                                            <span>{t.subject}</span>
+                                            {t.knowledgeBaseAdded && (
+                                                <span className="px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-500 text-[10px] font-bold tracking-widest uppercase flex items-center gap-1">
+                                                    🧠 KB Gönderildi
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[t.status] ?? ''}`}>
                                             {t.status.replace(/_/g, ' ')}
