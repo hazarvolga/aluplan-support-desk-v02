@@ -28,6 +28,7 @@ enum TicketStatus {
   OPEN
   PENDING_CUSTOMER
   IN_PROGRESS
+  PENDING_CUSTOMER_REVIEW
   RESOLVED
   CLOSED
 }
@@ -396,6 +397,12 @@ model Ticket {
 
   resolvedAt DateTime? @map("resolved_at")
   closedAt   DateTime? @map("closed_at")
+  
+  // CSAT / Self-Learning Feedback
+  satisfactionScore Int?       @map("satisfaction_score") // 1-5
+  satisfactionComment String?  @db.Text @map("satisfaction_comment")
+  knowledgeBaseAdded  Boolean  @default(false) @map("knowledge_base_added")
+  
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
 

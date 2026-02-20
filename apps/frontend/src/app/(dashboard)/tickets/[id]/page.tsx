@@ -23,6 +23,7 @@ const STATUS_COLORS: Record<string, string> = {
     OPEN: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
     IN_PROGRESS: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     PENDING_CUSTOMER: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    PENDING_CUSTOMER_REVIEW: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     RESOLVED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     CLOSED: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
 };
@@ -49,21 +50,22 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const [someoneTyping, setSomeoneTyping] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    const load = async () => {
+        try {
+            const [ticketRes, userRes] = await Promise.all([
+                api.tickets.get(id),
+                api.auth.me()
+            ]);
+            setTicket(ticketRes);
+            setUser(userRes);
+        } catch (err) {
+            toast.error('Talep yüklenemedi');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const load = async () => {
-            try {
-                const [ticketRes, userRes] = await Promise.all([
-                    api.tickets.get(id),
-                    api.auth.me()
-                ]);
-                setTicket(ticketRes);
-                setUser(userRes);
-            } catch (err) {
-                toast.error('Talep yüklenemedi');
-            } finally {
-                setLoading(false);
-            }
-        };
         load();
     }, [id]);
 
@@ -166,6 +168,31 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         }
     };
 
+    const handleTransitionToReview = async () => {
+        if (!ticket) return;
+        try {
+            await api.tickets.updateStatus(ticket.id, 'PENDING_CUSTOMER_REVIEW');
+            toast.success('Talep onaya gönderildi (Müşteri Doğrulaması Bekleniyor)');
+            load(); // reload ticket
+        } catch (error) {
+            toast.error('Durum değiştirilemedi');
+        }
+    };
+
+    const handleSimulateCsat = async (score: number) => {
+        if (!ticket) return;
+        try {
+            await api.post(`/tickets/${ticket.id}/feedback`, {
+                score,
+                comment: score >= 4 ? 'Sorunum tamamen çözüldü, teşekkürler.' : 'Hala eksikler var.'
+            });
+            toast.success(`Müşteri ${score}/5 puanı ile değerlendirme yaptı.`);
+            load(); // reload ticket
+        } catch (error) {
+            toast.error('Test değerlendirmesi gönderilemedi.');
+        }
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             setFiles([...files, ...Array.from(e.target.files)]);
@@ -207,6 +234,16 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
+                                {!isCustomer && ticket.status !== 'CLOSED' && ticket.status !== 'RESOLVED' && ticket.status !== 'PENDING_CUSTOMER_REVIEW' && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleTransitionToReview}
+                                        className="h-8 border-green-500/20 text-green-400 hover:bg-green-500/10 gap-1.5"
+                                    >
+                                        Çözüme Ulaştır
+                                    </Button>
+                                )}
                                 {!isCustomer && (
                                     <Button
                                         variant="outline"
@@ -222,6 +259,25 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                 <Badge className={STATUS_COLORS[ticket.status]}>{ticket.status}</Badge>
                             </div>
                         </div>
+
+                        {ticket.status === 'PENDING_CUSTOMER_REVIEW' && (
+                            <div className="mt-4 p-4 rounded-xl bg-orange-500/5 border border-orange-500/20 animate-in fade-in slide-in-from-top-2">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-orange-400 mb-1">Müşteri Doğrulaması Bekleniyor</h4>
+                                        <p className="text-xs text-slate-400">Müşteri çözümü onaylarsa (+4 puan), bilet otomatik olarak Bilgi Bankasına eklenecektir (Option C).</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(2)} className="h-8 border-red-500/20 text-red-400 hover:bg-red-500/10">
+                                            Test: Reddet (2 Puan)
+                                        </Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(5)} className="h-8 border-green-500/20 text-green-400 hover:bg-green-500/10">
+                                            Test: Onayla (5 Puan) // KB Ekle
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {summary && (
                             <div className="mt-4 p-4 rounded-xl bg-violet-500/5 border border-violet-500/10 animate-in fade-in slide-in-from-top-2 duration-500">

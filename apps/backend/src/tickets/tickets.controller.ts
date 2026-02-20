@@ -141,6 +141,20 @@ export class TicketsController {
         return this.ticketsService.transition(id, TicketStatus.CLOSED, req.user.sub);
     }
 
+    // ─── CSAT FEEDBACK ──────────────────────────
+    @Post(':id/feedback')
+    @RequirePermissions('ticket:read') // Customers should be able to submit, their ownership is checked in service
+    @ApiOperation({ summary: 'Submit Customer Satisfaction (CSAT) rating and comment' })
+    async submitFeedback(
+        @Param('id') id: string,
+        @Body() body: { score: number, comment?: string },
+        @Request() req: any,
+    ) {
+        const updated = await this.ticketsService.submitFeedback(id, body.score, body.comment, req.user.sub);
+        this.notificationsGateway.emitTicketUpdated(updated);
+        return updated;
+    }
+
     // ─── MESSAGE ────────────────────────────────
     @Post(':id/messages')
     @RequirePermissions('ticket:update')

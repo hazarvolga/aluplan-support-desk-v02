@@ -108,6 +108,45 @@ Yalnızca kategori adını yaz. Başka bir şey yazma. Eğer uygun kategori yoks
         }
     }
 
+    /**
+     * Option C: Synthesize a raw ticket conversation into a formal KB article formatting, with PII masked.
+     */
+    async summarizeTicket(subject: string, conversation: string): Promise<string | null> {
+        try {
+            const prompt = `Görevin: Aşağıdaki müşteri destek bileti (ticket) konuşmasını okuyup, diğer müşterilerin faydalanabileceği resmi ve anlaşılır bir "Nasıl Yapılır" (How-To) veya "Sık Sorulan Soru" (FAQ) makalesi haline getirmektir.
+        
+KURALLAR:
+1. Kişisel verileri (isim, e-posta, IP adresi, şifre) kesinlikle maskele ([GİZLENDİ] yaz).
+2. Sadece teknik çözüme odaklan. "Merhaba, nasılsınız" gibi gereksiz konuşmaları at.
+3. Çıktıyı şu formatta ver: 
+Soru: [Sorunu tek cümlede özetle]
+Cevap: [Adım adım çözüm]
+
+KONUŞMA BAŞLIĞI: ${subject}
+KONUŞMA GEÇMİŞİ:
+${conversation.substring(0, 3000)}`; // limit content to prevent context blown
+
+            const response = await fetch(`${this.baseUrl}/api/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: this.chatModel,
+                    prompt,
+                    stream: false,
+                    options: { temperature: 0.1 },
+                }),
+                signal: AbortSignal.timeout(60_000),
+            });
+
+            if (!response.ok) throw new Error(`Ollama chat HTTP ${response.status}`);
+            const data = await response.json() as { response: string };
+            return data.response.trim();
+        } catch (err: any) {
+            this.logger.warn(`⚠️ Ollama ticket summarization failed: ${err.message}`);
+            return null;
+        }
+    }
+
     async isAvailable(): Promise<boolean> {
         try {
             const res = await fetch(`${this.baseUrl}/api/tags`, { signal: AbortSignal.timeout(3_000) });

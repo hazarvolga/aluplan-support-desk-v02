@@ -14,14 +14,12 @@ import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { TicketStatus, TicketPriority, Prisma } from '@aluplan/database';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-// =============================================
-// State Machine — allowed transitions
-// =============================================
 const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
     NEW: [TicketStatus.OPEN],
-    OPEN: [TicketStatus.IN_PROGRESS, TicketStatus.PENDING_CUSTOMER, TicketStatus.RESOLVED],
-    IN_PROGRESS: [TicketStatus.PENDING_CUSTOMER, TicketStatus.RESOLVED],
-    PENDING_CUSTOMER: [TicketStatus.OPEN, TicketStatus.RESOLVED, TicketStatus.CLOSED],
+    OPEN: [TicketStatus.IN_PROGRESS, TicketStatus.PENDING_CUSTOMER, TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW],
+    IN_PROGRESS: [TicketStatus.PENDING_CUSTOMER, TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW],
+    PENDING_CUSTOMER: [TicketStatus.OPEN, TicketStatus.RESOLVED, TicketStatus.CLOSED, TicketStatus.PENDING_CUSTOMER_REVIEW],
+    PENDING_CUSTOMER_REVIEW: [TicketStatus.RESOLVED, TicketStatus.OPEN], // Review to final resolved or back to open
     RESOLVED: [TicketStatus.CLOSED, TicketStatus.OPEN], // Reopen on customer reply
     CLOSED: [],
 };
@@ -329,6 +327,36 @@ export class TicketsService {
         }
 
         return message;
+    }
+
+    // =============================================
+    // SUBMIT FEEDBACK (Self-Learning KB Trigger)
+    // =============================================
+    async submitFeedback(id: string, score: number, comment?: string, customerId?: string) {
+        const ticket = await this.findOne(id);
+
+        if (ticket.status !== TicketStatus.PENDING_CUSTOMER_REVIEW && ticket.status !== TicketStatus.RESOLVED) {
+            throw new BadRequestException('Feedback can only be submitted for tickets pending review or recently resolved.');
+        }
+
+        const updated = await this.prisma.ticket.update({
+            where: { id },
+            data: {
+                satisfactionScore: score,
+                satisfactionComment: comment,
+                status: TicketStatus.CLOSED, // Auto-close upon feedback
+                closedAt: new Date()
+            }
+        });
+
+        this.logger.log(`⭐ Ticket ${ticket.ticketNumber} received feedback: ${score}/5`);
+
+        // Option C Core: If it's a solved issue and the user agrees (score 4 or 5)
+        if (score >= 4) {
+            this.eventEmitter.emit('ticket.kb_summarize', updated);
+        }
+
+        return updated;
     }
 
     // =============================================

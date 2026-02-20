@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { OnEvent } from '@nestjs/event-emitter';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 const AUTO_PUBLISH_THRESHOLD = 0.85; // Sorular %85+ eşleşme → direkt yayınla
 
@@ -17,7 +20,21 @@ export interface ExtractedPattern {
 export class FaqService {
     private readonly logger = new Logger(FaqService.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        @InjectQueue('kb-summarizer') private readonly kbQueue: Queue,
+    ) { }
+
+    @OnEvent('ticket.kb_summarize')
+    async handleTicketKbSummarize(ticket: any) {
+        this.logger.log(`📥 Received ticket ${ticket.ticketNumber} for KB Summarization...`);
+        // Add ticket to the summarizer queue for Option C pipeline
+        await this.kbQueue.add('summarize', { ticketId: ticket.id }, {
+            removeOnComplete: true,
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 5000 }
+        });
+    }
 
     // ─── EXTRACT PATTERNS FROM TICKETS ──────────────────────
     /**
