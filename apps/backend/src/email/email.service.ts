@@ -112,6 +112,17 @@ export class EmailService implements OnModuleInit {
         await this.send({ to: data.recipientEmail, ...template });
     }
 
+    // ─── AUTH EMAILS ──────────────────────────────────────────
+    async sendPasswordReset(data: {
+        recipientEmail: string;
+        recipientName: string;
+        newPassword: string;
+    }) {
+        const portalUrl = `${this.config.get('FRONTEND_URL', 'http://localhost:3000')}/login`;
+        const template = Templates.passwordReset({ ...data, portalUrl });
+        await this.send({ to: data.recipientEmail, ...template });
+    }
+
     // ─── HEALTH CHECK ─────────────────────────────────────────
     async healthCheck(): Promise<{ provider: string; available: boolean }> {
         const available = await this.provider.healthCheck();

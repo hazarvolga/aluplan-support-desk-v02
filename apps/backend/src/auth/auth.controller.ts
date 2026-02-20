@@ -45,6 +45,14 @@ export class AuthController {
         return this.authService.lookupEmail(email);
     }
 
+    @Public()
+    @Post('forgot-password')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Request a password reset email' })
+    forgotPassword(@Body('email') email: string) {
+        return this.authService.forgotPassword(email);
+    }
+
     @UseGuards(JwtAuthGuard)
     @Get('me')
     @ApiBearerAuth()

@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -11,6 +12,7 @@ export class AuthService {
         private readonly prisma: PrismaService,
         private readonly jwtService: JwtService,
         private readonly config: ConfigService,
+        private readonly emailService: EmailService,
     ) { }
 
     async login(dto: LoginDto) {
@@ -123,6 +125,36 @@ export class AuthService {
         }
 
         return { action: 'NEW', companyName: null };
+    }
+
+    async forgotPassword(email: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (!user) {
+            // Return generic success to prevent email enumeration
+            return { success: true };
+        }
+
+        // Generate a random 8-character password
+        const newPassword = Math.random().toString(36).slice(-8);
+        const salt = await bcrypt.genSalt();
+        const passwordHash = await bcrypt.hash(newPassword, salt);
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash },
+        });
+
+        // Send email with new password
+        await this.emailService.sendPasswordReset({
+            recipientEmail: user.email,
+            recipientName: user.fullName || 'Değerli Müşterimiz',
+            newPassword
+        });
+
+        return { success: true };
     }
 
     private async generateTokens(

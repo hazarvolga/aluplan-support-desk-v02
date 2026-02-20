@@ -7,11 +7,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
+import { EmailModule } from '../email/email.module';
 
 @Module({
     imports: [
         PassportModule,
         JwtModule.register({}), // Config via ConfigService in strategies
+        EmailModule,
     ],
     controllers: [AuthController],
     providers: [

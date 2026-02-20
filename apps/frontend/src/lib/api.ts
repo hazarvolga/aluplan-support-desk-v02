@@ -34,6 +34,11 @@ export const api = {
                 method: 'POST',
                 body: JSON.stringify({ email }),
             }),
+        forgotPassword: (email: string) =>
+            request<{ success: boolean }>('/auth/forgot-password', {
+                method: 'POST',
+                body: JSON.stringify({ email }),
+            }),
         me: () => request<{ id: string; fullName: string; email: string; roles: string[] }>('/auth/me'),
     },
     pool: {

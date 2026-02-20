@@ -15,6 +15,7 @@ export default function RegisterPage() {
     const [success, setSuccess] = useState(false);
     const [step, setStep] = useState<1 | 2>(1);
     const [lookupResult, setLookupResult] = useState<{ action: string, companyName: string | null } | null>(null);
+    const [resetSent, setResetSent] = useState(false);
 
     const [form, setForm] = useState({
         username: '',
@@ -47,6 +48,7 @@ export default function RegisterPage() {
             }
 
             setStep(2);
+            setResetSent(false);
         } catch (err: any) {
             setError(err.message || 'E-posta kontrolü sırasında bir hata oluştu.');
         } finally {
@@ -94,6 +96,19 @@ export default function RegisterPage() {
             setTimeout(() => router.push('/login'), 2000);
         } catch (err: any) {
             setError(err.message || 'Bir hata oluştu.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleForgotPassword = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            await api.auth.forgotPassword(form.email);
+            setResetSent(true);
+        } catch (err: any) {
+            setError(err.message || 'Şifre sıfırlama sırasında bir hata oluştu.');
         } finally {
             setLoading(false);
         }
@@ -174,18 +189,46 @@ export default function RegisterPage() {
                             {/* STEP 2: CLAIM ACCOUNT STATE */}
                             {step === 2 && lookupResult?.action === 'CLAIM' && (
                                 <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-5 pt-2">
-                                    <div className="p-5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-center shadow-inner">
-                                        <CheckCircle2 className="h-10 w-10 text-sky-400 mx-auto mb-3 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]" />
-                                        <h3 className="text-lg font-medium text-white mb-2">Sizi Tanıyoruz!</h3>
-                                        <p className="text-sm text-slate-300 leading-relaxed">
-                                            Aluplan sisteminde firmanız ve size ait bir profil zaten bulunuyor. <br /><br />
-                                            Giriş yapabilir, şifrenizi bilmiyorsanız yöneticinizden talep edebilirsiniz.
-                                        </p>
-                                    </div>
-                                    <Button asChild className="w-full bg-white text-black hover:bg-slate-200 h-11 font-medium transition-colors">
-                                        <Link href="/login">Giriş Ekranına Git</Link>
-                                    </Button>
-                                    <Button type="button" variant="ghost" className="w-full text-slate-400 hover:text-white h-11" onClick={() => { setStep(1); setLookupResult(null); }}>
+                                    {resetSent ? (
+                                        <div className="p-5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center shadow-inner">
+                                            <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto mb-3 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                            <h3 className="text-lg font-medium text-white mb-2">Şifreniz Gönderildi</h3>
+                                            <p className="text-sm text-slate-300 leading-relaxed">
+                                                Yeni giriş şifreniz güvenlik amacıyla e-posta adresinize gönderildi. Lütfen gelen kutunuzu (ve gerekiyorsa spam klasörünü) kontrol edin.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="p-5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-center shadow-inner">
+                                            <CheckCircle2 className="h-10 w-10 text-sky-400 mx-auto mb-3 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]" />
+                                            <h3 className="text-lg font-medium text-white mb-2">Sizi Tanıyoruz!</h3>
+                                            <p className="text-sm text-slate-300 leading-relaxed">
+                                                Aluplan sisteminde firmanız ve size ait bir profil zaten bulunuyor. <br /><br />
+                                                Giriş yapabilir veya doğrudan yeni bir şifre talep edip e-posta ile alabilirsiniz.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {!resetSent ? (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Button asChild className="w-full bg-white text-black hover:bg-slate-200 h-11 font-medium transition-colors">
+                                                <Link href="/login">Giriş Yap</Link>
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                onClick={handleForgotPassword}
+                                                disabled={loading}
+                                                className="w-full bg-slate-800 text-white border border-slate-700 hover:bg-slate-700 h-11 transition-all"
+                                            >
+                                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Şifremi Sıfırla'}
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <Button asChild className="w-full bg-white text-black hover:bg-slate-200 h-11 font-medium transition-colors">
+                                            <Link href="/login">Giriş Ekranına Git</Link>
+                                        </Button>
+                                    )}
+
+                                    <Button type="button" variant="ghost" className="w-full text-slate-400 hover:text-white h-11" onClick={() => { setStep(1); setLookupResult(null); setResetSent(false); }}>
                                         Farklı bir e-posta dene
                                     </Button>
                                 </div>
