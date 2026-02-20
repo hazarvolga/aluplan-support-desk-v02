@@ -83,6 +83,48 @@ export class AuthService {
         return { success: true };
     }
 
+    async lookupEmail(email: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (user) {
+            return { action: 'CLAIM' };
+        }
+
+        const domain = email.split('@')[1];
+        if (!domain) return { action: 'NEW', companyName: null };
+
+        const publicDomains = [
+            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+            'icloud.com', 'live.com', 'yandex.com', 'yandex.com.tr', 'mynet.com'
+        ];
+
+        if (publicDomains.includes(domain.toLowerCase())) {
+            return { action: 'NEW', companyName: null };
+        }
+
+        const matchedProfile = await this.prisma.customerProfile.findFirst({
+            where: {
+                user: {
+                    email: {
+                        endsWith: `@${domain}`,
+                        mode: 'insensitive'
+                    }
+                }
+            },
+            select: {
+                companyName: true
+            }
+        });
+
+        if (matchedProfile?.companyName) {
+            return { action: 'NEW_MATCHED_COMPANY', companyName: matchedProfile.companyName };
+        }
+
+        return { action: 'NEW', companyName: null };
+    }
+
     private async generateTokens(
         userId: string,
         email: string,

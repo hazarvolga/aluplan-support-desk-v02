@@ -29,6 +29,11 @@ export const api = {
                 method: 'POST',
                 body: JSON.stringify({ email, password }),
             }),
+        lookup: (email: string) =>
+            request<{ action: 'CLAIM' | 'NEW' | 'NEW_MATCHED_COMPANY'; companyName: string | null }>('/auth/lookup', {
+                method: 'POST',
+                body: JSON.stringify({ email }),
+            }),
         me: () => request<{ id: string; fullName: string; email: string; roles: string[] }>('/auth/me'),
     },
     pool: {

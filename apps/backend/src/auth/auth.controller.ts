@@ -37,6 +37,14 @@ export class AuthController {
         return this.authService.logout(req.user.sub);
     }
 
+    @Public()
+    @Post('lookup')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Lookup email domain for intelligent registration' })
+    lookup(@Body('email') email: string) {
+        return this.authService.lookupEmail(email);
+    }
+
     @UseGuards(JwtAuthGuard)
     @Get('me')
     @ApiBearerAuth()

@@ -50,7 +50,7 @@ export default function CustomerProfilePage() {
     }, [id, router]);
 
     const handleChange = (field: string, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData((prev: any) => ({ ...prev, [field]: value }));
     };
 
     const handleSave = async (e: React.FormEvent) => {
