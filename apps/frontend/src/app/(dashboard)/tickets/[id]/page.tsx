@@ -19,17 +19,20 @@ import { toast } from 'sonner';
 import { MacroPicker } from '@/components/macros/macro-picker';
 
 const STATUS_COLORS: Record<string, string> = {
-    NEW: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    OPEN: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
-    IN_PROGRESS: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    PENDING_CUSTOMER: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-    PENDING_CUSTOMER_REVIEW: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-    RESOLVED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    CLOSED: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+    NEW: 'border-blue-900/50 text-blue-400 bg-blue-400/5',
+    OPEN: 'border-sky-900/50 text-sky-400 bg-sky-400/5',
+    IN_PROGRESS: 'border-amber-900/50 text-amber-400 bg-amber-400/5',
+    PENDING_CUSTOMER: 'border-purple-900/50 text-purple-400 bg-purple-400/5',
+    PENDING_CUSTOMER_REVIEW: 'border-orange-900/50 text-orange-400 bg-orange-400/5',
+    RESOLVED: 'border-emerald-900/50 text-emerald-400 bg-emerald-400/5',
+    CLOSED: 'border-border text-muted-foreground bg-muted/5',
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-    LOW: 'text-slate-500', MEDIUM: 'text-amber-500', HIGH: 'text-orange-500', URGENT: 'text-red-600',
+    LOW: 'text-muted-foreground',
+    MEDIUM: 'text-amber-500',
+    HIGH: 'text-orange-600',
+    URGENT: 'text-red-600 font-black italic',
 };
 
 export default function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -236,34 +239,36 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     );
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto py-2">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 w-full py-0">
             {/* Main Conversation Column */}
-            <div className="lg:col-span-2 space-y-6">
-                <Card className="bg-card/30 backdrop-blur-xl border-white/5 overflow-hidden flex flex-col min-h-[600px]">
-                    <CardHeader className="border-b border-white/5 bg-slate-900/50 py-4">
-                        <div className="flex items-center justify-between">
+            <div className="lg:col-span-3 space-y-4">
+                <Card className="flex flex-col min-h-[700px] border-border/60">
+                    <CardHeader className="py-3 bg-muted/20">
+                        <div className="flex items-start justify-between">
                             <div className="space-y-1">
-                                <CardTitle className="text-xl flex items-center gap-2">
-                                    <span className="font-mono text-xs opacity-50 bg-white/5 px-2 py-1 rounded">#{ticket.ticketNumber}</span>
-                                    {ticket.subject}
+                                <div className="flex items-center gap-2">
+                                    <span className="font-mono text-[10px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 font-bold uppercase tracking-widest">INCIDENT_{ticket.ticketNumber}</span>
+                                    <Badge className={STATUS_COLORS[ticket.status]}>{ticket.status}</Badge>
+                                </div>
+                                <CardTitle className="text-[16px] normal-case text-foreground font-bold tracking-tight mt-1">
+                                    {ticket.subject.toUpperCase()}
                                 </CardTitle>
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground font-medium">
+                                <div className="flex items-center gap-4 text-[10px] text-muted-foreground font-mono uppercase tracking-tighter">
                                     <span className="flex items-center gap-1">
-                                        <UserIcon className="h-3 w-3" />
-                                        {ticket.creator?.fullName || (ticket.userId ? 'Silinmiş Kullanıcı' : 'Dış Kaynak/E-posta')}
+                                        OP: {ticket.creator?.fullName || 'SYSTEM_DEFAULT'}
                                     </span>
-                                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {new Date(ticket.createdAt).toLocaleString('tr-TR')}</span>
+                                    <span className="flex items-center gap-1">TS: {new Date(ticket.createdAt).toISOString().replace(/T/, ' ').replace(/\..+/, '')}</span>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                                 {!isCustomer && ticket.status !== 'CLOSED' && ticket.status !== 'RESOLVED' && ticket.status !== 'PENDING_CUSTOMER_REVIEW' && (
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={handleTransitionToReview}
-                                        className="h-8 border-green-500/20 text-green-400 hover:bg-green-500/10 gap-1.5"
+                                        className="h-7 border-emerald-500/30 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
                                     >
-                                        Çözüme Ulaştır
+                                        EXEC_RESOLVE
                                     </Button>
                                 )}
                                 {!isCustomer && (
@@ -272,31 +277,27 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                         size="sm"
                                         onClick={handleSummarize}
                                         disabled={summarizing}
-                                        className="h-8 border-violet-500/20 text-violet-400 hover:bg-violet-500/10 gap-1.5"
+                                        className="h-7 border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
                                     >
-                                        <Bot className={`h-3.5 w-3.5 ${summarizing ? 'animate-pulse' : ''}`} />
-                                        {summarizing ? 'Özetleniyor...' : 'AI Özet'}
+                                        <Bot className={`h-3 w-3 ${summarizing ? 'animate-pulse' : ''}`} />
+                                        {summarizing ? 'SUMMARIZING...' : 'AI_SUMMARY'}
                                     </Button>
                                 )}
-                                <Badge className={STATUS_COLORS[ticket.status]}>{ticket.status}</Badge>
                             </div>
                         </div>
 
                         {ticket.status === 'PENDING_CUSTOMER_REVIEW' && (
-                            <div className="mt-4 p-6 rounded-xl bg-gradient-to-br from-orange-500/10 to-transparent border border-orange-500/20 animate-in fade-in slide-in-from-top-2">
+                            <div className="mt-2 p-4 border border-orange-500/30 bg-orange-500/5">
                                 {isCustomer ? (
-                                    <div className="flex flex-col items-center justify-center text-center space-y-4">
-                                        <div className="h-12 w-12 rounded-full bg-orange-500/20 flex items-center justify-center mb-2">
-                                            <CheckCircle2 className="h-6 w-6 text-orange-400" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-lg font-bold text-white mb-1">Talebiniz Çözüldü mü?</h4>
-                                            <p className="text-sm text-slate-400 max-w-md mx-auto">
-                                                Uzmanımız bu talebi çözüme ulaştırdığını belirtti. Lütfen deneyiminizi puanlayarak talebi kapatın.
+                                    <div className="flex flex-col items-center justify-center text-center space-y-3">
+                                        <div className="flex flex-col items-center">
+                                            <h4 className="text-[12px] font-bold text-orange-400 uppercase tracking-[0.2em] mb-1">INCIDENT_RESOLUTION_PENDING</h4>
+                                            <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-tighter">
+                                                Please evaluate system resolution performance to close channel.
                                             </p>
                                         </div>
 
-                                        <div className="flex items-center gap-2 py-2">
+                                        <div className="flex items-center gap-1 py-1">
                                             {[1, 2, 3, 4, 5].map((star) => (
                                                 <button
                                                     key={star}
@@ -304,44 +305,43 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                                     onClick={() => setCsatScore(star)}
                                                     onMouseEnter={() => setCsatHover(star)}
                                                     onMouseLeave={() => setCsatHover(0)}
-                                                    className={`p-2 rounded-full transition-all duration-200 hover:scale-110 ${(csatHover || csatScore) >= star ? 'text-orange-400' : 'text-slate-600 hover:text-orange-400/50'}`}
+                                                    className={`p-1 transition-all duration-150 ${(csatHover || csatScore) >= star ? 'text-orange-400' : 'text-muted/30 hover:text-orange-400/50'}`}
                                                 >
-                                                    <Star className={`h-8 w-8 ${(csatHover || csatScore) >= star ? 'fill-orange-400' : ''}`} />
+                                                    <Star className={`h-6 w-6 ${(csatHover || csatScore) >= star ? 'fill-orange-400' : ''}`} />
                                                 </button>
                                             ))}
                                         </div>
 
                                         {csatScore > 0 && (
-                                            <div className="w-full max-w-md space-y-3 animate-in fade-in zoom-in duration-300">
+                                            <div className="w-full max-w-sm space-y-2">
                                                 <Textarea
-                                                    placeholder="Eklemek istediğiniz bir yorum var mı? (İsteğe bağlı)"
-                                                    className="bg-black/20 border-white/10 resize-none"
+                                                    placeholder="APPEND_OPERATIONAL_FEEDBACK (OPTIONAL)"
+                                                    className="bg-black/40 border-border/50 text-[11px] h-16 uppercase tracking-tight"
                                                     value={csatComment}
                                                     onChange={(e) => setCsatComment(e.target.value)}
                                                 />
                                                 <Button
                                                     onClick={handleSubmitCsat}
                                                     disabled={sending}
-                                                    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                                                    className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-none h-8 text-[10px] uppercase font-bold tracking-widest"
                                                 >
-                                                    {sending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                                                    Değerlendirmeyi Gönder ve Kapat
+                                                    {sending ? 'COMMITTING...' : 'COMMIT_FEEDBACK_&_CLOSE'}
                                                 </Button>
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center justify-between gap-4">
                                         <div>
-                                            <h4 className="text-sm font-bold text-orange-400 mb-1">Müşteri Doğrulaması Bekleniyor</h4>
-                                            <p className="text-xs text-slate-400">Müşteri çözümü onaylarsa (+4 puan), bilet otomatik olarak Bilgi Bankasına eklenecektir (Option C).</p>
+                                            <h4 className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">AWAITING_CUSTOMER_VERIFICATION</h4>
+                                            <p className="text-[9px] text-muted-foreground font-mono uppercase mt-1">Status: REVIEW_PENDING | Auto-Sync enabled for +4 Ratings</p>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(2)} className="h-8 border-red-500/20 text-red-400 hover:bg-red-500/10">
-                                                Test: Reddet (2)
+                                            <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(2)} className="h-6 px-2 border-red-900/50 text-red-500 bg-red-500/5 text-[9px] uppercase font-bold tracking-wider">
+                                                DEBUG:REJECT(2)
                                             </Button>
-                                            <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(5)} className="h-8 border-green-500/20 text-green-400 hover:bg-green-500/10">
-                                                Test: Onayla (5) // KB Ekle
+                                            <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(5)} className="h-6 px-2 border-emerald-900/50 text-emerald-500 bg-emerald-500/5 text-[9px] uppercase font-bold tracking-wider">
+                                                DEBUG:APPROVE(5)
                                             </Button>
                                         </div>
                                     </div>
@@ -350,36 +350,33 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         )}
 
                         {summary && (
-                            <div className="mt-4 p-4 rounded-xl bg-violet-500/5 border border-violet-500/10 animate-in fade-in slide-in-from-top-2 duration-500">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Bot className="h-4 w-4 text-violet-400" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400/80">Yapay Zeka Özeti</span>
-                                    <button onClick={() => setSummary(null)} className="ml-auto text-muted-foreground hover:text-white transition-colors">
-                                        <Clock className="h-3 w-3 rotate-45" />
+                            <div className="mt-2 p-3 border border-primary/20 bg-primary/5">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <Bot className="h-3 w-3 text-primary" />
+                                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/80">AI_SUMMARY_LOG</span>
+                                    <button onClick={() => setSummary(null)} className="ml-auto text-muted-foreground hover:text-foreground">
+                                        <X className="h-3 w-3" />
                                     </button>
                                 </div>
-                                <p className="text-xs leading-relaxed text-slate-300 italic">"{summary}"</p>
+                                <p className="text-[11px] leading-relaxed text-foreground/90 font-medium italic">"{summary}"</p>
                             </div>
                         )}
                     </CardHeader>
 
                     <CardContent className="flex-1 p-0 flex flex-col">
-                        <ScrollArea className="flex-1 p-6 h-[500px]">
-                            <div className="space-y-8">
+                        <ScrollArea className="flex-1 p-4 h-[550px]">
+                            <div className="space-y-6">
                                 {/* Initial Description as first message */}
-                                <div className="flex gap-4 group">
-                                    <Avatar className="h-10 w-10 border border-brand-500/20">
-                                        <AvatarImage src={ticket.creator?.avatarUrl} />
-                                        <AvatarFallback className="bg-brand-500/10 text-brand-500">
-                                            {ticket.creator?.fullName?.[0] || 'E'}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 space-y-2">
+                                <div className="flex gap-3 group">
+                                    <div className="h-8 w-8 bg-muted flex items-center justify-center border border-border text-[10px] font-bold uppercase">
+                                        {ticket.creator?.fullName?.[0] || 'OP'}
+                                    </div>
+                                    <div className="flex-1 space-y-1">
                                         <div className="flex items-baseline justify-between">
-                                            <span className="text-sm font-semibold">{ticket.creator?.fullName || (ticket.userId ? 'Silinmiş Kullanıcı' : 'Dış Kaynak/E-posta')}</span>
-                                            <span className="text-[10px] text-muted-foreground uppercase">{formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true, locale: tr })}</span>
+                                            <span className="text-[11px] font-mono font-bold uppercase tracking-tight">{ticket.creator?.fullName || 'EXTERNAL_AGENT'}</span>
+                                            <span className="text-[9px] text-muted-foreground uppercase font-mono">{formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true, locale: tr })}</span>
                                         </div>
-                                        <div className="bg-slate-800/40 border border-white/5 p-4 rounded-2xl rounded-tl-none text-sm leading-relaxed">
+                                        <div className="bg-muted/30 border border-border/50 p-3 text-[12px] leading-relaxed tracking-tight text-foreground font-medium">
                                             {ticket.description}
                                         </div>
                                     </div>
@@ -387,34 +384,33 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
                                 {/* Thread */}
                                 {ticket.messages.map((msg: any) => (
-                                    <div key={msg.id} className={`flex gap-4 ${msg.senderId === user?.id ? 'flex-row-reverse' : ''}`}>
-                                        <Avatar className="h-10 w-10 border border-white/10">
-                                            <AvatarImage src={msg.sender?.avatarUrl} />
-                                            <AvatarFallback className="bg-slate-800 text-xs">{msg.sender?.fullName?.[0] || '?'}</AvatarFallback>
-                                        </Avatar>
-                                        <div className={`flex-1 space-y-2 ${msg.senderId === user?.id ? 'items-end flex flex-col' : ''}`}>
+                                    <div key={msg.id} className={`flex gap-3 ${msg.senderId === user?.id ? 'flex-row-reverse' : ''}`}>
+                                        <div className={`h-8 w-8 flex items-center justify-center border text-[10px] font-bold uppercase ${msg.senderId === user?.id ? 'bg-primary border-primary text-primary-foreground' : 'bg-muted border-border'}`}>
+                                            {msg.sender?.fullName?.[0] || '??'}
+                                        </div>
+                                        <div className={`flex-1 space-y-1 ${msg.senderId === user?.id ? 'items-end flex flex-col' : ''}`}>
                                             <div className="flex items-baseline gap-2">
-                                                <span className="text-sm font-semibold">{msg.sender?.fullName || 'Sistem'}</span>
-                                                <span className="text-[10px] text-muted-foreground uppercase">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true, locale: tr })}</span>
+                                                <span className="text-[11px] font-mono font-bold uppercase tracking-tight">{msg.sender?.fullName || 'SYSTEM'}</span>
+                                                <span className="text-[9px] text-muted-foreground uppercase font-mono">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true, locale: tr })}</span>
                                             </div>
-                                            <div className={`p-4 rounded-2xl text-sm leading-relaxed ${msg.senderId === user?.id
-                                                ? 'bg-brand-600/90 text-white rounded-tr-none'
-                                                : 'bg-slate-800/40 border border-white/5 rounded-tl-none'
+                                            <div className={`p-3 text-[12px] leading-relaxed tracking-tight font-medium ${msg.senderId === user?.id
+                                                ? 'bg-primary/90 text-primary-foreground border border-primary'
+                                                : 'bg-muted/30 border border-border/50'
                                                 }`}>
                                                 {msg.message}
 
                                                 {/* Attachments for this message */}
                                                 {msg.attachments?.length > 0 && (
-                                                    <div className="mt-4 pt-3 border-t border-white/10 space-y-2">
+                                                    <div className="mt-3 pt-2 border-t border-border/20 space-y-1">
                                                         {msg.attachments.map((file: any) => (
                                                             <a
                                                                 key={file.id}
                                                                 href={`${api.getBaseUrl()}/attachments/${file.id}/download`}
                                                                 target="_blank"
-                                                                className="flex items-center gap-2 bg-black/20 p-2 rounded-lg hover:bg-black/40 transition-colors text-xs"
+                                                                className="flex items-center gap-2 bg-black/20 p-1.5 hover:bg-black/40 transition-none text-[10px] font-mono border border-border/20"
                                                             >
                                                                 <Paperclip className="h-3 w-3 opacity-60" />
-                                                                <span className="flex-1 truncate">{file.fileName}</span>
+                                                                <span className="flex-1 truncate uppercase">{file.fileName}</span>
                                                                 <Download className="h-3 w-3 opacity-60" />
                                                             </a>
                                                         ))}
@@ -427,16 +423,14 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
                                 {/* Typing Indicator */}
                                 {someoneTyping && (
-                                    <div className="flex gap-4">
-                                        <Avatar className="h-10 w-10 border border-white/10">
-                                            <AvatarFallback className="bg-slate-800 text-xs">...</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1 space-y-2">
-                                            <div className="p-4 rounded-2xl w-16 text-sm bg-slate-800/40 border border-white/5 rounded-tl-none">
-                                                <span className="flex gap-1">
-                                                    <span className="h-1.5 w-1.5 bg-muted-foreground rounded-full animate-bounce" />
-                                                    <span className="h-1.5 w-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.2s]" />
-                                                    <span className="h-1.5 w-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.4s]" />
+                                    <div className="flex gap-3">
+                                        <div className="h-8 w-8 bg-muted border border-border flex items-center justify-center text-[10px] animate-pulse">...</div>
+                                        <div className="flex-1 space-y-1">
+                                            <div className="p-3 w-12 bg-muted/30 border border-border/50">
+                                                <span className="flex gap-1 justify-center">
+                                                    <span className="h-1 w-1 bg-muted-foreground animate-bounce" />
+                                                    <span className="h-1 w-1 bg-muted-foreground animate-bounce [animation-delay:0.2s]" />
+                                                    <span className="h-1 w-1 bg-muted-foreground animate-bounce [animation-delay:0.4s]" />
                                                 </span>
                                             </div>
                                         </div>
@@ -446,40 +440,44 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         </ScrollArea>
                     </CardContent>
 
-                    <CardFooter className="p-4 border-t border-white/5 bg-slate-900/30 flex flex-col gap-4">
+                    <CardFooter className="p-3 border-t border-border/50 bg-muted/10 flex flex-col gap-3">
                         {/* Selected Files Preview */}
                         {files.length > 0 && (
                             <div className="flex flex-wrap gap-2 w-full">
                                 {files.map((f, i) => (
-                                    <div key={i} className="flex items-center gap-2 bg-slate-800 px-2 py-1 rounded text-[10px] border border-white/5">
-                                        <span className="truncate max-w-[100px]">{f.name}</span>
-                                        <button onClick={() => setFiles(files.filter((_, idx) => idx !== i))}><Shield className="h-3 w-3 text-red-500 rotate-45" /></button>
+                                    <div key={i} className="flex items-center gap-2 bg-muted border border-border px-1.5 py-0.5 text-[9px] font-mono uppercase">
+                                        <span className="truncate max-w-[150px]">{f.name}</span>
+                                        <button onClick={() => setFiles(files.filter((_, idx) => idx !== i))} className="text-red-500 hover:text-red-400">
+                                            <X className="h-3 w-3" />
+                                        </button>
                                     </div>
                                 ))}
                             </div>
                         )}
 
                         <div className="flex items-end gap-3 w-full">
-                            <label className="mb-2 cursor-pointer text-muted-foreground hover:text-white transition-colors">
-                                <Paperclip className="h-5 w-5" />
+                            <label className="mb-1.5 cursor-pointer text-muted-foreground hover:text-primary transition-none">
+                                <Paperclip className="h-4 w-4" />
                                 <input type="file" multiple className="hidden" onChange={handleFileChange} />
                             </label>
-                            <div className="flex justify-between items-center gap-2 mb-2 w-full">
-                                <MacroPicker onSelect={(content: string) => setReply((prev) => prev ? `${prev}\n${content}` : content)} />
-                                <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest bg-white/5 px-2 py-0.5 rounded">Mesaj Yaz</div>
+                            <div className="flex-1 space-y-2">
+                                <div className="flex justify-between items-center mr-1">
+                                    <MacroPicker onSelect={(content: string) => setReply((prev) => prev ? `${prev}\n${content}` : content)} />
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">COMMS_CHANNEL [ENCRYPTED]</span>
+                                </div>
+                                <Textarea
+                                    placeholder="TRANSMIT_MESSAGE..."
+                                    className="bg-black/30 border-border/50 focus-visible:ring-primary h-20 text-[12px] p-2 rounded-none resize-none uppercase tracking-tight font-medium"
+                                    value={reply}
+                                    onChange={handleTypingChange}
+                                />
                             </div>
-                            <Textarea
-                                placeholder="Mesajınızı yazın..."
-                                className="bg-slate-900 border-white/5 focus-visible:ring-brand-500 resize-none min-h-[100px]"
-                                value={reply}
-                                onChange={handleTypingChange}
-                            />
                             <Button
                                 onClick={handleSendReply}
                                 disabled={sending || (!reply.trim() && files.length === 0)}
-                                className="mb-2 bg-brand-600 hover:bg-brand-700"
+                                className="mb-0 bg-primary hover:bg-primary/90 rounded-none h-20 w-12 border-l border-primary/50"
                             >
-                                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                {sending ? <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" /> : <Send className="h-5 w-5 text-primary-foreground" />}
                             </Button>
                         </div>
                     </CardFooter>
@@ -487,51 +485,50 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             </div>
 
             {/* Sidebar Info Column */}
-            <div className="space-y-6">
-                <Card className="bg-card/30 backdrop-blur-xl border-white/5">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-medium">Talep Bilgileri</CardTitle>
+            <div className="space-y-4">
+                <Card className="border-border/60">
+                    <CardHeader className="py-2 bg-muted/10">
+                        <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground">INCIDENT_METADATA</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 py-4">
                         <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Durum</label>
+                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">STATE</label>
                             <div className="flex items-center gap-2">
-                                <div className={`h-2 w-2 rounded-full ${STATUS_COLORS[ticket.status].split(' ')[0]}`} />
-                                <span className="text-sm font-medium">{ticket.status}</span>
+                                <div className="h-1.5 w-1.5 bg-primary animate-pulse" />
+                                <span className="text-[12px] font-bold uppercase tracking-tight text-foreground">{ticket.status}</span>
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Öncelik</label>
+                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">CRITICALITY</label>
                             <div className="flex items-center gap-2">
                                 <Badge variant="outline" className={PRIORITY_COLORS[ticket.priority]}>{ticket.priority}</Badge>
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Oluşturuldu</label>
-                            <p className="text-sm font-medium">{new Date(ticket.createdAt).toLocaleString('tr-TR')}</p>
+                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">OPENED_AT</label>
+                            <p className="text-[11px] font-mono font-medium text-foreground">{new Date(ticket.createdAt).toISOString().replace(/T/, ' ').replace(/\..+/, '')}</p>
                         </div>
                         {ticket.assignee && (
-                            <div className="space-y-1 pt-2 border-t border-white/5">
-                                <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Sorumlu Uzman</label>
+                            <div className="space-y-1 pt-3 border-t border-border/20">
+                                <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">ASSIGNED_OFFICER</label>
                                 <div className="flex items-center gap-2">
-                                    <Avatar className="h-6 w-6">
-                                        <AvatarImage src={ticket.assignee?.avatarUrl} />
-                                        <AvatarFallback className="text-[8px]">{ticket.assignee?.fullName?.[0] || '?'}</AvatarFallback>
-                                    </Avatar>
-                                    <span className="text-sm font-medium">{ticket.assignee?.fullName || 'Atanmamış'}</span>
+                                    <div className="h-6 w-6 bg-muted border border-border flex items-center justify-center text-[8px] font-bold">
+                                        {ticket.assignee?.fullName?.[0] || 'AX'}
+                                    </div>
+                                    <span className="text-[11px] font-bold uppercase tracking-tight">{ticket.assignee?.fullName || 'UNASSIGNED'}</span>
                                 </div>
                             </div>
                         )}
                     </CardContent>
                 </Card>
 
-                {/* Helpful Tip */}
-                <div className="bg-brand-500/10 border border-brand-500/20 p-4 rounded-xl space-y-2">
-                    <h4 className="text-xs font-bold text-brand-400 flex items-center gap-1.5 uppercase tracking-wider">
-                        <Shield className="h-3 w-3" /> Güvenlik İpucu
+                {/* System Notice */}
+                <div className="bg-primary/5 border border-primary/20 p-3 space-y-2">
+                    <h4 className="text-[9px] font-bold text-primary flex items-center gap-1.5 uppercase tracking-[0.2em]">
+                        <Shield className="h-3 w-3" /> SECURITY_NOTICE
                     </h4>
-                    <p className="text-[11px] text-brand-200/70 leading-relaxed">
-                        Destek ekibimiz sizden asla parolanızı veya kredi kartı bilgilerinizi istemez. Dosya paylaşırken hassas verileri kararttığınızdan emin olun.
+                    <p className="text-[10px] text-muted-foreground leading-tight tracking-tight">
+                        OPERATIONAL_SECURITY_MANDATORY. NEVER DISCLOSE ACCESS_CREDENTIALS OR SYSTEM_PRIVILEGES. SCRUB SENSITIVE_DATA FROM TRANSMISSIONS.
                     </p>
                 </div>
             </div>

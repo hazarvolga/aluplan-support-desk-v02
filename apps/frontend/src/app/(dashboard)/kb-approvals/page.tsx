@@ -63,34 +63,34 @@ export default function KbApprovalsPage() {
     };
 
     return (
-        <div className="space-y-8 max-w-7xl mx-auto py-2">
-            <div className="flex justify-between items-start">
+        <div className="space-y-4 py-0">
+            <div className="flex justify-between items-start border-b border-border/40 pb-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                        <Bot className="h-8 w-8 text-violet-500" />
-                        AI Doküman Onayları
+                    <h1 className="text-[18px] font-bold tracking-tight uppercase flex items-center gap-2">
+                        <Bot className="h-5 w-5 text-primary" />
+                        AI_KNOWLEDGE_VERIFICATION_CENTER
                     </h1>
-                    <p className="text-muted-foreground mt-2">
-                        Müşteri biletlerinden Yapay Zeka tarafından otomatik çıkarılmış Bilgi Bankası makalelerini (Self-Learning KB) inceleyin ve yayınlayın.
+                    <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-tight">
+                        Review and authorize automatically synthesized knowledge units from processed incident threads.
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={fetchDrafts} disabled={loading} className="border-white/10 hover:bg-white/5">
-                        <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                        Yenile
+                    <Button variant="outline" size="sm" onClick={fetchDrafts} disabled={loading} className="h-7 text-[10px] uppercase font-bold tracking-widest bg-muted/20 border-border/60">
+                        <RefreshCw className={`mr-2 h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+                        RESYNC_QUEUE
                     </Button>
-                    <Button onClick={runPipeline} className="bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20">
-                        Boru Hattını Çalıştır
+                    <Button size="sm" onClick={runPipeline} className="h-7 text-[10px] uppercase font-bold tracking-widest bg-emerald-600 hover:bg-emerald-700">
+                        EXEC_PIPELINE
                     </Button>
                 </div>
             </div>
 
-            <Card className="bg-card/30 backdrop-blur-xl border-white/5 overflow-hidden">
-                <CardHeader className="bg-slate-900/50 pb-4 border-b border-white/5">
-                    <CardTitle className="text-lg flex items-center justify-between">
-                        <span>Bekleyen Onaylar</span>
-                        <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 border-none">
-                            {drafts.length} Taslak
+            <Card className="border-border/60">
+                <CardHeader className="py-2.5 px-3 bg-muted/10 border-b border-border/40">
+                    <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] flex items-center justify-between text-muted-foreground">
+                        <span>AWAITING_AUTHORIZATION_QUEUE</span>
+                        <Badge className="bg-orange-500/10 text-orange-400 border-orange-900/50 rounded-none h-4 px-1.5 text-[9px] font-mono">
+                            {drafts.length} UNITS_LOADED
                         </Badge>
                     </CardTitle>
                 </CardHeader>
@@ -108,49 +108,48 @@ export default function KbApprovalsPage() {
                     ) : (
                         <Table>
                             <TableHeader>
-                                <TableRow className="border-white/5 hover:bg-transparent">
-                                    <TableHead className="w-[300px]">Üretilen Soru</TableHead>
-                                    <TableHead>Üretilen Cevap</TableHead>
-                                    <TableHead className="w-[120px] text-center">AI Güven Skoru</TableHead>
-                                    <TableHead className="w-[100px] text-center">İlgili Bilet</TableHead>
-                                    <TableHead className="w-[180px] text-right">İşlemler</TableHead>
+                                <TableRow className="border-border/40 hover:bg-transparent">
+                                    <TableHead className="w-[300px] h-8 text-[9px] uppercase font-bold tracking-widest font-mono">EXTRACTED_QUERY</TableHead>
+                                    <TableHead className="h-8 text-[9px] uppercase font-bold tracking-widest font-mono">SYNTHESIZED_RESPONSE</TableHead>
+                                    <TableHead className="w-[120px] text-center h-8 text-[9px] uppercase font-bold tracking-widest font-mono">CONFIDENCE_SCORE</TableHead>
+                                    <TableHead className="w-[100px] text-center h-8 text-[9px] uppercase font-bold tracking-widest font-mono">SOURCE_INCIDENT</TableHead>
+                                    <TableHead className="w-[180px] text-right h-8 text-[9px] uppercase font-bold tracking-widest font-mono">AUTHORIZATION</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {drafts.map((draft) => (
-                                    <TableRow key={draft.id} className="border-white/5 group">
-                                        <TableCell className="font-medium align-top">
+                                    <TableRow key={draft.id} className="border-border/20 group">
+                                        <TableCell className="font-medium align-top py-3">
                                             <div className="flex gap-2">
-                                                <FileText className="h-4 w-4 text-violet-400 shrink-0 mt-1" />
-                                                <span className="text-sm line-clamp-3">{draft.question}</span>
+                                                <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                <span className="text-[12px] leading-tight tracking-tight uppercase font-bold">{draft.question}</span>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="align-top">
-                                            <p className="text-sm text-slate-300 line-clamp-3 mb-2">{draft.answer}</p>
+                                        <TableCell className="align-top py-3">
+                                            <p className="text-[11px] text-foreground/70 leading-relaxed italic line-clamp-3">"{draft.answer}"</p>
                                         </TableCell>
-                                        <TableCell className="align-top text-center">
-                                            <Badge variant="outline" className={`
-                                                ${draft.confidenceScore >= 0.85 ? 'text-green-400 border-green-500/30' :
-                                                    draft.confidenceScore >= 0.60 ? 'text-amber-400 border-amber-500/30' :
-                                                        'text-red-400 border-red-500/30'}
+                                        <TableCell className="align-top text-center py-3">
+                                            <Badge variant="outline" className={`h-4 px-1.5 text-[9px] font-mono rounded-none ${draft.confidenceScore >= 0.85 ? 'text-emerald-400 border-emerald-900/50 bg-emerald-500/5' :
+                                                    draft.confidenceScore >= 0.60 ? 'text-amber-400 border-amber-900/50 bg-amber-500/5' :
+                                                        'text-red-400 border-red-900/50 bg-red-500/5'}
                                             `}>
-                                                {Math.round(draft.confidenceScore * 100)}%
+                                                {Math.round(draft.confidenceScore * 100)}%_RELIABLE
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="align-top text-center">
+                                        <TableCell className="align-top text-center py-3">
                                             {draft.sourceTicketId ? (
-                                                <Link href={`/tickets/${draft.sourceTicketId}`} target="_blank" className="inline-flex items-center gap-1 text-xs text-brand-400 hover:underline">
-                                                    #{draft.sourceTicketId.substring(0, 6)} <ExternalLink className="h-3 w-3" />
+                                                <Link href={`/tickets/${draft.sourceTicketId}`} target="_blank" className="font-mono text-[9px] text-primary hover:underline uppercase tracking-tighter">
+                                                    INC_{draft.sourceTicketId.substring(0, 6)}
                                                 </Link>
                                             ) : '-'}
                                         </TableCell>
-                                        <TableCell className="align-top text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button size="sm" variant="ghost" onClick={() => handleApprove(draft.id)} className="h-8 w-8 p-0 text-green-500 hover:text-green-400 hover:bg-green-500/10">
-                                                    <CheckCircle2 className="h-5 w-5" />
+                                        <TableCell className="align-top text-right py-3">
+                                            <div className="flex justify-end gap-1.5">
+                                                <Button size="sm" variant="outline" onClick={() => handleApprove(draft.id)} className="h-6 text-[9px] font-bold uppercase border-emerald-900/50 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 transition-none">
+                                                    VERIFY
                                                 </Button>
-                                                <Button size="sm" variant="ghost" onClick={() => handleDismiss(draft.id)} className="h-8 w-8 p-0 text-red-500 hover:text-red-400 hover:bg-red-500/10">
-                                                    <XCircle className="h-5 w-5" />
+                                                <Button size="sm" variant="outline" onClick={() => handleDismiss(draft.id)} className="h-6 text-[9px] font-bold uppercase border-red-900/50 text-red-500 bg-red-500/5 hover:bg-red-500/10 transition-none">
+                                                    PURGE
                                                 </Button>
                                             </div>
                                         </TableCell>

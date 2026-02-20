@@ -14,10 +14,10 @@ interface QueryResult {
 }
 
 const CONFIDENCE_COLORS: Record<string, string> = {
-    HIGH: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    MEDIUM: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    LOW: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-    NO_MATCH: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+    HIGH: 'border-emerald-900/50 text-emerald-400 bg-emerald-400/5',
+    MEDIUM: 'border-amber-900/50 text-amber-400 bg-amber-400/5',
+    LOW: 'border-orange-900/50 text-orange-400 bg-orange-400/5',
+    NO_MATCH: 'border-border text-muted-foreground bg-muted/5',
 };
 
 export default function AiPage() {
@@ -46,81 +46,81 @@ export default function AiPage() {
     };
 
     return (
-        <div className="space-y-6 max-w-2xl">
-            <div>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-                    <Bot className="h-6 w-6 text-brand-500" />
-                    AI Asistan
+        <div className="space-y-4 max-w-3xl">
+            <div className="border-b border-border/40 pb-4">
+                <h1 className="text-[18px] font-bold text-foreground uppercase tracking-tight flex items-center gap-2">
+                    <Bot className="h-5 w-5 text-primary" />
+                    AI_CO_NAVIGATOR_BETA
                 </h1>
-                <p className="mt-1 text-slate-500 dark:text-slate-400 text-sm">
-                    Bilgi bankasında semantik arama yapın. Ollama &amp; pgvector ile güçlendirilmiştir.
+                <p className="mt-1 text-muted-foreground text-[10px] font-mono uppercase tracking-widest leading-none">
+                    Execute semantic intelligence queries against the unified knowledge lake. Hardware: Ollama_VEC_Compute.
                 </p>
             </div>
 
             {/* Query input */}
-            <form onSubmit={handleQuery} className="flex gap-3">
+            <form onSubmit={handleQuery} className="flex gap-2 bg-muted/5 border border-border/60 p-1">
                 <input
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Sorunuzu yazın…"
-                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+                    placeholder="ENTER_QUERY_STRING..."
+                    className="flex-1 px-3 py-2 bg-transparent text-foreground text-[12px] uppercase font-bold tracking-tight focus:outline-none placeholder:text-muted-foreground/40"
                 />
                 <button
                     type="submit"
                     disabled={loading || !query.trim()}
-                    className="px-5 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold disabled:opacity-50 transition flex items-center gap-2"
+                    className="px-4 py-2 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest disabled:opacity-30 transition-none flex items-center gap-2"
                 >
-                    <Send className="h-4 w-4" />
-                    {loading ? 'Aranıyor…' : 'Sor'}
+                    <Send className="h-3 w-3" />
+                    {loading ? 'EXECUTING...' : 'RUN_QUERY'}
                 </button>
             </form>
 
             {/* Result */}
             {result && (
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 animate-slide-up shadow-sm">
+                <div className="bg-muted/5 border border-border/60 p-4 space-y-4 animate-in fade-in duration-300">
                     {/* Confidence badge */}
                     <div className="flex items-center gap-2">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${CONFIDENCE_COLORS[result.confidence] ?? ''}`}>
-                            {result.confidence} güven
+                        <span className={`px-2 py-0.5 border text-[9px] font-mono uppercase font-bold tracking-widest ${CONFIDENCE_COLORS[result.confidence] ?? ''}`}>
+                            CONFIDENCE: {result.confidence}
                         </span>
                     </div>
 
                     {/* Answer */}
                     {result.answer ? (
-                        <p className="text-slate-800 dark:text-slate-200 leading-relaxed text-sm">{result.answer}</p>
+                        <p className="text-foreground/90 leading-relaxed text-[13px] italic">"{result.answer}"</p>
                     ) : (
-                        <div className="flex items-start gap-3 text-slate-500 dark:text-slate-400">
-                            <AlertCircle className="h-5 w-5 shrink-0 text-amber-500 mt-0.5" />
-                            <p className="text-sm">Bu konuda eşleşen bir yanıt bulunamadı.</p>
+                        <div className="flex items-start gap-3 text-muted-foreground border border-orange-900/30 bg-orange-950/10 p-3">
+                            <AlertCircle className="h-4 w-4 shrink-0 text-orange-500 mt-0.5" />
+                            <p className="text-[11px] uppercase font-bold tracking-tight">NULL_RESPONSE: NO RELATIVE MATCHES FOUND IN CURRENT KNOWLEDGE LAKE.</p>
                         </div>
                     )}
 
                     {/* Suggest ticket */}
                     {result.suggestTicket && (
-                        <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4">
-                            <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
-                            <p className="text-sm text-amber-800 dark:text-amber-300">
-                                Sorunuz için destek talebi oluşturmanızı öneririz.
+                        <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 p-3">
+                            <AlertCircle className="h-4 w-4 text-primary shrink-0" />
+                            <p className="text-[10px] text-primary uppercase font-bold tracking-widest">
+                                RECOMMENDATION: ESCALATE TO HUMAN_OPERATOR_LEVEL_1.
                             </p>
                             <a
                                 href="/tickets/new"
-                                className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline"
+                                className="ml-auto inline-flex items-center gap-1.5 px-2 py-1 bg-primary text-primary-foreground text-[9px] font-bold uppercase tracking-widest hover:opacity-90"
                             >
-                                Talep Oluştur <ExternalLink className="h-3.5 w-3.5" />
+                                CREATE_INCIDENT
                             </a>
                         </div>
                     )}
 
                     {/* Sources */}
                     {result.sources.length > 0 && (
-                        <div>
-                            <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Kaynaklar</p>
-                            <div className="space-y-1.5">
+                        <div className="border-t border-border/20 pt-3">
+                            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-3">TRACE_SOURCES</p>
+                            <div className="space-y-1">
                                 {result.sources.map((s) => (
-                                    <div key={s.articleId} className="flex items-center justify-between text-sm">
-                                        <span className="text-brand-600 dark:text-brand-400 hover:underline cursor-pointer">{s.title}</span>
-                                        <span className="text-xs text-slate-400 tabular-nums">{(s.similarity * 100).toFixed(0)}%</span>
+                                    <div key={s.articleId} className="flex items-center justify-between text-[11px] font-mono group p-1 hover:bg-muted/10">
+                                        <span className="text-primary hover:underline cursor-pointer uppercase tracking-tighter truncate max-w-[80%]">{s.title}</span>
+                                        <span className="text-[10px] text-muted-foreground/60 tabular-nums">SIM_{Math.round(s.similarity * 100)}%</span>
                                     </div>
                                 ))}
                             </div>
@@ -129,24 +129,24 @@ export default function AiPage() {
 
                     {/* Feedback */}
                     {result.answer && (
-                        <div className="flex items-center gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
-                            <p className="text-xs text-slate-400">Bu yanıt yardımcı oldu mu?</p>
+                        <div className="flex items-center gap-3 border-t border-border/20 pt-4">
+                            <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest">HELPFUL?</p>
                             <button
                                 onClick={() => handleFeedback(true)}
                                 disabled={!!feedback}
-                                className={`p-2 rounded-lg transition-colors ${feedback === 'positive' ? 'bg-green-100 text-green-600' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400'}`}
+                                className={`h-7 w-7 flex items-center justify-center border transition-none ${feedback === 'positive' ? 'border-emerald-500 text-emerald-500 bg-emerald-500/10' : 'border-border text-muted-foreground hover:border-primary/60 hover:text-foreground'}`}
                             >
-                                <ThumbsUp className="h-4 w-4" />
+                                <ThumbsUp className="h-3.5 w-3.5" />
                             </button>
                             <button
                                 onClick={() => handleFeedback(false)}
                                 disabled={!!feedback}
-                                className={`p-2 rounded-lg transition-colors ${feedback === 'negative' ? 'bg-red-100 text-red-600' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400'}`}
+                                className={`h-7 w-7 flex items-center justify-center border transition-none ${feedback === 'negative' ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-border text-muted-foreground hover:border-primary/60 hover:text-foreground'}`}
                             >
-                                <ThumbsDown className="h-4 w-4" />
+                                <ThumbsDown className="h-3.5 w-3.5" />
                             </button>
                             {feedback && (
-                                <span className="text-xs text-slate-400 ml-1">Geri bildiriminiz alındı, teşekkürler!</span>
+                                <span className="text-[9px] font-mono text-muted-foreground uppercase">FEEDBACK_RECORDED_THANK_YOU</span>
                             )}
                         </div>
                     )}

@@ -6,10 +6,10 @@ import { BookOpen, Plus, CheckCircle2, Clock, XCircle, Search, BarChart3 } from 
 import Link from 'next/link';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-    DRAFT: { label: 'Taslak', color: 'text-slate-500 bg-slate-100 dark:bg-slate-800' },
-    REVIEW: { label: 'İnceleme', color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30' },
-    PUBLISHED: { label: 'Yayında', color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
-    ARCHIVED: { label: 'Arşiv', color: 'text-slate-400 bg-slate-100 dark:bg-slate-800' },
+    DRAFT: { label: 'DRAFT', color: 'border-border text-muted-foreground bg-muted/5' },
+    REVIEW: { label: 'UNDER_REVIEW', color: 'border-orange-900/50 text-orange-400 bg-orange-400/5' },
+    PUBLISHED: { label: 'ACTIVE', color: 'border-emerald-900/50 text-emerald-400 bg-emerald-400/5' },
+    ARCHIVED: { label: 'ARCHIVED', color: 'border-border/40 text-muted-foreground/40 bg-muted/5' },
 };
 
 export default function KnowledgeBasePage() {
@@ -41,44 +41,44 @@ export default function KnowledgeBasePage() {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Bilgi Bankası</h1>
-                    <p className="mt-1 text-slate-500 dark:text-slate-400 text-sm">{total} makale</p>
+                    <h1 className="text-[18px] font-bold text-foreground uppercase tracking-tight">KNOWLEDGE_BASE_CENTRAL</h1>
+                    <p className="mt-1 text-muted-foreground text-[10px] font-mono uppercase tracking-widest leading-none">OBJECT_COUNT: {total} UNITS</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     <Link
                         href="/knowledge-base/analytics"
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-brand-500 transition-all shadow-sm hover:shadow-md text-sm font-semibold"
+                        className="flex items-center gap-2 px-3 py-1.5 border border-border bg-muted/20 text-muted-foreground hover:text-foreground transition-none text-[10px] uppercase font-bold tracking-widest"
                     >
-                        <BarChart3 className="h-4 w-4 text-brand-500" /> Analiz
+                        <BarChart3 className="h-3 w-3 text-primary" /> ANALYTICS
                     </Link>
                     <Link
                         href="/knowledge-base/new"
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white transition-all shadow-lg shadow-brand-500/20 text-sm font-semibold"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground transition-none text-[10px] uppercase font-bold tracking-widest"
                     >
-                        <Plus className="h-4 w-4" /> Yeni Ekle
+                        <Plus className="h-3 w-3" /> CREATE_ARTICLE
                     </Link>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap pb-2 border-b border-border/20">
                 <form onSubmit={handleSearch} className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
                     <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Makale ara…"
-                        className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        placeholder="SCAN_RECORDS..."
+                        className="w-full pl-9 pr-4 py-1.5 border border-border/60 bg-black/20 text-[11px] uppercase tracking-tight text-foreground focus:outline-none focus:ring-1 focus:ring-primary h-8"
                     />
                 </form>
                 {Object.entries(STATUS_LABELS).map(([k, v]) => (
                     <button
                         key={k}
                         onClick={() => setStatusFilter(k)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === k ? 'bg-brand-500 text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-brand-300'
+                        className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-none h-8 ${statusFilter === k ? 'bg-primary text-primary-foreground' : 'bg-muted/10 border border-border/60 text-muted-foreground hover:border-primary/60 hover:text-foreground'
                             }`}
                     >
                         {v.label}
@@ -97,45 +97,56 @@ export default function KnowledgeBasePage() {
                     <p className="text-slate-500 dark:text-slate-400">Makale bulunamadı</p>
                 </div>
             ) : (
-                <div className="space-y-2">
+                <div className="divide-y divide-border/20 border-t border-b border-border/40">
                     {articles.map((a) => {
                         const s = STATUS_LABELS[a.status] ?? STATUS_LABELS.DRAFT;
                         return (
-                            <Link
+                            <div
                                 key={a.id}
-                                href={`/knowledge-base/${a.id}`}
-                                className="group flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-5 py-4 hover:border-brand-500 dark:hover:border-brand-600 transition-all shadow-sm hover:shadow-md"
+                                className="group flex items-center justify-between bg-muted/5 px-4 py-3 hover:bg-muted/10 transition-none"
                             >
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2.5 mb-1">
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold ${s.color}`}>
+                                    <div className="flex items-center gap-2.5 mb-1 text-[9px] font-mono uppercase tracking-tighter">
+                                        <Badge className={`px-1.5 py-0 h-4 border ${s.color}`}>
                                             {s.label}
-                                        </span>
-                                        {a.tags?.map((t: string) => (
-                                            <span key={t} className="text-xs text-slate-400">#{t}</span>
-                                        ))}
+                                        </Badge>
+                                        <div className="flex gap-2">
+                                            {a.tags?.map((t: string) => (
+                                                <span key={t} className="text-muted-foreground/40">#{t.toUpperCase()}</span>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <p className="font-semibold text-slate-900 dark:text-white text-sm truncate">{a.title}</p>
-                                    <p className="text-xs text-slate-400 mt-0.5">{a.creator?.fullName} · {new Date(a.updatedAt).toLocaleDateString('tr-TR')}</p>
+                                    <Link href={`/knowledge-base/${a.id}`} className="group-hover:text-primary transition-none">
+                                        <p className="font-bold text-foreground text-[14px] leading-tight tracking-tight truncate">{a.title.toUpperCase()}</p>
+                                    </Link>
+                                    <div className="flex items-center gap-4 mt-1 text-[9px] font-mono uppercase text-muted-foreground/60">
+                                        <span>OFFICER: {a.creator?.fullName || 'SYSTEM'}</span>
+                                        <span>LAST_SYNC: {new Date(a.updatedAt).toISOString().split('T')[0]}</span>
+                                    </div>
                                 </div>
 
-                                {a.status === 'REVIEW' && (
-                                    <div className="flex items-center gap-2 shrink-0 ml-4">
-                                        <button
-                                            onClick={() => handleReview(a.id, true)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold hover:bg-green-200 transition-colors"
-                                        >
-                                            <CheckCircle2 className="h-3.5 w-3.5" /> Onayla
-                                        </button>
-                                        <button
-                                            onClick={() => handleReview(a.id, false)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-semibold hover:bg-red-200 transition-colors"
-                                        >
-                                            <XCircle className="h-3.5 w-3.5" /> Reddet
-                                        </button>
-                                    </div>
-                                )}
-                            </Link>
+                                <div className="flex items-center gap-2 shrink-0 ml-4">
+                                    {a.status === 'REVIEW' && (
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                onClick={() => handleReview(a.id, true)}
+                                                className="px-2 py-1 border border-emerald-900/50 bg-emerald-500/5 text-emerald-500 text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-500/10 transition-none"
+                                            >
+                                                VERIFY
+                                            </button>
+                                            <button
+                                                onClick={() => handleReview(a.id, false)}
+                                                className="px-2 py-1 border border-red-900/50 bg-red-500/5 text-red-500 text-[9px] font-bold uppercase tracking-widest hover:bg-red-500/10 transition-none"
+                                            >
+                                                REJECT
+                                            </button>
+                                        </div>
+                                    )}
+                                    <Link href={`/knowledge-base/${a.id}`} className="p-2 text-muted-foreground hover:text-foreground">
+                                        <ArrowRight className="h-4 w-4" />
+                                    </Link>
+                                </div>
+                            </div>
                         );
                     })}
                 </div>

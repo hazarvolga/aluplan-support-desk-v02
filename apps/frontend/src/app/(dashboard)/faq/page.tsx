@@ -62,31 +62,32 @@ export default function FaqPage() {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
+        <div className="space-y-4">
+            <div className="flex justify-between items-start border-b border-border/40 pb-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">FAQ Management</h1>
-                    <p className="text-muted-foreground">Review and manage automatically generated FAQs.</p>
+                    <h1 className="text-[18px] font-bold tracking-tight uppercase">FAQ_MANAGEMENT_UNIT</h1>
+                    <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mt-1">Review and synchronize automatically extracted operational knowledge specimens.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={fetchFaqs} disabled={loading}>
-                        <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                        Refresh
+                    <Button variant="outline" size="sm" onClick={fetchFaqs} disabled={loading} className="h-7 text-[10px] uppercase font-bold tracking-widest bg-muted/20">
+                        <RefreshCw className={`mr-2 h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+                        RELOAD_CACHE
                     </Button>
-                    <Button onClick={runPipeline}>
-                        <ArrowRight className="mr-2 h-4 w-4" />
-                        Run Pipeline Now
+                    <Button size="sm" onClick={runPipeline} className="h-7 text-[10px] uppercase font-bold tracking-widest">
+                        <ArrowRight className="mr-2 h-3 w-3" />
+                        RUN_EXTRACTION
                     </Button>
                 </div>
             </div>
 
-            <div className="flex gap-2 pb-4">
+            <div className="flex gap-1.5 pb-2">
                 {['ALL', 'PENDING_REVIEW', 'PUBLISHED', 'DRAFT'].map((status) => (
                     <Button
                         key={status}
                         variant={filter === status ? 'default' : 'outline'}
                         onClick={() => setFilter(status as any)}
                         size="sm"
+                        className="h-6 px-3 text-[9px] uppercase font-bold tracking-widest rounded-none border-border/60"
                     >
                         {status.replace('_', ' ')}
                     </Button>
@@ -104,42 +105,41 @@ export default function FaqPage() {
                 )}
 
                 {faqs.map((faq) => (
-                    <Card key={faq.id} className="overflow-hidden">
-                        <CardHeader className="bg-muted/50 pb-3">
+                    <Card key={faq.id} className="border-border/60">
+                        <CardHeader className="py-2.5 px-3 bg-muted/10 border-b border-border/40">
                             <div className="flex justify-between items-start">
                                 <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant={
-                                            faq.status === 'PUBLISHED' ? 'default' :
-                                                faq.status === 'PENDING_REVIEW' ? 'destructive' : 'secondary'
-                                        }>
+                                    <div className="flex items-center gap-3">
+                                        <Badge className={`text-[9px] h-4 tracking-tighter ${faq.status === 'PUBLISHED' ? 'border-emerald-900/50 text-emerald-400 bg-emerald-400/5' :
+                                                faq.status === 'PENDING_REVIEW' ? 'border-orange-900/50 text-orange-400 bg-orange-400/5' : 'border-border text-muted-foreground bg-muted/5'
+                                            }`}>
                                             {faq.status}
                                         </Badge>
-                                        <span className="text-xs text-muted-foreground">Freq: {faq.frequency}</span>
-                                        <span className="text-xs text-muted-foreground">Score: {Math.round(faq.confidenceScore * 100)}%</span>
+                                        <span className="text-[9px] font-mono text-muted-foreground uppercase opacity-60">FREQ: {faq.frequency}</span>
+                                        <span className="text-[9px] font-mono text-muted-foreground uppercase opacity-60">CONFIDENCE: {Math.round(faq.confidenceScore * 100)}%</span>
                                     </div>
-                                    <CardTitle className="text-lg">{faq.question}</CardTitle>
+                                    <CardTitle className="text-[13px] tracking-tight">{faq.question}</CardTitle>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-1.5">
                                     {faq.status === 'PENDING_REVIEW' && (
                                         <>
-                                            <Button size="sm" variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => handleApprove(faq.id)}>
-                                                <CheckCircle className="h-4 w-4 mr-1" /> Approve
+                                            <Button size="sm" variant="outline" className="h-6 text-[9px] uppercase font-bold tracking-wider border-emerald-900/50 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10" onClick={() => handleApprove(faq.id)}>
+                                                COMMIT
                                             </Button>
-                                            <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDismiss(faq.id)}>
-                                                <XCircle className="h-4 w-4 mr-1" /> Reject
+                                            <Button size="sm" variant="outline" className="h-6 text-[9px] uppercase font-bold tracking-wider border-orange-900/50 text-orange-500 bg-orange-500/5 hover:bg-orange-500/10" onClick={() => handleDismiss(faq.id)}>
+                                                DISCARD
                                             </Button>
                                         </>
                                     )}
-                                    <Button size="icon" variant="ghost" className="text-muted-foreground" onClick={() => handleDismiss(faq.id)}>
-                                        <Trash2 className="h-4 w-4" />
+                                    <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => handleDismiss(faq.id)}>
+                                        <Trash2 className="h-3 w-3" />
                                     </Button>
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="pt-4">
-                            <div className="prose prose-sm dark:prose-invert max-w-none">
-                                <p>{faq.answer}</p>
+                        <CardContent className="p-3">
+                            <div className="prose prose-xs dark:prose-invert max-w-none text-foreground/80 leading-relaxed italic">
+                                "{faq.answer}"
                             </div>
                             {faq.sourceTicketId && (
                                 <div className="mt-4 text-xs text-muted-foreground">
