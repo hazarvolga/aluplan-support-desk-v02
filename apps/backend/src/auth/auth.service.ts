@@ -51,7 +51,7 @@ export class AuthService {
             ),
         ];
 
-        const tokens = await this.generateTokens(user.id, user.email, roles, permissions);
+        const tokens = await this.generateTokens(user.id, user.email, user.fullName, roles, permissions);
 
         return {
             user: {
@@ -75,7 +75,7 @@ export class AuthService {
         // In production, validate stored refresh token hash
         const roles = await this.getUserRoles(userId);
         const permissions = await this.getUserPermissions(userId);
-        return this.generateTokens(userId, user.email, roles, permissions);
+        return this.generateTokens(userId, user.email, user.fullName, roles, permissions);
     }
 
     async logout(userId: string) {
@@ -86,10 +86,11 @@ export class AuthService {
     private async generateTokens(
         userId: string,
         email: string,
+        fullName: string,
         roles: string[],
         permissions: string[],
     ) {
-        const payload = { sub: userId, email, roles, permissions };
+        const payload = { sub: userId, email, fullName, roles, permissions };
 
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {
@@ -102,7 +103,7 @@ export class AuthService {
             }),
         ]);
 
-        return { accessToken, refreshToken };
+        return { access_token: accessToken, refresh_token: refreshToken };
     }
 
     private async getUserRoles(userId: string): Promise<string[]> {

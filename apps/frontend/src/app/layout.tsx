@@ -10,10 +10,16 @@ export const viewport: Viewport = {
     themeColor: '#0ea5e9',
 };
 
+import { AuthProvider } from '@/components/auth/role-guard';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="tr" suppressHydrationWarning>
-            <body>{children}</body>
+            <body>
+                <AuthProvider>
+                    {children}
+                </AuthProvider>
+            </body>
         </html>
     );
 }

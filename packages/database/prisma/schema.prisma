@@ -99,6 +99,7 @@ model User {
   articleVersions        KnowledgeArticleVersion[]
   aiInteractions         AiInteraction[]
   feedbacks              InteractionFeedback[]
+  articleFeedbacks       ArticleFeedback[]
   trainingReviews        TrainingQueue[]
   auditLogs              AuditLog[]
   settings               Setting[]
@@ -235,11 +236,26 @@ model KnowledgeArticle {
   versions   KnowledgeArticleVersion[]
   embeddings KnowledgeEmbedding[]
   interactions AiInteraction[]
+  feedbacks    ArticleFeedback[]
 
   @@index([status], map: "idx_ka_status")
   @@index([approved], map: "idx_ka_approved")
   @@index([categoryId], map: "idx_ka_category")
   @@map("knowledge_articles")
+}
+
+model ArticleFeedback {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  articleId String   @map("article_id") @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  isHelpful Boolean  @map("is_helpful")
+  comment   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  article KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user    User?            @relation(fields: [userId], references: [id])
+
+  @@map("article_feedbacks")
 }
 
 model KnowledgeArticleVersion {

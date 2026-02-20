@@ -103,7 +103,6 @@ export class CustomersService {
                         role: { name: 'customer' },
                     },
                 },
-                deletedAt: null,
             },
             select: {
                 id: true,

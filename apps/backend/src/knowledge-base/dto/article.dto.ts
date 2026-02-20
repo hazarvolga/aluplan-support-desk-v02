@@ -66,3 +66,13 @@ export class ReviewArticleDto {
     @IsOptional()
     note?: string;
 }
+
+export class SubmitFeedbackDto {
+    @ApiProperty({ description: 'true = helpful, false = unhelpful' })
+    isHelpful: boolean;
+
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    comment?: string;
+}

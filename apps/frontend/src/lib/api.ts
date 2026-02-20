@@ -52,6 +52,20 @@ export const api = {
             request<any>(`/knowledge-base/articles/${id}/review`, {
                 method: 'POST', body: JSON.stringify({ approved }),
             }),
+        submitFeedback: (id: string, isHelpful: boolean, comment?: string) =>
+            request<any>(`/knowledge-base/articles/${id}/feedback`, {
+                method: 'POST', body: JSON.stringify({ isHelpful, comment }),
+            }),
+        incrementView: (id: string) =>
+            request<any>(`/knowledge-base/articles/${id}/view`, { method: 'POST' }),
+        getAnalytics: (id: string) => request<any>(`/knowledge-base/articles/${id}/analytics`),
+        compare: (id: string, v1: number, v2: number) =>
+            request<any>(`/knowledge-base/articles/${id}/compare?v1=${v1}&v2=${v2}`),
+        suggestCategory: (title: string, content: string) =>
+            request<any>('/knowledge-base/articles/suggest-category', {
+                method: 'POST', body: JSON.stringify({ title, content }),
+            }),
+        getGlobalAnalytics: () => request<any>('/knowledge-base/analytics'),
     },
     ai: {
         query: (userQuery: string) =>

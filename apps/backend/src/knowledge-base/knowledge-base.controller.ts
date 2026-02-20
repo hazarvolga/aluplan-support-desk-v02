@@ -4,9 +4,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { KnowledgeBaseService } from './knowledge-base.service';
-import { CreateArticleDto, UpdateArticleDto, ReviewArticleDto } from './dto/article.dto';
+import { CreateArticleDto, UpdateArticleDto, ReviewArticleDto, SubmitFeedbackDto } from './dto/article.dto';
 import { RbacGuard } from '../rbac/rbac.guard';
-import { RequirePermissions } from '../rbac/decorators/rbac.decorators';
+import { RequirePermissions, Roles } from '../rbac/decorators/rbac.decorators';
+import { Public } from '../auth/decorators/public.decorator';
 
 const ArticleStatus = {
     DRAFT: 'DRAFT',
@@ -105,5 +106,50 @@ export class KnowledgeBaseController {
     @ApiQuery({ name: 'q', required: true })
     keywordSearch(@Query('q') query: string) {
         return this.kbService.keywordSearch(query);
+    }
+
+    // ─── ANALYTICS & FEEDBACK ─────────────────────────────
+    @Public()
+    @Post('articles/:id/view')
+    @ApiOperation({ summary: 'Increment article view count' })
+    incrementViewCount(@Param('id') id: string) {
+        return this.kbService.incrementViewCount(id);
+    }
+
+    @Post('articles/:id/feedback')
+    @ApiOperation({ summary: 'Submit feedback for an article' })
+    submitFeedback(@Param('id') id: string, @Body() dto: SubmitFeedbackDto, @Request() req: any) {
+        return this.kbService.submitFeedback(id, dto, req.user?.sub);
+    }
+
+    @Get('articles/:id/analytics')
+    @RequirePermissions('reports:read')
+    @ApiOperation({ summary: 'Get article analytics' })
+    getAnalytics(@Param('id') id: string) {
+        return this.kbService.getAnalytics(id);
+    }
+
+    // ─── VERSIONING ───────────────────────────────────────
+    @Get('articles/:id/compare')
+    @RequirePermissions('kb:read')
+    @ApiOperation({ summary: 'Compare two versions of an article' })
+    @ApiQuery({ name: 'v1', required: true, type: Number })
+    @ApiQuery({ name: 'v2', required: true, type: Number })
+    compare(@Param('id') id: string, @Query('v1') v1: number, @Query('v2') v2: number) {
+        return this.kbService.compareVersions(id, v1, v2);
+    }
+
+    @Post('articles/suggest-category')
+    @RequirePermissions('kb:create')
+    @ApiOperation({ summary: 'Suggest a category for an article' })
+    suggestCategory(@Body() body: { title: string; content: string }) {
+        return this.kbService.suggestArticleCategory(body.title, body.content);
+    }
+
+    @Get('analytics')
+    @RequirePermissions('reports:read')
+    @ApiOperation({ summary: 'Get global KB usage and feedback analytics' })
+    getGlobalAnalytics() {
+        return this.kbService.getGlobalAnalytics();
     }
 }

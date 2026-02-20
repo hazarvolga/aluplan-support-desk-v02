@@ -6,7 +6,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../ai/embedding.service';
-import { CreateArticleDto, UpdateArticleDto, ReviewArticleDto } from './dto/article.dto';
+import { OllamaService } from '../ai/ollama.service';
+import { CreateArticleDto, UpdateArticleDto, ReviewArticleDto, SubmitFeedbackDto } from './dto/article.dto';
 
 // ArticleStatus from schema: DRAFT | REVIEW | PUBLISHED | ARCHIVED
 // We use string literals to avoid Prisma client import resolution order issues.
@@ -24,6 +25,7 @@ export class KnowledgeBaseService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly embeddingService: EmbeddingService,
+        private readonly ollamaService: OllamaService,
     ) { }
 
     // ─── CATEGORIES ─────────────────────────────────────────
@@ -241,5 +243,120 @@ export class KnowledgeBaseService {
             },
             take: limit,
         });
+    }
+    // ─── ANALYTICS & FEEDBACK ─────────────────────────────
+    async incrementViewCount(id: string) {
+        return this.prisma.knowledgeArticle.update({
+            where: { id },
+            data: { viewCount: { increment: 1 } },
+        });
+    }
+
+    async submitFeedback(id: string, dto: SubmitFeedbackDto, userId?: string) {
+        await this.findOne(id); // Verify existence
+
+        return (this.prisma as any).articleFeedback.create({
+            data: {
+                articleId: id,
+                userId,
+                isHelpful: dto.isHelpful,
+                comment: dto.comment,
+            },
+        });
+    }
+
+    async getAnalytics(id: string) {
+        const [feedbackStats, views] = await Promise.all([
+            (this.prisma as any).articleFeedback.groupBy({
+                by: ['isHelpful'],
+                where: { articleId: id },
+                _count: true,
+            }),
+            this.prisma.knowledgeArticle.findUnique({
+                where: { id },
+                select: { viewCount: true },
+            }),
+        ]);
+
+        const stats = feedbackStats as { isHelpful: boolean; _count: number }[];
+        const helpfulCount = stats.find((f) => f.isHelpful)?._count ?? 0;
+        const unhelpfulCount = stats.find((f) => !f.isHelpful)?._count ?? 0;
+
+        return {
+            views: views?.viewCount ?? 0,
+            helpfulCount,
+            unhelpfulCount,
+            score: helpfulCount + unhelpfulCount > 0
+                ? (helpfulCount / (helpfulCount + unhelpfulCount)) * 100
+                : 100,
+        };
+    }
+
+    async getGlobalAnalytics() {
+        const [mostViewed, feedBackStats] = await Promise.all([
+            this.prisma.knowledgeArticle.findMany({
+                orderBy: { viewCount: 'desc' },
+                take: 5,
+                select: { id: true, title: true, viewCount: true, status: true },
+            }),
+            (this.prisma as any).articleFeedback.groupBy({
+                by: ['articleId', 'isHelpful'],
+                _count: true,
+            }),
+        ]);
+
+        // Process feedback stats into a usable map
+        const performanceMap: Record<string, { helpful: number; unhelpful: number }> = {};
+        feedBackStats.forEach((stat: any) => {
+            if (!performanceMap[stat.articleId]) performanceMap[stat.articleId] = { helpful: 0, unhelpful: 0 };
+            if (stat.isHelpful) performanceMap[stat.articleId].helpful = stat._count;
+            else performanceMap[stat.articleId].unhelpful = stat._count;
+        });
+
+        return {
+            mostViewed,
+            performance: Object.entries(performanceMap)
+                .map(([id, stats]) => ({
+                    id,
+                    ...stats,
+                    total: stats.helpful + stats.unhelpful,
+                    score: (stats.helpful / (stats.helpful + stats.unhelpful)) * 100,
+                }))
+                .filter(p => p.total > 0)
+                .sort((a, b) => a.score - b.score) // Show least helpful first
+                .slice(0, 5),
+        };
+    }
+
+    // ─── VERSION COMPARISON ───────────────────────────────
+    async compareVersions(articleId: string, v1: number, v2: number) {
+        const versions = await this.prisma.knowledgeArticleVersion.findMany({
+            where: {
+                articleId,
+                version: { in: [v1, v2] },
+            },
+            orderBy: { version: 'asc' },
+        });
+
+        if (versions.length < 2) {
+            throw new BadRequestException('Need two versions to compare');
+        }
+
+        const older = versions[0];
+        const newer = versions[1];
+
+        return {
+            older: { version: older.version, title: older.title, content: older.content },
+            newer: { version: newer.version, title: newer.title, content: newer.content },
+        };
+    }
+
+    async suggestArticleCategory(title: string, content: string) {
+        const categories = await this.prisma.category.findMany({ select: { name: true } });
+        const catNames = categories.map((c) => c.name);
+
+        if (catNames.length === 0) return 'GENEL';
+
+        return this.ollamaService.suggestCategory(title, content, catNames);
     }
 }

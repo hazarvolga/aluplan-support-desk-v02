@@ -18,7 +18,7 @@ export class CustomersController {
 
     @Get()
     @UseGuards(JwtAuthGuard, RbacGuard)
-    @Roles('admin', 'agent')
+    @Roles('admin', 'support_agent', 'support_manager')
     async getAllCustomers() {
         return this.customersService.getAllCustomers();
     }

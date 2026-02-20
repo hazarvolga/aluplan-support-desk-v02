@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { BookOpen, Plus, CheckCircle2, Clock, XCircle, Search } from 'lucide-react';
+import { BookOpen, Plus, CheckCircle2, Clock, XCircle, Search, BarChart3 } from 'lucide-react';
+import Link from 'next/link';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     DRAFT: { label: 'Taslak', color: 'text-slate-500 bg-slate-100 dark:bg-slate-800' },
@@ -46,6 +47,12 @@ export default function KnowledgeBasePage() {
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Bilgi Bankası</h1>
                     <p className="mt-1 text-slate-500 dark:text-slate-400 text-sm">{total} makale</p>
                 </div>
+                <Link
+                    href="/knowledge-base/analytics"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-brand-500 transition-all shadow-sm hover:shadow-md text-sm font-semibold"
+                >
+                    <BarChart3 className="h-4 w-4 text-brand-500" /> Analiz
+                </Link>
             </div>
 
             {/* Filters */}
@@ -86,9 +93,10 @@ export default function KnowledgeBasePage() {
                     {articles.map((a) => {
                         const s = STATUS_LABELS[a.status] ?? STATUS_LABELS.DRAFT;
                         return (
-                            <div
+                            <Link
                                 key={a.id}
-                                className="group flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-5 py-4 hover:border-brand-300 dark:hover:border-brand-700 transition-colors"
+                                href={`/knowledge-base/${a.id}`}
+                                className="group flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-5 py-4 hover:border-brand-500 dark:hover:border-brand-600 transition-all shadow-sm hover:shadow-md"
                             >
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2.5 mb-1">
@@ -119,7 +127,7 @@ export default function KnowledgeBasePage() {
                                         </button>
                                     </div>
                                 )}
-                            </div>
+                            </Link>
                         );
                     })}
                 </div>

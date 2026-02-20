@@ -75,6 +75,39 @@ export class OllamaService {
         }
     }
 
+    async suggestCategory(title: string, content: string, categories: string[]): Promise<string | null> {
+        try {
+            const prompt = `Görevin: Aşağıdaki döküman için en uygun kategoriyi seçmek.
+
+KATEGORİ LİSTESİ:
+${categories.join(', ')}
+
+DÖKÜMAN BAŞLIĞI: ${title}
+DÖKÜMAN İÇERİĞİ: ${content.substring(0, 500)}...
+
+Yalnızca kategori adını yaz. Başka bir şey yazma. Eğer uygun kategori yoksa "GENEL" yaz.`;
+
+            const response = await fetch(`${this.baseUrl}/api/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: this.chatModel,
+                    prompt,
+                    stream: false,
+                    options: { temperature: 0 },
+                }),
+                signal: AbortSignal.timeout(15_000),
+            });
+
+            if (!response.ok) throw new Error(`Ollama HTTP ${response.status}`);
+            const data = await response.json() as { response: string };
+            return data.response.trim();
+        } catch (err: any) {
+            this.logger.warn(`⚠️ Ollama category suggestion failed: ${err.message}`);
+            return null;
+        }
+    }
+
     async isAvailable(): Promise<boolean> {
         try {
             const res = await fetch(`${this.baseUrl}/api/tags`, { signal: AbortSignal.timeout(3_000) });

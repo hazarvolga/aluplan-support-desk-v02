@@ -9,6 +9,7 @@ const ROLES = [
     { name: 'support_agent', description: 'Handle and respond to tickets' },
     { name: 'kb_editor', description: 'Create and submit knowledge base articles for review' },
     { name: 'viewer', description: 'Read-only access' },
+    { name: 'customer', description: 'Self-registered customer with support access' },
 ];
 
 const PERMISSIONS = [
@@ -47,6 +48,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
         'kb:create', 'kb:read', 'kb:update', 'kb:submit_review', 'faq:read',
     ],
     viewer: ['ticket:read', 'kb:read', 'faq:read', 'reports:read'],
+    customer: ['ticket:create', 'ticket:read', 'kb:read'],
 };
 
 async function main() {
