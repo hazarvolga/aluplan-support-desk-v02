@@ -14,6 +14,7 @@ const ADMIN_NAV = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/tickets', icon: Ticket, label: 'Kuyruk' },
     { href: '/knowledge-base', icon: BookOpen, label: 'Bilgi Bankası' },
+    { href: '/knowledge-pool', icon: BookOpen, label: 'Bilgi Havuzu' },
     { href: '/ai', icon: Bot, label: 'AI Asistan' },
     { href: '/faq', icon: MessageSquareQuote, label: 'FAQ' },
     { href: '/customers', icon: Users, label: 'Müşteriler' },

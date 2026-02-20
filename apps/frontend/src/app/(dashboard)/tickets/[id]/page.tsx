@@ -1,7 +1,7 @@
 'use client';
-
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import { api } from '@/lib/api';
+import { getSocket } from '@/lib/socket';
 import {
     Ticket, Clock, Shield, User as UserIcon, Send,
     Paperclip, Download, MoreVertical, CheckCircle2,
@@ -43,6 +43,12 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const [summarizing, setSummarizing] = useState(false);
     const [loading, setLoading] = useState(true);
 
+    // Live chat states
+    const [isTyping, setIsTyping] = useState(false);
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [someoneTyping, setSomeoneTyping] = useState(false);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         const load = async () => {
             try {
@@ -60,6 +66,61 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         };
         load();
     }, [id]);
+
+    useEffect(() => {
+        if (!id || !user) return;
+
+        const socket = getSocket();
+        socket.connect();
+        socket.emit('ticket:join', id);
+
+        const handleNewMessage = (data: any) => {
+            if (data.ticketId === id && data.message.senderId !== user.id) {
+                setTicket((prev: any) => ({
+                    ...prev,
+                    messages: [...prev.messages, data.message]
+                }));
+                // Auto-scroll logic here or just rely on natural scroll
+            }
+        };
+
+        const handleTyping = (data: any) => {
+            if (data.userId !== user.id) {
+                setSomeoneTyping(data.isTyping);
+            }
+        };
+
+        const handleTicketUpdated = (updatedTicket: any) => {
+            setTicket((prev: any) => ({ ...prev, ...updatedTicket, messages: prev.messages }));
+        };
+
+        socket.on('ticket:new_message', handleNewMessage);
+        socket.on('ticket:typing', handleTyping);
+        socket.on('ticket:updated', handleTicketUpdated);
+
+        return () => {
+            socket.emit('ticket:leave', id);
+            socket.off('ticket:new_message', handleNewMessage);
+            socket.off('ticket:typing', handleTyping);
+            socket.off('ticket:updated', handleTicketUpdated);
+            socket.disconnect();
+        };
+    }, [id, user]);
+
+    const handleTypingChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setReply(e.target.value);
+        if (!isTyping) {
+            setIsTyping(true);
+            getSocket().emit('ticket:typing', { ticketId: id, isTyping: true });
+        }
+
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+        typingTimeoutRef.current = setTimeout(() => {
+            setIsTyping(false);
+            getSocket().emit('ticket:typing', { ticketId: id, isTyping: false });
+        }, 2000);
+    };
 
     const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
     const isCustomer = userRoles.includes('customer') || user?.role?.toLowerCase() === 'customer';
@@ -237,6 +298,24 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                         </div>
                                     </div>
                                 ))}
+
+                                {/* Typing Indicator */}
+                                {someoneTyping && (
+                                    <div className="flex gap-4">
+                                        <Avatar className="h-10 w-10 border border-white/10">
+                                            <AvatarFallback className="bg-slate-800 text-xs">...</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 space-y-2">
+                                            <div className="p-4 rounded-2xl w-16 text-sm bg-slate-800/40 border border-white/5 rounded-tl-none">
+                                                <span className="flex gap-1">
+                                                    <span className="h-1.5 w-1.5 bg-muted-foreground rounded-full animate-bounce" />
+                                                    <span className="h-1.5 w-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.2s]" />
+                                                    <span className="h-1.5 w-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.4s]" />
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </ScrollArea>
                     </CardContent>
@@ -267,7 +346,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                 placeholder="Mesajınızı yazın..."
                                 className="bg-slate-900 border-white/5 focus-visible:ring-brand-500 resize-none min-h-[100px]"
                                 value={reply}
-                                onChange={(e) => setReply(e.target.value)}
+                                onChange={handleTypingChange}
                             />
                             <Button
                                 onClick={handleSendReply}

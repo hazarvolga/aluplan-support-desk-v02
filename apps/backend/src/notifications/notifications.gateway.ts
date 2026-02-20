@@ -74,6 +74,15 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         return { left: ticketId };
     }
 
+    // Live Chat Presence
+    @SubscribeMessage('ticket:typing')
+    async announceTyping(@ConnectedSocket() client: Socket, @MessageBody() data: { ticketId: string, isTyping: boolean }) {
+        client.to(`ticket:${data.ticketId}`).emit('ticket:typing', {
+            userId: client.data.userId,
+            isTyping: data.isTyping,
+        });
+    }
+
     // ─── EMIT METHODS (called from services) ────────────────
 
     emitTicketCreated(ticket: any) {

@@ -43,6 +43,18 @@ services:
     #           capabilities: [gpu]
 
   # ============================================
+  # Redis — For Background Jobs (BullMQ)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: aluplan_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # ============================================
   # NestJS Backend
   # ============================================
   backend:
@@ -63,11 +75,15 @@ services:
       MAIL_PROVIDER: ${MAIL_PROVIDER:-resend}
       RESEND_API_KEY: ${RESEND_API_KEY}
       MAIL_FROM: ${MAIL_FROM}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     ports:
       - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/health"]
       interval: 30s
@@ -94,3 +110,4 @@ services:
 volumes:
   postgres_data:
   ollama_data:
+  redis_data:

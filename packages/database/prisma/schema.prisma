@@ -536,3 +536,72 @@ model InboundEmailLog {
 
   @@map("inbound_email_logs")
 }
+
+// =============================================
+// KNOWLEDGE POOL (Unstructured Data)
+// =============================================
+
+enum KnowledgeSourceType {
+  URL
+  FILE_PDF
+  FILE_TXT
+  FILE_MD
+  FILE_CSV
+}
+
+enum KnowledgeSourceStatus {
+  INACTIVE
+  ACTIVE
+  SYNCING
+  FAILED
+}
+
+model KnowledgeSource {
+  id            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type          KnowledgeSourceType
+  name          String               @db.VarChar(255)
+  url           String?              @db.Text
+  fileName      String?              @map("file_name") @db.VarChar(255)
+  filePath      String?              @map("file_path") @db.Text
+  status        KnowledgeSourceStatus @default(ACTIVE)
+  lastSyncedAt  DateTime?            @map("last_synced_at")
+  lastEtag      String?              @map("last_etag") @db.VarChar(255)
+  lastHash      String?              @map("last_hash") @db.VarChar(255)
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  syncLogs      KnowledgeSourceSyncLog[]
+  embeddings    KnowledgePoolEmbedding[]
+
+  @@map("knowledge_sources")
+}
+
+model KnowledgeSourceSyncLog {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId        String   @map("source_id") @db.Uuid
+  syncStartedAt   DateTime @default(now()) @map("sync_started_at")
+  syncFinishedAt  DateTime? @map("sync_finished_at")
+  status          String   @db.VarChar(50) // SUCCESS, FAILED
+  error           String?  @db.Text
+  chunksProcessed Int      @default(0) @map("chunks_processed")
+  newHash         String?  @map("new_hash") @db.VarChar(255)
+
+  source          KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@map("knowledge_source_sync_logs")
+}
+
+model KnowledgePoolEmbedding {
+  id                   String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId             String                  @map("source_id") @db.Uuid
+  embedding            Unsupported("vector(768)")
+  content              String                  @db.Text // The raw chunk text
+  metadata             Json?                   @db.JsonB
+  modelName            String                  @map("model_name") @db.VarChar(100)
+  createdAt            DateTime                @default(now()) @map("created_at")
+
+  source               KnowledgeSource         @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId], map: "idx_kpe_source")
+  @@map("knowledge_pool_embeddings")
+}

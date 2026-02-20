@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
@@ -17,12 +17,31 @@ import { CustomersModule } from './customers/customers.module';
 import { SettingsModule } from './settings/settings.module';
 import { MacrosModule } from './macros/macros.module';
 
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { OmniChannelModule } from './omni-channel/omni-channel.module';
+import { BullModule } from '@nestjs/bullmq';
+import { KnowledgePoolModule } from './knowledge-pool/knowledge-pool.module';
+import configuration, { validate } from './config/configuration';
+
 @Module({
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
+            load: [configuration],
+            validate,
             envFilePath: ['.env.local', '.env'],
         }),
+        BullModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                connection: {
+                    host: config.get<string>('redis.host'),
+                    port: config.get<number>('redis.port'),
+                },
+            }),
+        }),
+        EventEmitterModule.forRoot(),
         ScheduleModule.forRoot(),
         PrismaModule,
         AuthModule,
@@ -38,6 +57,8 @@ import { MacrosModule } from './macros/macros.module';
         CustomersModule,
         SettingsModule,
         MacrosModule,
+        OmniChannelModule,
+        KnowledgePoolModule,
     ],
     providers: [NotificationsGateway],
 })

@@ -2,13 +2,18 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    const headers: any = {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options?.headers,
+    };
+
+    if (!(options?.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+    }
+
     const res = await fetch(`${API}${path}`, {
         ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...options?.headers,
-        },
+        headers,
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({ message: res.statusText }));
@@ -24,7 +29,26 @@ export const api = {
                 method: 'POST',
                 body: JSON.stringify({ email, password }),
             }),
-        me: () => request<{ id: string; fullName: string; email: string; role: string }>('/auth/me'),
+        me: () => request<{ id: string; fullName: string; email: string; roles: string[] }>('/auth/me'),
+    },
+    pool: {
+        list: () => request<any[]>('/knowledge-pool/sources'),
+        addUrl: (name: string, url: string) =>
+            request<any>('/knowledge-pool/sources', {
+                method: 'POST',
+                body: JSON.stringify({ name, url, type: 'URL' }),
+            }),
+        upload: (name: string, file: File) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('name', name);
+            return request('/knowledge-pool/sources/upload', {
+                method: 'POST',
+                body: formData,
+            });
+        },
+        sync: (id: string) => request<any>(`/knowledge-pool/sources/${id}/sync`, { method: 'POST' }),
+        logs: (id: string) => request<any[]>(`/knowledge-pool/sources/${id}/logs`),
     },
     tickets: {
         list: (params?: Record<string, string>) => {

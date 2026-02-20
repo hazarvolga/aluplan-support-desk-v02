@@ -96,10 +96,24 @@ export class EmbeddingService {
                         : 'LOW',
         }));
     }
-
     /**
-     * Re-index all published articles (used after model change).
+     * Store embedding for raw content from the Knowledge Pool.
      */
+    async indexPoolContent(sourceId: string, content: string, metadata: any = {}): Promise<void> {
+        const result = await this.ollama.embed(content);
+        if (!result) {
+            this.logger.warn(`⚠️ Skipping pool embedding for source ${sourceId} — Ollama unavailable`);
+            return;
+        }
+
+        await this.prisma.$executeRaw`
+      INSERT INTO knowledge_pool_embeddings (id, source_id, embedding, content, metadata, model_name)
+      VALUES (gen_random_uuid(), ${sourceId}::uuid, ${JSON.stringify(result.embedding)}::vector, 
+              ${content}, ${JSON.stringify(metadata)}::jsonb, ${result.model})
+    `;
+        this.logger.log(`📐 Indexed pool embedding for source ${sourceId}`);
+    }
+
     async reindexAll(): Promise<{ indexed: number; failed: number }> {
         const articles = await this.prisma.knowledgeArticle.findMany({
             where: { status: 'PUBLISHED' },

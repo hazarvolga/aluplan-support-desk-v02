@@ -39,7 +39,7 @@ export class AiQueryService {
         this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.75'));
     }
 
-    async query(userQuery: string, userId: string): Promise<AiQueryResult> {
+    async query(userQuery: string, userId?: string | null): Promise<AiQueryResult> {
         // 1. Semantic search
         const results: SearchResult[] = await this.embeddingService.search(userQuery);
 

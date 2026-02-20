@@ -12,6 +12,7 @@ import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { AddMessageDto } from './dto/add-message.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { TicketStatus, TicketPriority, Prisma } from '@aluplan/database';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 // =============================================
 // State Machine — allowed transitions
@@ -32,6 +33,7 @@ export class TicketsService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly slaService: SlaService,
+        private readonly eventEmitter: EventEmitter2,
     ) { }
 
     // =============================================
@@ -73,6 +75,10 @@ export class TicketsService {
         });
 
         this.logger.log(`🎫 Created ticket ${ticket.ticketNumber} (${priority})`);
+
+        // Emit event for Autonomous Resolution Engine
+        this.eventEmitter.emit('ticket.created', ticket);
+
         return ticket;
     }
 
