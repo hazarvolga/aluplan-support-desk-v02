@@ -47,12 +47,20 @@ export default function KnowledgeBasePage() {
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Bilgi Bankası</h1>
                     <p className="mt-1 text-slate-500 dark:text-slate-400 text-sm">{total} makale</p>
                 </div>
-                <Link
-                    href="/knowledge-base/analytics"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-brand-500 transition-all shadow-sm hover:shadow-md text-sm font-semibold"
-                >
-                    <BarChart3 className="h-4 w-4 text-brand-500" /> Analiz
-                </Link>
+                <div className="flex items-center gap-3">
+                    <Link
+                        href="/knowledge-base/analytics"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-brand-500 transition-all shadow-sm hover:shadow-md text-sm font-semibold"
+                    >
+                        <BarChart3 className="h-4 w-4 text-brand-500" /> Analiz
+                    </Link>
+                    <Link
+                        href="/knowledge-base/new"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white transition-all shadow-lg shadow-brand-500/20 text-sm font-semibold"
+                    >
+                        <Plus className="h-4 w-4" /> Yeni Ekle
+                    </Link>
+                </div>
             </div>
 
             {/* Filters */}

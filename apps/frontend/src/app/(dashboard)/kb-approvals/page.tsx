@@ -52,6 +52,16 @@ export default function KbApprovalsPage() {
         }
     };
 
+    const runPipeline = async () => {
+        try {
+            toast.info('Boru hattı başlatıldı, bu işlem arkaplanda çalışacaktır...');
+            await api.faq.runPipeline();
+            // Fetch drafts down the line or wait for sockets...
+        } catch (error) {
+            toast.error('Pipeline başlatılamadı: ' + String(error));
+        }
+    };
+
     return (
         <div className="space-y-8 max-w-7xl mx-auto py-2">
             <div className="flex justify-between items-start">
@@ -64,10 +74,15 @@ export default function KbApprovalsPage() {
                         Müşteri biletlerinden Yapay Zeka tarafından otomatik çıkarılmış Bilgi Bankası makalelerini (Self-Learning KB) inceleyin ve yayınlayın.
                     </p>
                 </div>
-                <Button variant="outline" onClick={fetchDrafts} disabled={loading} className="border-white/10 hover:bg-white/5">
-                    <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                    Yenile
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={fetchDrafts} disabled={loading} className="border-white/10 hover:bg-white/5">
+                        <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                        Yenile
+                    </Button>
+                    <Button onClick={runPipeline} className="bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20">
+                        Boru Hattını Çalıştır
+                    </Button>
+                </div>
             </div>
 
             <Card className="bg-card/30 backdrop-blur-xl border-white/5 overflow-hidden">
