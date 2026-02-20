@@ -66,31 +66,31 @@ export const api = {
     kb: {
         list: (params?: Record<string, string>) => {
             const q = params ? '?' + new URLSearchParams(params).toString() : '';
-            return request<any>(`/knowledge-base/articles${q}`);
+            return request<any>(`/kb/articles${q}`);
         },
-        get: (id: string) => request<any>(`/knowledge-base/articles/${id}`),
+        get: (id: string) => request<any>(`/kb/articles/${id}`),
         create: (body: any) =>
-            request<any>('/knowledge-base/articles', { method: 'POST', body: JSON.stringify(body) }),
+            request<any>('/kb/articles', { method: 'POST', body: JSON.stringify(body) }),
         submitForReview: (id: string) =>
-            request<any>(`/knowledge-base/articles/${id}/submit-for-review`, { method: 'POST' }),
+            request<any>(`/kb/articles/${id}/submit-for-review`, { method: 'POST' }),
         review: (id: string, approved: boolean) =>
-            request<any>(`/knowledge-base/articles/${id}/review`, {
+            request<any>(`/kb/articles/${id}/review`, {
                 method: 'POST', body: JSON.stringify({ approved }),
             }),
         submitFeedback: (id: string, isHelpful: boolean, comment?: string) =>
-            request<any>(`/knowledge-base/articles/${id}/feedback`, {
+            request<any>(`/kb/articles/${id}/feedback`, {
                 method: 'POST', body: JSON.stringify({ isHelpful, comment }),
             }),
         incrementView: (id: string) =>
-            request<any>(`/knowledge-base/articles/${id}/view`, { method: 'POST' }),
-        getAnalytics: (id: string) => request<any>(`/knowledge-base/articles/${id}/analytics`),
+            request<any>(`/kb/articles/${id}/view`, { method: 'POST' }),
+        getAnalytics: (id: string) => request<any>(`/kb/articles/${id}/analytics`),
         compare: (id: string, v1: number, v2: number) =>
-            request<any>(`/knowledge-base/articles/${id}/compare?v1=${v1}&v2=${v2}`),
+            request<any>(`/kb/articles/${id}/compare?v1=${v1}&v2=${v2}`),
         suggestCategory: (title: string, content: string) =>
-            request<any>('/knowledge-base/articles/suggest-category', {
+            request<any>('/kb/articles/suggest-category', {
                 method: 'POST', body: JSON.stringify({ title, content }),
             }),
-        getGlobalAnalytics: () => request<any>('/knowledge-base/analytics'),
+        getGlobalAnalytics: () => request<any>('/kb/analytics'),
     },
     ai: {
         query: (userQuery: string) =>

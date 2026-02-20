@@ -27,8 +27,7 @@ export default function NewKnowledgeBaseArticlePage() {
         try {
             const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
 
-            // Assuming api.kb.create exists or maps to a generic POST
-            await api.post('/knowledge-base', {
+            await api.kb.create({
                 title,
                 content,
                 tags: tagsArray,
