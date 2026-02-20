@@ -29,7 +29,7 @@ export default function NewTicketPage() {
     const [files, setFiles] = useState<File[]>([]);
 
     const form = useForm<TicketFormValues>({
-        resolver: zodResolver(ticketSchema),
+        resolver: zodResolver(ticketSchema) as any,
         defaultValues: {
             subject: '',
             description: '',

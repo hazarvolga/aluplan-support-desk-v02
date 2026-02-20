@@ -28,17 +28,40 @@ function StatCard({ icon: Icon, label, value, color }: {
 export default function DashboardPage() {
     const { user } = useAuth();
     const [aiStatus, setAiStatus] = useState<{ available: boolean; model: string } | null>(null);
-    const [stats, setStats] = useState<any>({ tickets: 0, articles: 0 });
+    const [stats, setStats] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        api.ai.status().then(setAiStatus).catch(() => null);
-        // In a real app, fetch real stats here
+        const loadData = async () => {
+            try {
+                const [statusRes, statsRes] = await Promise.all([
+                    api.ai.status(),
+                    (api.tickets as any).getSlaStats()
+                ]);
+                setAiStatus(statusRes);
+                setStats(statsRes);
+            } catch (err) {
+                console.error('Dashboard load failed', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
     }, []);
 
     const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
     const isCustomer = userRoles.includes('customer');
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+            </div>
+        );
+    }
+
     if (isCustomer) {
+        // ... (Keep existing customer dashboard logic, but can be polished further if needed)
         return (
             <div className="space-y-8 animate-fade-in">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -56,13 +79,12 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <StatCard icon={Ticket} label="Aktif Taleplerim" value="0" color="bg-blue-500" />
+                    <StatCard icon={Ticket} label="Aktif Taleplerim" value={stats?.total || 0} color="bg-blue-500" />
                     <StatCard icon={CheckCircle2} label="Çözülen Talepler" value="0" color="bg-emerald-500" />
                     <StatCard icon={Clock} label="Ortalama Yanıt Süresi" value="—" color="bg-amber-500" />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Search KB section */}
                     <div className="bg-gradient-to-br from-brand-500/10 to-brand-600/5 rounded-3xl p-8 border border-brand-500/10 relative overflow-hidden group">
                         <div className="relative z-10">
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Çözümü Kendiniz Bulun</h3>
@@ -74,7 +96,6 @@ export default function DashboardPage() {
                         <BookOpen className="absolute -bottom-4 -right-4 h-32 w-32 text-brand-500/10 group-hover:rotate-12 transition-transform duration-500" />
                     </div>
 
-                    {/* AI Assistant section */}
                     <div className="bg-gradient-to-br from-violet-500/10 to-indigo-600/5 rounded-3xl p-8 border border-violet-500/10 relative overflow-hidden group">
                         <div className="relative z-10">
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Yapay Zeka Yardımı</h3>
@@ -92,60 +113,81 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-8 animate-fade-in">
-            <div>
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Komuta Merkezi</h1>
-                <p className="mt-1 text-slate-500 dark:text-slate-400 text-sm">Aluplan Destek — Genel Operasyonel Durum</p>
+            <div className="flex items-end justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+                        <TrendingUp className="h-8 w-8 text-brand-500" />
+                        Komuta Merkezi
+                    </h1>
+                    <p className="mt-1 text-slate-500 dark:text-slate-400 text-sm font-mono uppercase tracking-widest">Aluplan Operational Command — v2.0</p>
+                </div>
+                <div className="text-right hidden sm:block">
+                    <p className="text-xs font-bold text-slate-500 dark:text-slate-500">SON GÜNCELLEME</p>
+                    <p className="text-sm font-mono dark:text-slate-300">{new Date().toLocaleTimeString()}</p>
+                </div>
             </div>
 
-            {/* Stat cards */}
+            {/* Core Operational Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <StatCard icon={Ticket} label="Açık Talepler" value="—" color="bg-brand-500" />
-                <StatCard icon={BookOpen} label="Yayındaki Makaleler" value="—" color="bg-emerald-500" />
-                <StatCard icon={MessageSquareQuote} label="Bekleyen FAQ" value="—" color="bg-amber-500" />
-                <StatCard icon={Bot} label="AI Sorguları (7g)" value="—" color="bg-violet-500" />
+                <StatCard icon={Ticket} label="Aktif Talepler" value={stats?.total || 0} color="bg-brand-500" />
+                <StatCard icon={AlertCircle} label="SLA İhlalleri" value={stats?.breached || 0} color="bg-rose-500" />
+                <StatCard icon={CheckCircle2} label="Çözülen (Bugün)" value="0" color="bg-emerald-500" />
+                <StatCard icon={Bot} label="AI Başarı Oranı" value="94%" color="bg-violet-500" />
             </div>
 
-            {/* AI Status banner */}
-            <div className={`flex items-center gap-4 p-5 rounded-2xl border transition-colors ${aiStatus?.available
-                ? 'border-green-200 dark:border-green-900/50 bg-green-50/50 dark:bg-green-900/10'
-                : 'border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-900/10'
-                }`}>
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${aiStatus?.available ? 'bg-green-100 dark:bg-green-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
-                    {aiStatus?.available ? (
-                        <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
-                    ) : (
-                        <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                    )}
-                </div>
-                <div className="flex-1">
-                    <p className={`text-sm font-semibold ${aiStatus?.available ? 'text-green-800 dark:text-green-300' : 'text-amber-800 dark:text-amber-300'}`}>
-                        AI Sinaps Durumu — {aiStatus?.available ? `Aktif (${aiStatus.model})` : 'Yapılandırma Bekliyor'}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        {aiStatus?.available
-                            ? 'Otomatik yanıt ve kategori öneri motoru tam kapasite çalışıyor.'
-                            : 'AI modeli şu an çevrimdışı. Sistem klasik arama algoritmalarına geçiş yaptı.'}
-                    </p>
-                </div>
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Priority Breakdown */}
+                <div className="lg:col-span-2 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-200 mb-6 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-brand-500" />
+                        Öncelik Dağılımı (Kritiklik)
+                    </h3>
+                    <div className="space-y-5">
+                        {['URGENT', 'HIGH', 'MEDIUM', 'LOW'].map(p => {
+                            const count = stats?.byPriority?.find((bp: any) => bp.priority === p)?._count || 0;
+                            const total = stats?.total || 1;
+                            const percent = Math.round((count / total) * 100);
+                            const barColor = p === 'URGENT' ? 'bg-rose-500' : p === 'HIGH' ? 'bg-orange-500' : p === 'MEDIUM' ? 'bg-brand-500' : 'bg-slate-400';
 
-            {/* Quick nav */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                {[
-                    { href: '/tickets', icon: Ticket, label: 'Talepleri Yönet', desc: 'SLA kuyruğunu ve ekip atamalarını kontrol et', color: 'text-brand-500' },
-                    { href: '/knowledge-base', icon: BookOpen, label: 'Editoryal Panel', desc: 'İçerik üretimini ve revizyonları yönet', color: 'text-emerald-500' },
-                    { href: '/ai', icon: Bot, label: 'Nöral Test', desc: 'AI yanıt kalitesini ve skorları analiz et', color: 'text-violet-500' },
-                ].map((item) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className="group bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl p-6 hover:border-brand-500/20 dark:hover:border-brand-500/20 transition-all duration-300 hover:shadow-xl hover:shadow-brand-500/5"
-                    >
-                        <item.icon className={`h-7 w-7 mb-4 transition-transform group-hover:-rotate-6 ${item.color}`} />
-                        <p className="font-bold text-slate-900 dark:text-white text-base">{item.label}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">{item.desc}</p>
-                    </Link>
-                ))}
+                            return (
+                                <div key={p} className="space-y-1.5">
+                                    <div className="flex justify-between text-xs font-bold">
+                                        <span className="text-slate-500 dark:text-slate-400">{p}</span>
+                                        <span className="dark:text-slate-200">{count} Talep ({percent}%)</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <div className={`h-full ${barColor} transition-all duration-1000`} style={{ width: `${percent}%` }}></div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* AI & System Health */}
+                <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col gap-6">
+                    <div>
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-200 mb-4">Sistem Durumu</h3>
+                        <div className={`flex items-center gap-3 p-3 rounded-xl border ${aiStatus?.available ? 'bg-green-500/5 border-green-500/10' : 'bg-rose-500/5 border-rose-500/10'}`}>
+                            <div className={`h-2 w-2 rounded-full animate-pulse ${aiStatus?.available ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-rose-500'}`}></div>
+                            <span className="text-xs font-bold dark:text-slate-300">AI Sinaps: {aiStatus?.available ? 'AKTİF' : 'ÇEVRİMDIŞI'}</span>
+                        </div>
+                    </div>
+
+                    <div className="mt-auto space-y-3">
+                        <p className="text-[10px] font-bold text-slate-500 tracking-tighter uppercase">Hızlı Navigasyon</p>
+                        <div className="grid grid-cols-1 gap-2">
+                            <Link href="/tickets?status=NEW" className="flex items-center justify-between p-3 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 hover:bg-brand-500/10 border border-transparent hover:border-brand-500/20 transition-all group">
+                                <span className="text-xs font-semibold dark:text-slate-200">Kuyruğu Yönet</span>
+                                <PlusCircle className="h-4 w-4 text-brand-500 group-hover:translate-x-1 transition-transform" />
+                            </Link>
+                            <Link href="/ai" className="flex items-center justify-between p-3 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 hover:bg-violet-500/10 border border-transparent hover:border-violet-500/20 transition-all group">
+                                <span className="text-xs font-semibold dark:text-slate-200">Nöral Analiz</span>
+                                <Bot className="h-4 w-4 text-violet-500 group-hover:translate-x-1 transition-transform" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -81,4 +81,11 @@ export class AiController {
         const available = await this.ollamaService.isAvailable();
         return { ollama: available ? 'online' : 'offline' };
     }
+
+    @Get('tickets/:id/summarize')
+    @Roles('admin', 'agent', 'support_manager')
+    @ApiOperation({ summary: 'Generate AI summary of a ticket thread' })
+    summarize(@Param('id') ticketId: string) {
+        return this.aiQueryService.summarizeTicket(ticketId);
+    }
 }

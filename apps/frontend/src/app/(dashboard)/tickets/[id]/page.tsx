@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import {
     Ticket, Clock, Shield, User as UserIcon, Send,
     Paperclip, Download, MoreVertical, CheckCircle2,
-    AlertTriangle, MessageSquare, Loader2
+    AlertTriangle, MessageSquare, Loader2, Bot
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { MacroPicker } from '@/components/macros/macro-picker';
 
 const STATUS_COLORS: Record<string, string> = {
     NEW: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -37,6 +38,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const [reply, setReply] = useState('');
     const [files, setFiles] = useState<File[]>([]);
     const [sending, setSending] = useState(false);
+    const [updating, setUpdating] = useState(false);
+    const [summary, setSummary] = useState<string | null>(null);
+    const [summarizing, setSummarizing] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -48,14 +52,17 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 ]);
                 setTicket(ticketRes);
                 setUser(userRes);
-            } catch (error: any) {
-                toast.error('Talep yüklenemedi: ' + error.message);
+            } catch (err) {
+                toast.error('Talep yüklenemedi');
             } finally {
                 setLoading(false);
             }
         };
         load();
     }, [id]);
+
+    const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
+    const isCustomer = userRoles.includes('customer') || user?.role?.toLowerCase() === 'customer';
 
     const handleSendReply = async () => {
         if (!reply.trim() && files.length === 0) return;
@@ -82,6 +89,19 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             toast.error('Mesaj gönderilemedi: ' + error.message);
         } finally {
             setSending(false);
+        }
+    };
+
+    const handleSummarize = async () => {
+        setSummarizing(true);
+        try {
+            const res = await api.get(`/ai/tickets/${id}/summarize`);
+            setSummary(res);
+            toast.success('Yapay zeka özeti oluşturuldu');
+        } catch (err) {
+            toast.error('Özet oluşturulurken hata');
+        } finally {
+            setSummarizing(false);
         }
     };
 
@@ -118,12 +138,42 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     {ticket.subject}
                                 </CardTitle>
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground font-medium">
-                                    <span className="flex items-center gap-1"><UserIcon className="h-3 w-3" /> {ticket.creator.fullName}</span>
+                                    <span className="flex items-center gap-1">
+                                        <UserIcon className="h-3 w-3" />
+                                        {ticket.creator?.fullName || (ticket.userId ? 'Silinmiş Kullanıcı' : 'Dış Kaynak/E-posta')}
+                                    </span>
                                     <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {new Date(ticket.createdAt).toLocaleString('tr-TR')}</span>
                                 </div>
                             </div>
-                            <Badge className={STATUS_COLORS[ticket.status]}>{ticket.status}</Badge>
+                            <div className="flex items-center gap-3">
+                                {!isCustomer && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleSummarize}
+                                        disabled={summarizing}
+                                        className="h-8 border-violet-500/20 text-violet-400 hover:bg-violet-500/10 gap-1.5"
+                                    >
+                                        <Bot className={`h-3.5 w-3.5 ${summarizing ? 'animate-pulse' : ''}`} />
+                                        {summarizing ? 'Özetleniyor...' : 'AI Özet'}
+                                    </Button>
+                                )}
+                                <Badge className={STATUS_COLORS[ticket.status]}>{ticket.status}</Badge>
+                            </div>
                         </div>
+
+                        {summary && (
+                            <div className="mt-4 p-4 rounded-xl bg-violet-500/5 border border-violet-500/10 animate-in fade-in slide-in-from-top-2 duration-500">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Bot className="h-4 w-4 text-violet-400" />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400/80">Yapay Zeka Özeti</span>
+                                    <button onClick={() => setSummary(null)} className="ml-auto text-muted-foreground hover:text-white transition-colors">
+                                        <Clock className="h-3 w-3 rotate-45" />
+                                    </button>
+                                </div>
+                                <p className="text-xs leading-relaxed text-slate-300 italic">"{summary}"</p>
+                            </div>
+                        )}
                     </CardHeader>
 
                     <CardContent className="flex-1 p-0 flex flex-col">
@@ -132,12 +182,14 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                 {/* Initial Description as first message */}
                                 <div className="flex gap-4 group">
                                     <Avatar className="h-10 w-10 border border-brand-500/20">
-                                        <AvatarImage src={ticket.creator.avatarUrl} />
-                                        <AvatarFallback className="bg-brand-500/10 text-brand-500">{ticket.creator.fullName[0]}</AvatarFallback>
+                                        <AvatarImage src={ticket.creator?.avatarUrl} />
+                                        <AvatarFallback className="bg-brand-500/10 text-brand-500">
+                                            {ticket.creator?.fullName?.[0] || 'E'}
+                                        </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 space-y-2">
                                         <div className="flex items-baseline justify-between">
-                                            <span className="text-sm font-semibold">{ticket.creator.fullName}</span>
+                                            <span className="text-sm font-semibold">{ticket.creator?.fullName || (ticket.userId ? 'Silinmiş Kullanıcı' : 'Dış Kaynak/E-posta')}</span>
                                             <span className="text-[10px] text-muted-foreground uppercase">{formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true, locale: tr })}</span>
                                         </div>
                                         <div className="bg-slate-800/40 border border-white/5 p-4 rounded-2xl rounded-tl-none text-sm leading-relaxed">
@@ -151,16 +203,16 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     <div key={msg.id} className={`flex gap-4 ${msg.senderId === user?.id ? 'flex-row-reverse' : ''}`}>
                                         <Avatar className="h-10 w-10 border border-white/10">
                                             <AvatarImage src={msg.sender?.avatarUrl} />
-                                            <AvatarFallback className="bg-slate-800 text-xs">{msg.sender?.fullName[0]}</AvatarFallback>
+                                            <AvatarFallback className="bg-slate-800 text-xs">{msg.sender?.fullName?.[0] || '?'}</AvatarFallback>
                                         </Avatar>
                                         <div className={`flex-1 space-y-2 ${msg.senderId === user?.id ? 'items-end flex flex-col' : ''}`}>
                                             <div className="flex items-baseline gap-2">
-                                                <span className="text-sm font-semibold">{msg.sender?.fullName}</span>
+                                                <span className="text-sm font-semibold">{msg.sender?.fullName || 'Sistem'}</span>
                                                 <span className="text-[10px] text-muted-foreground uppercase">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true, locale: tr })}</span>
                                             </div>
                                             <div className={`p-4 rounded-2xl text-sm leading-relaxed ${msg.senderId === user?.id
-                                                    ? 'bg-brand-600/90 text-white rounded-tr-none'
-                                                    : 'bg-slate-800/40 border border-white/5 rounded-tl-none'
+                                                ? 'bg-brand-600/90 text-white rounded-tr-none'
+                                                : 'bg-slate-800/40 border border-white/5 rounded-tl-none'
                                                 }`}>
                                                 {msg.message}
 
@@ -207,9 +259,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                 <Paperclip className="h-5 w-5" />
                                 <input type="file" multiple className="hidden" onChange={handleFileChange} />
                             </label>
+                            <div className="flex justify-between items-center gap-2 mb-2 w-full">
+                                <MacroPicker onSelect={(content: string) => setReply((prev) => prev ? `${prev}\n${content}` : content)} />
+                                <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest bg-white/5 px-2 py-0.5 rounded">Mesaj Yaz</div>
+                            </div>
                             <Textarea
                                 placeholder="Mesajınızı yazın..."
-                                className="bg-slate-900 border-white/5 focus-visible:ring-brand-500 resize-none min-h-[80px]"
+                                className="bg-slate-900 border-white/5 focus-visible:ring-brand-500 resize-none min-h-[100px]"
                                 value={reply}
                                 onChange={(e) => setReply(e.target.value)}
                             />
@@ -254,10 +310,10 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                 <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Sorumlu Uzman</label>
                                 <div className="flex items-center gap-2">
                                     <Avatar className="h-6 w-6">
-                                        <AvatarImage src={ticket.assignee.avatarUrl} />
-                                        <AvatarFallback className="text-[8px]">{ticket.assignee.fullName[0]}</AvatarFallback>
+                                        <AvatarImage src={ticket.assignee?.avatarUrl} />
+                                        <AvatarFallback className="text-[8px]">{ticket.assignee?.fullName?.[0] || '?'}</AvatarFallback>
                                     </Avatar>
-                                    <span className="text-sm font-medium">{ticket.assignee.fullName}</span>
+                                    <span className="text-sm font-medium">{ticket.assignee?.fullName || 'Atanmamış'}</span>
                                 </div>
                             </div>
                         )}

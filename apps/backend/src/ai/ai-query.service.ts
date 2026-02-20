@@ -123,4 +123,30 @@ export class AiQueryService {
             take: limit,
         });
     }
+
+    async summarizeTicket(ticketId: string): Promise<string> {
+        const ticket = await this.prisma.ticket.findUniqueOrThrow({
+            where: { id: ticketId },
+            include: {
+                messages: {
+                    orderBy: { createdAt: 'asc' },
+                    include: { sender: { select: { fullName: true } } }
+                }
+            }
+        });
+
+        const conversation = ticket.messages.map(m =>
+            `${m.sender?.fullName || 'Sistem'}: ${m.message}`
+        ).join('\n');
+
+        const prompt = `Görevin: Aşağıdaki destek talebi yazışmalarını ajanlar için kısa (en fazla 3-4 cümle) ve profesyonel şekilde özetlemek.
+Konu: ${ticket.subject}
+Yazışmalar:
+${conversation}
+
+Özetle ve en kritik noktaları belirt:`;
+
+        const result = await this.ollama.reformat('', 'Lütfen bu talebi özetle.', prompt);
+        return result?.response ?? 'Özet oluşturulamadı.';
+    }
 }

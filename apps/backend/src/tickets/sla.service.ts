@@ -73,14 +73,37 @@ export class SlaService {
             (ticket.slaResponseDue !== null && !ticket.slaRespondedAt && now > ticket.slaResponseDue);
 
         if (isBreached) {
-            await this.prisma.ticket.update({
-                where: { id: ticketId },
-                data: { isSlaBreached: true },
-            });
+            await this.escalateTicket(ticketId, 'SLA Breach Auto-Escalation');
             this.logger.warn(`🚨 SLA breached for ticket ${ticket.ticketNumber}`);
         }
 
         return isBreached;
+    }
+
+    async escalateTicket(ticketId: string, reason: string) {
+        const ticket = await this.prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } });
+
+        // Prevent infinite escalation
+        if (ticket.priority === TicketPriority.URGENT && ticket.escalated) return;
+
+        await this.prisma.$transaction([
+            this.prisma.ticket.update({
+                where: { id: ticketId },
+                data: {
+                    priority: TicketPriority.URGENT,
+                    escalated: true,
+                    escalationCount: { increment: 1 },
+                },
+            }),
+            this.prisma.ticketEscalation.create({
+                data: {
+                    ticketId,
+                    fromPriority: ticket.priority,
+                    toPriority: TicketPriority.URGENT,
+                    reason,
+                }
+            })
+        ]);
     }
 
     private async getSlaConfig(priority: TicketPriority): Promise<{ response: number; resolve: number }> {

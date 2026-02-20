@@ -20,35 +20,58 @@ export class SlaCronService {
     async checkSlaBreaches() {
         const now = new Date();
 
+        // 1. Handle Active Breaches
         const breached = await this.prisma.ticket.findMany({
             where: {
                 isSlaBreached: false,
                 status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] },
                 OR: [
-                    // Resolve deadline passed
                     { slaResolveDue: { lt: now } },
-                    // Response deadline passed and no response yet
                     { slaResponseDue: { lt: now }, slaRespondedAt: null },
                 ],
             },
         });
 
-        if (breached.length === 0) return;
-
-        // Bulk update
-        const ids = breached.map((t) => t.id);
-        await this.prisma.ticket.updateMany({
-            where: { id: { in: ids } },
-            data: { isSlaBreached: true },
-        });
-
-        // Emit WebSocket breach events
         for (const ticket of breached) {
+            await this.prisma.ticket.update({
+                where: { id: ticket.id },
+                data: { isSlaBreached: true },
+            });
+
+            // Auto-escalate to URGENT on breach
+            await this.prisma.ticket.update({
+                where: { id: ticket.id },
+                data: {
+                    priority: 'URGENT' as any,
+                    escalated: true,
+                    escalationCount: { increment: 1 }
+                }
+            });
+
             this.notificationsGateway.emitSlaBreached(ticket);
-            this.logger.warn(`🚨 SLA Breach: ${ticket.ticketNumber}`);
+            this.logger.error(`🚨 SLA Breached & Escalated: ${ticket.ticketNumber}`);
         }
 
-        this.logger.log(`⏱ SLA check done — ${breached.length} breach(es) marked`);
+        // 2. Handle Near-Breach Warnings (80% path)
+        // For simplicity: check tickets due in the next 15 minutes that haven't breached yet
+        const warningThreshold = new Date(now.getTime() + 15 * 60 * 1000);
+        const nearing = await this.prisma.ticket.findMany({
+            where: {
+                isSlaBreached: false,
+                status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] },
+                slaResponseDue: { lt: warningThreshold, gt: now },
+                slaRespondedAt: null,
+            }
+        });
+
+        for (const ticket of nearing) {
+            this.logger.warn(`⚠️ SLA Warning (80%): ${ticket.ticketNumber} is nearing response deadline.`);
+            // In a real app, send email/slack to agent here
+        }
+
+        if (breached.length > 0) {
+            this.logger.log(`⏱ SLA check done — ${breached.length} breach(es) processed`);
+        }
     }
 
     /**

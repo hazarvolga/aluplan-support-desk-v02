@@ -37,6 +37,7 @@ export const api = {
             request<any>(`/tickets/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
         addMessage: (id: string, body: any) =>
             request<any>(`/tickets/${id}/messages`, { method: 'POST', body: JSON.stringify(body) }),
+        getSlaStats: () => request<any>('/tickets/sla/stats'),
     },
     kb: {
         list: (params?: Record<string, string>) => {
@@ -105,5 +106,18 @@ export const api = {
         list: () => request<any[]>('/customers'),
         get: (id: string) => request<any>(`/customers/${id}`),
     },
+    settings: {
+        list: (decrypt = false) => request<any[]>(`/settings${decrypt ? '?decrypt=true' : ''}`),
+        upsert: (body: any) => request<any>('/settings', { method: 'POST', body: JSON.stringify(body) }),
+        delete: (key: string) => request<any>(`/settings/${key}`, { method: 'DELETE' }),
+    },
+    macros: {
+        list: () => request<any[]>('/macros'),
+        create: (body: any) => request<any>('/macros', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: any) => request<any>(`/macros/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        delete: (id: string) => request<any>(`/macros/${id}`, { method: 'DELETE' }),
+    },
+    get: (url: string) => request<any>(url),
+    post: (url: string, body: any) => request<any>(url, { method: 'POST', body: JSON.stringify(body) }),
     getBaseUrl: () => API,
 };

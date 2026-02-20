@@ -103,6 +103,7 @@ model User {
   trainingReviews        TrainingQueue[]
   auditLogs              AuditLog[]
   settings               Setting[]
+  macrosCreated          Macro[]
   customerProfile        CustomerProfile?
 
   @@map("users")
@@ -499,4 +500,39 @@ model AuditLog {
   @@index([actorId], map: "idx_audit_actor")
   @@index([createdAt(sort: Desc)], map: "idx_audit_created")
   @@map("audit_logs")
+}
+
+// =============================================
+// PRODUCTIVITY TOOLS (Macros / Canned Responses)
+// =============================================
+
+model Macro {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @db.VarChar(100)
+  content   String   @db.Text
+  createdBy String?  @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  creator User? @relation(fields: [createdBy], references: [id])
+
+  @@map("macros")
+}
+
+// =============================================
+// EMAIL AUTOMATION TRACKING
+// =============================================
+
+model InboundEmailLog {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  messageId     String   @unique @map("message_id") @db.VarChar(255) // IMAP Message-ID
+  from          String   @db.VarChar(255)
+  subject       String?  @db.Text
+  processed     Boolean  @default(false)
+  ticketId      String?  @map("ticket_id") @db.Uuid
+  error         String?  @db.Text
+  processedAt   DateTime? @map("processed_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("inbound_email_logs")
 }
