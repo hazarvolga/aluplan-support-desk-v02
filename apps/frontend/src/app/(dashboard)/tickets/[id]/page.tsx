@@ -5,7 +5,7 @@ import { getSocket } from '@/lib/socket';
 import {
     Ticket, Clock, Shield, User as UserIcon, Send,
     Paperclip, Download, MoreVertical, CheckCircle2,
-    AlertTriangle, MessageSquare, Loader2, Bot
+    AlertTriangle, MessageSquare, Loader2, Bot, Star
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,11 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const [summary, setSummary] = useState<string | null>(null);
     const [summarizing, setSummarizing] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // CSAT States
+    const [csatScore, setCsatScore] = useState<number>(0);
+    const [csatHover, setCsatHover] = useState<number>(0);
+    const [csatComment, setCsatComment] = useState('');
 
     // Live chat states
     const [isTyping, setIsTyping] = useState(false);
@@ -193,6 +198,23 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         }
     };
 
+    const handleSubmitCsat = async () => {
+        if (!ticket || csatScore === 0) return;
+        setSending(true);
+        try {
+            await api.post(`/tickets/${ticket.id}/feedback`, {
+                score: csatScore,
+                comment: csatComment
+            });
+            toast.success(`${csatScore}/5 puanı ile değerlendirme yaptınız. Teşekkürler!`);
+            load(); // reload ticket
+        } catch (error) {
+            toast.error('Değerlendirme gönderilemedi.');
+        } finally {
+            setSending(false);
+        }
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             setFiles([...files, ...Array.from(e.target.files)]);
@@ -261,21 +283,69 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         </div>
 
                         {ticket.status === 'PENDING_CUSTOMER_REVIEW' && (
-                            <div className="mt-4 p-4 rounded-xl bg-orange-500/5 border border-orange-500/20 animate-in fade-in slide-in-from-top-2">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h4 className="text-sm font-bold text-orange-400 mb-1">Müşteri Doğrulaması Bekleniyor</h4>
-                                        <p className="text-xs text-slate-400">Müşteri çözümü onaylarsa (+4 puan), bilet otomatik olarak Bilgi Bankasına eklenecektir (Option C).</p>
+                            <div className="mt-4 p-6 rounded-xl bg-gradient-to-br from-orange-500/10 to-transparent border border-orange-500/20 animate-in fade-in slide-in-from-top-2">
+                                {isCustomer ? (
+                                    <div className="flex flex-col items-center justify-center text-center space-y-4">
+                                        <div className="h-12 w-12 rounded-full bg-orange-500/20 flex items-center justify-center mb-2">
+                                            <CheckCircle2 className="h-6 w-6 text-orange-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-lg font-bold text-white mb-1">Talebiniz Çözüldü mü?</h4>
+                                            <p className="text-sm text-slate-400 max-w-md mx-auto">
+                                                Uzmanımız bu talebi çözüme ulaştırdığını belirtti. Lütfen deneyiminizi puanlayarak talebi kapatın.
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 py-2">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <button
+                                                    key={star}
+                                                    type="button"
+                                                    onClick={() => setCsatScore(star)}
+                                                    onMouseEnter={() => setCsatHover(star)}
+                                                    onMouseLeave={() => setCsatHover(0)}
+                                                    className={`p-2 rounded-full transition-all duration-200 hover:scale-110 ${(csatHover || csatScore) >= star ? 'text-orange-400' : 'text-slate-600 hover:text-orange-400/50'}`}
+                                                >
+                                                    <Star className={`h-8 w-8 ${(csatHover || csatScore) >= star ? 'fill-orange-400' : ''}`} />
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {csatScore > 0 && (
+                                            <div className="w-full max-w-md space-y-3 animate-in fade-in zoom-in duration-300">
+                                                <Textarea
+                                                    placeholder="Eklemek istediğiniz bir yorum var mı? (İsteğe bağlı)"
+                                                    className="bg-black/20 border-white/10 resize-none"
+                                                    value={csatComment}
+                                                    onChange={(e) => setCsatComment(e.target.value)}
+                                                />
+                                                <Button
+                                                    onClick={handleSubmitCsat}
+                                                    disabled={sending}
+                                                    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                                                >
+                                                    {sending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                                    Değerlendirmeyi Gönder ve Kapat
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(2)} className="h-8 border-red-500/20 text-red-400 hover:bg-red-500/10">
-                                            Test: Reddet (2 Puan)
-                                        </Button>
-                                        <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(5)} className="h-8 border-green-500/20 text-green-400 hover:bg-green-500/10">
-                                            Test: Onayla (5 Puan) // KB Ekle
-                                        </Button>
+                                ) : (
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h4 className="text-sm font-bold text-orange-400 mb-1">Müşteri Doğrulaması Bekleniyor</h4>
+                                            <p className="text-xs text-slate-400">Müşteri çözümü onaylarsa (+4 puan), bilet otomatik olarak Bilgi Bankasına eklenecektir (Option C).</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(2)} className="h-8 border-red-500/20 text-red-400 hover:bg-red-500/10">
+                                                Test: Reddet (2)
+                                            </Button>
+                                            <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(5)} className="h-8 border-green-500/20 text-green-400 hover:bg-green-500/10">
+                                                Test: Onayla (5) // KB Ekle
+                                            </Button>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         )}
 
