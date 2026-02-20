@@ -83,15 +83,17 @@ export class TicketsService {
         status?: TicketStatus;
         priority?: TicketPriority;
         assignedTo?: string;
+        userId?: string; // Filter by creator
         isSlaBreached?: boolean;
         page?: number;
         limit?: number;
     }) {
-        const { status, priority, assignedTo, isSlaBreached, page = 1, limit = 20 } = params;
+        const { status, priority, assignedTo, userId, isSlaBreached, page = 1, limit = 20 } = params;
         const where: Prisma.TicketWhereInput = {
             ...(status && { status }),
             ...(priority && { priority }),
             ...(assignedTo && { assignedTo }),
+            ...(userId && { userId }),
             ...(isSlaBreached !== undefined && { isSlaBreached }),
         };
 
@@ -116,14 +118,18 @@ export class TicketsService {
     // =============================================
     // FIND ONE
     // =============================================
-    async findOne(id: string) {
+    async findOne(id: string, requester?: { id: string; role: string }) {
         const ticket = await this.prisma.ticket.findUnique({
             where: { id },
             include: {
                 creator: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
                 assignee: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
                 messages: {
-                    include: { sender: { select: { id: true, fullName: true, avatarUrl: true } } },
+                    where: requester?.role === 'customer' ? { isInternal: false } : {},
+                    include: {
+                        sender: { select: { id: true, fullName: true, avatarUrl: true } },
+                        attachments: true,
+                    },
                     orderBy: { createdAt: 'asc' },
                 },
                 escalations: {
@@ -133,13 +139,19 @@ export class TicketsService {
             },
         });
         if (!ticket) throw new NotFoundException(`Ticket not found`);
+
+        // ownership check for customers
+        if (requester?.role === 'customer' && ticket.userId !== requester.id) {
+            throw new ForbiddenException('You do not have access to this ticket');
+        }
+
         return ticket;
     }
 
-    async findByNumber(ticketNumber: string) {
+    async findByNumber(ticketNumber: string, requester?: { id: string; role: string }) {
         const ticket = await this.prisma.ticket.findUnique({ where: { ticketNumber } });
         if (!ticket) throw new NotFoundException(`Ticket ${ticketNumber} not found`);
-        return this.findOne(ticket.id);
+        return this.findOne(ticket.id, requester);
     }
 
     // =============================================
@@ -277,8 +289,8 @@ export class TicketsService {
     // =============================================
     // ADD MESSAGE
     // =============================================
-    async addMessage(ticketId: string, dto: AddMessageDto, senderId: string) {
-        const ticket = await this.findOne(ticketId);
+    async addMessage(ticketId: string, dto: AddMessageDto, senderId: string, role: string) {
+        const ticket = await this.findOne(ticketId, { id: senderId, role }); // ownership check happens here
 
         if (ticket.status === TicketStatus.CLOSED) {
             throw new BadRequestException('Cannot add message to a closed ticket');

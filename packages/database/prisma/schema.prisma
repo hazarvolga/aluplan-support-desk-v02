@@ -405,8 +405,23 @@ model TicketMessage {
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   sender User?  @relation(fields: [senderId], references: [id])
+  attachments Attachment[]
 
   @@map("ticket_messages")
+}
+
+model Attachment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  message   TicketMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  fileName  String   @map("file_name") @db.VarChar(255)
+  fileSize  Int      @map("file_size")
+  mimeType  String   @map("mime_type") @db.VarChar(100)
+  url       String   @db.Text // Storage path or URL
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([messageId], map: "idx_attachment_message")
+  @@map("attachments")
 }
 
 model TicketEscalation {

@@ -43,11 +43,15 @@ export class TicketsController {
     @ApiQuery({ name: 'isSlaBreached', required: false, type: Boolean })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
-    findAll(@Query() query: any) {
+    findAll(@Query() query: any, @Request() req: any) {
+        // If user is a customer, force filter by their own userId
+        const userId = req.user.role === 'customer' ? req.user.sub : query.userId;
+
         return this.ticketsService.findAll({
             status: query.status,
             priority: query.priority,
             assignedTo: query.assignedTo,
+            userId,
             isSlaBreached: query.isSlaBreached === 'true',
             page: query.page ? parseInt(query.page) : 1,
             limit: query.limit ? parseInt(query.limit) : 20,
@@ -66,16 +70,16 @@ export class TicketsController {
     @Get(':id')
     @RequirePermissions('ticket:read')
     @ApiOperation({ summary: 'Get ticket by id' })
-    findOne(@Param('id') id: string) {
-        return this.ticketsService.findOne(id);
+    findOne(@Param('id') id: string, @Request() req: any) {
+        return this.ticketsService.findOne(id, { id: req.user.sub, role: req.user.role });
     }
 
     // ─── GET BY NUMBER ──────────────────────────
     @Get('by-number/:number')
     @RequirePermissions('ticket:read')
     @ApiOperation({ summary: 'Get ticket by number (e.g. SUP-00001)' })
-    findByNumber(@Param('number') number: string) {
-        return this.ticketsService.findByNumber(number);
+    findByNumber(@Param('number') number: string, @Request() req: any) {
+        return this.ticketsService.findByNumber(number, { id: req.user.sub, role: req.user.role });
     }
 
     // ─── UPDATE ─────────────────────────────────
@@ -146,7 +150,7 @@ export class TicketsController {
         @Body() dto: AddMessageDto,
         @Request() req: any,
     ) {
-        const message = await this.ticketsService.addMessage(id, dto, req.user.sub);
+        const message = await this.ticketsService.addMessage(id, dto, req.user.sub, req.user.role);
         this.notificationsGateway.emitNewMessage(id, message);
         return message;
     }

@@ -7,9 +7,12 @@ import {
     MessageSquareQuote, Settings, LogOut, ChevronRight, Users,
 } from 'lucide-react';
 
-const nav = [
+import { api } from '@/lib/api';
+import { useEffect, useState } from 'react';
+
+const ADMIN_NAV = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/tickets', icon: Ticket, label: 'Talepler' },
+    { href: '/tickets', icon: Ticket, label: 'Operasyonel Kuyruk' },
     { href: '/knowledge-base', icon: BookOpen, label: 'Bilgi Bankası' },
     { href: '/ai', icon: Bot, label: 'AI Asistan' },
     { href: '/faq', icon: MessageSquareQuote, label: 'FAQ' },
@@ -17,8 +20,21 @@ const nav = [
     { href: '/users', icon: Settings, label: 'Ekip' },
 ];
 
+const CUSTOMER_NAV = [
+    { href: '/my-tickets', icon: Ticket, label: 'Taleplerim' },
+    { href: '/knowledge-base', icon: BookOpen, label: 'Yardım Merkezi' },
+    { href: '/ai', icon: Bot, label: 'AI Asistan' },
+];
+
 export function Sidebar() {
     const pathname = usePathname();
+    const [user, setUser] = useState<any>(null);
+
+    useEffect(() => {
+        api.auth.me().then(setUser).catch(() => { });
+    }, []);
+
+    const nav = user?.role === 'customer' ? CUSTOMER_NAV : ADMIN_NAV;
 
     return (
         <aside className="flex h-screen w-60 flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">

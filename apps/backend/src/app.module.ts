@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { RbacModule } from './rbac/rbac.module';
 import { HealthModule } from './health/health.module';
 import { TicketsModule } from './tickets/tickets.module';
+import { AttachmentsModule } from './attachments/attachments.module';
 import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
 import { AiModule } from './ai/ai.module';
 import { FaqModule } from './faq/faq.module';
@@ -27,6 +28,7 @@ import { CustomersModule } from './customers/customers.module';
         RbacModule,
         HealthModule,
         TicketsModule,
+        AttachmentsModule,
         KnowledgeBaseModule,
         AiModule,
         FaqModule,

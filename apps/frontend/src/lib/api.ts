@@ -77,6 +77,16 @@ export const api = {
         update: (id: string, body: any) => request<any>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
         delete: (id: string) => request<any>(`/users/${id}`, { method: 'DELETE' }),
     },
+    attachments: {
+        upload: (messageId: string, file: File) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            return request(`/attachments/upload/${messageId}`, {
+                method: 'POST',
+                body: formData,
+            });
+        },
+    },
     customers: {
         list: () => request<any[]>('/customers'),
         get: (id: string) => request<any>(`/customers/${id}`),
