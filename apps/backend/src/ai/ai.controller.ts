@@ -79,7 +79,8 @@ export class AiController {
     @ApiOperation({ summary: 'Check Ollama availability' })
     async status() {
         const available = await this.ollamaService.isAvailable();
-        return { ollama: available ? 'online' : 'offline' };
+        const model = this.ollamaService.getModel();
+        return { available, model };
     }
 
     @Get('tickets/:id/summarize')

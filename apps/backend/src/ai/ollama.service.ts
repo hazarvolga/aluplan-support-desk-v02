@@ -155,4 +155,8 @@ ${conversation.substring(0, 3000)}`; // limit content to prevent context blown
             return false;
         }
     }
+
+    getModel(): string {
+        return this.chatModel;
+    }
 }
