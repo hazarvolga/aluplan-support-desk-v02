@@ -1,0 +1,58 @@
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
+import helmet from 'helmet';
+import * as compression from 'compression';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+    const logger = new Logger('Bootstrap');
+    const app = await NestFactory.create(AppModule, { logger: ['log', 'error', 'warn', 'debug'] });
+
+    const configService = app.get(ConfigService);
+    const port = configService.get<number>('PORT', 3001);
+    const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+
+    // Security
+    app.use(helmet());
+    app.use(compression());
+
+    // CORS
+    app.enableCors({
+        origin: frontendUrl,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    });
+
+    // Global API prefix
+    app.setGlobalPrefix('api/v1');
+
+    // Validation
+    app.useGlobalPipes(
+        new ValidationPipe({
+            whitelist: true,
+            forbidNonWhitelisted: true,
+            transform: true,
+            transformOptions: { enableImplicitConversion: true },
+        }),
+    );
+
+    // Swagger (only in development)
+    if (configService.get('NODE_ENV') !== 'production') {
+        const config = new DocumentBuilder()
+            .setTitle('Aluplan Support Desk API')
+            .setDescription('Controlled Knowledge Automation Engine')
+            .setVersion('1.0')
+            .addBearerAuth()
+            .build();
+        const document = SwaggerModule.createDocument(app, config);
+        SwaggerModule.setup('api/docs', app, document);
+        logger.log(`📖 Swagger: http://localhost:${port}/api/docs`);
+    }
+
+    await app.listen(port);
+    logger.log(`🚀 Backend running on http://localhost:${port}/api/v1`);
+}
+
+bootstrap();

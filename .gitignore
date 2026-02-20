@@ -1,0 +1,90 @@
+# ========================
+# Dependencies
+# ========================
+node_modules/
+.pnp
+.pnp.js
+.pnpm-store/
+
+# ========================
+# Build Output
+# ========================
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# ========================
+# Environment Variables
+# ========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ========================
+# Turbo
+# ========================
+.turbo/
+
+# ========================
+# Prisma
+# ========================
+packages/database/generated/
+
+# ========================
+# Testing / Coverage
+# ========================
+coverage/
+*.lcov
+.nyc_output/
+
+# ========================
+# Logs
+# ========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ========================
+# OS Files
+# ========================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ========================
+# IDE / Editor
+# ========================
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-workspace
+*.sublime-project
+
+# ========================
+# Docker
+# ========================
+docker-compose.override.yml
+
+# ========================
+# Miscellaneous
+# ========================
+*.pid
+*.seed
+*.pid.lock
+.cache/
+tmp/
+temp/

@@ -1,0 +1,133 @@
+import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
+import { PrismaService } from '../prisma/prisma.service';
+import { LoginDto } from './dto/login.dto';
+
+@Injectable()
+export class AuthService {
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly jwtService: JwtService,
+        private readonly config: ConfigService,
+    ) { }
+
+    async login(dto: LoginDto) {
+        const user = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+            include: {
+                userRoles: {
+                    include: {
+                        role: {
+                            include: {
+                                rolePermissions: { include: { permission: true } },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!user || user.deletedAt) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+
+        if (user.status !== 'ACTIVE') {
+            throw new UnauthorizedException('Account is not active');
+        }
+
+        const passwordValid = await bcrypt.compare(dto.password, user.passwordHash);
+        if (!passwordValid) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+
+        const roles = user.userRoles.map((ur) => ur.role.name);
+        const permissions = [
+            ...new Set(
+                user.userRoles.flatMap((ur) =>
+                    ur.role.rolePermissions.map((rp) => rp.permission.name),
+                ),
+            ),
+        ];
+
+        const tokens = await this.generateTokens(user.id, user.email, roles, permissions);
+
+        return {
+            user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                avatarUrl: user.avatarUrl,
+                roles,
+                permissions,
+            },
+            ...tokens,
+        };
+    }
+
+    async refreshTokens(userId: string, refreshToken: string) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user || user.status !== 'ACTIVE') {
+            throw new ForbiddenException('Access denied');
+        }
+
+        // In production, validate stored refresh token hash
+        const roles = await this.getUserRoles(userId);
+        const permissions = await this.getUserPermissions(userId);
+        return this.generateTokens(userId, user.email, roles, permissions);
+    }
+
+    async logout(userId: string) {
+        // In production: invalidate refresh token in DB
+        return { success: true };
+    }
+
+    private async generateTokens(
+        userId: string,
+        email: string,
+        roles: string[],
+        permissions: string[],
+    ) {
+        const payload = { sub: userId, email, roles, permissions };
+
+        const [accessToken, refreshToken] = await Promise.all([
+            this.jwtService.signAsync(payload, {
+                secret: this.config.get('JWT_SECRET'),
+                expiresIn: this.config.get('JWT_EXPIRES_IN', '15m'),
+            }),
+            this.jwtService.signAsync(payload, {
+                secret: this.config.get('JWT_REFRESH_SECRET'),
+                expiresIn: this.config.get('JWT_REFRESH_EXPIRES_IN', '7d'),
+            }),
+        ]);
+
+        return { accessToken, refreshToken };
+    }
+
+    private async getUserRoles(userId: string): Promise<string[]> {
+        const userRoles = await this.prisma.userRole.findMany({
+            where: { userId },
+            include: { role: true },
+        });
+        return userRoles.map((ur) => ur.role.name);
+    }
+
+    private async getUserPermissions(userId: string): Promise<string[]> {
+        const userRoles = await this.prisma.userRole.findMany({
+            where: { userId },
+            include: {
+                role: {
+                    include: { rolePermissions: { include: { permission: true } } },
+                },
+            },
+        });
+        return [
+            ...new Set(
+                userRoles.flatMap((ur) =>
+                    ur.role.rolePermissions.map((rp) => rp.permission.name),
+                ),
+            ),
+        ];
+    }
+}
