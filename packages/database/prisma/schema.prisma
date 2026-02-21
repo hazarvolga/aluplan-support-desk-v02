@@ -320,10 +320,12 @@ model AiInteraction {
   responseGenerated String?        @map("response_generated") @db.Text
   autoAnswered     Boolean         @default(false) @map("auto_answered")
   ticketCreated    Boolean         @default(false) @map("ticket_created")
+  productId        String?         @map("product_id") @db.Uuid
   userContext      Json?           @map("user_context")  // page, segment, etc.
   createdAt        DateTime        @default(now()) @map("created_at")
 
   user           User?                    @relation(fields: [userId], references: [id])
+  product        Product?                 @relation(fields: [productId], references: [id])
   matchedArticle KnowledgeArticle?        @relation(fields: [matchedArticleId], references: [id])
   matchedVersion KnowledgeArticleVersion? @relation("MatchedVersion", fields: [matchedVersionId], references: [id])
   feedbacks      InteractionFeedback[]
@@ -583,12 +585,15 @@ model KnowledgeSource {
   fileName      String?              @map("file_name") @db.VarChar(255)
   filePath      String?              @map("file_path") @db.Text
   status        KnowledgeSourceStatus @default(ACTIVE)
+  productId     String?              @map("product_id") @db.Uuid
+  metadata      Json?                @db.JsonB
   lastSyncedAt  DateTime?            @map("last_synced_at")
   lastEtag      String?              @map("last_etag") @db.VarChar(255)
   lastHash      String?              @map("last_hash") @db.VarChar(255)
   createdAt     DateTime             @default(now()) @map("created_at")
   updatedAt     DateTime             @updatedAt @map("updated_at")
 
+  product       Product?             @relation(fields: [productId], references: [id])
   syncLogs      KnowledgeSourceSyncLog[]
   embeddings    KnowledgePoolEmbedding[]
 
@@ -639,6 +644,8 @@ model Product {
 
   categories  ProductCategory[]
   tickets     Ticket[]
+  knowledgeSources KnowledgeSource[]
+  aiInteractions   AiInteraction[]
 
   @@map("products")
 }

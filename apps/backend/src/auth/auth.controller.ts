@@ -58,6 +58,6 @@ export class AuthController {
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get current user' })
     me(@Request() req: any) {
-        return req.user;
+        return this.authService.getProfile(req.user.id);
     }
 }

@@ -83,6 +83,26 @@ export class AiController {
         return { available, model };
     }
 
+    @Post('search')
+    @ApiOperation({ summary: 'Semantic search Knowledge Pool + Articles with Product filtering' })
+    @HttpCode(HttpStatus.OK)
+    async search(@Body() dto: { query: string; productId?: string; limit?: number }, @Request() req: any) {
+        const results = await this.embeddingService.search(dto.query, dto.limit ?? 5, dto.productId);
+
+        // Log as an interaction for traceability
+        const interaction = await this.aiQueryService.logSearchInteraction(
+            dto.query,
+            req.user?.sub,
+            results,
+            dto.productId
+        );
+
+        return {
+            results,
+            interactionId: interaction.id
+        };
+    }
+
     @Get('tickets/:id/summarize')
     @Roles('admin', 'agent', 'support_manager')
     @ApiOperation({ summary: 'Generate AI summary of a ticket thread' })

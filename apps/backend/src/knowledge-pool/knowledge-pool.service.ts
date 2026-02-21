@@ -51,6 +51,9 @@ export class KnowledgePoolService {
         return this.prisma.knowledgeSource.findMany({
             orderBy: { createdAt: 'desc' },
             include: {
+                product: {
+                    select: { id: true, name: true }
+                },
                 _count: {
                     select: { embeddings: true }
                 }

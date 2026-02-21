@@ -158,7 +158,6 @@ ${conversation}
      */
     async smartTagTicket(productId: string, text: string, hotinfoContext?: any): Promise<{ tags: string[] }> {
         try {
-            // Fetch product's static categories
             const product = await this.prisma.product.findUnique({
                 where: { id: productId },
                 include: { categories: true }
@@ -166,7 +165,6 @@ ${conversation}
 
             if (!product || product.categories.length === 0) return { tags: [] };
 
-            // 1. Semantic search past highly-rated tickets (RAG)
             const pastMatches = await this.embeddingService.searchTickets(text, 2);
             const kbMatches = await this.embeddingService.search(text, 2);
             let contextStr = '';
@@ -182,37 +180,46 @@ ${conversation}
                 contextStr += `\nMÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO):\n- Allplan: ${hotinfoContext.allplanVersion}\n- OS: ${hotinfoContext.osVersion}\n- CPU: ${hotinfoContext.cpu}\n- GPU: ${hotinfoContext.gpu}\n- RAM: ${hotinfoContext.ram}\n`;
             }
 
-            // 2. Build Guardrails with Categories
             const allowedTags = product.categories.map((c: { name: string }) => c.name);
             const prompt = `Görevin: Aşağıdaki Müşteri Destek talebini analiz edip, İZİN VERİLEN KATEGORİLER listesinden EN UYGUN OLANI seçmek.
-
 İZİN VERİLEN KATEGORİLER:
 ${allowedTags.join(', ')}
 ${contextStr}
-
 MÜŞTERİ TALEBİ:
 ${text.substring(0, 1000)}
-
 SADECE en uygun kategori adını yaz. Hiçbiri uymuyorsa "GENEL" yaz.`;
 
-            // 3. Ask Ollama to classify
             const result = await this.ollama.reformat('Sen akıllı bir etiketleme asistanısın. Sadece tek kelime/kalıp dönersin.', 'Analiz et', prompt);
 
             if (result?.response) {
                 const suggested = result.response.trim();
-                // Ensure the AI didn't hallucinate outside the allowed list (except GENEL)
                 const isValid = allowedTags.some((t: string) => t.toLowerCase() === suggested.toLowerCase());
                 if (isValid) {
-                    // Match the original case
                     const originalTag = allowedTags.find((t: string) => t.toLowerCase() === suggested.toLowerCase());
                     return { tags: [originalTag!] };
                 }
             }
-
             return { tags: [] };
         } catch (error) {
             this.logger.error(`Error in smartTagTicket: ${error.message}`);
             return { tags: [] };
         }
+    }
+
+    async logSearchInteraction(query: string, userId?: string, results: SearchResult[] = [], productId?: string | null) {
+        const topResult = results[0] ?? null;
+
+        return this.prisma.aiInteraction.create({
+            data: {
+                userId,
+                productId,
+                userQuery: query,
+                confidenceBand: topResult ? topResult.confidence : null,
+                matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
+                similarityScore: topResult ? topResult.similarity : undefined,
+                autoAnswered: false, // This was just a search
+                userContext: { type: 'WIZARD_SEARCH', resultCount: results.length }
+            },
+        });
     }
 }

@@ -52,7 +52,7 @@ export class EmbeddingService {
      * Semantic similarity search using pgvector cosine distance.
      * Returns ranked results with confidence band.
      */
-    async search(query: string, limit = 5): Promise<SearchResult[]> {
+    async search(query: string, limit = 5, productId?: string | null): Promise<SearchResult[]> {
         const embResult = await this.ollama.embed(query);
         if (!embResult) {
             this.logger.warn('Semantic search unavailable — Ollama offline');
@@ -95,6 +95,7 @@ export class EmbeddingService {
         FROM knowledge_pool_embeddings kpe
         JOIN knowledge_sources ks ON kpe.source_id = ks.id
         WHERE ks.status = 'ACTIVE'
+          AND (${productId}::uuid IS NULL OR ks.product_id = ${productId}::uuid)
           AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
       )
       SELECT * FROM combined_search

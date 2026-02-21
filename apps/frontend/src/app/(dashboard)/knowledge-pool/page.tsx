@@ -169,6 +169,16 @@ export default function KnowledgePoolPage() {
                                                         <Badge className={`h-4 px-1.5 text-[8px] font-mono rounded-none ${source.status === 'ACTIVE' ? 'border-emerald-900/50 text-emerald-400 bg-emerald-400/5' :
                                                             source.status === 'SYNCING' ? 'border-amber-900/50 text-amber-400 bg-amber-400/5' : 'border-red-900/50 text-red-500 bg-red-500/5'
                                                             }`}>{source.status}</Badge>
+                                                        {source.product && (
+                                                            <Badge variant="outline" className="h-4 px-1.5 text-[8px] font-mono rounded-none border-blue-500/50 text-blue-400 bg-blue-400/5 uppercase">
+                                                                {source.product.name}
+                                                            </Badge>
+                                                        )}
+                                                        {source.metadata?.matchedCategory && (
+                                                            <Badge variant="outline" className="h-4 px-1.5 text-[8px] font-mono rounded-none border-purple-500/50 text-purple-400 bg-purple-400/5 uppercase">
+                                                                {source.metadata.matchedCategory}
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                     <p className="text-[10px] text-muted-foreground font-mono truncate max-w-md mt-1.5 opacity-60">
                                                         {source.type === 'URL' ? source.url : source.fileName}
@@ -176,6 +186,9 @@ export default function KnowledgePoolPage() {
                                                     <div className="flex items-center gap-4 mt-2 text-[9px] font-mono uppercase text-muted-foreground/60">
                                                         <span className="flex items-center gap-1">OBJECTS: {source._count?.embeddings || 0} UNITS</span>
                                                         <span className="flex items-center gap-1">LAST_SYNC: {source.lastSyncedAt ? new Date(source.lastSyncedAt).toISOString().split('T')[0] : 'NEVER'}</span>
+                                                        {source.metadata?.score !== undefined && (
+                                                            <span className="flex items-center gap-1 text-primary/40">MATCH_SCORE: {source.metadata.score}</span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

@@ -157,6 +157,26 @@ export class AuthService {
         return { success: true };
     }
 
+    async getProfile(userId: string) {
+        return this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                email: true,
+                fullName: true,
+                avatarUrl: true,
+                status: true,
+                customerProfile: {
+                    select: {
+                        id: true,
+                        hotinfoData: true,
+                        hotinfoUpdatedAt: true,
+                    }
+                }
+            }
+        });
+    }
+
     private async generateTokens(
         userId: string,
         email: string,
