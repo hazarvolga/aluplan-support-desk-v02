@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Paperclip, X, Loader2, ArrowLeft, Box } from 'lucide-react';
+import { Paperclip, X, Loader2, ArrowLeft, Box, CheckCircle2, AlertTriangle, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ticketSchema = z.object({
@@ -30,6 +30,9 @@ export default function NewTicketPage() {
     const [files, setFiles] = useState<File[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+    const [hotinfoData, setHotinfoData] = useState<any | null>(null);
+    const [isHotinfoConfirmed, setIsHotinfoConfirmed] = useState(false);
+    const [checkingProfile, setCheckingProfile] = useState(false);
 
     const form = useForm<TicketFormValues>({
         resolver: zodResolver(ticketSchema) as any,
@@ -64,13 +67,59 @@ export default function NewTicketPage() {
         setFiles(files.filter((_, i) => i !== index));
     };
 
+    const handleHotinfoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.name.endsWith('.hxl')) {
+            toast.error('Lütfen geçerli bir .hxl dosyası yükleyin');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await api.post('/customers/me/hotinfo', formData);
+
+            setHotinfoData(response.hotinfo);
+            setIsHotinfoConfirmed(true);
+            toast.success('Sistem bilgileriniz başarıyla güncellendi');
+        } catch (error: any) {
+            toast.error('Dosya yüklenirken hata oluştu');
+            console.error(error);
+        }
+    };
+
+    const checkUserProfile = async () => {
+        setCheckingProfile(true);
+        try {
+            const user = await api.auth.me();
+            if (user?.customerProfile?.hotinfoData) {
+                setHotinfoData(user.customerProfile.hotinfoData);
+            }
+        } catch (error) {
+            console.error("Failed to fetch profile", error);
+        } finally {
+            setCheckingProfile(false);
+        }
+    };
+
+    const handleProductSelect = (id: string, isAllplan: boolean) => {
+        setSelectedProductId(id);
+        if (isAllplan) {
+            checkUserProfile();
+        }
+    };
+
     const onSubmit = async (values: TicketFormValues) => {
         setLoading(true);
         try {
             // 1. Create Ticket
             const ticket = await api.tickets.create({
                 ...values,
-                productId: selectedProductId
+                productId: selectedProductId,
+                hotinfoContext: isHotinfoConfirmed ? hotinfoData : null
             });
 
             // 2. Add initial message (description)
@@ -117,29 +166,32 @@ export default function NewTicketPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
-                    {products.map(product => (
-                        <Card
-                            key={product.id}
-                            className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-brand-500/10 hover:border-brand-500/50 bg-card/40 backdrop-blur-sm border-white/5 overflow-hidden relative"
-                            onClick={() => setSelectedProductId(product.id)}
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <CardHeader>
-                                <div className="h-12 w-12 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <Box className="h-6 w-6" />
-                                </div>
-                                <CardTitle className="text-xl">{product.name}</CardTitle>
-                                {product.description && (
-                                    <CardDescription className="line-clamp-2 mt-2">
-                                        {product.description}
-                                    </CardDescription>
-                                )}
-                            </CardHeader>
-                        </Card>
-                    ))}
+                    {products.map(product => {
+                        const isAllplan = product.name.toUpperCase().includes('ALLPLAN');
+                        return (
+                            <Card
+                                key={product.id}
+                                className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-brand-500/10 hover:border-brand-500/50 bg-card/40 backdrop-blur-sm border-white/5 overflow-hidden relative"
+                                onClick={() => handleProductSelect(product.id, isAllplan)}
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <CardHeader>
+                                    <div className="h-12 w-12 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                        <Box className="h-6 w-6" />
+                                    </div>
+                                    <CardTitle className="text-xl">{product.name}</CardTitle>
+                                    {product.description && (
+                                        <CardDescription className="line-clamp-2 mt-2">
+                                            {product.description}
+                                        </CardDescription>
+                                    )}
+                                </CardHeader>
+                            </Card>
+                        );
+                    })}
                     <Card
                         className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-slate-500/10 hover:border-slate-500/50 bg-card/40 backdrop-blur-sm border-white/5 border-dashed"
-                        onClick={() => setSelectedProductId('general')}
+                        onClick={() => handleProductSelect('general', false)}
                     >
                         <CardHeader>
                             <div className="h-12 w-12 rounded-lg bg-slate-500/20 text-slate-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -157,6 +209,16 @@ export default function NewTicketPage() {
     }
 
     const selectedProductDetails = products.find(p => p.id === selectedProductId);
+    const isAllplanSelected = selectedProductDetails?.name.toUpperCase().includes('ALLPLAN');
+
+    if (checkingProfile && isAllplanSelected) {
+        return (
+            <div className="flex h-[50vh] flex-col items-center justify-center space-y-4">
+                <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
+                <p className="text-muted-foreground">Profil bilgileriniz kontrol ediliyor...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-3xl mx-auto space-y-6 py-8 animate-in fade-in slide-in-from-right-8 duration-500">
@@ -224,6 +286,113 @@ export default function NewTicketPage() {
                                 )}
                             />
 
+                            {isAllplanSelected && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Monitor className="h-5 w-5 text-brand-400" />
+                                        <h3 className="font-semibold text-lg">Sistem Profiliniz (Hotinfo)</h3>
+                                    </div>
+
+                                    {hotinfoData ? (
+                                        <div className={`p-4 rounded-xl border transition-all duration-300 ${isHotinfoConfirmed ? 'bg-brand-500/5 border-brand-500/20' : 'bg-slate-900/50 border-white/10'}`}>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-4">
+                                                <div className="space-y-1">
+                                                    <p className="text-muted-foreground">Allplan Versiyon</p>
+                                                    <p className="font-medium text-white">{hotinfoData.allplanVersion}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-muted-foreground">İşletim Sistemi</p>
+                                                    <p className="font-medium text-white">{hotinfoData.osVersion}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-muted-foreground">Ekran Kartı</p>
+                                                    <p className="font-medium text-white italic truncate" title={hotinfoData.gpu}>{hotinfoData.gpu}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-muted-foreground">İşlemci</p>
+                                                    <p className="font-medium text-white truncate" title={hotinfoData.cpu}>{hotinfoData.cpu}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-muted-foreground">RAM</p>
+                                                    <p className="font-medium text-white">{hotinfoData.ram}</p>
+                                                </div>
+                                            </div>
+
+                                            {!isHotinfoConfirmed ? (
+                                                <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-white/5 mt-4">
+                                                    <Button
+                                                        type="button"
+                                                        className="flex-1 bg-brand-600 hover:bg-brand-500 gap-2"
+                                                        onClick={() => setIsHotinfoConfirmed(true)}
+                                                    >
+                                                        <CheckCircle2 className="h-4 w-4" />
+                                                        Bilgiler Güncel, Onaylıyorum
+                                                    </Button>
+                                                    <div className="relative flex-1">
+                                                        <input
+                                                            type="file"
+                                                            accept=".hxl"
+                                                            onChange={handleHotinfoUpload}
+                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                                                        />
+                                                        <Button variant="outline" type="button" className="w-full border-white/10 hover:bg-white/5 gap-2">
+                                                            <ArrowLeft className="h-4 w-4 rotate-90" />
+                                                            Bilgiler Yanlış, Yeni Dosya Yükle
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-between pt-2 border-t border-brand-500/20 mt-4">
+                                                    <div className="flex items-center gap-2 text-brand-400 text-sm">
+                                                        <CheckCircle2 className="h-4 w-4" />
+                                                        <span>Sistem bilgileriniz talebe eklendi.</span>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        type="button"
+                                                        className="text-xs text-muted-foreground hover:text-white"
+                                                        onClick={() => setIsHotinfoConfirmed(false)}
+                                                    >
+                                                        Güncelle
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center p-8 rounded-xl bg-orange-500/5 border border-orange-500/20 space-y-4 text-center">
+                                            <div className="h-10 w-10 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center">
+                                                <AlertTriangle className="h-6 w-6" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="font-semibold text-orange-400">Hotinfo Dosyası Eksik</p>
+                                                <p className="text-xs text-muted-foreground max-w-xs">
+                                                    Size daha iyi yardımcı olabilmemiz için lütfen Allmenü'den Hotinfo dosyanızı (.hxl) oluşturup yükleyin.
+                                                </p>
+                                            </div>
+                                            <div className="relative">
+                                                <input
+                                                    type="file"
+                                                    accept=".hxl"
+                                                    onChange={handleHotinfoUpload}
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                />
+                                                <Button type="button" className="bg-orange-600 hover:bg-orange-500 shadow-lg shadow-orange-500/20">
+                                                    Hotinfo Yükle (.hxl)
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {isAllplanSelected && !isHotinfoConfirmed && (
+                                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 px-1">
+                                            <AlertTriangle className="h-3 w-3" />
+                                            En güncel sistem bilgileriyle destek ekibimizin size %80 daha hızlı yanıt vermesini sağlayabilirsiniz.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
                             <FormField
                                 control={form.control}
                                 name="description"
@@ -283,7 +452,7 @@ export default function NewTicketPage() {
                             <Button type="button" variant="ghost" onClick={() => router.back()} disabled={loading} className="text-muted-foreground hover:text-white">
                                 İptal
                             </Button>
-                            <Button type="submit" disabled={loading} className="bg-brand-600 hover:bg-brand-500 min-w-32 shadow-lg shadow-brand-500/20">
+                            <Button type="submit" disabled={loading || (isAllplanSelected && !isHotinfoConfirmed)} className="bg-brand-600 hover:bg-brand-500 min-w-32 shadow-lg shadow-brand-500/20">
                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Talebi Gönder
                             </Button>

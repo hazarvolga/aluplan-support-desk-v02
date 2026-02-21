@@ -88,3 +88,8 @@ docker-compose.override.yml
 .cache/
 tmp/
 temp/
+apps/backend/uploads/
+*.hxl
+ Bilgi Bankası/
+havuz.md
+ All Contacts(All Contacts).csv

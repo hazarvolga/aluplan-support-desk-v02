@@ -4,10 +4,14 @@ import { RegisterCustomerDto } from './dto/register-customer.dto';
 import * as bcrypt from 'bcrypt';
 
 import { ImportCustomerRecordDto } from './dto/import-customers.dto';
+import { HotinfoParserService } from './hotinfo-parser.service';
 
 @Injectable()
 export class CustomersService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private hotinfoParser: HotinfoParserService
+    ) { }
 
     async importCustomers(data: ImportCustomerRecordDto[]) {
         let successCount = 0;
@@ -292,5 +296,33 @@ export class CustomersService {
         // Return the plain text password so the admin can copy and send it.
         // In a real email setup, we'd fire an event.
         return { newPassword: tempPassword, email: user.email };
+    }
+
+    async uploadHotinfo(userId: string, fileBuffer: Buffer) {
+        const xmlString = fileBuffer.toString('utf-8');
+        const parsedData = this.hotinfoParser.parseHotinfo(xmlString);
+
+        if (!parsedData) {
+            throw new BadRequestException('Geçersiz Hotinfo dosyası. Lütfen geçerli bir .hxl dosyası yükleyin.');
+        }
+
+        const profile = await this.prisma.customerProfile.findUnique({ where: { userId } });
+        if (!profile) {
+            throw new NotFoundException('Müşteri profili bulunamadı.');
+        }
+
+        const updatedProfile = await this.prisma.customerProfile.update({
+            where: { userId },
+            data: {
+                hotinfoData: parsedData,
+                hotinfoUpdatedAt: new Date()
+            }
+        });
+
+        return {
+            success: true,
+            hotinfo: updatedProfile.hotinfoData,
+            updatedAt: updatedProfile.hotinfoUpdatedAt
+        };
     }
 }

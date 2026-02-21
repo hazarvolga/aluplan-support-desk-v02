@@ -1,4 +1,5 @@
-import { Controller, Post, Body, Get, UseGuards, Param, Patch } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Param, Patch, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CustomersService } from './customers.service';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
 import { ImportCustomerRecordDto } from './dto/import-customers.dto';
@@ -29,6 +30,16 @@ export class CustomersController {
     @Roles('admin', 'support_manager')
     async importCustomers(@Body() data: ImportCustomerRecordDto[]) {
         return this.customersService.importCustomers(data);
+    }
+
+    @Post('me/hotinfo')
+    @UseGuards(JwtAuthGuard)
+    @UseInterceptors(FileInterceptor('file'))
+    async uploadHotinfo(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
+        if (!file) {
+            throw new BadRequestException('Lütfen bir dosya yükleyin.');
+        }
+        return this.customersService.uploadHotinfo(req.user.id, file.buffer);
     }
 
     @Get(':id')

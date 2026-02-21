@@ -68,6 +68,8 @@ export class TicketsService {
                 tags: dto.tags ?? [],
                 userId: createdByUserId,
                 interactionId: dto.interactionId,
+                productId: dto.productId,
+                hotinfoSnapshot: dto.hotinfoContext || undefined,
                 slaResponseDue: slaDeadlines.slaResponseDue,
                 slaResolveDue: slaDeadlines.slaResolveDue,
             },
@@ -79,7 +81,7 @@ export class TicketsService {
         // Option A + C Logic: If the user provided a productId, do auto-tagging
         if (dto.productId) {
             // we run this async so that the frontend feels "zero friction" fast response
-            this.runAutoTaggingAsync(ticket.id, dto.productId, `${dto.subject}\n\n${dto.description || ''}`);
+            this.runAutoTaggingAsync(ticket.id, dto.productId, `${dto.subject}\n\n${dto.description || ''}`, dto.hotinfoContext);
         }
 
         // Emit event for Autonomous Resolution Engine
@@ -88,9 +90,9 @@ export class TicketsService {
         return ticket;
     }
 
-    private async runAutoTaggingAsync(ticketId: string, productId: string, text: string) {
+    private async runAutoTaggingAsync(ticketId: string, productId: string, text: string, hotinfoContext?: any) {
         try {
-            const aiTags = await this.aiQueryService.smartTagTicket(productId, text);
+            const aiTags = await this.aiQueryService.smartTagTicket(productId, text, hotinfoContext);
             if (aiTags.tags.length > 0) {
                 await this.prisma.ticket.update({
                     where: { id: ticketId },

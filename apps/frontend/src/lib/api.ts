@@ -39,7 +39,19 @@ export const api = {
                 method: 'POST',
                 body: JSON.stringify({ email }),
             }),
-        me: () => request<{ id: string; fullName: string; email: string; roles: string[] }>('/auth/me'),
+        me: () => request<{
+            id: string;
+            fullName: string;
+            email: string;
+            roles: string[];
+            status?: string;
+            customerProfile?: {
+                id: string;
+                hotinfoData?: any;
+                hotinfoUpdatedAt?: string;
+                [key: string]: any;
+            }
+        }>('/auth/me'),
     },
     pool: {
         list: () => request<any[]>('/knowledge-pool/sources'),

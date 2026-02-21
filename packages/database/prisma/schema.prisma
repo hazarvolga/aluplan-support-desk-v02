@@ -176,6 +176,8 @@ model CustomerProfile {
   contractStatus    String?  @map("contract_status") @db.VarChar(100)
   externalContactId String?  @unique @map("external_contact_id") @db.VarChar(255)
   crmVerified       Boolean  @default(false) @map("crm_verified")
+  hotinfoData       Json?    @map("hotinfo_data")
+  hotinfoUpdatedAt  DateTime? @map("hotinfo_updated_at")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
@@ -390,6 +392,7 @@ model Ticket {
   tags            String[]       @default([])
   productId       String?        @map("product_id") @db.Uuid
   suggestedCategories String[]   @default([]) @map("suggested_categories")
+  hotinfoSnapshot  Json?          @map("hotinfo_snapshot")
 
   // SLA Fields
   slaResponseDue  DateTime?  @map("sla_response_due")

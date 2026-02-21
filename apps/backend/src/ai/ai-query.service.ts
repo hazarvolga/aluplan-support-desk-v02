@@ -156,7 +156,7 @@ ${conversation}
      * 1. Static Product Categories
      * 2. Past high-rated tickets (Option A + C implementation)
      */
-    async smartTagTicket(productId: string, text: string): Promise<{ tags: string[] }> {
+    async smartTagTicket(productId: string, text: string, hotinfoContext?: any): Promise<{ tags: string[] }> {
         try {
             // Fetch product's static categories
             const product = await this.prisma.product.findUnique({
@@ -176,6 +176,10 @@ ${conversation}
             }
             if (kbMatches.length > 0) {
                 contextStr += '\nBİLGİ HAVUZU REFERANSLARI:\n' + kbMatches.map(m => `- ${m.title}`).join('\n');
+            }
+
+            if (hotinfoContext) {
+                contextStr += `\nMÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO):\n- Allplan: ${hotinfoContext.allplanVersion}\n- OS: ${hotinfoContext.osVersion}\n- CPU: ${hotinfoContext.cpu}\n- GPU: ${hotinfoContext.gpu}\n- RAM: ${hotinfoContext.ram}\n`;
             }
 
             // 2. Build Guardrails with Categories

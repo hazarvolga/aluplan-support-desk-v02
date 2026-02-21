@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsUUID, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsUUID, MinLength, MaxLength, IsObject } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TicketPriority } from '@aluplan/database';
 
@@ -32,4 +32,9 @@ export class CreateTicketDto {
     @IsUUID()
     @IsOptional()
     productId?: string;
+
+    @ApiPropertyOptional({ description: 'System information from Hotinfo for AI context' })
+    @IsObject()
+    @IsOptional()
+    hotinfoContext?: any;
 }
