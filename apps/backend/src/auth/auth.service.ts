@@ -158,14 +158,14 @@ export class AuthService {
     }
 
     async getProfile(userId: string) {
-        return this.prisma.user.findUnique({
+        const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            select: {
-                id: true,
-                email: true,
-                fullName: true,
-                avatarUrl: true,
-                status: true,
+            include: {
+                userRoles: {
+                    include: {
+                        role: true,
+                    },
+                },
                 customerProfile: {
                     select: {
                         id: true,
@@ -175,6 +175,18 @@ export class AuthService {
                 }
             }
         });
+
+        if (!user) return null;
+
+        return {
+            id: user.id,
+            email: user.email,
+            fullName: user.fullName,
+            avatarUrl: user.avatarUrl,
+            status: user.status,
+            roles: user.userRoles.map((ur) => ur.role.name),
+            customerProfile: user.customerProfile
+        };
     }
 
     private async generateTokens(

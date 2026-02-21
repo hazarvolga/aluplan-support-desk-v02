@@ -6,6 +6,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
+import { BulkUpdateTicketDto } from './dto/bulk-update-ticket.dto';
 import { AddMessageDto } from './dto/add-message.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { RbacGuard } from '../rbac/rbac.guard';
@@ -88,6 +89,15 @@ export class TicketsController {
     @ApiOperation({ summary: 'Update ticket fields' })
     update(@Param('id') id: string, @Body() dto: UpdateTicketDto, @Request() req: any) {
         return this.ticketsService.update(id, dto, req.user.sub);
+    }
+
+    @Patch('bulk')
+    @RequirePermissions('ticket:update')
+    @ApiOperation({ summary: 'Bulk update multiple tickets' })
+    async bulkUpdate(@Body() dto: BulkUpdateTicketDto, @Request() req: any) {
+        const result = await this.ticketsService.bulkUpdate(dto, req.user.sub);
+        this.notificationsGateway.emitBulkUpdate(dto.ticketIds);
+        return result;
     }
 
     // ─── TRANSITION ─────────────────────────────

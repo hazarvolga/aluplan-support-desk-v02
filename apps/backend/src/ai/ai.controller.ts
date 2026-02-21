@@ -8,6 +8,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
 import { OllamaService } from './ollama.service';
+import { AiCopilotService } from './ai-copilot.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 
@@ -37,6 +38,7 @@ export class AiController {
         private readonly aiQueryService: AiQueryService,
         private readonly embeddingService: EmbeddingService,
         private readonly ollamaService: OllamaService,
+        private readonly aiCopilotService: AiCopilotService,
     ) { }
 
     @Post('query')
@@ -108,5 +110,12 @@ export class AiController {
     @ApiOperation({ summary: 'Generate AI summary of a ticket thread' })
     summarize(@Param('id') ticketId: string) {
         return this.aiQueryService.summarizeTicket(ticketId);
+    }
+
+    @Get('copilot/draft/:ticketId')
+    @Roles('admin', 'agent', 'support_manager')
+    @ApiOperation({ summary: 'Generate AI response draft for a ticket' })
+    async getCopilotDraft(@Param('ticketId') ticketId: string) {
+        return this.aiCopilotService.generateDraft(ticketId);
     }
 }

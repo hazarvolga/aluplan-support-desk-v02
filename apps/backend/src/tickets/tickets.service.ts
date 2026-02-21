@@ -11,7 +11,8 @@ import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { AddMessageDto } from './dto/add-message.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
-import { TicketStatus, TicketPriority, Prisma } from '@aluplan/database';
+import { BulkUpdateTicketDto } from './dto/bulk-update-ticket.dto';
+import { TicketStatus, TicketPriority, Prisma, CommunicationChannel } from '@aluplan/database';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiQueryService } from '../ai/ai-query.service';
 
@@ -72,6 +73,7 @@ export class TicketsService {
                 hotinfoSnapshot: dto.hotinfoContext || undefined,
                 slaResponseDue: slaDeadlines.slaResponseDue,
                 slaResolveDue: slaDeadlines.slaResolveDue,
+                channel: dto.channel || 'WEB',
             },
             include: { creator: { select: { id: true, fullName: true, email: true } } },
         });
@@ -273,6 +275,25 @@ export class TicketsService {
     }
 
     // =============================================
+    // SLA STATS
+    // =============================================
+    async getSlaStats() {
+        const [total, breached, nearing] = await Promise.all([
+            this.prisma.ticket.count({ where: { status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] } } }),
+            this.prisma.ticket.count({ where: { isSlaBreached: true, status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] } } }),
+            this.prisma.ticket.count({
+                where: {
+                    isSlaBreached: false,
+                    status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] },
+                    slaResponseDue: { lt: new Date(Date.now() + 60 * 60 * 1000) }, // next hour
+                },
+            }),
+        ]);
+
+        return { total, breached, nearing };
+    }
+
+    // =============================================
     // ESCALATE
     // =============================================
     async escalate(id: string, dto: EscalateTicketDto, actorId: string) {
@@ -331,6 +352,7 @@ export class TicketsService {
                 senderId,
                 message: dto.message,
                 isInternal: dto.isInternal ?? false,
+                channel: dto.channel || 'WEB',
             },
             include: { sender: { select: { id: true, fullName: true, avatarUrl: true } } },
         });
@@ -350,6 +372,8 @@ export class TicketsService {
                 data: { slaRespondedAt: new Date() },
             });
         }
+
+        this.eventEmitter.emit('ticket.message_added', { ticket, message });
 
         return message;
     }
@@ -385,19 +409,41 @@ export class TicketsService {
     }
 
     // =============================================
-    // SLA STATS (for dashboard)
+    // BULK UPDATE
     // =============================================
-    async getSlaStats() {
-        const [total, breached, byPriority] = await Promise.all([
-            this.prisma.ticket.count({ where: { status: { notIn: [TicketStatus.CLOSED] } } }),
-            this.prisma.ticket.count({ where: { isSlaBreached: true } }),
-            this.prisma.ticket.groupBy({
-                by: ['priority'],
-                where: { status: { notIn: [TicketStatus.CLOSED] } },
-                _count: true,
-            }),
-        ]);
+    async bulkUpdate(dto: BulkUpdateTicketDto, actorId: string) {
+        const { ticketIds, status, priority, assignedTo } = dto;
 
-        return { total, breached, byPriority };
+        const updateData: Prisma.TicketUpdateInput = {};
+        if (status) updateData.status = status;
+        if (priority) updateData.priority = priority;
+        if (assignedTo) updateData.assignee = { connect: { id: assignedTo } };
+
+        // If priority changes, we must recalculate SLAs individually
+        if (priority) {
+            await this.prisma.$transaction(async (tx) => {
+                for (const id of ticketIds) {
+                    const deadlines = await this.slaService.calculateDeadlines(priority);
+                    await tx.ticket.update({
+                        where: { id },
+                        data: {
+                            ...updateData,
+                            slaResponseDue: deadlines.slaResponseDue,
+                            slaResolveDue: deadlines.slaResolveDue,
+                            isSlaBreached: false,
+                        },
+                    });
+                }
+            });
+            return { count: ticketIds.length };
+        }
+
+        const result = await this.prisma.ticket.updateMany({
+            where: { id: { in: ticketIds } },
+            data: updateData,
+        });
+
+        this.logger.log(`🎫 Bulk updated ${result.count} tickets (Agent: ${actorId})`);
+        return result;
     }
 }

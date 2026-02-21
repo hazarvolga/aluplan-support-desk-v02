@@ -108,12 +108,8 @@ Yalnızca kategori adını yaz. Başka bir şey yazma. Eğer uygun kategori yoks
         }
     }
 
-    /**
-     * Option C: Synthesize a raw ticket conversation into a formal KB article formatting, with PII masked.
-     */
     async summarizeTicket(subject: string, conversation: string): Promise<string | null> {
-        try {
-            const prompt = `Görevin: Aşağıdaki müşteri destek bileti (ticket) konuşmasını okuyup, diğer müşterilerin faydalanabileceği resmi ve anlaşılır bir "Nasıl Yapılır" (How-To) veya "Sık Sorulan Soru" (FAQ) makalesi haline getirmektir.
+        const prompt = `Görevin: Aşağıdaki müşteri destek bileti (ticket) konuşmasını okuyup, diğer müşterilerin faydalanabileceği resmi ve anlaşılır bir "Nasıl Yapılır" (How-To) veya "Sık Sorulan Soru" (FAQ) makalesi haline getirmektir.
         
 KURALLAR:
 1. Kişisel verileri (isim, e-posta, IP adresi, şifre) kesinlikle maskele ([GİZLENDİ] yaz).
@@ -124,8 +120,16 @@ Cevap: [Adım adım çözüm]
 
 KONUŞMA BAŞLIĞI: ${subject}
 KONUŞMA GEÇMİŞİ:
-${conversation.substring(0, 3000)}`; // limit content to prevent context blown
+${conversation.substring(0, 3000)}`;
 
+        return this.generateResponse(prompt, 60_000);
+    }
+
+    /**
+     * Generic generation method for various AI tasks.
+     */
+    async generateResponse(prompt: string, timeout = 30_000): Promise<string | null> {
+        try {
             const response = await fetch(`${this.baseUrl}/api/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -133,16 +137,16 @@ ${conversation.substring(0, 3000)}`; // limit content to prevent context blown
                     model: this.chatModel,
                     prompt,
                     stream: false,
-                    options: { temperature: 0.1 },
+                    options: { temperature: 0.2 },
                 }),
-                signal: AbortSignal.timeout(60_000),
+                signal: AbortSignal.timeout(timeout),
             });
 
             if (!response.ok) throw new Error(`Ollama chat HTTP ${response.status}`);
             const data = await response.json() as { response: string };
             return data.response.trim();
         } catch (err: any) {
-            this.logger.warn(`⚠️ Ollama ticket summarization failed: ${err.message}`);
+            this.logger.warn(`⚠️ Ollama generation failed: ${err.message}`);
             return null;
         }
     }

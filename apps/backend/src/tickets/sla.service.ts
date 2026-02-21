@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { TicketPriority } from '@aluplan/database';
 import { PrismaService } from '../prisma/prisma.service';
+import { TicketPriority } from '@aluplan/database';
+import { BusinessHoursService } from './business-hours.service';
 
 export interface SlaDeadlines {
     slaResponseDue: Date;
@@ -23,17 +24,21 @@ export class SlaService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly config: ConfigService,
+        private readonly businessHoursService: BusinessHoursService,
     ) { }
 
     /**
      * Calculate SLA deadlines from current time based on priority.
      * Reads from Settings table if configured, falls back to defaults.
+     * Uses BusinessHoursService to account for working hours.
      */
     async calculateDeadlines(priority: TicketPriority, from: Date = new Date()): Promise<SlaDeadlines> {
         const slaConfig = await this.getSlaConfig(priority);
 
-        const slaResponseDue = new Date(from.getTime() + slaConfig.response * 60 * 60 * 1000);
-        const slaResolveDue = new Date(from.getTime() + slaConfig.resolve * 60 * 60 * 1000);
+        const [slaResponseDue, slaResolveDue] = await Promise.all([
+            this.businessHoursService.calculateDeadline(from, slaConfig.response),
+            this.businessHoursService.calculateDeadline(from, slaConfig.resolve),
+        ]);
 
         return { slaResponseDue, slaResolveDue };
     }
@@ -48,14 +53,13 @@ export class SlaService {
         const ticket = await this.prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } });
         const now = new Date();
 
-        // If ticket already has a response, only recalculate resolve deadline
         const slaConfig = await this.getSlaConfig(newPriority);
 
         const slaResponseDue = ticket.slaRespondedAt
             ? ticket.slaResponseDue!  // Keep original if already responded
-            : new Date(now.getTime() + slaConfig.response * 60 * 60 * 1000);
+            : await this.businessHoursService.calculateDeadline(now, slaConfig.response);
 
-        const slaResolveDue = new Date(now.getTime() + slaConfig.resolve * 60 * 60 * 1000);
+        const slaResolveDue = await this.businessHoursService.calculateDeadline(now, slaConfig.resolve);
 
         return { slaResponseDue, slaResolveDue };
     }

@@ -138,4 +138,13 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             message,
         });
     }
+
+    emitBulkUpdate(ticketIds: string[]) {
+        // Notify all agents/managers that multiple tickets changed
+        this.server
+            .to('role:admin')
+            .to('role:support_manager')
+            .to('role:support_agent')
+            .emit('tickets:bulk_updated', { ticketIds });
+    }
 }
