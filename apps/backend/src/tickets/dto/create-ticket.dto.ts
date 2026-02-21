@@ -1,6 +1,6 @@
 import { IsString, IsEnum, IsOptional, IsUUID, MinLength, MaxLength, IsObject } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TicketPriority } from '@aluplan/database';
+import { TicketPriority, CommunicationChannel } from '@aluplan/database';
 
 export class CreateTicketDto {
     @ApiProperty({ example: 'Login sayfasında hata alıyorum' })
@@ -37,4 +37,9 @@ export class CreateTicketDto {
     @IsObject()
     @IsOptional()
     hotinfoContext?: any;
+
+    @ApiPropertyOptional({ enum: CommunicationChannel, default: CommunicationChannel.WEB })
+    @IsEnum(CommunicationChannel)
+    @IsOptional()
+    channel?: CommunicationChannel;
 }

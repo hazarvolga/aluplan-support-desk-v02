@@ -23,6 +23,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { KnowledgePoolModule } from './knowledge-pool/knowledge-pool.module';
 import configuration, { validate } from './config/configuration';
 import { ProductsModule } from './products/products.module';
+import { WhatsAppModule } from './whatsapp/whatsapp.module';
 
 @Module({
     imports: [
@@ -61,6 +62,7 @@ import { ProductsModule } from './products/products.module';
         OmniChannelModule,
         KnowledgePoolModule,
         ProductsModule,
+        WhatsAppModule,
     ],
     providers: [NotificationsGateway],
 })
