@@ -7,6 +7,7 @@ import {
     ExternalLink, FileIcon, Trash2, ArrowUpCircle,
     MousePointer2
 } from 'lucide-react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -35,8 +36,6 @@ export default function KnowledgePoolPage() {
     const [urlAddress, setUrlAddress] = useState('');
     const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
 
-    const [fileName, setFileName] = useState('');
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isFileModalOpen, setIsFileModalOpen] = useState(false);
 
     const loadSources = async () => {
@@ -68,19 +67,6 @@ export default function KnowledgePoolPage() {
         }
     };
 
-    const handleUploadFile = async () => {
-        if (!fileName || !selectedFile) return;
-        try {
-            await api.pool.upload(fileName, selectedFile);
-            toast({ title: 'Başarılı', description: 'Dosya yüklendi' });
-            setIsFileModalOpen(false);
-            setFileName('');
-            setSelectedFile(null);
-            loadSources();
-        } catch (err: any) {
-            toast({ title: 'Hata', description: err.message, variant: 'destructive' });
-        }
-    };
 
     const handleSync = async (id: string) => {
         try {
@@ -146,36 +132,11 @@ export default function KnowledgePoolPage() {
                         </DialogContent>
                     </Dialog>
 
-                    <Dialog open={isFileModalOpen} onOpenChange={setIsFileModalOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" className="h-8 border-border/60 text-[10px] uppercase font-bold tracking-widest gap-2 bg-muted/20">
-                                <FileText className="h-3 w-3" /> UPLOAD_DATASET
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-                            <DialogHeader>
-                                <DialogTitle>Bilgi Dosyası Yükle</DialogTitle>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="fname">Görünen Ad</Label>
-                                    <Input id="fname" value={fileName} onChange={(e) => setFileName(e.target.value)} placeholder="Örn: 2024 Katalog" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="file">Dosya (PDF, CSV, MD, TXT)</Label>
-                                    <Input
-                                        id="file"
-                                        type="file"
-                                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                                        className="cursor-pointer file:bg-brand-50 file:text-brand-700 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-4"
-                                    />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button onClick={handleUploadFile} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl w-full">Yükle ve İndeksle</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <Link href="/knowledge-pool/upload">
+                        <Button variant="outline" className="h-8 border-border/60 text-[10px] uppercase font-bold tracking-widest gap-2 bg-muted/20">
+                            <FileText className="h-3 w-3" /> UPLOAD_DATASET
+                        </Button>
+                    </Link>
                 </div>
             </div>
 
@@ -206,7 +167,7 @@ export default function KnowledgePoolPage() {
                                                     <div className="flex items-center gap-2">
                                                         <h3 className="font-bold text-[14px] leading-none uppercase tracking-tight">{source.name}</h3>
                                                         <Badge className={`h-4 px-1.5 text-[8px] font-mono rounded-none ${source.status === 'ACTIVE' ? 'border-emerald-900/50 text-emerald-400 bg-emerald-400/5' :
-                                                                source.status === 'SYNCING' ? 'border-amber-900/50 text-amber-400 bg-amber-400/5' : 'border-red-900/50 text-red-500 bg-red-500/5'
+                                                            source.status === 'SYNCING' ? 'border-amber-900/50 text-amber-400 bg-amber-400/5' : 'border-red-900/50 text-red-500 bg-red-500/5'
                                                             }`}>{source.status}</Badge>
                                                     </div>
                                                     <p className="text-[10px] text-muted-foreground font-mono truncate max-w-md mt-1.5 opacity-60">

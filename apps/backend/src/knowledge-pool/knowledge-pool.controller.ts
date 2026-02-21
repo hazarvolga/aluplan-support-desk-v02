@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Logger } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -42,15 +42,35 @@ export class KnowledgePoolController {
         @UploadedFile(
             new ParseFilePipe({
                 validators: [
-                    new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
-                    new FileTypeValidator({ fileType: /(pdf|plain|csv|markdown|octet-stream)$/ }),
+                    new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }), // Increased to 50MB
                 ],
             }),
         )
         file: Express.Multer.File,
         @Body('name') name: string,
     ) {
-        const type = this.determineTypeFromExt(extname(file.originalname));
+        const logger = new Logger('KnowledgePoolController');
+        logger.debug(`File Upload Request: name=${name}, originalname=${file.originalname}, mimetype=${file.mimetype}`);
+
+        const validMimes = [
+            'application/pdf',
+            'text/plain',
+            'text/csv',
+            'text/markdown',
+            'application/octet-stream'
+        ];
+
+        const isMimeValid = validMimes.some(mime => file.mimetype.toLowerCase().includes(mime));
+        const ext = extname(file.originalname).toLowerCase();
+        const validExts = ['.pdf', '.txt', '.csv', '.md'];
+        const isExtValid = validExts.includes(ext);
+
+        if (!isMimeValid && !isExtValid) {
+            logger.error(`Validation Failed: mimetype=${file.mimetype}, ext=${ext}`);
+            throw new Error(`VALIDATION_FAILED: ${file.mimetype.toUpperCase()} (${ext.toUpperCase()}) is not supported.`);
+        }
+
+        const type = this.determineTypeFromExt(ext);
         return this.knowledgePoolService.createFileSource(name, type, file);
     }
 
