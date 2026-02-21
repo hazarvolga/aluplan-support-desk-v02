@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bot, CheckCircle2, Database, Zap, BookOpen, ChevronRight } from 'lucide-react';
+import { Bot, CheckCircle2, Database, Zap, BookOpen, ChevronRight, MessageCircle, Clock, Layers, Sparkles } from 'lucide-react';
 
 export default function SystemGuidePage() {
     return (
@@ -45,6 +45,59 @@ export default function SystemGuidePage() {
                         Bilet açıldığında sistem "Bilgi Havuzu" (URL'ler, PDF'ler vb.) içerisindeki dokümanları analiz eder. Gelen sorun eğer standart bir SSS veya dokümantasyon üzerinden çözülebiliyorsa, biletin içerisine otomatik olarak <strong>bir yapay zeka yanıt taslağı veya çözüm önerisi</strong> bırakır.
                     </CardContent>
                 </Card>
+            </div>
+
+            <div className="mt-12 space-y-6 pt-8 border-t border-white/10">
+                <h2 className="text-2xl font-semibold flex items-center gap-2 mb-4">
+                    <Zap className="h-6 w-6 text-brand-400" />
+                    Gelişmiş Operasyonel Özellikler
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="bg-gradient-to-br from-emerald-900/40 to-transparent border-white/5">
+                        <CardHeader>
+                            <MessageCircle className="h-8 w-8 text-emerald-400 mb-2" />
+                            <CardTitle className="text-lg">WhatsApp Omni-channel Köprüsü</CardTitle>
+                            <CardDescription>Meta Business API üzerinden doğrudan iletişim</CardDescription>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground space-y-2">
+                            Müşterileriniz WhatsApp üzerinden yazdığında, sistem otomatik olarak telefon numarası üzerinden lead eşleşmesi yapar ve bilet oluşturur. Temsilci panel içinden cevap verdiğinde, bu yanıt otomatik olarak müşterinin WhatsApp hattına iletilir.
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-gradient-to-br from-amber-900/40 to-transparent border-white/5">
+                        <CardHeader>
+                            <Clock className="h-8 w-8 text-amber-400 mb-2" />
+                            <CardTitle className="text-lg">Gelişmiş SLA & Mesai Kontrolü</CardTitle>
+                            <CardDescription>Gerçek çalışma saatlerine dayalı zamanlama</CardDescription>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground space-y-2">
+                            SLA süreleri artık sadece mesai saatleri (09:00 - 18:00) içerisinde işlemektedir. Hafta sonları ve tanımlı resmi tatiller süre hesabına katılmaz, böylece destek ekibinizin gerçek performans analizi korunur.
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-gradient-to-br from-blue-900/40 to-transparent border-white/5">
+                        <CardHeader>
+                            <Layers className="h-8 w-8 text-blue-400 mb-2" />
+                            <CardTitle className="text-lg">Acente Verimliliği & Toplu İşlemler</CardTitle>
+                            <CardDescription>Yüzlerce bileti saniyeler içinde yönetin</CardDescription>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground space-y-2">
+                            Bilet listesinde çoklu seçim yaparak durum güncelleme (RESOLVED, CLOSED), öncelik değiştirme veya toplu atama yapabilirsiniz. Alt kısımda beliren "Yüzen Komut Çubuğu" ile operasyonel hızınızı artırın.
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-gradient-to-br from-purple-900/40 to-transparent border-white/5">
+                        <CardHeader>
+                            <Sparkles className="h-8 w-8 text-purple-400 mb-2" />
+                            <CardTitle className="text-lg">AI Co-pilot (Yanıt Taslakları)</CardTitle>
+                            <CardDescription>Bilgi havuzu sentezi ile saniyeler içinde yanıt</CardDescription>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground space-y-2">
+                            Karmaşık teknik sorularda, yapay zeka bilgi bankasındaki dökümanları ve bilet geçmişini tarayarak size profesyonel bir yanıt taslağı sunar. Taslağı tek tuşla mesaj alanına aktarıp üzerinde düzenleme yapabilirsiniz.
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
 
             <div className="mt-12 space-y-6 pt-8 border-t border-white/10">
@@ -103,6 +156,25 @@ export default function SystemGuidePage() {
                                 <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 mb-1">Bilgi Bankası</Badge>
                                 <p className="text-xs">Müşterilerinizin tarayıcılarında görebileceği, sizin tasarladığınız SSS veya Yardım Makaleleridir.</p>
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-slate-900/40 border-white/5">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-base text-brand-400 flex items-center gap-2">
+                                <ChevronRight className="h-4 w-4" />
+                                4. WhatsApp İletişim Süreci Nasıl İşliyor? Temsilci Numarası Gerekli mi?
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground space-y-3">
+                            <p>
+                                <strong>Hayır, temsilcilerin bireysel numara girmesine gerek yoktur.</strong> Sistem kurumsal bir WhatsApp Business hattı üzerinden (Meta API) çalışır:
+                            </p>
+                            <ul className="list-disc pl-5 space-y-1 text-xs">
+                                <li><strong>Merkezi Hat:</strong> Tüm mesajlar tek bir kurumsal hat üzerinden gönderilir ve alınır.</li>
+                                <li><strong>Otomatik Eşleşme:</strong> Gelen mesajın telefon numarası CRM'deki müşteri profili ile eşleşirse, bilet otomatik olarak o müşteri adına açılır.</li>
+                                <li><strong>Doğrudan Yanıt:</strong> Temsilci panelden cevap yazdığında, sistem bu yanıtı müşterinin WhatsApp'ına kurumsal kimliğinizle iletir.</li>
+                            </ul>
                         </CardContent>
                     </Card>
                 </div>

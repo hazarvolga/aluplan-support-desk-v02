@@ -42,7 +42,7 @@ export function Sidebar() {
     }, []);
 
     useEffect(() => {
-        if (user && !user.roles.includes('customer')) {
+        if (user && user.roles?.includes('customer') === false) {
             api.faq.list('PENDING_REVIEW').then(res => {
                 setPendingCount(Array.isArray(res) ? res.length : (res.data?.length || 0));
             }).catch(() => { });

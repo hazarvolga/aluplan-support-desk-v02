@@ -5,7 +5,8 @@ import { getSocket } from '@/lib/socket';
 import {
     Ticket, Clock, Shield, User as UserIcon, Send,
     Paperclip, Download, MoreVertical, CheckCircle2,
-    AlertTriangle, MessageSquare, Loader2, Bot, Star, X
+    AlertTriangle, MessageSquare, Loader2, Bot, Star, X,
+    MessageCircle, Mail, Globe, Cpu
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,20 @@ const PRIORITY_COLORS: Record<string, string> = {
     URGENT: 'text-red-600 font-black italic',
 };
 
+const CHANNEL_ICONS: Record<string, any> = {
+    WEB: Globe,
+    WHATSAPP: MessageCircle,
+    EMAIL: Mail,
+    API: Cpu,
+};
+
+const CHANNEL_COLORS: Record<string, string> = {
+    WEB: 'text-blue-400',
+    WHATSAPP: 'text-emerald-400',
+    EMAIL: 'text-amber-400',
+    API: 'text-purple-400',
+};
+
 export default function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const [ticket, setTicket] = useState<any>(null);
@@ -46,6 +61,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const [summary, setSummary] = useState<string | null>(null);
     const [summarizing, setSummarizing] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [drafting, setDrafting] = useState(false);
 
     // CSAT States
     const [csatScore, setCsatScore] = useState<number>(0);
@@ -176,6 +192,19 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         }
     };
 
+    const handleDraft = async () => {
+        setDrafting(true);
+        try {
+            const res = await api.ai.getCopilotDraft(id);
+            setReply(res.draft);
+            toast.success('Yapay zeka yanıt taslağı oluşturdu');
+        } catch (err: any) {
+            toast.error('Taslak oluşturulamadı: ' + err.message);
+        } finally {
+            setDrafting(false);
+        }
+    };
+
     const handleTransitionToReview = async () => {
         if (!ticket) return;
         try {
@@ -247,7 +276,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         <div className="flex items-start justify-between">
                             <div className="space-y-1">
                                 <div className="flex items-center gap-2">
-                                    <span className="font-mono text-[10px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 font-bold uppercase tracking-widest">INCIDENT_{ticket.ticketNumber}</span>
+                                    <div className="flex items-center gap-1.5 font-mono text-[10px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 font-bold uppercase tracking-widest">
+                                        {(() => {
+                                            const Icon = CHANNEL_ICONS[ticket.channel] || Globe;
+                                            return <Icon className={`h-3 w-3 ${CHANNEL_COLORS[ticket.channel] || ''}`} />;
+                                        })()}
+                                        INCIDENT_{ticket.ticketNumber}
+                                    </div>
                                     <Badge className={STATUS_COLORS[ticket.status]}>{ticket.status}</Badge>
                                 </div>
                                 <CardTitle className="text-[16px] normal-case text-foreground font-bold tracking-tight mt-1">
@@ -281,6 +316,18 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     >
                                         <Bot className={`h-3 w-3 ${summarizing ? 'animate-pulse' : ''}`} />
                                         {summarizing ? 'SUMMARIZING...' : 'AI_SUMMARY'}
+                                    </Button>
+                                )}
+                                {!isCustomer && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleDraft}
+                                        disabled={drafting}
+                                        className="h-7 border-purple-500/30 text-purple-400 bg-purple-400/5 hover:bg-purple-400/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
+                                    >
+                                        <Bot className={`h-3 w-3 ${drafting ? 'animate-pulse' : ''}`} />
+                                        {drafting ? 'DRAFTING...' : 'REPLY_CO_PILOT'}
                                     </Button>
                                 )}
                             </div>
@@ -496,6 +543,16 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             <div className="flex items-center gap-2">
                                 <div className="h-1.5 w-1.5 bg-primary animate-pulse" />
                                 <span className="text-[12px] font-bold uppercase tracking-tight text-foreground">{ticket.status}</span>
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">COMMUNICATION_CHANNEL</label>
+                            <div className="flex items-center gap-2">
+                                {(() => {
+                                    const Icon = CHANNEL_ICONS[ticket.channel] || Globe;
+                                    return <Icon className={`h-3 w-3 ${CHANNEL_COLORS[ticket.channel] || ''}`} />;
+                                })()}
+                                <span className="text-[12px] font-bold uppercase tracking-tight text-foreground">{ticket.channel || 'WEB'}</span>
                             </div>
                         </div>
                         <div className="space-y-1">

@@ -84,6 +84,8 @@ export const api = {
         addMessage: (id: string, body: any) =>
             request<any>(`/tickets/${id}/messages`, { method: 'POST', body: JSON.stringify(body) }),
         getSlaStats: () => request<any>('/tickets/sla/stats'),
+        bulkUpdate: (body: { ticketIds: string[]; status?: string; priority?: string; assignedTo?: string }) =>
+            request<any>('/tickets/bulk', { method: 'PATCH', body: JSON.stringify(body) }),
     },
     kb: {
         list: (params?: Record<string, string>) => {
@@ -122,6 +124,7 @@ export const api = {
                 method: 'POST', body: JSON.stringify({ rating, comment }),
             }),
         status: () => request<any>('/ai/status'),
+        getCopilotDraft: (ticketId: string) => request<{ draft: string; model: string }>(`/ai/copilot/draft/${ticketId}`),
     },
     faq: {
         published: () => request<any[]>('/faq/published'),
