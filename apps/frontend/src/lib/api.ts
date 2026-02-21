@@ -172,6 +172,10 @@ export const api = {
         delete: (id: string) => request<any>(`/macros/${id}`, { method: 'DELETE' }),
     },
     get: (url: string) => request<any>(url),
-    post: (url: string, body: any) => request<any>(url, { method: 'POST', body: JSON.stringify(body) }),
+    post: (url: string, body: any) =>
+        request<any>(url, {
+            method: 'POST',
+            body: body instanceof FormData ? body : JSON.stringify(body)
+        }),
     getBaseUrl: () => API,
 };

@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Monitor, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
@@ -23,6 +25,9 @@ export default function ProfilePage() {
     const [accountStatus, setAccountStatus] = useState('');
     const [crmVerified, setCrmVerified] = useState(false);
     const [roles, setRoles] = useState<string[]>([]);
+    const [hotinfoData, setHotinfoData] = useState<any>(null);
+    const [hotinfoUpdatedAt, setHotinfoUpdatedAt] = useState<string | null>(null);
+    const [uploadingHotinfo, setUploadingHotinfo] = useState(false);
 
     // Auth password fields
     const [password, setPassword] = useState('');
@@ -41,6 +46,11 @@ export default function ProfilePage() {
             setEmail(user.email || '');
             setRoles(user.roles || []);
             setAccountStatus(user.status || 'ACTIVE');
+
+            if (user.customerProfile) {
+                setHotinfoData(user.customerProfile.hotinfoData);
+                setHotinfoUpdatedAt(user.customerProfile.hotinfoUpdatedAt || null);
+            }
 
             // Get full details including customerProfile
             try {
@@ -97,6 +107,33 @@ export default function ProfilePage() {
             alert('Güncelleme başarısız: ' + (error.message || 'Bilinmeyen hata'));
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleHotinfoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.name.endsWith('.hxl')) {
+            toast.error('Lütfen geçerli bir .hxl dosyası yükleyin');
+            return;
+        }
+
+        setUploadingHotinfo(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await api.post('/customers/me/hotinfo', formData);
+
+            setHotinfoData(response.hotinfo);
+            setHotinfoUpdatedAt(new Date().toISOString());
+            toast.success('Sistem bilgileriniz başarıyla güncellendi');
+        } catch (error: any) {
+            toast.error('Dosya yüklenirken hata oluştu');
+            console.error(error);
+        } finally {
+            setUploadingHotinfo(false);
         }
     };
 
@@ -268,6 +305,98 @@ export default function ProfilePage() {
                             </Button>
                         </div>
                     </form>
+                </CardContent>
+            </Card>
+
+            <Card className="border-slate-800 bg-slate-900/50">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="flex items-center gap-2">
+                                <Monitor className="w-5 h-5 text-brand-500" />
+                                Sistem Bilgileri (Hotinfo)
+                            </CardTitle>
+                            <CardDescription>
+                                Allplan destek talepleriniz için gerekli sistem konfigürasyonu
+                            </CardDescription>
+                        </div>
+                        {hotinfoData && (
+                            <div className="flex flex-col items-end">
+                                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Son Güncelleme</div>
+                                <div className="text-xs text-slate-400">{hotinfoUpdatedAt ? new Date(hotinfoUpdatedAt).toLocaleDateString('tr-TR') : '-'}</div>
+                            </div>
+                        )}
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {hotinfoData ? (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                                    <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Allplan Versiyon</div>
+                                    <div className="text-sm font-semibold text-slate-200">{hotinfoData.allplanVersion}</div>
+                                </div>
+                                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                                    <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">İşletim Sistemi</div>
+                                    <div className="text-sm font-semibold text-slate-200">{hotinfoData.osVersion}</div>
+                                </div>
+                                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                                    <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">RAM</div>
+                                    <div className="text-sm font-semibold text-slate-200">{hotinfoData.ram}</div>
+                                </div>
+                                <div className="p-3 rounded-lg bg-white/5 border border-white/10 md:col-span-3">
+                                    <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Ekran Kartı / GPU</div>
+                                    <div className="text-sm font-semibold text-slate-200">{hotinfoData.gpu}</div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-emerald-400 text-xs">
+                                <CheckCircle2 className="w-4 h-4" />
+                                Sistem bilgileriniz güncel. Destek taleplerinizde bu bilgiler otomatik kullanılacaktır.
+                            </div>
+
+                            <div className="pt-2">
+                                <div className="relative">
+                                    <input
+                                        type="file"
+                                        accept=".hxl"
+                                        onChange={handleHotinfoUpload}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                        disabled={uploadingHotinfo}
+                                    />
+                                    <Button variant="outline" className="w-full border-slate-700 hover:bg-slate-800" disabled={uploadingHotinfo}>
+                                        {uploadingHotinfo ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Monitor className="w-4 h-4 mr-2" />}
+                                        Bilgileri Güncelle (.hxl Yükle)
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-8 px-4 rounded-xl bg-orange-500/5 border border-orange-500/20 space-y-4 text-center">
+                            <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+                                <AlertTriangle className="w-6 h-6 text-orange-500" />
+                            </div>
+                            <div className="space-y-1">
+                                <h3 className="font-semibold text-slate-200">Sistem Bilgisi Eksik</h3>
+                                <p className="text-xs text-slate-400 max-w-[280px]">
+                                    Destek ekibimizin size daha hızlı yardımcı olabilmesi için Allplan Hotinfo dosyanızı yüklemeniz önerilir.
+                                </p>
+                            </div>
+                            <div className="relative w-full max-w-[200px]">
+                                <input
+                                    type="file"
+                                    accept=".hxl"
+                                    onChange={handleHotinfoUpload}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                    disabled={uploadingHotinfo}
+                                />
+                                <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white" disabled={uploadingHotinfo}>
+                                    {uploadingHotinfo ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Monitor className="w-4 h-4 mr-2" />}
+                                    HXL Dosyası Yükle
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
