@@ -170,6 +170,7 @@ model CustomerProfile {
   middleName        String?  @map("middle_name") @db.VarChar(100)
   customerNo        String   @unique @map("customer_no") @db.VarChar(50) // CRM ID (e.g. C300 XX XX XX)
   companyName       String   @map("company_name") @db.VarChar(255)
+  industry          String?  @db.VarChar(255)
   jobTitle          String?  @map("job_title") @db.VarChar(255)
   phoneNumber       String?  @map("phone_number") @db.VarChar(50)
   contractStatus    String?  @map("contract_status") @db.VarChar(100)

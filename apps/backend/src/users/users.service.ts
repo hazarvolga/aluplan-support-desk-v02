@@ -76,10 +76,50 @@ export class UsersService {
             updateData.passwordHash = await bcrypt.hash(dto.password, 10);
         }
 
+        // Update User
         const user = await this.prisma.user.update({
             where: { id: userId },
             data: updateData,
+            include: { customerProfile: true }
         });
+
+        // Update or Create CustomerProfile
+        if (dto.companyName || dto.jobTitle || dto.phone) {
+            const firstName = user.fullName.split(' ')[0] || '';
+            const lastName = user.fullName.split(' ').slice(1).join(' ') || '';
+
+            if (user.customerProfile) {
+                await this.prisma.customerProfile.update({
+                    where: { id: user.customerProfile.id },
+                    data: {
+                        companyName: dto.companyName || user.customerProfile.companyName,
+                        industry: dto.industry || user.customerProfile.industry,
+                        jobTitle: dto.jobTitle || user.customerProfile.jobTitle,
+                        phoneNumber: dto.phone || user.customerProfile.phoneNumber,
+                        firstName: dto.fullName ? firstName : user.customerProfile.firstName,
+                        lastName: dto.fullName ? lastName : user.customerProfile.lastName,
+                    },
+                });
+            } else {
+                // Determine next customer number (fallback to a simple sequence or uuid if no pattern is established)
+                // We'll use a placeholder for now as per "can fill themselves"
+                const count = await this.prisma.customerProfile.count();
+                const customerNo = `CUST-${(count + 1).toString().padStart(5, '0')}`;
+
+                await this.prisma.customerProfile.create({
+                    data: {
+                        userId: user.id,
+                        firstName,
+                        lastName,
+                        companyName: dto.companyName || '-',
+                        industry: dto.industry || null,
+                        jobTitle: dto.jobTitle || '-',
+                        phoneNumber: dto.phone || null,
+                        customerNo,
+                    },
+                });
+            }
+        }
 
         const { passwordHash: _, ...result } = user;
         return result;

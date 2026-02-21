@@ -5,6 +5,7 @@
     "scripts": {
         "build": "turbo build",
         "dev": "turbo dev",
+        "start:full": "bash scripts/start.sh",
         "test": "turbo test",
         "lint": "turbo lint",
         "db:generate": "turbo db:generate",

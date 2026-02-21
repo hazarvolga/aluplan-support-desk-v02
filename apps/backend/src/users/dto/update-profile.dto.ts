@@ -13,7 +13,25 @@ export class UpdateProfileDto {
     @IsString()
     @MaxLength(50)
     phone?: string;
-    
+
+    @ApiPropertyOptional({ example: 'Acme Corp', description: 'Company name' })
+    @IsOptional()
+    @IsString()
+    @MaxLength(255)
+    companyName?: string;
+
+    @ApiPropertyOptional({ example: 'Software Engineer', description: 'Job title' })
+    @IsOptional()
+    @IsString()
+    @MaxLength(255)
+    jobTitle?: string;
+
+    @ApiPropertyOptional({ example: 'Technology', description: 'Industry' })
+    @IsOptional()
+    @IsString()
+    @MaxLength(255)
+    industry?: string;
+
     @ApiPropertyOptional({ example: 'password123', description: 'New password' })
     @IsOptional()
     @IsString()

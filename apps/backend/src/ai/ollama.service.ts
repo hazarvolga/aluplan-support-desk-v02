@@ -34,7 +34,7 @@ export class OllamaService {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ model: this.embedModel, prompt: text }),
-                signal: AbortSignal.timeout(10_000),
+                signal: AbortSignal.timeout(30_000),
             });
 
             if (!response.ok) throw new Error(`Ollama embed HTTP ${response.status}`);

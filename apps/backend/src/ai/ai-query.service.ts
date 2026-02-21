@@ -67,7 +67,7 @@ export class AiQueryService {
                 userQuery,
                 responseGenerated: answer,
                 confidenceBand: confidence === 'NO_MATCH' ? null : (confidence as 'HIGH' | 'MEDIUM' | 'LOW'),
-                matchedArticleId: topResult?.articleId,
+                matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
                 similarityScore: topResult ? topResult.similarity : undefined,
                 autoAnswered: answer !== null,
             },
@@ -76,7 +76,7 @@ export class AiQueryService {
         const suggestTicket = confidence === 'NO_MATCH' || confidence === 'LOW';
 
         this.logger.log(
-            `🤖 AI Query: "${userQuery.slice(0, 60)}" → ${confidence} (${topResult?.similarity?.toFixed(3) ?? 'n/a'})`,
+            `🤖 AI Query: "${userQuery.slice(0, 60)}" → ${confidence} (${topResult?.similarity?.toFixed(3) ?? 'n/a'}) [Src: ${topResult?.sourceType}]`,
         );
 
         return {
@@ -168,9 +168,14 @@ ${conversation}
 
             // 1. Semantic search past highly-rated tickets (RAG)
             const pastMatches = await this.embeddingService.searchTickets(text, 2);
+            const kbMatches = await this.embeddingService.search(text, 2);
             let contextStr = '';
+
             if (pastMatches.length > 0) {
-                contextStr = '\nBENZER GEÇMİŞ BİLETLER:\n' + pastMatches.map(m => `- ${m.subject}`).join('\n');
+                contextStr += '\nBENZER GEÇMİŞ BİLETLER:\n' + pastMatches.map(m => `- ${m.subject}`).join('\n');
+            }
+            if (kbMatches.length > 0) {
+                contextStr += '\nBİLGİ HAVUZU REFERANSLARI:\n' + kbMatches.map(m => `- ${m.title}`).join('\n');
             }
 
             // 2. Build Guardrails with Categories

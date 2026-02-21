@@ -15,6 +15,13 @@ export default function ProfilePage() {
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
+    const [companyName, setCompanyName] = useState('');
+    const [jobTitle, setJobTitle] = useState('');
+    const [industry, setIndustry] = useState('');
+    const [customerNo, setCustomerNo] = useState('');
+    const [contractStatus, setContractStatus] = useState('');
+    const [accountStatus, setAccountStatus] = useState('');
+    const [crmVerified, setCrmVerified] = useState(false);
     const [roles, setRoles] = useState<string[]>([]);
 
     // Auth password fields
@@ -29,22 +36,25 @@ export default function ProfilePage() {
         setLoading(true);
         try {
             // we use the auth me endpoint which returns core details
-            // we will need to augment this later if phone is needed, 
-            // but for now let's load what we can
             const user = await api.auth.me();
             setFullName(user.fullName || '');
             setEmail(user.email || '');
             setRoles(user.roles || []);
+            setAccountStatus(user.status || 'ACTIVE');
 
-            // To get phone, we might need a dedicated GET /users/profile 
-            // but assuming the backend returns it if we fetch /users/:id 
-            // In the interest of saving an extra call, we leave phone blank initially or fetch by id
+            // Get full details including customerProfile
             try {
                 const fullDetails = await api.users.get(user.id);
-                if (fullDetails?.customerProfile?.phoneNumber) {
-                    setPhone(fullDetails.customerProfile.phoneNumber);
+                if (fullDetails?.customerProfile) {
+                    const cp = fullDetails.customerProfile;
+                    setPhone(cp.phoneNumber || '');
+                    setCompanyName(cp.companyName || '');
+                    setJobTitle(cp.jobTitle || '');
+                    setIndustry(cp.industry || '');
+                    setCustomerNo(cp.customerNo || '');
+                    setContractStatus(cp.contractStatus || '-');
+                    setCrmVerified(cp.crmVerified || false);
                 } else if (fullDetails?.phone) {
-                    // Just in case user table has phone
                     setPhone(fullDetails.phone);
                 }
             } catch (e) { /* ignore secondary load failure */ }
@@ -66,9 +76,14 @@ export default function ProfilePage() {
 
         setSaving(true);
         try {
-            const body: any = { fullName };
+            const body: any = {
+                fullName,
+                phone,
+                companyName,
+                jobTitle,
+                industry
+            };
 
-            if (phone) body.phone = phone;
             if (password) body.password = password;
 
             await api.users.updateProfile(body);
@@ -76,6 +91,7 @@ export default function ProfilePage() {
             alert('Profil başarıyla güncellendi.');
             setPassword('');
             setConfirmPassword('');
+            loadProfile(); // Refresh to see any auto-generated customerNo
         } catch (error: any) {
             console.error(error);
             alert('Güncelleme başarısız: ' + (error.message || 'Bilinmeyen hata'));
@@ -101,7 +117,13 @@ export default function ProfilePage() {
                 </p>
             </div>
 
-            <Card>
+            <Card className="relative overflow-hidden">
+                {crmVerified && (
+                    <div className="absolute top-4 right-4 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        CRM DOĞRULANDI
+                    </div>
+                )}
                 <CardHeader>
                     <CardTitle>Kişisel Bilgiler</CardTitle>
                     <CardDescription>
@@ -110,35 +132,104 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSave} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email">E-posta (Değiştirilemez)</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={email}
-                                disabled
-                                className="bg-muted cursor-not-allowed"
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email">E-posta (Değiştirilemez)</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={email}
+                                    disabled
+                                    className="bg-muted cursor-not-allowed opacity-70"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="fullName">Ad Soyad</Label>
+                                <Input
+                                    id="fullName"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    required
+                                />
+                            </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="fullName">Ad Soyad</Label>
-                            <Input
-                                id="fullName"
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                required
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="phone">Telefon Numarası</Label>
+                                <Input
+                                    id="phone"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                    placeholder="+90 555 444 33 22"
+                                    disabled={crmVerified}
+                                    className={crmVerified ? 'bg-muted/50 cursor-not-allowed' : ''}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="customerNo">Müşteri No (Değiştirilemez)</Label>
+                                <Input
+                                    id="customerNo"
+                                    value={customerNo || 'CRM kaydı yok'}
+                                    disabled
+                                    className="bg-muted cursor-not-allowed font-mono text-xs opacity-70"
+                                />
+                            </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="phone">Telefon Numarası</Label>
-                            <Input
-                                id="phone"
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                placeholder="+90 555 444 33 22"
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="companyName">Şirket Adı</Label>
+                                <Input
+                                    id="companyName"
+                                    value={companyName}
+                                    onChange={(e) => setCompanyName(e.target.value)}
+                                    placeholder="Şirketinizin adı"
+                                    disabled={crmVerified}
+                                    className={crmVerified ? 'bg-muted/50 cursor-not-allowed' : ''}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="industry">Sektör</Label>
+                                <Input
+                                    id="industry"
+                                    value={industry}
+                                    onChange={(e) => setIndustry(e.target.value)}
+                                    placeholder="Faaliyet gösterdiğiniz sektör"
+                                    disabled={crmVerified}
+                                    className={crmVerified ? 'bg-muted/50 cursor-not-allowed' : ''}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="jobTitle">Ünvan</Label>
+                                <Input
+                                    id="jobTitle"
+                                    value={jobTitle}
+                                    onChange={(e) => setJobTitle(e.target.value)}
+                                    placeholder="Ünvanınız (örn: Satın Alma Müdürü)"
+                                    disabled={crmVerified}
+                                    className={crmVerified ? 'bg-muted/50 cursor-not-allowed' : ''}
+                                />
+                            </div>
+                            <div className="space-y-2 flex flex-col justify-end">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase text-muted-foreground">Abonelik</Label>
+                                        <div className="text-xs font-semibold bg-sky-500/10 text-sky-600 py-1 px-2 rounded border border-sky-500/20 text-center">
+                                            {contractStatus}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase text-muted-foreground">Durum</Label>
+                                        <div className="text-xs font-semibold bg-amber-500/10 text-amber-600 py-1 px-2 rounded border border-amber-500/20 text-center">
+                                            {accountStatus}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="pt-4 border-t mt-6">

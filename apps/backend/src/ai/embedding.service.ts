@@ -4,6 +4,7 @@ import { OllamaService } from './ollama.service';
 
 export interface SearchResult {
     articleId: string;
+    sourceType: 'ARTICLE' | 'POOL';
     title: string;
     content: string;
     similarity: number;
@@ -64,27 +65,46 @@ export class EmbeddingService {
         const rows = await this.prisma.$queryRaw<
             Array<{
                 article_id: string;
+                source_type: 'ARTICLE' | 'POOL';
                 title: string;
                 content: string;
                 similarity: number;
             }>
         >`
-      SELECT
-        ka.id AS article_id,
-        ka.title,
-        kav.content,
-        1 - (ke.embedding <=> ${vectorStr}::vector) AS similarity
-      FROM knowledge_embeddings ke
-      JOIN knowledge_articles ka ON ka.id = ke.article_id
-      JOIN knowledge_article_versions kav ON kav.id = ke.article_version_id
-      WHERE ka.status = 'PUBLISHED'
-        AND 1 - (ke.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
+      WITH combined_search AS (
+        SELECT
+          ka.id AS article_id,
+          'ARTICLE' AS source_type,
+          ka.title,
+          kav.content,
+          1 - (ke.embedding <=> ${vectorStr}::vector) AS similarity
+        FROM knowledge_embeddings ke
+        JOIN knowledge_articles ka ON ka.id = ke.article_id
+        JOIN knowledge_article_versions kav ON kav.id = ke.article_version_id
+        WHERE ka.status = 'PUBLISHED'
+          AND 1 - (ke.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
+        
+        UNION ALL
+        
+        SELECT
+          kpe.source_id AS article_id,
+          'POOL' AS source_type,
+          ks.name AS title,
+          kpe.content,
+          1 - (kpe.embedding <=> ${vectorStr}::vector) AS similarity
+        FROM knowledge_pool_embeddings kpe
+        JOIN knowledge_sources ks ON kpe.source_id = ks.id
+        WHERE ks.status = 'ACTIVE'
+          AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
+      )
+      SELECT * FROM combined_search
       ORDER BY similarity DESC
       LIMIT ${limit}
     `;
 
         return rows.map((row) => ({
             articleId: row.article_id,
+            sourceType: row.source_type,
             title: row.title,
             content: row.content,
             similarity: Number(row.similarity),

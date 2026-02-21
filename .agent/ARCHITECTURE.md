@@ -287,3 +287,23 @@ For details, see [scripts/README.md](scripts/README.md)
 | Testing | `test-engineer` | testing-patterns, webapp-testing |
 | Debug | `debugger` | systematic-debugging |
 | Plan | `project-planner` | brainstorming, plan-writing |
+ 
+ ---
+ 
+ ## 🧠 Project Specific Features (v02 Extension)
+ 
+ ### Hybrid AI Ticket Tagging & RAG
+ The support platform utilizes a Hybrid Retrieval-Augmented Generation model for ticket classification.
+ 
+ #### Core Components:
+ - **Vector Engine:** `pgvector` extension in PostgreSQL (via Prisma).
+ - **LLM Backend:** Ollama running `llama3.2:3b` (Chat) and `mxbai-embed-large` (Embeddings).
+ - **Retrieval Logic:** `EmbeddingService.searchTickets` performs similarity searches against high-rated historical tickets (`satisfactionScore >= 4`).
+ - **Categorization Strategy:** Combines static Admin-defined categories (`ProductCategory`) with dynamic RAG context to suggest tags.
+ 
+ #### Key Service Paths:
+ - Backend Logic: `apps/backend/src/ai/` and `tickets/tickets.service.ts`
+ - CRUD Management: `apps/backend/src/products/`
+ - UI Management: `apps/frontend/src/app/(dashboard)/products/page.tsx`
+ - Client Interaction: `apps/frontend/src/app/(dashboard)/tickets/new/page.tsx`
+
