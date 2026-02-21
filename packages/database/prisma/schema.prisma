@@ -73,6 +73,13 @@ enum MailProvider {
   SENDGRID
 }
 
+enum CommunicationChannel {
+  EMAIL
+  WEB
+  WHATSAPP
+  API
+}
+
 // =============================================
 // USERS & RBAC
 // =============================================
@@ -395,6 +402,7 @@ model Ticket {
   productId       String?        @map("product_id") @db.Uuid
   suggestedCategories String[]   @default([]) @map("suggested_categories")
   hotinfoSnapshot  Json?          @map("hotinfo_snapshot")
+  channel          CommunicationChannel @default(WEB)
 
   // SLA Fields
   slaResponseDue  DateTime?  @map("sla_response_due")
@@ -439,6 +447,7 @@ model TicketMessage {
   senderId   String?  @map("sender_id") @db.Uuid
   message    String   @db.Text
   isInternal Boolean  @default(false) @map("is_internal")  // Internal note = not visible to customer
+  channel    CommunicationChannel @default(WEB)
   createdAt  DateTime @default(now()) @map("created_at")
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
@@ -674,4 +683,33 @@ model TicketEmbedding {
 
   @@index([ticketId], map: "idx_ticket_embeddings_ticket")
   @@map("ticket_embeddings")
+}
+
+// =============================================
+// SLA CONFIGURATION (Business Hours & Holidays)
+// =============================================
+
+model BusinessHours {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dayOfWeek    Int      // 0 (Sunday) to 6 (Saturday)
+  startTime    String   @db.VarChar(5) // "09:00"
+  endTime      String   @db.VarChar(5) // "18:00"
+  isWorkingDay Boolean  @default(true) @map("is_working_day")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([dayOfWeek])
+  @@map("business_hours")
+}
+
+model Holiday {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  date        DateTime @db.Date
+  name        String   @db.VarChar(255)
+  isRecurring Boolean  @default(false) @map("is_recurring") // If true, only month/day matter
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([date])
+  @@map("holidays")
 }
