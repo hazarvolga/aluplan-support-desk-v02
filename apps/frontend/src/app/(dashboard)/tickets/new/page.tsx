@@ -12,14 +12,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Paperclip, X, Loader2, ArrowLeft, Box, CheckCircle2, AlertTriangle, Monitor, Sparkles } from 'lucide-react';
+import { Paperclip, X, Loader2, ArrowLeft, CheckCircle2, AlertTriangle, Monitor, Sparkles, Box } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 const ticketSchema = z.object({
     subject: z.string().min(5, 'Konu en az 5 karakter olmalıdır'),
     description: z.string().min(10, 'Açıklama en az 10 karakter olmalıdır'),
-    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
 });
 
 type TicketFormValues = z.infer<typeof ticketSchema>;
@@ -31,10 +31,9 @@ export default function NewTicketPage() {
     const [loadingProducts, setLoadingProducts] = useState(true);
     const [files, setFiles] = useState<File[]>([]);
     const [products, setProducts] = useState<any[]>([]);
-    const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+    const [selectedProductId, setSelectedProductId] = useState<string>('');
     const [hotinfoData, setHotinfoData] = useState<any | null>(null);
     const [isHotinfoConfirmed, setIsHotinfoConfirmed] = useState(false);
-    const [checkingProfile, setCheckingProfile] = useState(false);
 
     // AI RAG States
     const [isDiagnosing, setIsDiagnosing] = useState(false);
@@ -46,7 +45,7 @@ export default function NewTicketPage() {
         defaultValues: {
             subject: '',
             description: '',
-            priority: 'MEDIUM',
+            priority: undefined,
         },
     });
 
@@ -63,21 +62,26 @@ export default function NewTicketPage() {
             });
     }, []);
 
-    const handleProductSelect = (id: string, isAllplan: boolean) => {
-        setSelectedProductId(id);
+    const handleProductChange = async (value: string) => {
+        setSelectedProductId(value);
+        setHotinfoData(null);
+        setIsHotinfoConfirmed(false);
+
+        const product = products.find(p => p.id === value);
+        const isAllplan = product?.name?.toUpperCase().includes('ALLPLAN');
+
         if (isAllplan) {
-            checkUserProfile();
-        } else {
-            setCurrentStep(2);
+            try {
+                const user = await api.auth.me();
+                if (user?.customerProfile?.hotinfoData) {
+                    setHotinfoData(user.customerProfile.hotinfoData);
+                    setIsHotinfoConfirmed(false); // User must explicitly confirm
+                    toast.info('Profilinizdeki sistem bilgileri yüklendi. Lütfen güncel olduğunu onaylayın.');
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile", error);
+            }
         }
-    };
-
-    const nextStep = () => {
-        setCurrentStep(prev => prev + 1);
-    };
-
-    const prevStep = () => {
-        setCurrentStep(prev => prev - 1);
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,30 +119,12 @@ export default function NewTicketPage() {
         }
     };
 
-    const checkUserProfile = async () => {
-        setCheckingProfile(true);
-        try {
-            const user = await api.auth.me();
-            if (user?.customerProfile?.hotinfoData) {
-                setHotinfoData(user.customerProfile.hotinfoData);
-                setIsHotinfoConfirmed(true);
-                toast.success('Sistem profiliniz otomatik olarak yüklendi');
-            }
-            setCurrentStep(2);
-        } catch (error) {
-            console.error("Failed to fetch profile", error);
-            setCurrentStep(2);
-        } finally {
-            setCheckingProfile(false);
-        }
-    };
-
     const runDiagnosis = async () => {
         const { subject, description } = form.getValues();
         if (!description) return;
 
         setIsDiagnosing(true);
-        setCurrentStep(3);
+        setCurrentStep(2);
         try {
             const response = await api.post('/ai/search', {
                 query: `${subject} ${description}`,
@@ -157,21 +143,18 @@ export default function NewTicketPage() {
     const onSubmit = async (values: TicketFormValues) => {
         setLoading(true);
         try {
-            // 1. Create Ticket
             const ticket = await api.tickets.create({
                 ...values,
-                productId: selectedProductId === 'general' ? null : selectedProductId,
+                productId: selectedProductId === 'general' || selectedProductId === '' ? null : selectedProductId,
                 hotinfoContext: isHotinfoConfirmed ? hotinfoData : null,
-                interactionId: interactionId // Link the diagnostic attempt
+                interactionId: interactionId
             });
 
-            // 2. Add initial message (description)
             const message = await api.tickets.addMessage(ticket.id, {
                 message: values.description,
                 isInternal: false
             });
 
-            // 3. Upload Files
             if (files.length > 0) {
                 for (const file of files) {
                     await api.attachments.upload(message.id, file);
@@ -196,92 +179,49 @@ export default function NewTicketPage() {
     }
 
     const selectedProductDetails = products.find(p => p.id === selectedProductId);
-    const isAllplanSelected = selectedProductDetails?.name.toUpperCase().includes('ALLPLAN');
+    const isAllplanSelected = selectedProductDetails?.name?.toUpperCase().includes('ALLPLAN');
 
-    // WIZARD STEPS RENDERING
+    // ── STEP 1: Ticket Form (Subject, Product, Priority, Hotinfo) ──
     const renderStep1 = () => (
-        <div className="max-w-4xl mx-auto space-y-8 py-8 animate-in fade-in slide-in-from-bottom-4">
+        <div className="max-w-3xl mx-auto space-y-6 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="space-y-3 text-center">
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent">Size Nasıl Yardımcı Olabiliriz?</h1>
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent">Yeni Destek Talebi</h1>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                    Sorun yaşadığınız ürünü seçerek başlayın. Akıllı asistanımız size adım adım rehberlik edecek.
+                    Sorununuzu tanımlayın, akıllı asistanımız size adım adım rehberlik edecek.
                 </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
-                {products.map(product => (
-                    <Card
-                        key={product.id}
-                        className={`group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${selectedProductId === product.id ? 'border-brand-500 bg-brand-500/5' : 'bg-card/40 border-white/5'} backdrop-blur-sm overflow-hidden relative`}
-                        onClick={() => handleProductSelect(product.id, product.name.toUpperCase().includes('ALLPLAN'))}
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <CardHeader>
-                            <div className={`h-12 w-12 rounded-lg ${selectedProductId === product.id ? 'bg-brand-500/20 text-brand-400' : 'bg-brand-500/10 text-brand-500/50'} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                                <Box className="h-6 w-6" />
-                            </div>
-                            <CardTitle className="text-xl">{product.name}</CardTitle>
-                            {product.description && <CardDescription className="line-clamp-2 mt-2">{product.description}</CardDescription>}
-                        </CardHeader>
-                    </Card>
-                ))}
-                <Card
-                    className={`group cursor-pointer transition-all duration-300 hover:scale-[1.02] ${selectedProductId === 'general' ? 'border-slate-500 bg-slate-500/5' : 'bg-card/40 border-white/5 border-dashed'}`}
-                    onClick={() => handleProductSelect('general', false)}
-                >
-                    <CardHeader>
-                        <div className="h-12 w-12 rounded-lg bg-slate-500/20 text-slate-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <Box className="h-6 w-6" />
-                        </div>
-                        <CardTitle className="text-xl">Diğer / Genel Soru</CardTitle>
-                        <CardDescription className="mt-2">Belirli bir ürünle ilgili olmayan genel konular.</CardDescription>
-                    </CardHeader>
-                </Card>
-            </div>
-
-            {checkingProfile && (
-                <div className="flex flex-col items-center justify-center space-y-4 py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
-                    <p className="text-muted-foreground text-sm">Sistem bilgileriniz kontrol ediliyor...</p>
-                </div>
-            )}
-        </div>
-    );
-
-    const renderStep2 = () => (
-        <div className="max-w-3xl mx-auto space-y-6 py-8 animate-in fade-in slide-in-from-right-8 duration-500">
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => setCurrentStep(1)} className="rounded-full hover:bg-white/10">
-                    <ArrowLeft className="h-5 w-5" />
-                </Button>
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-bold tracking-tight">Sorunu Tanımlayın</h1>
-                    <p className="text-brand-400 font-medium">{selectedProductDetails?.name || 'Genel Kategori'}</p>
-                </div>
             </div>
 
             <Card className="bg-card/60 backdrop-blur-xl border-white/5 shadow-2xl">
                 <CardHeader>
                     <CardTitle>Temel Bilgiler</CardTitle>
-                    <CardDescription>Bize sorununuz hakkında kısa bir özet verin.</CardDescription>
+                    <CardDescription>Talebiniz hakkında bilgi verin. Ürün seçerek daha hedefli destek alabilirsiniz.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <Form {...form}>
                         <div className="space-y-6">
-                            <FormField
-                                control={form.control}
-                                name="subject"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Konu / Özet</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Örn: Kurulum sırasında lisans hatası alıyorum" {...field} className="bg-slate-950/50 border-white/10" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            {/* Product Selection Dropdown */}
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium flex items-center gap-2">
+                                    <Box className="h-4 w-4 text-brand-400" />
+                                    İlgili Ürün
+                                </Label>
+                                <Select value={selectedProductId} onValueChange={handleProductChange}>
+                                    <SelectTrigger className="bg-slate-950/50 border-white/10">
+                                        <SelectValue placeholder="Ürün seçin (opsiyonel)" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="general">Genel Soru / Diğer</SelectItem>
+                                        {products.map(product => (
+                                            <SelectItem key={product.id} value={product.id}>
+                                                {product.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-[11px] text-muted-foreground/60">Belirli bir ürünle ilgili değilse &quot;Genel Soru / Diğer&quot; seçili kalabilir.</p>
+                            </div>
 
+                            {/* Allplan Hotinfo Section */}
                             {isAllplanSelected && (
                                 <div className="space-y-4 pt-2">
                                     <div className="flex items-center gap-2 mb-2">
@@ -298,59 +238,218 @@ export default function NewTicketPage() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                                                <span className="text-sm font-medium">Sistem Verileri Hazır ({hotinfoData.allplanVersion})</span>
-                                            </div>
-                                            <Button variant="ghost" size="sm" onClick={() => setHotinfoData(null)}>Değiştir</Button>
-                                        </div>
+                                        <>
+                                            {!isHotinfoConfirmed ? (
+                                                <div className="rounded-xl border border-white/10 bg-slate-900/60 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+                                                    {/* Header */}
+                                                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+                                                        <div className="flex items-center gap-2">
+                                                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                                            <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                                                Sistem Bilgilerini Onaylayın
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* System Info Grid */}
+                                                    {(() => {
+                                                        const sr = (val: any) => {
+                                                            if (!val) return null;
+                                                            if (typeof val === 'object') {
+                                                                return val['@_version'] || val['@_name'] || val['#text'] || JSON.stringify(val);
+                                                            }
+                                                            return String(val);
+                                                        };
+                                                        return (
+                                                            <div className="grid grid-cols-2 gap-px bg-white/5 m-px">
+                                                                <div className="p-3 bg-slate-900/80">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Allplan Edition & Hotfix</div>
+                                                                    <div className="text-sm font-semibold text-white">
+                                                                        {hotinfoData.allplanVersion || '-'}
+                                                                        {hotinfoData.allplanEdition && <span className="text-xs text-muted-foreground ml-1">({hotinfoData.allplanEdition})</span>}
+                                                                    </div>
+                                                                    {hotinfoData.allplanHotfix && <div className="text-[10px] text-brand-400 mt-0.5">Hotfix: {hotinfoData.allplanHotfix}</div>}
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">İşletim Sistemi</div>
+                                                                    <div className="text-sm font-semibold text-white">{hotinfoData.osVersion || '-'}</div>
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">GPU Driver Sürümü</div>
+                                                                    <div className="text-sm font-semibold text-white">{sr(hotinfoData.gpuDriverVersion) || '-'}</div>
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">İşlemci (CPU)</div>
+                                                                    <div className="text-sm font-semibold text-white truncate">{hotinfoData.cpu || '-'}</div>
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">OpenGL Sürümü</div>
+                                                                    <div className="text-sm font-semibold text-white">{sr(hotinfoData.openglVersion) || '-'}</div>
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Ekran Kartı (GPU)</div>
+                                                                    <div className="text-sm font-semibold text-white truncate">{sr(hotinfoData.gpu) || '-'}</div>
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">VRAM</div>
+                                                                    <div className="text-sm font-semibold text-white">{sr(hotinfoData.vram) || '-'}</div>
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">RAM</div>
+                                                                    <div className="text-sm font-semibold text-white">{hotinfoData.ram || '-'}</div>
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Ekran Çözünürlüğü</div>
+                                                                    <div className="text-sm font-semibold text-white">{sr(hotinfoData.screenResolution) || '-'}</div>
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Disk Bilgisi</div>
+                                                                    <div className="text-sm font-semibold text-white truncate">{sr(hotinfoData.diskInfo) || '-'}</div>
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Lisans Tipi</div>
+                                                                    <div className="text-sm font-semibold text-white">{sr(hotinfoData.licenseType) || '-'}</div>
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">.NET Framework</div>
+                                                                    <div className="text-sm font-semibold text-white">{sr(hotinfoData.dotnetVersion) || '-'}</div>
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80 col-span-2">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Ağ Bilgisi</div>
+                                                                    <div className="text-sm font-semibold text-white truncate">{sr(hotinfoData.networkInfo) || '-'}</div>
+                                                                </div>
+                                                                <div className="p-3 bg-slate-900/80 col-span-2">
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Yüklü Modüller (max 10)</div>
+                                                                    <div className="flex flex-wrap gap-1.5 mt-1">
+                                                                        {hotinfoData.installedModules?.length > 0 ? hotinfoData.installedModules.slice(0, 10).map((mod: string, i: number) => (
+                                                                            <span key={i} className="text-[10px] bg-white/5 border border-white/10 px-2 py-0.5 rounded text-slate-300">{sr(mod)}</span>
+                                                                        )) : <span className="text-sm font-semibold text-white">-</span>}
+                                                                        {hotinfoData.installedModules?.length > 10 && <span className="text-[10px] text-muted-foreground">... +{hotinfoData.installedModules.length - 10} daha</span>}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+
+                                                    {/* Confirmation Actions */}
+                                                    <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between gap-3 bg-slate-900/80">
+                                                        <p className="text-[11px] text-amber-400/80">Bu bilgiler güncel mi? Onaylayın veya yeni dosya yükleyin.</p>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <div className="relative">
+                                                                <input type="file" accept=".hxl" onChange={handleHotinfoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                                                                <Button type="button" variant="outline" size="sm" className="border-white/10 text-xs text-white bg-slate-800 hover:bg-slate-700">
+                                                                    Yenisini Yükle
+                                                                </Button>
+                                                            </div>
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                className="bg-emerald-600 hover:bg-emerald-500 text-xs text-white"
+                                                                onClick={() => { setIsHotinfoConfirmed(true); toast.success('Sistem bilgileri onaylandı'); }}
+                                                            >
+                                                                <CheckCircle2 className="h-3 w-3 mr-1" /> Onayla
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-4 flex items-center justify-between animate-in zoom-in-95 duration-300">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                                                            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                                                        </div>
+                                                        <div className="space-y-0.5">
+                                                            <p className="text-sm font-semibold text-emerald-400">Sistem Bilgileri (Hotinfo) Eklendi</p>
+                                                            <p className="text-[11px] text-emerald-500/70">Bu bilgiler teknik ekibe otomatik olarak iletilecek.</p>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-xs text-muted-foreground hover:text-white"
+                                                        onClick={() => { setIsHotinfoConfirmed(false); }}
+                                                    >
+                                                        Görüntüle / Değiştir
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             )}
 
-                            <FormField
-                                control={form.control}
-                                name="priority"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Öncelik</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger className="bg-slate-950/50 border-white/10">
-                                                    <SelectValue placeholder="Öncelik seçin" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="LOW">Düşük</SelectItem>
-                                                <SelectItem value="MEDIUM">Orta</SelectItem>
-                                                <SelectItem value="HIGH">Yüksek</SelectItem>
-                                                <SelectItem value="URGENT">Acil</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </FormItem>
-                                )}
-                            />
+                            {selectedProductId !== '' && (!isAllplanSelected || isHotinfoConfirmed) && (
+                                <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                                    {/* Priority */}
+                                    <FormField
+                                        control={form.control}
+                                        name="priority"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Öncelik</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="bg-slate-950/50 border-white/10">
+                                                            <SelectValue placeholder="Öncelik seçin" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="LOW">Düşük</SelectItem>
+                                                        <SelectItem value="MEDIUM">Orta</SelectItem>
+                                                        <SelectItem value="HIGH">Yüksek</SelectItem>
+                                                        <SelectItem value="URGENT">Acil</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            )}
+
+                            {form.watch('priority') && (
+                                <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500 pt-6">
+                                    {/* Subject */}
+                                    <FormField
+                                        control={form.control}
+                                        name="subject"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Konu / Özet</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Örn: Kurulum sırasında lisans hatası alıyorum" {...field} className="bg-slate-950/50 border-white/10" />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </Form>
                 </CardContent>
-                <CardFooter className="justify-end border-t border-white/5 pt-6 mt-6">
-                    <Button
-                        disabled={!form.getValues('subject') || (isAllplanSelected && !isHotinfoConfirmed)}
-                        onClick={() => setCurrentStep(3)}
-                        className="bg-brand-600"
-                    >
-                        Sonraki Adım <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
-                    </Button>
-                </CardFooter>
+
+                {form.watch('priority') && (
+                    <CardFooter className="justify-end border-t border-white/5 pt-6 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <Button
+                            disabled={!form.getValues('subject') || form.getValues('subject').length < 5}
+                            onClick={() => setCurrentStep(2)}
+                            className="bg-brand-600 hover:bg-brand-500"
+                        >
+                            Sonraki Adım <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
+                        </Button>
+                    </CardFooter>
+                )}
             </Card>
         </div>
     );
 
-    const renderStep3 = () => (
+    // ── STEP 2: AI Diagnosis ──
+    const renderStep2 = () => (
         <div className="max-w-3xl mx-auto space-y-6 py-8 animate-in fade-in slide-in-from-right-8 duration-500">
             <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => setCurrentStep(2)} className="rounded-full hover:bg-white/10">
+                <Button variant="ghost" size="icon" onClick={() => setCurrentStep(1)} className="rounded-full hover:bg-white/10">
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div className="space-y-1">
@@ -400,13 +499,13 @@ export default function NewTicketPage() {
                             ))}
                         </div>
                         <div className="p-4 rounded-xl bg-slate-900 border border-white/5 text-center space-y-3">
-                            <p className="text-sm text-muted-foreground italic">"Bu çözümlerden biri sorununuzu giderdi mi?"</p>
+                            <p className="text-sm text-muted-foreground italic">&quot;Bu çözümlerden biri sorununuzu giderdi mi?&quot;</p>
                             <div className="flex gap-2 justify-center">
                                 <Button size="sm" variant="outline" className="text-emerald-400 border-emerald-500/20" onClick={() => {
                                     toast.success('Çözüm bulmanıza sevindik! 🎉');
                                     router.push('/dashboard');
                                 }}>Evet, Çözüldü</Button>
-                                <Button size="sm" variant="outline" onClick={() => setCurrentStep(4)}>Hayır, Devam Et</Button>
+                                <Button size="sm" variant="outline" onClick={() => setCurrentStep(3)}>Hayır, Devam Et</Button>
                             </div>
                         </div>
                     </div>
@@ -415,10 +514,11 @@ export default function NewTicketPage() {
         </div>
     );
 
-    const renderStep4 = () => (
+    // ── STEP 3: Attachments & Submit ──
+    const renderStep3 = () => (
         <div className="max-w-3xl mx-auto space-y-6 py-8 animate-in fade-in slide-in-from-right-8 duration-500">
             <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => setCurrentStep(3)} className="rounded-full hover:bg-white/10">
+                <Button variant="ghost" size="icon" onClick={() => setCurrentStep(2)} className="rounded-full hover:bg-white/10">
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <h1 className="text-3xl font-bold tracking-tight">Son Kontrol & Ekler</h1>
@@ -474,7 +574,6 @@ export default function NewTicketPage() {
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
             {currentStep === 3 && renderStep3()}
-            {currentStep === 4 && renderStep4()}
         </div>
     );
 }

@@ -177,7 +177,19 @@ ${conversation}
             }
 
             if (hotinfoContext) {
-                contextStr += `\nMÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO):\n- Allplan: ${hotinfoContext.allplanVersion}\n- OS: ${hotinfoContext.osVersion}\n- CPU: ${hotinfoContext.cpu}\n- GPU: ${hotinfoContext.gpu}\n- RAM: ${hotinfoContext.ram}\n`;
+                const h = hotinfoContext;
+                contextStr += `\nMÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO):`;
+                contextStr += `\n- Allplan: ${h.allplanVersion}${h.allplanEdition ? ` (${h.allplanEdition})` : ''}${h.allplanHotfix ? ` Hotfix: ${h.allplanHotfix}` : ''}`;
+                contextStr += `\n- OS: ${h.osVersion}`;
+                contextStr += `\n- CPU: ${h.cpu}`;
+                contextStr += `\n- GPU: ${h.gpu}${h.gpuDriverVersion ? ` (Driver: ${h.gpuDriverVersion})` : ''}${h.openglVersion ? ` OpenGL: ${h.openglVersion}` : ''}`;
+                contextStr += `\n- RAM: ${h.ram}${h.vram ? ` | VRAM: ${h.vram}` : ''}`;
+                if (h.screenResolution) contextStr += `\n- Çözünürlük: ${h.screenResolution}`;
+                if (h.diskInfo) contextStr += `\n- Disk: ${h.diskInfo}`;
+                if (h.licenseType) contextStr += `\n- Lisans: ${h.licenseType}`;
+                if (h.dotnetVersion) contextStr += `\n- .NET: ${h.dotnetVersion}`;
+                if (h.installedModules?.length) contextStr += `\n- Modüller: ${h.installedModules.join(', ')}`;
+                contextStr += '\n';
             }
 
             const allowedTags = product.categories.map((c: { name: string }) => c.name);
