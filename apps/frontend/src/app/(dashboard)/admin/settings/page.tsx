@@ -292,89 +292,126 @@ export default function AdminSettingsPage() {
                     <TabsContent value="email">
                         <Card>
                             <CardHeader>
-                                <CardTitle>E-Posta Servisleri</CardTitle>
-                                <CardDescription>Bildirimler için Resend veya SMTP yapılandırması.</CardDescription>
+                                <CardTitle>E-Posta Servis Ayarları</CardTitle>
+                                <CardDescription>Sistem bildirimleri ve müşteri yazışmaları için e-posta sunucusunu yapılandırın.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="space-y-2">
-                                    <Label>Aktif Sağlayıcı</Label>
-                                    <Select
-                                        value={getSetting('email.active_provider') || 'resend'}
-                                        onValueChange={v => updateValue('email.active_provider', v)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="resend">Resend (Önerilen)</SelectItem>
-                                            <SelectItem value="smtp">SMTP (Özel Sunucu)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Gönderen Adresi (From Email)</Label>
-                                    <Input
-                                        value={getSetting('email.from_address')}
-                                        onChange={e => updateValue('email.from_address', e.target.value)}
-                                        placeholder="noreply@aluplan.com"
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
-                                    <div className="space-y-4">
-                                        <h3 className="font-medium">Resend Ayarları</h3>
-                                        <div className="space-y-2">
-                                            <Label>API Key</Label>
-                                            <Input
-                                                type="password"
-                                                value={getSetting('email.resend.api_key')}
-                                                onChange={e => updateValue('email.resend.api_key', e.target.value)}
-                                                placeholder="re_..."
-                                            />
-                                        </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Aktif Sağlayıcı</Label>
+                                        <Select
+                                            value={getSetting('email.active_provider') || 'resend'}
+                                            onValueChange={v => updateValue('email.active_provider', v)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="resend">Resend (Önerilen)</SelectItem>
+                                                <SelectItem value="smtp">SMTP (Özel Sunucu)</SelectItem>
+                                                <SelectItem value="gmail">Gmail (Google OAuth2)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <h3 className="font-medium">SMTP Ayarları</h3>
-                                        <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-2">
+                                        <Label>Gönderen Adresi (From Email)</Label>
+                                        <Input
+                                            value={getSetting('email.from_address')}
+                                            onChange={e => updateValue('email.from_address', e.target.value)}
+                                            placeholder="noreply@aluplan.com"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 border-t space-y-4">
+                                    {/* Resend Ayarları - Sadece Resend seçiliyse göster */}
+                                    {(getSetting('email.active_provider') === 'resend' || !getSetting('email.active_provider')) && (
+                                        <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+                                            <h3 className="font-medium flex items-center gap-2">
+                                                <Globe className="h-4 w-4" /> Resend Ayarları
+                                            </h3>
                                             <div className="space-y-2">
-                                                <Label>Host</Label>
+                                                <Label>API Key</Label>
                                                 <Input
-                                                    value={getSetting('email.smtp.host')}
-                                                    onChange={e => updateValue('email.smtp.host', e.target.value)}
-                                                    placeholder="smtp.example.com"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Port</Label>
-                                                <Input
-                                                    value={getSetting('email.smtp.port')}
-                                                    onChange={e => updateValue('email.smtp.port', e.target.value)}
-                                                    placeholder="587"
+                                                    type="password"
+                                                    value={getSetting('email.resend.api_key')}
+                                                    onChange={e => updateValue('email.resend.api_key', e.target.value)}
+                                                    placeholder="re_..."
                                                 />
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label>Kullanıcı Adı</Label>
-                                            <Input
-                                                value={getSetting('email.smtp.user')}
-                                                onChange={e => updateValue('email.smtp.user', e.target.value)}
-                                            />
+                                    )}
+
+                                    {/* SMTP Ayarları - Sadece SMTP seçiliyse göster */}
+                                    {getSetting('email.active_provider') === 'smtp' && (
+                                        <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+                                            <h3 className="font-medium flex items-center gap-2">
+                                                <Mail className="h-4 w-4" /> SMTP (Özel Sunucu) Ayarları
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label>Host</Label>
+                                                    <Input
+                                                        value={getSetting('email.smtp.host')}
+                                                        onChange={e => updateValue('email.smtp.host', e.target.value)}
+                                                        placeholder="smtp.example.com"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Port</Label>
+                                                    <Input
+                                                        value={getSetting('email.smtp.port')}
+                                                        onChange={e => updateValue('email.smtp.port', e.target.value)}
+                                                        placeholder="587"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Kullanıcı Adı</Label>
+                                                    <Input
+                                                        value={getSetting('email.smtp.user')}
+                                                        onChange={e => updateValue('email.smtp.user', e.target.value)}
+                                                        placeholder="user@example.com"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Şifre</Label>
+                                                    <Input
+                                                        type="password"
+                                                        value={getSetting('email.smtp.pass')}
+                                                        onChange={e => updateValue('email.smtp.pass', e.target.value)}
+                                                        placeholder="••••••••"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label>Şifre</Label>
-                                            <Input
-                                                type="password"
-                                                value={getSetting('email.smtp.pass')}
-                                                onChange={e => updateValue('email.smtp.pass', e.target.value)}
-                                            />
+                                    )}
+
+                                    {/* Gmail OAuth Ayarları - Sadece Gmail seçiliyse göster */}
+                                    {getSetting('email.active_provider') === 'gmail' && (
+                                        <div className="space-y-4 p-6 border-2 border-dashed rounded-lg bg-primary/5 text-center">
+                                            <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                                                <Mail className="h-6 w-6 text-primary" />
+                                            </div>
+                                            <h3 className="font-bold text-lg">Gmail ile Güvenli Bağlantı</h3>
+                                            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                                                Gmail hesabınızı güvenli bir şekilde bağlamak için Google OAuth2 kullanın.
+                                                Bu yöntem şifrenizi paylaşmadan e-posta göndermenize olanak tanır.
+                                            </p>
+                                            <div className="pt-2">
+                                                <Button variant="outline" className="gap-2 border-primary/20 hover:bg-primary/10" disabled>
+                                                    <Globe className="h-4 w-4" /> Google ile Bağlan (Çok Yakında)
+                                                </Button>
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground">
+                                                Not: Bu özellik bir sonraki güncellemede aktif olacaktır.
+                                            </p>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
 
                                 <Button
-                                    className="w-full md:w-auto"
+                                    className="w-full"
                                     onClick={() => handleSave([
                                         'email.active_provider',
                                         'email.from_address',

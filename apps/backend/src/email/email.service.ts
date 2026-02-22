@@ -16,6 +16,7 @@ export class EmailService implements OnModuleInit {
         private readonly prisma: PrismaService,
         private readonly resend: ResendProvider,
         private readonly smtp: SmtpProvider,
+        private readonly gmail: GmailProvider,
     ) { }
 
     async onModuleInit() {
@@ -25,8 +26,19 @@ export class EmailService implements OnModuleInit {
 
     private async refreshProvider() {
         try {
-            const providerName = (await this.settings.getValue('email.active_provider')) ?? 'resend';
-            this.provider = providerName === 'smtp' ? this.smtp : this.resend;
+            const providerName = (await this.settings.getValue('email.active_provider')) || 'resend';
+            switch (providerName) {
+                case 'smtp':
+                    this.provider = this.smtp;
+                    break;
+                case 'gmail':
+                    this.provider = this.gmail;
+                    break;
+                case 'resend':
+                default:
+                    this.provider = this.resend;
+                    break;
+            }
             this.logger.log(`📧 Email provider: ${providerName}`);
         } catch {
             this.provider = this.resend;
@@ -130,14 +142,19 @@ export class EmailService implements OnModuleInit {
     // ─── HEALTH CHECK ─────────────────────────────────────────
     async healthCheck(): Promise<{ provider: string; available: boolean }> {
         const available = await this.provider.healthCheck();
+        let providerName = 'unknown';
+        if (this.provider instanceof ResendProvider) providerName = 'resend';
+        else if (this.provider instanceof SmtpProvider) providerName = 'smtp';
+        else if (this.provider instanceof GmailProvider) providerName = 'gmail';
+
         return {
-            provider: this.provider instanceof ResendProvider ? 'resend' : 'smtp',
+            provider: providerName,
             available,
         };
     }
 
     // ─── HOT SWAP: Change provider without restart ────────────
-    async switchProvider(name: 'resend' | 'smtp') {
+    async switchProvider(name: 'resend' | 'smtp' | 'gmail') {
         await this.settings.upsert({
             key: 'email.active_provider',
             value: name,
