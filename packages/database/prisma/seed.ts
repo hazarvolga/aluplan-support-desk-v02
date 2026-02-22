@@ -136,6 +136,83 @@ async function main() {
     }
     console.log('✅ Default settings seeded');
 
+    // Seed Products and Categories (Taxonomy)
+    const PRODUCTS_TAXONOMY = [
+        {
+            name: "ALLPLAN",
+            description: "Mimari ve Mühendislik BIM Çözümü",
+            categories: [
+                { name: "Sistem, Lisans & Abonelik", keywords: ["cloud licensing", "wibu", "dongle", "aktivasyon", "hata kodu", "ultimate", "professional", "concept", "basic", "yavaşlama", "bağlantı hatası", "çökme", "açılmıyor", "donma", "performans", "kilitlendi", "yanıt vermiyor", "eğitim lisansı", "kurulum hatası", "crash"] },
+                { name: "Mimari ve 3B Modelleme", keywords: ["duvar", "taşıyıcı", "çizim", "ölçülendirme", "katman", "pafta", "kesit", "ölçek", "ai görselleştirme", "render", "kaplama", "lumion", "nasıl yapılır", "how to", "ayarlar", "arayüz bozuk", "siyah ekran", "kütüphane eksik", "yazdır", "pdf çıktı"] },
+                { name: "Mühendislik (Donatı & Çelik)", keywords: ["donatı", "çelik", "betonarme", "donatı pozlama", "metraj listesi", "scia", "frilo", "precast", "şantiye", "hesap hatası"] },
+                { name: "BIM, Veri Paylaşımı & Altyapı", keywords: ["ifc", "dwg", "koordinasyon", "referans model", "bulut", "bimplus", "allplan share", "civil", "köprü", "altyapı", "bozuk dosya", "corrupt", "senkronizasyon hatası", "kaydetme sorunu", "teamwork hatası", "yedekleme", "kurtarma", "bak backup"] }
+            ]
+        },
+        {
+            name: "AX3000",
+            description: "Mekanik ve Elektrik Tesisat (MEP) Çözümü",
+            categories: [
+                { name: "Mekanik, Elektrik & Sıhhi Tesisat", keywords: ["boru", "vana", "sıhhi tesisat", "şebeke", "bağlantı", "boyutlandırma", "elektrik", "tava", "kablo", "çarpışma", "çakışma"] },
+                { name: "İklimlendirme (HVAC) & TS825", keywords: ["ısıtma", "soğutma", "havalandırma", "ts825", "ekb", "iklim", "vr", "debi", "yalıtım", "enerji performansı", "hata kodu"] }
+            ]
+        },
+        {
+            name: "CDS Add-on",
+            description: "Aluplan Geliştirilmiş Eklentileri",
+            categories: [
+                { name: "Arazi, Altyapı & Rampa", keywords: ["arazi", "kazı", "dolgu", "yol", "sürüş eğrisi", "rampa", "otopark", "drive curve", "hafriyat", "eğim hatası"] },
+                { name: "Akıllı Tasarım Araçları", keywords: ["çelik profil", "3b ölçü", "grafik metin", "dwg converter", "skp dönüştürücü", "geometri araçları", "eklenti çalışmıyor", "plugin hatası"] }
+            ]
+        }
+    ];
+
+    for (const prodDef of PRODUCTS_TAXONOMY) {
+        // Find existing product by name to emulate upsert (since name isn't marked @unique in schema)
+        let product = await prisma.product.findFirst({
+            where: { name: prodDef.name }
+        });
+
+        if (!product) {
+            product = await prisma.product.create({
+                data: {
+                    name: prodDef.name,
+                    description: prodDef.description,
+                    isActive: true,
+                }
+            });
+        } else {
+            // Update description just in case
+            await prisma.product.update({
+                where: { id: product.id },
+                data: { description: prodDef.description, isActive: true }
+            });
+        }
+
+        // Seed Categories
+        for (const catDef of prodDef.categories) {
+            let category = await prisma.productCategory.findFirst({
+                where: { productId: product.id, name: catDef.name }
+            });
+
+            if (!category) {
+                await prisma.productCategory.create({
+                    data: {
+                        productId: product.id,
+                        name: catDef.name,
+                        keywords: catDef.keywords,
+                        isActive: true
+                    }
+                });
+            } else {
+                await prisma.productCategory.update({
+                    where: { id: category.id },
+                    data: { keywords: catDef.keywords, isActive: true }
+                });
+            }
+        }
+    }
+    console.log('✅ Base Products and Categories Taxonomy seeded');
+
     console.log('\n🎉 Seed complete!');
     console.log(`👤 Admin: admin@aluplan.com / ${adminPassword}`);
 }

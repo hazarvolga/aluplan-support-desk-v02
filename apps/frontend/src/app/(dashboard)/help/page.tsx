@@ -129,14 +129,27 @@ export default function SystemGuidePage() {
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base text-brand-400 flex items-center gap-2">
                                 <ChevronRight className="h-4 w-4" />
-                                2. Yapay Zekanın Akıllı Etiketleme Kalitesini Nasıl Artırabilirim?
+                                2. Yapay Zekanın Akıllı Etiketleme Kalitesini Nasıl Artırabilirim? (Taksonomi Rehberi)
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground space-y-2 italic">
-                            <ul className="list-disc pl-5 space-y-2 not-italic">
-                                <li><strong>Modül Anahtar Kelimeleri:</strong> Ürünler sayfasında Kategorileri düzenlerken detaylı ve konuya has anahtar kelimeler girin.</li>
-                                <li><strong>Geçmiş Performanslar:</strong> Kapatılan biletlerde müşteri memnuniyet puanı yüksek çıkarsa o sorun otomatik olarak Vektör Veritabanına alınır. Ne kadar çok başarılı bilet çözülürse, AI o kadar hatasız yönlendirme yapar.</li>
-                            </ul>
+                        <CardContent className="text-sm text-muted-foreground space-y-4">
+                            <p>
+                                Sistemimiz, biletleri sınıflandırırken yalnızca ürün özelliklerine ("duvar", "kolon", "ifc") değil, <strong>Sorun/Niyet odaklı (Symptom-driven) gelişmiş bir hibrit taksonomi (Option C V3)</strong> kullanır.
+                            </p>
+                            <div className="bg-blue-500/5 border border-blue-500/10 p-4 rounded-md space-y-3">
+                                <h4 className="text-blue-400 font-medium">Bunun anlamı nedir?</h4>
+                                <p className="text-slate-300">
+                                    AEC/BIM sektöründeki global destek tecrübelerine (Autodesk, Graphisoft modelleri) göre kullanıcılar "Render ayarlarım bozuldu" demek yerine genellikle "Program çöküyor", "Kasıyor" veya "Siyah ekran veriyor" şeklinde kriz kelimeleri kullanırlar.
+                                </p>
+                                <p className="text-slate-300">
+                                    Sistem yapay zekası (RAG), kullanıcıların bu panik/kriz kelimelerini anlar. Bu yüzden ürünlerinize (<span className="text-brand-400">Ürünler & Modüller</span> sekmesinde) anahtar kelime girerken şu kuralları izleyin:
+                                </p>
+                                <ul className="list-disc pl-5 space-y-2 text-slate-300 italic">
+                                    <li><strong>Sorun Belirten Kelimeler Ekleyin:</strong> Teknik isimlerin yanına mutlaka "bozuk dosya", "çökme", "yavaşlama", "açılmıyor" gibi niyet kelimeleri ekleyin.</li>
+                                    <li><strong>Eğitim (How-to) Niyetleri:</strong> "Nasıl yapılır", "ayarlar", "kütüphane ekleme" gibi eğitim amaçlı sorguları yakalayacak kelimeler girin.</li>
+                                    <li><strong>Benzerlik (Similarity):</strong> Kapatılan biletlerde müşteri memnuniyet puanı yüksek çıkarsa o sorun otomatik olarak Vektör Veritabanına alınır. Ne kadar çok bilet başarılı çözülürse, yapay zeka jenerik kelimeleri o kadar iyi eşleştirir.</li>
+                                </ul>
+                            </div>
                         </CardContent>
                     </Card>
 
