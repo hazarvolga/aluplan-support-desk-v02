@@ -2,7 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
-import { OllamaService } from '../ai/ollama.service';
+import { AiService } from '../ai/ai.service';
 
 @Processor('kb-summarizer')
 export class KbSummarizerProcessor extends WorkerHost {
@@ -10,7 +10,7 @@ export class KbSummarizerProcessor extends WorkerHost {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly ollama: OllamaService,
+        private readonly ai: AiService,
     ) {
         super();
     }
@@ -30,11 +30,11 @@ export class KbSummarizerProcessor extends WorkerHost {
             return;
         }
 
-        // Check if ollama is available
-        const isAvailable = await this.ollama.isAvailable();
+        // Check if AI is available
+        const isAvailable = await this.ai.isAvailable();
         if (!isAvailable) {
-            this.logger.error('Ollama is not available to summarize the ticket.');
-            throw new Error('Ollama service unavailable');
+            this.logger.error('AI Service is not available to summarize the ticket.');
+            throw new Error('AI service unavailable');
         }
 
         // 2. Format conversation
@@ -42,8 +42,8 @@ export class KbSummarizerProcessor extends WorkerHost {
             `${m.isInternal ? '[INTERNAL] ' : ''}${m.senderId === ticket.userId ? 'Customer' : 'Agent'}: ${m.message}`
         ).join('\n---\n');
 
-        // 3. Ask Ollama to summarize
-        const summary = await this.ollama.summarizeTicket(ticket.subject, conversation);
+        // 3. Ask AI to summarize
+        const summary = await this.ai.summarizeTicket(ticket.subject, conversation);
 
         if (!summary) {
             this.logger.error(`Ollama failed to return a summary for ticket ${ticketId}`);

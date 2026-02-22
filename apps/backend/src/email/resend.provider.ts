@@ -1,25 +1,31 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { SettingsService } from '../settings/settings.service';
 import { EmailProvider, SendEmailOptions } from './interfaces/email-provider.interface';
 
 @Injectable()
 export class ResendProvider implements EmailProvider {
     private readonly logger = new Logger(ResendProvider.name);
-    private readonly apiKey: string;
     private readonly apiUrl = 'https://api.resend.com/emails';
 
-    constructor(private readonly config: ConfigService) {
-        this.apiKey = config.get<string>('RESEND_API_KEY', '');
+    constructor(
+        private readonly settings: SettingsService,
+    ) { }
+
+    private async getApiKey(): Promise<string | null> {
+        return (await this.settings.getValue('email.resend.api_key')) ?? process.env.RESEND_API_KEY ?? null;
     }
 
     async send(options: SendEmailOptions): Promise<{ messageId: string }> {
-        const from = options.from ?? this.config.get('EMAIL_FROM', 'noreply@aluplan.com');
+        const apiKey = await this.getApiKey();
+        if (!apiKey) throw new Error('Resend API key not configured');
+
+        const from = options.from ?? (await this.settings.getValue('email.from_address')) ?? 'noreply@aluplan.com';
         const to = Array.isArray(options.to) ? options.to : [options.to];
 
         const res = await fetch(this.apiUrl, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${this.apiKey}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -41,10 +47,11 @@ export class ResendProvider implements EmailProvider {
     }
 
     async healthCheck(): Promise<boolean> {
-        if (!this.apiKey) return false;
+        const apiKey = await this.getApiKey();
+        if (!apiKey) return false;
         try {
             const res = await fetch('https://api.resend.com/domains', {
-                headers: { 'Authorization': `Bearer ${this.apiKey}` },
+                headers: { 'Authorization': `Bearer ${apiKey}` },
                 signal: AbortSignal.timeout(5_000),
             });
             return res.ok;

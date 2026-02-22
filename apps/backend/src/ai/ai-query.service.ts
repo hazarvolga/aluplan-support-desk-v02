@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OllamaService } from './ollama.service';
+import { AiService } from './ai.service';
 import { EmbeddingService, SearchResult } from './embedding.service';
 import { ConfigService } from '@nestjs/config';
 
@@ -31,7 +31,7 @@ export class AiQueryService {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly ollama: OllamaService,
+        private readonly ai: AiService,
         private readonly embeddingService: EmbeddingService,
         private readonly config: ConfigService,
     ) {
@@ -54,9 +54,9 @@ export class AiQueryService {
             else confidence = 'LOW';
         }
 
-        // 3. Reformat via Ollama for HIGH/MEDIUM matches
+        // 3. Reformat via AI for HIGH/MEDIUM matches
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
-            const aiResult = await this.ollama.reformat(SYSTEM_PROMPT, userQuery, topResult.content);
+            const aiResult = await this.ai.reformat(SYSTEM_PROMPT, userQuery, topResult.content);
             answer = aiResult?.response ?? topResult.content;
         }
 
@@ -146,7 +146,7 @@ ${conversation}
 
 Özetle ve en kritik noktaları belirt:`;
 
-        const result = await this.ollama.reformat('', 'Lütfen bu talebi özetle.', prompt);
+        const result = await this.ai.reformat('', 'Lütfen bu talebi özetle.', prompt);
         return result?.response ?? 'Özet oluşturulamadı.';
     }
 
@@ -201,7 +201,7 @@ MÜŞTERİ TALEBİ:
 ${text.substring(0, 1000)}
 SADECE en uygun kategori adını yaz. Hiçbiri uymuyorsa "GENEL" yaz.`;
 
-            const result = await this.ollama.reformat('Sen akıllı bir etiketleme asistanısın. Sadece tek kelime/kalıp dönersin.', 'Analiz et', prompt);
+            const result = await this.ai.reformat('Sen akıllı bir etiketleme asistanısın. Sadece tek kelime/kalıp dönersin.', 'Analiz et', prompt);
 
             if (result?.response) {
                 const suggested = result.response.trim();

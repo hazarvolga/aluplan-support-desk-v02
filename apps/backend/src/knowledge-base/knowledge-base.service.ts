@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../ai/embedding.service';
-import { OllamaService } from '../ai/ollama.service';
+import { AiService } from '../ai/ai.service';
 import { CreateArticleDto, UpdateArticleDto, ReviewArticleDto, SubmitFeedbackDto } from './dto/article.dto';
 
 // ArticleStatus from schema: DRAFT | REVIEW | PUBLISHED | ARCHIVED
@@ -25,7 +25,7 @@ export class KnowledgeBaseService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly embeddingService: EmbeddingService,
-        private readonly ollamaService: OllamaService,
+        private readonly aiService: AiService,
     ) { }
 
     // ─── CATEGORIES ─────────────────────────────────────────
@@ -358,6 +358,6 @@ export class KnowledgeBaseService {
 
         if (catNames.length === 0) return 'GENEL';
 
-        return this.ollamaService.suggestCategory(title, content, catNames);
+        return this.aiService.suggestCategory(title, content, catNames);
     }
 }

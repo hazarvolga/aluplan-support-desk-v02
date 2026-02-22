@@ -5,6 +5,9 @@ import { UpsertSettingDto } from './dto/upsert-setting.dto';
 
 @Injectable()
 export class SettingsService {
+    private cache = new Map<string, string>();
+    private secretCache = new Map<string, boolean>();
+
     constructor(
         private prisma: PrismaService,
         private crypto: CryptoService,
@@ -17,7 +20,7 @@ export class SettingsService {
             finalValue = this.crypto.encrypt(dto.value);
         }
 
-        return this.prisma.setting.upsert({
+        const setting = await this.prisma.setting.upsert({
             where: { key: dto.key },
             update: {
                 value: finalValue,
@@ -31,40 +34,82 @@ export class SettingsService {
                 updatedBy: userId,
             },
         });
+
+        // Update cache
+        this.cache.set(dto.key, dto.value); // Store plaintext in cache for internal use
+        this.secretCache.set(dto.key, dto.isSecret ?? false);
+
+        return setting;
     }
 
-    async get(key: string, decrypt = false) {
+    async get(key: string, decrypt = false): Promise<any> {
+        // Return from cache if available (plaintext internal cache)
+        if (this.cache.has(key)) {
+            const isSecret = this.secretCache.get(key);
+            let value = this.cache.get(key) || '';
+
+            if (isSecret && !decrypt) {
+                value = '********';
+            }
+
+            return { key, value, isSecret };
+        }
+
         const setting = await this.prisma.setting.findUnique({
             where: { key },
         });
 
         if (!setting) {
-            throw new NotFoundException(`Setting with key "${key}" not found`);
+            return null;
         }
 
-        if (decrypt && setting.isSecret) {
-            setting.value = this.crypto.decrypt(setting.value);
-        } else if (setting.isSecret) {
-            setting.value = '********'; // Mask secret values by default
+        let plaintext = setting.value;
+        if (setting.isSecret) {
+            plaintext = this.crypto.decrypt(setting.value);
+        }
+
+        // Hydrate cache
+        this.cache.set(key, plaintext);
+        this.secretCache.set(key, setting.isSecret);
+
+        if (setting.isSecret && !decrypt) {
+            setting.value = '********';
+        } else {
+            setting.value = plaintext;
         }
 
         return setting;
+    }
+
+    /**
+     * Internal method for services to get plaintext values directly without DTO wrapper
+     */
+    async getValue(key: string): Promise<string | null> {
+        const setting = await this.get(key, true);
+        return setting?.value ?? null;
     }
 
     async getAll(decrypt = false) {
         const settings = await this.prisma.setting.findMany();
 
         return settings.map((s) => {
-            if (decrypt && s.isSecret) {
-                s.value = this.crypto.decrypt(s.value);
-            } else if (s.isSecret) {
-                s.value = '********';
+            let value = s.value;
+            if (s.isSecret) {
+                const plaintext = this.crypto.decrypt(s.value);
+                this.cache.set(s.key, plaintext);
+                this.secretCache.set(s.key, true);
+                value = decrypt ? plaintext : '********';
+            } else {
+                this.cache.set(s.key, s.value);
+                this.secretCache.set(s.key, false);
             }
-            return s;
+            return { ...s, value };
         });
     }
 
     async delete(key: string) {
+        this.cache.delete(key);
+        this.secretCache.delete(key);
         return this.prisma.setting.delete({
             where: { key },
         });

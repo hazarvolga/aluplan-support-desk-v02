@@ -8,6 +8,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
 import { OllamaService } from './ollama.service';
+import { AiService } from './ai.service';
 import { AiCopilotService } from './ai-copilot.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
@@ -37,7 +38,7 @@ export class AiController {
     constructor(
         private readonly aiQueryService: AiQueryService,
         private readonly embeddingService: EmbeddingService,
-        private readonly ollamaService: OllamaService,
+        private readonly aiService: AiService,
         private readonly aiCopilotService: AiCopilotService,
     ) { }
 
@@ -78,11 +79,10 @@ export class AiController {
     }
 
     @Get('status')
-    @ApiOperation({ summary: 'Check Ollama availability' })
+    @ApiOperation({ summary: 'Check AI service availability' })
     async status() {
-        const available = await this.ollamaService.isAvailable();
-        const model = this.ollamaService.getModel();
-        return { available, model };
+        const available = await this.aiService.isAvailable();
+        return { available, provider: 'dynamic' };
     }
 
     @Post('search')

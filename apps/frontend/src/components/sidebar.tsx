@@ -20,6 +20,7 @@ const ADMIN_NAV = [
     { href: '/customers', icon: Users, label: 'Müşteriler' },
     { href: '/products', icon: BookOpen, label: 'Ürünler & Modüller' },
     { href: '/users', icon: Settings, label: 'Ekip' },
+    { href: '/admin/settings', icon: Settings, label: 'Sistem Ayarları' },
     { href: '/help', icon: BookOpen, label: 'Sistem Rehberi' },
     { href: '/profile', icon: User, label: 'Profil' },
 ];

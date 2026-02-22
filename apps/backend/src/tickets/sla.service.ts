@@ -1,13 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
 import { TicketPriority } from '@aluplan/database';
+import { PrismaService } from '../prisma/prisma.service';
+import { SlaDeadlines } from './interfaces/sla.interface';
+import { SettingsService } from '../settings/settings.service';
 import { BusinessHoursService } from './business-hours.service';
-
-export interface SlaDeadlines {
-    slaResponseDue: Date;
-    slaResolveDue: Date;
-}
 
 // Default SLA hours per priority — overridable via Settings table
 const DEFAULT_SLA_HOURS: Record<TicketPriority, { response: number; resolve: number }> = {
@@ -23,7 +19,7 @@ export class SlaService {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly config: ConfigService,
+        private readonly settings: SettingsService,
         private readonly businessHoursService: BusinessHoursService,
     ) { }
 
@@ -111,19 +107,16 @@ export class SlaService {
     }
 
     private async getSlaConfig(priority: TicketPriority): Promise<{ response: number; resolve: number }> {
-        try {
-            const key = priority.toLowerCase();
-            const [responseRow, resolveRow] = await Promise.all([
-                this.prisma.setting.findUnique({ where: { key: `sla_${key}_response_hours` } }),
-                this.prisma.setting.findUnique({ where: { key: `sla_${key}_resolve_hours` } }),
-            ]);
+        const key = priority.toLowerCase();
 
-            return {
-                response: responseRow ? parseInt(responseRow.value, 10) : DEFAULT_SLA_HOURS[priority].response,
-                resolve: resolveRow ? parseInt(resolveRow.value, 10) : DEFAULT_SLA_HOURS[priority].resolve,
-            };
-        } catch {
-            return DEFAULT_SLA_HOURS[priority];
-        }
+        const [responseHours, resolveHours] = await Promise.all([
+            this.settings.getValue(`sla.${key}.response_hours`),
+            this.settings.getValue(`sla.${key}.resolve_hours`),
+        ]);
+
+        return {
+            response: responseHours ? parseInt(responseHours, 10) : DEFAULT_SLA_HOURS[priority].response,
+            resolve: resolveHours ? parseInt(resolveHours, 10) : DEFAULT_SLA_HOURS[priority].resolve,
+        };
     }
 }

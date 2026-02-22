@@ -1,33 +1,35 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { SettingsService } from '../settings/settings.service';
 import { EmailProvider, SendEmailOptions } from './interfaces/email-provider.interface';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class SmtpProvider implements EmailProvider {
     private readonly logger = new Logger(SmtpProvider.name);
-    private transporter: nodemailer.Transporter | null = null;
 
-    constructor(private readonly config: ConfigService) {
-        const host = config.get('SMTP_HOST');
-        if (host) {
-            this.transporter = nodemailer.createTransport({
-                host,
-                port: parseInt(config.get('SMTP_PORT', '587')),
-                secure: config.get('SMTP_SECURE', 'false') === 'true',
-                auth: {
-                    user: config.get('SMTP_USER'),
-                    pass: config.get('SMTP_PASS'),
-                },
-            });
-        }
+    constructor(private readonly settings: SettingsService) { }
+
+    private async getTransporter(): Promise<nodemailer.Transporter | null> {
+        const host = await this.settings.getValue('email.smtp.host');
+        if (!host) return null;
+
+        return nodemailer.createTransport({
+            host,
+            port: parseInt((await this.settings.getValue('email.smtp.port')) ?? '587', 10),
+            secure: (await this.settings.getValue('email.smtp.secure')) === 'true',
+            auth: {
+                user: (await this.settings.getValue('email.smtp.user')) ?? '',
+                pass: (await this.settings.getValue('email.smtp.pass')) ?? '',
+            },
+        } as nodemailer.TransportOptions);
     }
 
     async send(options: SendEmailOptions): Promise<{ messageId: string }> {
-        if (!this.transporter) throw new Error('SMTP not configured');
+        const transporter = await this.getTransporter();
+        if (!transporter) throw new Error('SMTP not configured');
 
-        const from = options.from ?? this.config.get('EMAIL_FROM', 'noreply@aluplan.com');
-        const info = await this.transporter.sendMail({
+        const from = options.from ?? (await this.settings.getValue('email.from_address')) ?? 'noreply@aluplan.com';
+        const info = await transporter.sendMail({
             from,
             to: Array.isArray(options.to) ? options.to.join(',') : options.to,
             subject: options.subject,
@@ -38,9 +40,10 @@ export class SmtpProvider implements EmailProvider {
     }
 
     async healthCheck(): Promise<boolean> {
-        if (!this.transporter) return false;
+        const transporter = await this.getTransporter();
+        if (!transporter) return false;
         try {
-            await this.transporter.verify();
+            await transporter.verify();
             return true;
         } catch {
             return false;

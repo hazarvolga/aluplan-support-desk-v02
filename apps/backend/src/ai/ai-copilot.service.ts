@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OllamaService } from './ollama.service';
+import { AiService } from './ai.service';
 
 @Injectable()
 export class AiCopilotService {
@@ -8,7 +8,7 @@ export class AiCopilotService {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly ollama: OllamaService,
+        private readonly ai: AiService,
     ) { }
 
     /**
@@ -57,11 +57,11 @@ KURALLAR:
 YANIT TASLAĞI:`;
 
         this.logger.log(`🤖 Generating AI draft for ticket ${ticket.ticketNumber}...`);
-        const response = await this.ollama.generateResponse(prompt, 60_000);
+        const response = await this.ai.generate(prompt, 60_000);
 
         return {
             draft: response || 'Taslak oluşturulamadı.',
-            model: this.ollama.getModel()
+            model: 'dynamic' // Provider info is abstracted
         };
     }
 }
