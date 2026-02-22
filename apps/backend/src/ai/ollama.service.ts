@@ -34,7 +34,7 @@ export class OllamaService {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ model: this.embedModel, prompt: text }),
-                signal: AbortSignal.timeout(30_000),
+                signal: AbortSignal.timeout(120_000), // Increased to 120s for high load
             });
 
             if (!response.ok) throw new Error(`Ollama embed HTTP ${response.status}`);
@@ -63,7 +63,7 @@ export class OllamaService {
                     stream: false,
                     options: { temperature: 0.1, top_p: 0.9 }, // Low temp = controlled output
                 }),
-                signal: AbortSignal.timeout(30_000),
+                signal: AbortSignal.timeout(150_000), // Increased to 150s
             });
 
             if (!response.ok) throw new Error(`Ollama chat HTTP ${response.status}`);
@@ -96,7 +96,7 @@ Yalnızca kategori adını yaz. Başka bir şey yazma. Eğer uygun kategori yoks
                     stream: false,
                     options: { temperature: 0 },
                 }),
-                signal: AbortSignal.timeout(15_000),
+                signal: AbortSignal.timeout(30_000), // Increased to 30s
             });
 
             if (!response.ok) throw new Error(`Ollama HTTP ${response.status}`);
@@ -122,13 +122,13 @@ KONUŞMA BAŞLIĞI: ${subject}
 KONUŞMA GEÇMİŞİ:
 ${conversation.substring(0, 3000)}`;
 
-        return this.generateResponse(prompt, 60_000);
+        return this.generateResponse(prompt, 180_000); // Increased to 180s
     }
 
     /**
      * Generic generation method for various AI tasks.
      */
-    async generateResponse(prompt: string, timeout = 30_000): Promise<string | null> {
+    async generateResponse(prompt: string, timeout = 60_000): Promise<string | null> {
         try {
             const response = await fetch(`${this.baseUrl}/api/generate`, {
                 method: 'POST',
@@ -153,7 +153,7 @@ ${conversation.substring(0, 3000)}`;
 
     async isAvailable(): Promise<boolean> {
         try {
-            const res = await fetch(`${this.baseUrl}/api/tags`, { signal: AbortSignal.timeout(3_000) });
+            const res = await fetch(`${this.baseUrl}/api/tags`, { signal: AbortSignal.timeout(5_000) });
             return res.ok;
         } catch {
             return false;

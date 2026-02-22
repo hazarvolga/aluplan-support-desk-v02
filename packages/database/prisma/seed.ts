@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -213,8 +215,165 @@ async function main() {
     }
     console.log('✅ Base Products and Categories Taxonomy seeded');
 
+    // Call Knowledge Base Seed
+    await seedKnowledgeBase();
+
     console.log('\n🎉 Seed complete!');
     console.log(`👤 Admin: admin@aluplan.com / ${adminPassword}`);
+}
+
+function parseFrontmatter(content: string) {
+    const fmRegex = /^---\n([\s\S]*?)\n---/;
+    const match = content.match(fmRegex);
+    let title = null;
+    let body = content;
+    if (match) {
+        body = content.slice(match[0].length).trim();
+        const titleMatch = match[1].match(/^title:\s*"?([^"\n]*)"?/m);
+        if (titleMatch) title = titleMatch[1];
+    }
+    return { title, body };
+}
+
+
+function generateSlug(text: string) {
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
+}
+
+async function seedKnowledgeBase() {
+    console.log('\n📚 1. Knowledge Base (Bilgi Havuzu) Taraması Başlıyor...');
+    // Proje kökündeki Bilgi Bankası klasörüne erişim
+    const kbPath = path.resolve(__dirname, '../../../Bilgi Bankası/BilgiHavuzuMD');
+
+    if (!fs.existsSync(kbPath)) {
+        console.log(`⚠️ Bilgi Havuzu klasörü bulunamadı: ${kbPath}`);
+        return;
+    }
+
+    const admin = await prisma.user.findUnique({ where: { email: 'admin@aluplan.com' } });
+    if (!admin) {
+        console.log('⚠️ Admin kullanıcısı bulunamadı, KB seed atlanıyor.');
+        return;
+    }
+
+    let fileCount = 0;
+    let chunkCount = 0;
+
+    async function walk(dir: string, categoryPath: { name: string, slug: string, id: string }[] = []) {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+        for (const entry of entries) {
+            if (entry.name === '.DS_Store' || entry.name === 'scraper') continue;
+
+            const fullPath = path.join(dir, entry.name);
+
+            if (entry.isDirectory()) {
+                const slug = generateSlug(entry.name) || `cat-${Date.now()}`;
+
+                let parentId = categoryPath.length > 0 ? categoryPath[categoryPath.length - 1].id : null;
+
+                let cat = await prisma.category.findUnique({ where: { slug } });
+                if (!cat) {
+                    cat = await prisma.category.create({
+                        data: {
+                            name: entry.name.replace(/_/g, ' '),
+                            slug,
+                            parentId
+                        }
+                    });
+                }
+
+                await walk(fullPath, [...categoryPath, { name: cat.name, slug: cat.slug, id: cat.id }]);
+            } else if (entry.name.endsWith('.md') || entry.name.endsWith('.txt') || entry.name.endsWith('.MD')) {
+                const contentText = fs.readFileSync(fullPath, 'utf-8');
+                const { body } = parseFrontmatter(contentText);
+
+                // Use the exact filename as the base title
+                let articleTitle = entry.name.replace(/\.(md|txt|MD)$/i, '');
+
+                const categoryId = categoryPath.length > 0 ? categoryPath[categoryPath.length - 1].id : null;
+                const categoryName = categoryPath.length > 0 ? categoryPath[categoryPath.length - 1].name : null;
+
+                // Implement Option B: Prepend category name to differentiate files with the same name
+                if (categoryName) {
+                    articleTitle = `[${categoryName}] ${articleTitle}`;
+                }
+
+                fileCount++; // Tracking total items
+                chunkCount++; // We consider each file as 1 major chunk/article now
+
+                let slugBase = generateSlug(articleTitle);
+
+                const existing = await prisma.knowledgeArticle.findFirst({
+                    where: { title: articleTitle }
+                });
+
+                if (existing) {
+                    const latestVersion = await prisma.knowledgeArticleVersion.findFirst({
+                        where: { articleId: existing.id },
+                        orderBy: { version: 'desc' }
+                    });
+
+                    if (!latestVersion || latestVersion.content !== body) {
+                        const newVersionNum = (latestVersion?.version || 0) + 1;
+                        await prisma.knowledgeArticleVersion.create({
+                            data: {
+                                articleId: existing.id,
+                                version: newVersionNum,
+                                title: articleTitle,
+                                content: body,
+                                contentPlain: body.replace(/[#*`_\[\]]/g, ''),
+                                createdBy: admin.id,
+                            }
+                        });
+                        await prisma.knowledgeArticle.update({
+                            where: { id: existing.id },
+                            data: { currentVersion: newVersionNum, status: 'REVIEW', approved: false }
+                        });
+                    }
+                } else {
+                    let finalSlug = slugBase;
+                    let suffix = 1;
+                    while (true) {
+                        const clash = await prisma.knowledgeArticle.findUnique({ where: { slug: finalSlug } });
+                        if (!clash) break;
+                        finalSlug = `${slugBase}-${suffix}`;
+                        suffix++;
+                    }
+
+                    const newArticle = await prisma.knowledgeArticle.create({
+                        data: {
+                            categoryId,
+                            title: articleTitle,
+                            slug: finalSlug,
+                            status: 'REVIEW',
+                            createdBy: admin.id,
+                            currentVersion: 1,
+                        }
+                    });
+
+                    await prisma.knowledgeArticleVersion.create({
+                        data: {
+                            articleId: newArticle.id,
+                            version: 1,
+                            title: articleTitle,
+                            content: body,
+                            contentPlain: body.replace(/[#*`_\[\]]/g, ''),
+                            createdBy: admin.id
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    await walk(kbPath);
+    console.log(`✅ Bilgi Havuzu Yüklemesi Tamamlandı. ${fileCount} parça incelendi, ${chunkCount} parçada yeni versiyon/ekleme yapıldı.`);
 }
 
 main()

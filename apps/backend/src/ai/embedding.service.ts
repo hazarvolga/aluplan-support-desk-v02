@@ -26,26 +26,46 @@ export class EmbeddingService {
 
     /**
      * Store embedding for a published article version.
-     * Called asynchronously after article is approved/published.
+     * Uses smart chunking to prevent context loss.
      */
-    async indexArticle(articleId: string, versionId: string, content: string): Promise<void> {
-        const result = await this.ollama.embed(content);
-        if (!result) {
-            this.logger.warn(`⚠️ Skipping embedding for article ${articleId} — Ollama unavailable`);
-            return;
+    async indexArticle(articleId: string, versionId: string, title: string, content: string): Promise<void> {
+        const { smartChunk } = await import('../knowledge-base/utils/smart-chunker');
+        const chunks = smartChunk(content, { title, maxTokens: 1000, overlap: 200 });
+
+        // Delete existing embeddings for this version to avoid duplicates on re-index
+        await this.prisma.$executeRaw`DELETE FROM knowledge_embeddings WHERE article_version_id = ${versionId}::uuid`;
+
+        for (const chunk of chunks) {
+            let result = null;
+            let retries = 3;
+
+            while (retries > 0 && !result) {
+                result = await this.ollama.embed(chunk.content);
+                if (!result) {
+                    retries--;
+                    if (retries > 0) {
+                        this.logger.warn(`🔄 Retrying embedding for article ${articleId} chunk ${chunk.sequence} (${retries} attempts left)...`);
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
+                    }
+                }
+            }
+
+            if (!result) {
+                this.logger.error(`❌ Failed to index chunk ${chunk.sequence} for article ${articleId} after multiple attempts.`);
+                continue;
+            }
+
+            await this.prisma.$executeRaw`
+                INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, model_name)
+                VALUES (gen_random_uuid(), ${articleId}::uuid, ${versionId}::uuid,
+                        ${JSON.stringify(result.embedding)}::vector, ${chunk.content}, ${chunk.sequence}, ${result.model})
+            `;
+
+            // Sequential throttling: Give Ollama a short breather
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        // Store as pgvector via raw query (Prisma doesn't natively support vector literals)
-        await this.prisma.$executeRaw`
-      INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, model_name)
-      VALUES (gen_random_uuid(), ${articleId}::uuid, ${versionId}::uuid,
-              ${JSON.stringify(result.embedding)}::vector, ${result.model})
-      ON CONFLICT (article_id, article_version_id) DO UPDATE
-        SET embedding = EXCLUDED.embedding,
-            model_name = EXCLUDED.model_name,
-            updated_at = NOW()
-    `;
-        this.logger.log(`📐 Indexed embedding for article ${articleId}`);
+        this.logger.log(`📐 Indexed ${chunks.length} chunks for article ${articleId}`);
     }
 
     /**
@@ -76,12 +96,13 @@ export class EmbeddingService {
           ka.id AS article_id,
           'ARTICLE' AS source_type,
           ka.title,
-          kav.content,
+          ke.content,
           1 - (ke.embedding <=> ${vectorStr}::vector) AS similarity
         FROM knowledge_embeddings ke
         JOIN knowledge_articles ka ON ka.id = ke.article_id
         JOIN knowledge_article_versions kav ON kav.id = ke.article_version_id
         WHERE ka.status = 'PUBLISHED'
+          AND ka.current_version = kav.version
           AND 1 - (ke.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
         
         UNION ALL
@@ -201,7 +222,7 @@ export class EmbeddingService {
             const version = article.versions[0];
             if (!version) continue;
             try {
-                await this.indexArticle(article.id, version.id, version.content);
+                await this.indexArticle(article.id, version.id, article.title, version.content);
                 indexed++;
             } catch {
                 failed++;

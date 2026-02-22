@@ -16,8 +16,20 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         headers,
     });
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(err.message ?? 'API Error');
+        let errStr = res.statusText;
+        try {
+            const err = await res.json();
+            // NestJS returns error details in `message` (sometimes an array of strings for validation)
+            if (Array.isArray(err.message)) {
+                errStr = err.message.join(', ');
+            } else if (err.message) {
+                errStr = err.message;
+            }
+            console.error('API Error Response:', err);
+        } catch (e) {
+            // response was not JSON
+        }
+        throw new Error(errStr);
     }
     return res.json();
 }
@@ -95,6 +107,8 @@ export const api = {
         get: (id: string) => request<any>(`/kb/articles/${id}`),
         create: (body: any) =>
             request<any>('/kb/articles', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: any) =>
+            request<any>(`/kb/articles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
         submitForReview: (id: string) =>
             request<any>(`/kb/articles/${id}/submit-for-review`, { method: 'POST' }),
         review: (id: string, approved: boolean) =>

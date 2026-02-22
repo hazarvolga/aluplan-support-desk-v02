@@ -81,7 +81,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ id: st
         return (
             <div className="text-center py-20">
                 <p className="text-slate-500">Makale bulunamadı.</p>
-                <Link href="/knowledge-base" className="mt-4 text-brand-500 hover:underline flex items-center justify-center gap-1">
+                <Link href="/knowledge-pool" className="mt-4 text-brand-500 hover:underline flex items-center justify-center gap-1">
                     <ChevronLeft className="h-4 w-4" /> Geri Dön
                 </Link>
             </div>
@@ -93,28 +93,48 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ id: st
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <Link
-                href="/knowledge-base"
+                href="/knowledge-pool"
                 className="inline-flex items-center gap-2 text-slate-500 hover:text-brand-500 transition-colors text-sm font-medium group"
             >
                 <ChevronLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
-                Bilgi Bankasına Dön
+                Bilgi Havuzuna Dön
             </Link>
 
             <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                    <span className="px-2.5 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 text-xs font-semibold border border-brand-500/20">
-                        {article.category?.name || 'Genel'}
-                    </span>
-                    <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-                        <Eye className="h-3.5 w-3.5" />
-                        <span>{article.viewCount || 0} görüntülenme</span>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="px-2.5 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 text-xs font-semibold border border-brand-500/20">
+                            {article.category?.name || 'Genel'}
+                        </span>
+                        <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>{article.viewCount || 0} görüntülenme</span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <Link
+                            href={`/knowledge-base/${id}/edit`}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-500 hover:text-white transition-all font-medium text-xs border border-orange-500/20"
+                        >
+                            <FileText className="h-3.5 w-3.5" /> Düzenle
+                        </Link>
+
+                        {(article.versions?.length > 1) && (
+                            <button
+                                onClick={() => setShowVersions(true)}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-all font-medium text-xs border border-slate-200 dark:border-slate-700/50 backdrop-blur-sm shadow-sm"
+                            >
+                                <History className="h-3.5 w-3.5" /> Versiyon Geçmişi
+                            </button>
+                        )}
                     </div>
                 </div>
-                <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white leading-tight tracking-tight">
+                <h1 className="text-4xl font-extrabold text-slate-700 dark:text-white leading-tight tracking-tight">
                     {latestVersion.title}
                 </h1>
 
-                <div className="flex flex-wrap items-center gap-6 pt-2 border-b border-slate-200 dark:border-slate-800 pb-6 text-sm text-slate-500 dark:text-slate-400">
+                <div className="flex flex-wrap items-center gap-6 pt-2 border-b border-slate-200 dark:border-slate-800 pb-6 text-sm text-slate-600 dark:text-slate-300">
                     <div className="flex items-center gap-2">
                         <User className="h-4 w-4" />
                         <span>{article.creator?.fullName}</span>
@@ -136,61 +156,50 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ id: st
                 </div>
             </div>
 
-            <article className="prose prose-slate dark:prose-invert max-w-none">
-                <div className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+            <article className="max-w-none">
+                <div className="text-slate-600 dark:text-white text-[15px] leading-relaxed whitespace-pre-wrap">
                     {latestVersion.content}
                 </div>
             </article>
 
             {/* Feedback Section */}
-            <div className="mt-12 p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+            <div className="mt-12 p-8 rounded-2xl bg-white/[0.02] dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 shadow-sm relative overflow-hidden group backdrop-blur-sm">
                 <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                     <BookOpen className="h-32 w-32" />
                 </div>
 
                 {!feedbackSent ? (
                     <div className="relative z-10 space-y-4">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Bu makale yardımcı oldu mu?</h3>
-                        <div className="flex items-center gap-4">
+                        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Bu doküman size yardımcı oldu mu?</h3>
+                        <div className="flex items-center gap-3">
                             <button
                                 onClick={() => handleFeedback(true)}
                                 disabled={feedbackLoading}
-                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-green-500/10 text-green-600 hover:bg-green-500 hover:text-white transition-all font-semibold disabled:opacity-50"
+                                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500 hover:text-white transition-all font-medium text-sm disabled:opacity-50 border border-green-500/20"
                             >
                                 <ThumbsUp className="h-4 w-4" /> Evet
                             </button>
                             <button
                                 onClick={() => handleFeedback(false)}
                                 disabled={feedbackLoading}
-                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white transition-all font-semibold disabled:opacity-50"
+                                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-slate-500/10 text-slate-600 dark:text-slate-400 hover:bg-slate-600 hover:text-white transition-all font-medium text-sm disabled:opacity-50 border border-slate-500/20"
                             >
-                                <ThumbsDown className="h-4 w-4" /> Hayır
+                                <ThumbsDown className="h-4 w-4" /> Geliştirilmeli
                             </button>
                         </div>
                     </div>
                 ) : (
                     <div className="relative z-10 text-center py-4 animate-in zoom-in-95 duration-300">
-                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 mb-4">
-                            <ThumbsUp className="h-6 w-6" />
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-500/10 text-brand-500 mb-4 border border-brand-500/20">
+                            <ThumbsUp className="h-5 w-5" />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">Teşekkürler!</h3>
-                        <p className="text-slate-500 dark:text-slate-400 mt-1">Geri bildiriminiz içeriğimizi geliştirmemize yardımcı oluyor.</p>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Geribildiriminiz alındı</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">İçeriğimizi geliştirmemize yardımcı olduğunuz için teşekkür ederiz.</p>
                     </div>
                 )}
             </div>
 
-            {/* Admin Controls & Version History Modal */}
-            {(article.versions?.length > 1) && (
-                <div className="flex justify-end">
-                    <button
-                        onClick={() => setShowVersions(true)}
-                        className="flex items-center gap-2 text-slate-400 hover:text-brand-500 text-sm transition-colors"
-                    >
-                        <History className="h-4 w-4" /> Versiyon Geçmişi
-                    </button>
-                </div>
-            )}
-
+            {/* Version History Modal */}
             {showVersions && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[80vh] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col">

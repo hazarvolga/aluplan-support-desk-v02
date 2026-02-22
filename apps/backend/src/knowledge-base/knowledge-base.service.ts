@@ -187,8 +187,9 @@ export class KnowledgeBaseService {
     async review(id: string, dto: ReviewArticleDto, reviewerId: string) {
         const article = await this.findOne(id);
 
-        if (article.status !== 'REVIEW') {
-            throw new BadRequestException('Article is not in REVIEW status');
+        // Provide warning but do not strictly prevent admins from publishing directly from DRAFT
+        if (article.status !== 'REVIEW' && article.status !== 'DRAFT') {
+            this.logger.warn(`Article ${id} is being published from status ${article.status}`);
         }
 
         if (dto.approved) {
@@ -206,7 +207,7 @@ export class KnowledgeBaseService {
             const latestVersion = updated.versions[0];
             if (latestVersion) {
                 this.embeddingService
-                    .indexArticle(id, latestVersion.id, latestVersion.content)
+                    .indexArticle(id, latestVersion.id, updated.title, latestVersion.content)
                     .catch((err) => this.logger.error('Embedding index failed:', err));
             }
 
