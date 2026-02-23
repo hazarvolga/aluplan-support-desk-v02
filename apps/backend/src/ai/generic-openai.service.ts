@@ -144,6 +144,22 @@ KONUŞMA GEÇMİŞİ: ${conversation.substring(0, 3000)}`;
         return this.generate(prompt, 60_000);
     }
 
+    async analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'> {
+        const prompt = `Görevin: Aşağıdaki metnin duygusunu (sentiment) analiz edip, sonuç olarak 'POSITIVE', 'NEUTRAL' veya 'NEGATIVE' kelimelerinden sadece birini yazmak.
+        
+METİN:
+${text.substring(0, 1000)}
+
+SONUÇ (YALNIZCA KELİME):`;
+
+        const result = await this.generate(prompt, 30_000);
+        if (!result) return 'NEUTRAL';
+        const cleanResult = result.toUpperCase().trim();
+        if (cleanResult.includes('POSITIVE')) return 'POSITIVE';
+        if (cleanResult.includes('NEGATIVE')) return 'NEGATIVE';
+        return 'NEUTRAL';
+    }
+
     async isAvailable(): Promise<boolean> {
         const baseUrl = await this.getBaseUrl();
         const apiKey = await this.getApiKey();

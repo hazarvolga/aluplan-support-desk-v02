@@ -15,6 +15,7 @@ export interface AiProvider {
     streamReformat?(systemPrompt: string, userQuery: string, kbContent: string): AsyncGenerator<string, void, unknown>;
     suggestCategory(title: string, content: string, categories: string[]): Promise<string | null>;
     summarizeTicket(subject: string, conversation: string): Promise<string | null>;
+    analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'>;
     isAvailable(): Promise<boolean>;
     getName(): string;
 }

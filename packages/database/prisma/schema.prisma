@@ -81,6 +81,12 @@ enum CommunicationChannel {
   API
 }
 
+enum Sentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
 // =============================================
 // USERS & RBAC
 // =============================================
@@ -487,14 +493,16 @@ model Ticket {
 model TicketMessage {
   id         String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ticketId   String               @map("ticket_id") @db.Uuid
-  senderId   String?              @map("sender_id") @db.Uuid
+  senderId   String?              @map("sender_id") @db.Uuid // Null = system/agent note
   message    String               @db.Text
-  isInternal Boolean              @default(false) @map("is_internal") // Internal note = not visible to customer
+  isInternal Boolean              @default(false) @map("is_internal")
   channel    CommunicationChannel @default(WEB)
+  sentiment  Sentiment?           // AI classification
   createdAt  DateTime             @default(now()) @map("created_at")
+  updatedAt  DateTime             @updatedAt @map("updated_at")
 
-  ticket      Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  sender      User?        @relation(fields: [senderId], references: [id])
+  ticket      Ticket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender      User?              @relation(fields: [senderId], references: [id])
   attachments Attachment[]
 
   @@map("ticket_messages")

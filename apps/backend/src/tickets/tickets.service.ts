@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlaService } from './sla.service';
+import { PiiMaskingService } from './pii-masking.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { AddMessageDto } from './dto/add-message.dto';
@@ -34,6 +35,7 @@ export class TicketsService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly slaService: SlaService,
+        private readonly piiMaskingService: PiiMaskingService,
         private readonly eventEmitter: EventEmitter2,
         private readonly aiQueryService: AiQueryService,
     ) { }
@@ -63,8 +65,8 @@ export class TicketsService {
         const ticket = await this.prisma.ticket.create({
             data: {
                 ticketNumber,
-                subject: dto.subject,
-                description: dto.description,
+                subject: this.piiMaskingService.maskSensitiveData(dto.subject),
+                description: dto.description ? this.piiMaskingService.maskSensitiveData(dto.description) : null,
                 priority,
                 status: TicketStatus.NEW,
                 tags: dto.tags ?? [],
@@ -351,7 +353,7 @@ export class TicketsService {
             data: {
                 ticketId,
                 senderId,
-                message: dto.message,
+                message: this.piiMaskingService.maskSensitiveData(dto.message),
                 isInternal: dto.isInternal ?? false,
                 channel: dto.channel || 'WEB',
             },

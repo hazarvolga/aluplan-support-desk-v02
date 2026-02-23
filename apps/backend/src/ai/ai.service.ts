@@ -76,6 +76,11 @@ export class AiService implements AiProvider {
         return provider.summarizeTicket(subject, conversation);
     }
 
+    async analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'> {
+        const provider = await this.getActiveProvider();
+        return provider.analyzeSentiment(text);
+    }
+
     async isAvailable(): Promise<boolean> {
         const provider = await this.getActiveProvider();
         return provider.isAvailable();

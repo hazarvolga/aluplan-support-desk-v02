@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { Ticket, TicketStatus } from '@aluplan/database';
+import { Ticket, TicketStatus, TicketMessage } from '@aluplan/database';
 import { AiQueryService } from './ai-query.service';
+import { AiService } from './ai.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
 
@@ -11,6 +12,7 @@ export class AiAutoResolverService {
 
     constructor(
         private readonly aiQueryService: AiQueryService,
+        private readonly aiService: AiService,
         private readonly prisma: PrismaService,
         private readonly embeddingService: EmbeddingService,
     ) { }
@@ -62,6 +64,35 @@ export class AiAutoResolverService {
             }
         } catch (error) {
             this.logger.error(`❌ Failed to auto-resolve ticket ${ticket.ticketNumber}`, error.stack);
+        }
+    }
+
+    @OnEvent('ticket.message_added', { async: true })
+    async handleMessageAdded(event: { ticket: Ticket, message: TicketMessage }) {
+        const { ticket, message } = event;
+        // Ignore internal messages and messages from someone who isn't the ticket creator (agents)
+        if (message.isInternal || message.senderId !== ticket.userId) return;
+
+        try {
+            const sentiment = await this.aiService.analyzeSentiment(message.message);
+            if (sentiment) {
+                await this.prisma.ticketMessage.update({
+                    where: { id: message.id },
+                    data: { sentiment }
+                });
+                this.logger.log(`🎭 Sentimenent of message ${message.id} is ${sentiment}.`);
+
+                if (sentiment === 'NEGATIVE' && ticket.priority !== 'URGENT') {
+                    this.logger.warn(`😠 Negative sentiment detected in ticket ${ticket.ticketNumber}. Elevating priority.`);
+
+                    await this.prisma.ticket.update({
+                        where: { id: ticket.id },
+                        data: { priority: 'URGENT' }
+                    });
+                }
+            }
+        } catch (e) {
+            this.logger.error(`❌ Failed to analyze sentiment for message ${message.id}`, e.stack);
         }
     }
 
