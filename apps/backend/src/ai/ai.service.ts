@@ -8,6 +8,10 @@ import { AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provide
 @Injectable()
 export class AiService implements AiProvider {
     private readonly logger = new Logger(AiService.name);
+    private failureCount = 0;
+    private circuitOpenUntil = 0;
+    private readonly FAILURE_THRESHOLD = 5;
+    private readonly COOLDOWN_MS = 60_000;
 
     constructor(
         private readonly settings: SettingsService,
@@ -15,6 +19,46 @@ export class AiService implements AiProvider {
         private readonly openai: OpenAiService,
         private readonly custom: GenericOpenAiService,
     ) { }
+
+    private async isCircuitClosed(): Promise<boolean> {
+        // Manual override check
+        const manualOff = await this.settings.getValue('ai.circuit_breaker.manual_off');
+        if (manualOff?.toString() === 'true') return false;
+
+        if (Date.now() < this.circuitOpenUntil) {
+            return false;
+        }
+        return true;
+    }
+
+    private recordFailure() {
+        this.failureCount++;
+        if (this.failureCount >= this.FAILURE_THRESHOLD) {
+            this.circuitOpenUntil = Date.now() + this.COOLDOWN_MS;
+            this.logger.error(`🚨 AI Circuit Breaker OPENED. Cooldown for ${this.COOLDOWN_MS / 1000}s due to ${this.failureCount} failures.`);
+        }
+    }
+
+    private recordSuccess() {
+        this.failureCount = 0;
+        this.circuitOpenUntil = 0;
+    }
+
+    private async runSafe<T>(op: () => Promise<T>): Promise<T | null> {
+        if (!await this.isCircuitClosed()) {
+            this.logger.warn('⚠️ AI Operation skipped: Circuit Breaker is OPEN or manually disabled.');
+            return null;
+        }
+
+        try {
+            const result = await op();
+            this.recordSuccess();
+            return result;
+        } catch (err) {
+            this.recordFailure();
+            throw err;
+        }
+    }
 
     private async getActiveProvider(): Promise<AiProvider> {
         const providerName = await this.settings.getValue('ai.active_provider');
@@ -27,7 +71,6 @@ export class AiService implements AiProvider {
             case 'ollama':
                 return this.ollama;
             default:
-                this.logger.log('No AI provider specified or invalid provider. Falling back to Ollama.');
                 return this.ollama;
         }
     }
@@ -37,53 +80,75 @@ export class AiService implements AiProvider {
     }
 
     async embed(text: string): Promise<EmbeddingResult | null> {
-        const provider = await this.getActiveProvider();
-        this.logger.log(`Using AI provider: ${provider.getName()} for embedding`);
-        return provider.embed(text);
+        return this.runSafe(async () => {
+            const provider = await this.getActiveProvider();
+            return provider.embed(text);
+        });
     }
 
     async generate(prompt: string, timeout?: number): Promise<string | null> {
-        const provider = await this.getActiveProvider();
-        this.logger.log(`Using AI provider: ${provider.getName()} for generation`);
-        return provider.generate(prompt, timeout);
+        return this.runSafe(async () => {
+            const provider = await this.getActiveProvider();
+            return provider.generate(prompt, timeout);
+        });
     }
 
     async reformat(systemPrompt: string, userQuery: string, kbContent: string): Promise<ChatResult | null> {
-        const provider = await this.getActiveProvider();
-        return provider.reformat(systemPrompt, userQuery, kbContent);
+        return this.runSafe(async () => {
+            const provider = await this.getActiveProvider();
+            return provider.reformat(systemPrompt, userQuery, kbContent);
+        });
     }
 
     async *streamReformat(systemPrompt: string, userQuery: string, kbContent: string): AsyncGenerator<string, void, unknown> {
+        const closed = await this.isCircuitClosed();
+        if (!closed) {
+            yield 'AI servisi şu anda devre dışı (Circuit Breaker).';
+            return;
+        }
+
         const provider = await this.getActiveProvider();
-        if (provider.streamReformat) {
-            yield* provider.streamReformat(systemPrompt, userQuery, kbContent);
-        } else {
-            // Fallback: yield the whole reformat at once
-            const result = await provider.reformat(systemPrompt, userQuery, kbContent);
-            if (result?.response) {
-                yield result.response;
+        try {
+            if (provider.streamReformat) {
+                yield* provider.streamReformat(systemPrompt, userQuery, kbContent);
+            } else {
+                const result = await provider.reformat(systemPrompt, userQuery, kbContent);
+                if (result?.response) yield result.response;
             }
+            this.recordSuccess();
+        } catch (err) {
+            this.recordFailure();
+            yield 'AI yanıtı oluşturulurken bir hata oluştu.';
         }
     }
 
     async suggestCategory(title: string, content: string, categories: string[]): Promise<string | null> {
-        const provider = await this.getActiveProvider();
-        return provider.suggestCategory(title, content, categories);
+        return this.runSafe(async () => {
+            const provider = await this.getActiveProvider();
+            return provider.suggestCategory(title, content, categories);
+        });
     }
 
     async summarizeTicket(subject: string, conversation: string): Promise<string | null> {
-        const provider = await this.getActiveProvider();
-        return provider.summarizeTicket(subject, conversation);
+        return this.runSafe(async () => {
+            const provider = await this.getActiveProvider();
+            return provider.summarizeTicket(subject, conversation);
+        });
     }
 
     async analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'> {
-        const provider = await this.getActiveProvider();
-        return provider.analyzeSentiment(text);
+        const res = await this.runSafe(async () => {
+            const provider = await this.getActiveProvider();
+            return provider.analyzeSentiment(text);
+        });
+        return res || 'NEUTRAL';
     }
 
     async translate(text: string, targetLanguage: string): Promise<string | null> {
-        const provider = await this.getActiveProvider();
-        return provider.translate(text, targetLanguage);
+        return this.runSafe(async () => {
+            const provider = await this.getActiveProvider();
+            return provider.translate(text, targetLanguage);
+        });
     }
 
     async getActiveModelName(): Promise<string> {
@@ -92,6 +157,7 @@ export class AiService implements AiProvider {
     }
 
     async isAvailable(): Promise<boolean> {
+        if (!await this.isCircuitClosed()) return false;
         const provider = await this.getActiveProvider();
         return provider.isAvailable();
     }

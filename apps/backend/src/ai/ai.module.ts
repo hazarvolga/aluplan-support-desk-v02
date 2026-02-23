@@ -11,6 +11,7 @@ import { AiCopilotService } from './ai-copilot.service';
 import { SettingsModule } from '../settings/settings.module';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { PromptsService } from './prompts.service';
+import { LangfuseService } from './langfuse.service';
 
 @Module({
     imports: [SettingsModule],
@@ -25,8 +26,9 @@ import { PromptsService } from './prompts.service';
         AiAutoResolverService,
         AiCopilotService,
         PromptContextBuilderService,
-        PromptsService
+        PromptsService,
+        LangfuseService
     ],
-    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService, PromptsService],
+    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService, PromptsService, LangfuseService],
 })
 export class AiModule { }

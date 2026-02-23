@@ -3,11 +3,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Ticket, TicketMessage, TicketPriority } from '@aluplan/database';
 
+import { EventEmitter2 } from '@nestjs/event-emitter';
+
 @Injectable()
 export class RuleEngineService {
     private readonly logger = new Logger(RuleEngineService.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly eventEmitter: EventEmitter2,
+    ) { }
 
     @OnEvent('ticket.created', { async: true })
     async handleTicketCreated(ticket: Ticket) {
@@ -61,6 +66,13 @@ export class RuleEngineService {
                             }
                         } else if (key === 'assignTo') {
                             updateData.assignedTo = value;
+                        } else if (key === 'translateTo') {
+                            // Trigger translation in background
+                            this.eventEmitter.emit('ai.translate_message', {
+                                ticketId,
+                                messageId: (context as any).messageId,
+                                targetLanguage: value
+                            });
                         }
                     }
 

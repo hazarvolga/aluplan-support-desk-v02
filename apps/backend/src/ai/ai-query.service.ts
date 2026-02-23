@@ -1,10 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { EmbeddingService, SearchResult } from './embedding.service';
+import { TicketMessage } from '@aluplan/database';
 import { ConfigService } from '@nestjs/config';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { PromptsService } from './prompts.service';
+import { SettingsService } from '../settings/settings.service';
+import { LangfuseService } from './langfuse.service';
 
 // Confidence bands — LOW/HIGH/MEDIUM from schema, NO_MATCH is local
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -38,6 +42,8 @@ export class AiQueryService {
         private readonly config: ConfigService,
         private readonly promptContextBuilder: PromptContextBuilderService,
         private readonly promptsService: PromptsService,
+        private readonly settings: SettingsService,
+        private readonly langfuse: LangfuseService,
     ) {
         this.highThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_HIGH', '0.90'));
         this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.75'));
@@ -68,22 +74,42 @@ export class AiQueryService {
             const finalPrompt = `${systemPrompt}\n\n${contextPrompt}`;
             const aiResult = await this.ai.reformat(finalPrompt, userQuery, topResult.content);
             answer = aiResult?.response ?? topResult.content;
+
+            // Langfuse trace
+            await this.langfuse.trace('query-support', userQuery, answer, {
+                confidence,
+                similarity: topResult.similarity,
+                userId,
+            });
         }
 
-        // 4. Log interaction (NO_MATCH → null in DB, schema only has HIGH/MEDIUM/LOW)
+        if (!answer) {
+            answer = 'Bu konuda henüz bilgim yok ama yardım etmek için buradayım.';
+        }
+
+        const inputStr = userQuery;
+        const inputTokens = Math.ceil(inputStr.length / 4);
+        const outputTokens = Math.ceil(answer.length / 4);
+        const totalTokens = inputTokens + outputTokens;
+        const estimatedCost = (inputTokens * 0.00000015) + (outputTokens * 0.0000006);
+
+        // 4. Log interaction
+        const suggestTicket = confidence === 'NO_MATCH' || confidence === 'LOW';
         const interaction = await this.prisma.aiInteraction.create({
             data: {
                 userId,
                 userQuery,
-                responseGenerated: answer,
+                aiResponse: answer,
                 confidenceBand: confidence === 'NO_MATCH' ? null : (confidence as 'HIGH' | 'MEDIUM' | 'LOW'),
+                autoAnswered: !suggestTicket,
+                similarityScore: topResult?.similarity,
                 matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
-                similarityScore: topResult ? topResult.similarity : undefined,
-                autoAnswered: answer !== null,
-            },
+                inputTokens,
+                outputTokens,
+                totalTokens,
+                estimatedCost
+            } as any
         });
-
-        const suggestTicket = confidence === 'NO_MATCH' || confidence === 'LOW';
 
         this.logger.log(
             `🤖 AI Query: "${userQuery.slice(0, 60)}" → ${confidence} (${topResult?.similarity?.toFixed(3) ?? 'n/a'}) [Src: ${topResult?.sourceType}]`,
@@ -133,8 +159,15 @@ export class AiQueryService {
                 fullAnswer += chunk;
                 yield { chunk };
             }
+
+            // Langfuse trace for stream (after completion)
+            await this.langfuse.trace('query-support-stream', userQuery, fullAnswer, {
+                confidence,
+                similarity: topResult.similarity,
+                userId,
+            });
         } else {
-            fullAnswer = 'Bu konuda bilgim yok, destek talebi oluşturmanızı öneririm.';
+            fullAnswer = 'Bu konuda henüz bilgim yok, bir destek talebi oluşturmayı deneyebilirsiniz.';
             yield { chunk: fullAnswer };
         }
 
@@ -163,6 +196,47 @@ export class AiQueryService {
         });
 
         yield { done: true, interactionId: interaction.id, suggestTicket: confidence === 'LOW' || confidence === 'NO_MATCH' };
+    }
+
+    @OnEvent('ai.translate_message', { async: true })
+    async handleTranslationRequest(payload: { ticketId: string; messageId: string; targetLanguage: string }) {
+        try {
+            const message = await this.prisma.ticketMessage.findUnique({ where: { id: payload.messageId } });
+            if (!message) return;
+
+            const translated = await this.ai.translate(message.message, payload.targetLanguage);
+            if (translated) {
+                const currentMetadata = (message.metadata as any) || {};
+                await this.prisma.ticketMessage.update({
+                    where: { id: message.id },
+                    data: {
+                        metadata: {
+                            ...currentMetadata,
+                            translations: {
+                                ...(currentMetadata.translations || {}),
+                                [payload.targetLanguage]: translated
+                            }
+                        }
+                    }
+                });
+                this.logger.log(`🌍 Translated message ${message.id} to ${payload.targetLanguage}`);
+            }
+        } catch (error) {
+            this.logger.error(`❌ Translation failed for message ${payload.messageId}`, error.stack);
+        }
+    }
+
+    @OnEvent('ticket.message_added', { async: true })
+    async handleAutoTranslate(event: { ticket: any; message: TicketMessage }) {
+        const enabled = await this.settings.getValue('ai.auto_translate.enabled');
+        if (enabled?.toString() === 'true') {
+            const targetLang = (await this.settings.getValue('ai.auto_translate.target_lang')) || 'en';
+            await this.handleTranslationRequest({
+                ticketId: event.ticket.id,
+                messageId: event.message.id,
+                targetLanguage: targetLang
+            });
+        }
     }
 
     async submitFeedback(
