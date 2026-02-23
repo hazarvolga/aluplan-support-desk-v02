@@ -584,6 +584,29 @@ model AuditLog {
 }
 
 // =============================================
+// AUTOMATION ENGINE
+// =============================================
+
+enum RuleTrigger {
+  TICKET_CREATED
+  MESSAGE_ADDED
+}
+
+model TicketRule {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String      @db.VarChar(100)
+  description String?     @db.Text
+  isActive    Boolean     @default(true) @map("is_active")
+  triggerOn   RuleTrigger @default(TICKET_CREATED) @map("trigger_on")
+  conditions  Json        // Format: { "subject:contains": "acil", "priority:equals": "HIGH" }
+  actions     Json        // Format: { "setPriority": "URGENT", "addTag": "acil-talep" }
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@map("ticket_rules")
+}
+
+// =============================================
 // PRODUCTIVITY TOOLS (Macros / Canned Responses)
 // =============================================
 

@@ -4,13 +4,14 @@ import { TicketsController } from './tickets.controller';
 import { TicketsService } from './tickets.service';
 import { SlaService } from './sla.service';
 import { PiiMaskingService } from './pii-masking.service';
+import { RuleEngineService } from './rule-engine.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AiModule } from '../ai/ai.module';
 
 @Module({
-    imports: [JwtModule.register({}), AiModule, NotificationsModule], // for NotificationsGateway JWT verify
+    imports: [JwtModule.register({}), AiModule, NotificationsModule],
     controllers: [TicketsController],
-    providers: [TicketsService, SlaService, PiiMaskingService],
+    providers: [TicketsService, SlaService, PiiMaskingService, RuleEngineService],
     exports: [TicketsService, SlaService],
 })
 export class TicketsModule { }
