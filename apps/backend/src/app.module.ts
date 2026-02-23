@@ -16,6 +16,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { CustomersModule } from './customers/customers.module';
 import { SettingsModule } from './settings/settings.module';
 import { MacrosModule } from './macros/macros.module';
+import { AutomationModule } from './automation/automation.module';
 
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { OmniChannelModule } from './omni-channel/omni-channel.module';
@@ -90,6 +91,7 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
         NotificationsModule,
         WebhooksModule,
         RedisModule,
+        AutomationModule,
     ],
     providers: [],
 })
