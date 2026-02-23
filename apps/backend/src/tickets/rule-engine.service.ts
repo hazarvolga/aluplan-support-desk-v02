@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Ticket, TicketMessage, TicketPriority } from '@aluplan/database';
-
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AuditService } from '../automation/audit.service';
 
 @Injectable()
 export class RuleEngineService {
@@ -12,6 +12,7 @@ export class RuleEngineService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly audit: AuditService,
     ) { }
 
     @OnEvent('ticket.created', { async: true })
@@ -54,6 +55,14 @@ export class RuleEngineService {
                 if (isMatch) {
                     this.logger.log(`⚡ Rule matched: ${rule.name} for ticket ${ticketId}`);
 
+                    // Log rule match to audit
+                    await this.audit.log({
+                        action: 'automation.rule_matched',
+                        entityType: 'TICKET',
+                        entityId: ticketId,
+                        newValue: { ruleName: rule.name, triggerOn },
+                    });
+
                     const updateData: any = {};
                     for (const [key, value] of Object.entries(actions)) {
                         if (key === 'setPriority') {
@@ -77,10 +86,21 @@ export class RuleEngineService {
                     }
 
                     if (Object.keys(updateData).length > 0) {
+                        const oldTicket = await this.prisma.ticket.findUnique({ where: { id: ticketId } });
                         await this.prisma.ticket.update({
                             where: { id: ticketId },
                             data: updateData
                         });
+
+                        // Log rule application to audit
+                        await this.audit.log({
+                            action: 'automation.rule_applied',
+                            entityType: 'TICKET',
+                            entityId: ticketId,
+                            oldValue: oldTicket,
+                            newValue: updateData,
+                        });
+
                         this.logger.log(`✅ Rule ${rule.name} applied to ticket ${ticketId}`);
                     }
                 }

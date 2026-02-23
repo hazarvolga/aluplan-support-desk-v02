@@ -9,6 +9,19 @@ module.exports = {
             colors: {
                 background: 'rgb(var(--background))',
                 foreground: 'rgb(var(--foreground))',
+                // DISPATCH Industrial Palette
+                industrial: {
+                    dark: '#0D0E12',
+                    muted: '#2A2B30',
+                    border: '#323238',
+                },
+                amber: {
+                    warning: '#F5A623',
+                },
+                cyan: {
+                    active: '#00FFD1',
+                },
+                critical: '#FF2D55',
                 card: {
                     DEFAULT: 'rgb(var(--card))',
                     foreground: 'rgb(var(--card-foreground))',
@@ -40,30 +53,28 @@ module.exports = {
                 border: 'rgb(var(--border))',
                 input: 'rgb(var(--input))',
                 ring: 'rgb(var(--ring))',
+                // Keep brand for legacy compatibility but deprecate in favor of industrial
                 brand: {
-                    50: '#f0f9ff',
-                    100: '#e0f2fe',
-                    200: '#bae6fd',
-                    300: '#7dd3fc',
-                    400: '#38bdf8',
                     500: '#0ea5e9',
-                    600: '#0284c7',
-                    700: '#0369a1',
-                    800: '#075985',
-                    900: '#0c4a6e',
                 },
             },
             fontFamily: {
-                sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
-                mono: ['var(--font-geist-mono)', 'monospace'],
+                sans: ['var(--font-dm-sans)', 'system-ui', 'sans-serif'],
+                mono: ['var(--font-ibm-plex-mono)', 'monospace'],
+                industrial: ['var(--font-archivo-black)', 'sans-serif'],
+                condensed: ['var(--font-barlow-condensed)', 'sans-serif'],
             },
             animation: {
                 'fade-in': 'fadeIn 0.3s ease both',
                 'slide-up': 'slideUp 0.3s ease both',
+                'pulse-warn': 'pulseWarn 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                'scanline': 'scanline 8s linear infinite',
             },
             keyframes: {
                 fadeIn: { from: { opacity: '0' }, to: { opacity: '1' } },
                 slideUp: { from: { opacity: '0', transform: 'translateY(8px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+                pulseWarn: { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.5 } },
+                scanline: { '0%': { transform: 'translateY(-100%)' }, '100%': { transform: 'translateY(100%)' } },
             },
         },
     },

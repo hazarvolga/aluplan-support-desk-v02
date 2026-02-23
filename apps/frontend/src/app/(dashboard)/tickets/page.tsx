@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { Ticket, Clock, AlertCircle, CheckCircle2, Filter, ChevronDown, Check, Square, CheckSquare, Loader2, X, MessageCircle, Mail, Globe, Cpu } from 'lucide-react';
 import { toast } from 'sonner';
+import { WireframeBorder } from '@/components/ui/wireframe-border';
 
 const STATUS_COLORS: Record<string, string> = {
     NEW: 'border-blue-900/50 text-blue-400 bg-blue-400/5',
@@ -164,99 +165,101 @@ export default function TicketsPage() {
             )}
 
             {/* Main Operational Table */}
-            <div className="bg-card border border-border overflow-x-auto scrollbar-thin">
-                {loading ? (
-                    <div className="p-12 text-center bg-muted/5 min-w-[800px]">
-                        <div className="inline-block h-6 w-6 border-b-2 border-primary animate-spin" />
-                        <p className="text-[10px] font-mono mt-3 text-muted-foreground uppercase tracking-widest">Awaiting_Data_Stream...</p>
-                    </div>
-                ) : tickets.length === 0 ? (
-                    <div className="p-12 text-center min-w-[800px]">
-                        <Ticket className="h-8 w-8 text-muted/30 mx-auto mb-3" />
-                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">No_Incidents_Found</p>
-                    </div>
-                ) : (
-                    <table className="w-full text-left min-w-[800px]">
-                        <thead>
-                            <tr className="border-b border-border bg-muted/20 h-8">
-                                <th className="px-3 w-8">
-                                    <button onClick={toggleSelectAll} className="hover:text-primary transition-colors">
-                                        {selectedIds.length === tickets.length && tickets.length > 0 ?
-                                            <CheckSquare className="h-3.5 w-3.5 text-primary" /> :
-                                            <Square className="h-3.5 w-3.5 text-muted-foreground" />
-                                        }
-                                    </button>
-                                </th>
-                                <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">IDX</th>
-                                <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Subject_Event</th>
-                                <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Status_Flag</th>
-                                <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Level</th>
-                                <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest text-right">Timestamp</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/30">
-                            {tickets.map((t) => {
-                                const isSelected = selectedIds.includes(t.id);
-                                return (
-                                    <tr
-                                        key={t.id}
-                                        className={`hover:bg-muted/30 transition-none cursor-pointer group h-10 ${isSelected ? 'bg-primary/5' : ''}`}
-                                        onClick={() => window.location.href = `/tickets/${t.id}`}
-                                    >
-                                        <td className="px-3">
-                                            <button
-                                                onClick={(e) => toggleSelect(e, t.id)}
-                                                className={`transition-colors ${isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
-                                            >
-                                                {isSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4 opacity-30 group-hover:opacity-100" />}
-                                            </button>
-                                        </td>
-                                        <td className="px-3 font-mono text-[11px] text-muted-foreground border-r border-border/10">
-                                            <div className="flex items-center gap-1.5">
-                                                {(() => {
-                                                    const Icon = CHANNEL_ICONS[t.channel] || Globe;
-                                                    return <Icon className={`h-3 w-3 ${CHANNEL_COLORS[t.channel] || 'text-muted-foreground'}`} />;
-                                                })()}
-                                                [{t.ticketNumber}]
-                                            </div>
-                                        </td>
-                                        <td className="px-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[12px] font-bold text-foreground group-hover:text-primary tracking-tight">
-                                                    {t.subject.toUpperCase()}
+            <WireframeBorder scanline className="p-0 overflow-hidden">
+                <div className="overflow-x-auto scrollbar-thin">
+                    {loading ? (
+                        <div className="p-12 text-center bg-muted/5 min-w-[800px]">
+                            <div className="inline-block h-6 w-6 border-b-2 border-primary animate-spin" />
+                            <p className="text-[10px] font-mono mt-3 text-muted-foreground uppercase tracking-widest">Awaiting_Data_Stream...</p>
+                        </div>
+                    ) : tickets.length === 0 ? (
+                        <div className="p-12 text-center min-w-[800px]">
+                            <Ticket className="h-8 w-8 text-muted/30 mx-auto mb-3" />
+                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">No_Incidents_Found</p>
+                        </div>
+                    ) : (
+                        <table className="w-full text-left min-w-[800px]">
+                            <thead>
+                                <tr className="border-b border-border bg-muted/20 h-8">
+                                    <th className="px-3 w-8">
+                                        <button onClick={toggleSelectAll} className="hover:text-primary transition-colors">
+                                            {selectedIds.length === tickets.length && tickets.length > 0 ?
+                                                <CheckSquare className="h-3.5 w-3.5 text-primary" /> :
+                                                <Square className="h-3.5 w-3.5 text-muted-foreground" />
+                                            }
+                                        </button>
+                                    </th>
+                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">IDX</th>
+                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Subject_Event</th>
+                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Status_Flag</th>
+                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Level</th>
+                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest text-right">Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/30">
+                                {tickets.map((t) => {
+                                    const isSelected = selectedIds.includes(t.id);
+                                    return (
+                                        <tr
+                                            key={t.id}
+                                            className={`hover:bg-muted/30 transition-none cursor-pointer group h-10 ${isSelected ? 'bg-primary/5' : ''}`}
+                                            onClick={() => window.location.href = `/tickets/${t.id}`}
+                                        >
+                                            <td className="px-3">
+                                                <button
+                                                    onClick={(e) => toggleSelect(e, t.id)}
+                                                    className={`transition-colors ${isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
+                                                >
+                                                    {isSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4 opacity-30 group-hover:opacity-100" />}
+                                                </button>
+                                            </td>
+                                            <td className="px-3 font-mono text-[11px] text-muted-foreground border-r border-border/10">
+                                                <div className="flex items-center gap-1.5">
+                                                    {(() => {
+                                                        const Icon = CHANNEL_ICONS[t.channel] || Globe;
+                                                        return <Icon className={`h-3 w-3 ${CHANNEL_COLORS[t.channel] || 'text-muted-foreground'}`} />;
+                                                    })()}
+                                                    [{t.ticketNumber}]
+                                                </div>
+                                            </td>
+                                            <td className="px-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[12px] font-bold text-foreground group-hover:text-primary tracking-tight">
+                                                        {t.subject.toUpperCase()}
+                                                    </span>
+                                                    {t.knowledgeBaseAdded && (
+                                                        <span className="px-1 border border-primary/30 bg-primary/5 text-primary text-[8px] font-bold tracking-[0.2em] uppercase">
+                                                            KB_SYNCED
+                                                        </span>
+                                                    )}
+                                                    {t.isSlaBreached && (
+                                                        <span className="px-1 bg-red-500/10 border border-red-500/50 text-red-500 text-[8px] font-bold tracking-[0.2em] uppercase animate-pulse">
+                                                            SLA_BREACH
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-3">
+                                                <span className={`px-1.5 py-0.5 border text-[9px] font-bold uppercase tracking-widest ${STATUS_COLORS[t.status] ?? 'border-muted text-muted'}`}>
+                                                    {t.status}
                                                 </span>
-                                                {t.knowledgeBaseAdded && (
-                                                    <span className="px-1 border border-primary/30 bg-primary/5 text-primary text-[8px] font-bold tracking-[0.2em] uppercase">
-                                                        KB_SYNCED
-                                                    </span>
-                                                )}
-                                                {t.isSlaBreached && (
-                                                    <span className="px-1 bg-red-500/10 border border-red-500/50 text-red-500 text-[8px] font-bold tracking-[0.2em] uppercase animate-pulse">
-                                                        SLA_BREACH
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-3">
-                                            <span className={`px-1.5 py-0.5 border text-[9px] font-bold uppercase tracking-widest ${STATUS_COLORS[t.status] ?? 'border-muted text-muted'}`}>
-                                                {t.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-3">
-                                            <span className={`text-[10px] font-black uppercase italic ${PRIORITY_COLORS[t.priority] ?? ''}`}>
-                                                {t.priority}
-                                            </span>
-                                        </td>
-                                        <td className="px-3 text-right font-mono text-[10px] text-muted-foreground group-hover:text-foreground">
-                                            {new Date(t.createdAt).toISOString().replace(/T/, ' ').replace(/\..+/, '')}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                )}
-            </div>
+                                            </td>
+                                            <td className="px-3">
+                                                <span className={`text-[10px] font-black uppercase italic ${PRIORITY_COLORS[t.priority] ?? ''}`}>
+                                                    {t.priority}
+                                                </span>
+                                            </td>
+                                            <td className="px-3 text-right font-mono text-[10px] text-muted-foreground group-hover:text-foreground">
+                                                {new Date(t.createdAt).toISOString().replace(/T/, ' ').replace(/\..+/, '')}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            </WireframeBorder>
         </div>
     );
 }
