@@ -9,22 +9,24 @@ import {
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
+import { WireframeBorder } from '@/components/ui/wireframe-border';
+
 function StatCard({ icon: Icon, label, value, indicatorColor }: {
     icon: React.ElementType; label: string; value: string | number; indicatorColor: string;
 }) {
     return (
-        <div className="relative bg-muted/10 backdrop-blur-md border border-border/40 p-5 flex flex-col justify-between group overflow-hidden transition-colors hover:bg-muted/20">
+        <WireframeBorder className="p-5 flex flex-col justify-between group overflow-hidden transition-colors hover:bg-muted/10 bg-transparent">
             {/* Top Indicator Line */}
             <div className={`absolute top-0 left-0 right-0 h-[2px] ${indicatorColor} opacity-70`}></div>
 
             <div className="flex justify-between items-start mb-6">
-                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">{label}</p>
-                <Icon className="h-4 w-4 text-muted-foreground/50 group-hover:text-foreground transition-colors" />
+                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground font-mono">{label}</p>
+                <Icon className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-colors" />
             </div>
             <div>
                 <p className="text-3xl font-mono font-bold tracking-tighter text-foreground">{value}</p>
             </div>
-        </div>
+        </WireframeBorder>
     );
 }
 
@@ -132,7 +134,8 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative overflow-hidden">
+            <div className="scanline-overlay pointer-events-none" />
             <div className="flex justify-between items-end border-b border-border/40 pb-4">
                 <div>
                     <h1 className="text-[18px] font-bold tracking-tight uppercase flex items-center gap-2">
@@ -160,14 +163,14 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Priority Breakdown */}
-                <Card className="lg:col-span-2 border-border/40 bg-transparent rounded-none">
-                    <CardHeader className="py-3 px-4 bg-muted/10 border-b border-border/40">
-                        <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] flex items-center gap-2 text-muted-foreground">
-                            <Activity className="h-3 w-3" />
+                <WireframeBorder className="lg:col-span-2 border-border/40 bg-transparent">
+                    <div className="py-2.5 px-4 bg-muted/5 border-b border-border/20 flex items-center gap-2">
+                        <Activity className="h-3 w-3 text-primary" />
+                        <span className="text-[10px] uppercase font-bold tracking-[0.1em] text-muted-foreground font-mono">
                             INCIDENT_CRITICALITY_DISTRIBUTION
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4 space-y-5 flex flex-col justify-center min-h-[160px]">
+                        </span>
+                    </div>
+                    <div className="p-4 space-y-5 flex flex-col justify-center min-h-[160px]">
                         {['URGENT', 'HIGH', 'MEDIUM', 'LOW'].map(p => {
                             const count = stats?.byPriority?.find((bp: any) => bp.priority === p)?._count || 0;
                             const total = stats?.total || 1;
@@ -177,27 +180,27 @@ export default function DashboardPage() {
                             return (
                                 <div key={p} className="space-y-1.5">
                                     <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest">
-                                        <span className="text-muted-foreground w-16">{p}</span>
-                                        <div className="flex-1 mx-4 h-[2px] bg-muted relative overflow-hidden">
+                                        <span className="text-muted-foreground w-16 font-mono">{p}</span>
+                                        <div className="flex-1 mx-4 h-[2px] bg-muted/10 relative overflow-hidden">
                                             <div className={`absolute top-0 left-0 h-full ${barColor}`} style={{ width: `${percent}%` }}></div>
                                         </div>
-                                        <span className="text-foreground w-16 text-right font-mono text-xs">{count} <span className="text-muted-foreground/50 text-[10px] ml-1">[{percent}%]</span></span>
+                                        <span className="text-foreground w-16 text-right font-mono text-xs">{count} <span className="text-muted-foreground/30 text-[10px] ml-1">[{percent}%]</span></span>
                                     </div>
                                 </div>
                             );
                         })}
-                    </CardContent>
-                </Card>
+                    </div>
+                </WireframeBorder>
 
                 {/* AI & System Health */}
                 <div className="flex flex-col gap-4">
-                    <Card className="border-border/40 bg-transparent rounded-none flex-1">
-                        <CardHeader className="py-3 px-4 bg-muted/10 border-b border-border/40">
-                            <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground">
+                    <WireframeBorder className="border-border/40 bg-transparent flex-1">
+                        <div className="py-2.5 px-4 bg-muted/5 border-b border-border/20">
+                            <div className="text-[10px] uppercase font-bold tracking-[0.1em] text-muted-foreground font-mono">
                                 SYSTEM_TELEMETRY
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 flex flex-col justify-center">
+                            </div>
+                        </div>
+                        <div className="p-4 flex flex-col justify-center">
                             <div className={`p-4 border ${aiStatus?.available ? 'bg-emerald-500/5 border-emerald-900/30' : 'bg-rose-500/5 border-rose-900/30'} flex flex-col items-center justify-center gap-2 h-full min-h-[80px]`}>
                                 <div className="flex items-center gap-3">
                                     <div className={`h-2 w-2 rounded-full animate-pulse ${aiStatus?.available ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]'}`}></div>
@@ -209,26 +212,26 @@ export default function DashboardPage() {
                                     <span className="text-[9px] text-muted-foreground font-mono opacity-50 block uppercase tracking-tighter">M:{aiStatus.model}</span>
                                 )}
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </WireframeBorder>
 
-                    <Card className="border-border/40 bg-transparent rounded-none">
-                        <CardHeader className="py-3 px-4 bg-muted/10 border-b border-border/40">
-                            <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground">
+                    <WireframeBorder className="border-border/40 bg-transparent">
+                        <div className="py-2.5 px-4 bg-muted/5 border-b border-border/20">
+                            <div className="text-[10px] uppercase font-bold tracking-[0.1em] text-muted-foreground font-mono">
                                 RAPID_ROUTING
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 grid gap-2">
+                            </div>
+                        </div>
+                        <div className="p-4 grid gap-2">
                             <Link href="/tickets?status=NEW" className="flex items-center justify-between p-3 border border-border/40 bg-muted/5 hover:bg-primary/5 hover:border-primary/30 transition-colors group">
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-foreground">MANAGE_QUEUE</span>
+                                <span className="text-[10px] uppercase font-bold tracking-widest text-foreground font-mono">MANAGE_QUEUE</span>
                                 <PlusCircle className="h-3 w-3 text-primary group-hover:translate-x-1 transition-transform" />
                             </Link>
-                            <Link href="/ai" className="flex items-center justify-between p-3 border border-border/40 bg-muted/5 hover:bg-violet-500/5 hover:border-violet-500/30 transition-colors group">
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-foreground">NEURAL_ANALYSIS</span>
-                                <Bot className="h-3 w-3 text-violet-400 group-hover:translate-x-1 transition-transform" />
+                            <Link href="/ai" className="flex items-center justify-between p-3 border border-border/40 bg-muted/5 hover:bg-cyan-500/5 hover:border-cyan-500/30 transition-colors group">
+                                <span className="text-[10px] uppercase font-bold tracking-widest text-foreground font-mono">NEURAL_ANALYSIS</span>
+                                <Bot className="h-3 w-3 text-cyan-400 group-hover:translate-x-1 transition-transform" />
                             </Link>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </WireframeBorder>
                 </div>
             </div>
         </div>
