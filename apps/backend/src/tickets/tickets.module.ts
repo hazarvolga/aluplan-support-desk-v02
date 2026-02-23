@@ -5,13 +5,14 @@ import { TicketsService } from './tickets.service';
 import { SlaService } from './sla.service';
 import { PiiMaskingService } from './pii-masking.service';
 import { RuleEngineService } from './rule-engine.service';
+import { AutoAssignmentService } from './auto-assignment.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AiModule } from '../ai/ai.module';
 
 @Module({
     imports: [JwtModule.register({}), AiModule, NotificationsModule],
     controllers: [TicketsController],
-    providers: [TicketsService, SlaService, PiiMaskingService, RuleEngineService],
+    providers: [TicketsService, SlaService, PiiMaskingService, RuleEngineService, AutoAssignmentService],
     exports: [TicketsService, SlaService],
 })
 export class TicketsModule { }
