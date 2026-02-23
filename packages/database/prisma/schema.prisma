@@ -25,6 +25,7 @@ enum UserStatus {
 
 enum TicketStatus {
   NEW
+  DRAFT
   OPEN
   PENDING_CUSTOMER
   IN_PROGRESS
@@ -113,8 +114,25 @@ model User {
   settings          Setting[]
   macrosCreated     Macro[]
   customerProfile   CustomerProfile?
+  notifications     Notification[]
 
   @@map("users")
+}
+
+model Notification {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String   @db.VarChar(255)
+  message   String   @db.Text
+  type      String   @default("SYSTEM") @db.VarChar(50) // e.g., TICKET_ASSIGNED, INFO
+  isRead    Boolean  @default(false) @map("is_read")
+  link      String?  @db.Text // URL or deep link to the resource
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead], map: "idx_notifications_user_read")
+  @@map("notifications")
 }
 
 model Role {

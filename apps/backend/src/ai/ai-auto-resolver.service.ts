@@ -29,28 +29,24 @@ export class AiAutoResolverService {
             const result = await this.aiQueryService.query(queryText, ticket.userId ?? undefined);
 
             if (result.confidence === 'HIGH' && result.answer) {
-                this.logger.log(`✅ Auto-resolving ticket ${ticket.ticketNumber} with HIGH confidence AI response.`);
+                this.logger.log(`✍️ Creating Draft for ticket ${ticket.ticketNumber} with HIGH confidence AI response.`);
 
-                // 1. Add the AI message
+                // 1. Add the AI message as an internal note (Draft)
                 await this.prisma.ticketMessage.create({
                     data: {
                         ticketId: ticket.id,
-                        senderId: null, // System / AI sender (null senderId)
-                        message: result.answer,
-                        isInternal: false,
+                        senderId: null, // System / AI sender
+                        message: `[AI DRAFT RESPONSE]\n\n${result.answer}`,
+                        isInternal: true,
                     }
                 });
 
-                // 2. Update ticket status to RESOLVED and set SLA metrics
-                const now = new Date();
+                // 2. Update ticket status to DRAFT wait for Human-in-the-loop
                 await this.prisma.ticket.update({
                     where: { id: ticket.id },
                     data: {
-                        status: TicketStatus.RESOLVED,
+                        status: TicketStatus.DRAFT,
                         interactionId: result.interactionId,
-                        slaRespondedAt: now,
-                        slaSolvedAt: now,
-                        resolvedAt: now,
                     }
                 });
 

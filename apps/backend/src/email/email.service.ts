@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { ResendProvider } from './resend.provider';
 import { SmtpProvider } from './smtp.provider';
+import { GmailProvider } from './gmail.provider';
 import { EmailProvider, SendEmailOptions } from './interfaces/email-provider.interface';
 import * as Templates from './email.templates';
 

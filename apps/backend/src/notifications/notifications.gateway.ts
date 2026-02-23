@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../prisma/prisma.service';
 
 @WebSocketGateway({
     cors: { origin: '*', credentials: true },
@@ -24,6 +25,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     constructor(
         private readonly jwtService: JwtService,
         private readonly config: ConfigService,
+        private readonly prisma: PrismaService,
     ) { }
 
     async handleConnection(client: Socket) {
@@ -85,7 +87,26 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     // ─── EMIT METHODS (called from services) ────────────────
 
-    emitTicketCreated(ticket: any) {
+    async emitTicketCreated(ticket: any) {
+        // Find users with admin, support_manager, or support_agent role
+        const roleUsers = await this.prisma.userRole.findMany({
+            where: { role: { name: { in: ['admin', 'support_manager', 'support_agent'] } } },
+            select: { userId: true }
+        });
+        const userIds = [...new Set(roleUsers.map(r => r.userId))];
+
+        if (userIds.length > 0) {
+            await this.prisma.notification.createMany({
+                data: userIds.map(userId => ({
+                    userId,
+                    title: 'New Ticket',
+                    message: `Ticket #${ticket.ticketNumber} created: ${ticket.subject}`,
+                    type: 'TICKET_CREATED',
+                    link: `/tickets/${ticket.id}`
+                }))
+            });
+        }
+
         // Notify all agents/managers
         this.server.to('role:admin').to('role:support_manager').to('role:support_agent').emit('ticket:created', {
             id: ticket.id,
@@ -96,7 +117,20 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         });
     }
 
-    emitTicketUpdated(ticket: any) {
+    async emitTicketUpdated(ticket: any) {
+        // If assignedTo is present, notify the assignee
+        if (ticket.assignedTo) {
+            await this.prisma.notification.create({
+                data: {
+                    userId: ticket.assignedTo,
+                    title: 'Ticket Updated',
+                    message: `Ticket #${ticket.ticketNumber} has been updated. Status: ${ticket.status}`,
+                    type: 'TICKET_UPDATED',
+                    link: `/tickets/${ticket.id}`
+                }
+            });
+        }
+
         this.server.to(`ticket:${ticket.id}`).emit('ticket:updated', ticket);
         // Also broadcast to dashboard subscribers
         this.server.to('role:admin').to('role:support_manager').emit('ticket:status_changed', {
@@ -119,7 +153,26 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             });
     }
 
-    emitSlaBreached(ticket: any) {
+    async emitSlaBreached(ticket: any) {
+        const roleUsers = await this.prisma.userRole.findMany({
+            where: { role: { name: { in: ['admin', 'support_manager'] } } },
+            select: { userId: true }
+        });
+        const userIds = new Set(roleUsers.map(r => r.userId));
+        if (ticket.assignedTo) userIds.add(ticket.assignedTo);
+
+        if (userIds.size > 0) {
+            await this.prisma.notification.createMany({
+                data: Array.from(userIds).map(userId => ({
+                    userId,
+                    title: 'SLA Breached',
+                    message: `Ticket #${ticket.ticketNumber} has breached SLA.`,
+                    type: 'SLA_BREACH',
+                    link: `/tickets/${ticket.id}`
+                }))
+            });
+        }
+
         this.server
             .to('role:admin')
             .to('role:support_manager')

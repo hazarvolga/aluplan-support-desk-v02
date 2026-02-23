@@ -12,7 +12,7 @@ import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
 import { AiModule } from './ai/ai.module';
 import { FaqModule } from './faq/faq.module';
 import { EmailModule } from './email/email.module';
-import { NotificationsGateway } from './notifications/notifications.gateway';
+import { NotificationsModule } from './notifications/notifications.module';
 import { CustomersModule } from './customers/customers.module';
 import { SettingsModule } from './settings/settings.module';
 import { MacrosModule } from './macros/macros.module';
@@ -63,7 +63,8 @@ import { WhatsAppModule } from './whatsapp/whatsapp.module';
         KnowledgePoolModule,
         ProductsModule,
         WhatsAppModule,
+        NotificationsModule,
     ],
-    providers: [NotificationsGateway],
+    providers: [],
 })
 export class AppModule { }
