@@ -25,6 +25,7 @@ import configuration, { validate } from './config/configuration';
 import { ProductsModule } from './products/products.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { ReportsModule } from './reports/reports.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
@@ -86,6 +87,7 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
         WhatsAppModule,
         ReportsModule,
         NotificationsModule,
+        WebhooksModule,
     ],
     providers: [],
 })

@@ -247,6 +247,16 @@ export class TicketsService {
 
         const updated = await this.prisma.ticket.update({ where: { id }, data: updateData });
 
+        this.eventEmitter.emit('ticket.status_changed', {
+            ticketId: updated.id,
+            oldStatus: ticket.status,
+            newStatus: updated.status
+        });
+
+        if (updated.status === TicketStatus.RESOLVED) {
+            this.eventEmitter.emit('ticket.resolved', updated);
+        }
+
         this.logger.log(
             `🔄 Ticket ${ticket.ticketNumber}: ${ticket.status} → ${toStatus} by ${actorId}`,
         );

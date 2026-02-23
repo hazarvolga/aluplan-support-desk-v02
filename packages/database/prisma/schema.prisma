@@ -654,6 +654,23 @@ model InboundEmailLog {
 }
 
 // =============================================
+// WEBHOOK SYSTEM (Outgoing Events)
+// =============================================
+
+model Webhook {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar(100)
+  url         String   @db.Text
+  events      String[] // Array of event names like ["ticket.created", "ticket.resolved"]
+  secret      String?  @db.VarChar(255) // For signing payloads
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("webhooks")
+}
+
+// =============================================
 // KNOWLEDGE POOL (Unstructured Data)
 // =============================================
 
