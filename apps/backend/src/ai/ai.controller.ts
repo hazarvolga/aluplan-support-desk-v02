@@ -12,6 +12,7 @@ import { AiService } from './ai.service';
 import { AiCopilotService } from './ai-copilot.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 export class AiQueryDto {
     @ApiProperty({ example: 'Şifremi nasıl sıfırlarım?' })
@@ -32,7 +33,7 @@ export class FeedbackDto {
 
 @ApiTags('AI Engine')
 @ApiBearerAuth()
-@UseGuards(RbacGuard)
+@UseGuards(RbacGuard, ThrottlerGuard)
 @Controller('ai')
 export class AiController {
     constructor(

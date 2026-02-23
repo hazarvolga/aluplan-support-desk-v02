@@ -25,6 +25,9 @@ import configuration, { validate } from './config/configuration';
 import { ProductsModule } from './products/products.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -41,6 +44,23 @@ import { WhatsAppModule } from './whatsapp/whatsapp.module';
                     host: config.get<string>('redis.host'),
                     port: config.get<number>('redis.port'),
                 },
+            }),
+        }),
+        ThrottlerModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                throttlers: [
+                    {
+                        name: 'default',
+                        ttl: 60000,
+                        limit: 10,
+                    },
+                ],
+                storage: new ThrottlerStorageRedisService({
+                    host: config.get<string>('redis.host'),
+                    port: config.get<number>('redis.port'),
+                }),
             }),
         }),
         EventEmitterModule.forRoot(),

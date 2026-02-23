@@ -13,6 +13,7 @@
     },
     "dependencies": {
         "@aluplan/database": "workspace:*",
+        "@nest-lab/throttler-storage-redis": "^1.2.0",
         "@nestjs/bullmq": "^11.0.4",
         "@nestjs/common": "^11.0.0",
         "@nestjs/config": "^4.0.0",
@@ -26,6 +27,7 @@
         "@nestjs/schedule": "^5.0.1",
         "@nestjs/swagger": "^11.0.0",
         "@nestjs/terminus": "^11.0.0",
+        "@nestjs/throttler": "^6.5.0",
         "@nestjs/websockets": "^11.0.0",
         "@prisma/client": "^6.3.1",
         "@types/imap-simple": "^4.2.10",
