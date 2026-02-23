@@ -4,6 +4,7 @@ import { AiService } from './ai.service';
 import { EmbeddingService, SearchResult } from './embedding.service';
 import { ConfigService } from '@nestjs/config';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
+import { PromptsService } from './prompts.service';
 
 // Confidence bands — LOW/HIGH/MEDIUM from schema, NO_MATCH is local
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -17,7 +18,7 @@ export interface AiQueryResult {
     suggestTicket: boolean;
 }
 
-const SYSTEM_PROMPT = `Sen Aluplan destek asistanısın. 
+const DEFAULT_SYSTEM_PROMPT = `Sen Aluplan destek asistanısın. 
 KURALLAR:
 1. YALNIZCA sana verilen ONAYLI BİLGİ KAYNAĞINI kullan.
 2. Bilgi kaynağında yanıt yoksa: "Bu konuda bilgim yok, destek talebi oluşturmanızı öneririm." de.
@@ -36,6 +37,7 @@ export class AiQueryService {
         private readonly embeddingService: EmbeddingService,
         private readonly config: ConfigService,
         private readonly promptContextBuilder: PromptContextBuilderService,
+        private readonly promptsService: PromptsService,
     ) {
         this.highThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_HIGH', '0.90'));
         this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.75'));
@@ -57,12 +59,13 @@ export class AiQueryService {
         }
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
+            const systemPrompt = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', DEFAULT_SYSTEM_PROMPT);
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId,
                 userQuery,
                 kbContent: topResult.content,
             });
-            const finalPrompt = `${SYSTEM_PROMPT}\n\n${contextPrompt}`;
+            const finalPrompt = `${systemPrompt}\n\n${contextPrompt}`;
             const aiResult = await this.ai.reformat(finalPrompt, userQuery, topResult.content);
             answer = aiResult?.response ?? topResult.content;
         }
@@ -114,12 +117,13 @@ export class AiQueryService {
         }
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
+            const systemPrompt = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', DEFAULT_SYSTEM_PROMPT);
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId,
                 userQuery,
                 kbContent: topResult.content,
             });
-            const finalPrompt = `${SYSTEM_PROMPT}\n\n${contextPrompt}`;
+            const finalPrompt = `${systemPrompt}\n\n${contextPrompt}`;
 
             const stream = this.ai.streamReformat(finalPrompt, userQuery, topResult.content);
             for await (const chunk of stream) {

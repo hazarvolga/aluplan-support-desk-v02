@@ -10,21 +10,23 @@ import { AiAutoResolverService } from './ai-auto-resolver.service';
 import { AiCopilotService } from './ai-copilot.service';
 import { SettingsModule } from '../settings/settings.module';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
+import { PromptsService } from './prompts.service';
 
 @Module({
     imports: [SettingsModule],
     controllers: [AiController],
     providers: [
-        OllamaService,
+        AiService,
         OpenAiService,
         GenericOpenAiService,
-        AiService,
+        OllamaService,
         EmbeddingService,
         AiQueryService,
         AiAutoResolverService,
         AiCopilotService,
-        PromptContextBuilderService
+        PromptContextBuilderService,
+        PromptsService
     ],
-    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService],
+    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService, PromptsService],
 })
 export class AiModule { }
