@@ -111,6 +111,50 @@ export class OllamaService implements AiProvider {
         }
     }
 
+    async *streamReformat(systemPrompt: string, userQuery: string, kbContent: string): AsyncGenerator<string, void, unknown> {
+        try {
+            const baseUrl = await this.getBaseUrl();
+            const chatModel = await this.getChatModel();
+            const prompt = `${systemPrompt}\n\n---\nONAYLI BİLGİ KAYNAGI:\n${kbContent}\n\n---\nKULLANICI SORUSU:\n${userQuery}\n\nYUKARIDAKİ ONAYLI BİLGİYE DAYANARAK YANIT VER. Bilgi dışına çıkma.`;
+
+            const response = await fetch(`${baseUrl}/api/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: chatModel,
+                    prompt,
+                    stream: true,
+                    options: { temperature: 0.1, top_p: 0.9 },
+                }),
+            });
+
+            if (!response.ok) throw new Error(`Ollama stream HTTP ${response.status}`);
+
+            const reader = response.body?.getReader();
+            if (!reader) return;
+            const decoder = new TextDecoder('utf-8');
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const lines = decoder.decode(value, { stream: true }).split('\n').filter(l => l.trim().length > 0);
+                for (const line of lines) {
+                    try {
+                        const parsed = JSON.parse(line);
+                        if (parsed.response) {
+                            yield parsed.response;
+                        }
+                    } catch (e) {
+                        // ignore JSON parse error on chunk
+                    }
+                }
+            }
+        } catch (err: any) {
+            this.logger.warn(`⚠️ Ollama stream failed: ${err.message}`);
+        }
+    }
+
     async suggestCategory(title: string, content: string, categories: string[]): Promise<string | null> {
         const prompt = `Görevin: Aşağıdaki döküman için en uygun kategoriyi seçmek.
 

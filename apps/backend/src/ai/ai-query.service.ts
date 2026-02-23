@@ -93,6 +93,45 @@ export class AiQueryService {
         };
     }
 
+    async *streamQuery(userQuery: string, userId?: string | null): AsyncGenerator<any, void, unknown> {
+        const results = await this.embeddingService.search(userQuery);
+        const topResult = results[0] ?? null;
+
+        let confidence: ConfidenceBand = 'NO_MATCH';
+        let fullAnswer = '';
+
+        if (topResult) {
+            if (topResult.similarity >= this.highThreshold) confidence = 'HIGH';
+            else if (topResult.similarity >= this.mediumThreshold) confidence = 'MEDIUM';
+            else confidence = 'LOW';
+        }
+
+        if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
+            const stream = this.ai.streamReformat(SYSTEM_PROMPT, userQuery, topResult.content);
+            for await (const chunk of stream) {
+                fullAnswer += chunk;
+                yield { chunk };
+            }
+        } else {
+            fullAnswer = 'Bu konuda bilgim yok, destek talebi oluşturmanızı öneririm.';
+            yield { chunk: fullAnswer };
+        }
+
+        const interaction = await this.prisma.aiInteraction.create({
+            data: {
+                userId,
+                userQuery,
+                responseGenerated: fullAnswer,
+                confidenceBand: confidence === 'NO_MATCH' ? null : (confidence as 'HIGH' | 'MEDIUM' | 'LOW'),
+                matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
+                similarityScore: topResult ? topResult.similarity : undefined,
+                autoAnswered: confidence === 'HIGH' || confidence === 'MEDIUM',
+            },
+        });
+
+        yield { done: true, interactionId: interaction.id, suggestTicket: confidence === 'LOW' || confidence === 'NO_MATCH' };
+    }
+
     async submitFeedback(
         interactionId: string,
         userId: string,

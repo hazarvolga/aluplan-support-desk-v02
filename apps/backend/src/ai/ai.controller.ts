@@ -1,7 +1,8 @@
 import {
-    Controller, Post, Get, Body, Param, Request,
-    UseGuards, HttpCode, HttpStatus,
+    Controller, Post, Get, Body, Param, Request, Query,
+    UseGuards, HttpCode, HttpStatus, Sse, MessageEvent,
 } from '@nestjs/common';
+import { Observable } from 'rxjs';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { IsString, IsInt, Min, Max, IsOptional, MinLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -48,6 +49,25 @@ export class AiController {
     @HttpCode(HttpStatus.OK)
     query(@Body() dto: AiQueryDto, @Request() req: any) {
         return this.aiQueryService.query(dto.query, req.user.sub);
+    }
+
+    @Get('query/stream')
+    @ApiOperation({ summary: 'Stream AI response via SSE' })
+    @Sse()
+    streamQuery(@Query('q') query: string, @Request() req: any): Observable<MessageEvent> {
+        return new Observable((subscriber) => {
+            (async () => {
+                try {
+                    const stream = this.aiQueryService.streamQuery(query, req.user?.sub);
+                    for await (const object of stream) {
+                        subscriber.next({ data: object } as MessageEvent);
+                    }
+                    subscriber.complete();
+                } catch (err) {
+                    subscriber.error(err);
+                }
+            })();
+        });
     }
 
     @Post('interactions/:id/feedback')

@@ -53,6 +53,19 @@ export class AiService implements AiProvider {
         return provider.reformat(systemPrompt, userQuery, kbContent);
     }
 
+    async *streamReformat(systemPrompt: string, userQuery: string, kbContent: string): AsyncGenerator<string, void, unknown> {
+        const provider = await this.getActiveProvider();
+        if (provider.streamReformat) {
+            yield* provider.streamReformat(systemPrompt, userQuery, kbContent);
+        } else {
+            // Fallback: yield the whole reformat at once
+            const result = await provider.reformat(systemPrompt, userQuery, kbContent);
+            if (result?.response) {
+                yield result.response;
+            }
+        }
+    }
+
     async suggestCategory(title: string, content: string, categories: string[]): Promise<string | null> {
         const provider = await this.getActiveProvider();
         return provider.suggestCategory(title, content, categories);
