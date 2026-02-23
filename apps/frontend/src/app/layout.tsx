@@ -11,6 +11,7 @@ export const viewport: Viewport = {
 };
 
 import { AuthProvider } from '@/components/auth/role-guard';
+import { CommandMenu } from '@/components/command-menu';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <body suppressHydrationWarning>
                 <AuthProvider>
                     {children}
+                    <CommandMenu />
                 </AuthProvider>
             </body>
         </html>
