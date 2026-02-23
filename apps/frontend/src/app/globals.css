@@ -4,57 +4,64 @@
 
 @layer base {
   :root {
-    --background: 10 10 12;
+    --background: 13 14 18;
+    /* #0D0E12 */
     --foreground: 220 225 235;
 
-    --card: 14 14 17;
+    --card: 16 16 20;
     --card-foreground: 220 225 235;
 
-    --popover: 14 14 17;
+    --popover: 16 16 20;
     --popover-foreground: 220 225 235;
 
-    --primary: 220 225 235;
-    --primary-foreground: 10 10 12;
+    --primary: 0 255 209;
+    /* Cyan-Active */
+    --primary-foreground: 13 14 18;
 
-    --secondary: 25 25 30;
+    --secondary: 42 43 48;
+    /* industrial-muted */
     --secondary-foreground: 220 225 235;
 
-    --muted: 21 21 26;
-    --muted-foreground: 130 140 155;
+    --muted: 25 25 30;
+    --muted-foreground: 110 120 135;
 
-    --accent: 32 32 40;
-    --accent-foreground: 255 255 255;
+    --accent: 245 166 35;
+    /* Amber-Warning */
+    --accent-foreground: 13 14 18;
 
-    --destructive: 200 45 45;
+    --destructive: 255 45 85;
+    /* Critical-Red */
     --destructive-foreground: 255 255 255;
 
-    --border: 32 32 40;
-    --input: 21 21 26;
-    --ring: 220 225 235;
+    --border: 50 50 56;
+    --input: 25 25 30;
+    --ring: 0 255 209;
 
-    --radius: 0.125rem;
+    --radius: 0;
+    /* Forced Industrial 0-Radius */
     /* Precise industrial chambfer */
-    --sidebar-width: 200px;
+    --sidebar-width: 210px;
   }
 
   .dark {
-    /* Persistent dark theme for operational feel */
-    --background: 10 10 12;
+    --background: 13 14 18;
     --foreground: 220 225 235;
   }
 
   * {
     @apply border-border;
+    border-radius: 0 !important;
+    /* Zero tolerance for rounded corners */
     box-sizing: border-box;
   }
 
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1, "tnum" 1;
-    /* Tabular numbers for data */
     -webkit-font-smoothing: antialiased;
     letter-spacing: -0.01em;
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    /* DISPATCH Font pairing */
+    font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
   }
 }
 
@@ -70,5 +77,79 @@
 
   .tech-value {
     @apply font-mono text-sm tracking-tight;
+  }
+}
+@layer utilities {
+  .industrial-grid {
+    background-image: radial-gradient(rgb(var(--border)) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .wireframe-corner {
+    position: relative;
+  }
+
+  .wireframe-corner-tl::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    width: 10px;
+    height: 10px;
+    border-top: 1px solid rgb(var(--border));
+    border-left: 1px solid rgb(var(--border));
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .wireframe-corner-tr::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 10px;
+    height: 10px;
+    border-top: 1px solid rgb(var(--border));
+    border-right: 1px solid rgb(var(--border));
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .wireframe-corner-bl::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: -1px;
+    width: 10px;
+    height: 10px;
+    border-bottom: 1px solid rgb(var(--border));
+    border-left: 1px solid rgb(var(--border));
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .wireframe-corner-br::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 10px;
+    height: 10px;
+    border-bottom: 1px solid rgb(var(--border));
+    border-right: 1px solid rgb(var(--border));
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .scanline-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom,
+        transparent 50%,
+        rgba(0, 255, 209, 0.03) 50%);
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0.5;
   }
 }
