@@ -9,6 +9,7 @@ import { AiController } from './ai.controller';
 import { AiAutoResolverService } from './ai-auto-resolver.service';
 import { AiCopilotService } from './ai-copilot.service';
 import { SettingsModule } from '../settings/settings.module';
+import { PromptContextBuilderService } from './prompt-context-builder.service';
 
 @Module({
     imports: [SettingsModule],
@@ -21,8 +22,9 @@ import { SettingsModule } from '../settings/settings.module';
         EmbeddingService,
         AiQueryService,
         AiAutoResolverService,
-        AiCopilotService
+        AiCopilotService,
+        PromptContextBuilderService
     ],
-    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService],
+    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService],
 })
 export class AiModule { }

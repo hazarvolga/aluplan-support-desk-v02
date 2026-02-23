@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { EmbeddingService, SearchResult } from './embedding.service';
 import { ConfigService } from '@nestjs/config';
+import { PromptContextBuilderService } from './prompt-context-builder.service';
 
 // Confidence bands — LOW/HIGH/MEDIUM from schema, NO_MATCH is local
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -34,6 +35,7 @@ export class AiQueryService {
         private readonly ai: AiService,
         private readonly embeddingService: EmbeddingService,
         private readonly config: ConfigService,
+        private readonly promptContextBuilder: PromptContextBuilderService,
     ) {
         this.highThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_HIGH', '0.90'));
         this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.75'));
@@ -54,9 +56,14 @@ export class AiQueryService {
             else confidence = 'LOW';
         }
 
-        // 3. Reformat via AI for HIGH/MEDIUM matches
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
-            const aiResult = await this.ai.reformat(SYSTEM_PROMPT, userQuery, topResult.content);
+            const contextPrompt = await this.promptContextBuilder.buildContext({
+                userId,
+                userQuery,
+                kbContent: topResult.content,
+            });
+            const finalPrompt = `${SYSTEM_PROMPT}\n\n${contextPrompt}`;
+            const aiResult = await this.ai.reformat(finalPrompt, userQuery, topResult.content);
             answer = aiResult?.response ?? topResult.content;
         }
 
@@ -107,7 +114,14 @@ export class AiQueryService {
         }
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
-            const stream = this.ai.streamReformat(SYSTEM_PROMPT, userQuery, topResult.content);
+            const contextPrompt = await this.promptContextBuilder.buildContext({
+                userId,
+                userQuery,
+                kbContent: topResult.content,
+            });
+            const finalPrompt = `${SYSTEM_PROMPT}\n\n${contextPrompt}`;
+
+            const stream = this.ai.streamReformat(finalPrompt, userQuery, topResult.content);
             for await (const chunk of stream) {
                 fullAnswer += chunk;
                 yield { chunk };
