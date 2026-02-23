@@ -54,6 +54,7 @@ export class AuthService {
         ];
 
         const tokens = await this.generateTokens(user.id, user.email, user.fullName, roles, permissions);
+        await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
 
         return {
             user: {
@@ -70,18 +71,28 @@ export class AuthService {
 
     async refreshTokens(userId: string, refreshToken: string) {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
-        if (!user || user.status !== 'ACTIVE') {
+        if (!user || user.status !== 'ACTIVE' || !user.refreshTokenHash) {
             throw new ForbiddenException('Access denied');
         }
 
-        // In production, validate stored refresh token hash
+        const rtMatches = await bcrypt.compare(refreshToken, user.refreshTokenHash);
+        if (!rtMatches) {
+            throw new ForbiddenException('Access denied');
+        }
+
         const roles = await this.getUserRoles(userId);
         const permissions = await this.getUserPermissions(userId);
-        return this.generateTokens(userId, user.email, user.fullName, roles, permissions);
+        const tokens = await this.generateTokens(userId, user.email, user.fullName, roles, permissions);
+        await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
+
+        return tokens;
     }
 
     async logout(userId: string) {
-        // In production: invalidate refresh token in DB
+        await this.prisma.user.updateMany({
+            where: { id: userId, refreshTokenHash: { not: null } },
+            data: { refreshTokenHash: null }
+        });
         return { success: true };
     }
 
@@ -236,5 +247,14 @@ export class AuthService {
                 ),
             ),
         ];
+    }
+
+    private async updateRefreshTokenHash(userId: string, refreshToken: string) {
+        const salt = await bcrypt.genSalt();
+        const hash = await bcrypt.hash(refreshToken, salt);
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { refreshTokenHash: hash },
+        });
     }
 }

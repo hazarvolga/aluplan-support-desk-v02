@@ -87,14 +87,15 @@ enum CommunicationChannel {
 
 model User {
   id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email        String     @unique @db.VarChar(255)
-  fullName     String     @db.VarChar(255)
-  passwordHash String     @db.Text
-  avatarUrl    String?    @db.Text
-  status       UserStatus @default(ACTIVE)
-  deletedAt    DateTime?  @map("deleted_at")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  email            String     @unique @db.VarChar(255)
+  fullName         String     @db.VarChar(255)
+  passwordHash     String     @db.Text
+  refreshTokenHash String?    @map("refresh_token_hash") @db.Text
+  avatarUrl        String?    @db.Text
+  status           UserStatus @default(ACTIVE)
+  deletedAt        DateTime?  @map("deleted_at")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
 
   // Relations
   userRoles         UserRole[]                @relation("UserToRoles")
