@@ -90,6 +90,14 @@ tmp/
 temp/
 apps/backend/uploads/
 *.hxl
- Bilgi Bankası/
+Bilgi Bankası/
 havuz.md
- All Contacts(All Contacts).csv
+All Contacts(All Contacts).csv
+
+# Environments
+venv/
+.venv/
+env/
+.env*
+bin/
+obj/
