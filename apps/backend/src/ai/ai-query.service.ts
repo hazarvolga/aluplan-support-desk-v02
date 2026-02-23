@@ -9,6 +9,8 @@ import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { PromptsService } from './prompts.service';
 import { SettingsService } from '../settings/settings.service';
 import { LangfuseService } from './langfuse.service';
+import { RedisService } from '../redis/redis.service';
+import { createHash } from 'crypto';
 
 // Confidence bands — LOW/HIGH/MEDIUM from schema, NO_MATCH is local
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -44,12 +46,24 @@ export class AiQueryService {
         private readonly promptsService: PromptsService,
         private readonly settings: SettingsService,
         private readonly langfuse: LangfuseService,
+        private readonly redis: RedisService,
     ) {
         this.highThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_HIGH', '0.90'));
         this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.75'));
     }
 
     async query(userQuery: string, userId?: string | null): Promise<AiQueryResult> {
+        // 0. Cache lookup
+        const queryHash = createHash('sha256').update(userQuery).digest('hex');
+        const cacheKey = `ai:query:cache:${queryHash}`;
+        const cached = await this.redis.get(cacheKey);
+
+        if (cached) {
+            const result = JSON.parse(cached);
+            this.logger.log(`🎯 AI Query Cache Hit: ${userQuery.slice(0, 40)}...`);
+            return result;
+        }
+
         // 1. Semantic search
         const results: SearchResult[] = await this.embeddingService.search(userQuery);
 
@@ -115,7 +129,7 @@ export class AiQueryService {
             `🤖 AI Query: "${userQuery.slice(0, 60)}" → ${confidence} (${topResult?.similarity?.toFixed(3) ?? 'n/a'}) [Src: ${topResult?.sourceType}]`,
         );
 
-        return {
+        const finalResult: AiQueryResult = {
             query: userQuery,
             answer,
             confidence,
@@ -127,9 +141,25 @@ export class AiQueryService {
             interactionId: interaction.id,
             suggestTicket,
         };
+
+        // Cache for 1 hour
+        await this.redis.set(cacheKey, JSON.stringify(finalResult), 3600);
+
+        return finalResult;
     }
 
     async *streamQuery(userQuery: string, userId?: string | null): AsyncGenerator<any, void, unknown> {
+        // 0. Cache lookup
+        const queryHash = createHash('sha256').update(userQuery).digest('hex');
+        const cacheKey = `ai:query:stream_cache:${queryHash}`;
+        const cached = await this.redis.get(cacheKey);
+
+        if (cached) {
+            this.logger.log(`🎯 AI Stream Query Cache Hit: ${userQuery.slice(0, 40)}...`);
+            yield { chunk: cached };
+            return;
+        }
+
         const results = await this.embeddingService.search(userQuery);
         const topResult = results[0] ?? null;
 
