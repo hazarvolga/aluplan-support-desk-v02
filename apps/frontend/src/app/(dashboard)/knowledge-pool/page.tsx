@@ -210,49 +210,51 @@ export default function KnowledgePoolPage() {
         <div className="p-4 space-y-4">
             {/* Header */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4">
-                    <div>
-                        <h1 className="text-[18px] font-bold tracking-tight text-foreground uppercase">KNOWLEDGE_POOL_INGESTION</h1>
-                        <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-none">Automated verification and indexing of external data streams.</p>
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border/40 pb-4">
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-[16px] md:text-[18px] font-bold tracking-tight text-foreground uppercase truncate">KNOWLEDGE_POOL_INGESTION</h1>
+                        <p className="text-[9px] md:text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-none line-clamp-1 md:line-clamp-none">Automated verification and indexing of external data streams.</p>
                     </div>
 
-                    <TabsList className="bg-muted/10 border border-border/40">
-                        <TabsTrigger value="sources" className="text-[10px] uppercase font-bold tracking-widest">RAW_SOURCES (URL)</TabsTrigger>
-                        <TabsTrigger value="articles" className="text-[10px] uppercase font-bold tracking-widest">SEEDED_CONTENT (MD)</TabsTrigger>
-                    </TabsList>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <TabsList className="bg-muted/10 border border-border/40 h-9">
+                            <TabsTrigger value="sources" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">RAW_SOURCES</TabsTrigger>
+                            <TabsTrigger value="articles" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">SEEDED_CONTENT</TabsTrigger>
+                        </TabsList>
 
-                    <div className="flex gap-2">
-                        <Dialog open={isUrlModalOpen} onOpenChange={setIsUrlModalOpen}>
-                            <DialogTrigger asChild>
-                                <Button className="bg-primary text-primary-foreground h-8 text-[10px] uppercase font-bold tracking-widest gap-2">
-                                    <Globe className="h-3 w-3" /> ADD_URL_STREAM
+                        <div className="flex items-center gap-2">
+                            <Dialog open={isUrlModalOpen} onOpenChange={setIsUrlModalOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="bg-primary text-primary-foreground h-8 text-[10px] uppercase font-bold tracking-widest gap-2">
+                                        <Globe className="h-3 w-3" /> ADD_URL_STREAM
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                                    <DialogHeader>
+                                        <DialogTitle>Yeni URL Kaynağı</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="grid gap-4 py-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="name">Kaynak Adı</Label>
+                                            <Input id="name" value={urlName} onChange={(e) => setUrlName(e.target.value)} placeholder="Örn: Teknik Dokümantasyon" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="url">URL Adresi</Label>
+                                            <Input id="url" value={urlAddress} onChange={(e) => setUrlAddress(e.target.value)} placeholder="https://example.com/docs" />
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button onClick={handleAddUrl} className="bg-brand-600 hover:bg-brand-700 rounded-xl w-full">Kaydet ve Eşitle</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+
+                            <Link href="/knowledge-pool/upload">
+                                <Button variant="outline" className="h-8 border-border/60 text-[10px] uppercase font-bold tracking-widest gap-2 bg-muted/20">
+                                    <FileText className="h-3 w-3" /> UPLOAD_DATASET
                                 </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-                                <DialogHeader>
-                                    <DialogTitle>Yeni URL Kaynağı</DialogTitle>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name">Kaynak Adı</Label>
-                                        <Input id="name" value={urlName} onChange={(e) => setUrlName(e.target.value)} placeholder="Örn: Teknik Dokümantasyon" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="url">URL Adresi</Label>
-                                        <Input id="url" value={urlAddress} onChange={(e) => setUrlAddress(e.target.value)} placeholder="https://example.com/docs" />
-                                    </div>
-                                </div>
-                                <DialogFooter>
-                                    <Button onClick={handleAddUrl} className="bg-brand-600 hover:bg-brand-700 rounded-xl w-full">Kaydet ve Eşitle</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-
-                        <Link href="/knowledge-pool/upload">
-                            <Button variant="outline" className="h-8 border-border/60 text-[10px] uppercase font-bold tracking-widest gap-2 bg-muted/20">
-                                <FileText className="h-3 w-3" /> UPLOAD_DATASET
-                            </Button>
-                        </Link>
+                            </Link>
+                        </div>
                     </div>
                 </div>
 
@@ -423,8 +425,8 @@ export default function KnowledgePoolPage() {
                                     key={f.value}
                                     onClick={() => setArticleStatusFilter(f.value)}
                                     className={`px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest border rounded transition-all ${articleStatusFilter === f.value
-                                            ? `${f.color} border-current ring-1 ring-current/30`
-                                            : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'
+                                        ? `${f.color} border-current ring-1 ring-current/30`
+                                        : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'
                                         }`}
                                 >
                                     {f.label}

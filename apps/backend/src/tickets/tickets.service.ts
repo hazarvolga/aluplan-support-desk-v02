@@ -5,6 +5,7 @@ import {
     ForbiddenException,
     Logger,
 } from '@nestjs/common';
+import { RedisService } from '../redis/redis.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlaService } from './sla.service';
 import { PiiMaskingService } from './pii-masking.service';
@@ -38,6 +39,7 @@ export class TicketsService {
         private readonly piiMaskingService: PiiMaskingService,
         private readonly eventEmitter: EventEmitter2,
         private readonly aiQueryService: AiQueryService,
+        private readonly redis: RedisService,
     ) { }
 
     // =============================================
@@ -291,6 +293,10 @@ export class TicketsService {
     // SLA STATS
     // =============================================
     async getSlaStats() {
+        const cacheKey = 'sla_stats';
+        const cached = await this.redis.get(cacheKey);
+        if (cached) return JSON.parse(cached);
+
         const [total, breached, nearing] = await Promise.all([
             this.prisma.ticket.count({ where: { status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] } } }),
             this.prisma.ticket.count({ where: { isSlaBreached: true, status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] } } }),
@@ -303,7 +309,9 @@ export class TicketsService {
             }),
         ]);
 
-        return { total, breached, nearing };
+        const result = { total, breached, nearing };
+        await this.redis.set(cacheKey, JSON.stringify(result), 60); // 60 seconds TTL
+        return result;
     }
 
     // =============================================

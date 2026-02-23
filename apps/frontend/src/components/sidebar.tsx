@@ -33,7 +33,11 @@ const CUSTOMER_NAV = [
     { href: '/profile', icon: User, label: 'Profil' },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+    onNavClick?: () => void;
+}
+
+export function Sidebar({ onNavClick }: SidebarProps) {
     const pathname = usePathname();
     const [user, setUser] = useState<any>(null);
     const [pendingCount, setPendingCount] = useState(0);
@@ -78,6 +82,7 @@ export function Sidebar() {
                         <Link
                             key={href}
                             href={href}
+                            onClick={onNavClick}
                             className={`flex items-center gap-2.5 px-2 py-1.5 transition-colors group relative
                 ${active
                                     ? 'bg-accent text-white'

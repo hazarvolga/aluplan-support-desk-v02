@@ -89,7 +89,7 @@ export default function TicketsPage() {
     return (
         <div className="space-y-4 relative min-h-screen pb-24">
             {/* System Queue Header */}
-            <div className="flex items-end justify-between border-b border-border/50 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/50 pb-4">
                 <div className="space-y-1">
                     <div className="flex items-center gap-2">
                         <div className="h-2 w-2 bg-emerald-500 animate-pulse" />
@@ -164,19 +164,19 @@ export default function TicketsPage() {
             )}
 
             {/* Main Operational Table */}
-            <div className="bg-card border border-border overflow-hidden">
+            <div className="bg-card border border-border overflow-x-auto scrollbar-thin">
                 {loading ? (
-                    <div className="p-12 text-center bg-muted/5">
+                    <div className="p-12 text-center bg-muted/5 min-w-[800px]">
                         <div className="inline-block h-6 w-6 border-b-2 border-primary animate-spin" />
                         <p className="text-[10px] font-mono mt-3 text-muted-foreground uppercase tracking-widest">Awaiting_Data_Stream...</p>
                     </div>
                 ) : tickets.length === 0 ? (
-                    <div className="p-12 text-center">
+                    <div className="p-12 text-center min-w-[800px]">
                         <Ticket className="h-8 w-8 text-muted/30 mx-auto mb-3" />
                         <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">No_Incidents_Found</p>
                     </div>
                 ) : (
-                    <table className="w-full text-left">
+                    <table className="w-full text-left min-w-[800px]">
                         <thead>
                             <tr className="border-b border-border bg-muted/20 h-8">
                                 <th className="px-3 w-8">

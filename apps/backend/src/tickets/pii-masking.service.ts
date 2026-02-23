@@ -10,6 +10,8 @@ export class PiiMaskingService {
     private readonly tcknRegex = /\b[1-9]\d{10}\b/g;
     // Basic phone number regex
     private readonly phoneRegex = /\+?90\s?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{2}[-.\s]?\d{2}\b/g;
+    // Basic email regex
+    private readonly emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 
     maskSensitiveData(text: string): string {
         if (!text) return text;
@@ -32,6 +34,12 @@ export class PiiMaskingService {
         // Mask Phone Numbers
         masked = masked.replace(this.phoneRegex, (match) => {
             return `[TELEFON GİZLENDİ]`;
+        });
+
+        // Mask Emails
+        masked = masked.replace(this.emailRegex, (match) => {
+            const [local, domain] = match.split('@');
+            return `[E-POSTA GİZLENDİ: ${local.charAt(0)}***@${domain}]`;
         });
 
         return masked;

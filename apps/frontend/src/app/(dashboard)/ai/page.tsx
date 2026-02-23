@@ -48,7 +48,7 @@ export default function AiPage() {
     return (
         <div className="space-y-4 max-w-3xl">
             <div className="border-b border-border/40 pb-4">
-                <h1 className="text-[18px] font-bold text-foreground uppercase tracking-tight flex items-center gap-2">
+                <h1 className="text-[16px] md:text-[18px] font-bold text-foreground uppercase tracking-tight flex items-center gap-2">
                     <Bot className="h-5 w-5 text-primary" />
                     AI_CO_NAVIGATOR_BETA
                 </h1>
@@ -58,18 +58,18 @@ export default function AiPage() {
             </div>
 
             {/* Query input */}
-            <form onSubmit={handleQuery} className="flex gap-2 bg-muted/5 border border-border/60 p-1">
+            <form onSubmit={handleQuery} className="flex flex-col sm:flex-row gap-2 bg-muted/5 border border-border/60 p-1">
                 <input
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="ENTER_QUERY_STRING..."
-                    className="flex-1 px-3 py-2 bg-transparent text-foreground text-[12px] uppercase font-bold tracking-tight focus:outline-none placeholder:text-muted-foreground/40"
+                    className="flex-1 px-3 py-2 bg-transparent text-foreground text-[12px] uppercase font-bold tracking-tight focus:outline-none placeholder:text-muted-foreground/40 min-h-[40px]"
                 />
                 <button
                     type="submit"
                     disabled={loading || !query.trim()}
-                    className="px-4 py-2 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest disabled:opacity-30 transition-none flex items-center gap-2"
+                    className="px-4 py-2 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest disabled:opacity-30 transition-none flex items-center justify-center gap-2 h-10 sm:h-auto"
                 >
                     <Send className="h-3 w-3" />
                     {loading ? 'EXECUTING...' : 'RUN_QUERY'}

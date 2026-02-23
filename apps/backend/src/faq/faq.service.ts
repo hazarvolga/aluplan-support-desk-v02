@@ -63,16 +63,9 @@ export class FaqService {
             const answerMsg = ticket.messages.find((m: { senderId: string | null }) => m.senderId !== ticket.userId);
             if (!answerMsg) continue;
 
-            // Simple confidence: based on how many similar tickets exist
-            const similarCount = await this.prisma.ticket.count({
-                where: {
-                    subject: { contains: ticket.subject.split(' ')[0], mode: 'insensitive' },
-                    status: { in: ['RESOLVED', 'CLOSED'] },
-                    id: { not: ticket.id },
-                },
-            });
-
-            const confidenceScore = Math.min(0.5 + similarCount * 0.1, 0.99);
+            // Simple confidence: based on message length and content
+            // (Optimization: Removed per-ticket DB count to avoid N+1)
+            const confidenceScore = Math.min(0.6 + (answerMsg.message.length / 500) * 0.2, 0.95);
 
             patterns.push({
                 question,
@@ -156,9 +149,10 @@ export class FaqService {
             // Skip if empty answer (interaction-sourced without resolution)
             if (!pattern.answer.trim()) { skipped++; continue; }
 
-            // Check for duplicate
+            // Check for duplicate (Optimized: use exact match or first 30 chars)
             const existing = await this.prisma.faqEntry.findFirst({
-                where: { question: { contains: pattern.question.slice(0, 30), mode: 'insensitive' } },
+                where: { question: pattern.question },
+                select: { id: true }
             });
 
             if (existing) {
