@@ -14,6 +14,7 @@ import { AiCopilotService } from './ai-copilot.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { IsBoolean } from 'class-validator';
 
 export class AiQueryDto {
     @ApiProperty({ example: 'Şifremi nasıl sıfırlarım?' })
@@ -30,6 +31,16 @@ export class FeedbackDto {
     @ApiPropertyOptional()
     @IsString() @IsOptional()
     comment?: string;
+}
+
+export class AiTelemetryDto {
+    @ApiProperty({ example: true })
+    @IsBoolean()
+    accepted: boolean;
+
+    @ApiPropertyOptional()
+    @IsString() @IsOptional()
+    editedResponse?: string;
 }
 
 @ApiTags('AI Engine')
@@ -82,6 +93,19 @@ export class AiController {
             req.user.sub,
             dto.rating,
             dto.comment,
+        );
+    }
+
+    @Post('interactions/:id/telemetry')
+    @ApiOperation({ summary: 'Submit acceptance/edit telemetry for an AI interaction' })
+    submitTelemetry(
+        @Param('id') interactionId: string,
+        @Body() dto: AiTelemetryDto,
+    ) {
+        return this.aiQueryService.submitTelemetry(
+            interactionId,
+            dto.accepted,
+            dto.editedResponse
         );
     }
 

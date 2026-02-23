@@ -24,6 +24,7 @@ const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
     PENDING_CUSTOMER_REVIEW: [TicketStatus.RESOLVED, TicketStatus.OPEN], // Review to final resolved or back to open
     RESOLVED: [TicketStatus.CLOSED, TicketStatus.OPEN], // Reopen on customer reply
     CLOSED: [],
+    DRAFT: [TicketStatus.OPEN, TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER, TicketStatus.CLOSED],
 };
 
 @Injectable()

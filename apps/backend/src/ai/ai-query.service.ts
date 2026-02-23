@@ -167,6 +167,16 @@ export class AiQueryService {
         });
     }
 
+    async submitTelemetry(interactionId: string, accepted: boolean, editedResponse?: string) {
+        return this.prisma.aiInteraction.update({
+            where: { id: interactionId },
+            data: {
+                isAccepted: accepted,
+                editedResponse: editedResponse
+            },
+        });
+    }
+
     async getPendingForReview(limit = 50): Promise<any[]> {
         return this.prisma.aiInteraction.findMany({
             where: {

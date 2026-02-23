@@ -367,6 +367,11 @@ model AiInteraction {
   ticketCreated     Boolean         @default(false) @map("ticket_created")
   productId         String?         @map("product_id") @db.Uuid
   userContext       Json?           @map("user_context") // page, segment, etc.
+
+  // Telemetry details
+  isAccepted        Boolean?        @map("is_accepted")
+  editedResponse    String?         @map("edited_response") @db.Text
+
   createdAt         DateTime        @default(now()) @map("created_at")
 
   user           User?                    @relation(fields: [userId], references: [id])
