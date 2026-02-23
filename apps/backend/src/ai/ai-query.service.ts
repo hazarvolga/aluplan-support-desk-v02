@@ -225,6 +225,9 @@ export class AiQueryService {
             },
         });
 
+        // Cache for 1 hour
+        await this.redis.set(cacheKey, fullAnswer, 3600);
+
         yield { done: true, interactionId: interaction.id, suggestTicket: confidence === 'LOW' || confidence === 'NO_MATCH' };
     }
 
