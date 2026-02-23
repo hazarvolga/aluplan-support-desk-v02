@@ -142,6 +142,20 @@ export class TicketsController {
         return updated;
     }
 
+    // ─── LINK ───────────────────────────────────
+    @Post(':id/link/:parentId')
+    @RequirePermissions('ticket:update')
+    @ApiOperation({ summary: 'Link/merge ticket to a parent ticket' })
+    async link(
+        @Param('id') childId: string,
+        @Param('parentId') parentId: string,
+        @Request() req: any,
+    ) {
+        const updated = await this.ticketsService.linkTicket(childId, parentId, req.user.sub);
+        this.notificationsGateway.emitTicketUpdated(updated);
+        return updated;
+    }
+
     // ─── CLOSE ──────────────────────────────────
     @Patch(':id/close')
     @RequirePermissions('ticket:close')

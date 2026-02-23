@@ -61,4 +61,33 @@ export class MacrosService {
             where: { id },
         });
     }
+
+    async renderMacro(macroId: string, ticketId?: string) {
+        const macro = await this.findOne(macroId);
+        let content = macro.content;
+
+        if (ticketId) {
+            const ticket = await this.prisma.ticket.findUnique({
+                where: { id: ticketId },
+                include: { creator: true, assignee: true }
+            });
+
+            if (ticket) {
+                content = content.replace(/\{\{ticket\.ticketNumber\}\}/g, ticket.ticketNumber);
+                content = content.replace(/\{\{ticket\.subject\}\}/g, ticket.subject);
+
+                if (ticket.creator) {
+                    content = content.replace(/\{\{customer\.name\}\}/g, ticket.creator.fullName);
+                    content = content.replace(/\{\{customer\.email\}\}/g, ticket.creator.email);
+                }
+
+                if (ticket.assignee) {
+                    content = content.replace(/\{\{agent\.name\}\}/g, ticket.assignee.fullName);
+                    content = content.replace(/\{\{agent\.email\}\}/g, ticket.assignee.email);
+                }
+            }
+        }
+
+        return { content };
+    }
 }

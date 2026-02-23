@@ -191,6 +191,39 @@ SONUÇ (YALNIZCA KELİME):`;
         return 'NEUTRAL';
     }
 
+    async translate(text: string, targetLanguage: string): Promise<string | null> {
+        if (!await this.isAvailable()) return null;
+        try {
+            const baseUrl = await this.getBaseUrl();
+            const chatModel = await this.getChatModel();
+
+            const response = await fetch(`${baseUrl}/api/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: chatModel,
+                    messages: [
+                        { role: 'system', content: `You are a professional translator. Translate the following text precisely to ${targetLanguage}. ONLY output the translated text with no extra commentary.` },
+                        { role: 'user', content: text }
+                    ],
+                    options: { temperature: 0.3 }
+                }),
+                signal: AbortSignal.timeout(60_000), // Default timeout for translation
+            });
+
+            if (!response.ok) throw new Error(`Ollama translate HTTP ${response.status}`);
+            const data = await response.json() as { message: { content: string } };
+            return data.message.content.trim() || null;
+        } catch (error: any) {
+            this.logger.warn(`⚠️ Ollama Translation failed: ${error.message}`);
+            return null;
+        }
+    }
+
+    async getActiveModelName(): Promise<string> {
+        return this.getChatModel();
+    }
+
     async isAvailable(): Promise<boolean> {
         try {
             const baseUrl = await this.getBaseUrl();

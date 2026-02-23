@@ -378,6 +378,12 @@ model AiInteraction {
   isAccepted        Boolean?        @map("is_accepted")
   editedResponse    String?         @map("edited_response") @db.Text
 
+  // Token usage and Cost telemetry
+  inputTokens       Int?            @map("input_tokens")
+  outputTokens      Int?            @map("output_tokens")
+  totalTokens       Int?            @map("total_tokens")
+  estimatedCost     Decimal?        @map("estimated_cost") @db.Decimal(10, 6)
+
   createdAt         DateTime        @default(now()) @map("created_at")
 
   user           User?                    @relation(fields: [userId], references: [id])
@@ -472,6 +478,9 @@ model Ticket {
   satisfactionComment String? @map("satisfaction_comment") @db.Text
   knowledgeBaseAdded  Boolean @default(false) @map("knowledge_base_added")
 
+  // Ticket Linking
+  parentId            String? @map("parent_id") @db.Uuid
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -479,6 +488,8 @@ model Ticket {
   assignee    User?              @relation("TicketAssignedTo", fields: [assignedTo], references: [id])
   interaction AiInteraction?     @relation(fields: [interactionId], references: [id])
   product     Product?           @relation(fields: [productId], references: [id])
+  parentTicket Ticket?           @relation("TicketHierarchy", fields: [parentId], references: [id])
+  linkedTickets Ticket[]         @relation("TicketHierarchy")
   messages    TicketMessage[]
   escalations TicketEscalation[]
   embeddings  TicketEmbedding[]

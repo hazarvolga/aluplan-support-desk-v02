@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { MacrosService } from './macros.service';
 import { CreateMacroDto } from './dto/create-macro.dto';
 import { UpdateMacroDto } from './dto/update-macro.dto';
@@ -27,6 +27,12 @@ export class MacrosController {
     @Roles('admin', 'superuser', 'agent')
     findOne(@Param('id') id: string) {
         return this.macrosService.findOne(id);
+    }
+
+    @Get(':id/render')
+    @Roles('admin', 'superuser', 'agent')
+    renderMacro(@Param('id') id: string, @Query('ticketId') ticketId?: string) {
+        return this.macrosService.renderMacro(id, ticketId);
     }
 
     @Patch(':id')

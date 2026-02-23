@@ -412,6 +412,51 @@ export class TicketsService {
     }
 
     // =============================================
+    // TICKET MERGE / LINK
+    // =============================================
+    async linkTicket(childId: string, parentId: string, actorId: string) {
+        if (childId === parentId) throw new BadRequestException('Cannot link ticket to itself');
+
+        const [child, parent] = await Promise.all([
+            this.prisma.ticket.findUnique({ where: { id: childId } }),
+            this.prisma.ticket.findUnique({ where: { id: parentId } })
+        ]);
+
+        if (!child) throw new NotFoundException('Child ticket not found');
+        if (!parent) throw new NotFoundException('Parent ticket not found');
+
+        const updatedChild = await this.prisma.ticket.update({
+            where: { id: childId },
+            data: {
+                parentId,
+                status: 'CLOSED',
+                resolutionNote: `Merged into parent ticket #${parent.ticketNumber}`,
+                closedAt: new Date()
+            } as any
+        });
+
+        await this.prisma.ticketMessage.createMany({
+            data: [
+                {
+                    ticketId: childId,
+                    senderId: actorId,
+                    isInternal: true,
+                    message: `⚠️ Bilet kapatıldı ve ana bilet #${parent.ticketNumber} ile birleştirildi.`
+                },
+                {
+                    ticketId: parentId,
+                    senderId: actorId,
+                    isInternal: true,
+                    message: `🔗 Bilet #${child.ticketNumber} bu bilete alt bilet olarak birleştirildi.`
+                }
+            ]
+        });
+
+        this.logger.log(`🔗 Ticket ${child.ticketNumber} merged into ${parent.ticketNumber} by agent ${actorId}`);
+        return updatedChild;
+    }
+
+    // =============================================
     // BULK UPDATE
     // =============================================
     async bulkUpdate(dto: BulkUpdateTicketDto, actorId: string) {

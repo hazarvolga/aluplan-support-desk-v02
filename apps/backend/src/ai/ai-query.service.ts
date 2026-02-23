@@ -116,6 +116,8 @@ export class AiQueryService {
             else confidence = 'LOW';
         }
 
+        let usedPrompt = userQuery;
+
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
             const systemPrompt = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', DEFAULT_SYSTEM_PROMPT);
             const contextPrompt = await this.promptContextBuilder.buildContext({
@@ -124,6 +126,7 @@ export class AiQueryService {
                 kbContent: topResult.content,
             });
             const finalPrompt = `${systemPrompt}\n\n${contextPrompt}`;
+            usedPrompt = finalPrompt;
 
             const stream = this.ai.streamReformat(finalPrompt, userQuery, topResult.content);
             for await (const chunk of stream) {
@@ -135,6 +138,14 @@ export class AiQueryService {
             yield { chunk: fullAnswer };
         }
 
+        const inputStr = usedPrompt;
+        const inputTokens = Math.ceil(inputStr.length / 4);
+        const outputTokens = Math.ceil(fullAnswer.length / 4);
+        const totalTokens = inputTokens + outputTokens;
+
+        // Rough estimate based on generic models (e.g. gpt-4o-mini equivalents)
+        const estimatedCost = (inputTokens * 0.00000015) + (outputTokens * 0.0000006);
+
         const interaction = await this.prisma.aiInteraction.create({
             data: {
                 userId,
@@ -144,6 +155,10 @@ export class AiQueryService {
                 matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
                 similarityScore: topResult ? topResult.similarity : undefined,
                 autoAnswered: confidence === 'HIGH' || confidence === 'MEDIUM',
+                inputTokens,
+                outputTokens,
+                totalTokens,
+                estimatedCost
             },
         });
 
@@ -175,6 +190,21 @@ export class AiQueryService {
                 editedResponse: editedResponse
             },
         });
+    }
+
+    async getTelemetryMetrics() {
+        const metrics = await this.prisma.aiInteraction.aggregate({
+            _sum: {
+                inputTokens: true,
+                outputTokens: true,
+                totalTokens: true,
+                estimatedCost: true
+            },
+            _count: {
+                id: true
+            }
+        } as any);
+        return metrics;
     }
 
     async getPendingForReview(limit = 50): Promise<any[]> {

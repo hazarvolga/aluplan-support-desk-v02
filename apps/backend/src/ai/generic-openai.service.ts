@@ -151,13 +151,49 @@ METİN:
 ${text.substring(0, 1000)}
 
 SONUÇ (YALNIZCA KELİME):`;
-
         const result = await this.generate(prompt, 30_000);
         if (!result) return 'NEUTRAL';
         const cleanResult = result.toUpperCase().trim();
         if (cleanResult.includes('POSITIVE')) return 'POSITIVE';
         if (cleanResult.includes('NEGATIVE')) return 'NEGATIVE';
         return 'NEUTRAL';
+    }
+
+    async translate(text: string, targetLanguage: string): Promise<string | null> {
+        const baseUrl = await this.getBaseUrl();
+        const apiKey = await this.getApiKey();
+        const model = await this.getChatModel();
+        if (!baseUrl || !apiKey) return null;
+
+        try {
+            const response = await fetch(`${baseUrl}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                    model,
+                    messages: [
+                        { role: 'system', content: `You are a professional translator. Translate the following text precisely to ${targetLanguage}. ONLY output the translated text with no extra commentary.` },
+                        { role: 'user', content: text }
+                    ],
+                    temperature: 0.3,
+                    max_tokens: 1000,
+                }),
+                signal: AbortSignal.timeout(60_000),
+            });
+            if (!response.ok) throw new Error(`Custom OpenAI HTTP ${response.status}`);
+            const data = await response.json();
+            return data.choices[0]?.message?.content?.trim() || null;
+        } catch (error: any) {
+            this.logger.error(`GenericOpenAI Translation API error: ${error.message}`);
+            return null;
+        }
+    }
+
+    async getActiveModelName(): Promise<string> {
+        return this.getChatModel();
     }
 
     async isAvailable(): Promise<boolean> {

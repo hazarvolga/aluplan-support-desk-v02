@@ -16,6 +16,8 @@ export interface AiProvider {
     suggestCategory(title: string, content: string, categories: string[]): Promise<string | null>;
     summarizeTicket(subject: string, conversation: string): Promise<string | null>;
     analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'>;
+    translate(text: string, targetLanguage: string): Promise<string | null>;
     isAvailable(): Promise<boolean>;
     getName(): string;
+    getActiveModelName(): Promise<string>;
 }

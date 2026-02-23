@@ -62,6 +62,13 @@ export class AiController {
         return this.aiQueryService.query(dto.query, req.user.sub);
     }
 
+    @Get('metrics')
+    @Roles('admin', 'superuser')
+    @ApiOperation({ summary: 'Get global AI usage metrics (Cost/Token tracking)' })
+    async getMetrics() {
+        return this.aiQueryService.getTelemetryMetrics();
+    }
+
     @Get('query/stream')
     @ApiOperation({ summary: 'Stream AI response via SSE' })
     @Sse()

@@ -81,6 +81,16 @@ export class AiService implements AiProvider {
         return provider.analyzeSentiment(text);
     }
 
+    async translate(text: string, targetLanguage: string): Promise<string | null> {
+        const provider = await this.getActiveProvider();
+        return provider.translate(text, targetLanguage);
+    }
+
+    async getActiveModelName(): Promise<string> {
+        const provider = await this.getActiveProvider();
+        return provider.getActiveModelName();
+    }
+
     async isAvailable(): Promise<boolean> {
         const provider = await this.getActiveProvider();
         return provider.isAvailable();

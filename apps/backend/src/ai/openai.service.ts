@@ -154,6 +154,41 @@ SONUÇ (YALNIZCA KELİME):`;
         return 'NEUTRAL';
     }
 
+    async translate(text: string, targetLanguage: string): Promise<string | null> {
+        const apiKey = await this.getApiKey();
+        if (!apiKey) return null;
+        try {
+            const model = await this.getModel();
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                    model,
+                    messages: [
+                        { role: 'system', content: `You are a professional translator. Translate the following text precisely to ${targetLanguage}. ONLY output the translated text with no extra commentary.` },
+                        { role: 'user', content: text }
+                    ],
+                    temperature: 0.3,
+                    max_tokens: 1000,
+                }),
+                signal: AbortSignal.timeout(60_000),
+            });
+            if (!response.ok) throw new Error(`OpenAI HTTP ${response.status}`);
+            const data = await response.json();
+            return data.choices[0]?.message?.content?.trim() || null;
+        } catch (error: any) {
+            this.logger.error(`OpenAI Translation API error: ${error.message}`);
+            return null;
+        }
+    }
+
+    async getActiveModelName(): Promise<string> {
+        return this.getModel();
+    }
+
     async isAvailable(): Promise<boolean> {
         const apiKey = await this.getApiKey();
         return !!apiKey;
