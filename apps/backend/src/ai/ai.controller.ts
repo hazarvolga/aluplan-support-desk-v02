@@ -69,6 +69,14 @@ export class AiController {
         return this.aiQueryService.getTelemetryMetrics();
     }
 
+    @Post('translate')
+    @Roles('admin', 'superuser', 'agent')
+    @ApiOperation({ summary: 'Translate text to a target language' })
+    async translate(@Body() body: { text: string; targetLanguage: string }) {
+        const result = await this.aiService.translate(body.text, body.targetLanguage);
+        return { translatedText: result };
+    }
+
     @Get('query/stream')
     @ApiOperation({ summary: 'Stream AI response via SSE' })
     @Sse()
