@@ -34,7 +34,8 @@ const ADMIN_NAV = [
             { href: '/ai', icon: Bot, label: 'AI Konfigürasyonu' },
             { href: '/customers', icon: Users, label: 'Müşteriler' },
             { href: '/products', icon: Layers, label: 'Ürünler & Modüller' },
-            { href: '/users', icon: Settings, label: 'Ekip' },
+            { href: '/teams', icon: Users, label: 'Ekip' },
+            { href: '/users', icon: Settings, label: 'Global Kullanıcılar' },
             { href: '/admin/settings', icon: Settings, label: 'Sistem Ayarları' },
         ]
     },

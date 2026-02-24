@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -16,9 +16,9 @@ export class UsersController {
 
     @Roles('admin', 'support_manager')
     @Get()
-    @ApiOperation({ summary: 'List all users' })
-    findAll() {
-        return this.usersService.findAll();
+    @ApiOperation({ summary: 'List all users optionally filtered by type (agent|customer)' })
+    findAll(@Query('type') type?: 'agent' | 'customer') {
+        return this.usersService.findAll(type);
     }
 
     @Get(':id')

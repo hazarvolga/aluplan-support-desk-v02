@@ -27,7 +27,7 @@ export default function UsersPage() {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const res = await api.users.list();
+            const res = await api.users.list('agent');
             setUsers(res);
         } catch (error) {
             toast({ title: 'Error fetching users', description: String(error), variant: 'destructive' });
