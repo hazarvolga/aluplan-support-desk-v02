@@ -352,6 +352,8 @@ async function seedKnowledgeBase() {
                             title: articleTitle,
                             slug: finalSlug,
                             status: 'REVIEW',
+                            isInternal: true,
+                            isAutoImported: true,
                             createdBy: admin.id,
                             currentVersion: 1,
                         }
