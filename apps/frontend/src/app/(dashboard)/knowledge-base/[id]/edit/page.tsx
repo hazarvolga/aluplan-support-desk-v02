@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 interface EditArticleForm {
     title: string;
     content: string;
+    isInternal: boolean;
 }
 
 export default function EditKnowledgeArticlePage() {
@@ -44,6 +45,7 @@ export default function EditKnowledgeArticlePage() {
                 reset({
                     title: data.title,
                     content: content,
+                    isInternal: data.isInternal || false,
                 });
             } catch (err: any) {
                 console.error('Failed to load article:', err);
@@ -62,6 +64,7 @@ export default function EditKnowledgeArticlePage() {
             await api.kb.update(articleId, {
                 title: data.title,
                 content: data.content,
+                isInternal: data.isInternal,
                 changeSummary: 'Admin tarafından arayüz üzerinden güncellendi.',
             });
             toast.success('Belge başarıyla güncellendi.');
@@ -163,6 +166,24 @@ export default function EditKnowledgeArticlePage() {
                     {errors.title && (
                         <p className="text-sm text-red-400">{errors.title.message}</p>
                     )}
+                </div>
+
+                {/* Internal Toggle */}
+                <div className="flex items-center space-x-3 rounded-lg border border-white/10 bg-neutral-900/30 p-4">
+                    <input
+                        id="isInternal"
+                        type="checkbox"
+                        {...register('isInternal')}
+                        className="h-4 w-4 rounded border-white/20 bg-neutral-800 text-orange-500 focus:ring-orange-500/50"
+                    />
+                    <div className="flex flex-col">
+                        <label htmlFor="isInternal" className="text-sm font-medium text-gray-200 cursor-pointer">
+                            Yalnızca Dahili Kullanım (AI Eğitimi)
+                        </label>
+                        <p className="text-xs text-gray-500">
+                            Bu işaretlendiğinde, makale müşteri portalında listelenmez.
+                        </p>
+                    </div>
                 </div>
 
                 {/* Markdown Content Input */}

@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { BookOpen, Plus, CheckCircle2, Clock, XCircle, Search, BarChart3, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/components/auth/role-guard';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     DRAFT: { label: 'DRAFT', color: 'border-border text-muted-foreground bg-muted/5' },
@@ -14,11 +15,14 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function KnowledgeBasePage() {
+    const { user } = useAuth();
     const [articles, setArticles] = useState<any[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('PUBLISHED');
+
+    const isStaff = user?.roles?.some(r => ['admin', 'agent'].includes(r.toLowerCase())) ?? false;
 
     const load = async () => {
         setLoading(true);
@@ -49,18 +53,22 @@ export default function KnowledgeBasePage() {
                     <p className="mt-1 text-muted-foreground text-[10px] font-mono uppercase tracking-widest leading-none">OBJECT_COUNT: {total} UNITS</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Link
-                        href="/knowledge-base/analytics"
-                        className="flex items-center gap-2 px-3 py-1.5 border border-border bg-muted/20 text-muted-foreground hover:text-foreground transition-none text-[10px] uppercase font-bold tracking-widest"
-                    >
-                        <BarChart3 className="h-3 w-3 text-primary" /> ANALYTICS
-                    </Link>
-                    <Link
-                        href="/knowledge-base/new"
-                        className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground transition-none text-[10px] uppercase font-bold tracking-widest"
-                    >
-                        <Plus className="h-3 w-3" /> CREATE_ARTICLE
-                    </Link>
+                    {isStaff && (
+                        <>
+                            <Link
+                                href="/knowledge-base/analytics"
+                                className="flex items-center gap-2 px-3 py-1.5 border border-border bg-muted/20 text-muted-foreground hover:text-foreground transition-none text-[10px] uppercase font-bold tracking-widest"
+                            >
+                                <BarChart3 className="h-3 w-3 text-primary" /> ANALYTICS
+                            </Link>
+                            <Link
+                                href="/knowledge-base/new"
+                                className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground transition-none text-[10px] uppercase font-bold tracking-widest"
+                            >
+                                <Plus className="h-3 w-3" /> CREATE_ARTICLE
+                            </Link>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -75,7 +83,7 @@ export default function KnowledgeBasePage() {
                         className="w-full pl-9 pr-4 py-1.5 border border-border/60 bg-black/20 text-[11px] uppercase tracking-tight text-foreground focus:outline-none focus:ring-1 focus:ring-primary h-8"
                     />
                 </form>
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                {isStaff && Object.entries(STATUS_LABELS).map(([k, v]) => (
                     <button
                         key={k}
                         onClick={() => setStatusFilter(k)}
@@ -128,7 +136,7 @@ export default function KnowledgeBasePage() {
                                 </div>
 
                                 <div className="flex items-center gap-2 shrink-0 ml-4">
-                                    {a.status === 'REVIEW' && (
+                                    {isStaff && a.status === 'REVIEW' && (
                                         <div className="flex items-center gap-1.5">
                                             <button
                                                 onClick={() => handleReview(a.id, true)}

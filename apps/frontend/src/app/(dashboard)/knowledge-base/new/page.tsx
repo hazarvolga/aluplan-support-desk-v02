@@ -15,6 +15,7 @@ export default function NewKnowledgeBaseArticlePage() {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [tags, setTags] = useState('');
+    const [isInternal, setIsInternal] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleSave = async () => {
@@ -31,6 +32,7 @@ export default function NewKnowledgeBaseArticlePage() {
                 title,
                 content,
                 tags: tagsArray,
+                isInternal,
                 status: 'PUBLISHED' // Or DRAFT depending on your workflow
             });
 
@@ -91,6 +93,22 @@ export default function NewKnowledgeBaseArticlePage() {
                             value={tags}
                             onChange={(e) => setTags(e.target.value)}
                         />
+                    </div>
+
+                    <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/5 border border-blue-500/10">
+                        <input
+                            type="checkbox"
+                            id="isInternal"
+                            className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                            checked={isInternal}
+                            onChange={(e) => setIsInternal(e.target.checked)}
+                        />
+                        <div className="space-y-0.5">
+                            <label htmlFor="isInternal" className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                                Yalnızca Dahili Kullanım (AI Eğitimi)
+                            </label>
+                            <p className="text-xs text-slate-500">Bu makale müşterilere gösterilmez, yalnızca yapay zeka tarafından bilgi kaynağı olarak kullanılır.</p>
+                        </div>
                     </div>
 
                     <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-white/5">

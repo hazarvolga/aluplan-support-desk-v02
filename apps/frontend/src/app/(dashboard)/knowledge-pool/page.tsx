@@ -212,8 +212,8 @@ export default function KnowledgePoolPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border/40 pb-4">
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-[16px] md:text-[18px] font-bold tracking-tight text-foreground uppercase truncate">KNOWLEDGE_POOL_INGESTION</h1>
-                        <p className="text-[9px] md:text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-none line-clamp-1 md:line-clamp-none">Automated verification and indexing of external data streams.</p>
+                        <h1 className="text-[16px] md:text-[18px] font-bold tracking-tight text-foreground uppercase truncate">BİLGİ_HAVUZU_KONTROL</h1>
+                        <p className="text-[9px] md:text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-none line-clamp-1 md:line-clamp-none">Yapay zeka için teknik kaynakların yönetimi ve indekslenmesi.</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">

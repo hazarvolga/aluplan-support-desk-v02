@@ -435,7 +435,7 @@ export default function NewTicketPage() {
                         <Button
                             disabled={!form.getValues('subject') || form.getValues('subject').length < 5}
                             onClick={() => setCurrentStep(2)}
-                            className="bg-brand-600 hover:bg-brand-500"
+                            className="bg-brand-600 hover:bg-brand-500 text-industrial-dark font-bold"
                         >
                             Sonraki Adım <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
                         </Button>
@@ -468,7 +468,7 @@ export default function NewTicketPage() {
                         onChange={(e) => form.setValue('description', e.target.value)}
                     />
                     <Button
-                        className="w-full bg-brand-600 gap-2 h-12 text-lg"
+                        className="w-full bg-brand-600 gap-2 h-12 text-lg text-industrial-dark font-bold"
                         disabled={isDiagnosing || !form.watch('description')}
                         onClick={runDiagnosis}
                     >
@@ -560,7 +560,7 @@ export default function NewTicketPage() {
                     <Button
                         disabled={loading}
                         onClick={form.handleSubmit(onSubmit)}
-                        className="bg-brand-600 min-w-40 shadow-lg shadow-brand-500/20 h-12 text-lg"
+                        className="bg-brand-600 min-w-40 shadow-lg shadow-brand-500/20 h-12 text-lg text-industrial-dark font-bold"
                     >
                         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Talebi Oluştur'}
                     </Button>
