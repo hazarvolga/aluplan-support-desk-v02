@@ -62,3 +62,32 @@ export function smartChunk(text: string, options: ChunkerOptions = {}): ChunkRes
 
     return chunks;
 }
+
+/**
+ * Hierarchical (Parent-Child) chunking for better RAG quality.
+ * - Parent: Large context for LLM (1500-2000 tokens/chars)
+ * - Child: Small chunks for vector search (300-500 tokens/chars)
+ */
+export function hierarchicalChunk(text: string, options: ChunkerOptions = {}): { parent: string, children: string[] }[] {
+    const { maxTokens = 2000, title = 'Bilinmeyen Döküman' } = options;
+    const CHILD_SIZE = 400;
+
+    // 1. Create large Parent chunks
+    const parents = smartChunk(text, { maxTokens, title });
+
+    return parents.map(p => {
+        // 2. Further split each parent into smaller Children
+        // We use the same smartChunk logic but with smaller size and no title prefix for children
+        // to keep them "clean" for embedding vector distance.
+        const children = smartChunk(p.content.replace(`[Kaynak: ${title}]\n\n`, ''), {
+            maxTokens: CHILD_SIZE,
+            overlap: 100,
+            title: ''
+        });
+
+        return {
+            parent: p.content,
+            children: children.map(c => c.content)
+        };
+    });
+}
