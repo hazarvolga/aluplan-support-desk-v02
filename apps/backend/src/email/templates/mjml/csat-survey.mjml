@@ -1,0 +1,36 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Inter, -apple-system, sans-serif" color="#334155" />
+      <mj-text font-size="15px" line-height="1.6" />
+    </mj-attributes>
+    <mj-style inline="inline">
+      .star-link { font-size: 24px; text-decoration: none; padding: 0 5px; }
+      .footer { border-top: 1px solid #e2e8f0; }
+    </mj-style>
+  </mj-head>
+  <mj-body background-color="#f1f5f9">
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
+        <mj-text background-color="#0EA5E9" color="#fff" font-size="20px" font-weight="bold" padding="16px">
+          {{brand.name}} Support
+        </mj-text>
+        <mj-text font-size="22px" font-weight="bold" color="#0f172a" padding-top="20px">Nasıl bir deneyim yaşadınız?</mj-text>
+        <mj-text>Merhaba {{customer.first_name}},</mj-text>
+        <mj-text>#{{ticket.id}} numaralı talebiniz ("{{ticket.subject}}") çözüldü. Lütfen deneyiminizi puanlayın:</mj-text>
+        
+        <mj-text align="center" padding="20px 0">
+          <a href="{{csat.star_1}}" class="star-link" style="text-decoration:none;font-size:24px;">⭐ 1</a>
+          <a href="{{csat.star_2}}" class="star-link" style="text-decoration:none;font-size:24px;">⭐ 2</a>
+          <a href="{{csat.star_3}}" class="star-link" style="text-decoration:none;font-size:24px;">⭐ 3</a>
+          <a href="{{csat.star_4}}" class="star-link" style="text-decoration:none;font-size:24px;">⭐ 4</a>
+          <a href="{{csat.star_5}}" class="star-link" style="text-decoration:none;font-size:24px;">⭐ 5</a>
+        </mj-text>
+        
+        <mj-text css-class="footer" font-size="12px" color="#94a3b8" padding-top="20px">
+          Bu maillleri almak istemiyorsanız: <a href="{{unsubscribe_url}}" style="color:#0EA5E9;">Abonelikten Çık</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

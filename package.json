@@ -7,11 +7,15 @@
         "dev": "turbo dev",
         "start:full": "bash scripts/start.sh",
         "test": "turbo test",
+        "test:all": "turbo test",
+        "test:e2e": "pnpm --filter @aluplan/frontend test:e2e",
         "lint": "turbo lint",
         "db:generate": "turbo db:generate",
         "db:migrate": "turbo db:migrate"
     },
     "devDependencies": {
+        "@types/handlebars": "^4.1.0",
+        "@types/mjml": "^4.7.4",
         "@types/multer": "^2.0.0",
         "prettier": "^3.4.2",
         "turbo": "^2.3.3",
@@ -21,5 +25,12 @@
     "engines": {
         "node": ">=20.0.0",
         "pnpm": ">=9.0.0"
+    },
+    "dependencies": {
+        "@nestjs/bullmq": "^11.0.4",
+        "bullmq": "^5.69.3",
+        "handlebars": "^4.7.8",
+        "ioredis": "^5.9.3",
+        "mjml": "^4.18.0"
     }
 }

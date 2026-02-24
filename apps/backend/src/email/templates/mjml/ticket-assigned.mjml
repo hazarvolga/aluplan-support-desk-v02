@@ -1,0 +1,33 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Inter, -apple-system, sans-serif" color="#334155" />
+      <mj-text font-size="15px" line-height="1.6" />
+    </mj-attributes>
+    <mj-style inline="inline">
+      .ticket-card { background-color: #f8fafc; border-left: 4px solid #ef4444; padding: 16px; margin: 16px 0; }
+      .footer { border-top: 1px solid #e2e8f0; }
+    </mj-style>
+  </mj-head>
+  <mj-body background-color="#f1f5f9">
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
+        <mj-text background-color="#0EA5E9" color="#fff" font-size="20px" font-weight="bold" padding="16px">
+          {{brand.name}} Support
+        </mj-text>
+        <mj-text font-size="22px" font-weight="bold" color="#0f172a" padding-top="20px">Yeni Görev Ataması</mj-text>
+        <mj-text>Merhaba {{agent.first_name}},</mj-text>
+        <mj-text>Aşağıdaki talep sana atandı.</mj-text>
+        <mj-text css-class="ticket-card">
+          <strong>Talep:</strong> #{{ticket.id}} - {{ticket.subject}}<br/>
+          <strong>Müşteri:</strong> {{customer.full_name}} ({{customer.email}})
+        </mj-text>
+        <mj-text color="#ef4444" font-weight="bold">SLA: {{sla.first_response_deadline}}</mj-text>
+        <mj-button href="{{ticket.url}}" background-color="#0f172a" border-radius="8px">Dashboard'da Aç</mj-button>
+        <mj-text css-class="footer" font-size="12px" color="#94a3b8" padding-top="20px">
+          Bu bildirimleri <a href="{{unsubscribe_url}}" style="color:#0EA5E9;">tercihler sayfasından</a> yönetebilirsin.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

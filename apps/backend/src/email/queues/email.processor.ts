@@ -1,0 +1,80 @@
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Job } from 'bullmq';
+import { Logger } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { SettingsService } from '../../settings/settings.service';
+import { ResendProvider } from '../resend.provider';
+import { SmtpProvider } from '../smtp.provider';
+import { GmailProvider } from '../gmail.provider';
+import { EmailProvider } from '../interfaces/email-provider.interface';
+import { TemplateService, EmailPayload } from '../email.templates';
+
+@Processor('email')
+export class EmailProcessor extends WorkerHost {
+  private readonly logger = new Logger(EmailProcessor.name);
+  private provider: EmailProvider;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: SettingsService,
+    private readonly resend: ResendProvider,
+    private readonly smtp: SmtpProvider,
+    private readonly gmail: GmailProvider,
+  ) {
+    super();
+  }
+
+  private async refreshProvider() {
+    try {
+      const providerName = (await this.settings.getValue('email.active_provider')) || 'resend';
+      switch (providerName) {
+        case 'smtp': this.provider = this.smtp; break;
+        case 'gmail': this.provider = this.gmail; break;
+        case 'resend':
+        default: this.provider = this.resend; break;
+      }
+    } catch {
+      this.provider = this.resend;
+    }
+  }
+
+  async process(job: Job<EmailPayload & { logRef: string }, any, string>): Promise<any> {
+    this.logger.debug(`Processing email job: ${job.id}`);
+    const { template, to, subject, data, logRef } = job.data;
+    await this.refreshProvider();
+
+    try {
+      const compiled = TemplateService.compile(template, data);
+
+      const result = await this.provider.send({
+        to,
+        subject: compiled.subject || subject,
+        html: compiled.html,
+        text: compiled.text
+      });
+
+      await this.prisma.emailLog.update({
+        where: { id: logRef },
+        data: {
+          status: 'SENT',
+          messageId: result.messageId,
+          sentAt: new Date()
+        }
+      });
+
+      this.logger.log(`Email successfully dispatched: ${job.id} - MsgId: ${result.messageId}`);
+    } catch (error: any) {
+      this.logger.error(`Failed to dispatch email job: ${job.id}`, error.stack);
+
+      await this.prisma.emailLog.update({
+        where: { id: logRef },
+        data: {
+          status: 'FAILED',
+          error: error.message
+        }
+      });
+      // Pick up BullMQ retries mechanism
+      throw error;
+    }
+  }
+}

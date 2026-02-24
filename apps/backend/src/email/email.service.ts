@@ -1,11 +1,13 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { ResendProvider } from './resend.provider';
 import { SmtpProvider } from './smtp.provider';
 import { GmailProvider } from './gmail.provider';
 import { EmailProvider, SendEmailOptions } from './interfaces/email-provider.interface';
-import * as Templates from './email.templates';
+import { EmailPayload } from './email.templates';
 
 @Injectable()
 export class EmailService implements OnModuleInit {
@@ -13,6 +15,7 @@ export class EmailService implements OnModuleInit {
     private provider: EmailProvider;
 
     constructor(
+        @InjectQueue('email') private readonly emailQueue: Queue,
         private readonly settings: SettingsService,
         private readonly prisma: PrismaService,
         private readonly resend: ResendProvider,
@@ -46,101 +49,115 @@ export class EmailService implements OnModuleInit {
         }
     }
 
-    // ─── CORE SEND ───────────────────────────────────────────
-    async send(options: SendEmailOptions): Promise<void> {
-        try {
-            if (!this.provider) await this.refreshProvider();
-            const result = await this.provider.send(options);
-            this.logger.log(`✉️ Email sent → ${JSON.stringify(options.to)} [${result.messageId}]`);
-        } catch (err: any) {
-            this.logger.error(`❌ Email send failed: ${err.message}`);
-            // Don't throw — email is non-critical, business continues
-        }
-    }
+    /**
+     * Entry-point for enqueueing emails securely. Creates Log tracking entries dynamically.
+     */
+    async enqueueEmail(payload: EmailPayload): Promise<void> {
+        // Evaluate preference limits before proceeding.
+        /*const userObj = await this.prisma.user.findFirst({ where: { email: payload.to }, include: { settings: true } });
+        if (userObj) {
+            const pref = await this.prisma.emailPreference.findUnique({
+               where: { userId_emailType: { userId: userObj.id, emailType: payload.template } }
+            });
+            if (pref && pref.enabled === false) {
+                this.logger.log(`Skipping queue enqueue for ${payload.template} to ${payload.to} (User Opt-Out)`);
+                return;
+            }
+        }*/
 
-    private async getFrontendUrl(): Promise<string> {
-        return (await this.settings.getValue('general.frontend_url')) ?? 'http://localhost:3000';
-    }
-
-    // ─── TICKET EVENT EMAILS ──────────────────────────────────
-    async sendTicketCreated(data: {
-        customerEmail: string;
-        customerName: string;
-        ticketNumber: string;
-        subject: string;
-        priority: string;
-    }) {
-        const portalUrl = `${await this.getFrontendUrl()}/tickets/${data.ticketNumber}`;
-        const template = Templates.ticketCreated({ ...data, portalUrl });
-        await this.send({ to: data.customerEmail, ...template });
-    }
-
-    async sendTicketAssigned(data: {
-        agentEmail: string;
-        agentName: string;
-        customerName: string;
-        ticketNumber: string;
-        subject: string;
-        priority: string;
-    }) {
-        const portalUrl = `${await this.getFrontendUrl()}/tickets/${data.ticketNumber}`;
-        const template = Templates.ticketAssigned({ ...data, portalUrl });
-        await this.send({ to: data.agentEmail, ...template });
-    }
-
-    async sendSlaBreachWarning(data: {
-        recipientEmail: string;
-        recipientName: string;
-        ticketNumber: string;
-        subject: string;
-        priority: string;
-        breachType: 'response' | 'resolve';
-        minutesOverdue: number;
-    }) {
-        const portalUrl = `${await this.getFrontendUrl()}/tickets/${data.ticketNumber}`;
-        const template = Templates.slaBreachWarning({ ...data, portalUrl });
-        await this.send({ to: data.recipientEmail, ...template });
-    }
-
-    async sendTicketResolved(data: {
-        customerEmail: string;
-        customerName: string;
-        ticketNumber: string;
-        subject: string;
-    }) {
-        const baseUrl = await this.getFrontendUrl();
-        const template = Templates.ticketResolved({
-            ...data,
-            portalUrl: `${baseUrl}/tickets/${data.ticketNumber}`,
-            feedbackUrl: `${baseUrl}/tickets/${data.ticketNumber}/feedback`,
+        // Inject initial mapping schema into our Database logs:
+        const draftLog = await this.prisma.emailLog.create({
+            data: {
+                recipientEmail: payload.to,
+                subject: payload.subject,
+                templateName: payload.template,
+                provider: 'RESEND',
+                status: 'QUEUED'
+            }
         });
-        await this.send({ to: data.customerEmail, ...template });
+
+        // Delegate to BullMQ for processing logic.
+        const jobId = `${payload.template}:${payload.to}:${payload.data?.ticket?.id ?? 'sys'}`;
+        await this.emailQueue.add('send-email', { ...payload, logRef: draftLog.id }, {
+            jobId: jobId,
+            delay: payload.delay ?? 0,
+            priority: payload.priority ?? 2,
+            removeOnComplete: true,
+            attempts: 3,
+            backoff: {
+                type: 'exponential',
+                delay: 60000
+            }
+        });
+
+        this.logger.log(`Enqueued Email -> ${payload.template} to ${payload.to} (Log ID: ${draftLog.id})`);
     }
 
-    async sendNewMessage(data: {
-        recipientEmail: string;
-        recipientName: string;
-        senderName: string;
-        ticketNumber: string;
-        messagePreview: string;
-    }) {
-        const portalUrl = `${await this.getFrontendUrl()}/tickets/${data.ticketNumber}`;
-        const template = Templates.newMessage({ ...data, portalUrl });
-        await this.send({ to: data.recipientEmail, ...template });
+    // ─── TICKET EVENT EMAILS (Proxied to Enqueuer) ─────────────────────────
+
+    async sendTicketCreated(data: any) {
+        await this.enqueueEmail({
+            template: 'ticket-created',
+            to: data.customerEmail,
+            subject: `[${data.ticketNumber}] Talebiniz alındı`,
+            priority: 1, // Standard High Priority
+            data: data
+        });
     }
 
-    // ─── AUTH EMAILS ──────────────────────────────────────────
-    async sendPasswordReset(data: {
-        recipientEmail: string;
-        recipientName: string;
-        newPassword: string;
-    }) {
-        const portalUrl = `${await this.getFrontendUrl()}/login`;
-        const template = Templates.passwordReset({ ...data, portalUrl });
-        await this.send({ to: data.recipientEmail, ...template });
+    async sendTicketAssigned(data: any) {
+        await this.enqueueEmail({
+            template: 'ticket-assigned',
+            to: data.agentEmail,
+            subject: `[${data.ticketNumber}] Atanan Talep: ${data.subject}`,
+            priority: 2,
+            data: data
+        });
     }
 
-    // ─── HEALTH CHECK ─────────────────────────────────────────
+    async sendPasswordReset(data: any) {
+        await this.enqueueEmail({
+            template: 'password-reset',
+            to: data.recipientEmail,
+            subject: `Aluplan Destek - Yeni Şifreniz Oluşturuldu`,
+            priority: 1, // High Priority
+            data: data
+        });
+    }
+
+    async sendSlaBreachWarning(data: any) {
+        const type = data.breachType === 'response' ? 'Yanıt SLA İhlali' : 'Çözüm SLA İhlali';
+        await this.enqueueEmail({
+            template: 'sla-breach-warning',
+            to: data.recipientEmail,
+            subject: `🚨 [${data.ticketNumber}] ${type}`,
+            priority: 1,
+            data: data
+        });
+    }
+
+    async sendTicketResolved(data: any) {
+        await this.enqueueEmail({
+            template: 'ticket-resolved',
+            to: data.customerEmail,
+            subject: `[${data.ticketNumber}] Talebiniz çözüldü`,
+            priority: 2,
+            data: data
+        });
+    }
+
+    async sendNewMessage(data: any) {
+        await this.enqueueEmail({
+            template: 'new-message',
+            to: data.recipientEmail,
+            subject: `[${data.ticketNumber}] Yeni mesaj`,
+            priority: 2,
+            data: data
+        });
+    }
+
+    // ─── UTILITIES & SYNC TRIGGERS ────────────────────────────
+
     async healthCheck(): Promise<{ provider: string; available: boolean }> {
         const available = await this.provider.healthCheck();
         let providerName = 'unknown';
@@ -154,7 +171,6 @@ export class EmailService implements OnModuleInit {
         };
     }
 
-    // ─── HOT SWAP: Change provider without restart ────────────
     async switchProvider(name: 'resend' | 'smtp' | 'gmail') {
         await this.settings.upsert({
             key: 'email.active_provider',
