@@ -4,8 +4,8 @@ import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../ai/embedding.service';
 import { KnowledgePoolParserService } from './knowledge-pool-parser.service';
-import axios from 'axios';
 import * as crypto from 'crypto';
+// @ts-ignore
 const TurndownService = require('turndown');
 import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
 
@@ -14,6 +14,7 @@ import { CrawlService } from './crawl.service';
 @Processor('knowledge-sync')
 export class KnowledgePoolProcessor extends WorkerHost {
     private readonly logger = new Logger(KnowledgePoolProcessor.name);
+    private readonly turndown = new TurndownService();
 
     constructor(
         private readonly prisma: PrismaService,
@@ -25,7 +26,59 @@ export class KnowledgePoolProcessor extends WorkerHost {
     }
 
     async process(job: Job<{ sourceId: string }>): Promise<any> {
-        // ... same logic ...
+        const { sourceId } = job.data;
+        // @ts-ignore
+        const source = await this.prisma.knowledgeSource.findUnique({
+            where: { id: sourceId },
+            include: { product: true }
+        });
+
+        if (!source) {
+            this.logger.error(`❌ Source not found: ${sourceId}`);
+            return;
+        }
+
+        this.logger.log(`🏗️ Processing sync for: ${source.name} (${source.type})`);
+
+        // @ts-ignore
+        const log = await this.prisma.knowledgeSourceSyncLog.create({
+            data: {
+                sourceId,
+                status: 'SYNCING',
+            },
+        });
+
+        try {
+            if (source.type === KnowledgeSourceType.URL) {
+                await this.handleUrlSync(source, log.id);
+            } else {
+                await this.handleFileSync(source, log.id);
+            }
+
+            // @ts-ignore
+            await this.prisma.knowledgeSourceSyncLog.update({
+                where: { id: log.id },
+                data: { status: 'SUCCESS', syncFinishedAt: new Date() },
+            });
+
+            this.logger.log(`✅ Completed sync for source: ${source.name} (${sourceId})`);
+        } catch (error) {
+            this.logger.error(`❌ Sync failed for source ${sourceId}: ${error.message}`, error.stack);
+
+            // @ts-ignore
+            await this.prisma.knowledgeSource.update({
+                where: { id: sourceId },
+                data: { status: KnowledgeSourceStatus.FAILED },
+            });
+
+            // @ts-ignore
+            await this.prisma.knowledgeSourceSyncLog.update({
+                where: { id: log.id },
+                data: { status: 'FAILED', error: error.message, syncFinishedAt: new Date() },
+            });
+
+            throw error;
+        }
     }
 
     private async handleUrlSync(source: any, logId: string) {
@@ -77,7 +130,8 @@ export class KnowledgePoolProcessor extends WorkerHost {
             data: {
                 lastHash: hash,
                 name: title,
-                status: isMajorChange ? KnowledgeSourceStatus.INACTIVE : KnowledgeSourceStatus.ACTIVE, // Or mapped to review
+                status: isMajorChange ? KnowledgeSourceStatus.PENDING_REVIEW : KnowledgeSourceStatus.ACTIVE,
+                lastSyncedAt: new Date(),
                 metadata: {
                     ...(source.metadata as any || {}),
                     lastContentLength: newLength,
@@ -100,6 +154,13 @@ export class KnowledgePoolProcessor extends WorkerHost {
 
         if (hash === source.lastHash) {
             this.logger.log(`⏩ File unchanged (Hash match): ${source.fileName}`);
+
+            // Still update status to ACTIVE if it was SYNCING
+            // @ts-ignore
+            await this.prisma.knowledgeSource.update({
+                where: { id: source.id },
+                data: { status: KnowledgeSourceStatus.ACTIVE, lastSyncedAt: new Date() }
+            });
             return;
         }
 
@@ -112,17 +173,37 @@ export class KnowledgePoolProcessor extends WorkerHost {
 
         let totalChunks = 0;
         for (const h of hierarchies) {
-            await this.embeddingService.indexPoolContent(source.id, h.parent, { fileName: source.fileName, type: 'parent' });
+            await this.embeddingService.indexPoolContent(source.id, h.parent, {
+                fileName: source.fileName,
+                type: 'parent',
+                status: 'ACTIVE'
+            });
             for (const child of h.children) {
-                await this.embeddingService.indexPoolContent(source.id, child, { fileName: source.fileName, type: 'child' });
+                await this.embeddingService.indexPoolContent(source.id, child, {
+                    fileName: source.fileName,
+                    type: 'child',
+                    status: 'ACTIVE'
+                });
                 totalChunks++;
             }
         }
 
+        // Section 3.5.3: Change Monitor (Partial for files - size track)
+        const oldLength = (source.metadata as any)?.lastContentLength || 0;
+        const newLength = content.length;
+
         // @ts-ignore
         await this.prisma.knowledgeSource.update({
             where: { id: source.id },
-            data: { lastHash: hash }
+            data: {
+                lastHash: hash,
+                status: KnowledgeSourceStatus.ACTIVE,
+                lastSyncedAt: new Date(),
+                metadata: {
+                    ...(source.metadata as any || {}),
+                    lastContentLength: newLength
+                }
+            }
         });
 
         // @ts-ignore

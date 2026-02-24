@@ -1,18 +1,41 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as pdf from 'pdf-parse';
-import * as csv from 'csv-parser';
+// @ts-ignore
+const pdf = require('pdf-parse');
+// @ts-ignore
+const csv = require('csv-parser');
 
 @Injectable()
 export class KnowledgePoolParserService {
     private readonly logger = new Logger(KnowledgePoolParserService.name);
 
+    private fixEncoding(text: string): string {
+        if (!text) return text;
+
+        // If string contains any multi-byte character (char code > 255), 
+        // it means its UTF-8 strings are already correctly decoded natively.
+        for (let i = 0; i < text.length && i < 5000; i++) {
+            if (text.charCodeAt(i) > 255) {
+                return text;
+            }
+        }
+
+        // Convert Latin1 (binary) encoded string to raw utf8 format.
+        try {
+            return Buffer.from(text, 'binary').toString('utf8');
+        } catch {
+            return text;
+        }
+    }
+
     async parsePdf(filePath: string): Promise<string> {
+        this.logger.debug(`Starting PDF parsing for: ${filePath}`);
         const dataBuffer = fs.readFileSync(filePath);
         // @ts-ignore
         const data = await pdf(dataBuffer);
-        return data.text;
+        this.logger.debug(`Completed PDF parsing for: ${filePath}. extracted length: ${data?.text?.length || 0}`);
+        return this.fixEncoding(data.text);
     }
 
     async parseCsv(filePath: string): Promise<string> {
@@ -20,18 +43,18 @@ export class KnowledgePoolParserService {
             const results: string[] = [];
             fs.createReadStream(filePath)
                 .pipe(csv())
-                .on('data', (data) => results.push(JSON.stringify(data)))
-                .on('end', () => resolve(results.join('\n')))
-                .on('error', (err) => reject(err));
+                .on('data', (data: any) => results.push(JSON.stringify(data)))
+                .on('end', () => resolve(this.fixEncoding(results.join('\n'))))
+                .on('error', (err: any) => reject(err));
         });
     }
 
     async parseTxt(filePath: string): Promise<string> {
-        return fs.readFileSync(filePath, 'utf-8');
+        return this.fixEncoding(fs.readFileSync(filePath, 'utf-8'));
     }
 
     async parseMd(filePath: string): Promise<string> {
-        return fs.readFileSync(filePath, 'utf-8');
+        return this.fixEncoding(fs.readFileSync(filePath, 'utf-8'));
     }
 
     async parseFile(type: string, filePath: string): Promise<string> {

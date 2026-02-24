@@ -57,17 +57,18 @@ export class KnowledgePoolController {
             'text/plain',
             'text/csv',
             'text/markdown',
-            'application/octet-stream'
+            'application/octet-stream',
+            'application/x-pdf' // Added variant
         ];
 
-        const isMimeValid = validMimes.some(mime => file.mimetype.toLowerCase().includes(mime));
+        const isMimeValid = validMimes.some(mime => file.mimetype.toLowerCase().includes(mime.toLowerCase()));
         const ext = extname(file.originalname).toLowerCase();
         const validExts = ['.pdf', '.txt', '.csv', '.md'];
         const isExtValid = validExts.includes(ext);
 
         if (!isMimeValid && !isExtValid) {
             logger.error(`Validation Failed: mimetype=${file.mimetype}, ext=${ext}`);
-            throw new Error(`VALIDATION_FAILED: ${file.mimetype.toUpperCase()} (${ext.toUpperCase()}) is not supported.`);
+            throw new Error(`VALIDATION_FAILED: ${file.mimetype.toUpperCase()} (${ext.toUpperCase()}) is not supported. Please upload PDF, TXT, CSV, or MD files.`);
         }
 
         const type = this.determineTypeFromExt(ext);

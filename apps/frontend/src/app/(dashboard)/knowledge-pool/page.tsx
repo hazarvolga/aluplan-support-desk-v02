@@ -26,7 +26,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 export default function KnowledgePoolPage() {
-    const [activeTab, setActiveTab] = useState('articles');
+    const [activeTab, setActiveTab] = useState('sources');
 
     // Sources State
     const [sources, setSources] = useState<any[]>([]);
