@@ -63,28 +63,28 @@ export class AiController {
     }
 
     @Get('metrics')
-    @Roles('admin', 'superuser')
+    @Roles('ADMIN', 'SUPERUSER')
     @ApiOperation({ summary: 'Get global AI usage metrics (Cost/Token tracking)' })
     async getMetrics() {
         return this.aiQueryService.getTelemetryMetrics();
     }
 
     @Get('health-metrics')
-    @Roles('admin', 'superuser')
+    @Roles('ADMIN', 'SUPERUSER')
     @ApiOperation({ summary: 'Get detailed AI health & deflection metrics (Option C)' })
     async getHealth() {
         return this.aiQueryService.getHealthMetrics();
     }
 
     @Get('sources-stats')
-    @Roles('admin', 'superuser')
+    @Roles('ADMIN', 'SUPERUSER')
     @ApiOperation({ summary: 'Get counts for the 4 source pillars (Documents, Articles, URLs, Tickets)' })
     async getSourcesStats() {
         return this.aiQueryService.getSourcesStats();
     }
 
     @Post('translate')
-    @Roles('admin', 'superuser', 'agent')
+    @Roles('ADMIN', 'SUPERUSER', 'AGENT')
     @ApiOperation({ summary: 'Translate text to a target language' })
     async translate(@Body() body: { text: string; targetLanguage: string }) {
         const result = await this.aiService.translate(body.text, body.targetLanguage);
@@ -139,14 +139,14 @@ export class AiController {
     }
 
     @Get('review-queue')
-    @Roles('admin', 'support_manager')
+    @Roles('ADMIN', 'SUPPORT_MANAGER')
     @ApiOperation({ summary: 'Low-confidence queries pending FAQ review (admin only)' })
     getReviewQueue(): Promise<any[]> {
         return this.aiQueryService.getPendingForReview();
     }
 
     @Post('reindex')
-    @Roles('admin')
+    @Roles('ADMIN')
     @ApiOperation({ summary: 'Re-index all published articles (run after model change)' })
     reindex() {
         return this.embeddingService.reindexAll();
@@ -182,14 +182,14 @@ export class AiController {
     }
 
     @Get('tickets/:id/summarize')
-    @Roles('admin', 'agent', 'support_manager')
+    @Roles('ADMIN', 'AGENT', 'SUPPORT_MANAGER')
     @ApiOperation({ summary: 'Generate AI summary of a ticket thread' })
     summarize(@Param('id') ticketId: string) {
         return this.aiQueryService.summarizeTicket(ticketId);
     }
 
     @Get('copilot/draft/:ticketId')
-    @Roles('admin', 'agent', 'support_manager')
+    @Roles('ADMIN', 'AGENT', 'SUPPORT_MANAGER')
     @ApiOperation({ summary: 'Generate AI response draft for a ticket' })
     async getCopilotDraft(@Param('ticketId') ticketId: string) {
         return this.aiCopilotService.generateDraft(ticketId);

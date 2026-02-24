@@ -319,18 +319,73 @@ export default function AdminSettingsPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Marka & Görsel Kimlik</CardTitle>
-                                <CardDescription>Kurumsal renkler ve logo.</CardDescription>
+                                <CardDescription>Kurumsal kimlik ve iletişim bilgileri. Bu bilgiler e-posta Footer alanında otomatik gösterilir.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label>Kurumsal Logo URL</Label>
-                                    <Input
-                                        value={getSetting('branding.logo_url')}
-                                        onChange={e => updateValue('branding.logo_url', e.target.value)}
-                                        placeholder="/logo.png"
-                                    />
+                            <CardContent className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label>Firma Adı</Label>
+                                            <Input
+                                                value={getSetting('branding.company_name')}
+                                                onChange={e => updateValue('branding.company_name', e.target.value)}
+                                                placeholder="Örn: Aluplan A.Ş."
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Kurumsal Logo URL</Label>
+                                            <Input
+                                                value={getSetting('branding.logo_url')}
+                                                onChange={e => updateValue('branding.logo_url', e.target.value)}
+                                                placeholder="/logo.png"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>İletişim Adresi (Footer)</Label>
+                                            <textarea
+                                                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                value={getSetting('branding.address')}
+                                                onChange={e => updateValue('branding.address', e.target.value)}
+                                                placeholder="Örn: Barbaros Mah. Çiğdem Sok. No:1..."
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-medium border-b pb-2">Sosyal Medya Linkleri</h3>
+                                        <div className="space-y-2">
+                                            <Label>LinkedIn</Label>
+                                            <Input
+                                                value={getSetting('branding.social_linkedin')}
+                                                onChange={e => updateValue('branding.social_linkedin', e.target.value)}
+                                                placeholder="https://linkedin.com/company/..."
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Twitter / X</Label>
+                                            <Input
+                                                value={getSetting('branding.social_twitter')}
+                                                onChange={e => updateValue('branding.social_twitter', e.target.value)}
+                                                placeholder="https://x.com/..."
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                                <Button onClick={() => handleSave(['branding.logo_url'])} disabled={saving}>Kaydet</Button>
+
+                                <Button
+                                    className="w-full sm:w-auto"
+                                    onClick={() => handleSave([
+                                        'branding.company_name',
+                                        'branding.logo_url',
+                                        'branding.address',
+                                        'branding.social_linkedin',
+                                        'branding.social_twitter'
+                                    ])}
+                                    disabled={saving}
+                                >
+                                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Marka Ayarlarını Kaydet
+                                </Button>
                             </CardContent>
                         </Card>
                     </TabsContent>

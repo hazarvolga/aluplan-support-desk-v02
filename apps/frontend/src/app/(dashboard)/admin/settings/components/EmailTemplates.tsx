@@ -104,19 +104,29 @@ export function EmailTemplates() {
         const defaultMjml = `<mjml>
   <mj-head>
     <mj-attributes>
-      <mj-all font-family="Arial, sans-serif" />
+      <mj-all font-family="Inter, system-ui, sans-serif" />
+      <mj-text line-height="1.5" color="#52525b" />
     </mj-attributes>
+    <mj-style>
+      .brand-box { border-radius: 12px; overflow: hidden; }
+    </mj-style>
   </mj-head>
-  <mj-body background-color="#f4f4f4">
-    <mj-section background-color="#ffffff" padding="20px">
-      <mj-column>
-        <mj-text font-size="18px" color="#333333" font-weight="bold">
-          {{brand.name}} - Yeni Şablon
+  <mj-body background-color="#f8fafc">
+    <mj-section padding="40px 20px">
+      <mj-column width="100%" background-color="#ffffff" border-radius="16px" padding="20px">
+        <mj-text font-size="24px" color="#0f172a" font-weight="bold" padding-bottom="0">
+          {{brand.name}}
         </mj-text>
-        <mj-divider border-color="#eeeeee" />
-        <mj-text font-size="14px" color="#555555">
-          İçeriğinizi burada düzenleyin.
+        <mj-divider border-width="1px" border-color="#f1f5f9" padding="20px 0" />
+        <mj-text font-size="16px">
+          Yeni e-posta şablonunuz başarıyla oluşturuldu.
         </mj-text>
+        <mj-text padding-top="20px">
+          Düzenlemek için sol taraftaki MJML editörünü kullanabilirsiniz. Sağ taraftaki önizleme panelinden canlı sonucu görebilirsiniz.
+        </mj-text>
+        <mj-button background-color="#0ea5e9" color="white" border-radius="8px" padding-top="30px" href="{{brand.help_center_url}}">
+          Yardım Merkezi
+        </mj-button>
       </mj-column>
     </mj-section>
   </mj-body>

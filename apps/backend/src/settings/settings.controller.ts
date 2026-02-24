@@ -11,25 +11,25 @@ export class SettingsController {
     constructor(private readonly settingsService: SettingsService) { }
 
     @Post()
-    @Roles('admin', 'superuser')
+    @Roles('ADMIN', 'SUPERUSER')
     upsert(@Body() dto: UpsertSettingDto, @Request() req: any) {
         return this.settingsService.upsert(dto, req.user.id);
     }
 
     @Get()
-    @Roles('admin', 'superuser')
+    @Roles('ADMIN', 'SUPERUSER')
     findAll(@Query('decrypt') decrypt?: string) {
         return this.settingsService.getAll(decrypt === 'true');
     }
 
     @Get(':key')
-    @Roles('admin', 'superuser')
+    @Roles('ADMIN', 'SUPERUSER')
     findOne(@Param('key') key: string, @Query('decrypt') decrypt?: string) {
         return this.settingsService.get(key, decrypt === 'true');
     }
 
     @Delete(':key')
-    @Roles('admin', 'superuser')
+    @Roles('ADMIN', 'SUPERUSER')
     remove(@Param('key') key: string) {
         return this.settingsService.delete(key);
     }

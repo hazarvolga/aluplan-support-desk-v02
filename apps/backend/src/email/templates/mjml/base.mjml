@@ -15,19 +15,39 @@
     <mj-section background-color="#ffffff" padding="20px">
       <mj-column>
         <!-- Header -->
-        <mj-text background-color="#0EA5E9" color="#fff" font-size="20px" font-weight="bold" padding="16px">
-          {{brand.name}} Support
+        <mj-image src="{{brand.logo_url}}" alt="{{brand.name}} Logo" width="150px" align="left" padding-bottom="20px" />
+        
+        <mj-text font-size="20px" font-weight="bold" color="#0f172a" padding-bottom="10px">
+          {{brand.name}}
         </mj-text>
 
         <!-- Slot Content -->
         <mj-wrapper padding="10px 0">
-           <!-- Dynamic Content Will Be Injected Here via Handlebars during build if needed or pure string parsing -->
+           <!-- Content injected here -->
         </mj-wrapper>
 
         <!-- Footer -->
-        <mj-text css-class="footer" font-size="12px" color="#94a3b8" padding-top="20px">
-          Bu otomatik bir mesajdır. <br/>
-          <a href="{{brand.help_center_url}}" style="color:#0EA5E9;">Yardım Merkezi</a> | <a href="{{unsubscribe_url}}" style="color:#0EA5E9;">Abonelikten Çık</a>
+        <mj-divider border-width="1px" border-color="#f1f5f9" padding-top="40px" />
+        
+        <mj-text font-size="12px" color="#64748b" line-height="1.5">
+          <strong>{{brand.name}}</strong><br/>
+          {{brand.address}}<br/>
+          Bu otomatik bir sistem mesajıdır.
+        </mj-text>
+
+        <mj-social font-size="12px" icon-size="20px" mode="horizontal" align="left" padding-top="10px">
+          {{#if brand.social_linkedin}}
+          <mj-social-element name="linkedin" href="{{brand.social_linkedin}}">LinkedIn</mj-social-element>
+          {{/if}}
+          {{#if brand.social_twitter}}
+          <mj-social-element name="twitter" href="{{brand.social_twitter}}">Twitter</mj-social-element>
+          {{/if}}
+        </mj-social>
+
+        <mj-text font-size="11px" color="#94a3b8" padding-top="20px">
+          <a href="{{brand.help_center_url}}" style="color:#0EA5E9; text-decoration:none;">Yardım Merkezi</a>
+          &nbsp; | &nbsp;
+          <a href="{{unsubscribe_url}}" style="color:#64748b; text-decoration:underline;">Abonelikten Çık</a>
         </mj-text>
       </mj-column>
     </mj-section>

@@ -44,7 +44,26 @@ export class EmailProcessor extends WorkerHost {
     await this.refreshProvider();
 
     try {
-      const compiled = TemplateService.compile(template, data);
+      // Fetch branding data to inject as defaults
+      const [companyName, logoUrl, address, linkedin, twitter, frontendUrl] = await Promise.all([
+        this.settings.getValue('branding.company_name'),
+        this.settings.getValue('branding.logo_url'),
+        this.settings.getValue('branding.address'),
+        this.settings.getValue('branding.social_linkedin'),
+        this.settings.getValue('branding.social_twitter'),
+        this.settings.getValue('general.frontend_url'),
+      ]);
+
+      const brandDefaults = {
+        name: companyName || 'Aluplan',
+        logo_url: logoUrl || '/logo.png',
+        address: address || '',
+        social_linkedin: linkedin || '',
+        social_twitter: twitter || '',
+        help_center_url: frontendUrl || 'https://help.aluplan.com',
+      };
+
+      const compiled = TemplateService.compile(template, data, brandDefaults);
 
       const result = await this.provider.send({
         to,

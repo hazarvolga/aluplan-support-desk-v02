@@ -12,37 +12,37 @@ export class MacrosController {
     constructor(private readonly macrosService: MacrosService) { }
 
     @Post()
-    @Roles('admin', 'superuser', 'agent')
+    @Roles('ADMIN', 'SUPERUSER', 'AGENT')
     create(@Body() createMacroDto: CreateMacroDto, @Request() req: any) {
         return this.macrosService.create(createMacroDto, req.user.id);
     }
 
     @Get()
-    @Roles('admin', 'superuser', 'agent')
+    @Roles('ADMIN', 'SUPERUSER', 'AGENT')
     findAll() {
         return this.macrosService.findAll();
     }
 
     @Get(':id')
-    @Roles('admin', 'superuser', 'agent')
+    @Roles('ADMIN', 'SUPERUSER', 'AGENT')
     findOne(@Param('id') id: string) {
         return this.macrosService.findOne(id);
     }
 
     @Get(':id/render')
-    @Roles('admin', 'superuser', 'agent')
+    @Roles('ADMIN', 'SUPERUSER', 'AGENT')
     renderMacro(@Param('id') id: string, @Query('ticketId') ticketId?: string) {
         return this.macrosService.renderMacro(id, ticketId);
     }
 
     @Patch(':id')
-    @Roles('admin', 'superuser', 'agent')
+    @Roles('ADMIN', 'SUPERUSER', 'AGENT')
     update(@Param('id') id: string, @Body() updateMacroDto: UpdateMacroDto) {
         return this.macrosService.update(id, updateMacroDto);
     }
 
     @Delete(':id')
-    @Roles('admin', 'superuser', 'agent')
+    @Roles('ADMIN', 'SUPERUSER', 'AGENT')
     remove(@Param('id') id: string) {
         return this.macrosService.remove(id);
     }

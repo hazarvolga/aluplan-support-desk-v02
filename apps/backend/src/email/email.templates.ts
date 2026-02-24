@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import mjml2html from 'mjml';
+import mjml2html = require('mjml');
 import * as Handlebars from 'handlebars';
 
 export interface EmailPayload {
@@ -14,7 +14,8 @@ export interface EmailPayload {
 
 export class TemplateService {
   private static cache: Map<string, Handlebars.TemplateDelegate> = new Map();
-  private static mjmlDir = path.join(__dirname, 'templates', 'mjml');
+  // MJML files live in src/ not dist/. Resolve reliably from __dirname.
+  private static mjmlDir = path.join(__dirname, '..', '..', 'src', 'email', 'templates', 'mjml');
 
   public static resetCache(templateName?: string) {
     if (templateName) {
@@ -24,7 +25,7 @@ export class TemplateService {
     }
   }
 
-  public static compile(templateName: string, data: any): { html: string; text: string; subject: string } {
+  public static compile(templateName: string, data: any, brandDefaults?: any): { html: string; text: string; subject: string } {
     let compiledTemplate = this.cache.get(templateName);
 
     if (!compiledTemplate) {
@@ -49,16 +50,20 @@ export class TemplateService {
     }
 
     // Global Brand Data fallback injected if missing
-    const brandData = data.brand || {
+    const brandData = {
       name: 'Aluplan',
       help_center_url: 'https://help.aluplan.com',
-      primary_color: '#0EA5E9'
+      primary_color: '#0EA5E9',
+      logo_url: '/logo.png',
+      address: '',
+      ...brandDefaults,
+      ...data.brand
     };
 
     const renderContext = {
       ...data,
       brand: brandData,
-      unsubscribe_url: `https://help.aluplan.com/unsubscribe?token=${data.customerId || 'global'}`
+      unsubscribe_url: data.unsubscribe_url || `${brandData.help_center_url}/unsubscribe?token=${data.userId || 'global'}`
     };
 
     return {
