@@ -16,18 +16,30 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         headers,
     });
     if (!res.ok) {
-        let errStr = res.statusText;
+        let errStr = `HTTP ${res.status}: ${res.statusText}`;
+        let errBody: any = {};
         try {
-            const err = await res.json();
+            errBody = await res.json();
             // NestJS returns error details in `message` (sometimes an array of strings for validation)
-            if (Array.isArray(err.message)) {
-                errStr = err.message.join(', ');
-            } else if (err.message) {
-                errStr = err.message;
+            if (Array.isArray(errBody.message)) {
+                errStr = errBody.message.join(', ');
+            } else if (errBody.message) {
+                errStr = errBody.message;
+            } else if (Object.keys(errBody).length > 0) {
+                errStr = JSON.stringify(errBody);
+            } else {
+                errStr = `Error Detail Missing (Status ${res.status})`;
             }
-            console.error('API Error Response:', err);
+            console.error(`API Error [${res.status}]:`, errBody);
         } catch (e) {
-            // response was not JSON
+            // response was not JSON, try text
+            try {
+                const text = await res.clone().text();
+                console.error(`API Error [${res.status}] (Non-JSON):`, text);
+                errStr = text || errStr;
+            } catch (te) {
+                console.error(`API Error [${res.status}] (Parse Failed)`);
+            }
         }
         throw new Error(errStr);
     }
@@ -139,6 +151,22 @@ export const api = {
             }),
         status: () => request<any>('/ai/status'),
         getCopilotDraft: (ticketId: string) => request<{ draft: string; model: string }>(`/ai/copilot/draft/${ticketId}`),
+        getHealthMetrics: () => request<{
+            totalInteractions: number;
+            deflectionRate: number;
+            aiAccuracy: number;
+            confidenceDistribution: Array<{ band: string; count: number }>;
+        }>('/ai/health-metrics'),
+        getSourcesStats: () => request<{
+            pillars: {
+                DOCUMENTS: number;
+                ARTICLES: number;
+                URLS: number;
+                TICKETS: number;
+            };
+            pendingFaqs: number;
+            totalSources: number;
+        }>('/ai/sources-stats'),
     },
     faq: {
         published: () => request<any[]>('/faq/published'),

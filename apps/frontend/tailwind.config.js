@@ -53,9 +53,18 @@ module.exports = {
                 border: 'rgb(var(--border))',
                 input: 'rgb(var(--input))',
                 ring: 'rgb(var(--ring))',
-                // Keep brand for legacy compatibility but deprecate in favor of industrial
+                // Mapping brand to primary industrial palette
                 brand: {
-                    500: '#0ea5e9',
+                    50: '#E6FFF9',
+                    100: '#CCFFf4',
+                    200: '#99FFEE',
+                    300: '#66FFE7',
+                    400: '#33FFE1',
+                    500: '#00FFD1', // Primary Cyan
+                    600: '#00CCB7',
+                    700: '#009989',
+                    800: '#00665C',
+                    900: '#00332E',
                 },
             },
             fontFamily: {

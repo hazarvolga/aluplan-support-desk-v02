@@ -99,7 +99,7 @@ export function RoleGuard({
             const isCustomer = userRoles.includes('customer');
 
             // Routes that are definitely NOT for customers
-            const adminOnlyPaths = ['/users', '/settings', '/reports', '/customers', '/faq/review', '/ai/training'];
+            const adminOnlyPaths = ['/users', '/settings', '/reports', '/customers', '/faq/review', '/ai/training', '/faq-learning'];
             const isUnauthorizedTarget = adminOnlyPaths.some(path => pathname.startsWith(path));
 
             if (allowedRoles) {

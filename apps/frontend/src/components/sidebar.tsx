@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Ticket, BookOpen, Bot,
-    MessageSquareQuote, Settings, LogOut, ChevronRight, Users, User
+    MessageSquareQuote, Settings, LogOut, ChevronRight, Users, User,
+    Brain, Database, Layers
 } from 'lucide-react';
 
 import { api } from '@/lib/api';
@@ -13,15 +14,30 @@ import { useEffect, useState } from 'react';
 const ADMIN_NAV = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/tickets', icon: Ticket, label: 'Kuyruk' },
-    { href: '/knowledge-base', icon: BookOpen, label: 'Bilgi Bankası' },
-    { href: '/knowledge-pool', icon: BookOpen, label: 'Bilgi Havuzu' },
-    { href: '/ai', icon: Bot, label: 'AI Asistan' },
-    { href: '/kb-approvals', icon: MessageSquareQuote, label: 'AI Onayları' },
-    { href: '/customers', icon: Users, label: 'Müşteriler' },
-    { href: '/products', icon: BookOpen, label: 'Ürünler & Modüller' },
-    { href: '/users', icon: Settings, label: 'Ekip' },
-    { href: '/admin/settings', icon: Settings, label: 'Sistem Ayarları' },
-    { href: '/help', icon: BookOpen, label: 'Sistem Rehberi' },
+    {
+        section: 'BİLGİ BANKASI',
+        items: [
+            { href: '/knowledge-base', icon: BookOpen, label: 'KB Makaleleri' },
+            { href: '/kb-approvals', icon: MessageSquareQuote, label: 'AI Onayları' },
+        ]
+    },
+    {
+        section: 'BİLGİ HAVUZU',
+        items: [
+            { href: '/knowledge-pool', icon: Database, label: 'Veri Kaynakları' },
+            { href: '/faq-learning', icon: Brain, label: 'Öğrenme Döngüsü' },
+        ]
+    },
+    {
+        section: 'SİSTEM',
+        items: [
+            { href: '/ai', icon: Bot, label: 'AI Konfigürasyonu' },
+            { href: '/customers', icon: Users, label: 'Müşteriler' },
+            { href: '/products', icon: Layers, label: 'Ürünler & Modüller' },
+            { href: '/users', icon: Settings, label: 'Ekip' },
+            { href: '/admin/settings', icon: Settings, label: 'Sistem Ayarları' },
+        ]
+    },
     { href: '/profile', icon: User, label: 'Profil' },
 ];
 
@@ -72,38 +88,52 @@ export function Sidebar({ onNavClick }: SidebarProps) {
             </div>
 
             {/* Terminal Navigation */}
-            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-0.5 scrollbar-thin">
-                <div className="px-2 pb-2">
-                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Navigation</span>
-                </div>
-                {nav.map(({ href, icon: Icon, label }) => {
-                    const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
-                    return (
-                        <Link
-                            key={href}
-                            href={href}
-                            onClick={onNavClick}
-                            className={`flex items-center gap-2.5 px-2 py-1.5 transition-colors group relative
-                ${active
-                                    ? 'bg-accent text-white'
-                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                }`}
-                        >
-                            <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-white' : 'text-muted-foreground group-hover:text-foreground'}`} />
-                            <span className="flex-1 text-[12px] font-medium tracking-tight truncate">{label.toUpperCase()}</span>
-
-                            {label === 'AI Onayları' && pendingCount > 0 && (
-                                <span className={`px-1 text-[9px] font-mono font-bold border ${active ? 'border-white text-white' : 'border-muted-foreground/30 text-muted-foreground'}`}>
-                                    {pendingCount.toString().padStart(2, '0')}
+            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-4 scrollbar-thin">
+                {nav.map((item: any, idx: number) => (
+                    <div key={item.section || idx} className="space-y-1">
+                        {item.section && (
+                            <div className="px-2 pb-1.5 pt-2">
+                                <span className="text-[9px] font-extrabold text-primary/50 uppercase tracking-[0.2em]">
+                                    {item.section}
                                 </span>
-                            )}
+                            </div>
+                        )}
 
-                            {active && (
-                                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary" />
-                            )}
-                        </Link>
-                    );
-                })}
+                        {(item.items || [item]).map((navItem: any) => {
+                            if (!navItem.href) return null;
+                            const Icon = navItem.icon;
+                            const active = pathname === navItem.href || (navItem.href !== '/dashboard' && pathname.startsWith(navItem.href));
+
+                            return (
+                                <Link
+                                    key={navItem.href}
+                                    href={navItem.href}
+                                    onClick={onNavClick}
+                                    className={`flex items-center gap-2.5 px-2 py-1.5 transition-colors group relative
+                                        ${active
+                                            ? 'bg-accent text-white font-bold'
+                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                        }`}
+                                >
+                                    {Icon && <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-white' : 'text-muted-foreground group-hover:text-foreground'}`} />}
+                                    <span className="flex-1 text-[11px] uppercase tracking-tighter truncate">
+                                        {navItem.label}
+                                    </span>
+
+                                    {navItem.label === 'AI Onayları' && pendingCount > 0 && (
+                                        <span className={`px-1 text-[9px] font-mono font-bold border ${active ? 'border-white text-white' : 'border-muted-foreground/30 text-muted-foreground'}`}>
+                                            {pendingCount.toString().padStart(2, '0')}
+                                        </span>
+                                    )}
+
+                                    {active && (
+                                        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary" />
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </div>
+                ))}
             </nav>
 
             {/* Auth Zone */}
