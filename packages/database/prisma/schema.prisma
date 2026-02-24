@@ -17,6 +17,18 @@ datasource db {
 // ENUMS
 // =============================================
 
+enum AgentStatus {
+  ONLINE
+  AWAY
+  DND
+}
+
+enum RoutingLogic {
+  MANUAL
+  ROUND_ROBIN
+  SKILL_BASED
+}
+
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -92,7 +104,7 @@ enum Sentiment {
 // =============================================
 
 model User {
-  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email            String     @unique @db.VarChar(255)
   fullName         String     @db.VarChar(255)
   passwordHash     String     @db.Text
@@ -103,7 +115,17 @@ model User {
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
+  // Agent fields
+  isAgent          Boolean @default(false) @map("is_agent")
+  timezone         String  @default("UTC") @db.VarChar(50)
+  maxActiveTickets Int     @default(5) @map("max_active_tickets")
+  orgId            String? @map("org_id") @db.Uuid
+
   // Relations
+  organization      Organization?             @relation(fields: [orgId], references: [id])
+  teamMembers       TeamMember[]
+  agentSkills       AgentSkill[]
+  shifts            Shift[]
   userRoles         UserRole[]                @relation("UserToRoles")
   assignedRoles     UserRole[]                @relation("AssignedByUser")
   ticketsCreated    Ticket[]                  @relation("TicketCreatedBy")
@@ -122,8 +144,115 @@ model User {
   macrosCreated     Macro[]
   customerProfile   CustomerProfile?
   notifications     Notification[]
+  emailPreferences  EmailPreference[]
 
   @@map("users")
+}
+
+// =============================================
+// MULTI-TENANCY & HIERARCHY (Orgs, Depts, Teams)
+// =============================================
+
+model Organization {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @db.VarChar(255)
+  domain    String?  @unique @db.VarChar(255)
+  settings  Json?    @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  departments Department[]
+  users       User[]
+
+  @@map("organizations")
+}
+
+model Department {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  teams        Team[]
+
+  @@map("departments")
+}
+
+model Team {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  departmentId String       @map("department_id") @db.Uuid
+  name         String       @db.VarChar(255)
+  description  String?      @db.Text
+  routingLogic RoutingLogic @default(MANUAL) @map("routing_logic")
+
+  // SLA Settings
+  firstResponseSlaMinutes Int?    @map("first_response_sla_minutes")
+  resolutionSlaMinutes    Int?    @map("resolution_sla_minutes")
+  businessHoursOnly       Boolean @default(true) @map("business_hours_only")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  department Department   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  members    TeamMember[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  userId     String   @map("user_id") @db.Uuid
+  teamId     String   @map("team_id") @db.Uuid
+  roleInTeam String   @default("Agent") @map("role_in_team") @db.VarChar(50) // Lead, Agent, Viewer
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([userId, teamId])
+  @@map("team_members")
+}
+
+model Skill {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId     String?  @map("org_id") @db.Uuid // Null if global skill, else org-specific
+  name      String   @db.VarChar(100)
+  category  String?  @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  agentSkills AgentSkill[]
+
+  @@map("skills")
+}
+
+model AgentSkill {
+  userId      String   @map("user_id") @db.Uuid
+  skillId     String   @map("skill_id") @db.Uuid
+  proficiency Int      @default(1) // 1-5
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([userId, skillId])
+  @@map("agent_skills")
+}
+
+model Shift {
+  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String      @map("user_id") @db.Uuid
+  status            AgentStatus @default(ONLINE)
+  scheduleJson      Json?       @map("schedule_json") // E.g., { "monday": ["09:00", "17:00"] }
+  autoAssignEnabled Boolean     @default(true) @map("auto_assign_enabled")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("shifts")
 }
 
 model Notification {
@@ -136,7 +265,7 @@ model Notification {
   link      String?  @db.Text // URL or deep link to the resource
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead], map: "idx_notifications_user_read")
   @@map("notifications")
@@ -280,7 +409,7 @@ model KnowledgeArticle {
   approvedBy     String?       @map("approved_by") @db.Uuid
   approvedAt     DateTime?     @map("approved_at")
   currentVersion Int           @default(1) @map("current_version")
-   isInternal     Boolean       @default(false) @map("is_internal")
+  isInternal     Boolean       @default(false) @map("is_internal")
   isAutoImported Boolean       @default(false) @map("is_auto_imported")
   trustScore     Decimal       @default(0.95) @map("trust_score") @db.Decimal(5, 4)
   feedbackWeight Decimal       @default(1.0) @map("feedback_weight") @db.Decimal(5, 4)
@@ -345,7 +474,7 @@ model KnowledgeArticleVersion {
 model KnowledgeEmbedding {
   id                   String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   articleId            String                     @map("article_id") @db.Uuid
-   articleVersionId     String                     @map("article_version_id") @db.Uuid
+  articleVersionId     String                     @map("article_version_id") @db.Uuid
   parentId             String?                    @map("parent_id") @db.Uuid
   embedding            Unsupported("vector(768)")
   content              String                     @db.Text
@@ -381,16 +510,16 @@ model AiInteraction {
   userContext       Json?           @map("user_context") // page, segment, etc.
 
   // Telemetry details
-  isAccepted        Boolean?        @map("is_accepted")
-  editedResponse    String?         @map("edited_response") @db.Text
+  isAccepted     Boolean? @map("is_accepted")
+  editedResponse String?  @map("edited_response") @db.Text
 
   // Token usage and Cost telemetry
-  inputTokens       Int?            @map("input_tokens")
-  outputTokens      Int?            @map("output_tokens")
-  totalTokens       Int?            @map("total_tokens")
-  estimatedCost     Decimal?        @map("estimated_cost") @db.Decimal(10, 6)
+  inputTokens   Int?     @map("input_tokens")
+  outputTokens  Int?     @map("output_tokens")
+  totalTokens   Int?     @map("total_tokens")
+  estimatedCost Decimal? @map("estimated_cost") @db.Decimal(10, 6)
 
-  createdAt         DateTime        @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   user           User?                    @relation(fields: [userId], references: [id])
   product        Product?                 @relation(fields: [productId], references: [id])
@@ -485,20 +614,20 @@ model Ticket {
   knowledgeBaseAdded  Boolean @default(false) @map("knowledge_base_added")
 
   // Ticket Linking
-  parentId            String? @map("parent_id") @db.Uuid
+  parentId String? @map("parent_id") @db.Uuid
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  creator     User?              @relation("TicketCreatedBy", fields: [userId], references: [id])
-  assignee    User?              @relation("TicketAssignedTo", fields: [assignedTo], references: [id])
-  interaction AiInteraction?     @relation(fields: [interactionId], references: [id])
-  product     Product?           @relation(fields: [productId], references: [id])
-  parentTicket Ticket?           @relation("TicketHierarchy", fields: [parentId], references: [id])
-  linkedTickets Ticket[]         @relation("TicketHierarchy")
-  messages    TicketMessage[]
-  escalations TicketEscalation[]
-  embeddings  TicketEmbedding[]
+  creator       User?              @relation("TicketCreatedBy", fields: [userId], references: [id])
+  assignee      User?              @relation("TicketAssignedTo", fields: [assignedTo], references: [id])
+  interaction   AiInteraction?     @relation(fields: [interactionId], references: [id])
+  product       Product?           @relation(fields: [productId], references: [id])
+  parentTicket  Ticket?            @relation("TicketHierarchy", fields: [parentId], references: [id])
+  linkedTickets Ticket[]           @relation("TicketHierarchy")
+  messages      TicketMessage[]
+  escalations   TicketEscalation[]
+  embeddings    TicketEmbedding[]
 
   @@index([status], map: "idx_tickets_status")
   @@index([assignedTo], map: "idx_tickets_assigned")
@@ -514,13 +643,13 @@ model TicketMessage {
   message    String               @db.Text
   isInternal Boolean              @default(false) @map("is_internal")
   channel    CommunicationChannel @default(WEB)
-  sentiment  Sentiment?           // AI classification
-  metadata   Json?                // For translations, etc.
+  sentiment  Sentiment? // AI classification
+  metadata   Json? // For translations, etc.
   createdAt  DateTime             @default(now()) @map("created_at")
   updatedAt  DateTime             @updatedAt @map("updated_at")
 
-  ticket      Ticket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  sender      User?              @relation(fields: [senderId], references: [id])
+  ticket      Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender      User?        @relation(fields: [senderId], references: [id])
   attachments Attachment[]
 
   @@map("ticket_messages")
@@ -566,7 +695,7 @@ model FaqEntry {
   status          FaqStatus @default(PENDING_REVIEW)
   confidenceScore Decimal   @map("confidence_score") @db.Decimal(5, 4) // 0.0000 - 1.0000
   frequency       Int       @default(1) // How many times this was seen
-   isInternal      Boolean   @default(true) @map("is_internal")
+  isInternal      Boolean   @default(true) @map("is_internal")
   trustScore      Decimal   @default(0.75) @map("trust_score") @db.Decimal(5, 4)
   feedbackWeight  Decimal   @default(1.0) @map("feedback_weight") @db.Decimal(5, 4)
   sourceTypes     String[]  @default([]) @map("source_types") // ['ticket', 'chat']
@@ -619,8 +748,8 @@ model TicketRule {
   description String?     @db.Text
   isActive    Boolean     @default(true) @map("is_active")
   triggerOn   RuleTrigger @default(TICKET_CREATED) @map("trigger_on")
-  conditions  Json        // Format: { "subject:contains": "acil", "priority:equals": "HIGH" }
-  actions     Json        // Format: { "setPriority": "URGENT", "addTag": "acil-talep" }
+  conditions  Json // Format: { "subject:contains": "acil", "priority:equals": "HIGH" }
+  actions     Json // Format: { "setPriority": "URGENT", "addTag": "acil-talep" }
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
@@ -667,14 +796,14 @@ model InboundEmailLog {
 // =============================================
 
 model Webhook {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   @db.VarChar(100)
-  url         String   @db.Text
-  events      String[] // Array of event names like ["ticket.created", "ticket.resolved"]
-  secret      String?  @db.VarChar(255) // For signing payloads
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @db.VarChar(100)
+  url       String   @db.Text
+  events    String[] // Array of event names like ["ticket.created", "ticket.resolved"]
+  secret    String?  @db.VarChar(255) // For signing payloads
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("webhooks")
 }
@@ -707,8 +836,8 @@ model KnowledgeSource {
   fileName     String?               @map("file_name") @db.VarChar(255)
   filePath     String?               @map("file_path") @db.Text
   status       KnowledgeSourceStatus @default(ACTIVE)
-   productId    String?               @map("product_id") @db.Uuid
-  trustScore    Decimal               @default(0.85) @map("trust_score") @db.Decimal(5, 4)
+  productId    String?               @map("product_id") @db.Uuid
+  trustScore   Decimal               @default(0.85) @map("trust_score") @db.Decimal(5, 4)
   metadata     Json?                 @db.JsonB
   lastSyncedAt DateTime?             @map("last_synced_at")
   lastEtag     String?               @map("last_etag") @db.VarChar(255)
@@ -826,4 +955,53 @@ model Holiday {
 
   @@unique([date])
   @@map("holidays")
+}
+
+// =============================================
+// OUTBOUND EMAIL TRACKING & PREFERENCES
+// =============================================
+
+model EmailLog {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipientEmail String       @map("recipient_email") @db.VarChar(255)
+  subject        String       @db.Text
+  templateName   String       @map("template_name") @db.VarChar(100)
+  provider       MailProvider @default(RESEND)
+  messageId      String?      @unique @map("message_id") @db.VarChar(255)
+  status         String       @default("PENDING") @db.VarChar(50) // PENDING, SENT, FAILED
+  error          String?      @db.Text
+  sentAt         DateTime?    @map("sent_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  events EmailEvent[]
+
+  @@index([recipientEmail], map: "idx_email_logs_recipient")
+  @@index([templateName], map: "idx_email_logs_template")
+  @@map("email_logs")
+}
+
+model EmailEvent {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  emailLogId String   @map("email_log_id") @db.Uuid
+  eventType  String   @map("event_type") @db.VarChar(50) // sent, delivered, opened, clicked, bounced, complained
+  occurredAt DateTime @map("occurred_at")
+  metadata   Json?    @db.JsonB
+
+  emailLog EmailLog @relation(fields: [emailLogId], references: [id], onDelete: Cascade)
+
+  @@index([emailLogId], map: "idx_email_events_log")
+  @@map("email_events")
+}
+
+model EmailPreference {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  emailType String   @map("email_type") @db.VarChar(100)
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, emailType])
+  @@map("email_preferences")
 }
