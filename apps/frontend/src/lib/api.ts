@@ -176,8 +176,17 @@ export const api = {
         dismiss: (id: string) => request<any>(`/faq/${id}/dismiss`, { method: 'POST' }),
         runPipeline: () => request<any>('/faq/pipeline/run', { method: 'POST' }),
     },
+    teams: {
+        organizations: () => request<any[]>('/teams/organizations'),
+        departments: (orgId?: string) => request<any[]>(`/teams/departments${orgId ? `?orgId=${orgId}` : ''}`),
+        list: () => request<any[]>('/teams'),
+        get: (id: string) => request<any>(`/teams/${id}`),
+        create: (body: any) => request<any>('/teams', { method: 'POST', body: JSON.stringify(body) }),
+        addMember: (teamId: string, body: any) => request<any>(`/teams/${teamId}/members`, { method: 'POST', body: JSON.stringify(body) }),
+        removeMember: (teamId: string, userId: string) => request<any>(`/teams/${teamId}/members/${userId}`, { method: 'DELETE' }),
+    },
     users: {
-        list: () => request<any[]>('/users'),
+        list: (type?: 'agent' | 'customer') => request<any[]>(`/users${type ? `?type=${type}` : ''}`),
         get: (id: string) => request<any>(`/users/${id}`),
         create: (body: any) => request<any>('/users', { method: 'POST', body: JSON.stringify(body) }),
         updateProfile: (body: any) => request<any>('/users/profile', { method: 'PATCH', body: JSON.stringify(body) }),
@@ -215,6 +224,16 @@ export const api = {
         create: (body: any) => request<any>('/macros', { method: 'POST', body: JSON.stringify(body) }),
         update: (id: string, body: any) => request<any>(`/macros/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
         delete: (id: string) => request<any>(`/macros/${id}`, { method: 'DELETE' }),
+    },
+    email: {
+        logs: (page = 1, limit = 50, status?: string) => {
+            const q = new URLSearchParams({ page: String(page), limit: String(limit) });
+            if (status) q.append('status', status);
+            return request<{ data: any[]; total: number; page: number; limit: number }>(`/email/admin/logs?${q}`);
+        },
+        templates: () => request<{ templates: string[] }>('/email/admin/templates'),
+        previewTemplate: (name: string, data: any) => request<any>(`/email/admin/templates/${name}/preview`, { method: 'POST', body: JSON.stringify(data) }),
+        verifyProvider: () => request<{ provider: string; available: boolean }>('/email/admin/provider/verify', { method: 'POST' }),
     },
     get: (url: string) => request<any>(url),
     post: (url: string, body: any) =>

@@ -16,6 +16,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { EmailLogs } from './components/EmailLogs';
+import { EmailTemplates } from './components/EmailTemplates';
+
 export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -193,6 +196,13 @@ export default function SettingsPage() {
                                 }} disabled={saving} className="bg-brand-600 ml-auto">Kaydet</Button>
                             </CardFooter>
                         </Card>
+                    </div>
+
+                    <Separator className="bg-white/5 my-8" />
+
+                    <div className="space-y-6">
+                        <EmailTemplates />
+                        <EmailLogs />
                     </div>
                 </TabsContent>
 
