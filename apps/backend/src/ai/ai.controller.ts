@@ -69,6 +69,20 @@ export class AiController {
         return this.aiQueryService.getTelemetryMetrics();
     }
 
+    @Get('health-metrics')
+    @Roles('admin', 'superuser')
+    @ApiOperation({ summary: 'Get detailed AI health & deflection metrics (Option C)' })
+    async getHealth() {
+        return this.aiQueryService.getHealthMetrics();
+    }
+
+    @Get('sources-stats')
+    @Roles('admin', 'superuser')
+    @ApiOperation({ summary: 'Get counts for the 4 source pillars (Documents, Articles, URLs, Tickets)' })
+    async getSourcesStats() {
+        return this.aiQueryService.getSourcesStats();
+    }
+
     @Post('translate')
     @Roles('admin', 'superuser', 'agent')
     @ApiOperation({ summary: 'Translate text to a target language' })
@@ -149,14 +163,16 @@ export class AiController {
     @ApiOperation({ summary: 'Semantic search Knowledge Pool + Articles with Product filtering' })
     @HttpCode(HttpStatus.OK)
     async search(@Body() dto: { query: string; productId?: string; limit?: number }, @Request() req: any) {
-        const results = await this.embeddingService.search(dto.query, dto.limit ?? 5, dto.productId);
+        const isStaff = req.user?.role !== 'customer';
+        const results = await this.embeddingService.search(dto.query, dto.limit ?? 5, dto.productId, isStaff);
 
         // Log as an interaction for traceability
         const interaction = await this.aiQueryService.logSearchInteraction(
             dto.query,
             req.user?.sub,
             results,
-            dto.productId
+            dto.productId,
+            isStaff
         );
 
         return {

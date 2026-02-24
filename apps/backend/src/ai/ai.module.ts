@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
+import { LlmApiService } from './llm-api.service';
 import { AiService } from './ai.service';
 import { EmbeddingService } from './embedding.service';
 import { AiQueryService } from './ai-query.service';
@@ -12,6 +13,8 @@ import { SettingsModule } from '../settings/settings.module';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { PromptsService } from './prompts.service';
 import { LangfuseService } from './langfuse.service';
+import { TrustScoreCalculator } from './utils/trust-score.calculator';
+import { TicketClusteringService } from './ticket-clustering.service';
 
 @Module({
     imports: [SettingsModule],
@@ -27,8 +30,11 @@ import { LangfuseService } from './langfuse.service';
         AiCopilotService,
         PromptContextBuilderService,
         PromptsService,
-        LangfuseService
+        LangfuseService,
+        LlmApiService,
+        TrustScoreCalculator,
+        TicketClusteringService
     ],
-    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService, PromptsService, LangfuseService],
+    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService, PromptsService, LangfuseService, LlmApiService, TrustScoreCalculator, TicketClusteringService],
 })
 export class AiModule { }

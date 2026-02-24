@@ -53,8 +53,9 @@ export class AiQueryService {
     }
 
     async query(userQuery: string, userId?: string | null): Promise<AiQueryResult> {
-        // 0. Cache lookup
-        const queryHash = createHash('sha256').update(userQuery).digest('hex');
+        // 0. Cache lookup (simplified for internal/external aware caching)
+        const isStaff = await this.isStaff(userId);
+        const queryHash = createHash('sha256').update(userQuery + isStaff).digest('hex');
         const cacheKey = `ai:query:cache:${queryHash}`;
         const cached = await this.redis.get(cacheKey);
 
@@ -64,8 +65,11 @@ export class AiQueryService {
             return result;
         }
 
-        // 1. Semantic search
-        const results: SearchResult[] = await this.embeddingService.search(userQuery);
+        // 1. Semantic search with role-based filtering
+        let results: SearchResult[] = await this.embeddingService.search(userQuery, 10, null, isStaff);
+
+        // 3. Re-ranking Phase (Section 5: Hybrid Retrieval Engine)
+        results = this.rerankResults(results, userQuery);
 
         // 2. Determine confidence band
         const topResult = results[0] ?? null;
@@ -108,7 +112,11 @@ export class AiQueryService {
         const estimatedCost = (inputTokens * 0.00000015) + (outputTokens * 0.0000006);
 
         // 4. Log interaction
-        const suggestTicket = confidence === 'NO_MATCH' || confidence === 'LOW';
+        // R-R1: If top trust_score < 0.4, suggest ticket (Confidence LOW or NO_MATCH usually implies this)
+        // We also check the actual similarity * trust_score if possible, but status-based confidence is the current implementation.
+        const topTrustScore = results[0]?.similarity || 0; // Simplified trust score check
+        const suggestTicket = confidence === 'NO_MATCH' || confidence === 'LOW' || topTrustScore < 0.4;
+
         const interaction = await this.prisma.aiInteraction.create({
             data: {
                 userId,
@@ -148,9 +156,38 @@ export class AiQueryService {
         return finalResult;
     }
 
+    /**
+     * Heuristic Re-ranking (Cohort Search)
+     * Section 5.3: Re-ranking with weights
+     */
+    private rerankResults(results: SearchResult[], query: string): SearchResult[] {
+        if (results.length === 0) return [];
+
+        return results
+            .map(res => {
+                let boost = 1.0;
+
+                // Pillar-specific boosts based on Trust stability (Section 5.3)
+                if (res.sourceType === 'ARTICLE') boost *= 1.25; // Premium Hand-picked
+                if (res.sourceType === 'DOCUMENT') boost *= 1.1; // Official Docs
+                if (res.sourceType === 'URL' && res.similarity < 0.6) boost *= 0.8; // Penalize low-quality web snippets
+
+                // Recency heuristic (if available in content/metadata)
+                // (Optional: add date parsing if content has dates)
+
+                return {
+                    ...res,
+                    similarity: res.similarity * boost
+                };
+            })
+            .sort((a, b) => b.similarity - a.similarity)
+            .slice(0, 5);
+    }
+
     async *streamQuery(userQuery: string, userId?: string | null): AsyncGenerator<any, void, unknown> {
-        // 0. Cache lookup
-        const queryHash = createHash('sha256').update(userQuery).digest('hex');
+        // 0. Cache lookup (simplified for internal/external aware caching)
+        const isStaff = await this.isStaff(userId);
+        const queryHash = createHash('sha256').update(userQuery + isStaff).digest('hex');
         const cacheKey = `ai:query:stream_cache:${queryHash}`;
         const cached = await this.redis.get(cacheKey);
 
@@ -160,8 +197,9 @@ export class AiQueryService {
             return;
         }
 
-        const results = await this.embeddingService.search(userQuery);
+        const results = await this.embeddingService.search(userQuery, 5, null, isStaff);
         const topResult = results[0] ?? null;
+        // ... rest of logic stays same ...
 
         let confidence: ConfidenceBand = 'NO_MATCH';
         let fullAnswer = '';
@@ -229,6 +267,19 @@ export class AiQueryService {
         await this.redis.set(cacheKey, fullAnswer, 3600);
 
         yield { done: true, interactionId: interaction.id, suggestTicket: confidence === 'LOW' || confidence === 'NO_MATCH' };
+    }
+
+    private async isStaff(userId?: string | null): Promise<boolean> {
+        if (!userId) return false;
+        // In this schema, User relates to Roles via UserRole junction table
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { userRoles: { include: { role: true } } }
+        }) as any;
+
+        if (!user || !user.userRoles) return false;
+        // Check if any associated role is NOT 'customer'
+        return user.userRoles.some((ur: any) => ur.role?.name.toLowerCase() !== 'customer');
     }
 
     @OnEvent('ai.translate_message', { async: true })
@@ -422,7 +473,7 @@ SADECE en uygun kategori adını yaz. Hiçbiri uymuyorsa "GENEL" yaz.`;
         }
     }
 
-    async logSearchInteraction(query: string, userId?: string, results: SearchResult[] = [], productId?: string | null) {
+    async logSearchInteraction(query: string, userId?: string, results: SearchResult[] = [], productId?: string | null, isStaff = false) {
         const topResult = results[0] ?? null;
 
         return this.prisma.aiInteraction.create({
@@ -430,12 +481,88 @@ SADECE en uygun kategori adını yaz. Hiçbiri uymuyorsa "GENEL" yaz.`;
                 userId,
                 productId,
                 userQuery: query,
-                confidenceBand: topResult ? topResult.confidence : null,
+                confidenceBand: topResult ? (topResult.confidence as any) : null,
                 matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
                 similarityScore: topResult ? topResult.similarity : undefined,
                 autoAnswered: false, // This was just a search
-                userContext: { type: 'WIZARD_SEARCH', resultCount: results.length }
+                userContext: { type: 'WIZARD_SEARCH', resultCount: results.length, isStaff }
             },
         });
+    }
+
+    /**
+     * Get AI System Health Metrics (Option C Implementation)
+     */
+    async getHealthMetrics() {
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        const [totalInteractions, ticketCreations, confidenceStats] = await Promise.all([
+            this.prisma.aiInteraction.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+            this.prisma.aiInteraction.count({ where: { createdAt: { gte: thirtyDaysAgo }, ticketCreated: true } }),
+            this.prisma.aiInteraction.groupBy({
+                by: ['confidenceBand'],
+                where: { createdAt: { gte: thirtyDaysAgo } },
+                _count: { id: true }
+            })
+        ]);
+
+        // Deflection Rate: Interaksiyonlardan bilete dönüşmeyenlerin oranı
+        const deflectionRate = totalInteractions > 0
+            ? ((totalInteractions - ticketCreations) / totalInteractions) * 100
+            : 0;
+
+        const highConf = confidenceStats.find(s => s.confidenceBand === 'HIGH')?._count.id || 0;
+        const aiAccuracy = totalInteractions > 0
+            ? (highConf / totalInteractions) * 100
+            : 0;
+
+        return {
+            period: '30d',
+            totalInteractions,
+            ticketCreations,
+            deflectionRate: Math.round(deflectionRate * 10) / 10,
+            aiAccuracy: Math.round(aiAccuracy * 10) / 10,
+            confidenceDistribution: confidenceStats.map(s => ({
+                band: s.confidenceBand || 'NO_MATCH',
+                count: s._count.id
+            }))
+        };
+    }
+
+    /**
+     * Get counts for the 4 Source Pillars (PDF, Admin, URL, Ticket)
+     * as defined in FAQ_Self_Learing_mimarisi.MD
+     */
+    async getSourcesStats() {
+        const [filesCount, articlesCount, urlsCount, learnedCount] = await Promise.all([
+            this.prisma.knowledgeSource.count({
+                where: { type: { in: ['FILE_PDF', 'FILE_TXT', 'FILE_MD', 'FILE_CSV'] } }
+            }),
+            this.prisma.knowledgeArticle.count({
+                where: { status: 'PUBLISHED' }
+            }),
+            this.prisma.knowledgeSource.count({
+                where: { type: 'URL' }
+            }),
+            this.prisma.faqEntry.count({
+                where: { status: 'PUBLISHED' }
+            })
+        ]);
+
+        const pendingFaqs = await this.prisma.faqEntry.count({
+            where: { status: 'PENDING_REVIEW' }
+        });
+
+        return {
+            pillars: {
+                DOCUMENTS: filesCount,
+                ARTICLES: articlesCount,
+                URLS: urlsCount,
+                TICKETS: learnedCount
+            },
+            pendingFaqs,
+            totalSources: filesCount + articlesCount + urlsCount + learnedCount
+        };
     }
 }

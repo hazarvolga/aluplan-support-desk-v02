@@ -3,6 +3,7 @@ import { SettingsService } from '../settings/settings.service';
 import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
+import { LlmApiService } from './llm-api.service';
 import { AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class AiService implements AiProvider {
         private readonly ollama: OllamaService,
         private readonly openai: OpenAiService,
         private readonly custom: GenericOpenAiService,
+        private readonly llmapi: LlmApiService,
     ) { }
 
     private async isCircuitClosed(): Promise<boolean> {
@@ -70,6 +72,8 @@ export class AiService implements AiProvider {
                 return this.custom;
             case 'ollama':
                 return this.ollama;
+            case 'llmapi':
+                return this.llmapi;
             default:
                 return this.ollama;
         }
@@ -82,7 +86,15 @@ export class AiService implements AiProvider {
     async embed(text: string): Promise<EmbeddingResult | null> {
         return this.runSafe(async () => {
             const provider = await this.getActiveProvider();
-            return provider.embed(text);
+            let result = await provider.embed(text);
+
+            // AUTO-FALLBACK: If primary provider fails to embed, try Ollama
+            if (!result && provider.getName() !== 'ollama') {
+                this.logger.warn(`🔄 Active provider [${provider.getName()}] failed to embed. Falling back to Ollama...`);
+                result = await this.ollama.embed(text);
+            }
+
+            return result;
         });
     }
 

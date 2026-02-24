@@ -4,7 +4,7 @@ import { AiService } from './ai.service';
 
 export interface SearchResult {
     articleId: string;
-    sourceType: 'ARTICLE' | 'POOL';
+    sourceType: 'ARTICLE' | 'DOCUMENT' | 'URL' | 'TICKET';
     title: string;
     content: string;
     similarity: number;
@@ -24,50 +24,50 @@ export class EmbeddingService {
     ) { }
 
     /**
-     * Store embedding for a published article version.
+     * Store embedding for a published article version using Hierarchical (Parent-Child) chunking.
      */
     async indexArticle(articleId: string, versionId: string, title: string, content: string): Promise<void> {
-        const { smartChunk } = await import('../knowledge-base/utils/smart-chunker');
-        const chunks = smartChunk(content, { title, maxTokens: 1000, overlap: 200 });
+        const { hierarchicalChunk } = await import('../knowledge-base/utils/smart-chunker');
+        const hierarchies = hierarchicalChunk(content, { title, maxTokens: 2000 });
 
         await this.prisma.$executeRaw`DELETE FROM knowledge_embeddings WHERE article_version_id = ${versionId}::uuid`;
 
-        for (const chunk of chunks) {
-            let result = null;
-            let retries = 3;
-
-            while (retries > 0 && !result) {
-                result = await this.ai.embed(chunk.content);
-                if (!result) {
-                    retries--;
-                    if (retries > 0) {
-                        this.logger.warn(`🔄 Retrying embedding for article ${articleId} chunk ${chunk.sequence} (${retries} attempts left)...`);
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                    }
-                }
-            }
-
-            if (!result) {
-                this.logger.error(`❌ Failed to index chunk ${chunk.sequence} for article ${articleId} after multiple attempts.`);
-                continue;
-            }
+        for (const h of hierarchies) {
+            // 1. Index the Parent (for context storage)
+            const parentId = crypto.randomUUID();
+            const parentEmb = await this.ai.embed(h.parent);
+            if (!parentEmb) continue;
 
             await this.prisma.$executeRaw`
-                INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, model_name)
-                VALUES (gen_random_uuid(), ${articleId}::uuid, ${versionId}::uuid,
-                        ${JSON.stringify(result.embedding)}::vector, ${chunk.content}, ${chunk.sequence}, ${result.model})
+                INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, model_name, parent_id)
+                VALUES (${parentId}::uuid, ${articleId}::uuid, ${versionId}::uuid,
+                        ${JSON.stringify(parentEmb.embedding)}::vector, ${h.parent}, 0, ${parentEmb.model}, NULL)
             `;
 
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // 2. Index the Children (for precise retrieval)
+            for (let i = 0; i < h.children.length; i++) {
+                const childContent = h.children[i];
+                const childEmb = await this.ai.embed(childContent);
+                if (!childEmb) continue;
+
+                await this.prisma.$executeRaw`
+                    INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, model_name, parent_id)
+                    VALUES (gen_random_uuid(), ${articleId}::uuid, ${versionId}::uuid,
+                            ${JSON.stringify(childEmb.embedding)}::vector, ${childContent}, ${i + 1}, ${childEmb.model}, ${parentId}::uuid)
+                `;
+            }
+
+            // Small delay to prevent rate limits
+            await new Promise(resolve => setTimeout(resolve, 300));
         }
 
-        this.logger.log(`📐 Indexed ${chunks.length} chunks for article ${articleId}`);
+        this.logger.log(`📐 Indexed ${hierarchies.length} hierarchies for article ${articleId}`);
     }
 
     /**
-     * Semantic similarity search using pgvector.
+     * Semantic similarity search using pgvector with Trust Score re-ranking.
      */
-    async search(query: string, limit = 5, productId?: string | null): Promise<SearchResult[]> {
+    async search(query: string, limit = 5, productId?: string | null, includeInternal = false): Promise<SearchResult[]> {
         const embResult = await this.ai.embed(query);
         if (!embResult) {
             this.logger.warn('Semantic search unavailable — AI offline');
@@ -83,26 +83,55 @@ export class EmbeddingService {
                 title: string;
                 content: string;
                 similarity: number;
+                trust_score: number;
             }>
         >`
       WITH combined_search AS (
-        SELECT ka.id AS article_id, 'ARTICLE' AS source_type, ka.title, ke.content, 1 - (ke.embedding <=> ${vectorStr}::vector) AS similarity
+        -- Articles (Search on Child, return Parent context)
+        SELECT 
+            ka.id AS article_id, 
+            'ARTICLE' AS source_type, 
+            ka.title, 
+            COALESCE(parent.content, ke.content) AS content, 
+            1 - (ke.embedding <=> ${vectorStr}::vector) AS similarity,
+            ka.trust_score
         FROM knowledge_embeddings ke
         JOIN knowledge_articles ka ON ka.id = ke.article_id
-        JOIN knowledge_article_versions kav ON kav.id = ke.article_version_id
-        WHERE ka.status = 'PUBLISHED' AND ka.current_version = kav.version AND 1 - (ke.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
+        LEFT JOIN knowledge_embeddings parent ON ke.parent_id = parent.id
+        WHERE ka.status = 'PUBLISHED' 
+          AND (${includeInternal} = true OR ka.is_internal = false)
+          AND 1 - (ke.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
+          AND ke.parent_id IS NOT NULL -- Only search on children
+        
         UNION ALL
-        SELECT kpe.source_id AS article_id, 'POOL' AS source_type, ks.name AS title, kpe.content, 1 - (kpe.embedding <=> ${vectorStr}::vector) AS similarity
+        
+        -- Knowledge Pool (General chunks)
+        SELECT 
+            ks.id AS article_id, 
+            CASE 
+                WHEN ks.type = 'URL' THEN 'URL'
+                ELSE 'DOCUMENT'
+            END AS source_type, 
+            ks.name AS title, 
+            kpe.content, 
+            1 - (kpe.embedding <=> ${vectorStr}::vector) AS similarity,
+            ks.trust_score
         FROM knowledge_pool_embeddings kpe
         JOIN knowledge_sources ks ON kpe.source_id = ks.id
-        WHERE ks.status = 'ACTIVE' AND (${productId}::uuid IS NULL OR ks.product_id = ${productId}::uuid) AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
+        WHERE ks.status = 'ACTIVE' 
+          AND ${includeInternal} = true
+          AND (${productId}::uuid IS NULL OR ks.product_id = ${productId}::uuid) 
+          AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
       )
-      SELECT * FROM combined_search ORDER BY similarity DESC LIMIT ${limit}
+      SELECT * 
+      FROM combined_search 
+      ORDER BY (similarity * trust_score) DESC 
+      LIMIT ${limit}
     `;
 
         return rows.map((row) => ({
             articleId: row.article_id,
-            sourceType: row.source_type,
+            sourceType: row.source_type as any,
             title: row.title,
             content: row.content,
             similarity: Number(row.similarity),
