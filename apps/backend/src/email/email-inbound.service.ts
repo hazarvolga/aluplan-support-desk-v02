@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { TicketsService } from '../tickets/tickets.service';
+import { SystemRole } from '@prisma/client';
 import { SIMPLE_MAP_CONFIG } from './interfaces/imap.interface';
 import * as imaps from 'imap-simple';
 import { simpleParser } from 'mailparser';
@@ -99,15 +100,10 @@ export class EmailInboundService implements OnModuleInit {
                 if (ticket) {
                     // Identify sender
                     const sender = await this.prisma.user.findUnique({
-                        where: { email: from },
-                        include: {
-                            userRoles: {
-                                include: { role: true }
-                            }
-                        }
+                        where: { email: from }
                     });
                     const senderId = sender?.id || ticket.userId;
-                    const role = (sender as any)?.userRoles?.[0]?.role?.name || 'customer';
+                    const role = sender?.role || 'customer';
 
                     await this.ticketsService.addMessage(ticket.id, {
                         message: body,
@@ -129,11 +125,8 @@ export class EmailInboundService implements OnModuleInit {
                             email: from,
                             fullName: from.split('@')[0], // Use email prefix as temporary name
                             passwordHash: 'inbound-only', // System account
-                            userRoles: {
-                                create: {
-                                    role: { connect: { name: 'customer' } }
-                                }
-                            }
+                            role: SystemRole.VIEWER,
+                            status: 'ACTIVE'
                         }
                     });
                     this.logger.log(`Created skeleton user for inbound email: ${from}`);

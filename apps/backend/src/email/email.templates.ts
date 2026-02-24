@@ -16,6 +16,14 @@ export class TemplateService {
   private static cache: Map<string, Handlebars.TemplateDelegate> = new Map();
   private static mjmlDir = path.join(__dirname, 'templates', 'mjml');
 
+  public static resetCache(templateName?: string) {
+    if (templateName) {
+      this.cache.delete(templateName);
+    } else {
+      this.cache.clear();
+    }
+  }
+
   public static compile(templateName: string, data: any): { html: string; text: string; subject: string } {
     let compiledTemplate = this.cache.get(templateName);
 

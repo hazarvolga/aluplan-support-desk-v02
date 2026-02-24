@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { TeamsService } from './teams.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
+import { AssignmentStrategy, SystemRole, AgentStatus } from '@prisma/client';
 
 @ApiTags('Teams')
 @ApiBearerAuth()
@@ -11,58 +12,88 @@ import { Roles } from '../rbac/decorators/rbac.decorators';
 export class TeamsController {
     constructor(private readonly teamsService: TeamsService) { }
 
-    @Roles('admin', 'support_manager')
-    @Get('organizations')
-    @ApiOperation({ summary: 'List all organizations (tenants)' })
-    getOrganizations() {
-        return this.teamsService.getOrganizations();
-    }
-
-    @Roles('admin', 'support_manager')
+    // DEPARTMENTS
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER')
     @Get('departments')
     @ApiOperation({ summary: 'List all departments' })
-    getDepartments(@Query('orgId') orgId?: string) {
-        return this.teamsService.getDepartments(orgId);
+    getDepartments() {
+        return this.teamsService.getDepartments();
     }
 
-    @Roles('admin', 'support_manager', 'support_agent')
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER')
+    @Get('departments/:id')
+    @ApiOperation({ summary: 'Get department details' })
+    getDepartment(@Param('id') id: string) {
+        return this.teamsService.getDepartment(id);
+    }
+
+    // TEAMS
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'AGENT')
     @Get()
     @ApiOperation({ summary: 'List all teams' })
     getTeams() {
         return this.teamsService.getTeams();
     }
 
-    @Roles('admin', 'support_manager')
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER')
     @Post()
     @ApiOperation({ summary: 'Create a new team' })
-    createTeam(@Body() dto: { name: string; departmentId: string; routingLogic?: string }) {
+    createTeam(@Body() dto: {
+        name: string;
+        slug: string;
+        departmentId: string;
+        description?: string;
+        assignmentStrategy?: AssignmentStrategy;
+        autoAssignmentEnabled?: boolean;
+    }) {
         return this.teamsService.createTeam(dto);
     }
 
-    @Roles('admin', 'support_manager', 'support_agent')
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'AGENT')
     @Get(':id')
     @ApiOperation({ summary: 'Get team details' })
     getTeam(@Param('id') id: string) {
         return this.teamsService.getTeam(id);
     }
 
-    @Roles('admin', 'support_manager')
+    // MEMBERS & AGENTS
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD')
     @Post(':id/members')
     @ApiOperation({ summary: 'Add or update team member role' })
-    addMember(@Param('id') id: string, @Body() dto: { userId: string; roleInTeam?: string }) {
+    addMember(@Param('id') id: string, @Body() dto: { userId: string; roleOverride?: SystemRole }) {
         return this.teamsService.addMember(id, dto);
     }
 
-    @Roles('admin', 'support_manager')
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD')
     @Delete(':id/members/:userId')
     @ApiOperation({ summary: 'Remove team member' })
     removeMember(@Param('id') id: string, @Param('userId') userId: string) {
         return this.teamsService.removeMember(id, userId);
     }
 
-    @Patch('shifts/presence')
-    @ApiOperation({ summary: 'Update agent presence (Shift Status)' })
-    updatePresence(@Req() req: any, @Body() dto: { status: 'ONLINE' | 'AWAY' | 'DND' }) {
-        return this.teamsService.updateShiftStatus(req.user.id, dto.status);
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'AGENT')
+    @Get('agents/:id')
+    @ApiOperation({ summary: 'Get agent profile' })
+    getAgentProfile(@Param('id') id: string) {
+        return this.teamsService.getAgentProfile(id);
+    }
+
+    @Patch('agents/me/status')
+    @ApiOperation({ summary: 'Update my agent status' })
+    updateMyStatus(@Req() req: any, @Body() dto: { status: AgentStatus }) {
+        return this.teamsService.updateAgentStatus(req.user.id, dto.status);
+    }
+
+    @Patch('agents/me/profile')
+    @ApiOperation({ summary: 'Update my agent profile' })
+    updateMyProfile(@Req() req: any, @Body() dto: { title?: string; bio?: string; timezone?: string; language?: string }) {
+        return this.teamsService.updateAgentProfile(req.user.id, dto);
+    }
+
+    // SKILLS
+    @Get('skills')
+    @ApiOperation({ summary: 'List all skills' })
+    getSkills() {
+        return this.teamsService.getSkills();
     }
 }

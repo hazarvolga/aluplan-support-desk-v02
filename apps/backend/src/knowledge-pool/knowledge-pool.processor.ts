@@ -10,6 +10,7 @@ const TurndownService = require('turndown');
 import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
 
 import { CrawlService } from './crawl.service';
+import { hierarchicalChunk } from '../knowledge-base/utils/smart-chunker';
 
 @Processor('knowledge-sync')
 export class KnowledgePoolProcessor extends WorkerHost {
@@ -95,7 +96,6 @@ export class KnowledgePoolProcessor extends WorkerHost {
             this.logger.warn(`🚨 Major change detected (${(delta * 100).toFixed(1)}%) for ${source.url}. Mark for review.`);
         }
 
-        const { hierarchicalChunk } = await import('../knowledge-base/utils/smart-chunker');
         const hierarchies = hierarchicalChunk(content, { title });
 
         await this.prisma.$executeRawUnsafe(
@@ -164,7 +164,6 @@ export class KnowledgePoolProcessor extends WorkerHost {
             return;
         }
 
-        const { hierarchicalChunk } = await import('../knowledge-base/utils/smart-chunker');
         const hierarchies = hierarchicalChunk(content, { title: source.name || source.fileName });
 
         await this.prisma.$executeRawUnsafe(

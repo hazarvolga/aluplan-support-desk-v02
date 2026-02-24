@@ -7,7 +7,7 @@ export type JwtPayload = {
     sub: string;
     email: string;
     fullName: string;
-    roles: string[];
+    role: string;
     permissions: string[];
 };
 
@@ -26,7 +26,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
             id: payload.sub,
             email: payload.email,
             fullName: payload.fullName,
-            roles: payload.roles,
+            role: payload.role,
             permissions: payload.permissions,
         };
     }

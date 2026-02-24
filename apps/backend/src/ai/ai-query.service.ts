@@ -11,6 +11,7 @@ import { SettingsService } from '../settings/settings.service';
 import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
 import { createHash } from 'crypto';
+import { SystemRole } from '@prisma/client';
 
 // Confidence bands — LOW/HIGH/MEDIUM from schema, NO_MATCH is local
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -271,15 +272,14 @@ export class AiQueryService {
 
     private async isStaff(userId?: string | null): Promise<boolean> {
         if (!userId) return false;
-        // In this schema, User relates to Roles via UserRole junction table
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            include: { userRoles: { include: { role: true } } }
-        }) as any;
+            select: { role: true }
+        });
 
-        if (!user || !user.userRoles) return false;
-        // Check if any associated role is NOT 'customer'
-        return user.userRoles.some((ur: any) => ur.role?.name.toLowerCase() !== 'customer');
+        if (!user) return false;
+        // Staff are all roles except VIEWER (customer)
+        return user.role !== SystemRole.VIEWER;
     }
 
     @OnEvent('ai.translate_message', { async: true })

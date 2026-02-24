@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Ticket } from '@aluplan/database';
 import { PrismaService } from '../prisma/prisma.service';
+import { SystemRole } from '@prisma/client';
 
 @Injectable()
 export class AutoAssignmentService {
@@ -20,11 +21,19 @@ export class AutoAssignmentService {
         if (!currentTicket || currentTicket.assignedTo) return;
 
         try {
-            // Find all active agent users. Adjust based on your custom Role schema if different.
-            // Assuming users with some specific role. If exact RBAC schema varies, adapt this where query.
+            // Find all active agent users based on new SystemRole enum
             const agents = await this.prisma.user.findMany({
                 where: {
-                    userRoles: { some: { role: { name: { in: ['admin', 'support_manager', 'support_agent'] } } } }
+                    role: {
+                        in: [
+                            SystemRole.ADMIN,
+                            SystemRole.DEPARTMENT_MANAGER,
+                            SystemRole.TEAM_LEAD,
+                            SystemRole.SENIOR_AGENT,
+                            SystemRole.AGENT
+                        ]
+                    },
+                    status: 'ACTIVE'
                 },
                 select: { id: true }
             });
@@ -34,7 +43,7 @@ export class AutoAssignmentService {
                 return;
             }
 
-            const agentIds = agents.map(a => a.id);
+            const agentIds = agents.map((a: any) => a.id);
 
             // Compute current active workload for these agents
             const workload = await this.prisma.ticket.groupBy({
@@ -50,7 +59,7 @@ export class AutoAssignmentService {
             let minLoad = Infinity;
 
             for (const agentId of agentIds) {
-                const load = workload.find(w => w.assignedTo === agentId)?._count.id || 0;
+                const load = (workload as any[]).find((w: any) => w.assignedTo === agentId)?._count.id || 0;
                 if (load < minLoad) {
                     minLoad = load;
                     selectedAgentId = agentId;
@@ -64,7 +73,7 @@ export class AutoAssignmentService {
 
             this.logger.log(`🤖 Auto-assigned ticket ${ticket.ticketNumber} to agent ${selectedAgentId} (current load: ${minLoad})`);
 
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`❌ Auto-assignment failed for ticket ${ticket.id}`, error.stack);
         }
     }

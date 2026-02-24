@@ -1,5 +1,6 @@
 import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SystemRole } from '@prisma/client';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
 import * as bcrypt from 'bcrypt';
 
@@ -18,14 +19,7 @@ export class CustomersService {
         let errorCount = 0;
         const errors = [];
 
-        let customerRole = await this.prisma.role.findUnique({
-            where: { name: 'customer' },
-        });
-        if (!customerRole) {
-            customerRole = await this.prisma.role.create({
-                data: { name: 'customer', description: 'Destek Müşterisi' },
-            });
-        }
+        // Legacy role lookups removed. Using SystemRole.VIEWER for customers.
 
         for (const record of data) {
             try {
@@ -45,9 +39,7 @@ export class CustomersService {
                                 fullName: record.fullName || `${record.firstName} ${record.lastName}`,
                                 passwordHash,
                                 status: record.status?.toLowerCase() === 'active' ? 'ACTIVE' : 'INACTIVE',
-                                userRoles: {
-                                    create: { roleId: customerRole.id },
-                                },
+                                role: SystemRole.VIEWER,
                             },
                             include: { customerProfile: true },
                         });
@@ -128,16 +120,7 @@ export class CustomersService {
 
         // 4. Create User + CustomerProfile in a single transaction
         return this.prisma.$transaction(async (prisma) => {
-            // Ensure 'customer' role exists
-            let customerRole = await prisma.role.findUnique({
-                where: { name: 'customer' },
-            });
-            if (!customerRole) {
-                customerRole = await prisma.role.create({
-                    data: { name: 'customer', description: 'Destek Müşterisi' },
-                });
-            }
-
+            // Legacy role lookups removed.
             const passwordHash = await bcrypt.hash(dto.password, 10);
             const fullName = `${dto.firstName} ${dto.lastName}`;
 
@@ -148,11 +131,7 @@ export class CustomersService {
                     fullName,
                     passwordHash,
                     status: 'ACTIVE',
-                    userRoles: {
-                        create: {
-                            roleId: customerRole.id,
-                        },
-                    },
+                    role: SystemRole.VIEWER,
                     customerProfile: {
                         create: {
                             firstName: dto.firstName,
@@ -166,7 +145,6 @@ export class CustomersService {
                 },
                 include: {
                     customerProfile: true,
-                    userRoles: { include: { role: true } },
                 },
             });
 
@@ -187,11 +165,8 @@ export class CustomersService {
     async getAllCustomers() {
         return this.prisma.user.findMany({
             where: {
-                userRoles: {
-                    some: {
-                        role: { name: 'customer' },
-                    },
-                },
+                role: SystemRole.VIEWER,
+                deletedAt: null
             },
             select: {
                 id: true,

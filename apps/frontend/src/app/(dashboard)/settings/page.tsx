@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { EmailLogs } from './components/EmailLogs';
 import { EmailTemplates } from './components/EmailTemplates';
 
 export default function SettingsPage() {
@@ -202,7 +201,6 @@ export default function SettingsPage() {
 
                     <div className="space-y-6">
                         <EmailTemplates />
-                        <EmailLogs />
                     </div>
                 </TabsContent>
 

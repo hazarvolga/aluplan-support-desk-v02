@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Query, Body, Param, Res, HttpStatus, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Param, Res, HttpStatus, UseGuards, Req, NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TemplateService } from './email.templates';
 import { EmailService } from './email.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Controller('email')
 export class EmailController {
@@ -128,10 +130,39 @@ export class EmailController {
   @UseGuards(JwtAuthGuard)
   @Get('admin/templates')
   async getTemplates() {
-    // In a real scenario, this would scan the directory. We're returning hardcoded known templates for now
-    return {
-      templates: ['ticket-created', 'ticket-assigned', 'ticket-resolved', 'sla-breach-warning', 'new-message', 'password-reset']
-    };
+    const mjmlDir = path.join(process.cwd(), 'apps/backend/src/email/templates/mjml');
+    if (!fs.existsSync(mjmlDir)) return { templates: [] };
+
+    const files = fs.readdirSync(mjmlDir)
+      .filter(f => f.endsWith('.mjml'))
+      .map(f => f.replace('.mjml', ''));
+
+    return { templates: files };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('admin/templates/:name/source')
+  async getTemplateSource(@Param('name') name: string) {
+    const mjmlPath = path.join(process.cwd(), 'apps/backend/src/email/templates/mjml', `${name}.mjml`);
+    if (!fs.existsSync(mjmlPath)) throw new NotFoundException('Template not found');
+
+    const content = fs.readFileSync(mjmlPath, 'utf8');
+    return { content };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('admin/templates/:name/save')
+  async saveTemplate(@Param('name') name: string, @Body() body: { content: string }) {
+    const mjmlPath = path.join(process.cwd(), 'apps/backend/src/email/templates/mjml', `${name}.mjml`);
+
+    // Ensure dir exists
+    const mjmlDir = path.dirname(mjmlPath);
+    if (!fs.existsSync(mjmlDir)) fs.mkdirSync(mjmlDir, { recursive: true });
+
+    fs.writeFileSync(mjmlPath, body.content, 'utf8');
+    TemplateService.resetCache(name);
+
+    return { success: true };
   }
 
   @UseGuards(JwtAuthGuard)

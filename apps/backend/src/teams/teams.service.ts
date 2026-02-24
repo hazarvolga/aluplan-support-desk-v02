@@ -1,41 +1,85 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { AssignmentStrategy, SystemRole, AgentStatus } from '@prisma/client';
 
 @Injectable()
 export class TeamsService {
     constructor(private readonly prisma: PrismaService) { }
 
-    // ORG & DEPT
-    async getOrganizations() {
-        return this.prisma.organization.findMany({
-            include: { departments: true }
+    // DEPARTMENTS
+    async getDepartments() {
+        return this.prisma.department.findMany({
+            where: { isArchived: false },
+            include: {
+                teams: {
+                    include: {
+                        _count: { select: { members: true } }
+                    }
+                },
+                slaPolicies: true,
+                _count: { select: { teams: true } }
+            },
+            orderBy: { name: 'asc' }
         });
     }
 
-    async getDepartments(orgId?: string) {
-        return this.prisma.department.findMany({
-            where: orgId ? { orgId } : undefined,
-            include: { organization: true, teams: true }
+    async getDepartment(id: string) {
+        const dept = await this.prisma.department.findUnique({
+            where: { id },
+            include: {
+                teams: {
+                    include: {
+                        _count: { select: { members: true } }
+                    }
+                },
+                slaPolicies: true
+            }
         });
+        if (!dept) throw new NotFoundException('Department not found');
+        return dept;
     }
 
     // TEAMS
     async getTeams() {
         return this.prisma.team.findMany({
+            where: { isArchived: false },
             include: {
-                department: { include: { organization: true } },
-                members: { include: { user: true } }
+                department: true,
+                members: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                fullName: true,
+                                email: true,
+                                avatarUrl: true,
+                                role: true,
+                                agentStatus: true
+                            }
+                        }
+                    }
+                },
+                _count: { select: { members: true } }
             }
         });
     }
 
-    async createTeam(data: { name: string; departmentId: string; routingLogic?: any }) {
+    async createTeam(data: {
+        name: string;
+        slug: string;
+        departmentId: string;
+        description?: string;
+        assignmentStrategy?: AssignmentStrategy;
+        autoAssignmentEnabled?: boolean;
+    }) {
         return this.prisma.team.create({
             data: {
                 name: data.name,
+                slug: data.slug,
                 departmentId: data.departmentId,
-                routingLogic: data.routingLogic || 'MANUAL'
+                description: data.description,
+                assignmentStrategy: data.assignmentStrategy || AssignmentStrategy.MANUAL,
+                autoAssignmentEnabled: data.autoAssignmentEnabled || false
             }
         });
     }
@@ -45,15 +89,29 @@ export class TeamsService {
             where: { id },
             include: {
                 department: true,
-                members: { include: { user: true } }
+                members: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                fullName: true,
+                                email: true,
+                                avatarUrl: true,
+                                role: true,
+                                agentStatus: true,
+                                title: true
+                            }
+                        }
+                    }
+                }
             }
         });
         if (!team) throw new NotFoundException('Team not found');
         return team;
     }
 
-    // MEMBERS
-    async addMember(teamId: string, data: { userId: string; roleInTeam?: string }) {
+    // MEMBERS & AGENTS
+    async addMember(teamId: string, data: { userId: string; roleOverride?: SystemRole }) {
         return this.prisma.teamMember.upsert({
             where: {
                 userId_teamId: { userId: data.userId, teamId }
@@ -61,10 +119,10 @@ export class TeamsService {
             create: {
                 teamId,
                 userId: data.userId,
-                roleInTeam: data.roleInTeam || 'Agent'
+                roleOverride: data.roleOverride
             },
             update: {
-                roleInTeam: data.roleInTeam
+                roleOverride: data.roleOverride
             }
         });
     }
@@ -75,18 +133,61 @@ export class TeamsService {
         });
     }
 
-    // AGENT SHIFTS & SKILLS
+    async getAgentProfile(userId: string) {
+        const agent = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                teamMembers: {
+                    include: {
+                        team: {
+                            include: { department: true }
+                        }
+                    }
+                },
+                agentSkills: {
+                    include: { skill: true }
+                },
+                shifts: true,
+                availability: true,
+                _count: {
+                    select: {
+                        ticketsAssigned: { where: { status: { notIn: ['RESOLVED', 'CLOSED'] } } }
+                    }
+                }
+            }
+        });
+        if (!agent) throw new NotFoundException('Agent not found');
+        return agent;
+    }
 
-    async updateShiftStatus(userId: string, status: 'ONLINE' | 'AWAY' | 'DND') {
-        const shift = await this.prisma.shift.findFirst({ where: { userId } });
-        if (shift) {
-            return this.prisma.shift.update({
-                where: { id: shift.id },
-                data: { status }
-            });
-        }
-        return this.prisma.shift.create({
-            data: { userId, status }
+    async updateAgentStatus(userId: string, status: AgentStatus) {
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: { agentStatus: status }
+        });
+    }
+
+    async updateAgentProfile(userId: string, data: { title?: string; bio?: string; timezone?: string; language?: string }) {
+        return this.prisma.user.update({
+            where: { id: userId },
+            data
+        });
+    }
+
+    // SKILLS
+    async getSkills() {
+        return this.prisma.skill.findMany({
+            include: {
+                _count: { select: { agentSkills: true } }
+            }
+        });
+    }
+
+    async addAgentSkill(userId: string, skillId: string, proficiency: number) {
+        return this.prisma.agentSkill.upsert({
+            where: { userId_skillId: { userId, skillId } },
+            create: { userId, skillId, proficiency },
+            update: { proficiency }
         });
     }
 }

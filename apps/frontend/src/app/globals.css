@@ -40,7 +40,7 @@
     --radius: 0;
     /* Forced Industrial 0-Radius */
     /* Precise industrial chambfer */
-    --sidebar-width: 210px;
+    --sidebar-width: 256px;
   }
 
   .dark {

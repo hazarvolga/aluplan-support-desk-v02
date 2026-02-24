@@ -18,17 +18,6 @@ export class AuthService {
     async login(dto: LoginDto) {
         const user = await this.prisma.user.findUnique({
             where: { email: dto.email },
-            include: {
-                userRoles: {
-                    include: {
-                        role: {
-                            include: {
-                                rolePermissions: { include: { permission: true } },
-                            },
-                        },
-                    },
-                },
-            },
         });
 
         if (!user || user.deletedAt) {
@@ -44,16 +33,10 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        const roles = user.userRoles.map((ur) => ur.role.name);
-        const permissions = [
-            ...new Set(
-                user.userRoles.flatMap((ur) =>
-                    ur.role.rolePermissions.map((rp) => rp.permission.name),
-                ),
-            ),
-        ];
+        const role = user.role;
+        const permissions = this.getPermissionsForRole(role);
 
-        const tokens = await this.generateTokens(user.id, user.email, user.fullName, roles, permissions);
+        const tokens = await this.generateTokens(user.id, user.email, user.fullName, role, permissions);
         await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
 
         return {
@@ -62,7 +45,7 @@ export class AuthService {
                 email: user.email,
                 fullName: user.fullName,
                 avatarUrl: user.avatarUrl,
-                roles,
+                role,
                 permissions,
             },
             ...tokens,
@@ -80,9 +63,9 @@ export class AuthService {
             throw new ForbiddenException('Access denied');
         }
 
-        const roles = await this.getUserRoles(userId);
-        const permissions = await this.getUserPermissions(userId);
-        const tokens = await this.generateTokens(userId, user.email, user.fullName, roles, permissions);
+        const role = user.role;
+        const permissions = this.getPermissionsForRole(role);
+        const tokens = await this.generateTokens(userId, user.email, user.fullName, role, permissions);
         await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
 
         return tokens;
@@ -172,11 +155,6 @@ export class AuthService {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
             include: {
-                userRoles: {
-                    include: {
-                        role: true,
-                    },
-                },
                 customerProfile: {
                     select: {
                         id: true,
@@ -195,7 +173,7 @@ export class AuthService {
             fullName: user.fullName,
             avatarUrl: user.avatarUrl,
             status: user.status,
-            roles: user.userRoles.map((ur) => ur.role.name),
+            role: user.role,
             customerProfile: user.customerProfile
         };
     }
@@ -204,10 +182,10 @@ export class AuthService {
         userId: string,
         email: string,
         fullName: string,
-        roles: string[],
+        role: string,
         permissions: string[],
     ) {
-        const payload = { sub: userId, email, fullName, roles, permissions };
+        const payload = { sub: userId, email, fullName, role, permissions };
 
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {
@@ -223,30 +201,20 @@ export class AuthService {
         return { access_token: accessToken, refresh_token: refreshToken };
     }
 
-    private async getUserRoles(userId: string): Promise<string[]> {
-        const userRoles = await this.prisma.userRole.findMany({
-            where: { userId },
-            include: { role: true },
-        });
-        return userRoles.map((ur) => ur.role.name);
-    }
-
-    private async getUserPermissions(userId: string): Promise<string[]> {
-        const userRoles = await this.prisma.userRole.findMany({
-            where: { userId },
-            include: {
-                role: {
-                    include: { rolePermissions: { include: { permission: true } } },
-                },
-            },
-        });
-        return [
-            ...new Set(
-                userRoles.flatMap((ur) =>
-                    ur.role.rolePermissions.map((rp) => rp.permission.name),
-                ),
-            ),
+    private getPermissionsForRole(role: string): string[] {
+        const basePermissions = [
+            'ticket:create', 'ticket:read', 'ticket:update',
+            'kb:read', 'faq:read'
         ];
+
+        if (role === 'ADMIN') return ['*']; // Full access
+        if (role === 'DEPARTMENT_MANAGER') return [...basePermissions, 'ticket:assign', 'reports:read', 'settings:read'];
+        if (role === 'TEAM_LEAD') return [...basePermissions, 'ticket:assign', 'reports:read'];
+        if (role === 'SENIOR_AGENT') return [...basePermissions, 'ticket:escalate'];
+        if (role === 'AGENT') return basePermissions;
+        if (role === 'VIEWER') return ['ticket:read', 'kb:read', 'faq:read'];
+
+        return basePermissions;
     }
 
     private async updateRefreshTokenHash(userId: string, refreshToken: string) {

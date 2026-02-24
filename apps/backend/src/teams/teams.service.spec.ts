@@ -2,13 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TeamsService } from './teams.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotFoundException } from '@nestjs/common';
+import { AssignmentStrategy, SystemRole, AgentStatus } from '@prisma/client';
 
 const mockPrismaService = {
-    organization: { findMany: jest.fn() },
-    department: { findMany: jest.fn() },
+    department: { findMany: jest.fn(), findUnique: jest.fn() },
     team: { findMany: jest.fn(), create: jest.fn(), findUnique: jest.fn() },
     teamMember: { upsert: jest.fn(), delete: jest.fn() },
-    shift: { findFirst: jest.fn(), update: jest.fn(), create: jest.fn() },
+    user: { findUnique: jest.fn(), update: jest.fn() },
+    skill: { findMany: jest.fn() },
+    agentSkill: { upsert: jest.fn() }
 };
 
 describe('TeamsService', () => {
@@ -33,13 +35,20 @@ describe('TeamsService', () => {
 
     describe('Teams', () => {
         it('should create a team with default MANUAL routing logic', async () => {
-            const mockTeam = { id: 'team-1', name: 'Support', departmentId: 'dept-1', routingLogic: 'MANUAL' };
+            const mockTeam = { id: 'team-1', name: 'Support', slug: 'support', departmentId: 'dept-1', assignmentStrategy: 'MANUAL' };
             mockPrismaService.team.create.mockResolvedValue(mockTeam);
 
-            const result = await service.createTeam({ name: 'Support', departmentId: 'dept-1' });
+            const result = await service.createTeam({ name: 'Support', slug: 'support', departmentId: 'dept-1' });
 
             expect(prisma.team.create).toHaveBeenCalledWith({
-                data: { name: 'Support', departmentId: 'dept-1', routingLogic: 'MANUAL' }
+                data: {
+                    name: 'Support',
+                    slug: 'support',
+                    departmentId: 'dept-1',
+                    description: undefined,
+                    assignmentStrategy: AssignmentStrategy.MANUAL,
+                    autoAssignmentEnabled: false
+                }
             });
             expect(result).toEqual(mockTeam);
         });
@@ -52,39 +61,31 @@ describe('TeamsService', () => {
 
     describe('Team Members', () => {
         it('should add a member to a team via upsert', async () => {
-            const mockMember = { userId: 'u1', teamId: 't1', roleInTeam: 'Lead' };
+            const mockMember = { userId: 'u1', teamId: 't1', roleOverride: SystemRole.AGENT };
             mockPrismaService.teamMember.upsert.mockResolvedValue(mockMember);
 
-            const result = await service.addMember('t1', { userId: 'u1', roleInTeam: 'Lead' });
+            const result = await service.addMember('t1', { userId: 'u1', roleOverride: SystemRole.AGENT });
 
             expect(prisma.teamMember.upsert).toHaveBeenCalledWith({
                 where: { userId_teamId: { userId: 'u1', teamId: 't1' } },
-                create: { teamId: 't1', userId: 'u1', roleInTeam: 'Lead' },
-                update: { roleInTeam: 'Lead' }
+                create: { teamId: 't1', userId: 'u1', roleOverride: SystemRole.AGENT },
+                update: { roleOverride: SystemRole.AGENT }
             });
             expect(result).toEqual(mockMember);
         });
     });
 
-    describe('Agent Shifts', () => {
-        it('should create a shift if none exists for the agent', async () => {
-            mockPrismaService.shift.findFirst.mockResolvedValue(null);
-            mockPrismaService.shift.create.mockResolvedValue({ id: 's1', userId: 'u1', status: 'AWAY' });
+    describe('Agent Status', () => {
+        it('should update agent status', async () => {
+            mockPrismaService.user.update.mockResolvedValue({ id: 'u1', agentStatus: AgentStatus.AWAY });
 
-            const result = await service.updateShiftStatus('u1', 'AWAY');
+            const result = await service.updateAgentStatus('u1', AgentStatus.AWAY);
 
-            expect(prisma.shift.create).toHaveBeenCalledWith({ data: { userId: 'u1', status: 'AWAY' } });
-            expect(result.status).toEqual('AWAY');
-        });
-
-        it('should update existing shift if found', async () => {
-            mockPrismaService.shift.findFirst.mockResolvedValue({ id: 's1', userId: 'u1', status: 'ONLINE' });
-            mockPrismaService.shift.update.mockResolvedValue({ id: 's1', userId: 'u1', status: 'DND' });
-
-            const result = await service.updateShiftStatus('u1', 'DND');
-
-            expect(prisma.shift.update).toHaveBeenCalledWith({ where: { id: 's1' }, data: { status: 'DND' } });
-            expect(result.status).toEqual('DND');
+            expect(prisma.user.update).toHaveBeenCalledWith({
+                where: { id: 'u1' },
+                data: { agentStatus: AgentStatus.AWAY }
+            });
+            expect(result.agentStatus).toEqual(AgentStatus.AWAY);
         });
     });
 });

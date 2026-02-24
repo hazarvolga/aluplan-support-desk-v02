@@ -23,10 +23,19 @@ enum AgentStatus {
   DND
 }
 
-enum RoutingLogic {
+enum AssignmentStrategy {
   MANUAL
   ROUND_ROBIN
   SKILL_BASED
+}
+
+enum SystemRole {
+  ADMIN
+  DEPARTMENT_MANAGER
+  TEAM_LEAD
+  SENIOR_AGENT
+  AGENT
+  VIEWER
 }
 
 enum UserStatus {
@@ -115,25 +124,25 @@ model User {
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
-  // Agent fields
-  isAgent          Boolean @default(false) @map("is_agent")
-  timezone         String  @default("UTC") @db.VarChar(50)
-  maxActiveTickets Int     @default(5) @map("max_active_tickets")
-  orgId            String? @map("org_id") @db.Uuid
+  role             SystemRole @default(AGENT)
+  agentStatus      AgentStatus @default(DND) @map("agent_status")
+  title            String?    @db.VarChar(100)
+  bio              String?    @db.Text
+  timezone         String     @default("UTC") @db.VarChar(50)
+  language         String     @default("tr") @db.VarChar(10)
+  maxActiveTickets Int        @default(5) @map("max_active_tickets")
 
   // Relations
-  organization      Organization?             @relation(fields: [orgId], references: [id])
   teamMembers       TeamMember[]
   agentSkills       AgentSkill[]
   shifts            Shift[]
-  userRoles         UserRole[]                @relation("UserToRoles")
-  assignedRoles     UserRole[]                @relation("AssignedByUser")
-  ticketsCreated    Ticket[]                  @relation("TicketCreatedBy")
-  ticketsAssigned   Ticket[]                  @relation("TicketAssignedTo")
+  availability      AvailabilityOverride[]
+  ticketsCreated    Ticket[]               @relation("TicketCreatedBy")
+  ticketsAssigned   Ticket[]               @relation("TicketAssignedTo")
   ticketMessages    TicketMessage[]
   ticketEscalations TicketEscalation[]
-  articlesCreated   KnowledgeArticle[]        @relation("ArticleCreatedBy")
-  articlesApproved  KnowledgeArticle[]        @relation("ArticleApprovedBy")
+  articlesCreated   KnowledgeArticle[]     @relation("ArticleCreatedBy")
+  articlesApproved  KnowledgeArticle[]     @relation("ArticleApprovedBy")
   articleVersions   KnowledgeArticleVersion[]
   aiInteractions    AiInteraction[]
   feedbacks         InteractionFeedback[]
@@ -149,53 +158,36 @@ model User {
   @@map("users")
 }
 
-// =============================================
-// MULTI-TENANCY & HIERARCHY (Orgs, Depts, Teams)
-// =============================================
-
-model Organization {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String   @db.VarChar(255)
-  domain    String?  @unique @db.VarChar(255)
-  settings  Json?    @db.JsonB
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  departments Department[]
-  users       User[]
-
-  @@map("organizations")
-}
-
 model Department {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orgId       String   @map("org_id") @db.Uuid
-  name        String   @db.VarChar(255)
+  name        String   @db.VarChar(100)
+  slug        String   @unique @db.VarChar(100)
   description String?  @db.Text
+  color       String?  @db.VarChar(7) // hex color
+  icon        String?  @db.VarChar(50) // lucide icon name
+  isDefault   Boolean  @default(false) @map("is_default")
   isActive    Boolean  @default(true) @map("is_active")
+  isArchived  Boolean  @default(false) @map("is_archived")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  teams        Team[]
+  teams       Team[]
+  slaPolicies SlaPolicy[]
 
   @@map("departments")
 }
 
 model Team {
-  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  departmentId String       @map("department_id") @db.Uuid
-  name         String       @db.VarChar(255)
-  description  String?      @db.Text
-  routingLogic RoutingLogic @default(MANUAL) @map("routing_logic")
-
-  // SLA Settings
-  firstResponseSlaMinutes Int?    @map("first_response_sla_minutes")
-  resolutionSlaMinutes    Int?    @map("resolution_sla_minutes")
-  businessHoursOnly       Boolean @default(true) @map("business_hours_only")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                     String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  departmentId           String             @map("department_id") @db.Uuid
+  name                   String             @db.VarChar(100)
+  slug                   String             @unique @db.VarChar(100)
+  description            String?            @db.Text
+  isArchived             Boolean            @default(false) @map("is_archived")
+  autoAssignmentEnabled  Boolean            @default(false) @map("auto_assignment_enabled")
+  assignmentStrategy     AssignmentStrategy @default(MANUAL) @map("assignment_strategy")
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
 
   department Department   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   members    TeamMember[]
@@ -204,22 +196,22 @@ model Team {
 }
 
 model TeamMember {
-  userId     String   @map("user_id") @db.Uuid
-  teamId     String   @map("team_id") @db.Uuid
-  roleInTeam String   @default("Agent") @map("role_in_team") @db.VarChar(50) // Lead, Agent, Viewer
-  createdAt  DateTime @default(now()) @map("created_at")
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  teamId        String      @map("team_id") @db.Uuid
+  roleOverride  SystemRole? @map("role_override")
+  joinedAt      DateTime    @default(now()) @map("joined_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
-  @@id([userId, teamId])
+  @@unique([userId, teamId])
   @@map("team_members")
 }
 
 model Skill {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orgId     String?  @map("org_id") @db.Uuid // Null if global skill, else org-specific
-  name      String   @db.VarChar(100)
+  name      String   @unique @db.VarChar(100)
   category  String?  @db.VarChar(100)
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -229,30 +221,59 @@ model Skill {
 }
 
 model AgentSkill {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId      String   @map("user_id") @db.Uuid
   skillId     String   @map("skill_id") @db.Uuid
-  proficiency Int      @default(1) // 1-5
+  proficiency Int      @default(3) // 1-5
   createdAt   DateTime @default(now()) @map("created_at")
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
-  @@id([userId, skillId])
+  @@unique([userId, skillId])
   @@map("agent_skills")
 }
 
 model Shift {
-  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId            String      @map("user_id") @db.Uuid
-  status            AgentStatus @default(ONLINE)
-  scheduleJson      Json?       @map("schedule_json") // E.g., { "monday": ["09:00", "17:00"] }
-  autoAssignEnabled Boolean     @default(true) @map("auto_assign_enabled")
-  updatedAt         DateTime    @updatedAt @map("updated_at")
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  dayOfWeek  Int      @map("day_of_week") @db.SmallInt // 0=Sunday, 6=Saturday
+  startTime  String   @map("start_time") // Using string for simple TIME storage or specific format
+  endTime    String   @map("end_time")
+  timezone   String?  @db.VarChar(100)
+  createdAt  DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
   @@map("shifts")
+}
+
+model AvailabilityOverride {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  date        DateTime @db.Date
+  isAvailable Boolean  @map("is_available")
+  note        String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("availability_overrides")
+}
+
+model SlaPolicy {
+  id                   String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String         @db.VarChar(100)
+  departmentId         String         @map("department_id") @db.Uuid
+  priority             TicketPriority
+  firstResponseMinutes Int            @map("first_response_minutes")
+  resolutionMinutes    Int            @map("resolution_minutes")
+  businessHoursOnly    Boolean        @default(true) @map("business_hours_only")
+  createdAt            DateTime       @default(now()) @map("created_at")
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@map("sla_policies")
 }
 
 model Notification {
@@ -271,52 +292,8 @@ model Notification {
   @@map("notifications")
 }
 
-model Role {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   @unique @db.VarChar(100)
-  description String?  @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  userRoles       UserRole[]
-  rolePermissions RolePermission[]
-
-  @@map("roles")
-}
-
-model Permission {
-  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String  @unique @db.VarChar(100) // 'kb:create', 'ticket:manage', etc.
-  description String? @db.Text
-
-  rolePermissions RolePermission[]
-
-  @@map("permissions")
-}
-
-model RolePermission {
-  roleId       String @map("role_id") @db.Uuid
-  permissionId String @map("permission_id") @db.Uuid
-
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  @@id([roleId, permissionId])
-  @@map("role_permissions")
-}
-
-model UserRole {
-  userId     String   @map("user_id") @db.Uuid
-  roleId     String   @map("role_id") @db.Uuid
-  assignedAt DateTime @default(now()) @map("assigned_at")
-  assignedBy String?  @map("assigned_by") @db.Uuid
-
-  user     User  @relation("UserToRoles", fields: [userId], references: [id], onDelete: Cascade)
-  role     Role  @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  assigner User? @relation("AssignedByUser", fields: [assignedBy], references: [id])
-
-  @@id([userId, roleId])
-  @@map("user_roles")
-}
+// Role and Permission models removed to simplify for ENUM usage in this single-org phase.
+// In the future, if dynamic permissions are needed, they can be reintroduced.
 
 // =============================================
 // CUSTOMER PROFILES (CRM Integration)

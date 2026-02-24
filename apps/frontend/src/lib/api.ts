@@ -67,8 +67,10 @@ export const api = {
             id: string;
             fullName: string;
             email: string;
-            roles: string[];
+            role: string;
+            permissions: string[];
             status?: string;
+            agentStatus?: string;
             customerProfile?: {
                 id: string;
                 hotinfoData?: any;
@@ -76,6 +78,7 @@ export const api = {
                 [key: string]: any;
             }
         }>('/auth/me'),
+        logout: () => request<{ success: boolean }>('/auth/logout', { method: 'POST' }),
     },
     pool: {
         list: () => request<any[]>('/knowledge-pool/sources'),
@@ -141,6 +144,7 @@ export const api = {
                 method: 'POST', body: JSON.stringify({ title, content }),
             }),
         getGlobalAnalytics: () => request<any>('/kb/analytics'),
+        listPending: () => request<any>('/kb/articles?status=PENDING_REVIEW'),
     },
     ai: {
         query: (userQuery: string) =>
@@ -177,13 +181,16 @@ export const api = {
         runPipeline: () => request<any>('/faq/pipeline/run', { method: 'POST' }),
     },
     teams: {
-        organizations: () => request<any[]>('/teams/organizations'),
-        departments: (orgId?: string) => request<any[]>(`/teams/departments${orgId ? `?orgId=${orgId}` : ''}`),
+        departments: () => request<any[]>('/teams/departments'),
+        getDepartment: (id: string) => request<any>(`/teams/departments/${id}`),
         list: () => request<any[]>('/teams'),
         get: (id: string) => request<any>(`/teams/${id}`),
         create: (body: any) => request<any>('/teams', { method: 'POST', body: JSON.stringify(body) }),
         addMember: (teamId: string, body: any) => request<any>(`/teams/${teamId}/members`, { method: 'POST', body: JSON.stringify(body) }),
         removeMember: (teamId: string, userId: string) => request<any>(`/teams/${teamId}/members/${userId}`, { method: 'DELETE' }),
+        getAgentProfile: (id: string) => request<any>(`/teams/agents/${id}`),
+        updateMyStatus: (status: string) => request<any>('/teams/agents/me/status', { method: 'PATCH', body: JSON.stringify({ status }) }),
+        updateMyProfile: (body: any) => request<any>('/teams/agents/me/profile', { method: 'PATCH', body: JSON.stringify(body) }),
     },
     users: {
         list: (type?: 'agent' | 'customer') => request<any[]>(`/users${type ? `?type=${type}` : ''}`),
@@ -232,6 +239,8 @@ export const api = {
             return request<{ data: any[]; total: number; page: number; limit: number }>(`/email/admin/logs?${q}`);
         },
         templates: () => request<{ templates: string[] }>('/email/admin/templates'),
+        getTemplateSource: (name: string) => request<{ content: string }>(`/email/admin/templates/${name}/source`),
+        saveTemplate: (name: string, content: string) => request<{ success: true }>(`/email/admin/templates/${name}/save`, { method: 'POST', body: JSON.stringify({ content }) }),
         previewTemplate: (name: string, data: any) => request<any>(`/email/admin/templates/${name}/preview`, { method: 'POST', body: JSON.stringify(data) }),
         verifyProvider: () => request<{ provider: string; available: boolean }>('/email/admin/provider/verify', { method: 'POST' }),
     },

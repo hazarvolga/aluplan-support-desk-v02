@@ -25,7 +25,7 @@ export class RbacGuard implements CanActivate {
 
         // Role check
         if (requiredRoles?.length) {
-            const hasRole = requiredRoles.some((role) => user.roles?.includes(role));
+            const hasRole = requiredRoles.includes(user.role);
             if (!hasRole) {
                 throw new ForbiddenException(`Requires role: ${requiredRoles.join(' | ')}`);
             }
@@ -33,6 +33,8 @@ export class RbacGuard implements CanActivate {
 
         // Permission check
         if (requiredPermissions?.length) {
+            if (user.permissions?.includes('*')) return true;
+
             const hasPermission = requiredPermissions.every((perm) =>
                 user.permissions?.includes(perm),
             );

@@ -44,7 +44,7 @@ export default function ProfilePage() {
             const user = await api.auth.me();
             setFullName(user.fullName || '');
             setEmail(user.email || '');
-            setRoles(user.roles || []);
+            setRoles(user.role ? [user.role] : []);
             setAccountStatus(user.status || 'ACTIVE');
 
             if (user.customerProfile) {

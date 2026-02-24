@@ -12,6 +12,7 @@ import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { SystemRole } from '@prisma/client';
 
 @WebSocketGateway({
     cors: { origin: '*', credentials: true },
@@ -44,13 +45,13 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             });
 
             client.data.userId = payload.sub;
-            client.data.roles = payload.roles;
+            client.data.role = payload.role;
             this.connectedClients++;
             this.logger.log(`🔌 Client connected: ${payload.sub} (total: ${this.connectedClients})`);
 
-            // Join role rooms for targeted notifications
-            for (const role of payload.roles ?? []) {
-                await client.join(`role:${role}`);
+            // Join role room for targeted notifications
+            if (payload.role) {
+                await client.join(`role:${payload.role}`);
             }
             await client.join(`user:${payload.sub}`);
         } catch {
@@ -88,12 +89,22 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     // ─── EMIT METHODS (called from services) ────────────────
 
     async emitTicketCreated(ticket: any) {
-        // Find users with admin, support_manager, or support_agent role
-        const roleUsers = await this.prisma.userRole.findMany({
-            where: { role: { name: { in: ['admin', 'support_manager', 'support_agent'] } } },
-            select: { userId: true }
+        // Find users with agent roles
+        const potentialAgents = await this.prisma.user.findMany({
+            where: {
+                role: {
+                    in: [
+                        SystemRole.ADMIN,
+                        SystemRole.DEPARTMENT_MANAGER,
+                        SystemRole.TEAM_LEAD,
+                        SystemRole.SENIOR_AGENT,
+                        SystemRole.AGENT
+                    ]
+                }
+            },
+            select: { id: true }
         });
-        const userIds = [...new Set(roleUsers.map(r => r.userId))];
+        const userIds = potentialAgents.map(a => a.id);
 
         if (userIds.length > 0) {
             await this.prisma.notification.createMany({
@@ -107,8 +118,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             });
         }
 
-        // Notify all agents/managers
-        this.server.to('role:admin').to('role:support_manager').to('role:support_agent').emit('ticket:created', {
+        // Notify all agents/managers via their standard rooms
+        this.server.to(`role:${SystemRole.ADMIN}`).to(`role:${SystemRole.DEPARTMENT_MANAGER}`).to(`role:${SystemRole.TEAM_LEAD}`).emit('ticket:created', {
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
             subject: ticket.subject,
@@ -133,7 +144,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
         this.server.to(`ticket:${ticket.id}`).emit('ticket:updated', ticket);
         // Also broadcast to dashboard subscribers
-        this.server.to('role:admin').to('role:support_manager').emit('ticket:status_changed', {
+        this.server.to(`role:${SystemRole.ADMIN}`).to(`role:${SystemRole.DEPARTMENT_MANAGER}`).emit('ticket:status_changed', {
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
             status: ticket.status,
@@ -143,8 +154,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     emitTicketEscalated(ticket: any) {
         // High-priority broadcast to managers
         this.server
-            .to('role:admin')
-            .to('role:support_manager')
+            .to(`role:${SystemRole.ADMIN}`)
+            .to(`role:${SystemRole.DEPARTMENT_MANAGER}`)
             .emit('ticket:escalated', {
                 id: ticket.id,
                 ticketNumber: ticket.ticketNumber,
@@ -154,11 +165,11 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     }
 
     async emitSlaBreached(ticket: any) {
-        const roleUsers = await this.prisma.userRole.findMany({
-            where: { role: { name: { in: ['admin', 'support_manager'] } } },
-            select: { userId: true }
+        const managers = await this.prisma.user.findMany({
+            where: { role: { in: [SystemRole.ADMIN, SystemRole.DEPARTMENT_MANAGER] } },
+            select: { id: true }
         });
-        const userIds = new Set(roleUsers.map(r => r.userId));
+        const userIds = new Set(managers.map(a => a.id));
         if (ticket.assignedTo) userIds.add(ticket.assignedTo);
 
         if (userIds.size > 0) {
@@ -174,8 +185,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         }
 
         this.server
-            .to('role:admin')
-            .to('role:support_manager')
+            .to(`role:${SystemRole.ADMIN}`)
+            .to(`role:${SystemRole.DEPARTMENT_MANAGER}`)
             .to(`user:${ticket.assignedTo}`)
             .emit('ticket:sla_breach', {
                 id: ticket.id,
@@ -195,9 +206,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     emitBulkUpdate(ticketIds: string[]) {
         // Notify all agents/managers that multiple tickets changed
         this.server
-            .to('role:admin')
-            .to('role:support_manager')
-            .to('role:support_agent')
+            .to(`role:${SystemRole.ADMIN}`)
+            .to(`role:${SystemRole.DEPARTMENT_MANAGER}`)
+            .to(`role:${SystemRole.TEAM_LEAD}`)
             .emit('tickets:bulk_updated', { ticketIds });
     }
 }

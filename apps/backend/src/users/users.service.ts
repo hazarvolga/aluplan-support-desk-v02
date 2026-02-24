@@ -2,12 +2,13 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { SystemRole } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
     constructor(private prisma: PrismaService) { }
 
-    async create(dto: { email: string; password: string; fullName: string; roles?: string[] }) {
+    async create(dto: { email: string; password: string; fullName: string; role?: SystemRole }) {
         const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
         if (existing) {
             throw new ConflictException('Bu e-posta adresi zaten kayıtlı.');
@@ -15,26 +16,13 @@ export class UsersService {
 
         const passwordHash = await bcrypt.hash(dto.password, 10);
 
-        let roleConnections: { roleId: string }[] = [];
-        if (dto.roles && dto.roles.length > 0) {
-            const roles = await this.prisma.role.findMany({
-                where: { name: { in: dto.roles } },
-            });
-            roleConnections = roles.map((r) => ({ roleId: r.id }));
-        }
-
         const user = await this.prisma.user.create({
             data: {
                 email: dto.email,
                 fullName: dto.fullName,
                 passwordHash,
                 status: 'ACTIVE',
-                userRoles: {
-                    create: roleConnections,
-                },
-            },
-            include: {
-                userRoles: { include: { role: true } },
+                role: dto.role || SystemRole.AGENT,
             },
         });
 
@@ -44,14 +32,13 @@ export class UsersService {
 
     async findAll(type?: 'agent' | 'customer') {
         const where: any = { deletedAt: null };
-        if (type === 'agent') where.isAgent = true;
-        else if (type === 'customer') where.isAgent = false;
+        if (type === 'agent') where.role = { not: SystemRole.VIEWER }; // Simplified logic for example
+        else if (type === 'customer') where.role = SystemRole.VIEWER; // Assuming viewers are customers for now, or use a flag
 
         return this.prisma.user.findMany({
             where,
             include: {
-                userRoles: { include: { role: true } },
-                customerProfile: true, // Only applicable if not strictly an agent, but safe to include
+                customerProfile: true,
                 teamMembers: { include: { team: true } }
             },
             orderBy: { createdAt: 'desc' },
@@ -62,8 +49,7 @@ export class UsersService {
         const user = await this.prisma.user.findUnique({
             where: { id, deletedAt: null },
             include: {
-                userRoles: { include: { role: true } },
-                customerProfile: true, // Included so customers can see their profile info seamlessly
+                customerProfile: true,
             },
         });
         if (!user) throw new NotFoundException(`User ${id} not found`);

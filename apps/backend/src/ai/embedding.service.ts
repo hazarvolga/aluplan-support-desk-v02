@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
+import { hierarchicalChunk } from '../knowledge-base/utils/smart-chunker';
 
 export interface SearchResult {
     articleId: string;
@@ -27,7 +28,6 @@ export class EmbeddingService {
      * Store embedding for a published article version using Hierarchical (Parent-Child) chunking.
      */
     async indexArticle(articleId: string, versionId: string, title: string, content: string): Promise<void> {
-        const { hierarchicalChunk } = await import('../knowledge-base/utils/smart-chunker');
         const hierarchies = hierarchicalChunk(content, { title, maxTokens: 2000 });
 
         await this.prisma.$executeRaw`DELETE FROM knowledge_embeddings WHERE article_version_id = ${versionId}::uuid`;

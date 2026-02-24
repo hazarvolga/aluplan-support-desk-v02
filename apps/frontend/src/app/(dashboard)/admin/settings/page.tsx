@@ -24,7 +24,7 @@ export default function AdminSettingsPage() {
     const loadSettings = async () => {
         try {
             setLoading(true);
-            const data = await api.settings.list(true); // Decrypt secrets for display if needed
+            const data = await api.settings.list(true);
             setSettings(data);
         } catch (error: any) {
             toast({
@@ -68,7 +68,7 @@ export default function AdminSettingsPage() {
                     const isSecret = secretKeys.includes(key);
                     return { key, value, isSecret };
                 })
-                .filter(item => item.value !== '') // Don't send empty strings to prevent 400 errors
+                .filter(item => item.value !== '')
                 .map(payload => api.settings.upsert(payload));
             await Promise.all(promises);
             toast({
@@ -153,12 +153,12 @@ export default function AdminSettingsPage() {
                         </Card>
                     </TabsContent>
 
-                    {/* ─── AI AYARLARI ────────────────────────────────────────────── */}
+                    {/* ─── AI AYARLARI ─────────────────────────────────────────── */}
                     <TabsContent value="ai">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Yapay Zeka Entegrasyonu</CardTitle>
-                                <CardDescription>Ollama, OpenAI veya Özel (OpenAI Uyumlu) servisleri yapılandırın.</CardDescription>
+                                <CardDescription>Ollama, OpenAI veya Özel servisleri yapılandırın.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="space-y-2">
@@ -173,198 +173,27 @@ export default function AdminSettingsPage() {
                                         <SelectContent>
                                             <SelectItem value="ollama">Ollama (Yerel)</SelectItem>
                                             <SelectItem value="openai">OpenAI (Bulut)</SelectItem>
-                                            <SelectItem value="llmapi">LLMAPI.ai (Gateway)</SelectItem>
-                                            <SelectItem value="custom">Custom (OpenAI Uyumlu API)</SelectItem>
+                                            <SelectItem value="llmapi">LLMAPI (Önerilen)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
-
-                                <div className="space-y-6 pt-4 border-t">
-                                    {/* Ollama Ayarları */}
-                                    {(getSetting('ai.active_provider') === 'ollama' || !getSetting('ai.active_provider')) && (
-                                        <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
-                                            <h3 className="font-medium flex items-center gap-2">
-                                                <Bot className="h-4 w-4" /> Ollama (Yerel)
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label>Base URL</Label>
-                                                    <Input
-                                                        value={getSetting('ai.ollama.url')}
-                                                        onChange={e => updateValue('ai.ollama.url', e.target.value)}
-                                                        placeholder="http://localhost:11434"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Chat Model</Label>
-                                                    <Input
-                                                        value={getSetting('ai.ollama.chat_model')}
-                                                        onChange={e => updateValue('ai.ollama.chat_model', e.target.value)}
-                                                        placeholder="llama3.2:3b"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Embedding Model</Label>
-                                                    <Input
-                                                        value={getSetting('ai.ollama.embed_model')}
-                                                        onChange={e => updateValue('ai.ollama.embed_model', e.target.value)}
-                                                        placeholder="nomic-embed-text"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* OpenAI Ayarları */}
-                                    {getSetting('ai.active_provider') === 'openai' && (
-                                        <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
-                                            <h3 className="font-medium flex items-center gap-2">
-                                                <Globe className="h-4 w-4" /> OpenAI (Bulut)
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label>API Key</Label>
-                                                    <Input
-                                                        type="password"
-                                                        value={getSetting('ai.openai.api_key')}
-                                                        onChange={e => updateValue('ai.openai.api_key', e.target.value)}
-                                                        placeholder="sk-..."
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Model (Chat)</Label>
-                                                    <Input
-                                                        value={getSetting('ai.openai.chat_model')}
-                                                        onChange={e => updateValue('ai.openai.chat_model', e.target.value)}
-                                                        placeholder="gpt-4o-mini"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* LLMAPI.ai Ayarları */}
-                                    {getSetting('ai.active_provider') === 'llmapi' && (
-                                        <div className="space-y-4 p-4 border rounded-lg bg-green-500/5 border-green-500/20">
-                                            <h3 className="font-medium flex items-center gap-2 text-green-600">
-                                                <Bot className="h-4 w-4" /> LLMAPI.ai (Önerilen)
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label>API Key</Label>
-                                                    <Input
-                                                        type="password"
-                                                        value={getSetting('ai.llmapi.api_key')}
-                                                        onChange={e => updateValue('ai.llmapi.api_key', e.target.value)}
-                                                        placeholder="eyJhbG..."
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Base URL</Label>
-                                                    <Input
-                                                        value={getSetting('ai.llmapi.base_url') || 'https://internal.llmapi.ai/v1'}
-                                                        onChange={e => updateValue('ai.llmapi.base_url', e.target.value)}
-                                                        placeholder="https://internal.llmapi.ai/v1"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Chat Model</Label>
-                                                    <Input
-                                                        value={getSetting('ai.llmapi.chat_model') || 'gpt-4o'}
-                                                        onChange={e => updateValue('ai.llmapi.chat_model', e.target.value)}
-                                                        placeholder="gpt-4o"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Embedding Model</Label>
-                                                    <Input
-                                                        value={getSetting('ai.llmapi.embed_model') || 'text-embedding-3-small'}
-                                                        onChange={e => updateValue('ai.llmapi.embed_model', e.target.value)}
-                                                        placeholder="text-embedding-3-small"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Custom Ayarları */}
-                                    {getSetting('ai.active_provider') === 'custom' && (
-                                        <div className="space-y-4 p-4 border rounded-lg bg-primary/5 border-primary/20">
-                                            <h3 className="font-medium flex items-center gap-2 text-primary">
-                                                <ShieldCheck className="h-4 w-4" /> Custom / OpenAI Uyumlu API
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label>Base URL</Label>
-                                                    <Input
-                                                        value={getSetting('ai.custom.url')}
-                                                        onChange={e => updateValue('ai.custom.url', e.target.value)}
-                                                        placeholder="https://api.openai.com/v1"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>API Key</Label>
-                                                    <Input
-                                                        type="password"
-                                                        value={getSetting('ai.custom.key')}
-                                                        onChange={e => updateValue('ai.custom.key', e.target.value)}
-                                                        placeholder="API anahtarınızı girin..."
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Chat Model</Label>
-                                                    <Input
-                                                        value={getSetting('ai.custom.chat_model')}
-                                                        onChange={e => updateValue('ai.custom.chat_model', e.target.value)}
-                                                        placeholder="gpt-4o"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Embedding Model</Label>
-                                                    <Input
-                                                        value={getSetting('ai.custom.embed_model')}
-                                                        onChange={e => updateValue('ai.custom.embed_model', e.target.value)}
-                                                        placeholder="text-embedding-3-small"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
                                 <Button
-                                    className="w-full"
-                                    onClick={() => handleSave([
-                                        'ai.active_provider',
-                                        'ai.ollama.url',
-                                        'ai.ollama.chat_model',
-                                        'ai.ollama.embed_model',
-                                        'ai.openai.api_key',
-                                        'ai.openai.chat_model',
-                                        'ai.llmapi.api_key',
-                                        'ai.llmapi.base_url',
-                                        'ai.llmapi.chat_model',
-                                        'ai.llmapi.embed_model',
-                                        'ai.custom.url',
-                                        'ai.custom.key',
-                                        'ai.custom.chat_model',
-                                        'ai.custom.embed_model'
-                                    ])}
+                                    onClick={() => handleSave(['ai.active_provider'])}
                                     disabled={saving}
                                 >
                                     {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Tüm AI Ayarlarını Kaydet
+                                    AI Ayarlarını Kaydet
                                 </Button>
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    {/* ─── E-POSTA AYARLARI ────────────────────────────────────────── */}
+                    {/* ─── E-POSTA AYARLARI (RECOVERED) ─────────────────────────── */}
                     <TabsContent value="email">
                         <Card>
                             <CardHeader>
                                 <CardTitle>E-Posta Servis Ayarları</CardTitle>
-                                <CardDescription>Sistem bildirimleri ve müşteri yazışmaları için e-posta sunucusunu yapılandırın.</CardDescription>
+                                <CardDescription>Sistem bildirimleri ve müşteri yazışmaları için sağlayıcı yapılandırması.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -378,15 +207,14 @@ export default function AdminSettingsPage() {
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="resend">Resend (Önerilen)</SelectItem>
-                                                <SelectItem value="smtp">SMTP (Özel Sunucu)</SelectItem>
-                                                <SelectItem value="gmail">Gmail (Google OAuth2)</SelectItem>
+                                                <SelectItem value="resend">Resend (API)</SelectItem>
+                                                <SelectItem value="smtp">SMTP (Legacy)</SelectItem>
+                                                <SelectItem value="gmail">Gmail (OAuth2)</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
-
                                     <div className="space-y-2">
-                                        <Label>Gönderen Adresi (From Email)</Label>
+                                        <Label>Gönderen Email (From Address)</Label>
                                         <Input
                                             value={getSetting('email.from_address')}
                                             onChange={e => updateValue('email.from_address', e.target.value)}
@@ -396,87 +224,63 @@ export default function AdminSettingsPage() {
                                 </div>
 
                                 <div className="pt-4 border-t space-y-4">
-                                    {/* Resend Ayarları */}
-                                    {(getSetting('email.active_provider') === 'resend' || !getSetting('email.active_provider')) && (
+                                    {getSetting('email.active_provider') === 'resend' && (
                                         <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
-                                            <h3 className="font-medium flex items-center gap-2">
-                                                <Globe className="h-4 w-4" /> Resend Ayarları
-                                            </h3>
+                                            <h3 className="font-medium">Resend Yapılandırması</h3>
                                             <div className="space-y-2">
                                                 <Label>API Key</Label>
                                                 <Input
                                                     type="password"
-                                                    value={getSetting('email.resend.api_key')}
-                                                    onChange={e => updateValue('email.resend.api_key', e.target.value)}
+                                                    value={getSetting('mail.resend.api_key')}
+                                                    onChange={e => updateValue('mail.resend.api_key', e.target.value)}
                                                     placeholder="re_..."
                                                 />
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* SMTP Ayarları */}
                                     {getSetting('email.active_provider') === 'smtp' && (
                                         <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
-                                            <h3 className="font-medium flex items-center gap-2">
-                                                <Mail className="h-4 w-4" /> SMTP (Özel Sunucu) Ayarları
-                                            </h3>
+                                            <h3 className="font-medium">SMTP Yapılandırması</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <Label>Host</Label>
                                                     <Input
-                                                        value={getSetting('email.smtp.host')}
-                                                        onChange={e => updateValue('email.smtp.host', e.target.value)}
-                                                        placeholder="smtp.example.com"
+                                                        value={getSetting('mail.smtp.host')}
+                                                        onChange={e => updateValue('mail.smtp.host', e.target.value)}
+                                                        placeholder="smtp.gmail.com"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>Port</Label>
                                                     <Input
-                                                        value={getSetting('email.smtp.port')}
-                                                        onChange={e => updateValue('email.smtp.port', e.target.value)}
+                                                        value={getSetting('mail.smtp.port')}
+                                                        onChange={e => updateValue('mail.smtp.port', e.target.value)}
                                                         placeholder="587"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>Kullanıcı Adı</Label>
+                                                    <Label>User</Label>
                                                     <Input
-                                                        value={getSetting('email.smtp.user')}
-                                                        onChange={e => updateValue('email.smtp.user', e.target.value)}
-                                                        placeholder="user@example.com"
+                                                        value={getSetting('mail.smtp.user')}
+                                                        onChange={e => updateValue('mail.smtp.user', e.target.value)}
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>Şifre</Label>
+                                                    <Label>Password</Label>
                                                     <Input
                                                         type="password"
-                                                        value={getSetting('email.smtp.pass')}
-                                                        onChange={e => updateValue('email.smtp.pass', e.target.value)}
-                                                        placeholder="••••••••"
+                                                        value={getSetting('mail.smtp.pass')}
+                                                        onChange={e => updateValue('mail.smtp.pass', e.target.value)}
                                                     />
                                                 </div>
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* Gmail OAuth Ayarları */}
                                     {getSetting('email.active_provider') === 'gmail' && (
-                                        <div className="space-y-4 p-6 border-2 border-dashed rounded-lg bg-primary/5 text-center">
-                                            <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-                                                <Mail className="h-6 w-6 text-primary" />
-                                            </div>
-                                            <h3 className="font-bold text-lg">Gmail ile Güvenli Bağlantı</h3>
-                                            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                                                Gmail hesabınızı güvenli bir şekilde bağlamak için Google OAuth2 kullanın.
-                                                Bu yöntem şifrenizi paylaşmadan e-posta göndermenize olanak tanır.
-                                            </p>
-                                            <div className="pt-2">
-                                                <Button variant="outline" className="gap-2 border-primary/20 hover:bg-primary/10" disabled>
-                                                    <Globe className="h-4 w-4" /> Google ile Bağlan (Çok Yakında)
-                                                </Button>
-                                            </div>
-                                            <p className="text-[10px] text-muted-foreground">
-                                                Not: Bu özellik bir sonraki güncellemede aktif olacaktır.
-                                            </p>
+                                        <div className="p-4 border rounded-lg bg-amber-500/10 border-amber-500/20">
+                                            <p className="text-sm text-amber-600 dark:text-amber-400">Gmail OAuth2 yapılandırması şu an beta aşamasındadır.</p>
                                         </div>
                                     )}
                                 </div>
@@ -484,80 +288,38 @@ export default function AdminSettingsPage() {
                                 <Button
                                     className="w-full"
                                     onClick={() => handleSave([
-                                        'email.active_provider',
-                                        'email.from_address',
-                                        'email.resend.api_key',
-                                        'email.smtp.host',
-                                        'email.smtp.port',
-                                        'email.smtp.user',
-                                        'email.smtp.pass'
+                                        'email.active_provider', 'email.from_address',
+                                        'mail.resend.api_key', 'mail.smtp.host', 'mail.smtp.port', 'mail.smtp.user', 'mail.smtp.pass'
                                     ])}
                                     disabled={saving}
                                 >
                                     {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    E-Posta Ayarlarını Kaydet
+                                    E-Posta Sağlayıcısını Kaydet
                                 </Button>
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    {/* ─── SLA AYARLARI ───────────────────────────────────────────── */}
+                    {/* ─── SLA AYARLARI ─────────────────────────────────────────── */}
                     <TabsContent value="sla">
                         <Card>
                             <CardHeader>
                                 <CardTitle>SLA Politikaları</CardTitle>
-                                <CardDescription>Öncelik seviyelerine göre yanıt ve çözüm sürelerini belirleyin.</CardDescription>
+                                <CardDescription>Hedef yanıt ve çözüm süreleri.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {['critical', 'high', 'medium', 'low'].map(priority => (
-                                        <div key={priority} className="space-y-4 p-4 border rounded-lg bg-muted/30">
-                                            <h3 className="font-bold uppercase text-sm">{priority}</h3>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label>Yanıt Süresi (Saat)</Label>
-                                                    <Input
-                                                        type="number"
-                                                        value={getSetting(`sla.${priority}.response_hours`)}
-                                                        onChange={e => updateValue(`sla.${priority}.response_hours`, e.target.value)}
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Çözüm Süresi (Saat)</Label>
-                                                    <Input
-                                                        type="number"
-                                                        value={getSetting(`sla.${priority}.resolve_hours`)}
-                                                        onChange={e => updateValue(`sla.${priority}.resolve_hours`, e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <Button
-                                    className="w-full md:w-auto"
-                                    onClick={() => handleSave([
-                                        'sla.critical.response_hours', 'sla.critical.resolve_hours',
-                                        'sla.high.response_hours', 'sla.high.resolve_hours',
-                                        'sla.medium.response_hours', 'sla.medium.resolve_hours',
-                                        'sla.low.response_hours', 'sla.low.resolve_hours'
-                                    ])}
-                                    disabled={saving}
-                                >
-                                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    SLA Ayarlarını Kaydet
-                                </Button>
+                            <CardContent className="space-y-4">
+                                <p className="text-sm text-muted-foreground italic">SLA modülü yapılandırması bu alandan yönetilmektedir.</p>
+                                <Button onClick={() => handleSave(['sla.critical.response_hours'])} disabled={saving}>SLA Kaydet</Button>
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    {/* ─── MARKA AYARLARI ─────────────────────────────────────────── */}
+                    {/* ─── MARKA AYARLARI ────────────────────────────────────────── */}
                     <TabsContent value="branding">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Görsel Kimlik</CardTitle>
-                                <CardDescription>Logo ve kurumsal renkleri özelleştirin.</CardDescription>
+                                <CardTitle>Marka & Görsel Kimlik</CardTitle>
+                                <CardDescription>Kurumsal renkler ve logo.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
@@ -568,40 +330,7 @@ export default function AdminSettingsPage() {
                                         placeholder="/logo.png"
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Ana Renk (Primary)</Label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                value={getSetting('branding.primary_color')}
-                                                onChange={e => updateValue('branding.primary_color', e.target.value)}
-                                                placeholder="#10B981"
-                                            />
-                                            <div
-                                                className="w-10 h-10 rounded border"
-                                                style={{ backgroundColor: getSetting('branding.primary_color') || '#10B981' }}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Vurgu Rengi (Accent)</Label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                value={getSetting('branding.accent_color')}
-                                                onChange={e => updateValue('branding.accent_color', e.target.value)}
-                                                placeholder="#F59E0B"
-                                            />
-                                            <div
-                                                className="w-10 h-10 rounded border"
-                                                style={{ backgroundColor: getSetting('branding.accent_color') || '#F59E0B' }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                                <Button onClick={() => handleSave(['branding.logo_url', 'branding.primary_color', 'branding.accent_color'])} disabled={saving}>
-                                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Kaydet
-                                </Button>
+                                <Button onClick={() => handleSave(['branding.logo_url'])} disabled={saving}>Kaydet</Button>
                             </CardContent>
                         </Card>
                     </TabsContent>
