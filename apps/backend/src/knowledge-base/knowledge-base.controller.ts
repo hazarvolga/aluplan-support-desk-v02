@@ -48,13 +48,15 @@ export class KnowledgeBaseController {
     @ApiQuery({ name: 'search', required: false })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
-    findAll(@Query() q: any) {
+    findAll(@Query() q: any, @Request() req: any) {
+        const isStaff = req.user?.role !== 'customer';
         return this.kbService.findAll({
             status: q.status,
             categoryId: q.categoryId,
             search: q.search,
             page: q.page ? parseInt(q.page) : 1,
             limit: q.limit ? parseInt(q.limit) : 20,
+            includeInternal: isStaff,
         });
     }
 
@@ -104,8 +106,9 @@ export class KnowledgeBaseController {
     @RequirePermissions('kb:read')
     @ApiOperation({ summary: 'Keyword search in published articles' })
     @ApiQuery({ name: 'q', required: true })
-    keywordSearch(@Query('q') query: string) {
-        return this.kbService.keywordSearch(query);
+    keywordSearch(@Query('q') query: string, @Request() req: any) {
+        const isStaff = req.user?.role !== 'customer';
+        return this.kbService.keywordSearch(query, 10, isStaff);
     }
 
     // ─── ANALYTICS & FEEDBACK ─────────────────────────────

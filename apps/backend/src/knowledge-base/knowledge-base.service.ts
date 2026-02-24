@@ -52,21 +52,31 @@ export class KnowledgeBaseService {
         search?: string;
         page?: number;
         limit?: number;
+        includeInternal?: boolean;
     }) {
-        const { status, categoryId, search, page = 1, limit = 20 } = params;
+        const { status, categoryId, search, page = 1, limit = 20, includeInternal = false } = params;
+
+        const where: any = {
+            // Exclude bulk-imported reference documents (seeded from Bilgi Bankası).
+            // These are AI retrieval sources, not admin-authored KB articles.
+            isAutoImported: false,
+            ...(status && { status }),
+            ...(categoryId && { categoryId }),
+            ...(search && {
+                OR: [
+                    { title: { contains: search, mode: 'insensitive' } },
+                    { tags: { has: search } },
+                ],
+            }),
+        };
+
+        if (!includeInternal) {
+            where.isInternal = false;
+        }
 
         const [data, total] = await Promise.all([
             this.prisma.knowledgeArticle.findMany({
-                where: {
-                    ...(status && { status }),
-                    ...(categoryId && { categoryId }),
-                    ...(search && {
-                        OR: [
-                            { title: { contains: search, mode: 'insensitive' } },
-                            { tags: { has: search } },
-                        ],
-                    }),
-                },
+                where,
                 include: {
                     creator: { select: { id: true, fullName: true, avatarUrl: true } },
                     category: { select: { id: true, name: true } },
@@ -77,10 +87,7 @@ export class KnowledgeBaseService {
                 take: limit,
             }),
             this.prisma.knowledgeArticle.count({
-                where: {
-                    ...(status && { status }),
-                    ...(categoryId && { categoryId }),
-                },
+                where,
             }),
         ]);
 
@@ -112,6 +119,7 @@ export class KnowledgeBaseService {
                 tags: dto.tags ?? [],
                 language: dto.language ?? 'tr',
                 status: 'DRAFT',
+                isInternal: dto.isInternal ?? false,
                 createdBy,
                 categoryId: dto.categoryId,
                 versions: {
@@ -143,6 +151,7 @@ export class KnowledgeBaseService {
                     ...(dto.title && { title: dto.title }),
                     ...(dto.categoryId && { categoryId: dto.categoryId }),
                     ...(dto.tags && { tags: dto.tags }),
+                    ...(dto.isInternal !== undefined && { isInternal: dto.isInternal }),
                     ...(article.status === 'PUBLISHED' && { status: 'DRAFT' }),
                 },
             });
@@ -230,15 +239,21 @@ export class KnowledgeBaseService {
     }
 
     // ─── KEYWORD SEARCH ─────────────────────────────────────
-    async keywordSearch(query: string, limit = 10) {
+    async keywordSearch(query: string, limit = 10, includeInternal = false) {
+        const where: any = {
+            status: 'PUBLISHED',
+            OR: [
+                { title: { contains: query, mode: 'insensitive' } },
+                { tags: { has: query } },
+            ],
+        };
+
+        if (!includeInternal) {
+            where.isInternal = false;
+        }
+
         return this.prisma.knowledgeArticle.findMany({
-            where: {
-                status: 'PUBLISHED',
-                OR: [
-                    { title: { contains: query, mode: 'insensitive' } },
-                    { tags: { has: query } },
-                ],
-            },
+            where,
             include: {
                 versions: { orderBy: { version: 'desc' }, take: 1 },
             },

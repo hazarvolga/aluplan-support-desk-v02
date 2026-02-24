@@ -28,6 +28,11 @@ export class CreateArticleDto {
     @IsString()
     @IsOptional()
     language?: string;
+
+    @ApiPropertyOptional({ default: false })
+    @IsBoolean()
+    @IsOptional()
+    isInternal?: boolean;
 }
 
 export class UpdateArticleDto {
@@ -55,6 +60,11 @@ export class UpdateArticleDto {
     @IsString()
     @IsOptional()
     changeSummary?: string;
+
+    @ApiPropertyOptional()
+    @IsBoolean()
+    @IsOptional()
+    isInternal?: boolean;
 }
 
 export class ReviewArticleDto {

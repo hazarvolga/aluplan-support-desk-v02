@@ -18,8 +18,9 @@ export class FaqController {
     @Get('published')
     @ApiOperation({ summary: 'Get published FAQs (public widget endpoint)' })
     @ApiQuery({ name: 'language', required: false })
-    getPublished(@Query('language') language = 'tr') {
-        return this.faqService.getPublished(language);
+    getPublished(@Query('language') language = 'tr', @Request() req: any) {
+        const isStaff = req.user?.role !== 'customer';
+        return this.faqService.getPublished(language, 50, isStaff);
     }
 
     // ─── ADMIN: CRUD + Review ─────────────────────────────────

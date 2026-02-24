@@ -66,6 +66,7 @@ export class KbSummarizerProcessor extends WorkerHost {
                 question: question,
                 answer: answer,
                 status: 'PENDING_REVIEW',
+                isInternal: true, // AI summarized tickets are internal by default
                 confidenceScore: 0.90, // CSAT backed!
                 sourceTypes: ['ticket'],
                 tags: ticket.tags,

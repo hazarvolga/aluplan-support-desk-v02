@@ -172,6 +172,7 @@ export class FaqService {
                     question: pattern.question,
                     answer: pattern.answer,
                     status,
+                    isInternal: true, // Default to internal for all pipeline-sourced Q&A
                     confidenceScore: pattern.confidenceScore,
                     sourceTypes: [pattern.sourceType],
                     tags: pattern.tags,
@@ -224,7 +225,11 @@ export class FaqService {
     async approveFaq(id: string): Promise<any> {
         return this.prisma.faqEntry.update({
             where: { id },
-            data: { status: 'PUBLISHED', publishedAt: new Date() },
+            data: {
+                status: 'PUBLISHED',
+                publishedAt: new Date(),
+                isInternal: false // Make public when approved by human
+            },
         });
     }
 
@@ -243,9 +248,13 @@ export class FaqService {
     /**
      * Public endpoint: returns published FAQs (for KB widget/embed).
      */
-    async getPublished(language = 'tr', limit = 50): Promise<any[]> {
+    async getPublished(language = 'tr', limit = 50, includeInternal = false): Promise<any[]> {
         return this.prisma.faqEntry.findMany({
-            where: { status: 'PUBLISHED', language },
+            where: {
+                status: 'PUBLISHED',
+                language,
+                ...(!includeInternal && { isInternal: false })
+            },
             orderBy: [{ frequency: 'desc' }, { publishedAt: 'desc' }],
             take: limit,
         });
