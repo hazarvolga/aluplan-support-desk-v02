@@ -213,7 +213,36 @@ export class EmailController {
         sla: { first_response_deadline: new Date().toLocaleString() }
       };
 
-      const compiled = TemplateService.compile(name, mockData);
+      // Fetch branding data for preview context
+      const [
+        companyName, logoUrl, address,
+        linkedin, twitter, facebook, instagram, pinterest,
+        frontendUrl
+      ] = await Promise.all([
+        this.prisma.setting.findUnique({ where: { key: 'branding.company_name' } }).then(s => s?.value),
+        this.prisma.setting.findUnique({ where: { key: 'branding.logo_url' } }).then(s => s?.value),
+        this.prisma.setting.findUnique({ where: { key: 'branding.address' } }).then(s => s?.value),
+        this.prisma.setting.findUnique({ where: { key: 'branding.social_linkedin' } }).then(s => s?.value),
+        this.prisma.setting.findUnique({ where: { key: 'branding.social_twitter' } }).then(s => s?.value),
+        this.prisma.setting.findUnique({ where: { key: 'branding.social_facebook' } }).then(s => s?.value),
+        this.prisma.setting.findUnique({ where: { key: 'branding.social_instagram' } }).then(s => s?.value),
+        this.prisma.setting.findUnique({ where: { key: 'branding.social_pinterest' } }).then(s => s?.value),
+        this.prisma.setting.findUnique({ where: { key: 'general.frontend_url' } }).then(s => s?.value),
+      ]);
+
+      const brandDefaults = {
+        name: companyName || 'Aluplan',
+        logo_url: logoUrl || '/logo.png',
+        address: address || '',
+        social_linkedin: linkedin || '',
+        social_twitter: twitter || '',
+        social_facebook: facebook || '',
+        social_instagram: instagram || '',
+        social_pinterest: pinterest || '',
+        help_center_url: frontendUrl || 'https://help.aluplan.com',
+      };
+
+      const compiled = TemplateService.compile(name, mockData, brandDefaults);
       return { success: true, subject: compiled.subject, html: compiled.html };
     } catch (error: any) {
       return { success: false, error: error.message || 'Template compilation failed.' };
