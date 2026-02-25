@@ -25,11 +25,11 @@ export class SlaService {
 
     /**
      * Calculate SLA deadlines from current time based on priority.
-     * Reads from Settings table if configured, falls back to defaults.
+     * Reads from SlaPolicy table, falling back to Settings table or defaults.
      * Uses BusinessHoursService to account for working hours.
      */
-    async calculateDeadlines(priority: TicketPriority, from: Date = new Date()): Promise<SlaDeadlines> {
-        const slaConfig = await this.getSlaConfig(priority);
+    async calculateDeadlines(priority: TicketPriority, departmentId?: string, from: Date = new Date()): Promise<SlaDeadlines> {
+        const slaConfig = await this.getSlaConfig(priority, departmentId);
 
         const [slaResponseDue, slaResolveDue] = await Promise.all([
             this.businessHoursService.calculateDeadline(from, slaConfig.response),
@@ -106,7 +106,27 @@ export class SlaService {
         ]);
     }
 
-    private async getSlaConfig(priority: TicketPriority): Promise<{ response: number; resolve: number }> {
+    private async getSlaConfig(priority: TicketPriority, departmentId?: string): Promise<{ response: number; resolve: number }> {
+        // 1. Try to find a specific policy in SlaPolicy table
+        if (departmentId) {
+            const policy = await this.prisma.slaPolicy.findFirst({
+                where: { priority, departmentId }
+            });
+            if (policy) {
+                return { response: policy.firstResponseMinutes / 60, resolve: policy.resolutionMinutes / 60 };
+            }
+        }
+
+        // 2. Try to find a general policy for this priority (without specific department or any dept)
+        const generalPolicy = await this.prisma.slaPolicy.findFirst({
+            where: { priority }
+        });
+
+        if (generalPolicy) {
+            return { response: generalPolicy.firstResponseMinutes / 60, resolve: generalPolicy.resolutionMinutes / 60 };
+        }
+
+        // 3. Fallback to Settings table (legacy)
         const key = priority.toLowerCase();
 
         const [responseHours, resolveHours] = await Promise.all([

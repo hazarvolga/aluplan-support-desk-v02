@@ -42,4 +42,9 @@ export class CreateTicketDto {
     @IsEnum(CommunicationChannel)
     @IsOptional()
     channel?: CommunicationChannel;
+
+    @ApiPropertyOptional({ description: 'ID of the department for SLA and routing' })
+    @IsUUID()
+    @IsOptional()
+    departmentId?: string;
 }

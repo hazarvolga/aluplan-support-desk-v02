@@ -42,6 +42,15 @@
           {{#if brand.social_twitter}}
           <mj-social-element name="twitter" href="{{brand.social_twitter}}">Twitter</mj-social-element>
           {{/if}}
+          {{#if brand.social_facebook}}
+          <mj-social-element name="facebook" href="{{brand.social_facebook}}">Facebook</mj-social-element>
+          {{/if}}
+          {{#if brand.social_instagram}}
+          <mj-social-element name="instagram" href="{{brand.social_instagram}}">Instagram</mj-social-element>
+          {{/if}}
+          {{#if brand.social_pinterest}}
+          <mj-social-element name="pinterest" href="{{brand.social_pinterest}}">Pinterest</mj-social-element>
+          {{/if}}
         </mj-social>
 
         <mj-text font-size="11px" color="#94a3b8" padding-top="20px">

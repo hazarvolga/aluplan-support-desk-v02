@@ -4,6 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TemplateService } from './email.templates';
 import { EmailService } from './email.service';
+import { GmailProvider } from './gmail.provider';
+import { Public } from '../auth/decorators/public.decorator';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -14,9 +16,11 @@ const MJML_DIR = path.join(__dirname, '..', '..', 'src', 'email', 'templates', '
 export class EmailController {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly gmailProvider: GmailProvider,
   ) { }
 
+  @Public()
   @Get('track/:logId')
   async trackOpen(@Param('logId') logId: string, @Res() res: Response) {
     try {
@@ -38,6 +42,7 @@ export class EmailController {
     res.send(buf);
   }
 
+  @Public()
   @Post('webhook/resend')
   async resendWebhook(@Body() payload: any, @Res() res: Response) {
     // Basic Resend webhook signature validation goes here (HMAC)
@@ -107,6 +112,7 @@ export class EmailController {
     return { success: true };
   }
 
+  @Public()
   @Post('unsubscribe')
   async unsubscribe(@Body() body: { token: string }) {
     // In a production app, the token would be a signed JWT. 
@@ -218,5 +224,42 @@ export class EmailController {
   @Post('admin/provider/verify')
   async verifyProvider() {
     return this.emailService.healthCheck();
+  }
+
+  // ─── GMAIL OAUTH2 FLOW ────────────────────────────────────
+
+  /**
+   * Returns the Google OAuth2 consent URL.
+   * Admin opens this URL in a new tab to authorize the app.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('gmail/auth-url')
+  async getGmailAuthUrl() {
+    const url = await this.gmailProvider.buildAuthUrl();
+    return { url };
+  }
+
+  /**
+   * Google redirects here after user consent.
+   * Exchanges authorization code for refresh_token and saves to DB.
+   * Redirects admin to settings page with success/error indicator.
+   */
+  @Public()
+  @Get('gmail/callback')
+  async gmailOAuthCallback(@Query('code') code: string, @Query('error') error: string, @Res() res: Response) {
+    // Frontend URL — settings page
+    const frontendBase = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const settingsUrl = `${frontendBase}/admin/settings?tab=email`;
+
+    if (error || !code) {
+      return res.redirect(`${settingsUrl}&gmail_status=error&gmail_error=${encodeURIComponent(error || 'no_code')}`);
+    }
+
+    try {
+      const { email } = await this.gmailProvider.handleCallback(code);
+      return res.redirect(`${settingsUrl}&gmail_status=success&gmail_email=${encodeURIComponent(email)}`);
+    } catch (err: any) {
+      return res.redirect(`${settingsUrl}&gmail_status=error&gmail_error=${encodeURIComponent(err.message)}`);
+    }
   }
 }

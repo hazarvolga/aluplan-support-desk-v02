@@ -11,7 +11,7 @@ import { Public } from '../auth/decorators/public.decorator';
 
 const ArticleStatus = {
     DRAFT: 'DRAFT',
-    PENDING_REVIEW: 'PENDING_REVIEW',
+    REVIEW: 'REVIEW',
     PUBLISHED: 'PUBLISHED',
     ARCHIVED: 'ARCHIVED',
 } as const;

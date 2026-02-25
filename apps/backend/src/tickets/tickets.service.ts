@@ -61,7 +61,7 @@ export class TicketsService {
         const priority = dto.priority ?? TicketPriority.MEDIUM;
         const [ticketNumber, slaDeadlines] = await Promise.all([
             this.generateTicketNumber(),
-            this.slaService.calculateDeadlines(priority),
+            this.slaService.calculateDeadlines(priority, dto.departmentId),
         ]);
 
         const ticket = await this.prisma.ticket.create({
@@ -79,6 +79,7 @@ export class TicketsService {
                 slaResponseDue: slaDeadlines.slaResponseDue,
                 slaResolveDue: slaDeadlines.slaResolveDue,
                 channel: dto.channel || 'WEB',
+                departmentId: dto.departmentId,
             },
             include: { creator: { select: { id: true, fullName: true, email: true } } },
         });
@@ -198,7 +199,8 @@ export class TicketsService {
 
         let slaUpdate = {};
         if (dto.priority) {
-            const deadlines = await this.slaService.calculateDeadlines(dto.priority);
+            const ticket = await this.prisma.ticket.findUnique({ where: { id } });
+            const deadlines = await this.slaService.calculateDeadlines(dto.priority, ticket?.departmentId as string);
             slaUpdate = {
                 slaResponseDue: deadlines.slaResponseDue,
                 slaResolveDue: deadlines.slaResolveDue,
@@ -489,7 +491,8 @@ export class TicketsService {
         if (priority) {
             await this.prisma.$transaction(async (tx) => {
                 for (const id of ticketIds) {
-                    const deadlines = await this.slaService.calculateDeadlines(priority);
+                    const ticket = await tx.ticket.findUnique({ where: { id } });
+                    const deadlines = await this.slaService.calculateDeadlines(priority, ticket?.departmentId as string);
                     await tx.ticket.update({
                         where: { id },
                         data: {

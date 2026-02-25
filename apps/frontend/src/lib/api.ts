@@ -125,7 +125,7 @@ export const api = {
         update: (id: string, body: any) =>
             request<any>(`/kb/articles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
         submitForReview: (id: string) =>
-            request<any>(`/kb/articles/${id}/submit-for-review`, { method: 'POST' }),
+            request<any>(`/kb/articles/${id}/submit`, { method: 'POST' }),
         review: (id: string, approved: boolean) =>
             request<any>(`/kb/articles/${id}/review`, {
                 method: 'POST', body: JSON.stringify({ approved }),
@@ -144,7 +144,7 @@ export const api = {
                 method: 'POST', body: JSON.stringify({ title, content }),
             }),
         getGlobalAnalytics: () => request<any>('/kb/analytics'),
-        listPending: () => request<any>('/kb/articles?status=PENDING_REVIEW'),
+        listPending: () => request<any>('/kb/articles?status=REVIEW'),
     },
     ai: {
         query: (userQuery: string) =>
@@ -226,6 +226,12 @@ export const api = {
         upsert: (body: any) => request<any>('/settings', { method: 'POST', body: JSON.stringify(body) }),
         delete: (key: string) => request<any>(`/settings/${key}`, { method: 'DELETE' }),
     },
+    sla: {
+        list: () => request<any[]>('/tickets/sla/policies'),
+        create: (body: any) => request<any>('/tickets/sla/policies', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: any) => request<any>(`/tickets/sla/policies/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        delete: (id: string) => request<any>(`/tickets/sla/policies/${id}`, { method: 'DELETE' }),
+    },
     macros: {
         list: () => request<any[]>('/macros'),
         create: (body: any) => request<any>('/macros', { method: 'POST', body: JSON.stringify(body) }),
@@ -243,6 +249,7 @@ export const api = {
         saveTemplate: (name: string, content: string) => request<{ success: true }>(`/email/admin/templates/${name}/save`, { method: 'POST', body: JSON.stringify({ content }) }),
         previewTemplate: (name: string, data: any) => request<any>(`/email/admin/templates/${name}/preview`, { method: 'POST', body: JSON.stringify(data) }),
         verifyProvider: () => request<{ provider: string; available: boolean }>('/email/admin/provider/verify', { method: 'POST' }),
+        getGmailAuthUrl: () => request<{ url: string }>('/email/gmail/auth-url'),
     },
     get: (url: string) => request<any>(url),
     post: (url: string, body: any) =>

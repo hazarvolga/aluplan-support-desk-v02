@@ -25,8 +25,25 @@
         </mj-text>
         <mj-text css-class="quote">"{{ticket.first_message_snippet}}"</mj-text>
         <mj-button href="{{ticket.url}}" background-color="#0EA5E9" border-radius="8px">Talebi Görüntüle</mj-button>
-        <mj-text css-class="footer" font-size="12px" color="#94a3b8" padding-top="20px">
-          Bu otomatik bir mesajdır. <br/> <a href="{{brand.help_center_url}}" style="color:#0EA5E9;">Yardım Merkezi</a> | <a href="{{unsubscribe_url}}" style="color:#0EA5E9;">Abonelikten Çık</a>
+        <!-- Footer -->
+        <mj-divider border-width="1px" border-color="#f1f5f9" padding-top="40px" />
+        
+        <mj-text font-size="12px" color="#64748b" line-height="1.5">
+          <strong>{{brand.name}}</strong><br/>
+          {{brand.address}}<br/>
+          Bu otomatik bir sistem mesajıdır.
+        </mj-text>
+
+        <mj-social font-size="12px" icon-size="20px" mode="horizontal" align="left" padding-top="10px">
+          {{#if brand.social_linkedin}}<mj-social-element name="linkedin" href="{{brand.social_linkedin}}">LinkedIn</mj-social-element>{{/if}}
+          {{#if brand.social_twitter}}<mj-social-element name="twitter" href="{{brand.social_twitter}}">Twitter</mj-social-element>{{/if}}
+          {{#if brand.social_facebook}}<mj-social-element name="facebook" href="{{brand.social_facebook}}">Facebook</mj-social-element>{{/if}}
+          {{#if brand.social_instagram}}<mj-social-element name="instagram" href="{{brand.social_instagram}}">Instagram</mj-social-element>{{/if}}
+          {{#if brand.social_pinterest}}<mj-social-element name="pinterest" href="{{brand.social_pinterest}}">Pinterest</mj-social-element>{{/if}}
+        </mj-social>
+
+        <mj-text font-size="11px" color="#94a3b8" padding-top="20px">
+          <a href="{{brand.help_center_url}}" style="color:#0EA5E9; text-decoration:none;">Yardım Merkezi</a> | <a href="{{unsubscribe_url}}" style="color:#64748b; text-decoration:underline;">Abonelikten Çık</a>
         </mj-text>
       </mj-column>
     </mj-section>

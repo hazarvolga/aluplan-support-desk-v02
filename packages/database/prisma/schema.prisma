@@ -173,6 +173,7 @@ model Department {
 
   teams       Team[]
   slaPolicies SlaPolicy[]
+  tickets     Ticket[]
 
   @@map("departments")
 }
@@ -570,6 +571,7 @@ model Ticket {
   suggestedCategories String[]             @default([]) @map("suggested_categories")
   hotinfoSnapshot     Json?                @map("hotinfo_snapshot")
   channel             CommunicationChannel @default(WEB)
+  departmentId        String?              @map("department_id") @db.Uuid
 
   // SLA Fields
   slaResponseDue DateTime? @map("sla_response_due")
@@ -605,6 +607,7 @@ model Ticket {
   messages      TicketMessage[]
   escalations   TicketEscalation[]
   embeddings    TicketEmbedding[]
+  department    Department?        @relation(fields: [departmentId], references: [id])
 
   @@index([status], map: "idx_tickets_status")
   @@index([assignedTo], map: "idx_tickets_assigned")
