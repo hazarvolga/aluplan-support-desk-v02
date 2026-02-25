@@ -10,11 +10,18 @@
     </mj-style>
   </mj-head>
   <mj-body background-color="#f1f5f9">
-    <mj-section background-color="#ffffff" padding="20px">
+    <!-- Header Section -->
+    <mj-section background-color="#0EA5E9" padding="16px">
       <mj-column>
-        <mj-text background-color="#0EA5E9" color="#fff" font-size="20px" font-weight="bold" padding="16px">
+        <mj-text color="#fff" font-size="20px" font-weight="bold" padding="0">
           {{brand.name}} Support
         </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Main Content -->
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
         <mj-text font-size="22px" font-weight="bold" color="#0f172a" padding-top="20px">Nasıl bir deneyim yaşadınız?</mj-text>
         <mj-text>Merhaba {{customer.first_name}},</mj-text>
         <mj-text>#{{ticket.id}} numaralı talebiniz ("{{ticket.subject}}") çözüldü. Lütfen deneyiminizi puanlayın:</mj-text>
