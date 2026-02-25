@@ -251,6 +251,16 @@ export const api = {
         verifyProvider: () => request<{ provider: string; available: boolean }>('/email/admin/provider/verify', { method: 'POST' }),
         getGmailAuthUrl: () => request<{ url: string }>('/email/gmail/auth-url'),
     },
+    branding: {
+        uploadLogo: (file: File) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            return request<{ url: string; filename: string }>('/branding/upload-logo', {
+                method: 'POST',
+                body: formData,
+            });
+        },
+    },
     get: (url: string) => request<any>(url),
     post: (url: string, body: any) =>
         request<any>(url, {

@@ -50,7 +50,7 @@ export class TemplateService {
     }
 
     // Global Brand Data fallback injected if missing
-    const brandData = {
+    const rawBrand = {
       name: 'Aluplan',
       help_center_url: 'https://help.aluplan.com',
       primary_color: '#0EA5E9',
@@ -58,6 +58,21 @@ export class TemplateService {
       address: '',
       ...brandDefaults,
       ...data.brand
+    };
+
+    // Ensure absolute logo URL
+    let absoluteLogoUrl = rawBrand.logo_url;
+    if (absoluteLogoUrl && (absoluteLogoUrl.startsWith('/') || !absoluteLogoUrl.startsWith('http'))) {
+      const baseUrl = rawBrand.help_center_url.endsWith('/')
+        ? rawBrand.help_center_url.slice(0, -1)
+        : rawBrand.help_center_url;
+      const path = absoluteLogoUrl.startsWith('/') ? absoluteLogoUrl : `/${absoluteLogoUrl}`;
+      absoluteLogoUrl = `${baseUrl}${path}`;
+    }
+
+    const brandData = {
+      ...rawBrand,
+      logo_url: absoluteLogoUrl
     };
 
     const renderContext = {

@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import {
     Loader2, Bot, Globe, Mail, ShieldCheck, Palette, CheckCircle2,
-    XCircle, ExternalLink, Plus, Trash2, Edit2, AlertCircle, Clock
+    XCircle, ExternalLink, Plus, Trash2, Edit2, AlertCircle, Clock,
+    Upload, Trash
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -32,6 +33,7 @@ export default function AdminSettingsPage() {
     const [saving, setSaving] = useState(false);
     const [settings, setSettings] = useState<any[]>([]);
     const [gmailAuthorizing, setGmailAuthorizing] = useState(false);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
 
     // SLA States
     const [policies, setPolicies] = useState<any[]>([]);
@@ -93,6 +95,28 @@ export default function AdminSettingsPage() {
             }
             return [...prev, { key, value }];
         });
+    };
+
+    const handleLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setUploadingLogo(true);
+            const res = await api.branding.uploadLogo(file);
+            updateValue('branding.logo_url', res.url);
+            toast({ title: '✅ Logo Yüklendi', description: 'Logo başarıyla kaydedildi.' });
+        } catch (error: any) {
+            toast({
+                title: 'Hata',
+                description: 'Logo yüklenirken bir sorun oluştu: ' + error.message,
+                variant: 'destructive',
+            });
+        } finally {
+            setUploadingLogo(false);
+            // Clear input
+            e.target.value = '';
+        }
     };
 
     const handleSave = async (keys: string[]) => {
@@ -726,13 +750,63 @@ export default function AdminSettingsPage() {
                                                 placeholder="Örn: Aluplan A.Ş."
                                             />
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label>Kurumsal Logo URL</Label>
-                                            <Input
-                                                value={getSetting('branding.logo_url')}
-                                                onChange={e => updateValue('branding.logo_url', e.target.value)}
-                                                placeholder="/logo.png"
-                                            />
+                                        <div className="space-y-4">
+                                            <Label>Kurumsal Logo</Label>
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-16 w-16 rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
+                                                    {getSetting('branding.logo_url') ? (
+                                                        <img
+                                                            src={getSetting('branding.logo_url').startsWith('http')
+                                                                ? getSetting('branding.logo_url')
+                                                                : `${api.getBaseUrl().replace('/api/v1', '')}${getSetting('branding.logo_url')}`}
+                                                            alt="Logo"
+                                                            className="h-full w-full object-contain"
+                                                        />
+                                                    ) : (
+                                                        <Palette className="h-8 w-8 text-muted-foreground/40" />
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="relative lg:w-[150px]"
+                                                            disabled={uploadingLogo}
+                                                        >
+                                                            {uploadingLogo ? (
+                                                                <>
+                                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                                    Yükleniyor...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Upload className="mr-2 h-4 w-4" />
+                                                                    Logo Yükle
+                                                                </>
+                                                            )}
+                                                            <input
+                                                                type="file"
+                                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                accept="image/*"
+                                                                onChange={handleLogoSelect}
+                                                            />
+                                                        </Button>
+                                                        {getSetting('branding.logo_url') && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => updateValue('branding.logo_url', '')}
+                                                            >
+                                                                <Trash className="h-4 w-4 text-destructive" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[10px] text-muted-foreground">
+                                                        PNG, JPG veya SVG (Maks. 2MB)
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Şirket E-posta</Label>

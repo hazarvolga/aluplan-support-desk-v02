@@ -32,6 +32,7 @@ import { RedisModule } from './redis/redis.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { TeamsModule } from './teams/teams.module';
+import { BrandingModule } from './branding/branding.module';
 
 @Module({
     imports: [
@@ -94,6 +95,7 @@ import { TeamsModule } from './teams/teams.module';
         RedisModule,
         AutomationModule,
         TeamsModule,
+        BrandingModule,
     ],
     providers: [],
 })
