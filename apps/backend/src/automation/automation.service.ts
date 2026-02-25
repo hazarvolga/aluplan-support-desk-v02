@@ -29,8 +29,54 @@ export class AutomationService {
             newValue: { status: payload.newStatus },
         });
 
+        // Send Status Change Email
+        const ticket = await this.prisma.ticket.findUnique({
+            where: { id: payload.ticketId },
+            include: { creator: true }
+        });
+
+        if (ticket?.creator?.email) {
+            this.emailService.sendTicketStatusChanged({
+                customerEmail: ticket.creator.email,
+                customerName: ticket.creator.fullName || 'Değerli Müşterimiz',
+                ticketNumber: ticket.ticketNumber,
+                ticketId: ticket.id,
+                oldStatus: payload.oldStatus,
+                newStatus: payload.newStatus,
+                ticketUrl: `${process.env.FRONTEND_URL}/tickets/${ticket.id}`
+            }).catch(err => this.logger.error(`Failed to send status change email: ${err.message}`));
+
+            // If RESOLVED, also send closed/survey email? 
+            // In Enterprise systems, RESOLVED -> CLOSED transition or direct closure triggers it.
+            if (payload.newStatus === TicketStatus.RESOLVED) {
+                this.emailService.sendTicketResolved({
+                    customerEmail: ticket.creator.email,
+                    customerName: ticket.creator.fullName,
+                    ticketNumber: ticket.ticketNumber,
+                    ticketId: ticket.id,
+                    surveyUrl: `${process.env.FRONTEND_URL}/tickets/${ticket.id}/feedback`
+                });
+            }
+        }
+
         // Rule Evaluation logic will go here
         this.evaluateRules(payload.ticketId, 'STATUS_CHANGE', payload);
+    }
+
+    @OnEvent('ticket.message_added')
+    async handleMessageAdded(payload: { ticket: any; message: any; recipientEmail?: string; userName?: string }) {
+        this.logger.log(`🤖 Automation: Dispatching new message notification for ${payload.ticket.ticketNumber}`);
+
+        if (payload.recipientEmail) {
+            this.emailService.sendNewMessage({
+                recipientEmail: payload.recipientEmail,
+                userName: payload.userName || 'Kullanıcı',
+                ticketId: payload.ticket.id,
+                ticketNumber: payload.ticket.ticketNumber,
+                latestMessage: payload.message.message,
+                ticketUrl: `${process.env.FRONTEND_URL}/tickets/${payload.ticket.id}`
+            }).catch(err => this.logger.error(`Failed to send message notification: ${err.message}`));
+        }
     }
 
     @OnEvent('ticket.created')

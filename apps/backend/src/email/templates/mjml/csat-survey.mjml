@@ -1,60 +1,21 @@
-<mjml>
-  <mj-head>
-    <mj-attributes>
-      <mj-all font-family="Inter, -apple-system, sans-serif" color="#334155" />
-      <mj-text font-size="15px" line-height="1.6" />
-    </mj-attributes>
-    <mj-style inline="inline">
-      .star-link { font-size: 24px; text-decoration: none; padding: 0 5px; }
-      .footer { border-top: 1px solid #e2e8f0; }
-    </mj-style>
-  </mj-head>
-  <mj-body background-color="#f1f5f9">
-    <!-- Header Section -->
-    <mj-section background-color="#0EA5E9" padding="16px">
-      <mj-column>
-        <mj-text color="#fff" font-size="20px" font-weight="bold" padding="0">
-          {{brand.name}} Support
-        </mj-text>
-      </mj-column>
-    </mj-section>
+<mj-section padding="20px">
+  <mj-column>
+    <mj-text font-size="22px" font-weight="bold" color="#0f172a" align="center">Deneyiminizi Değerlendirin</mj-text>
+    <mj-text align="center">Biletiniz (#{{ticketId}}) çözümlendi olarak işaretlendi. Size verdiğimiz hizmeti değerlendirir misiniz?</mj-text>
+  </mj-column>
+</mj-section>
 
-    <!-- Main Content -->
-    <mj-section background-color="#ffffff" padding="20px">
-      <mj-column>
-        <mj-text font-size="22px" font-weight="bold" color="#0f172a" padding-top="20px">Nasıl bir deneyim yaşadınız?</mj-text>
-        <mj-text>Merhaba {{customer.first_name}},</mj-text>
-        <mj-text>#{{ticket.id}} numaralı talebiniz ("{{ticket.subject}}") çözüldü. Lütfen deneyiminizi puanlayın:</mj-text>
-        
-        <mj-text align="center" padding="20px 0">
-          <a href="{{csat.star_1}}" class="star-link" style="text-decoration:none;font-size:24px;">⭐ 1</a>
-          <a href="{{csat.star_2}}" class="star-link" style="text-decoration:none;font-size:24px;">⭐ 2</a>
-          <a href="{{csat.star_3}}" class="star-link" style="text-decoration:none;font-size:24px;">⭐ 3</a>
-          <a href="{{csat.star_4}}" class="star-link" style="text-decoration:none;font-size:24px;">⭐ 4</a>
-          <a href="{{csat.star_5}}" class="star-link" style="text-decoration:none;font-size:24px;">⭐ 5</a>
-        </mj-text>
-        
-        <!-- Footer -->
-        <mj-divider border-width="1px" border-color="#f1f5f9" padding-top="40px" />
-        
-        <mj-text font-size="12px" color="#64748b" line-height="1.5">
-          <strong>{{brand.name}}</strong><br/>
-          {{brand.address}}<br/>
-          Bu otomatik bir sistem mesajıdır.
-        </mj-text>
-
-        <mj-social font-size="12px" icon-size="20px" mode="horizontal" align="left" padding-top="10px">
-          {{#if brand.social_linkedin}}<mj-social-element name="linkedin" href="{{brand.social_linkedin}}">LinkedIn</mj-social-element>{{/if}}
-          {{#if brand.social_twitter}}<mj-social-element name="twitter" href="{{brand.social_twitter}}">Twitter</mj-social-element>{{/if}}
-          {{#if brand.social_facebook}}<mj-social-element name="facebook" href="{{brand.social_facebook}}">Facebook</mj-social-element>{{/if}}
-          {{#if brand.social_instagram}}<mj-social-element name="instagram" href="{{brand.social_instagram}}">Instagram</mj-social-element>{{/if}}
-          {{#if brand.social_pinterest}}<mj-social-element name="pinterest" href="{{brand.social_pinterest}}">Pinterest</mj-social-element>{{/if}}
-        </mj-social>
-
-        <mj-text font-size="11px" color="#94a3b8" padding-top="20px">
-          Bu maillleri almak istemiyorsanız: <a href="{{unsubscribe_url}}" style="color:#0EA5E9; text-decoration:none;">Abonelikten Çık</a>
-        </mj-text>
-      </mj-column>
-    </mj-section>
-  </mj-body>
-</mjml>
+<mj-section padding="20px 0" background-color="#ffffff">
+  <mj-column width="33%">
+    <mj-button href="{{surveyUrl}}?rating=GOOD" background-color="#22c55e" border-radius="50px" width="60px" height="60px">😊</mj-button>
+    <mj-text align="center" font-size="12px">İyi</mj-text>
+  </mj-column>
+  <mj-column width="33%">
+    <mj-button href="{{surveyUrl}}?rating=NEUTRAL" background-color="#eab308" border-radius="50px" width="60px" height="60px">😐</mj-button>
+    <mj-text align="center" font-size="12px">Orta</mj-text>
+  </mj-column>
+  <mj-column width="33%">
+    <mj-button href="{{surveyUrl}}?rating=BAD" background-color="#ef4444" border-radius="50px" width="60px" height="60px">☹️</mj-button>
+    <mj-text align="center" font-size="12px">Kötü</mj-text>
+  </mj-column>
+</mj-section>

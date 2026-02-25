@@ -138,20 +138,70 @@ export class EmailService implements OnModuleInit {
 
     async sendTicketResolved(data: any) {
         await this.enqueueEmail({
-            template: 'ticket-resolved',
+            template: 'ticket-closed',
             to: data.customerEmail,
-            subject: `[${data.ticketNumber}] Talebiniz çözüldü`,
+            subject: `[${data.ticketNumber}] Biletiniz Çözümlendi`,
             priority: 2,
+            data: data
+        });
+    }
+
+    async sendTicketReopened(data: any) {
+        await this.enqueueEmail({
+            template: 'ticket-reopened',
+            to: data.customerEmail,
+            subject: `[${data.ticketNumber}] Bilet Tekrar Açıldı`,
+            priority: 1,
+            data: data
+        });
+    }
+
+    async sendTicketStatusChanged(data: any) {
+        await this.enqueueEmail({
+            template: 'ticket-status-changed',
+            to: data.customerEmail,
+            subject: `[${data.ticketNumber}] Durum Güncellemesi`,
+            priority: 2,
+            data: data
+        });
+    }
+
+    async sendAiSuggestedReply(data: any) {
+        await this.enqueueEmail({
+            template: 'ai-suggested-reply',
+            to: data.agentEmail,
+            subject: `🤖 Yapay Zeka Önerisi: #${data.ticketId}`,
+            priority: 3, // Lower priority for suggestions
             data: data
         });
     }
 
     async sendNewMessage(data: any) {
         await this.enqueueEmail({
-            template: 'new-message',
+            template: 'ticket-updated',
             to: data.recipientEmail,
-            subject: `[${data.ticketNumber}] Yeni mesaj`,
+            subject: `[${data.ticketNumber}] Yeni Mesaj`,
             priority: 2,
+            data: data
+        });
+    }
+
+    async sendUserInvited(data: any) {
+        await this.enqueueEmail({
+            template: 'user-invited',
+            to: data.recipientEmail,
+            subject: `Aluplan Destek Ekibine Davet Edildiniz`,
+            priority: 1,
+            data: data
+        });
+    }
+
+    async sendEmailVerification(data: any) {
+        await this.enqueueEmail({
+            template: 'email-verification',
+            to: data.recipientEmail,
+            subject: `E-posta Adresinizi Doğrulayın`,
+            priority: 1,
             data: data
         });
     }

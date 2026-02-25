@@ -1,0 +1,9 @@
+<mj-section padding="20px">
+  <mj-column border="2px solid #ef4444" border-radius="8px" padding="10px">
+    <mj-text font-size="18px" font-weight="bold" color="#b91c1c">🚨 SLA İhlali (BREACHED)</mj-text>
+    <mj-text font-size="14px">Bir destek biletinin hedeflenen çözüm süresi aşılmıştır. Acil müdahale gereklidir.</mj-text>
+    <mj-divider border-width="1px" border-color="#fee2e2" />
+    <mj-text font-size="14px"><strong>Bilet:</strong> #{{ticketId}} - {{ticketSubject}}<br /><strong>Sorumlu:</strong> {{agentName}}</mj-text>
+    <mj-button href="{{ticketUrl}}" background-color="#ef4444" border-radius="5px" font-size="14px">Acil İncele</mj-button>
+  </mj-column>
+</mj-section>

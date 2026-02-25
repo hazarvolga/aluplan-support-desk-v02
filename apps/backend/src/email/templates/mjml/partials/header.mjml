@@ -1,0 +1,10 @@
+<mj-section padding="20px 0">
+  <mj-column>
+    <mj-image
+      src="{{brand.logo_url}}"
+      alt="{{brand.name}}"
+      width="150px"
+      align="center"
+    />
+  </mj-column>
+</mj-section>

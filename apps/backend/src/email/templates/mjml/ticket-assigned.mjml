@@ -1,57 +1,21 @@
-<mjml>
-  <mj-head>
-    <mj-attributes>
-      <mj-all font-family="Inter, -apple-system, sans-serif" color="#334155" />
-      <mj-text font-size="15px" line-height="1.6" />
-    </mj-attributes>
-    <mj-style inline="inline">
-      .ticket-card { background-color: #f8fafc; border-left: 4px solid #ef4444; padding: 16px; margin: 16px 0; }
-      .footer { border-top: 1px solid #e2e8f0; }
-    </mj-style>
-  </mj-head>
-  <mj-body background-color="#f1f5f9">
-    <!-- Header Section -->
-    <mj-section background-color="#0EA5E9" padding="16px">
-      <mj-column>
-        <mj-text color="#fff" font-size="20px" font-weight="bold" padding="0">
-          {{brand.name}} Support
-        </mj-text>
-      </mj-column>
-    </mj-section>
+<mj-section padding="20px">
+  <mj-column>
+    <mj-text font-size="22px" font-weight="bold" color="#0f172a">Bilet Atandı</mj-text>
+    <mj-text>Merhaba <strong>{{agentName}}</strong>, yeni bir destek bileti size atandı.</mj-text>
+  </mj-column>
+</mj-section>
 
-    <!-- Main Content -->
-    <mj-section background-color="#ffffff" padding="20px">
-      <mj-column>
-        <mj-text font-size="22px" font-weight="bold" color="#0f172a" padding-top="20px">Yeni Görev Ataması</mj-text>
-        <mj-text>Merhaba {{agent.first_name}},</mj-text>
-        <mj-text>Aşağıdaki talep sana atandı.</mj-text>
-        <mj-text css-class="ticket-card">
-          <strong>Talep:</strong> #{{ticket.id}} - {{ticket.subject}}<br/>
-          <strong>Müşteri:</strong> {{customer.full_name}} ({{customer.email}})
-        </mj-text>
-        <mj-text color="#ef4444" font-weight="bold">SLA: {{sla.first_response_deadline}}</mj-text>
-        <mj-button href="{{ticket.url}}" background-color="#0f172a" border-radius="8px">Dashboard'da Aç</mj-button>
-        <!-- Footer -->
-        <mj-divider border-width="1px" border-color="#f1f5f9" padding-top="40px" />
-        
-        <mj-text font-size="12px" color="#64748b" line-height="1.5">
-          <strong>{{brand.name}}</strong><br/>
-          {{brand.address}}<br/>
-          Bu otomatik bir sistem mesajıdır.
-        </mj-text>
+<mj-section background-color="#f8fafc" border-radius="8px" padding="15px">
+  <mj-column>
+    <mj-text font-size="14px" color="#64748b" padding="0">Müşteri:</mj-text>
+    <mj-text font-weight="bold" padding="0 0 10px 0">{{customerName}}</mj-text>
+    <mj-text font-size="14px" color="#64748b" padding="0">Konu:</mj-text>
+    <mj-text font-weight="bold" padding="0">{{ticketSubject}}</mj-text>
+  </mj-column>
+</mj-section>
 
-        <mj-social font-size="12px" icon-size="20px" mode="horizontal" align="left" padding-top="10px">
-          {{#if brand.social_linkedin}}<mj-social-element name="linkedin" href="{{brand.social_linkedin}}">LinkedIn</mj-social-element>{{/if}}
-          {{#if brand.social_twitter}}<mj-social-element name="twitter" href="{{brand.social_twitter}}">Twitter</mj-social-element>{{/if}}
-          {{#if brand.social_facebook}}<mj-social-element name="facebook" href="{{brand.social_facebook}}">Facebook</mj-social-element>{{/if}}
-          {{#if brand.social_instagram}}<mj-social-element name="instagram" href="{{brand.social_instagram}}">Instagram</mj-social-element>{{/if}}
-          {{#if brand.social_pinterest}}<mj-social-element name="pinterest" href="{{brand.social_pinterest}}">Pinterest</mj-social-element>{{/if}}
-        </mj-social>
-
-        <mj-text font-size="11px" color="#94a3b8" padding-top="20px">
-          Bu bildirimleri <a href="{{unsubscribe_url}}" style="color:#0EA5E9; text-decoration:none;">tercihler sayfasından</a> yönetebilirsin.
-        </mj-text>
-      </mj-column>
-    </mj-section>
-  </mj-body>
-</mjml>
+<mj-section padding="20px">
+  <mj-column>
+    <mj-button href="{{ticketUrl}}" align="center" font-weight="bold" border-radius="8px" css-class="btn-primary">Bilete Git</mj-button>
+  </mj-column>
+</mj-section>

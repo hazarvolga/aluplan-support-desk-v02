@@ -1,56 +1,24 @@
 <mjml>
   <mj-head>
+    <mj-title>{{subject}}</mj-title>
+    <mj-font name="Inter" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" />
     <mj-attributes>
-      <mj-all font-family="Inter, -apple-system, sans-serif" color="#334155" />
-      <mj-text font-size="15px" line-height="1.6" />
+      <mj-all font-family="Inter, Helvetica, sans-serif" />
+      <mj-text font-size="16px" color="#334155" line-height="1.6" />
+      <mj-section background-color="#ffffff" />
     </mj-attributes>
-    <mj-style inline="inline">
-      .ticket-card { background-color: #f8fafc; border-left: 4px solid #0EA5E9; padding: 16px; margin: 16px 0; }
-      .footer { border-top: 1px solid #e2e8f0; }
-      .quote { font-style: italic; background-color: #f1f5f9; padding: 10px; border-left: 3px solid #cbd5e1; }
-      .alert-red { background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 16px 0;}
+    <mj-style>
+      .btn-primary { background-color: {{brand.primary_color}} !important; }
     </mj-style>
   </mj-head>
   <mj-body background-color="#f1f5f9">
-    <mj-section background-color="#ffffff" padding="20px">
-      <mj-column>
-        <!-- Header -->
-        <mj-image src="{{brand.logo_url}}" alt="{{brand.name}} Logo" width="150px" align="left" padding-bottom="20px" />
-        
-        <mj-text font-size="20px" font-weight="bold" color="#0f172a" padding-bottom="10px">
-          {{brand.name}}
-        </mj-text>
+    <!-- Header -->
+    <mj-include path="./partials/header.mjml" />
 
-        <!-- Slot Content -->
-        <mj-text padding="10px 0">
-           <!-- Content injected here -->
-        </mj-text>
+    <!-- Main Content Slot -->
+    {{{content}}}
 
-        <!-- Footer -->
-        <mj-divider border-width="1px" border-color="#f1f5f9" padding-top="40px" />
-        
-        <mj-text font-size="12px" color="#64748b" line-height="1.5">
-          <strong>{{brand.name}}</strong><br/>
-          {{#if brand.address}}{{brand.address}}<br/>{{/if}}
-          {{#if brand.email}}E-posta: {{brand.email}} | {{/if}}{{#if brand.phone}}Tel: {{brand.phone}}{{/if}}
-          {{#if (or brand.email brand.phone)}}<br/>{{/if}}
-          Bu otomatik bir sistem mesajıdır.
-        </mj-text>
-
-        <mj-social font-size="12px" icon-size="20px" mode="horizontal" align="left" padding-top="10px">
-          {{#if brand.social_linkedin}}<mj-social-element name="linkedin" href="{{brand.social_linkedin}}">LinkedIn</mj-social-element>{{/if}}
-          {{#if brand.social_twitter}}<mj-social-element name="twitter" href="{{brand.social_twitter}}">Twitter</mj-social-element>{{/if}}
-          {{#if brand.social_facebook}}<mj-social-element name="facebook" href="{{brand.social_facebook}}">Facebook</mj-social-element>{{/if}}
-          {{#if brand.social_instagram}}<mj-social-element name="instagram" href="{{brand.social_instagram}}">Instagram</mj-social-element>{{/if}}
-          {{#if brand.social_pinterest}}<mj-social-element name="pinterest" href="{{brand.social_pinterest}}">Pinterest</mj-social-element>{{/if}}
-        </mj-social>
-
-        <mj-text font-size="11px" color="#94a3b8" padding-top="20px">
-          <a href="{{brand.help_center_url}}" style="color:#0EA5E9; text-decoration:none;">Yardım Merkezi</a>
-          &nbsp; | &nbsp;
-          <a href="{{unsubscribe_url}}" style="color:#64748b; text-decoration:underline;">Abonelikten Çık</a>
-        </mj-text>
-      </mj-column>
-    </mj-section>
+    <!-- Footer -->
+    <mj-include path="./partials/footer.mjml" />
   </mj-body>
 </mjml>

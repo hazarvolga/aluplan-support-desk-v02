@@ -1,0 +1,7 @@
+<mj-section padding="20px">
+  <mj-column>
+    <mj-text font-size="20px" font-weight="bold" color="#0f172a">Bilet Tekrar Açıldı</mj-text>
+    <mj-text><strong>#{{ticketId}}</strong> numaralı kapalı destek biletiniz tekrar açılmıştır.</mj-text>
+    <mj-button href="{{ticketUrl}}" padding-top="25px" align="left" font-weight="bold" border-radius="8px" css-class="btn-primary">Bilete Git</mj-button>
+  </mj-column>
+</mj-section>

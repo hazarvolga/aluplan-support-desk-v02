@@ -1,0 +1,16 @@
+<mj-section padding="20px">
+  <mj-column>
+    <mj-text font-size="18px" font-weight="bold" color="#0369a1">🤖 AffeXAI Önerisi</mj-text>
+    <mj-text font-size="14px"><strong>#{{ticketId}}</strong> numaralı bilet için yapay zeka bir cevap taslağı oluşturdu.</mj-text>
+  </mj-column>
+</mj-section>
+
+<mj-section background-color="#f0f9ff" border="1px dashed #0EA5E9" border-radius="8px" padding="15px">
+  <mj-column><mj-text font-size="14px" color="#0c4a6e">{{{suggestedReplyContent}}}</mj-text></mj-column>
+</mj-section>
+
+<mj-section padding="10px 20px">
+  <mj-column>
+    <mj-button href="{{ticketUrl}}" font-weight="bold" border-radius="8px" css-class="btn-primary">Cevabı İncele & Gönder</mj-button>
+  </mj-column>
+</mj-section>

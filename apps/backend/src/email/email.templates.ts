@@ -30,15 +30,29 @@ export class TemplateService {
 
     if (!compiledTemplate) {
       const mjmlPath = path.join(this.mjmlDir, `${templateName}.mjml`);
+      const basePath = path.join(this.mjmlDir, 'base.mjml');
+
       if (!fs.existsSync(mjmlPath)) {
         throw new Error(`Template formulation failed: ${mjmlPath} does not exist`);
       }
 
-      const mjmlContent = fs.readFileSync(mjmlPath, 'utf8');
+      let mjmlContent = '';
+      const childContent = fs.readFileSync(mjmlPath, 'utf8');
+
+      if (templateName !== 'base' && fs.existsSync(basePath)) {
+        const baseContent = fs.readFileSync(basePath, 'utf8');
+        // Simple slot replacement: Replace {{{content}}} with child template content
+        // Note: Using triple braces in base.mjml for content slot
+        mjmlContent = baseContent.replace('{{{content}}}', childContent);
+      } else {
+        mjmlContent = childContent;
+      }
+
       const { html, errors } = mjml2html(mjmlContent, {
         beautify: false,
         minify: true,
         validationLevel: 'soft',
+        filePath: basePath // Pass base path so mj-include resolves correctly
       });
 
       if (errors && errors.length > 0) {

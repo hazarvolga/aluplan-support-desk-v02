@@ -25,7 +25,12 @@ export class BrandingController {
             storage: diskStorage({
                 destination: (req, file, callback) => {
                     // Save directly to frontend public directory for local dev accessibility
-                    const dest = join(process.cwd(), 'apps/frontend/public/logos');
+                    // Ensure we reach the root from apps/backend if needed
+                    let root = process.cwd();
+                    if (root.endsWith('apps/backend')) {
+                        root = join(root, '../..');
+                    }
+                    const dest = join(root, 'apps/frontend/public/logos');
                     callback(null, dest);
                 },
                 filename: (req, file, callback) => {

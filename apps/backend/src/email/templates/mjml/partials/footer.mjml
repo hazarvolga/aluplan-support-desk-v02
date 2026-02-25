@@ -1,0 +1,31 @@
+<mj-section padding="40px 0 20px 0">
+  <mj-column>
+    <mj-divider border-width="1px" border-color="#f1f5f9" />
+    <mj-text align="center" color="#64748b" font-size="12px" line-height="1.5">
+      {{brand.name}} Support<br />
+      {{#if brand.address}}{{brand.address}}<br />{{/if}}
+      {{#if brand.phone}}Tel: {{brand.phone}} | {{/if}}
+      {{#if brand.email}}E-posta: {{brand.email}}{{/if}}
+    </mj-text>
+    
+    <mj-social font-size="15px" icon-size="20px" mode="horizontal" align="center" padding-top="20px">
+      {{#if brand.social_linkedin}}
+      <mj-social-element name="linkedin" href="{{brand.social_linkedin}}" background-color="#0A66C2" />
+      {{/if}}
+      {{#if brand.social_twitter}}
+      <mj-social-element name="twitter" href="{{brand.social_twitter}}" background-color="#1DA1F2" />
+      {{/if}}
+      {{#if brand.social_facebook}}
+      <mj-social-element name="facebook" href="{{brand.social_facebook}}" background-color="#1877F2" />
+      {{/if}}
+      {{#if brand.social_instagram}}
+      <mj-social-element name="instagram" href="{{brand.social_instagram}}" background-color="#E4405F" />
+      {{/if}}
+    </mj-social>
+
+    <mj-text align="center" color="#94a3b8" font-size="11px" padding-top="20px">
+      Bu e-posta biletinizle ilgili güncelleme aldığı için gönderilmiştir.<br />
+      <a href="{{unsubscribe_url}}" style="color: #0EA5E9; text-decoration: none;">Abonelikten Ayrıl</a>
+    </mj-text>
+  </mj-column>
+</mj-section>

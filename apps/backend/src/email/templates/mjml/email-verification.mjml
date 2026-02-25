@@ -1,0 +1,7 @@
+<mj-section padding="20px">
+  <mj-column>
+    <mj-text font-size="22px" font-weight="bold" color="#0f172a">E-posta Adresinizi Doğrulayın</mj-text>
+    <mj-text>Kayıt işleminizi tamamlamak için e-posta adresinizi doğrulamanız gerekiyor.</mj-text>
+    <mj-button href="{{verificationUrl}}" padding-top="25px" align="center" font-weight="bold" border-radius="8px" css-class="btn-primary">E-postayı Doğrula</mj-button>
+  </mj-column>
+</mj-section>

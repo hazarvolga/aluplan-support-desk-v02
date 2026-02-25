@@ -396,7 +396,12 @@ export class TicketsService {
             });
         }
 
-        this.eventEmitter.emit('ticket.message_added', { ticket, message });
+        this.eventEmitter.emit('ticket.message_added', {
+            ticket,
+            message,
+            recipientEmail: ticket.userId === senderId ? ticket.assignee?.email : (ticket.creator?.email || undefined),
+            userName: ticket.userId === senderId ? (ticket.assignee?.fullName || 'Temsilci') : (ticket.creator?.fullName || 'Müşteri')
+        });
 
         return message;
     }
