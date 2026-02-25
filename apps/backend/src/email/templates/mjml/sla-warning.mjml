@@ -1,9 +1,0 @@
-<mj-section padding="20px">
-  <mj-column border="2px solid #eab308" border-radius="8px" padding="10px">
-    <mj-text font-size="18px" font-weight="bold" color="#854d0e">⚠️ SLA Uyarısı</mj-text>
-    <mj-text font-size="14px">Bir biletin SLA hedefine yaklaşılıyor. Lütfen aksiyon alınız.</mj-text>
-    <mj-divider border-width="1px" border-color="#fef08a" />
-    <mj-text font-size="14px"><strong>Bilet:</strong> #{{ticketId}} - {{ticketSubject}}<br /><strong>Kalan Süre:</strong> {{minutesLeft}} dakika</mj-text>
-    <mj-button href="{{ticketUrl}}" background-color="#eab308" border-radius="5px" font-size="14px">Bilete Müdahale Et</mj-button>
-  </mj-column>
-</mj-section>

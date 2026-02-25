@@ -1,0 +1,16 @@
+<mj-section background-color="#ffffff" border-radius="12px" css-class="dark-mode-section">
+  <mj-column>
+    <mj-text css-class="header-title dark-mode-title" align="center">{{t.security.2fa_title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text" align="center">
+      {{t.security.2fa_desc}}
+    </mj-text>
+    
+    <mj-text align="center" font-size="42px" font-weight="700" color="#0EA5E9" padding="30px 0" letter-spacing="8px">
+      {{authCode}}
+    </mj-text>
+    
+    <mj-text font-size="12px" color="#64748b" align="center">
+      {{t.security.2fa_expire}}
+    </mj-text>
+  </mj-column>
+</mj-section>

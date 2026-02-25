@@ -1,0 +1,69 @@
+{
+    "common": {
+        "hello": "Merhaba",
+        "view_ticket": "Bileti Görüntüle",
+        "go_to_ticket": "Bilete Git",
+        "customer": "Müşteri",
+        "agent": "Temsilci",
+        "subject": "Konu",
+        "priority": "Öncelik",
+        "ticket_id": "Numara",
+        "status": "Durum",
+        "date": "Tarih",
+        "device": "Cihaz",
+        "location": "Konum",
+        "automated_reply_title": "🤖 AffeXAI Önerisi",
+        "automated_reply_subtitle": "Bir destek bileti için yapay zeka bir cevap taslağı oluşturdu.",
+        "inspect_reply": "Cevabı İncele & Gönder",
+        "unsubscribe_info": "Bu e-postayı almak istemiyorsanız {unsubscribe_url} tıklayın.",
+        "rate_experience": "Deneyiminizi Değerlendirin"
+    },
+    "ticket_created": {
+        "title": "Talebiniz Alındı",
+        "description": "Destek talebiniz başarıyla oluşturuldu. Ekibimiz en kısa sürede inceleyip size geri dönecektir."
+    },
+    "ticket_assigned": {
+        "title": "Bilet Sorumluluğu",
+        "description": "Yeni bir destek bileti çalışma listenize eklendi."
+    },
+    "ticket_updated": {
+        "title": "Yeni Mesaj",
+        "description": "numaralı biletinizde yeni bir güncelleme var:"
+    },
+    "ticket_status": {
+        "title": "Durum Güncellendi",
+        "changed_to": "Biletin yeni durumu:"
+    },
+    "ticket_closed": {
+        "title": "Bilet Kapatıldı",
+        "description": "Destek talebiniz başarıyla çözümlenmiş ve kapatılmıştır."
+    },
+    "ticket_reopened": {
+        "title": "Bilet Tekrar Açıldı",
+        "description": "Kapatılmış olan biletiniz tekrar işleme alınmıştır."
+    },
+    "security": {
+        "new_login_title": "⚠️ Güvenlik Uyarısı: Yeni Giriş",
+        "new_login_desc": "Hesabınıza daha önce kullanılmamış bir cihaz veya konumdan giriş yapıldı.",
+        "not_me": "Bu Ben Değilim",
+        "2fa_title": "Doğrulama Kodunuz",
+        "2fa_desc": "Giriş yapmak için aşağıdaki doğrulama kodunu kullanın.",
+        "2fa_expire": "Bu kod 10 dakika boyunca geçerlidir."
+    },
+    "account": {
+        "pw_reset_title": "Şifre Sıfırlama",
+        "pw_reset_desc": "Hesabınız için şifre sıfırlama talebinde bulundunuz.",
+        "pw_reset_notice": "Eğer bu talebi siz yapmadıysanız lütfen dikkate almayın.",
+        "verify_email_title": "E-posta Doğrulama",
+        "verify_email_desc": "Kayıt işlemini tamamlamak için lütfen e-postanızı doğrulayın.",
+        "verify_button": "Doğrula",
+        "invite_title": "Aluplan'a Davet Edildiniz",
+        "invite_desc": "sizi destek ekibine katılmaya davet etti."
+    },
+    "sla": {
+        "warning_title": "⚠️ SLA Yaklaşıyor",
+        "warning_desc": "Bir biletin yanıtlanma süresi dolmak üzere.",
+        "breached_title": "🚨 SLA İhlali",
+        "breached_desc": "Bir biletin hedeflenen çözüm süresi aşılmıştır. Acil müdahale gereklidir."
+    }
+}

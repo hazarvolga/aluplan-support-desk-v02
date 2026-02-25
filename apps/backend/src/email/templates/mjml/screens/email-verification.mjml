@@ -1,0 +1,12 @@
+<mj-section background-color="#ffffff" border-radius="12px" css-class="dark-mode-section">
+  <mj-column>
+    <mj-text css-class="header-title dark-mode-title">{{t.account.verify_email_title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text">
+       {{t.account.verify_email_desc}}
+    </mj-text>
+    
+    <mj-button href="{{verificationUrl}}" align="center" padding-top="30px">
+      {{t.account.verify_button}}
+    </mj-button>
+  </mj-column>
+</mj-section>

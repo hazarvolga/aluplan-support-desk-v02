@@ -1,0 +1,24 @@
+<mj-section background-color="#ffffff" border-radius="12px 12px 0 0" border-left="4px solid #ef4444" border-bottom="0" css-class="dark-mode-section">
+  <mj-column>
+    <mj-text css-class="header-title" color="#b91c1c !important">{{t.sla.breached_title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text">{{t.sla.breached_desc}}</mj-text>
+  </mj-column>
+</mj-section>
+
+<mj-section background-color="#f8fafc" border-left="4px solid #ef4444" css-class="dark-mode-card" padding="15px">
+  <mj-column>
+    <mj-text padding="0 0 50x 0" css-class="info-label">{{t.common.ticket_id}}</mj-text>
+    <mj-text padding="0 0 10px 0" font-weight="600" css-class="dark-mode-text">#{{ticketId}} - {{ticketSubject}}</mj-text>
+    
+    <mj-text padding="0 0 5x 0" css-class="info-label">{{t.common.agent}}</mj-text>
+    <mj-text padding="0" font-weight="600" css-class="dark-mode-text">{{agentName}}</mj-text>
+  </mj-column>
+</mj-section>
+
+<mj-section background-color="#ffffff" border-radius="0 0 12px 12px" border-left="4px solid #ef4444" border-top="0" css-class="dark-mode-section">
+  <mj-column>
+    <mj-button href="{{ticketUrl}}" background-color="#ef4444">
+      Acil Müdahale Et
+    </mj-button>
+  </mj-column>
+</mj-section>

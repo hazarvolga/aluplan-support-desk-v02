@@ -1,0 +1,29 @@
+<mj-section background-color="#ffffff" border-radius="12px 12px 0 0" css-class="dark-mode-section">
+  <mj-column>
+    <mj-text css-class="header-title dark-mode-title">{{t.ticket_assigned.title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text">
+       {{t.common.hello}} <strong>{{agentName}}</strong>,
+    </mj-text>
+    <mj-text css-class="body-text dark-mode-text">
+      {{t.ticket_assigned.description}}
+    </mj-text>
+  </mj-column>
+</mj-section>
+
+<mj-section background-color="#f8fafc" border-radius="8px" padding="20px" css-class="dark-mode-card">
+  <mj-column>
+    <mj-text padding="0 0 5px 0" css-class="info-label">{{t.common.customer}}</mj-text>
+    <mj-text padding="0 0 15px 0" font-weight="600" css-class="dark-mode-text">{{customerName}}</mj-text>
+    
+    <mj-text padding="0 0 5px 0" css-class="info-label">{{t.common.subject}}</mj-text>
+    <mj-text padding="0" font-weight="600" css-class="dark-mode-text">{{ticketSubject}}</mj-text>
+  </mj-column>
+</mj-section>
+
+<mj-section background-color="#ffffff" border-radius="0 0 12px 12px" css-class="dark-mode-section">
+  <mj-column>
+    <mj-button href="{{ticketUrl}}" align="center">
+      {{t.common.go_to_ticket}}
+    </mj-button>
+  </mj-column>
+</mj-section>

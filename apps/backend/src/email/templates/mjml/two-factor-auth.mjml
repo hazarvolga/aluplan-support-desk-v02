@@ -1,7 +1,0 @@
-<mj-section padding="20px">
-  <mj-column>
-    <mj-text font-size="22px" font-weight="bold" color="#0f172a">Doğrulama Kodunuz</mj-text>
-    <mj-text align="center" font-size="32px" font-weight="bold" color="#0EA5E9" padding="20px 0" letter-spacing="5px">{{authCode}}</mj-text>
-    <mj-text font-size="12px" color="#64748b" align="center">Bu kod 10 dakika boyunca geçerlidir.</mj-text>
-  </mj-column>
-</mj-section>

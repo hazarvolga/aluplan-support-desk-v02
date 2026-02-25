@@ -1,0 +1,22 @@
+<mj-section background-color="#ffffff" border-radius="12px 12px 0 0" css-class="dark-mode-section" padding-bottom="0">
+  <mj-column>
+    <mj-text css-class="header-title dark-mode-title" color="#0369a1 !important">{{t.common.automated_reply_title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text">
+       <strong>#{{ticketId}}</strong> {{t.common.automated_reply_subtitle}}
+    </mj-text>
+  </mj-column>
+</mj-section>
+
+<mj-section background-color="#f0f9ff" border="1px dashed #0EA5E9" border-radius="8px" padding="20px" margin="10px 20px" css-class="dark-mode-card">
+  <mj-column>
+    <mj-text font-size="14px" color="#0c4a6e" css-class="dark-mode-text" padding="0">{{{suggestedReplyContent}}}</mj-text>
+  </mj-column>
+</mj-section>
+
+<mj-section background-color="#ffffff" border-radius="0 0 12px 12px" css-class="dark-mode-section">
+  <mj-column>
+    <mj-button href="{{ticketUrl}}" align="center">
+      {{t.common.inspect_reply}}
+    </mj-button>
+  </mj-column>
+</mj-section>

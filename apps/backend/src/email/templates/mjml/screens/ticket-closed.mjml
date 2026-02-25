@@ -1,0 +1,15 @@
+<mj-section background-color="#ffffff" border-radius="12px" css-class="dark-mode-section">
+  <mj-column>
+    <mj-text css-class="header-title dark-mode-title">{{t.ticket_closed.title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text">
+      {{t.common.hello}} <strong>{{customerName}}</strong>,
+    </mj-text>
+    <mj-text css-class="body-text dark-mode-text">
+       <strong>#{{ticketId}}</strong> {{t.ticket_closed.description}}
+    </mj-text>
+    
+    <mj-button href="{{surveyUrl}}" align="center" padding-top="30px">
+      {{t.common.rate_experience}}
+    </mj-button>
+  </mj-column>
+</mj-section>

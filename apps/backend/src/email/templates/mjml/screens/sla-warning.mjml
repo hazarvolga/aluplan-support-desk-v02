@@ -1,0 +1,23 @@
+<mj-section background-color="#ffffff" border-radius="12px 12px 0 0" border-left="4px solid #eab308" border-bottom="0" css-class="dark-mode-section">
+  <mj-column>
+    <mj-text css-class="header-title" color="#854d0e !important">{{t.sla.warning_title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text">{{t.sla.warning_desc}}</mj-text>
+  </mj-column>
+</mj-section>
+
+<mj-section background-color="#f8fafc" border-left="4px solid #eab308" css-class="dark-mode-card" padding="15px">
+  <mj-column>
+    <mj-text padding="0 0 5px 0" css-class="info-label">{{t.common.ticket_id}}</mj-text>
+    <mj-text padding="0 0 10px 0" font-weight="600" css-class="dark-mode-text">#{{ticketId}} - {{ticketSubject}}</mj-text>
+    
+    <mj-text padding="0" color="#854d0e" font-weight="600">Kalan Süre: {{minutesLeft}} dakika</mj-text>
+  </mj-column>
+</mj-section>
+
+<mj-section background-color="#ffffff" border-radius="0 0 12px 12px" border-left="4px solid #eab308" border-top="0" css-class="dark-mode-section">
+  <mj-column>
+    <mj-button href="{{ticketUrl}}" background-color="#eab308">
+      {{t.common.go_to_ticket}}
+    </mj-button>
+  </mj-column>
+</mj-section>

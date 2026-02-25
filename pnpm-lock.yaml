@@ -147,6 +147,9 @@ importers:
       helmet:
         specifier: ^8.0.0
         version: 8.1.0
+      html-to-text:
+        specifier: ^9.0.5
+        version: 9.0.5
       imap-simple:
         specifier: ^5.1.0
         version: 5.1.0
@@ -192,6 +195,9 @@ importers:
       turndown:
         specifier: ^7.2.2
         version: 7.2.2
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@nestjs/cli':
         specifier: ^11.0.0
@@ -211,6 +217,9 @@ importers:
       '@types/express':
         specifier: ^5.0.6
         version: 5.0.6
+      '@types/html-to-text':
+        specifier: ^9.0.4
+        version: 9.0.4
       '@types/jest':
         specifier: ^29.5.14
         version: 29.5.14
@@ -2377,6 +2386,9 @@ packages:
   '@types/handlebars@4.1.0':
     resolution: {integrity: sha512-gq9YweFKNNB1uFK71eRqsd4niVkXrxHugqWFQkeLRJvGjnxsLr16bYtcsG4tOFwmYi0Bax+wCkbf1reUfdl4kA==}
     deprecated: This is a stub types definition. handlebars provides its own type definitions, so you do not need this installed.
+
+  '@types/html-to-text@9.0.4':
+    resolution: {integrity: sha512-pUY3cKH/Nm2yYrEmDlPR1mR7yszjGx4DrwPjQ702C4/D5CwHuZTgZdIdwPkRbcuhs7BAh2L5rg3CL5cbRiGTCQ==}
 
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
@@ -8731,6 +8743,8 @@ snapshots:
   '@types/handlebars@4.1.0':
     dependencies:
       handlebars: 4.7.8
+
+  '@types/html-to-text@9.0.4': {}
 
   '@types/http-errors@2.0.5': {}
 

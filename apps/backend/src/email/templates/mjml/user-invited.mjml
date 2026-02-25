@@ -1,7 +1,0 @@
-<mj-section padding="20px">
-  <mj-column>
-    <mj-text font-size="22px" font-weight="bold" color="#0f172a">Davet Edildiniz</mj-text>
-    <mj-text>Merhaba, <strong>{{inviterName}}</strong> sizi <strong>{{brand.name}}</strong> destek platformuna katılmaya davet etti.</mj-text>
-    <mj-button href="{{inviteUrl}}" padding-top="25px" align="center" font-weight="bold" border-radius="8px" css-class="btn-primary">Daveti Kabul Et</mj-button>
-  </mj-column>
-</mj-section>

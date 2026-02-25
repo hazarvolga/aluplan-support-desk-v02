@@ -1,8 +1,0 @@
-<mj-section padding="20px" background-color="#fff1f2">
-  <mj-column border="1px solid #fda4af" border-radius="8px" padding="15px">
-    <mj-text font-size="20px" font-weight="bold" color="#be123c">⚠️ Yeni Cihaz Girişi</mj-text>
-    <mj-text font-size="14px">Hesabınıza daha önce kullanılmamış bir cihaz veya konumdan giriş yapıldı.</mj-text>
-    <mj-text font-size="14px"><strong>Cihaz:</strong> {{deviceInfo}}<br /><strong>Konum:</strong> {{locationInfo}}</mj-text>
-    <mj-button href="{{securityUrl}}" background-color="#be123c" border-radius="5px" font-size="14px">Bu Ben Değilim</mj-button>
-  </mj-column>
-</mj-section>
