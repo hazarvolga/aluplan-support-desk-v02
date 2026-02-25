@@ -10,7 +10,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // MJML files live in src/ not dist/. Resolve reliably from __dirname.
-const MJML_DIR = path.join(__dirname, '..', '..', 'src', 'email', 'templates', 'mjml');
+const MJML_BASE_DIR = path.join(__dirname, '..', '..', 'src', 'email', 'templates', 'mjml');
+const MJML_SCREENS_DIR = path.join(MJML_BASE_DIR, 'screens');
 
 @Controller('email')
 export class EmailController {
@@ -168,9 +169,9 @@ export class EmailController {
   @UseGuards(JwtAuthGuard)
   @Get('admin/templates')
   async getTemplates() {
-    if (!fs.existsSync(MJML_DIR)) return { templates: [] };
+    if (!fs.existsSync(MJML_SCREENS_DIR)) return { templates: [] };
 
-    const files = fs.readdirSync(MJML_DIR)
+    const files = fs.readdirSync(MJML_SCREENS_DIR)
       .filter(f => f.endsWith('.mjml'))
       .map(f => f.replace('.mjml', ''));
 
@@ -180,7 +181,7 @@ export class EmailController {
   @UseGuards(JwtAuthGuard)
   @Get('admin/templates/:name/source')
   async getTemplateSource(@Param('name') name: string) {
-    const mjmlPath = path.join(MJML_DIR, `${name}.mjml`);
+    const mjmlPath = path.join(MJML_SCREENS_DIR, `${name}.mjml`);
     if (!fs.existsSync(mjmlPath)) throw new NotFoundException('Template not found');
 
     const content = fs.readFileSync(mjmlPath, 'utf8');
@@ -190,10 +191,10 @@ export class EmailController {
   @UseGuards(JwtAuthGuard)
   @Post('admin/templates/:name/save')
   async saveTemplate(@Param('name') name: string, @Body() body: { content: string }) {
-    const mjmlPath = path.join(MJML_DIR, `${name}.mjml`);
+    const mjmlPath = path.join(MJML_SCREENS_DIR, `${name}.mjml`);
 
     // Ensure dir exists
-    if (!fs.existsSync(MJML_DIR)) fs.mkdirSync(MJML_DIR, { recursive: true });
+    if (!fs.existsSync(MJML_SCREENS_DIR)) fs.mkdirSync(MJML_SCREENS_DIR, { recursive: true });
 
     fs.writeFileSync(mjmlPath, body.content, 'utf8');
     TemplateService.resetCache(name);

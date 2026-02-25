@@ -18,7 +18,7 @@ export const BrandSchema = z.object({
 export const BaseEmailSchema = z.object({
     userId: z.string().optional(),
     brand: BrandSchema,
-    t: z.record(z.any()), // Translation map
+    t: z.record(z.string(), z.any()), // Translation map
     unsubscribe_url: z.string().url().optional(),
 });
 
