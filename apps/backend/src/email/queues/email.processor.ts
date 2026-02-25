@@ -46,13 +46,15 @@ export class EmailProcessor extends WorkerHost {
     try {
       // Fetch branding data to inject as defaults
       const [
-        companyName, logoUrl, address,
+        companyName, logoUrl, address, phone, email,
         linkedin, twitter, facebook, instagram, pinterest,
         frontendUrl
       ] = await Promise.all([
         this.settings.getValue('branding.company_name'),
         this.settings.getValue('branding.logo_url'),
         this.settings.getValue('branding.address'),
+        this.settings.getValue('branding.phone'),
+        this.settings.getValue('branding.email'),
         this.settings.getValue('branding.social_linkedin'),
         this.settings.getValue('branding.social_twitter'),
         this.settings.getValue('branding.social_facebook'),
@@ -65,6 +67,8 @@ export class EmailProcessor extends WorkerHost {
         name: companyName || 'Aluplan',
         logo_url: logoUrl || '/logo.png',
         address: address || '',
+        phone: phone || '',
+        email: email || '',
         social_linkedin: linkedin || '',
         social_twitter: twitter || '',
         social_facebook: facebook || '',

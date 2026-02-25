@@ -735,6 +735,22 @@ export default function AdminSettingsPage() {
                                             />
                                         </div>
                                         <div className="space-y-2">
+                                            <Label>Şirket E-posta</Label>
+                                            <Input
+                                                value={getSetting('branding.email')}
+                                                onChange={e => updateValue('branding.email', e.target.value)}
+                                                placeholder="destek@firma.com"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Şirket Telefon</Label>
+                                            <Input
+                                                value={getSetting('branding.phone')}
+                                                onChange={e => updateValue('branding.phone', e.target.value)}
+                                                placeholder="+90 212 ..."
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
                                             <Label>İletişim Adresi (Footer)</Label>
                                             <textarea
                                                 className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -795,6 +811,8 @@ export default function AdminSettingsPage() {
                                     onClick={() => handleSave([
                                         'branding.company_name',
                                         'branding.logo_url',
+                                        'branding.email',
+                                        'branding.phone',
                                         'branding.address',
                                         'branding.social_linkedin',
                                         'branding.social_twitter',

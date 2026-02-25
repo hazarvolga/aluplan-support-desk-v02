@@ -215,13 +215,15 @@ export class EmailController {
 
       // Fetch branding data for preview context
       const [
-        companyName, logoUrl, address,
+        companyName, logoUrl, address, phone, email,
         linkedin, twitter, facebook, instagram, pinterest,
         frontendUrl
       ] = await Promise.all([
         this.prisma.setting.findUnique({ where: { key: 'branding.company_name' } }).then(s => s?.value),
         this.prisma.setting.findUnique({ where: { key: 'branding.logo_url' } }).then(s => s?.value),
         this.prisma.setting.findUnique({ where: { key: 'branding.address' } }).then(s => s?.value),
+        this.prisma.setting.findUnique({ where: { key: 'branding.phone' } }).then(s => s?.value),
+        this.prisma.setting.findUnique({ where: { key: 'branding.email' } }).then(s => s?.value),
         this.prisma.setting.findUnique({ where: { key: 'branding.social_linkedin' } }).then(s => s?.value),
         this.prisma.setting.findUnique({ where: { key: 'branding.social_twitter' } }).then(s => s?.value),
         this.prisma.setting.findUnique({ where: { key: 'branding.social_facebook' } }).then(s => s?.value),
@@ -234,6 +236,8 @@ export class EmailController {
         name: companyName || 'Aluplan',
         logo_url: logoUrl || '/logo.png',
         address: address || '',
+        phone: phone || '',
+        email: email || '',
         social_linkedin: linkedin || '',
         social_twitter: twitter || '',
         social_facebook: facebook || '',
