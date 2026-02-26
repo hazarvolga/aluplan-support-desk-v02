@@ -1,11 +1,20 @@
-<mj-section css-class="dark-mode-section" padding="40px 24px 24px 24px">
+<!-- Header & Verification Intro -->
+<mj-section background-color="#FFFFFF" padding="25px 20px">
   <mj-column>
-    <mj-text css-class="header-title dark-mode-title" padding="0 0 16px 0">{{t.email_verification.title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text" padding="0 0 24px 0">
-      {{t.email_verification.description}}
+    <mj-text font-size="22px" font-weight="700" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}" align="center">
+      {{t.account.verify_email_title}}
     </mj-text>
-    <mj-button href="{{verificationUrl}}" align="left">
-       {{t.common.verify_email}}
+    <mj-text font-size="16px" color="#555555" align="center">
+      {{t.account.verify_email_desc}}
+    </mj-text>
+  </mj-column>
+</mj-section>
+
+<!-- Action Buttons -->
+<mj-section background-color="#FFFFFF" padding="15px 20px">
+  <mj-column width="100%">
+    <mj-button href="{{verificationUrl}}">
+      {{t.account.verify_button}}
     </mj-button>
   </mj-column>
 </mj-section>

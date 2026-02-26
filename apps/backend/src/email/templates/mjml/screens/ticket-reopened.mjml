@@ -1,10 +1,19 @@
-<mj-section css-class="dark-mode-section" padding="40px 24px 24px 24px">
+<!-- Header & Intro -->
+<mj-section background-color="#FFFFFF" padding="25px 20px">
   <mj-column>
-    <mj-text css-class="header-title dark-mode-title" padding="0 0 16px 0">{{t.ticket_reopened.title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text" padding="0 0 24px 0">
+    <mj-text font-size="22px" font-weight="700" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}" align="center">
+      {{t.ticket_reopened.title}}
+    </mj-text>
+    <mj-text font-size="16px" color="#555555" align="center">
       <strong>#{{ticketId}}</strong> {{t.ticket_reopened.description}}
     </mj-text>
-    <mj-button href="{{ticketUrl}}" align="left">
+  </mj-column>
+</mj-section>
+
+<!-- Action Buttons -->
+<mj-section background-color="#FFFFFF" padding="15px 20px">
+  <mj-column width="100%">
+    <mj-button href="{{ticketUrl}}">
       {{t.common.view_ticket}}
     </mj-button>
   </mj-column>

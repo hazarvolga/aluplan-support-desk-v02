@@ -1,28 +1,32 @@
-<mj-section css-class="dark-mode-section" padding="32px 24px 16px 24px" border-top="4px solid #eab308">
+<!-- Header & Warning Intro -->
+<mj-section background-color="#FFFFFF" padding="25px 20px" border-top="4px solid #FBC02D">
   <mj-column>
-    <mj-text css-class="header-title" color="#854d0e !important" padding="0 0 12px 0">{{t.sla.warning_title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text" padding="0">{{t.sla.warning_desc}}</mj-text>
-  </mj-column>
-</mj-section>
-
-<mj-section css-class="blueprint-card dark-mode-card" padding="0" border-left="4px solid #eab308">
-  <mj-column>
-    <mj-text css-class="technical-label" padding="16px 20px 4px 20px">
-      {{t.common.ticket_id}}
+    <mj-text font-size="22px" font-weight="700" color="#FBC02D" align="center">
+      {{t.sla.warning_title}}
     </mj-text>
-    <mj-text font-weight="600" css-class="dark-mode-text" padding="0 20px 12px 20px">
-      #{{ticketId}} - {{ticketSubject}}
-    </mj-text>
-    <mj-divider border-width="1px" border-color="#e2e8f0" padding="0" />
-    <mj-text color="#854d0e" font-weight="700" font-size="14px" padding="16px 20px">
-       ⏱ Kalan Süre: {{minutesLeft}} dakika
+    <mj-text font-size="16px" color="#555555" align="center">
+      {{t.sla.warning_desc}}
     </mj-text>
   </mj-column>
 </mj-section>
 
-<mj-section css-class="dark-mode-section" padding="24px 0 40px 0">
+<!-- Ticket Highlights -->
+<mj-section background-color="#FFFFFF" padding="20px 20px">
   <mj-column>
-    <mj-button href="{{ticketUrl}}" background-color="#eab308" align="center">
+    <mj-text font-size="16px" font-weight="600" color="#FBC02D">
+      {{t.common.ticket_id}} #{{ticketId}} – {{ticketSubject}}
+    </mj-text>
+    <mj-text css-class="ticket-card" border-left="4px solid #FBC02D">
+      • {{t.common.time_remaining}}: <strong>{{minutesLeft}} {{t.common.minutes}}</strong><br/>
+      • {{t.common.status}}: <strong>{{ticketStatus}}</strong>
+    </mj-text>
+  </mj-column>
+</mj-section>
+
+<!-- Action Buttons -->
+<mj-section background-color="#FFFFFF" padding="15px 20px">
+  <mj-column width="100%">
+    <mj-button href="{{ticketUrl}}" background-color="#FBC02D">
       {{t.common.go_to_ticket}}
     </mj-button>
   </mj-column>

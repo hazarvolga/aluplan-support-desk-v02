@@ -1,14 +1,23 @@
-<mj-section css-class="dark-mode-section" padding="40px 24px 24px 24px">
+<!-- Header & Invitation Intro -->
+<mj-section background-color="#FFFFFF" padding="25px 20px">
   <mj-column>
-    <mj-text css-class="header-title dark-mode-title" padding="0 0 16px 0">{{t.user_invited.title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text" padding="0 0 24px 0">
-       {{t.common.hello}},<br /><br />
-      {{t.user_invited.description}}
+    <mj-text font-size="22px" font-weight="700" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}" align="center">
+      {{t.account.invite_title}}
     </mj-text>
-    <mj-button href="{{inviteUrl}}" align="left">
+    <mj-text font-size="16px" color="#555555" align="center">
+      {{#if t.common.hello}}{{t.common.hello}},<br/>{{/if}}
+      {{inviterName}} {{t.account.invite_desc}}
+    </mj-text>
+  </mj-column>
+</mj-section>
+
+<!-- Action Buttons -->
+<mj-section background-color="#FFFFFF" padding="15px 20px">
+  <mj-column width="100%">
+    <mj-button href="{{inviteUrl}}">
       {{t.common.accept_invitation}}
     </mj-button>
-    <mj-text font-size="13px" color="#94a3b8" padding-top="24px">
+    <mj-text align="center" font-size="12px" color="#94a3b8" padding-top="16px">
       {{t.common.link_expires_in}} 48 saat.
     </mj-text>
   </mj-column>

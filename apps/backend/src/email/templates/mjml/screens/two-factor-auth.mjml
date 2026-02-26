@@ -1,20 +1,23 @@
-<mj-section css-class="dark-mode-section" padding="40px 24px 24px 24px">
+<!-- Header & 2FA Intro -->
+<mj-section background-color="#FFFFFF" padding="25px 20px">
   <mj-column>
-    <mj-text css-class="header-title dark-mode-title" padding="0 0 16px 0">{{t.security.two_factor_title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text" padding="0 0 32px 0">
-      {{t.security.two_factor_desc}}
+    <mj-text font-size="22px" font-weight="700" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}" align="center">
+      {{t.security.2fa_title}}
     </mj-text>
-    
-    <mj-section css-class="blueprint-card dark-mode-card" padding="24px">
-      <mj-column>
-        <mj-text align="center" font-size="32px" font-weight="700" letter-spacing="0.2em" color="{{brand.primary_color}}" padding="0">
-          {{token}}
-        </mj-text>
-      </mj-column>
-    </mj-section>
+    <mj-text font-size="16px" color="#555555" align="center">
+      {{t.security.2fa_desc}}
+    </mj-text>
+  </mj-column>
+</mj-section>
 
-    <mj-text font-size="13px" color="#94a3b8" padding-top="32px" align="center">
-      Bu kod 10 dakika geçerlidir.
+<!-- Token Card -->
+<mj-section background-color="#FFFFFF" padding="20px 20px">
+  <mj-column>
+    <mj-text css-class="ticket-card" align="center" font-size="32px" font-weight="700" letter-spacing="0.2em" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}">
+      {{token}}
+    </mj-text>
+    <mj-text font-size="12px" color="#94a3b8" padding-top="20px" align="center">
+      {{t.security.2fa_expire}}
     </mj-text>
   </mj-column>
 </mj-section>

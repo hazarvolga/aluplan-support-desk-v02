@@ -1,27 +1,32 @@
-<mj-section css-class="dark-mode-section" padding="32px 24px 16px 24px">
+<!-- Header & Intro -->
+<mj-section background-color="#FFFFFF" padding="25px 20px">
   <mj-column>
-    <mj-text css-class="header-title dark-mode-title" padding="0 0 12px 0">{{t.ticket_updated.title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text" padding="0">
-       {{t.common.hello}} <strong>{{userName}}</strong>,<br /><br />
-       <strong>#{{ticketId}}</strong> {{t.ticket_updated.description}}
+    <mj-text font-size="22px" font-weight="700" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}" align="center">
+      {{t.ticket_updated.title}}
+    </mj-text>
+    <mj-text font-size="16px" color="#555555" align="center">
+      {{t.common.hello}} <strong>{{userName}}</strong>,<br/>
+      <strong>#{{ticketId}}</strong> {{t.ticket_updated.description}}
     </mj-text>
   </mj-column>
 </mj-section>
 
-<mj-section css-class="blueprint-card dark-mode-card" padding="0">
+<!-- Latest Message Detail -->
+<mj-section background-color="#FFFFFF" padding="20px 20px">
   <mj-column>
-    <mj-text css-class="card-header dark-mode-card-header technical-label" padding="12px 20px">
-      Son Mesaj Özeti
+    <mj-text font-size="16px" font-weight="600" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}">
+      {{t.ticket_updated.latest_message_summary}}
     </mj-text>
-    <mj-text font-style="italic" color="#475569" css-class="dark-mode-text" padding="20px" line-height="1.6">
+    <mj-text css-class="ticket-card" font-style="italic">
       "{{latestMessage}}"
     </mj-text>
   </mj-column>
 </mj-section>
 
-<mj-section css-class="dark-mode-section" padding="24px 0 40px 0">
-  <mj-column>
-    <mj-button href="{{ticketUrl}}" align="center">
+<!-- Action Buttons -->
+<mj-section background-color="#FFFFFF" padding="15px 20px">
+  <mj-column width="100%">
+    <mj-button href="{{ticketUrl}}">
       {{t.common.view_ticket}}
     </mj-button>
   </mj-column>

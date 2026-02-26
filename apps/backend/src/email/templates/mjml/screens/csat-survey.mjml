@@ -1,16 +1,20 @@
-<mj-section css-class="dark-mode-section" padding="40px 24px 24px 24px">
+<!-- Header & Survey Intro -->
+<mj-section background-color="#FFFFFF" padding="25px 20px">
   <mj-column>
-    <mj-text css-class="header-title dark-mode-title" align="center" padding="0 0 16px 0">{{t.csat.title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text" align="center" padding="0">
-      <strong>#{{ticketId}}</strong> {{t.csat.description}}
+    <mj-text font-size="22px" font-weight="700" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}" align="center">
+      {{t.common.rate_experience}}
+    </mj-text>
+    <mj-text font-size="16px" color="#555555" align="center">
+      <strong>#{{ticketId}}</strong> {{t.ticket_closed.description}}
     </mj-text>
   </mj-column>
 </mj-section>
 
-<mj-section css-class="dark-mode-section" padding="0 0 40px 0">
-  <mj-column>
-    <mj-button href="{{surveyUrl}}" align="center">
-       Deneyiminizi Puanlayın
+<!-- Action Buttons -->
+<mj-section background-color="#FFFFFF" padding="15px 20px">
+  <mj-column width="100%">
+    <mj-button href="{{surveyUrl}}">
+      {{t.csat.rate_experience}}
     </mj-button>
     <mj-text align="center" font-size="13px" color="#94a3b8" padding-top="16px">
       {{t.csat.footer_note}}

@@ -1,37 +1,34 @@
-<mj-section css-class="dark-mode-section" padding="32px 24px 16px 24px">
+<!-- Header & Intro -->
+<mj-section background-color="#FFFFFF" padding="25px 20px">
   <mj-column>
-    <mj-text css-class="header-title dark-mode-title" padding="0 0 12px 0">{{t.ticket_assigned.title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text" padding="0">
-       {{t.common.hello}} <strong>{{agentName}}</strong>,<br /><br />
+    <mj-text font-size="22px" font-weight="700" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}" align="center">
+      {{t.ticket_assigned.title}}
+    </mj-text>
+    <mj-text font-size="16px" color="#555555" align="center">
+      {{t.common.hello}} <strong>{{agentName}}</strong>,<br/>
       {{t.ticket_assigned.description}}
     </mj-text>
   </mj-column>
 </mj-section>
 
-<mj-section css-class="blueprint-card dark-mode-card" padding="0">
+<!-- Ticket Details -->
+<mj-section background-color="#FFFFFF" padding="20px 20px">
   <mj-column>
-    <mj-text css-class="card-header dark-mode-card-header technical-label" padding="12px 20px">
-      Bilet Detayları
+    <mj-text font-size="16px" font-weight="600" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}">
+      {{t.ticket_assigned.details_title}}
     </mj-text>
-    <mj-text font-size="13px" color="#94a3b8" padding="16px 20px 4px 20px" css-class="technical-label">
-      {{t.common.customer}}
-    </mj-text>
-    <mj-text font-weight="600" css-class="dark-mode-text" padding="0 20px 12px 20px">
-      {{customerName}}
-    </mj-text>
-    <mj-divider border-width="1px" border-color="#e2e8f0" padding="0" />
-    <mj-text font-size="13px" color="#94a3b8" padding="12px 20px 4px 20px" css-class="technical-label">
-      {{t.common.subject}}
-    </mj-text>
-    <mj-text font-weight="600" css-class="dark-mode-text" padding="0 20px 20px 20px">
-      {{ticketSubject}}
+    <mj-text css-class="ticket-card">
+      • {{t.common.customer}}: <strong>{{customerName}}</strong><br/>
+      • {{t.common.subject}}: <strong>{{ticketSubject}}</strong><br/>
+      • {{t.common.priority}}: <strong>{{ticketPriority}}</strong>
     </mj-text>
   </mj-column>
 </mj-section>
 
-<mj-section css-class="dark-mode-section" padding="24px 0 40px 0">
-  <mj-column>
-    <mj-button href="{{ticketUrl}}" align="center">
+<!-- Action Buttons -->
+<mj-section background-color="#FFFFFF" padding="15px 20px">
+  <mj-column width="100%">
+    <mj-button href="{{ticketUrl}}">
       {{t.common.go_to_ticket}}
     </mj-button>
   </mj-column>
