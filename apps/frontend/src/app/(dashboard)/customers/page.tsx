@@ -357,7 +357,8 @@ export default function CustomersPage() {
                                     <SortableHeader field="industry">Sektör</SortableHeader>
                                     <SortableHeader field="companyName">Şirket Adı</SortableHeader>
                                     <SortableHeader field="customerNo">Müşteri No</SortableHeader>
-                                    <SortableHeader field="contractStatus">Abonelik Modeli</SortableHeader>
+                                    <SortableHeader field="contractStatus">Müşteri Durumu</SortableHeader>
+                                    <SortableHeader field="subscriptionModel">Abonelik Modeli</SortableHeader>
                                     <SortableHeader field="status">Durum</SortableHeader>
                                     <SortableHeader field="phoneNumber">Telefon</SortableHeader>
                                 </TableRow>
@@ -404,6 +405,13 @@ export default function CustomersPage() {
                                             <TableCell>
                                                 {c.customerProfile?.contractStatus ? (
                                                     <Badge variant="outline">{c.customerProfile.contractStatus}</Badge>
+                                                ) : (
+                                                    '-'
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                {c.customerProfile?.subscriptionModel ? (
+                                                    <Badge variant="outline">{c.customerProfile.subscriptionModel}</Badge>
                                                 ) : (
                                                     '-'
                                                 )}

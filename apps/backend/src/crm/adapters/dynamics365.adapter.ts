@@ -24,7 +24,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
     async syncAccounts(config: any): Promise<SyncResult> {
         try {
             const token = await this.getAccessToken(config);
-            const resourceUrl = `${config.instanceUrl}/api/data/v9.2/accounts?$select=accountid,name,industrycode,websiteurl,address1_composite,new_ClientID`;
+            const resourceUrl = `${config.instanceUrl}/api/data/v9.2/accounts?$select=accountid,name,industrycode,websiteurl,address1_composite,accountnumber`;
             this.logger.debug(`Fetching accounts from: ${resourceUrl}`);
 
             const response = await axios.get(resourceUrl, {
@@ -84,13 +84,14 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 errorCount,
             };
         } catch (error) {
-            this.logger.error('Dynamics 365 account sync failed', error.stack);
+            const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+            this.logger.error(`Dynamics 365 account sync failed: ${errorDetails}`, error.stack);
             return {
                 status: SyncStatus.ERROR,
                 totalRecords: 0,
                 successCount: 0,
                 errorCount: 0,
-                errorMessage: error.message,
+                errorMessage: `Account Sync Error: ${errorDetails}`,
             };
         }
     }
@@ -98,7 +99,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
     async syncContacts(config: any): Promise<SyncResult> {
         try {
             const token = await this.getAccessToken(config);
-            const resourceUrl = `${config.instanceUrl}/api/data/v9.2/contacts?$select=contactid,firstname,lastname,emailaddress1,jobtitle,telephone1,new_AbonelikModeli&$expand=parentcustomerid_account($select=accountid,name,new_ClientID,industrycode)`;
+            const resourceUrl = `${config.instanceUrl}/api/data/v9.2/contacts?$select=contactid,firstname,lastname,emailaddress1,jobtitle,telephone1,new_musteridurumu,new_abonelikmodeli&$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
             this.logger.debug(`Fetching contacts from: ${resourceUrl}`);
 
             const response = await axios.get(resourceUrl, {
@@ -154,8 +155,9 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             linkedAccountId = accountInfo?.id;
                         }
 
-                        const abonelikFormatted = contact['new_AbonelikModeli@OData.Community.Display.V1.FormattedValue'];
-                        const clientNo = contact.parentcustomerid_account?.new_ClientID || `DYN-${contact.contactid.substring(0, 8)}`;
+                        const statusFormatted = contact['new_musteridurumu@OData.Community.Display.V1.FormattedValue'];
+                        const subscriptionFormatted = contact['new_abonelikmodeli@OData.Community.Display.V1.FormattedValue'];
+                        const clientNo = contact.parentcustomerid_account?.accountnumber || `DYN-${contact.contactid.substring(0, 8)}`;
                         const industryFromAccount = contact.parentcustomerid_account ?
                             contact.parentcustomerid_account['industrycode@OData.Community.Display.V1.FormattedValue'] : null;
 
@@ -171,7 +173,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                 accountId: linkedAccountId,
                                 externalContactId: contact.contactid,
                                 customerNo: clientNo,
-                                contractStatus: abonelikFormatted,
+                                contractStatus: statusFormatted,
+                                subscriptionModel: subscriptionFormatted,
                                 industry: industryFromAccount || accountInfo?.industry,
                                 crmVerified: true,
                             },
@@ -185,7 +188,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                 companyName: contact.parentcustomerid_account?.name || 'Unknown',
                                 accountId: linkedAccountId,
                                 externalContactId: contact.contactid,
-                                contractStatus: abonelikFormatted,
+                                contractStatus: statusFormatted,
+                                subscriptionModel: subscriptionFormatted,
                                 industry: industryFromAccount || accountInfo?.industry,
                                 crmVerified: true,
                             },

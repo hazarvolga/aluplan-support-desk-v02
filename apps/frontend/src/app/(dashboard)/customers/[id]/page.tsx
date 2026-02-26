@@ -176,7 +176,7 @@ export default function CustomerProfilePage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Sözleşme / Profil Durumu</Label>
+                                <Label>Müşteri Durumu</Label>
                                 <Input value={formData.contractStatus} onChange={e => handleChange('contractStatus', e.target.value)} placeholder="Örn: Aktif, Askıda..." />
                             </div>
 
