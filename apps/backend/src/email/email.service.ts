@@ -128,7 +128,7 @@ export class EmailService implements OnModuleInit {
     async sendSlaBreachWarning(data: any) {
         const type = data.breachType === 'response' ? 'Yanıt SLA İhlali' : 'Çözüm SLA İhlali';
         await this.enqueueEmail({
-            template: 'sla-breach-warning',
+            template: 'sla-breached',
             to: data.recipientEmail,
             subject: `🚨 [${data.ticketNumber}] ${type}`,
             priority: 1,

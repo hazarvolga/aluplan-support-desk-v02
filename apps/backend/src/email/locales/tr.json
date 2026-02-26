@@ -3,12 +3,23 @@
         "hello": "Merhaba",
         "view_ticket": "Bileti Görüntüle",
         "go_to_ticket": "Bilete Git",
+        "reset_password": "Şifreyi Sıfırla",
+        "verify_email": "E-posta Doğrula",
+        "accept_invitation": "Daveti Kabul Et",
         "customer": "Müşteri",
         "agent": "Temsilci",
         "subject": "Konu",
         "priority": "Öncelik",
         "ticket_id": "Numara",
         "status": "Durum",
+        "old_status": "Eski Durum",
+        "new_status": "Yeni Durum",
+        "sla_status": "SLA Durumu",
+        "category": "Kategori",
+        "type": "Tür",
+        "created_at": "Oluşturulma",
+        "time_remaining": "Kalan Süre",
+        "minutes": "dakika",
         "date": "Tarih",
         "device": "Cihaz",
         "location": "Konum",
@@ -16,11 +27,13 @@
         "automated_reply_subtitle": "Bir destek bileti için yapay zeka bir cevap taslağı oluşturdu.",
         "inspect_reply": "Cevabı İncele & Gönder",
         "unsubscribe_info": "Bu e-postayı almak istemiyorsanız {unsubscribe_url} tıklayın.",
-        "rate_experience": "Deneyiminizi Değerlendirin"
+        "rate_experience": "Deneyiminizi Değerlendirin",
+        "link_expires_in": "Bağlantı geçerlilik süresi:"
     },
     "ticket_created": {
         "title": "Talebiniz Alındı",
-        "description": "Destek talebiniz başarıyla oluşturuldu. Ekibimiz en kısa sürede inceleyip size geri dönecektir."
+        "description": "Destek talebiniz başarıyla oluşturuldu. Ekibimiz en kısa sürede inceleyip size geri dönecektir.",
+        "description_short": "Destek talebiniz alındı ve ekibimize iletildi."
     },
     "ticket_assigned": {
         "title": "Bilet Sorumluluğu",
@@ -28,7 +41,8 @@
     },
     "ticket_updated": {
         "title": "Yeni Mesaj",
-        "description": "numaralı biletinizde yeni bir güncelleme var:"
+        "description": "numaralı biletinizde yeni bir güncelleme var:",
+        "latest_message_summary": "Son Mesaj"
     },
     "ticket_status": {
         "title": "Durum Güncellendi",
@@ -64,6 +78,10 @@
         "warning_title": "⚠️ SLA Yaklaşıyor",
         "warning_desc": "Bir biletin yanıtlanma süresi dolmak üzere.",
         "breached_title": "🚨 SLA İhlali",
-        "breached_desc": "Bir biletin hedeflenen çözüm süresi aşılmıştır. Acil müdahale gereklidir."
+        "breached_desc": "Bir biletin hedeflenen çözüm süresi aşılmıştır. Acil müdahale gereklidir.",
+        "breached": "İHLAL EDİLDİ",
+        "take_action": "Bileti İncele",
+        "breach_type": "İhlal Türü",
+        "target_date": "Hedef Tarih"
     }
 }

@@ -106,7 +106,11 @@ export class TemplateService {
       ...data,
       brand: brandData,
       t: t,
-      unsubscribe_url: data.unsubscribe_url || `${brandData.help_center_url}/unsubscribe?token=${data.userId || 'global'}`
+      unsubscribe_url: data.unsubscribe_url || `${brandData.help_center_url}/unsubscribe?token=${data.userId || 'global'}`,
+      // Normalize common variables
+      ticketId: data.ticketNumber || data.ticketId || '-',
+      ticketPriorityLow: (data.ticketPriority || data.priority || 'medium').toLowerCase(),
+      ticketSubject: data.ticketSubject || data.subject || '',
     };
 
     // 5. [PILLAR 2] - Contract Validation (Soft validation for now to avoid crashing, but logging issues)
