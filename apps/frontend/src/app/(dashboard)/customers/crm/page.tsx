@@ -24,6 +24,7 @@ interface CrmConnection {
     tenantId: string;
     clientId: string;
     clientSecret: string;
+    webhookSecret: string;
     instanceUrl: string;
     isActive: boolean;
     syncStatus: 'IDLE' | 'SYNCING' | 'SUCCESS' | 'ERROR';
@@ -48,6 +49,7 @@ export default function CrmManagementPage() {
         tenantId: '',
         clientId: '',
         clientSecret: '',
+        webhookSecret: '',
         instanceUrl: '',
     });
 
@@ -69,6 +71,7 @@ export default function CrmManagementPage() {
                     tenantId: conn.tenantId || '',
                     clientId: conn.clientId || '',
                     clientSecret: conn.clientSecret || '',
+                    webhookSecret: conn.webhookSecret || '',
                     instanceUrl: conn.instanceUrl || '',
                 });
                 loadLogs(conn.id);
@@ -181,6 +184,22 @@ export default function CrmManagementPage() {
                                         placeholder="••••••••••••"
                                         required
                                     />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="webhookSecret">Webhook API Anahtarı (x-api-key)</Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="webhookSecret"
+                                            type="text"
+                                            value={config.webhookSecret}
+                                            onChange={(e) => setConfig({ ...config, webhookSecret: e.target.value })}
+                                            placeholder="Gelişmiş güvenlik için rastgele bir anahtar girin"
+                                            required
+                                        />
+                                        <p className="text-[10px] text-muted-foreground mt-1">
+                                            Bu anahtarı Power Automate akışınızdaki `x-api-key` başlığına eklemelisiniz.
+                                        </p>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="instanceUrl">Dynamics Instance URL</Label>

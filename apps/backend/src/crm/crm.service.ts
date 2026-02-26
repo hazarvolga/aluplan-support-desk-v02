@@ -28,13 +28,20 @@ export class CrmService {
     }
 
     async getAllConnections() {
-        return this.prisma.crmConnection.findMany({
+        const connections = await this.prisma.crmConnection.findMany({
             include: {
                 _count: {
                     select: { syncLogs: true }
                 }
             }
         });
+
+        // Decrypt secrets for the UI (Admin only)
+        return connections.map(conn => ({
+            ...conn,
+            clientSecret: conn.clientSecret ? this.crypto.decrypt(conn.clientSecret) : null,
+            webhookSecret: conn.webhookSecret ? this.crypto.decrypt(conn.webhookSecret) : null
+        }));
     }
 
     async upsertConnection(dto: any) {
@@ -48,10 +55,11 @@ export class CrmService {
             throw new BadRequestException('CRM bağlantı doğrulaması başarısız oldu. Lütfen bilgileri kontrol edin.');
         }
 
-        // Encrypt secret before saving
+        // Encrypt secrets before saving
         const encryptedConfig = {
             ...config,
-            clientSecret: config.clientSecret ? this.crypto.encrypt(config.clientSecret) : null
+            clientSecret: config.clientSecret ? this.crypto.encrypt(config.clientSecret) : null,
+            webhookSecret: config.webhookSecret ? this.crypto.encrypt(config.webhookSecret) : null
         };
 
         return this.prisma.crmConnection.upsert({
@@ -174,6 +182,118 @@ export class CrmService {
                 }
             },
             orderBy: { name: 'asc' }
+        });
+    }
+
+    async processDynamics365Webhook(payload: any) {
+        this.logger.debug(`Processing Dynamics 365 Webhook payload for entity: ${payload.entity}`);
+        const adapter = this.getAdapter(CrmProvider.DYNAMICS_365) as Dynamics365Adapter;
+
+        if (payload.entity === 'account') {
+            return this.syncSingleAccount(payload.data);
+        } else if (payload.entity === 'contact') {
+            return this.syncSingleContact(payload.data);
+        } else {
+            throw new BadRequestException(`Unsupported entity type: ${payload.entity}`);
+        }
+    }
+
+    private async syncSingleAccount(data: any) {
+        const industryFormatted = data['industrycode@OData.Community.Display.V1.FormattedValue'] || data.industrycode_display;
+
+        return this.prisma.crmAccount.upsert({
+            where: { externalAccountId: data.accountid },
+            update: {
+                name: data.name,
+                website: data.websiteurl,
+                address: data.address1_composite,
+                industry: industryFormatted,
+                crmVerified: true,
+            },
+            create: {
+                name: data.name,
+                externalAccountId: data.accountid,
+                website: data.websiteurl,
+                address: data.address1_composite,
+                industry: industryFormatted,
+                crmVerified: true,
+            },
+        });
+    }
+
+    private async syncSingleContact(data: any) {
+        // This is a simplified version of the adapter logic for a single contact
+        if (!data.emailaddress1) {
+            this.logger.warn(`Webhook received for contact without email: ${data.contactid}`);
+            return;
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            // 1. Find or create User
+            let user = await tx.user.findUnique({
+                where: { email: data.emailaddress1 },
+            });
+
+            if (!user) {
+                user = await tx.user.create({
+                    data: {
+                        email: data.emailaddress1,
+                        fullName: `${data.firstname || ''} ${data.lastname || ''}`.trim() || 'CRM Contact',
+                        role: 'VIEWER',
+                        status: 'ACTIVE',
+                        passwordHash: 'CRM_SYNCED',
+                    },
+                });
+            }
+
+            // 2. Find Linked Account if any
+            let linkedAccountId: string | undefined = undefined;
+            let accountInfo: any = null;
+
+            const accountId = data.parentcustomerid_account?.accountid || data._parentcustomerid_value;
+
+            if (accountId) {
+                accountInfo = await tx.crmAccount.findUnique({
+                    where: { externalAccountId: accountId },
+                });
+                linkedAccountId = accountInfo?.id;
+            }
+
+            const statusFormatted = data['new_musteridurumu@OData.Community.Display.V1.FormattedValue'] || data.new_musteridurumu_display;
+            const clientNo = data.accountnumber || accountInfo?.customerNo || `DYN-${data.contactid.substring(0, 8)}`;
+            const industryFromAccount = accountInfo?.industry;
+
+            // 3. Upsert CustomerProfile
+            return tx.customerProfile.upsert({
+                where: { userId: user.id },
+                update: {
+                    firstName: data.firstname,
+                    lastName: data.lastname,
+                    jobTitle: data.jobtitle,
+                    phoneNumber: data.telephone1,
+                    companyName: data.parentcustomerid_account?.name || accountInfo?.name || 'Unknown',
+                    accountId: linkedAccountId,
+                    externalContactId: data.contactid,
+                    customerNo: clientNo,
+                    contractStatus: statusFormatted,
+                    industry: industryFromAccount,
+                    crmVerified: true,
+                },
+                create: {
+                    userId: user.id,
+                    firstName: data.firstname,
+                    lastName: data.lastname,
+                    customerNo: clientNo,
+                    jobTitle: data.jobtitle,
+                    phoneNumber: data.telephone1,
+                    companyName: data.parentcustomerid_account?.name || accountInfo?.name || 'Unknown',
+                    accountId: linkedAccountId,
+                    externalContactId: data.contactid,
+                    contractStatus: statusFormatted,
+                    industry: industryFromAccount,
+                    crmVerified: true,
+                },
+            });
         });
     }
 }

@@ -351,6 +351,7 @@ model CrmConnection {
   tenantId      String?     @map("tenant_id") @db.VarChar(255)
   clientId      String?     @map("client_id") @db.VarChar(255)
   clientSecret  String?     @map("client_secret") @db.Text
+  webhookSecret String?     @map("webhook_secret") @db.Text
   instanceUrl   String?     @map("instance_url") @db.VarChar(255)
   isActive      Boolean     @default(true) @map("is_active")
   syncSettings  Json?       @map("sync_settings")
