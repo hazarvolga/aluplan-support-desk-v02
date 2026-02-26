@@ -261,6 +261,16 @@ export const api = {
             });
         },
     },
+    crm: {
+        getConnections: () => request<any[]>('/crm/connections'),
+        upsertConnection: (data: any) => request<any>('/crm/connections', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        }),
+        triggerSync: (id: string) => request<any>(`/crm/sync/${id}`, { method: 'POST' }),
+        getLogs: (connectionId: string) => request<any[]>(`/crm/logs/${connectionId}`),
+        getAccounts: () => request<any[]>('/crm/accounts'),
+    },
     get: (url: string) => request<any>(url),
     post: (url: string, body: any) =>
         request<any>(url, {
