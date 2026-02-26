@@ -1,23 +1,31 @@
-<mj-section background-color="#ffffff" border-radius="12px 12px 0 0" border-left="4px solid #ef4444" border-bottom="0" css-class="dark-mode-section">
+<mj-section css-class="dark-mode-section" padding="32px 24px 16px 24px" border-top="4px solid #ef4444">
   <mj-column>
-    <mj-text css-class="header-title" color="#b91c1c !important">{{t.sla.breached_title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text">{{t.sla.breached_desc}}</mj-text>
+    <mj-text css-class="header-title" color="#b91c1c !important" padding="0 0 12px 0">{{t.sla.breached_title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text" padding="0">{{t.sla.breached_desc}}</mj-text>
   </mj-column>
 </mj-section>
 
-<mj-section background-color="#f8fafc" border-left="4px solid #ef4444" css-class="dark-mode-card" padding="15px">
+<mj-section css-class="blueprint-card dark-mode-card" padding="0" border-left="4px solid #ef4444">
   <mj-column>
-    <mj-text padding="0 0 50x 0" css-class="info-label">{{t.common.ticket_id}}</mj-text>
-    <mj-text padding="0 0 10px 0" font-weight="600" css-class="dark-mode-text">#{{ticketId}} - {{ticketSubject}}</mj-text>
-    
-    <mj-text padding="0 0 5x 0" css-class="info-label">{{t.common.agent}}</mj-text>
-    <mj-text padding="0" font-weight="600" css-class="dark-mode-text">{{agentName}}</mj-text>
+    <mj-text css-class="technical-label" padding="16px 20px 4px 20px">
+       {{t.common.ticket_id}}
+    </mj-text>
+    <mj-text font-weight="600" css-class="dark-mode-text" padding="0 20px 12px 20px">
+      #{{ticketId}} - {{ticketSubject}}
+    </mj-text>
+    <mj-divider border-width="1px" border-color="#e2e8f0" padding="0" />
+    <mj-text css-class="technical-label" padding="12px 20px 4px 20px">
+      {{t.common.agent}}
+    </mj-text>
+    <mj-text font-weight="700" color="#b91c1c" padding="0 20px 16px 20px">
+      {{agentName}}
+    </mj-text>
   </mj-column>
 </mj-section>
 
-<mj-section background-color="#ffffff" border-radius="0 0 12px 12px" border-left="4px solid #ef4444" border-top="0" css-class="dark-mode-section">
+<mj-section css-class="dark-mode-section" padding="24px 0 40px 0">
   <mj-column>
-    <mj-button href="{{ticketUrl}}" background-color="#ef4444">
+    <mj-button href="{{ticketUrl}}" background-color="#ef4444" align="center">
       Acil Müdahale Et
     </mj-button>
   </mj-column>

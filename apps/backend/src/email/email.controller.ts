@@ -247,6 +247,9 @@ export class EmailController {
         help_center_url: frontendUrl || 'https://help.aluplan.com',
       };
 
+      // Force reset cache for preview to ensure manual file edits are reflected instantly
+      TemplateService.resetCache(name);
+
       const compiled = TemplateService.compile(name, mockData, brandDefaults);
       return { success: true, subject: compiled.subject, html: compiled.html };
     } catch (error: any) {

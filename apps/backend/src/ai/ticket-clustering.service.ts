@@ -25,13 +25,17 @@ export class TicketClusteringService {
         this.logger.log('🚀 Starting Ticket Clustering Pipeline...');
 
         // 1. Get tickets resolved in the last 7 days that haven't been processed
+        // Physical database now has department_id, so this call is safe.
         const tickets = await this.prisma.ticket.findMany({
             where: {
                 status: { in: ['RESOLVED', 'CLOSED'] },
                 knowledgeBaseAdded: false,
                 updatedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
             },
-            include: { messages: { orderBy: { createdAt: 'asc' } } }
+            include: {
+                messages: { orderBy: { createdAt: 'asc' } },
+                department: true // Optional: tracking which department these belong to
+            }
         });
 
         if (tickets.length < this.MIN_CLUSTER_SIZE) {

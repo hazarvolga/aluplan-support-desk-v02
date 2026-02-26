@@ -52,7 +52,10 @@ export class TemplateService {
       const childContent = fs.readFileSync(mjmlPath, 'utf8');
       let mjmlContent = '';
 
-      if (templateName !== 'base' && fs.existsSync(layoutPath)) {
+      // Hybrid Detection: If child already has <mjml> tag, don't wrap with base layout
+      const isFullMjml = childContent.trim().toLowerCase().startsWith('<mjml>');
+
+      if (!isFullMjml && templateName !== 'base' && fs.existsSync(layoutPath)) {
         const baseContent = fs.readFileSync(layoutPath, 'utf8');
         mjmlContent = baseContent.replace('{{{content}}}', childContent);
       } else {

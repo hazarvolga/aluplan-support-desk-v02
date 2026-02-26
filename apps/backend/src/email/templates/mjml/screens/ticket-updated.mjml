@@ -1,24 +1,27 @@
-<mj-section background-color="#ffffff" border-radius="12px 12px 0 0" css-class="dark-mode-section">
+<mj-section css-class="dark-mode-section" padding="32px 24px 16px 24px">
   <mj-column>
-    <mj-text css-class="header-title dark-mode-title">{{t.ticket_updated.title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text">
-       {{t.common.hello}} <strong>{{userName}}</strong>,
-    </mj-text>
-    <mj-text css-class="body-text dark-mode-text">
+    <mj-text css-class="header-title dark-mode-title" padding="0 0 12px 0">{{t.ticket_updated.title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text" padding="0">
+       {{t.common.hello}} <strong>{{userName}}</strong>,<br /><br />
        <strong>#{{ticketId}}</strong> {{t.ticket_updated.description}}
     </mj-text>
   </mj-column>
 </mj-section>
 
-<mj-section background-color="#f8fafc" border-radius="8px" padding="20px" css-class="dark-mode-card">
+<mj-section css-class="blueprint-card dark-mode-card" padding="0">
   <mj-column>
-    <mj-text font-style="italic" color="#475569" css-class="dark-mode-text" padding="0">"{{latestMessage}}"</mj-text>
+    <mj-text css-class="card-header dark-mode-card-header technical-label" padding="12px 20px">
+      Son Mesaj Özeti
+    </mj-text>
+    <mj-text font-style="italic" color="#475569" css-class="dark-mode-text" padding="20px" line-height="1.6">
+      "{{latestMessage}}"
+    </mj-text>
   </mj-column>
 </mj-section>
 
-<mj-section background-color="#ffffff" border-radius="0 0 12px 12px" css-class="dark-mode-section">
+<mj-section css-class="dark-mode-section" padding="24px 0 40px 0">
   <mj-column>
-    <mj-button href="{{ticketUrl}}" align="left">
+    <mj-button href="{{ticketUrl}}" align="center">
       {{t.common.view_ticket}}
     </mj-button>
   </mj-column>

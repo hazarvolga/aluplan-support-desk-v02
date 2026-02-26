@@ -1,15 +1,63 @@
-<mj-section background-color="#ffffff" border-radius="12px" css-class="dark-mode-section">
-  <mj-column>
-    <mj-text css-class="header-title dark-mode-title">{{t.ticket_closed.title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text">
-      {{t.common.hello}} <strong>{{customerName}}</strong>,
-    </mj-text>
-    <mj-text css-class="body-text dark-mode-text">
-       <strong>#{{ticketId}}</strong> {{t.ticket_closed.description}}
-    </mj-text>
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Roboto, Arial, sans-serif" color="#333333" />
+      <mj-text font-size="14px" line-height="1.5" />
+      <mj-button background-color="#00695C" color="#ffffff" border-radius="4px" font-weight="500" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#F9F9F9">
     
-    <mj-button href="{{surveyUrl}}" align="center" padding-top="30px">
-      {{t.common.rate_experience}}
-    </mj-button>
-  </mj-column>
-</mj-section>
+    <!-- Header -->
+    <mj-section background-color="#FFFFFF" padding="20px 0">
+      <mj-column>
+        <mj-text font-size="20px" font-weight="700" color="#004D40" align="center">
+          Your Support Ticket Update
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Ticket Summary -->
+    <mj-section background-color="#FFFFFF" padding="15px 20px" border-radius="8px" css-class="ticket-summary">
+      <mj-column width="100%">
+        <mj-text font-size="16px" font-weight="600" color="#00796B">
+          Ticket #12345 – Issue Update
+        </mj-text>
+        <mj-text>
+          Hello <strong>John Doe</strong>,<br/>
+          Your ticket regarding <em>project workflow optimization</em> has been updated by our support team.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Action / Button -->
+    <mj-section background-color="#FFFFFF" padding="10px 20px" border-radius="8px">
+      <mj-column>
+        <mj-button href="https://support.yoursite.com/tickets/12345" padding="15px 25px">
+          View Ticket
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- Additional Info -->
+    <mj-section background-color="#E0F2F1" padding="15px 20px" border-radius="8px">
+      <mj-column>
+        <mj-text font-size="13px" color="#004D40">
+          Agent: <strong>Jane Smith</strong><br/>
+          Status: <strong>In Progress</strong><br/>
+          Priority: <strong>High</strong>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer -->
+    <mj-section background-color="#FFFFFF" padding="20px 0">
+      <mj-column>
+        <mj-text font-size="12px" color="#888888" align="center" line-height="1.3">
+          Developed by <strong>AffeXAI</strong> | <a href="https://www.yoursite.com" style="color:#888888; text-decoration:none;">www.yoursite.com</a> | contact@yoursite.com
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>

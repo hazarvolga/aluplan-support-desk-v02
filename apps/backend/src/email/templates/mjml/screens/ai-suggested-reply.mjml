@@ -1,22 +1,25 @@
-<mj-section background-color="#ffffff" border-radius="12px 12px 0 0" css-class="dark-mode-section" padding-bottom="0">
+<mj-section css-class="dark-mode-section" padding="32px 24px 16px 24px">
   <mj-column>
-    <mj-text css-class="header-title dark-mode-title" color="#0369a1 !important">{{t.common.automated_reply_title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text">
-       <strong>#{{ticketId}}</strong> {{t.common.automated_reply_subtitle}}
+    <mj-text css-class="header-title dark-mode-title" padding="0 0 12px 0">{{t.ai_suggested_reply.title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text" padding="0">{{t.ai_suggested_reply.description}}</mj-text>
+  </mj-column>
+</mj-section>
+
+<mj-section css-class="blueprint-card dark-mode-card" padding="0">
+  <mj-column>
+    <mj-text css-class="card-header dark-mode-card-header technical-label" padding="12px 20px" font-weight="700" color="{{brand.primary_color}} !important">
+       ✨ AffeXAI Yanıt Önerisi
+    </mj-text>
+    <mj-text font-style="italic" color="#475569" css-class="dark-mode-text" padding="20px" line-height="1.6">
+      "{{suggestedReply}}"
     </mj-text>
   </mj-column>
 </mj-section>
 
-<mj-section background-color="#f0f9ff" border="1px dashed #0EA5E9" border-radius="8px" padding="20px" margin="10px 20px" css-class="dark-mode-card">
-  <mj-column>
-    <mj-text font-size="14px" color="#0c4a6e" css-class="dark-mode-text" padding="0">{{{suggestedReplyContent}}}</mj-text>
-  </mj-column>
-</mj-section>
-
-<mj-section background-color="#ffffff" border-radius="0 0 12px 12px" css-class="dark-mode-section">
+<mj-section css-class="dark-mode-section" padding="24px 0 40px 0">
   <mj-column>
     <mj-button href="{{ticketUrl}}" align="center">
-      {{t.common.inspect_reply}}
+      {{t.common.use_suggestion}}
     </mj-button>
   </mj-column>
 </mj-section>

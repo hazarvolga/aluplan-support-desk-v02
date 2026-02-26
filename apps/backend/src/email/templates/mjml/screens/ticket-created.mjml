@@ -1,34 +1,43 @@
-<!-- Top Section: Header & Intro -->
-<mj-section background-color="#ffffff" border-radius="12px 12px 0 0" css-class="dark-mode-section" padding-bottom="0">
+<!-- Header & Intro -->
+<mj-section css-class="dark-mode-section" padding="32px 24px 16px 24px">
   <mj-column>
-    <mj-text css-class="header-title dark-mode-title">{{t.ticket_created.title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text">
-      {{t.common.hello}} <strong>{{customerName}}</strong>,
-    </mj-text>
-    <mj-text css-class="body-text dark-mode-text">
+    <mj-text css-class="header-title dark-mode-title" padding="0 0 12px 0">{{t.ticket_created.title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text" padding="0">
+      {{t.common.hello}} <strong>{{customerName}}</strong>,<br /><br />
       {{t.ticket_created.description}}
     </mj-text>
   </mj-column>
 </mj-section>
 
-<!-- Card Section: Details -->
-<mj-section background-color="#f8fafc" border="1px solid #e2e8f0" border-radius="8px" css-class="dark-mode-card" padding="20px">
+<!-- Technical Detail Card -->
+<mj-section css-class="blueprint-card dark-mode-card" padding="0">
   <mj-column>
-    <mj-text padding="0 0 5px 0" css-class="info-label">{{t.common.subject}}</mj-text>
-    <mj-text padding="0 0 15px 0" font-weight="600" css-class="dark-mode-text">{{ticketSubject}}</mj-text>
-    
-    <mj-text padding="0 0 5px 0" css-class="info-label">{{t.common.priority}}</mj-text>
-    <mj-text padding="0 0 15px 0" font-weight="600" css-class="dark-mode-text">{{ticketPriority}}</mj-text>
-    
-    <mj-text padding="0 0 5px 0" css-class="info-label">{{t.common.ticket_id}}</mj-text>
-    <mj-text padding="0" font-weight="600" color="#0EA5E9">#{{ticketId}}</mj-text>
+    <mj-text css-class="card-header dark-mode-card-header technical-label" padding="12px 20px">
+      {{t.common.subject}}
+    </mj-text>
+    <mj-text font-weight="600" font-size="16px" css-class="dark-mode-text" padding="16px 20px">
+      {{ticketSubject}}
+    </mj-text>
+    <mj-divider border-width="1px" border-color="#e2e8f0" padding="0" />
+    <mj-text css-class="technical-label" padding="16px 20px 4px 20px">
+      {{t.common.priority}}
+    </mj-text>
+    <mj-text font-weight="600" css-class="dark-mode-text" padding="0 20px 16px 20px">
+      {{ticketPriority}}
+    </mj-text>
+    <mj-text css-class="technical-label" padding="0 20px 4px 20px">
+      {{t.common.ticket_id}}
+    </mj-text>
+    <mj-text font-weight="700" color="{{brand.primary_color}}" padding="0 20px 20px 20px">
+      #{{ticketId}}
+    </mj-text>
   </mj-column>
 </mj-section>
 
-<!-- Bottom Section: CTA -->
-<mj-section background-color="#ffffff" border-radius="0 0 12px 12px" css-class="dark-mode-section">
+<!-- Action -->
+<mj-section css-class="dark-mode-section" padding="24px 0 40px 0">
   <mj-column>
-    <mj-button href="{{ticketUrl}}" align="left">
+    <mj-button href="{{ticketUrl}}" align="center">
       {{t.common.view_ticket}}
     </mj-button>
   </mj-column>

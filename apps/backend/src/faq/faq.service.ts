@@ -42,6 +42,7 @@ export class FaqService {
      * Called by a cron job or manually by admin.
      */
     async extractFromTickets(limit = 100): Promise<ExtractedPattern[]> {
+        // Query remains standard, Prisma Client is now aware of department_id
         const tickets = await this.prisma.ticket.findMany({
             where: { status: { in: ['RESOLVED', 'CLOSED'] } },
             include: {
@@ -49,6 +50,7 @@ export class FaqService {
                     where: { isInternal: false },
                     orderBy: { createdAt: 'asc' },
                 },
+                department: true
             },
             orderBy: { createdAt: 'desc' },
             take: limit,

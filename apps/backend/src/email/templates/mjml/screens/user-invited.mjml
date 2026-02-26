@@ -1,12 +1,15 @@
-<mj-section background-color="#ffffff" border-radius="12px" css-class="dark-mode-section">
+<mj-section css-class="dark-mode-section" padding="40px 24px 24px 24px">
   <mj-column>
-    <mj-text css-class="header-title dark-mode-title">{{t.account.invite_title}}</mj-text>
-    <mj-text css-class="body-text dark-mode-text">
-       {{t.common.hello}}, <strong>{{inviterName}}</strong> {{t.account.invite_desc}}
+    <mj-text css-class="header-title dark-mode-title" padding="0 0 16px 0">{{t.user_invited.title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text" padding="0 0 24px 0">
+       {{t.common.hello}},<br /><br />
+      {{t.user_invited.description}}
     </mj-text>
-    
-    <mj-button href="{{inviteUrl}}" align="center" padding-top="30px">
-      {{t.common.go_to_ticket}}
+    <mj-button href="{{inviteUrl}}" align="left">
+      {{t.common.accept_invitation}}
     </mj-button>
+    <mj-text font-size="13px" color="#94a3b8" padding-top="24px">
+      {{t.common.link_expires_in}} 48 saat.
+    </mj-text>
   </mj-column>
 </mj-section>

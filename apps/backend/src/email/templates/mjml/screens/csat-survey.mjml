@@ -1,23 +1,19 @@
-<mj-section background-color="#ffffff" border-radius="12px" css-class="dark-mode-section">
+<mj-section css-class="dark-mode-section" padding="40px 24px 24px 24px">
   <mj-column>
-    <mj-text css-class="header-title dark-mode-title" align="center">{{t.common.rate_experience}}</mj-text>
-    <mj-text align="center" css-class="body-text dark-mode-text">
-      Biletiniz (#{{ticketId}}) çözümlendi. Size verdiğimiz hizmeti değerlendirir misiniz?
+    <mj-text css-class="header-title dark-mode-title" align="center" padding="0 0 16px 0">{{t.csat.title}}</mj-text>
+    <mj-text css-class="body-text dark-mode-text" align="center" padding="0">
+      <strong>#{{ticketId}}</strong> {{t.csat.description}}
     </mj-text>
-    
-    <mj-section padding="20px 0" background-color="transparent">
-      <mj-column width="33%">
-        <mj-button href="{{surveyUrl}}?rating=GOOD" background-color="#22c55e" border-radius="50px" width="60px" height="60px">😊</mj-button>
-        <mj-text align="center" font-size="12px" color="#64748b">İyi</mj-text>
-      </mj-column>
-      <mj-column width="33%">
-        <mj-button href="{{surveyUrl}}?rating=NEUTRAL" background-color="#eab308" border-radius="50px" width="60px" height="60px">😐</mj-button>
-        <mj-text align="center" font-size="12px" color="#64748b">Orta</mj-text>
-      </mj-column>
-      <mj-column width="33%">
-        <mj-button href="{{surveyUrl}}?rating=BAD" background-color="#ef4444" border-radius="50px" width="60px" height="60px">☹️</mj-button>
-        <mj-text align="center" font-size="12px" color="#64748b">Kötü</mj-text>
-      </mj-column>
-    </mj-section>
+  </mj-column>
+</mj-section>
+
+<mj-section css-class="dark-mode-section" padding="0 0 40px 0">
+  <mj-column>
+    <mj-button href="{{surveyUrl}}" align="center">
+       Deneyiminizi Puanlayın
+    </mj-button>
+    <mj-text align="center" font-size="13px" color="#94a3b8" padding-top="16px">
+      {{t.csat.footer_note}}
+    </mj-text>
   </mj-column>
 </mj-section>
