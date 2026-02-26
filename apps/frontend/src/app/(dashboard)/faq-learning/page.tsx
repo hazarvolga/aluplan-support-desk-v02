@@ -98,10 +98,10 @@ export default function FaqLearningPage() {
                 <div>
                     <h1 className="text-[20px] font-bold tracking-tight uppercase flex items-center gap-2">
                         <Brain className="h-5 w-5 text-primary" />
-                        FAQ_SELF_LEARNING_PIPELINE
+                        SSS Otomatik Öğrenme Havuzu
                     </h1>
                     <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mt-1">
-                        NEURAL_SYNCHRONIZATION: TRANSFORMING OPERATIONAL DATA INTO STRUCTURED KNOWLEDGE
+                        NÖRAL SENKRONİZASYON: OPERASYONEL VERİYİ YAPILANDIRILMIŞ BİLGİYE DÖNÜŞTÜRME
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -111,7 +111,7 @@ export default function FaqLearningPage() {
                         className="h-8 text-[10px] uppercase font-bold tracking-widest border-border/40 rounded-none"
                     >
                         <RefreshCw className={`h-3 w-3 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        REFRESH
+                        YENİLE
                     </Button>
                     <Button
                         onClick={runPipeline}
@@ -119,7 +119,7 @@ export default function FaqLearningPage() {
                         className="h-8 text-[10px] uppercase font-bold tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 rounded-none"
                     >
                         {pipelineInFlight ? <RefreshCw className="h-3 w-3 animate-spin mr-2" /> : <Zap className="h-3 w-3 mr-2" />}
-                        TRIGGER_LEARNING_LOOP
+                        ÖĞRENME_DÖNGÜSÜNÜ_TETİKLE
                     </Button>
                 </div>
             </div>
@@ -133,45 +133,45 @@ export default function FaqLearningPage() {
                     <CardHeader className="py-3 px-4 border-b border-border/20 flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-                                <LineChart className="h-3.5 w-3.5" /> KB_HEALTH_INSIGHTS
+                                <LineChart className="h-3.5 w-3.5" /> BİLGİ_BANKASI_SAĞLIK_ANALİZİ
                             </CardTitle>
                         </div>
                         <Badge variant="outline" className="text-[9px] font-mono border-primary/20 text-primary">
-                            REAL_TIME_TELEMETRY
+                            GERÇEK_ZAMANLI_TELEMETRİ
                         </Badge>
                     </CardHeader>
                     <CardContent className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">DEFLECTION_RATE</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">ÇÖZÜM_ORANI</p>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-mono font-bold text-emerald-400">%{stats.deflectionRate || 0}</span>
-                                    <span className="text-[10px] text-muted-foreground/60">TICKETS_AVOIDED</span>
+                                    <span className="text-[10px] text-muted-foreground/60">ÖNLENEN_BİLETLER</span>
                                 </div>
                                 <Progress value={stats.deflectionRate || 0} className="h-1 rounded-none bg-muted" />
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">AI_ACCURACY</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">YAZ_DOĞRULUĞU</p>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-mono font-bold text-primary">%{stats.aiAccuracy || 0}</span>
-                                    <span className="text-[10px] text-muted-foreground/60">TOP_CONFIDENCE</span>
+                                    <span className="text-[10px] text-muted-foreground/60">EN_YÜKSEK_GÜVEN</span>
                                 </div>
                                 <Progress value={stats.aiAccuracy || 0} className="h-1 rounded-none bg-muted accent-primary" />
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">TOTAL_INTERACTIONS</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">TOPLAM_ETKİLEŞİM</p>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-mono font-bold text-foreground">{stats.totalInteractions || 0}</span>
-                                    <span className="text-[10px] text-muted-foreground/60">QUERIES_30D</span>
+                                    <span className="text-[10px] text-muted-foreground/60">SON_30_GÜN_SORGU</span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-8 pt-6 border-t border-border/20">
-                            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-4">CONFIDENCE_DISTRIBUTION</h4>
+                            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-4">GÜVEN_DAĞILIMI</h4>
                             <div className="space-y-3">
-                                {['HIGH', 'MEDIUM', 'LOW', 'NO_MATCH'].map(band => {
-                                    const bandData = stats.confidenceDistribution?.find(d => d.band === band) || { count: 0 };
+                                {['YÜKSEK', 'ORTA', 'DÜŞÜK', 'EŞLEŞME_YOK'].map(band => {
+                                    const bandData = stats.confidenceDistribution?.find(d => d.band === (band === 'YÜKSEK' ? 'HIGH' : band === 'ORTA' ? 'MEDIUM' : band === 'DÜŞÜK' ? 'LOW' : 'NO_MATCH')) || { count: 0 };
                                     const percentage = stats.totalInteractions > 0 ? (bandData.count / stats.totalInteractions) * 100 : 0;
                                     return (
                                         <div key={band} className="space-y-1">
@@ -191,7 +191,7 @@ export default function FaqLearningPage() {
                 <Card className="border-border/60 bg-muted/5 flex flex-col">
                     <CardHeader className="py-3 px-4 border-b border-border/20">
                         <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-                            <RefreshCw className="h-3.5 w-3.5" /> PIPELINE_STATUS
+                            <RefreshCw className="h-3.5 w-3.5" /> AKIŞ_DURUMU
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-6 flex-1 flex flex-col justify-between">
@@ -199,28 +199,28 @@ export default function FaqLearningPage() {
                             <div className="flex items-start gap-4">
                                 <div className="mt-1 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest">INGESTION_ENGINE</p>
-                                    <p className="text-[9px] text-muted-foreground font-mono">Status: ACTIVE | Watching Ticket Closed Events</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest">VERİ_ALIM_MOTORU</p>
+                                    <p className="text-[9px] text-muted-foreground font-mono">Durum: AKTİF | Kapatılan Bilet Olayları İzleniyor</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-4">
                                 <div className={`mt-1 h-2 w-2 rounded-full ${pipelineInFlight ? 'bg-primary animate-pulse shadow-[0_0_8px_rgba(var(--primary),0.5)]' : 'bg-muted-foreground/40'}`} />
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest">ABSTRACTION_LAYER</p>
-                                    <p className="text-[9px] text-muted-foreground font-mono">Current: IDLE | Nomic-Embed Strategy</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest">SOYUTLAMA_KATMANI</p>
+                                    <p className="text-[9px] text-muted-foreground font-mono">Mevcut: BOŞTA | Nomic-Embed Stratejisi</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-4">
                                 <div className={`mt-1 h-2 w-2 rounded-full ${candidates.length > 0 ? 'bg-orange-400' : 'bg-muted-foreground/40'}`} />
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest">VALIDATION_QUEUE</p>
-                                    <p className="text-[9px] text-muted-foreground font-mono">{candidates.length} CANDIDATES_WAITING_VERIFICATION</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest">DOĞRULAMA_KUYRUĞU</p>
+                                    <p className="text-[9px] text-muted-foreground font-mono">{candidates.length} ADAY_DOĞRULAMA_BEKLİYOR</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-8 border-t border-border/20 pt-4 text-[9px] font-mono text-muted-foreground/60 uppercase text-center">
-                            LAST_SYNC: {new Date().toLocaleTimeString()}
+                            SON_SENKRONİZASYON: {new Date().toLocaleTimeString()}
                         </div>
                     </CardContent>
                 </Card>
@@ -231,10 +231,10 @@ export default function FaqLearningPage() {
                 <div className="flex items-center gap-2 border-b border-border/20 pb-2">
                     <h2 className="text-[13px] font-bold uppercase tracking-widest flex items-center gap-2">
                         <FileText className="h-4 w-4 text-orange-400" />
-                        PIPELINE_CANDIDATES
+                        ÖĞRENME_ADAYLARI
                     </h2>
                     <Badge variant="outline" className="text-[9px] font-mono border-orange-500/20 text-orange-400">
-                        AWAITING_VERIFICATION: {candidates.length}
+                        DOĞRULAMA_BEKLEYEN: {candidates.length}
                     </Badge>
                 </div>
 
@@ -245,8 +245,8 @@ export default function FaqLearningPage() {
                 ) : candidates.length === 0 ? (
                     <div className="border border-dashed border-border/40 p-12 text-center bg-muted/5 opacity-50">
                         <CheckCircle2 className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-                        <p className="text-[10px] uppercase font-bold tracking-[0.2em]">ALL_PATTERNS_SYNCHRONIZED</p>
-                        <p className="text-[9px] font-mono mt-1 opacity-60">Run the extraction loop manually to find new knowledge specimens.</p>
+                        <p className="text-[10px] uppercase font-bold tracking-[0.2em]">TÜM_PATERNLER_EŞİTLENDİ</p>
+                        <p className="text-[9px] font-mono mt-1 opacity-60">Yeni bilgi örnekleri bulmak için çıkarma döngüsünü manuel olarak çalıştırın.</p>
                     </div>
                 ) : (
                     <div className="grid gap-4">
@@ -257,14 +257,14 @@ export default function FaqLearningPage() {
                                         <div className="flex-1 space-y-3 min-w-0">
                                             <div className="flex items-center gap-3">
                                                 <Badge className="text-[9px] h-4 bg-orange-500/10 text-orange-400 border-orange-400/20 uppercase tracking-tighter">
-                                                    PENDING_COMMIT
+                                                    ONAY_BEKLEYEN
                                                 </Badge>
                                                 <div className="flex items-center gap-1 text-[9px] font-mono text-muted-foreground uppercase">
                                                     <Zap className="h-2.5 w-2.5 text-primary" />
-                                                    CONFIDENCE: {Math.round(c.confidenceScore * 100)}%
+                                                    GÜVEN: %{Math.round(c.confidenceScore * 100)}
                                                 </div>
                                                 <div className="flex items-center gap-1 text-[9px] font-mono text-muted-foreground uppercase opacity-40">
-                                                    | FREQ: {c.frequency}
+                                                    | SIKLIK: {c.frequency}
                                                 </div>
                                             </div>
 
@@ -289,13 +289,13 @@ export default function FaqLearningPage() {
                                                 onClick={() => handleCommit(c.id)}
                                                 className="h-8 px-4 text-[10px] uppercase font-bold tracking-widest bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-none"
                                             >
-                                                COMMIT_TO_KB
+                                                BİLGİ_BANKASINA_EKLE
                                             </Button>
                                             <Button
                                                 variant="ghost"
                                                 className="h-8 px-4 text-[10px] uppercase font-bold tracking-widest text-muted-foreground hover:text-red-500 rounded-none"
                                             >
-                                                DISCARD
+                                                YOK_SAY
                                             </Button>
                                         </div>
                                     </div>

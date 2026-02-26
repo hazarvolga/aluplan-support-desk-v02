@@ -65,17 +65,17 @@ export default function FaqPage() {
         <div className="space-y-4">
             <div className="flex justify-between items-start border-b border-border/40 pb-4">
                 <div>
-                    <h1 className="text-[18px] font-bold tracking-tight uppercase">FAQ_MANAGEMENT_UNIT</h1>
-                    <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mt-1">Review and synchronize automatically extracted operational knowledge specimens.</p>
+                    <h1 className="text-[18px] font-bold tracking-tight uppercase">SSS_YÖNETİM_BİRİMİ</h1>
+                    <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mt-1">Otomatik olarak ayıklanan operasyonel bilgi örneklerini inceleyin ve senkronize edin.</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={fetchFaqs} disabled={loading} className="h-7 text-[10px] uppercase font-bold tracking-widest bg-muted/20">
                         <RefreshCw className={`mr-2 h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-                        RELOAD_CACHE
+                        ÖNBELLEĞİ_YENİLE
                     </Button>
                     <Button size="sm" onClick={runPipeline} className="h-7 text-[10px] uppercase font-bold tracking-widest">
                         <ArrowRight className="mr-2 h-3 w-3" />
-                        RUN_EXTRACTION
+                        AYIKLAMAYI_BAŞLAT
                     </Button>
                 </div>
             </div>
@@ -89,7 +89,7 @@ export default function FaqPage() {
                         size="sm"
                         className="h-6 px-3 text-[9px] uppercase font-bold tracking-widest rounded-none border-border/60"
                     >
-                        {status.replace('_', ' ')}
+                        {status === 'ALL' ? 'HEPSİ' : status === 'PENDING_REVIEW' ? 'ONAY_BEKLİYOR' : status === 'PUBLISHED' ? 'YAYINDA' : status === 'DRAFT' ? 'TASLAK' : status.replace('_', ' ')}
                     </Button>
                 ))}
             </div>
@@ -98,8 +98,8 @@ export default function FaqPage() {
                 {faqs.length === 0 && !loading && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>No FAQs found</CardTitle>
-                            <CardDescription>Try changing the filter or run the pipeline to generate new ones.</CardDescription>
+                            <CardTitle>SSS bulunamadı</CardTitle>
+                            <CardDescription>Filtreyi değiştirmeyi deneyin veya yeni SSS'ler oluşturmak için ayıklama işlemini başlatın.</CardDescription>
                         </CardHeader>
                     </Card>
                 )}
@@ -111,12 +111,12 @@ export default function FaqPage() {
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-3">
                                         <Badge className={`text-[9px] h-4 tracking-tighter ${faq.status === 'PUBLISHED' ? 'border-emerald-900/50 text-emerald-400 bg-emerald-400/5' :
-                                                faq.status === 'PENDING_REVIEW' ? 'border-orange-900/50 text-orange-400 bg-orange-400/5' : 'border-border text-muted-foreground bg-muted/5'
+                                            faq.status === 'PENDING_REVIEW' ? 'border-orange-900/50 text-orange-400 bg-orange-400/5' : 'border-border text-muted-foreground bg-muted/5'
                                             }`}>
-                                            {faq.status}
+                                            {faq.status === 'PUBLISHED' ? 'YAYINDA' : faq.status === 'PENDING_REVIEW' ? 'ONAY_BEKLİYOR' : faq.status === 'DRAFT' ? 'TASLAK' : faq.status}
                                         </Badge>
-                                        <span className="text-[9px] font-mono text-muted-foreground uppercase opacity-60">FREQ: {faq.frequency}</span>
-                                        <span className="text-[9px] font-mono text-muted-foreground uppercase opacity-60">CONFIDENCE: {Math.round(faq.confidenceScore * 100)}%</span>
+                                        <span className="text-[9px] font-mono text-muted-foreground uppercase opacity-60">SIKLIK: {faq.frequency}</span>
+                                        <span className="text-[9px] font-mono text-muted-foreground uppercase opacity-60">GÜVEN_SKORU: {Math.round(faq.confidenceScore * 100)}%</span>
                                     </div>
                                     <CardTitle className="text-[13px] tracking-tight">{faq.question}</CardTitle>
                                 </div>
@@ -124,10 +124,10 @@ export default function FaqPage() {
                                     {faq.status === 'PENDING_REVIEW' && (
                                         <>
                                             <Button size="sm" variant="outline" className="h-6 text-[9px] uppercase font-bold tracking-wider border-emerald-900/50 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10" onClick={() => handleApprove(faq.id)}>
-                                                COMMIT
+                                                ONAYLA
                                             </Button>
                                             <Button size="sm" variant="outline" className="h-6 text-[9px] uppercase font-bold tracking-wider border-orange-900/50 text-orange-500 bg-orange-500/5 hover:bg-orange-500/10" onClick={() => handleDismiss(faq.id)}>
-                                                DISCARD
+                                                YOK_SAY
                                             </Button>
                                         </>
                                     )}
@@ -143,7 +143,7 @@ export default function FaqPage() {
                             </div>
                             {faq.sourceTicketId && (
                                 <div className="mt-4 text-xs text-muted-foreground">
-                                    Source Ticket: #{faq.sourceTicketId}
+                                    Kaynak Talep: #{faq.sourceTicketId}
                                 </div>
                             )}
                         </CardContent>

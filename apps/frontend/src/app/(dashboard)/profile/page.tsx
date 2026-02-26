@@ -164,7 +164,7 @@ export default function ProfilePage() {
                 <CardHeader>
                     <CardTitle>Kişisel Bilgiler</CardTitle>
                     <CardDescription>
-                        Hesap bilgileriniz ({roles.join(', ')})
+                        Hesap bilgileriniz ({roles.map(r => r === 'admin' ? 'Yönetici' : r === 'agent' ? 'Temsilci' : r === 'customer' ? 'Müşteri' : r).join(', ')})
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -256,13 +256,13 @@ export default function ProfilePage() {
                                     <div className="space-y-1">
                                         <Label className="text-[10px] uppercase text-muted-foreground">Abonelik</Label>
                                         <div className="text-xs font-semibold bg-sky-500/10 text-sky-600 py-1 px-2 rounded border border-sky-500/20 text-center">
-                                            {contractStatus}
+                                            {contractStatus === 'ACTIVE' ? 'Aktif' : contractStatus === 'EXPIRED' ? 'Süresi Dolmuş' : contractStatus}
                                         </div>
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-[10px] uppercase text-muted-foreground">Durum</Label>
                                         <div className="text-xs font-semibold bg-amber-500/10 text-amber-600 py-1 px-2 rounded border border-amber-500/20 text-center">
-                                            {accountStatus}
+                                            {accountStatus === 'ACTIVE' ? 'Aktif' : accountStatus === 'INACTIVE' ? 'Pasif' : accountStatus === 'SUSPENDED' ? 'Askıya Alındı' : accountStatus}
                                         </div>
                                     </div>
                                 </div>

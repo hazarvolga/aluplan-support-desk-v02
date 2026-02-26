@@ -50,10 +50,10 @@ export default function AiPage() {
             <div className="border-b border-border/40 pb-4">
                 <h1 className="text-[16px] md:text-[18px] font-bold text-foreground uppercase tracking-tight flex items-center gap-2">
                     <Bot className="h-5 w-5 text-primary" />
-                    AI_CO_NAVIGATOR_BETA
+                    YA_YARDIMCI_NAVİGATÖR_BETA
                 </h1>
                 <p className="mt-1 text-muted-foreground text-[10px] font-mono uppercase tracking-widest leading-none">
-                    Execute semantic intelligence queries against the unified knowledge lake. Hardware: Ollama_VEC_Compute.
+                    Birleşik bilgi havuzunda anlamsal zeka sorguları yürütün. Donanım: Ollama_VEC_Compute.
                 </p>
             </div>
 
@@ -63,7 +63,7 @@ export default function AiPage() {
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="ENTER_QUERY_STRING..."
+                    placeholder="SORGU_METNİ_GİRİN..."
                     className="flex-1 px-3 py-2 bg-transparent text-foreground text-[12px] uppercase font-bold tracking-tight focus:outline-none placeholder:text-muted-foreground/40 min-h-[40px]"
                 />
                 <button
@@ -72,7 +72,7 @@ export default function AiPage() {
                     className="px-4 py-2 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest disabled:opacity-30 transition-none flex items-center justify-center gap-2 h-10 sm:h-auto"
                 >
                     <Send className="h-3 w-3" />
-                    {loading ? 'EXECUTING...' : 'RUN_QUERY'}
+                    {loading ? 'YÜRÜTÜLÜYOR...' : 'SORGULA'}
                 </button>
             </form>
 
@@ -82,7 +82,7 @@ export default function AiPage() {
                     {/* Confidence badge */}
                     <div className="flex items-center gap-2">
                         <span className={`px-2 py-0.5 border text-[9px] font-mono uppercase font-bold tracking-widest ${CONFIDENCE_COLORS[result.confidence] ?? ''}`}>
-                            CONFIDENCE: {result.confidence}
+                            GÜVEN_SKORU: {result.confidence === 'HIGH' ? 'YÜKSEK' : result.confidence === 'MEDIUM' ? 'ORTA' : result.confidence === 'LOW' ? 'DÜŞÜK' : 'EŞLEŞME_YOK'}
                         </span>
                     </div>
 
@@ -92,7 +92,7 @@ export default function AiPage() {
                     ) : (
                         <div className="flex items-start gap-3 text-muted-foreground border border-orange-900/30 bg-orange-950/10 p-3">
                             <AlertCircle className="h-4 w-4 shrink-0 text-orange-500 mt-0.5" />
-                            <p className="text-[11px] uppercase font-bold tracking-tight">NULL_RESPONSE: NO RELATIVE MATCHES FOUND IN CURRENT KNOWLEDGE LAKE.</p>
+                            <p className="text-[11px] uppercase font-bold tracking-tight">BOŞ_YANIT: MEVCUT BİLGİ HAVUZUNDA İLGİLİ EŞLEŞME BULUNAMADI.</p>
                         </div>
                     )}
 
@@ -101,13 +101,13 @@ export default function AiPage() {
                         <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 p-3">
                             <AlertCircle className="h-4 w-4 text-primary shrink-0" />
                             <p className="text-[10px] text-primary uppercase font-bold tracking-widest">
-                                RECOMMENDATION: ESCALATE TO HUMAN_OPERATOR_LEVEL_1.
+                                ÖNERİ: SEVİYE_1 İNSAN_OPERATÖRE AKTARIN.
                             </p>
                             <a
                                 href="/tickets/new"
                                 className="ml-auto inline-flex items-center gap-1.5 px-2 py-1 bg-primary text-primary-foreground text-[9px] font-bold uppercase tracking-widest hover:opacity-90"
                             >
-                                CREATE_INCIDENT
+                                DESTEK_TALEBİ_AÇ
                             </a>
                         </div>
                     )}
@@ -115,7 +115,7 @@ export default function AiPage() {
                     {/* Sources */}
                     {result.sources.length > 0 && (
                         <div className="border-t border-border/20 pt-3">
-                            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-3">TRACE_SOURCES</p>
+                            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-3">KAYNAK_TAKİBİ</p>
                             <div className="space-y-1">
                                 {result.sources.map((s) => (
                                     <div key={s.articleId} className="flex items-center justify-between text-[11px] font-mono group p-1 hover:bg-muted/10">
@@ -130,7 +130,7 @@ export default function AiPage() {
                     {/* Feedback */}
                     {result.answer && (
                         <div className="flex items-center gap-3 border-t border-border/20 pt-4">
-                            <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest">HELPFUL?</p>
+                            <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest">YARDIMCI_OLDU_MU?</p>
                             <button
                                 onClick={() => handleFeedback(true)}
                                 disabled={!!feedback}
@@ -146,7 +146,7 @@ export default function AiPage() {
                                 <ThumbsDown className="h-3.5 w-3.5" />
                             </button>
                             {feedback && (
-                                <span className="text-[9px] font-mono text-muted-foreground uppercase">FEEDBACK_RECORDED_THANK_YOU</span>
+                                <span className="text-[9px] font-mono text-muted-foreground uppercase">GERİ_BİLDİRİM_KAYDEDİLDİ_TEŞEKKÜRLER</span>
                             )}
                         </div>
                     )}

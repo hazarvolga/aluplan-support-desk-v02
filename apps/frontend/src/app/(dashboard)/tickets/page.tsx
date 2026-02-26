@@ -77,11 +77,11 @@ export default function TicketsPage() {
         setBulkLoading(true);
         try {
             await api.tickets.bulkUpdate({ ticketIds: selectedIds, status });
-            toast.success(`SYSTEM_COMMAND_SUCCESS: UPDATED_${selectedIds.length}_RECORDS`);
+            toast.success(`SİSTEM_KOMUTU_BAŞARILI: ${selectedIds.length}_KAYIT_GÜNCELLENDİ`);
             setSelectedIds([]);
             load();
         } catch (err: any) {
-            toast.error(`SYSTEM_COMMAND_ERROR: ${err.message}`);
+            toast.error(`SİSTEM_KOMUTU_HATASI: ${err.message}`);
         } finally {
             setBulkLoading(false);
         }
@@ -94,10 +94,10 @@ export default function TicketsPage() {
                 <div className="space-y-1">
                     <div className="flex items-center gap-2">
                         <div className="h-2 w-2 bg-emerald-500 animate-pulse" />
-                        <h1 className="text-[14px] font-bold text-foreground tracking-widest uppercase">Incident_Queue</h1>
+                        <h1 className="text-[14px] font-bold text-foreground tracking-widest uppercase">Talep_Kuyruğu</h1>
                     </div>
                     <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-tighter">
-                        ACTIVE_TICKETS_COUNT: <span className="text-foreground">{total.toString().padStart(4, '0')}</span>
+                        AKTİF_TALEP_SAYISI: <span className="text-foreground">{total.toString().padStart(4, '0')}</span>
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -108,9 +108,9 @@ export default function TicketsPage() {
                             onChange={(e) => setFilter(e.target.value)}
                             className="pl-7 pr-3 h-7 bg-muted/30 border border-border text-[11px] font-bold uppercase tracking-tight text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-none appearance-none cursor-pointer"
                         >
-                            <option value="">ALL_SYSTEM_STATES</option>
+                            <option value="">TÜM_SİSTEM_DURUMLARI</option>
                             {Object.keys(STATUS_COLORS).map((s) => (
-                                <option key={s} value={s}>{s}_STATUS</option>
+                                <option key={s} value={s}>{s === 'NEW' ? 'YENİ' : s === 'OPEN' ? 'AÇIK' : s === 'IN_PROGRESS' ? 'İŞLEMDE' : s === 'PENDING_CUSTOMER' ? 'MÜŞTERİ_BEKLENİYOR' : s === 'RESOLVED' ? 'ÇÖZÜLDÜ' : s === 'CLOSED' ? 'KAPANDI' : s}_DURUMU</option>
                             ))}
                         </select>
                     </div>
@@ -121,7 +121,7 @@ export default function TicketsPage() {
             <div className="flex gap-4 border-b border-border/20 pb-2 overflow-x-auto no-scrollbar">
                 {Object.entries(STATUS_COLORS).slice(0, 4).map(([status, color]) => (
                     <div key={status} className="flex flex-col min-w-[120px] bg-muted/10 border-l border-border p-1.5">
-                        <span className="text-[8px] font-bold text-muted-foreground uppercase">{status}</span>
+                        <span className="text-[8px] font-bold text-muted-foreground uppercase">{status === 'NEW' ? 'YENİ' : status === 'OPEN' ? 'AÇIK' : status === 'IN_PROGRESS' ? 'İŞLEMDE' : status === 'PENDING_CUSTOMER' ? 'MÜŞTERİ_BEKLENİYOR' : status}</span>
                         <span className="text-lg font-mono leading-none mt-1">--</span>
                     </div>
                 ))}
@@ -132,7 +132,7 @@ export default function TicketsPage() {
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
                     <div className="bg-background border-2 border-primary/50 shadow-2xl px-6 py-3 flex items-center gap-6 backdrop-blur-xl">
                         <div className="flex flex-col border-r border-border/50 pr-6">
-                            <span className="text-[10px] font-mono font-bold text-primary uppercase">Selected_Incidents</span>
+                            <span className="text-[10px] font-mono font-bold text-primary uppercase">Seçili_Talepler</span>
                             <span className="text-xl font-black font-mono leading-none">{selectedIds.length.toString().padStart(2, '0')}</span>
                         </div>
 
@@ -143,7 +143,7 @@ export default function TicketsPage() {
                                 className="h-8 px-3 bg-muted/30 border border-border text-[10px] font-bold uppercase hover:bg-amber-500/10 hover:border-amber-500/50 transition-colors flex items-center gap-2"
                             >
                                 {bulkLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Clock className="h-3 w-3 text-amber-500" />}
-                                Start_Progress
+                                Süreci_Başlat
                             </button>
                             <button
                                 onClick={() => handleBulkAction('RESOLVED')}
@@ -151,7 +151,7 @@ export default function TicketsPage() {
                                 className="h-8 px-3 bg-muted/30 border border-border text-[10px] font-bold uppercase hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-colors flex items-center gap-2"
                             >
                                 <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                                Resolve_All
+                                Hepsini_Çöz
                             </button>
                             <button
                                 onClick={() => setSelectedIds([])}
@@ -170,12 +170,12 @@ export default function TicketsPage() {
                     {loading ? (
                         <div className="p-12 text-center bg-muted/5 min-w-[800px]">
                             <div className="inline-block h-6 w-6 border-b-2 border-primary animate-spin" />
-                            <p className="text-[10px] font-mono mt-3 text-muted-foreground uppercase tracking-widest">Awaiting_Data_Stream...</p>
+                            <p className="text-[10px] font-mono mt-3 text-muted-foreground uppercase tracking-widest">Veri_Akışı_Bekleniyor...</p>
                         </div>
                     ) : tickets.length === 0 ? (
                         <div className="p-12 text-center min-w-[800px]">
                             <Ticket className="h-8 w-8 text-muted/30 mx-auto mb-3" />
-                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">No_Incidents_Found</p>
+                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Talep_Bulunamadı</p>
                         </div>
                     ) : (
                         <table className="w-full text-left min-w-[800px]">
@@ -190,10 +190,10 @@ export default function TicketsPage() {
                                         </button>
                                     </th>
                                     <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">IDX</th>
-                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Subject_Event</th>
-                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Status_Flag</th>
-                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Level</th>
-                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest text-right">Timestamp</th>
+                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Konu_Olay</th>
+                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Durum_Bayrağı</th>
+                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Kritiklik</th>
+                                    <th className="px-3 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest text-right">Zaman_Damgası</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border/30">
@@ -229,24 +229,24 @@ export default function TicketsPage() {
                                                     </span>
                                                     {t.knowledgeBaseAdded && (
                                                         <span className="px-1 border border-primary/30 bg-primary/5 text-primary text-[8px] font-bold tracking-[0.2em] uppercase">
-                                                            KB_SYNCED
+                                                            BB_SENK
                                                         </span>
                                                     )}
                                                     {t.isSlaBreached && (
                                                         <span className="px-1 bg-red-500/10 border border-red-500/50 text-red-500 text-[8px] font-bold tracking-[0.2em] uppercase animate-pulse">
-                                                            SLA_BREACH
+                                                            SLA_İHLALİ
                                                         </span>
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="px-3">
                                                 <span className={`px-1.5 py-0.5 border text-[9px] font-bold uppercase tracking-widest ${STATUS_COLORS[t.status] ?? 'border-muted text-muted'}`}>
-                                                    {t.status}
+                                                    {t.status === 'NEW' ? 'YENİ' : t.status === 'OPEN' ? 'AÇIK' : t.status === 'IN_PROGRESS' ? 'İŞLEMDE' : t.status === 'PENDING_CUSTOMER' ? 'BEKLEMEDE' : t.status === 'RESOLVED' ? 'ÇÖZÜLDÜ' : t.status === 'CLOSED' ? 'KAPANDI' : t.status}
                                                 </span>
                                             </td>
                                             <td className="px-3">
                                                 <span className={`text-[10px] font-black uppercase italic ${PRIORITY_COLORS[t.priority] ?? ''}`}>
-                                                    {t.priority}
+                                                    {t.priority === 'URGENT' ? 'ACİL' : t.priority === 'HIGH' ? 'YÜKSEK' : t.priority === 'MEDIUM' ? 'ORTA' : 'DÜŞÜK'}
                                                 </span>
                                             </td>
                                             <td className="px-3 text-right font-mono text-[10px] text-muted-foreground group-hover:text-foreground">

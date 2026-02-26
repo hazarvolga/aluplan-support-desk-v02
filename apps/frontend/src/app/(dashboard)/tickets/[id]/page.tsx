@@ -281,18 +281,18 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                             const Icon = CHANNEL_ICONS[ticket.channel] || Globe;
                                             return <Icon className={`h-3 w-3 ${CHANNEL_COLORS[ticket.channel] || ''}`} />;
                                         })()}
-                                        INCIDENT_{ticket.ticketNumber}
+                                        TALEP_{ticket.ticketNumber}
                                     </div>
-                                    <Badge className={STATUS_COLORS[ticket.status]}>{ticket.status}</Badge>
+                                    <Badge className={STATUS_COLORS[ticket.status]}>{ticket.status === 'NEW' ? 'YENİ' : ticket.status === 'OPEN' ? 'AÇIK' : ticket.status === 'IN_PROGRESS' ? 'İŞLEMDE' : ticket.status === 'PENDING_CUSTOMER' ? 'BEKLEMEDE' : ticket.status === 'PENDING_CUSTOMER_REVIEW' ? 'ONAYDA' : ticket.status === 'RESOLVED' ? 'ÇÖZÜLDÜ' : ticket.status === 'CLOSED' ? 'KAPANDI' : ticket.status}</Badge>
                                 </div>
                                 <CardTitle className="text-[16px] normal-case text-foreground font-bold tracking-tight mt-1">
                                     {ticket.subject.toUpperCase()}
                                 </CardTitle>
                                 <div className="flex items-center gap-4 text-[10px] text-muted-foreground font-mono uppercase tracking-tighter">
                                     <span className="flex items-center gap-1">
-                                        OP: {ticket.creator?.fullName || 'SYSTEM_DEFAULT'}
+                                        BAŞLATAN: {ticket.creator?.fullName || 'SİSTEM_VARSAYILAN'}
                                     </span>
-                                    <span className="flex items-center gap-1">TS: {new Date(ticket.createdAt).toISOString().replace(/T/, ' ').replace(/\..+/, '')}</span>
+                                    <span className="flex items-center gap-1">ZD: {new Date(ticket.createdAt).toISOString().replace(/T/, ' ').replace(/\..+/, '')}</span>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -303,7 +303,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                         onClick={handleTransitionToReview}
                                         className="h-7 border-emerald-500/30 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
                                     >
-                                        EXEC_RESOLVE
+                                        ÇÖZÜMLEMEYİ_TAMAMLA
                                     </Button>
                                 )}
                                 {!isCustomer && (
@@ -315,7 +315,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                         className="h-7 border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
                                     >
                                         <Bot className={`h-3 w-3 ${summarizing ? 'animate-pulse' : ''}`} />
-                                        {summarizing ? 'SUMMARIZING...' : 'AI_SUMMARY'}
+                                        {summarizing ? 'ÖZETLENİYOR...' : 'YSA_ÖZETİ'}
                                     </Button>
                                 )}
                                 {!isCustomer && (
@@ -327,7 +327,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                         className="h-7 border-purple-500/30 text-purple-400 bg-purple-400/5 hover:bg-purple-400/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
                                     >
                                         <Bot className={`h-3 w-3 ${drafting ? 'animate-pulse' : ''}`} />
-                                        {drafting ? 'DRAFTING...' : 'REPLY_CO_PILOT'}
+                                        {drafting ? 'TASLAK_HAZIRLANIYOR...' : 'YSA_TASLAĞI'}
                                     </Button>
                                 )}
                             </div>
@@ -338,9 +338,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                 {isCustomer ? (
                                     <div className="flex flex-col items-center justify-center text-center space-y-3">
                                         <div className="flex flex-col items-center">
-                                            <h4 className="text-[12px] font-bold text-orange-400 uppercase tracking-[0.2em] mb-1">INCIDENT_RESOLUTION_PENDING</h4>
+                                            <h4 className="text-[12px] font-bold text-orange-400 uppercase tracking-[0.2em] mb-1">TALEP_ÇÖZÜM_ONAYI_BEKLENİYOR</h4>
                                             <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-tighter">
-                                                Please evaluate system resolution performance to close channel.
+                                                Kanalı kapatmak için lütfen çözüm performansını değerlendirin.
                                             </p>
                                         </div>
 
@@ -362,7 +362,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                         {csatScore > 0 && (
                                             <div className="w-full max-w-sm space-y-2">
                                                 <Textarea
-                                                    placeholder="APPEND_OPERATIONAL_FEEDBACK (OPTIONAL)"
+                                                    placeholder="OPERASYONEL_GERİ_BİLDİRİM_EKLE (OPSİYONEL)"
                                                     className="bg-black/40 border-border/50 text-[11px] h-16 uppercase tracking-tight"
                                                     value={csatComment}
                                                     onChange={(e) => setCsatComment(e.target.value)}
@@ -372,7 +372,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                                     disabled={sending}
                                                     className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-none h-8 text-[10px] uppercase font-bold tracking-widest"
                                                 >
-                                                    {sending ? 'COMMITTING...' : 'COMMIT_FEEDBACK_&_CLOSE'}
+                                                    {sending ? 'KAYDEDİLİYOR...' : 'GERİ_BİLDİRİMİ_KAYDET_&_KAPAT'}
                                                 </Button>
                                             </div>
                                         )}
@@ -380,15 +380,15 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                 ) : (
                                     <div className="flex items-center justify-between gap-4">
                                         <div>
-                                            <h4 className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">AWAITING_CUSTOMER_VERIFICATION</h4>
-                                            <p className="text-[9px] text-muted-foreground font-mono uppercase mt-1">Status: REVIEW_PENDING | Auto-Sync enabled for +4 Ratings</p>
+                                            <h4 className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">MÜŞTERİ_DOĞRULAMASI_BEKLENİYOR</h4>
+                                            <p className="text-[9px] text-muted-foreground font-mono uppercase mt-1">Durum: İNCELEME_BEKLENİYOR | +4 Puan için Oto-Senk aktif</p>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(2)} className="h-6 px-2 border-red-900/50 text-red-500 bg-red-500/5 text-[9px] uppercase font-bold tracking-wider">
-                                                DEBUG:REJECT(2)
+                                                HATA_AYIKLA:REDDET(2)
                                             </Button>
                                             <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(5)} className="h-6 px-2 border-emerald-900/50 text-emerald-500 bg-emerald-500/5 text-[9px] uppercase font-bold tracking-wider">
-                                                DEBUG:APPROVE(5)
+                                                HATA_AYIKLA:ONAYLA(5)
                                             </Button>
                                         </div>
                                     </div>
@@ -400,7 +400,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             <div className="mt-2 p-3 border border-primary/20 bg-primary/5">
                                 <div className="flex items-center gap-2 mb-1.5">
                                     <Bot className="h-3 w-3 text-primary" />
-                                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/80">AI_SUMMARY_LOG</span>
+                                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/80">YSA_ÖZET_KAYDI</span>
                                     <button onClick={() => setSummary(null)} className="ml-auto text-muted-foreground hover:text-foreground">
                                         <X className="h-3 w-3" />
                                     </button>
@@ -437,7 +437,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                         </div>
                                         <div className={`flex-1 space-y-1 ${msg.senderId === user?.id ? 'items-end flex flex-col' : ''}`}>
                                             <div className="flex items-baseline gap-2">
-                                                <span className="text-[11px] font-mono font-bold uppercase tracking-tight">{msg.sender?.fullName || 'SYSTEM'}</span>
+                                                <span className="text-[11px] font-mono font-bold uppercase tracking-tight">{msg.sender?.fullName || 'SİSTEM'}</span>
                                                 <span className="text-[9px] text-muted-foreground uppercase font-mono">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true, locale: tr })}</span>
                                             </div>
                                             <div className={`p-3 text-[12px] leading-relaxed tracking-tight font-medium ${msg.senderId === user?.id
@@ -510,10 +510,10 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             <div className="flex-1 space-y-2">
                                 <div className="flex justify-between items-center mr-1">
                                     <MacroPicker onSelect={(content: string) => setReply((prev) => prev ? `${prev}\n${content}` : content)} />
-                                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">COMMS_CHANNEL [ENCRYPTED]</span>
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">İLETİŞİM_KANALI [ŞİFRELİ]</span>
                                 </div>
                                 <Textarea
-                                    placeholder="TRANSMIT_MESSAGE..."
+                                    placeholder="MESAJI_İLET..."
                                     className="bg-black/30 border-border/50 focus-visible:ring-primary h-20 text-[12px] p-2 rounded-none resize-none uppercase tracking-tight font-medium"
                                     value={reply}
                                     onChange={handleTypingChange}
@@ -535,18 +535,18 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             <div className="space-y-4">
                 <Card className="border-border/60">
                     <CardHeader className="py-2 bg-muted/10">
-                        <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground">INCIDENT_METADATA</CardTitle>
+                        <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground">TALEP_METADATASI</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 py-4">
                         <div className="space-y-1">
-                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">STATE</label>
+                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">DURUM</label>
                             <div className="flex items-center gap-2">
                                 <div className="h-1.5 w-1.5 bg-primary animate-pulse" />
-                                <span className="text-[12px] font-bold uppercase tracking-tight text-foreground">{ticket.status}</span>
+                                <span className="text-[12px] font-bold uppercase tracking-tight text-foreground">{ticket.status === 'NEW' ? 'YENİ' : ticket.status === 'OPEN' ? 'AÇIK' : ticket.status === 'IN_PROGRESS' ? 'İŞLEMDE' : ticket.status === 'PENDING_CUSTOMER' ? 'BEKLEMEDE' : ticket.status === 'PENDING_CUSTOMER_REVIEW' ? 'ONAYDA' : ticket.status === 'RESOLVED' ? 'ÇÖZÜLDÜ' : ticket.status === 'CLOSED' ? 'KAPANDI' : ticket.status}</span>
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">COMMUNICATION_CHANNEL</label>
+                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">İLETİŞİM_KANALI</label>
                             <div className="flex items-center gap-2">
                                 {(() => {
                                     const Icon = CHANNEL_ICONS[ticket.channel] || Globe;
@@ -556,23 +556,23 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">CRITICALITY</label>
+                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">KRİTİKLİK</label>
                             <div className="flex items-center gap-2">
-                                <Badge variant="outline" className={PRIORITY_COLORS[ticket.priority]}>{ticket.priority}</Badge>
+                                <Badge variant="outline" className={PRIORITY_COLORS[ticket.priority]}>{ticket.priority === 'URGENT' ? 'ACİL' : ticket.priority === 'HIGH' ? 'YÜKSEK' : ticket.priority === 'MEDIUM' ? 'ORTA' : 'DÜŞÜK'}</Badge>
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">OPENED_AT</label>
+                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">AÇILIŞ_TARİHİ</label>
                             <p className="text-[11px] font-mono font-medium text-foreground">{new Date(ticket.createdAt).toISOString().replace(/T/, ' ').replace(/\..+/, '')}</p>
                         </div>
                         {ticket.assignee && (
                             <div className="space-y-1 pt-3 border-t border-border/20">
-                                <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">ASSIGNED_OFFICER</label>
+                                <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">ATANAN_YETKİLİ</label>
                                 <div className="flex items-center gap-2">
                                     <div className="h-6 w-6 bg-muted border border-border flex items-center justify-center text-[8px] font-bold">
                                         {ticket.assignee?.fullName?.[0] || 'AX'}
                                     </div>
-                                    <span className="text-[11px] font-bold uppercase tracking-tight">{ticket.assignee?.fullName || 'UNASSIGNED'}</span>
+                                    <span className="text-[11px] font-bold uppercase tracking-tight">{ticket.assignee?.fullName || 'ATANMAMIŞ'}</span>
                                 </div>
                             </div>
                         )}
@@ -582,10 +582,10 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 {/* System Notice */}
                 <div className="bg-primary/5 border border-primary/20 p-3 space-y-2">
                     <h4 className="text-[9px] font-bold text-primary flex items-center gap-1.5 uppercase tracking-[0.2em]">
-                        <Shield className="h-3 w-3" /> SECURITY_NOTICE
+                        <Shield className="h-3 w-3" /> GÜVENLİK_UYARISI
                     </h4>
                     <p className="text-[10px] text-muted-foreground leading-tight tracking-tight">
-                        OPERATIONAL_SECURITY_MANDATORY. NEVER DISCLOSE ACCESS_CREDENTIALS OR SYSTEM_PRIVILEGES. SCRUB SENSITIVE_DATA FROM TRANSMISSIONS.
+                        OPERASYONEL_GÜVENLİK_ZORUNLUDUR. ERİŞİM_BİLGİLERİNİ_VEYA_SİSTEM_YETKİLERİNİ_ASLA_PAYLAŞMAYIN. İLETİLERDEKİ_HASSAS_VERİLERİ_TEMİZLEYİN.
                     </p>
                 </div>
             </div>

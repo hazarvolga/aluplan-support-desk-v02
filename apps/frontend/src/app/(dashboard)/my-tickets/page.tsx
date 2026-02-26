@@ -38,7 +38,17 @@ export default function MyTicketsPage() {
             RESOLVED: 'success',
             CLOSED: 'ghost',
         };
-        return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
+
+        const statusMap: Record<string, string> = {
+            NEW: 'YENİ',
+            OPEN: 'AÇIK',
+            IN_PROGRESS: 'İŞLEMDE',
+            PENDING_CUSTOMER: 'MÜŞTERİ BEKLENİYOR',
+            RESOLVED: 'ÇÖZÜLDÜ',
+            CLOSED: 'KAPANDI',
+        };
+
+        return <Badge variant={variants[status] || 'default'}>{statusMap[status] || status}</Badge>;
     };
 
     return (

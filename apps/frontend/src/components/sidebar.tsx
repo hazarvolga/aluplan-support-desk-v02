@@ -12,12 +12,12 @@ import { api } from '@/lib/api';
 import { useEffect, useState } from 'react';
 
 const ADMIN_NAV = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/tickets', icon: Ticket, label: 'Kuyruk' },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Kontrol Paneli' },
+    { href: '/tickets', icon: Ticket, label: 'Bilet Kuyruğu' },
     {
         section: 'BİLGİ BANKASI',
         items: [
-            { href: '/knowledge-base', icon: BookOpen, label: 'KB Makaleleri' },
+            { href: '/knowledge-base', icon: BookOpen, label: 'Makaleler' },
             { href: '/kb-approvals', icon: MessageSquareQuote, label: 'AI Onayları' },
         ]
     },
@@ -31,24 +31,24 @@ const ADMIN_NAV = [
     {
         section: 'SİSTEM',
         items: [
-            { href: '/ai', icon: Bot, label: 'AI Konfigürasyonu' },
+            { href: '/ai', icon: Bot, label: 'AI Yapılandırması' },
             { href: '/customers', icon: Users, label: 'Müşteriler' },
             { href: '/products', icon: Layers, label: 'Ürünler & Modüller' },
-            { href: '/teams', icon: Users, label: 'Ekip' },
+            { href: '/teams', icon: Users, label: 'Destek Ekipleri' },
             { href: '/admin/emails', icon: Mail, label: 'E-Posta Yönetimi' },
-            { href: '/users', icon: Settings, label: 'Global Kullanıcılar' },
+            { href: '/users', icon: Settings, label: 'Tüm Kullanıcılar' },
             { href: '/admin/settings', icon: Settings, label: 'Sistem Ayarları' },
         ]
     },
-    { href: '/profile', icon: User, label: 'Profil' },
+    { href: '/profile', icon: User, label: 'Profil Ayarları' },
 ];
 
 const CUSTOMER_NAV = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Ana Sayfa' },
-    { href: '/my-tickets', icon: Ticket, label: 'Taleplerim' },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Genel Bakış' },
+    { href: '/my-tickets', icon: Ticket, label: 'Destek Taleplerim' },
     { href: '/knowledge-base', icon: BookOpen, label: 'Bilgi Bankası' },
-    { href: '/ai', icon: Bot, label: 'AI Asistan' },
-    { href: '/profile', icon: User, label: 'Profil' },
+    { href: '/ai', icon: Bot, label: 'Yapay Zeka Asistanı' },
+    { href: '/profile', icon: User, label: 'Hesabım' },
 ];
 
 interface SidebarProps {
@@ -116,8 +116,8 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                                                     href={sub.href}
                                                     onClick={onNavClick}
                                                     className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${active
-                                                            ? 'bg-primary/10 text-primary'
-                                                            : 'text-muted-foreground hover:bg-white/5 hover:text-white'
+                                                        ? 'bg-primary/10 text-primary'
+                                                        : 'text-muted-foreground hover:bg-white/5 hover:text-white'
                                                         }`}
                                                 >
                                                     <div className="flex items-center gap-3">
@@ -145,8 +145,8 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                                 href={item.href}
                                 onClick={onNavClick}
                                 className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${active
-                                        ? 'bg-primary/10 text-primary'
-                                        : 'text-muted-foreground hover:bg-white/5 hover:text-white'
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'text-muted-foreground hover:bg-white/5 hover:text-white'
                                     }`}
                             >
                                 <div className="flex items-center gap-3">

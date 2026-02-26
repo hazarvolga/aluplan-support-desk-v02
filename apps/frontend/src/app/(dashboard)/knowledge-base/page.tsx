@@ -8,10 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/components/auth/role-guard';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-    DRAFT: { label: 'DRAFT', color: 'border-border text-muted-foreground bg-muted/5' },
-    REVIEW: { label: 'UNDER_REVIEW', color: 'border-orange-900/50 text-orange-400 bg-orange-400/5' },
-    PUBLISHED: { label: 'ACTIVE', color: 'border-emerald-900/50 text-emerald-400 bg-emerald-400/5' },
-    ARCHIVED: { label: 'ARCHIVED', color: 'border-border/40 text-muted-foreground/40 bg-muted/5' },
+    DRAFT: { label: 'TASLAK', color: 'border-border text-muted-foreground bg-muted/5' },
+    REVIEW: { label: 'İNCELEMEDE', color: 'border-orange-900/50 text-orange-400 bg-orange-400/5' },
+    PUBLISHED: { label: 'AKTİF', color: 'border-emerald-900/50 text-emerald-400 bg-emerald-400/5' },
+    ARCHIVED: { label: 'ARŞİVLENDİ', color: 'border-border/40 text-muted-foreground/40 bg-muted/5' },
 };
 
 export default function KnowledgeBasePage() {
@@ -49,8 +49,8 @@ export default function KnowledgeBasePage() {
         <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-border/40 pb-4">
                 <div>
-                    <h1 className="text-[18px] font-bold text-foreground uppercase tracking-tight">KNOWLEDGE_BASE_CENTRAL</h1>
-                    <p className="mt-1 text-muted-foreground text-[10px] font-mono uppercase tracking-widest leading-none">OBJECT_COUNT: {total} UNITS</p>
+                    <h1 className="text-[18px] font-bold text-foreground uppercase tracking-tight">BİLGİ_BANKASI_MERKEZİ</h1>
+                    <p className="mt-1 text-muted-foreground text-[10px] font-mono uppercase tracking-widest leading-none">NESNE_SAYISI: {total} ADET</p>
                 </div>
                 <div className="flex items-center gap-2">
                     {isStaff && (
@@ -59,13 +59,13 @@ export default function KnowledgeBasePage() {
                                 href="/knowledge-base/analytics"
                                 className="flex items-center gap-2 px-3 py-1.5 border border-border bg-muted/20 text-muted-foreground hover:text-foreground transition-none text-[10px] uppercase font-bold tracking-widest"
                             >
-                                <BarChart3 className="h-3 w-3 text-primary" /> ANALYTICS
+                                <BarChart3 className="h-3 w-3 text-primary" /> ANALİTİK
                             </Link>
                             <Link
                                 href="/knowledge-base/new"
                                 className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground transition-none text-[10px] uppercase font-bold tracking-widest"
                             >
-                                <Plus className="h-3 w-3" /> CREATE_ARTICLE
+                                <Plus className="h-3 w-3" /> MAKALE_OLUŞTUR
                             </Link>
                         </>
                     )}
@@ -79,7 +79,7 @@ export default function KnowledgeBasePage() {
                     <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="SCAN_RECORDS..."
+                        placeholder="KAYITLARI_TARA..."
                         className="w-full pl-9 pr-4 py-1.5 border border-border/60 bg-black/20 text-[11px] uppercase tracking-tight text-foreground focus:outline-none focus:ring-1 focus:ring-primary h-8"
                     />
                 </form>
@@ -104,7 +104,7 @@ export default function KnowledgeBasePage() {
                 <div className="border border-border/40 bg-muted/5 p-12 flex flex-col items-center justify-center text-center">
                     <BookOpen className="h-8 w-8 text-muted-foreground/30 mb-4" />
                     <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">KAYIT_BULUNAMADI</h3>
-                    <p className="text-[10px] font-mono text-muted-foreground/60 mt-2 uppercase tracking-tighter">Query returned zero matching results in the database.</p>
+                    <p className="text-[10px] font-mono text-muted-foreground/60 mt-2 uppercase tracking-tighter">Sorgu veritabanında eşleşen sonuç döndürmedi.</p>
                 </div>
             ) : (
                 <div className="divide-y divide-border/20 border-t border-b border-border/40">
@@ -130,8 +130,8 @@ export default function KnowledgeBasePage() {
                                         <p className="font-bold text-foreground text-[14px] leading-tight tracking-tight truncate">{a.title.toUpperCase()}</p>
                                     </Link>
                                     <div className="flex items-center gap-4 mt-1 text-[9px] font-mono uppercase text-muted-foreground/60">
-                                        <span>OFFICER: {a.creator?.fullName || 'SYSTEM'}</span>
-                                        <span>LAST_SYNC: {new Date(a.updatedAt).toISOString().split('T')[0]}</span>
+                                        <span>YETKİLİ: {a.creator?.fullName || 'SİSTEM'}</span>
+                                        <span>SON_SENK: {new Date(a.updatedAt).toISOString().split('T')[0]}</span>
                                     </div>
                                 </div>
 
@@ -142,13 +142,13 @@ export default function KnowledgeBasePage() {
                                                 onClick={() => handleReview(a.id, true)}
                                                 className="px-2 py-1 border border-emerald-900/50 bg-emerald-500/5 text-emerald-500 text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-500/10 transition-none"
                                             >
-                                                VERIFY
+                                                ONAYLA
                                             </button>
                                             <button
                                                 onClick={() => handleReview(a.id, false)}
                                                 className="px-2 py-1 border border-red-900/50 bg-red-500/5 text-red-500 text-[9px] font-bold uppercase tracking-widest hover:bg-red-500/10 transition-none"
                                             >
-                                                REJECT
+                                                REDDET
                                             </button>
                                         </div>
                                     )}

@@ -139,7 +139,7 @@ export default function SettingsPage() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label>Host</Label>
+                                    <Label>Sunucu (Host)</Label>
                                     <Input value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className="bg-slate-900/50" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -148,12 +148,12 @@ export default function SettingsPage() {
                                         <Input value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} className="bg-slate-900/50" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>User</Label>
+                                        <Label>Kullanıcı</Label>
                                         <Input value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} className="bg-slate-900/50" />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Password</Label>
+                                    <Label>Şifre</Label>
                                     <Input type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} className="bg-slate-900/50" placeholder="••••••••" />
                                 </div>
                             </CardContent>
@@ -175,7 +175,7 @@ export default function SettingsPage() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label>Host</Label>
+                                    <Label>Sunucu (Host)</Label>
                                     <Input value={imapHost} onChange={(e) => setImapHost(e.target.value)} className="bg-slate-900/50" />
                                 </div>
                                 <div className="space-y-2">
@@ -183,7 +183,7 @@ export default function SettingsPage() {
                                     <Input value={imapUser} onChange={(e) => setImapUser(e.target.value)} className="bg-slate-900/50" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Password</Label>
+                                    <Label>Şifre</Label>
                                     <Input type="password" value={imapPass} onChange={(e) => setImapPass(e.target.value)} className="bg-slate-900/50" placeholder="••••••••" />
                                 </div>
                             </CardContent>

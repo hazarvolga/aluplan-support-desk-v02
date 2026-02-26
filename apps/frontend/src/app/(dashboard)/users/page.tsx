@@ -41,13 +41,13 @@ export default function UsersPage() {
     }, []);
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+        if (!confirm(`${name} kullanıcısını silmek istediğinize emin misiniz?`)) return;
         try {
             await api.users.delete(id);
-            toast({ title: 'User deleted' });
+            toast({ title: 'Kullanıcı silindi' });
             fetchUsers();
         } catch (error) {
-            toast({ title: 'Error', description: String(error), variant: 'destructive' });
+            toast({ title: 'Hata', description: String(error), variant: 'destructive' });
         }
     };
 
@@ -65,11 +65,11 @@ export default function UsersPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Team Management</h1>
-                    <p className="text-muted-foreground">Manage support agents, managers, and admins.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Ekip Yönetimi</h1>
+                    <p className="text-muted-foreground">Destek temsilcilerini, yöneticileri ve adminleri yönetin.</p>
                 </div>
                 <Button onClick={handleCreate}>
-                    <Plus className="mr-2 h-4 w-4" /> Add User
+                    <Plus className="mr-2 h-4 w-4" /> Kullanıcı Ekle
                 </Button>
             </div>
 
@@ -77,15 +77,15 @@ export default function UsersPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>User</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead>Kullanıcı</TableHead>
+                            <TableHead>Rol</TableHead>
+                            <TableHead>E-posta</TableHead>
+                            <TableHead className="text-right">İşlemler</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {loading && <TableRow><TableCell colSpan={4} className="text-center py-4">Loading...</TableCell></TableRow>}
-                        {!loading && users.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-4">No users found</TableCell></TableRow>}
+                        {loading && <TableRow><TableCell colSpan={4} className="text-center py-4">Yükleniyor...</TableCell></TableRow>}
+                        {!loading && users.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-4">Kullanıcı bulunamadı</TableCell></TableRow>}
 
                         {users.map((user) => (
                             <TableRow key={user.id}>

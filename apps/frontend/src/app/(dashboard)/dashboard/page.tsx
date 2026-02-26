@@ -72,18 +72,18 @@ export default function DashboardPage() {
                     <div>
                         <h1 className="text-[18px] font-bold tracking-tight uppercase flex items-center gap-2">
                             <Activity className="h-5 w-5 text-primary" />
-                            END_USER_PORTAL
+                            KULLANICI_PORTALI
                         </h1>
                         <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-tight">
-                            Identity: {user?.fullName} | Access_Level: Standard
+                            Kimlik: {user?.fullName} | Erişim_Seviyesi: Standart
                         </p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <StatCard icon={Ticket} label="ACTIVE_INCIDENTS" value={stats?.total || 0} indicatorColor="bg-blue-500" />
-                    <StatCard icon={CheckCircle2} label="RESOLVED_INCIDENTS" value="0" indicatorColor="bg-emerald-500" />
-                    <StatCard icon={Clock} label="AVG_RESPONSE_TIME" value="N/A" indicatorColor="bg-amber-500" />
+                    <StatCard icon={Ticket} label="AKTİF_TALEPLER" value={stats?.total || 0} indicatorColor="bg-blue-500" />
+                    <StatCard icon={CheckCircle2} label="ÇÖZÜMLENEN_TALEPLER" value="0" indicatorColor="bg-emerald-500" />
+                    <StatCard icon={Clock} label="ORT_YANIT_SÜRESİ" value="N/A" indicatorColor="bg-amber-500" />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -91,14 +91,14 @@ export default function DashboardPage() {
                         <div className="relative z-10">
                             <h3 className="text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
                                 <Search className="h-4 w-4 text-primary" />
-                                QUERY_KNOWLEDGE_BASE
+                                BİLGİ_BANKASI_SORGULA
                             </h3>
                             <p className="text-muted-foreground text-xs font-mono leading-relaxed mb-6 max-w-[80%]">
-                                Access indexed resolutions and known workarounds.
+                                Kayıtlı çözümlere ve bilinen iş akışlarına erişin.
                             </p>
                         </div>
                         <Link href="/knowledge-base" className="relative z-10 inline-flex items-center justify-between bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors w-fit">
-                            ACCESS_RECORDS
+                            KAYITLARI_İNCELE
                         </Link>
                         <BookOpen className="absolute -bottom-4 -right-4 h-32 w-32 text-primary/5 group-hover:text-primary/10 transition-colors" />
                     </div>
@@ -107,14 +107,14 @@ export default function DashboardPage() {
                         <div className="relative z-10">
                             <h3 className="text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
                                 <Bot className="h-4 w-4 text-violet-500" />
-                                AI_DIAGNOSTICS
+                                YSA_DİAGNOSTİK
                             </h3>
                             <p className="text-muted-foreground text-xs font-mono leading-relaxed mb-6 max-w-[80%]">
-                                Initialize neural analysis for immediate technical direction.
+                                Hızlı teknik yönlendirme için yapay zeka analizini başlatın.
                             </p>
                         </div>
                         <Link href="/ai" className="relative z-10 inline-flex items-center justify-between bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors w-fit">
-                            INIT_SESSION
+                            OTURUMU_BAŞLAT
                         </Link>
                         <Bot className="absolute -bottom-4 -right-4 h-32 w-32 text-violet-500/5 group-hover:text-violet-500/10 transition-colors" />
                     </div>
@@ -126,7 +126,7 @@ export default function DashboardPage() {
                         className="inline-flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 text-[10px] font-bold uppercase tracking-widest shadow-sm"
                     >
                         <PlusCircle className="h-4 w-4" />
-                        SUBMIT_NEW_INCIDENT
+                        YENİ_TALEP_OLUŞTUR
                     </Link>
                 </div>
             </div>
@@ -140,25 +140,25 @@ export default function DashboardPage() {
                 <div>
                     <h1 className="text-[18px] font-bold tracking-tight uppercase flex items-center gap-2">
                         <TrendingUp className="h-5 w-5 text-primary" />
-                        GLOBAL_COMMAND_CENTER
+                        KONTROL_MERKEZİ
                     </h1>
                     <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-tight">
-                        Aluplan Operational Telemetry — SYS.V2
+                        Aluplan Operasyonel Telemetri — SYS.V2
                     </p>
                 </div>
                 <div className="text-right hidden sm:block">
-                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">LAST_SYNC</p>
-                    <p className="text-xs font-mono text-foreground mt-0.5">{new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SON_SENK</p>
+                    <p className="text-xs font-mono text-foreground mt-0.5">{new Date().toLocaleTimeString('tr-TR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         <span className="text-primary animate-pulse ml-1">_</span></p>
                 </div>
             </div>
 
             {/* Core Operational Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard icon={Ticket} label="ACTIVE_INCIDENTS" value={stats?.total || 0} indicatorColor="bg-blue-500" />
-                <StatCard icon={AlertCircle} label="SLA_VIOLATIONS" value={stats?.breached || 0} indicatorColor="bg-rose-500" />
-                <StatCard icon={CheckCircle2} label="DAILY_RESOLVED" value="0" indicatorColor="bg-emerald-500" />
-                <StatCard icon={Bot} label="AI_CONFIDENCE_AVG" value="94%" indicatorColor="bg-violet-500" />
+                <StatCard icon={Ticket} label="AKTİF_TALEPLER" value={stats?.total || 0} indicatorColor="bg-blue-500" />
+                <StatCard icon={AlertCircle} label="SLA_İHLALLERİ" value={stats?.breached || 0} indicatorColor="bg-rose-500" />
+                <StatCard icon={CheckCircle2} label="GÜNLÜK_ÇÖZÜMLENEN" value="0" indicatorColor="bg-emerald-500" />
+                <StatCard icon={Bot} label="YSA_GÜVEN_ORT" value="94%" indicatorColor="bg-violet-500" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -167,7 +167,7 @@ export default function DashboardPage() {
                     <div className="py-2.5 px-4 bg-muted/5 border-b border-border/20 flex items-center gap-2">
                         <Activity className="h-3 w-3 text-primary" />
                         <span className="text-[10px] uppercase font-bold tracking-[0.1em] text-muted-foreground font-mono">
-                            INCIDENT_CRITICALITY_DISTRIBUTION
+                            TALEP_KRİTİKLİK_DAĞILIMI
                         </span>
                     </div>
                     <div className="p-4 space-y-5 flex flex-col justify-center min-h-[160px]">
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                             return (
                                 <div key={p} className="space-y-1.5">
                                     <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest">
-                                        <span className="text-muted-foreground w-16 font-mono">{p}</span>
+                                        <span className="text-muted-foreground w-16 font-mono">{p === 'URGENT' ? 'ACİL' : p === 'HIGH' ? 'YÜKSEK' : p === 'MEDIUM' ? 'ORTA' : 'DÜŞÜK'}</span>
                                         <div className="flex-1 mx-4 h-[2px] bg-muted/10 relative overflow-hidden">
                                             <div className={`absolute top-0 left-0 h-full ${barColor}`} style={{ width: `${percent}%` }}></div>
                                         </div>
@@ -197,7 +197,7 @@ export default function DashboardPage() {
                     <WireframeBorder className="border-border/40 bg-transparent flex-1">
                         <div className="py-2.5 px-4 bg-muted/5 border-b border-border/20">
                             <div className="text-[10px] uppercase font-bold tracking-[0.1em] text-muted-foreground font-mono">
-                                SYSTEM_TELEMETRY
+                                SİSTEM_TELEMETRİSİ
                             </div>
                         </div>
                         <div className="p-4 flex flex-col justify-center">
@@ -218,16 +218,16 @@ export default function DashboardPage() {
                     <WireframeBorder className="border-border/40 bg-transparent">
                         <div className="py-2.5 px-4 bg-muted/5 border-b border-border/20">
                             <div className="text-[10px] uppercase font-bold tracking-[0.1em] text-muted-foreground font-mono">
-                                RAPID_ROUTING
+                                HIZLI_ERİŞİM
                             </div>
                         </div>
                         <div className="p-4 grid gap-2">
                             <Link href="/tickets?status=NEW" className="flex items-center justify-between p-3 border border-border/40 bg-muted/5 hover:bg-primary/5 hover:border-primary/30 transition-colors group">
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-foreground font-mono">MANAGE_QUEUE</span>
+                                <span className="text-[10px] uppercase font-bold tracking-widest text-foreground font-mono">KUYRUĞU_YÖNET</span>
                                 <PlusCircle className="h-3 w-3 text-primary group-hover:translate-x-1 transition-transform" />
                             </Link>
                             <Link href="/ai" className="flex items-center justify-between p-3 border border-border/40 bg-muted/5 hover:bg-cyan-500/5 hover:border-cyan-500/30 transition-colors group">
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-foreground font-mono">NEURAL_ANALYSIS</span>
+                                <span className="text-[10px] uppercase font-bold tracking-widest text-foreground font-mono">NÖRAL_ANALİZ</span>
                                 <Bot className="h-3 w-3 text-cyan-400 group-hover:translate-x-1 transition-transform" />
                             </Link>
                         </div>

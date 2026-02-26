@@ -68,19 +68,19 @@ export default function KbApprovalsPage() {
                 <div>
                     <h1 className="text-[18px] font-bold tracking-tight uppercase flex items-center gap-2">
                         <Bot className="h-5 w-5 text-primary" />
-                        AI_KNOWLEDGE_VERIFICATION_CENTER
+                        Yapay Zeka Bilgi Doğrulama Merkezi
                     </h1>
                     <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-tight">
-                        Review and authorize automatically synthesized knowledge units from processed incident threads.
+                        İşlenen olay kayıtlarından otomatik olarak sentezlenen bilgi birimlerini inceleyin ve yetkilendirin.
                     </p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={fetchDrafts} disabled={loading} className="h-7 text-[10px] uppercase font-bold tracking-widest bg-muted/20 border-border/60">
                         <RefreshCw className={`mr-2 h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-                        RESYNC_QUEUE
+                        KUYRUĞU_YENİLE
                     </Button>
                     <Button size="sm" onClick={runPipeline} className="h-7 text-[10px] uppercase font-bold tracking-widest bg-emerald-600 hover:bg-emerald-700">
-                        EXEC_PIPELINE
+                        İŞ_AKIŞINI_BAŞLAT
                     </Button>
                 </div>
             </div>
@@ -88,9 +88,9 @@ export default function KbApprovalsPage() {
             <Card className="border-border/60">
                 <CardHeader className="py-2.5 px-3 bg-muted/10 border-b border-border/40">
                     <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] flex items-center justify-between text-muted-foreground">
-                        <span>AWAITING_AUTHORIZATION_QUEUE</span>
+                        <span>ONAY_BEKLEYEN_BİLGİ_KUYRUĞU</span>
                         <Badge className="bg-orange-500/10 text-orange-400 border-orange-900/50 rounded-none h-4 px-1.5 text-[9px] font-mono">
-                            {drafts.length} UNITS_LOADED
+                            {drafts.length} BİRİM_YÜKLENDİ
                         </Badge>
                     </CardTitle>
                 </CardHeader>
@@ -109,11 +109,11 @@ export default function KbApprovalsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow className="border-border/40 hover:bg-transparent">
-                                    <TableHead className="w-[300px] h-8 text-[9px] uppercase font-bold tracking-widest font-mono">EXTRACTED_QUERY</TableHead>
-                                    <TableHead className="h-8 text-[9px] uppercase font-bold tracking-widest font-mono">SYNTHESIZED_RESPONSE</TableHead>
-                                    <TableHead className="w-[120px] text-center h-8 text-[9px] uppercase font-bold tracking-widest font-mono">CONFIDENCE_SCORE</TableHead>
-                                    <TableHead className="w-[100px] text-center h-8 text-[9px] uppercase font-bold tracking-widest font-mono">SOURCE_INCIDENT</TableHead>
-                                    <TableHead className="w-[180px] text-right h-8 text-[9px] uppercase font-bold tracking-widest font-mono">AUTHORIZATION</TableHead>
+                                    <TableHead className="w-[300px] h-8 text-[9px] uppercase font-bold tracking-widest font-mono">ÇIKARILAN_SORGU</TableHead>
+                                    <TableHead className="h-8 text-[9px] uppercase font-bold tracking-widest font-mono">SENTEZLENEN_YANIT</TableHead>
+                                    <TableHead className="w-[120px] text-center h-8 text-[9px] uppercase font-bold tracking-widest font-mono">GÜVEN_SKORU</TableHead>
+                                    <TableHead className="w-[100px] text-center h-8 text-[9px] uppercase font-bold tracking-widest font-mono">KAYNAK_VAKA</TableHead>
+                                    <TableHead className="w-[180px] text-right h-8 text-[9px] uppercase font-bold tracking-widest font-mono">YETKİLENDİRME</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -130,10 +130,10 @@ export default function KbApprovalsPage() {
                                         </TableCell>
                                         <TableCell className="align-top text-center py-3">
                                             <Badge variant="outline" className={`h-4 px-1.5 text-[9px] font-mono rounded-none ${draft.confidenceScore >= 0.85 ? 'text-emerald-400 border-emerald-900/50 bg-emerald-500/5' :
-                                                    draft.confidenceScore >= 0.60 ? 'text-amber-400 border-amber-900/50 bg-amber-500/5' :
-                                                        'text-red-400 border-red-900/50 bg-red-500/5'}
+                                                draft.confidenceScore >= 0.60 ? 'text-amber-400 border-amber-900/50 bg-amber-500/5' :
+                                                    'text-red-400 border-red-900/50 bg-red-500/5'}
                                             `}>
-                                                {Math.round(draft.confidenceScore * 100)}%_RELIABLE
+                                                %{Math.round(draft.confidenceScore * 100)}_GÜVENİLİR
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="align-top text-center py-3">
@@ -146,10 +146,10 @@ export default function KbApprovalsPage() {
                                         <TableCell className="align-top text-right py-3">
                                             <div className="flex justify-end gap-1.5">
                                                 <Button size="sm" variant="outline" onClick={() => handleApprove(draft.id)} className="h-6 text-[9px] font-bold uppercase border-emerald-900/50 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 transition-none">
-                                                    VERIFY
+                                                    DOĞRULA
                                                 </Button>
                                                 <Button size="sm" variant="outline" onClick={() => handleDismiss(draft.id)} className="h-6 text-[9px] font-bold uppercase border-red-900/50 text-red-500 bg-red-500/5 hover:bg-red-500/10 transition-none">
-                                                    PURGE
+                                                    SİL
                                                 </Button>
                                             </div>
                                         </TableCell>
