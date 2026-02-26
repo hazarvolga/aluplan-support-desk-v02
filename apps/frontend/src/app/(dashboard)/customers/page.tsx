@@ -34,7 +34,7 @@ interface CustomerItem {
     };
 }
 
-type SortField = 'companyName' | 'fullName' | 'jobTitle' | 'email' | 'status' | 'createdAt' | 'contractStatus';
+type SortField = 'companyName' | 'fullName' | 'jobTitle' | 'email' | 'status' | 'createdAt' | 'contractStatus' | 'industry' | 'customerNo' | 'phoneNumber';
 type SortOrder = 'asc' | 'desc';
 
 export default function CustomersPage() {
@@ -149,6 +149,18 @@ export default function CustomersPage() {
                     aValue = a.customerProfile?.contractStatus || '';
                     bValue = b.customerProfile?.contractStatus || '';
                     break;
+                case 'industry':
+                    aValue = a.customerProfile?.industry || '';
+                    bValue = b.customerProfile?.industry || '';
+                    break;
+                case 'customerNo':
+                    aValue = a.customerProfile?.customerNo || '';
+                    bValue = b.customerProfile?.customerNo || '';
+                    break;
+                case 'phoneNumber':
+                    aValue = a.customerProfile?.phoneNumber || '';
+                    bValue = b.customerProfile?.phoneNumber || '';
+                    break;
                 case 'createdAt':
                     aValue = new Date(a.createdAt).getTime();
                     bValue = new Date(b.createdAt).getTime();
@@ -233,15 +245,15 @@ export default function CustomersPage() {
                                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                 />
                             </TableHead>
-                            <SortableHeader field="fullName">Full Name</SortableHeader>
-                            <SortableHeader field="jobTitle">Job Title</SortableHeader>
-                            <SortableHeader field="email">Email</SortableHeader>
-                            <TableHead>Industry</TableHead>
-                            <SortableHeader field="companyName">Company Name</SortableHeader>
-                            <TableHead>Client ID</TableHead>
+                            <SortableHeader field="fullName">Ad Soyad</SortableHeader>
+                            <SortableHeader field="jobTitle">Ünvan</SortableHeader>
+                            <SortableHeader field="email">E-posta</SortableHeader>
+                            <SortableHeader field="industry">Sektör</SortableHeader>
+                            <SortableHeader field="companyName">Şirket Adı</SortableHeader>
+                            <SortableHeader field="customerNo">Müşteri No</SortableHeader>
                             <SortableHeader field="contractStatus">Abonelik Modeli</SortableHeader>
                             <SortableHeader field="status">Müşteri Durumu</SortableHeader>
-                            <TableHead>Mobile Phone</TableHead>
+                            <SortableHeader field="phoneNumber">Cep Telefonu</SortableHeader>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -269,7 +281,7 @@ export default function CustomersPage() {
                                     </TableCell>
                                     <TableCell>{c.customerProfile?.jobTitle || '-'}</TableCell>
                                     <TableCell>{c.email}</TableCell>
-                                    <TableCell>-</TableCell>
+                                    <TableCell>{c.customerProfile?.industry || '-'}</TableCell>
                                     <TableCell className="font-medium">
                                         {c.customerProfile?.companyName || '-'}
                                     </TableCell>
