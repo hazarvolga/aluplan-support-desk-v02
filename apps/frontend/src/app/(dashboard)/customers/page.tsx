@@ -13,8 +13,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, Search, ArrowUpDown, Trash2, Link2, RefreshCw, History, Building2, Globe, Users } from 'lucide-react';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Upload, Search, ArrowUpDown, Trash2, Link2, RefreshCw, History, Building2, Globe, Users, ExternalLink, Save } from 'lucide-react';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
 
 interface CustomerItem {
