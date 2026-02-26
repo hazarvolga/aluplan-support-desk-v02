@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, Search, ArrowUpDown, Trash2, Link2, RefreshCw, History, Building2, Globe, Users, ExternalLink, Save } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 interface CustomerItem {
     id: string;
@@ -57,6 +58,7 @@ type SortField = 'companyName' | 'fullName' | 'jobTitle' | 'email' | 'status' | 
 type SortOrder = 'asc' | 'desc';
 
 export default function CustomersPage() {
+    const { toast } = useToast();
     const [customers, setCustomers] = useState<CustomerItem[]>([]);
     const [accounts, setAccounts] = useState<AccountItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -154,11 +156,11 @@ export default function CustomersPage() {
         setDeleting(true);
         try {
             await api.customers.bulkDelete(selectedIds);
-            alert('Seçilen müşteriler silindi.');
+            toast({ title: '✅ Başarılı', description: 'Seçilen müşteriler silindi.' });
             loadCustomers();
         } catch (error: any) {
             console.error(error);
-            alert('Silme işlemi başarısız: ' + (error.message || 'Bilinmeyen hata'));
+            toast({ variant: 'destructive', title: '❌ Hata', description: 'Silme işlemi başarısız: ' + (error.message || 'Bilinmeyen hata') });
         } finally {
             setDeleting(false);
         }
@@ -170,10 +172,10 @@ export default function CustomersPage() {
         setSyncing(true);
         try {
             await api.crm.triggerSync(connectionId);
-            alert('Senkronizasyon başlatıldı.');
+            toast({ title: '🔄 Senkronizasyon', description: 'Senkronizasyon işlemi arka planda başlatıldı.' });
             loadConnections();
         } catch (error: any) {
-            alert('Hata: ' + error.message);
+            toast({ variant: 'destructive', title: '❌ Hata', description: error.message });
         } finally {
             setSyncing(false);
         }

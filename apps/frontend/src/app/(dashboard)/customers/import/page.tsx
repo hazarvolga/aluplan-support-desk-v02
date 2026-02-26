@@ -6,8 +6,10 @@ import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
 import { Upload, ArrowLeft, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ImportCustomersPage() {
+    const { toast } = useToast();
     const [importing, setImporting] = useState(false);
     const [progress, setProgress] = useState(0);
     const [stats, setStats] = useState<{ success: number; error: number; total: number } | null>(null);
@@ -46,7 +48,7 @@ export default function ImportCustomersPage() {
                             .filter((r: any) => r.email && r.firstName && r.lastName);
 
                         if (mappedData.length === 0) {
-                            alert('Geçerli bir veri bulunamadı. Lütfen CSV dosyasını kontrol edin.');
+                            toast({ variant: 'destructive', title: '⚠️ Veri Bulunamadı', description: 'Geçerli bir veri bulunamadı. Lütfen CSV dosyasını kontrol edin.' });
                             setImporting(false);
                             return;
                         }
@@ -73,7 +75,7 @@ export default function ImportCustomersPage() {
 
                     } catch (error: any) {
                         console.error('Import error:', error);
-                        alert('İçe aktarma sırasında bir hata oluştu: ' + error.message);
+                        toast({ variant: 'destructive', title: '❌ İçe Aktarma Hatası', description: error.message });
                     } finally {
                         setImporting(false);
                         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -81,7 +83,7 @@ export default function ImportCustomersPage() {
                 },
                 error: (err: any) => {
                     console.error(err);
-                    alert('CSV dosyası çözümlenirken bir hata oluştu.');
+                    toast({ variant: 'destructive', title: '❌ CSV Hatası', description: 'CSV dosyası çözümlenirken bir hata oluştu.' });
                     setImporting(false);
                     if (fileInputRef.current) fileInputRef.current.value = '';
                 },
@@ -89,7 +91,7 @@ export default function ImportCustomersPage() {
         };
 
         reader.onerror = () => {
-            alert('Dosya okunurken bir hata oluştu. Muhtemelen izin veya format problemi var.');
+            toast({ variant: 'destructive', title: '❌ Dosya Hatası', description: 'Dosya okunurken bir hata oluştu. Muhtemelen izin veya format problemi var.' });
             setImporting(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
         };

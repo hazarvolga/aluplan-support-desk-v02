@@ -10,8 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowLeft, User, Building, Edit, Save, Key } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CustomerProfilePage() {
+    const { toast } = useToast();
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
@@ -43,7 +45,7 @@ export default function CustomerProfilePage() {
             })
             .catch(err => {
                 console.error(err);
-                alert("Müşteri bulunamadı.");
+                toast({ variant: 'destructive', title: '❌ Hata', description: 'Müşteri bulunamadı.' });
                 router.push('/customers');
             })
             .finally(() => setLoading(false));
@@ -58,11 +60,11 @@ export default function CustomerProfilePage() {
         setSaving(true);
         try {
             await api.customers.update(id, formData);
-            alert('Müşteri başarıyla güncellendi.');
+            toast({ title: '✅ Başarılı', description: 'Müşteri başarıyla güncellendi.' });
             window.location.reload(); // Quick refresh to catch top layout items
         } catch (error: any) {
             console.error(error);
-            alert('Hata: ' + (error.message || 'Güncelleme başarısız.'));
+            toast({ variant: 'destructive', title: '❌ Hata', description: error.message || 'Güncelleme başarısız.' });
         } finally {
             setSaving(false);
         }
@@ -72,10 +74,10 @@ export default function CustomerProfilePage() {
         if (!confirm('Devam edilsin mi? Müşteriye yeni, rastgele bir şifre atanacaktır.')) return;
         try {
             const result = await api.customers.resetPassword(id);
-            alert(`Şifre sıfırlandı!\n\nYeni Şifre: ${result.newPassword}\nE-posta: ${result.email}\n\nLütfen bu bilgiyi güvenli bir şekilde kullanıcıyla paylaşın.`);
+            toast({ title: '🔑 Şifre Sıfırlandı', description: `Yeni Şifre: ${result.newPassword} — E-posta: ${result.email}` });
         } catch (error: any) {
             console.error(error);
-            alert('Hata: ' + (error.message || 'Şifre sıfırlama başarısız.'));
+            toast({ variant: 'destructive', title: '❌ Hata', description: error.message || 'Şifre sıfırlama başarısız.' });
         }
     };
 

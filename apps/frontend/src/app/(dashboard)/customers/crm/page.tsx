@@ -16,6 +16,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
 
 interface CrmConnection {
     id: string;
@@ -41,6 +42,7 @@ interface SyncLog {
 }
 
 export default function CrmManagementPage() {
+    const { toast } = useToast();
     const [config, setConfig] = useState({
         provider: 'DYNAMICS_365',
         tenantId: '',
@@ -96,10 +98,10 @@ export default function CrmManagementPage() {
         setSaving(true);
         try {
             await api.crm.upsertConnection(config);
-            alert('Bağlantı başarıyla kaydedildi ve doğrulandı.');
+            toast({ title: '✅ Başarılı', description: 'Bağlantı başarıyla kaydedildi ve doğrulandı.' });
             loadData();
         } catch (error: any) {
-            alert('Bağlantı hatası: ' + (error.response?.data?.message || error.message));
+            toast({ variant: 'destructive', title: '❌ Bağlantı Hatası', description: error.response?.data?.message || error.message });
         } finally {
             setSaving(false);
         }
@@ -110,7 +112,7 @@ export default function CrmManagementPage() {
         setSyncing(true);
         try {
             await api.crm.triggerSync(connection.id);
-            alert('Senkronizasyon işlemi arka planda başlatıldı.');
+            toast({ title: '🔄 Senkronizasyon', description: 'Senkronizasyon işlemi arka planda başlatıldı.' });
             loadData();
         } catch (error) {
             console.error('Sync failed', error);
