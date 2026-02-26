@@ -99,7 +99,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
     async syncContacts(config: any): Promise<SyncResult> {
         try {
             const token = await this.getAccessToken(config);
-            const resourceUrl = `${config.instanceUrl}/api/data/v9.2/contacts?$select=contactid,firstname,lastname,emailaddress1,jobtitle,telephone1,new_musteridurumu,new_abonelikmodeli&$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
+            const resourceUrl = `${config.instanceUrl}/api/data/v9.2/contacts?$select=contactid,firstname,lastname,emailaddress1,jobtitle,telephone1,new_musteridurumu&$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
             this.logger.debug(`Fetching contacts from: ${resourceUrl}`);
 
             const response = await axios.get(resourceUrl, {
@@ -156,7 +156,6 @@ export class Dynamics365Adapter implements ICrmAdapter {
                         }
 
                         const statusFormatted = contact['new_musteridurumu@OData.Community.Display.V1.FormattedValue'];
-                        const subscriptionFormatted = contact['new_abonelikmodeli@OData.Community.Display.V1.FormattedValue'];
                         const clientNo = contact.parentcustomerid_account?.accountnumber || `DYN-${contact.contactid.substring(0, 8)}`;
                         const industryFromAccount = contact.parentcustomerid_account ?
                             contact.parentcustomerid_account['industrycode@OData.Community.Display.V1.FormattedValue'] : null;
@@ -174,7 +173,6 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                 externalContactId: contact.contactid,
                                 customerNo: clientNo,
                                 contractStatus: statusFormatted,
-                                subscriptionModel: subscriptionFormatted,
                                 industry: industryFromAccount || accountInfo?.industry,
                                 crmVerified: true,
                             },
@@ -189,7 +187,6 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                 accountId: linkedAccountId,
                                 externalContactId: contact.contactid,
                                 contractStatus: statusFormatted,
-                                subscriptionModel: subscriptionFormatted,
                                 industry: industryFromAccount || accountInfo?.industry,
                                 crmVerified: true,
                             },

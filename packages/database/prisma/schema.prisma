@@ -315,7 +315,6 @@ model CustomerProfile {
   jobTitle          String?   @map("job_title") @db.VarChar(255)
   phoneNumber       String?   @map("phone_number") @db.VarChar(50)
   contractStatus    String?   @map("contract_status") @db.VarChar(100)
-  subscriptionModel String?   @map("subscription_model") @db.VarChar(100)
   externalContactId String?   @unique @map("external_contact_id") @db.VarChar(255)
   crmVerified       Boolean   @default(false) @map("crm_verified")
   hotinfoData       Json?     @map("hotinfo_data")
