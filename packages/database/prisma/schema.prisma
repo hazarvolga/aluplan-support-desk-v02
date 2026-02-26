@@ -309,6 +309,8 @@ model CustomerProfile {
   middleName        String?   @map("middle_name") @db.VarChar(100)
   customerNo        String    @unique @map("customer_no") @db.VarChar(50) // CRM ID (e.g. C300 XX XX XX)
   companyName       String    @map("company_name") @db.VarChar(255)
+  accountId         String?   @map("account_id") @db.Uuid
+  account           CrmAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
   industry          String?   @db.VarChar(255)
   jobTitle          String?   @map("job_title") @db.VarChar(255)
   phoneNumber       String?   @map("phone_number") @db.VarChar(50)
@@ -321,6 +323,75 @@ model CustomerProfile {
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
   @@map("customer_profiles")
+}
+
+model CrmAccount {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String            @db.VarChar(255)
+  industry          String?           @db.VarChar(255)
+  website           String?           @db.VarChar(255)
+  address           String?           @db.Text
+  externalAccountId String?           @unique @map("external_account_id") @db.VarChar(255)
+  crmVerified       Boolean           @default(false) @map("crm_verified")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  customers         CustomerProfile[]
+
+  @@map("crm_accounts")
+}
+
+// =============================================
+// CRM INTEGRATION (MULTI-PROVIDER)
+// =============================================
+
+model CrmConnection {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider      CrmProvider @unique
+  tenantId      String?     @map("tenant_id") @db.VarChar(255)
+  clientId      String?     @map("client_id") @db.VarChar(255)
+  clientSecret  String?     @map("client_secret") @db.Text
+  instanceUrl   String?     @map("instance_url") @db.VarChar(255)
+  isActive      Boolean     @default(true) @map("is_active")
+  syncSettings  Json?       @map("sync_settings")
+  lastSyncAt    DateTime?   @map("last_sync_at")
+  syncStatus    SyncStatus  @default(IDLE) @map("sync_status")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  syncLogs      CrmSyncLog[]
+
+  @@map("crm_connections")
+}
+
+model CrmSyncLog {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId    String        @map("connection_id") @db.Uuid
+  connection      CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  status          SyncStatus
+  startedAt       DateTime      @default(now()) @map("started_at")
+  completedAt     DateTime?     @map("completed_at")
+  totalRecords    Int           @default(0) @map("total_records")
+  successCount    Int           @default(0) @map("success_count")
+  errorCount      Int           @default(0) @map("error_count")
+  errorMessage    String?       @map("error_message") @db.Text
+  details         Json?         // Detailed record-level results
+
+  @@map("crm_sync_logs")
+}
+
+enum CrmProvider {
+  DYNAMICS_365
+  SALESFORCE
+  HUBSPOT
+  CUSTOM_WEBHOOK
+}
+
+enum SyncStatus {
+  IDLE
+  SYNCING
+  SUCCESS
+  ERROR
 }
 
 // =============================================
