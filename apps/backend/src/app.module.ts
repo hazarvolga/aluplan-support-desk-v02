@@ -34,6 +34,8 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
 import { TeamsModule } from './teams/teams.module';
 import { BrandingModule } from './branding/branding.module';
 import { CrmModule } from './crm/crm.module';
+import { AnnouncementsModule } from './announcements/announcements.module';
+import { AnnouncementTemplatesModule } from './announcement-templates/announcement-templates.module';
 
 @Module({
     imports: [
@@ -98,6 +100,8 @@ import { CrmModule } from './crm/crm.module';
         TeamsModule,
         BrandingModule,
         CrmModule,
+        AnnouncementsModule,
+        AnnouncementTemplatesModule,
     ],
     providers: [],
 })

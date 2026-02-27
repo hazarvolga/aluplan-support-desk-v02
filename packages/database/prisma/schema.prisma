@@ -145,6 +145,8 @@ model User {
   articlesApproved  KnowledgeArticle[]     @relation("ArticleApprovedBy")
   articleVersions   KnowledgeArticleVersion[]
   aiInteractions    AiInteraction[]
+  announcements     Announcement[]
+  announcementTemplates AnnouncementTemplate[] @relation("TemplateAuthor")
   feedbacks         InteractionFeedback[]
   articleFeedbacks  ArticleFeedback[]
   trainingReviews   TrainingQueue[]
@@ -319,8 +321,11 @@ model CustomerProfile {
   crmVerified       Boolean   @default(false) @map("crm_verified")
   hotinfoData       Json?     @map("hotinfo_data")
   hotinfoUpdatedAt  DateTime? @map("hotinfo_updated_at")
+  tags              String[]  @default([])
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  announcementLogs  AnnouncementLog[]
 
   @@map("customer_profiles")
 }
@@ -1026,6 +1031,7 @@ model EmailLog {
   createdAt      DateTime     @default(now()) @map("created_at")
 
   events EmailEvent[]
+  announcementLog AnnouncementLog?
 
   @@index([recipientEmail], map: "idx_email_logs_recipient")
   @@index([templateName], map: "idx_email_logs_template")
@@ -1056,4 +1062,73 @@ model EmailPreference {
 
   @@unique([userId, emailType])
   @@map("email_preferences")
+}
+
+// =============================================
+// ANNOUNCEMENTS & TARGETED CAMPAIGNS
+// =============================================
+
+model Announcement {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String           @db.VarChar(255)
+  subject        String           @db.VarChar(255)
+  contentMjml    String           @map("content_mjml") @db.Text
+  targetCriteria Json             @map("target_criteria") // Segment filters (industry, tags, contract status etc.)
+  status         AnnouncementStatus @default(DRAFT)
+  type           AnnouncementType @default(BROADCAST)
+  scheduledAt    DateTime?        @map("scheduled_at")
+  sentAt         DateTime?        @map("sent_at")
+  createdBy      String?          @map("created_by") @db.Uuid
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  author         User?            @relation(fields: [createdBy], references: [id])
+  logs           AnnouncementLog[]
+
+  @@map("announcements")
+}
+
+model AnnouncementLog {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  announcementId String       @map("announcement_id") @db.Uuid
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  customerId     String       @map("customer_id") @db.Uuid
+  customer       CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  status         String       @default("PENDING") @db.VarChar(50) // PENDING, SENT, FAILED
+  sentAt         DateTime?    @map("sent_at")
+  error          String?      @db.Text
+  emailLogId     String?      @unique @map("email_log_id") @db.Uuid
+  emailLog       EmailLog?    @relation(fields: [emailLogId], references: [id], onDelete: SetNull)
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@map("announcement_logs")
+}
+
+model AnnouncementTemplate {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar(255)
+  topic       String?  @db.VarChar(100)
+  subject     String?  @db.VarChar(255)
+  contentMjml String   @map("content_mjml") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  createdBy   String?  @map("created_by") @db.Uuid
+  author      User?    @relation("TemplateAuthor", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@map("announcement_templates")
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  CANCELLED
+}
+
+enum AnnouncementType {
+  BROADCAST
+  TRIGGER
+  LIFECYCLE
 }

@@ -27,8 +27,8 @@ async function main() {
         process.exit(1);
     }
 
-    // Default şifre "Aluplan2025!" gibi bir şey, hashleyelim
-    const defaultPassword = 'AluplanTest!';
+    // Use environment variable for default password, with a fallback for dev only
+    const defaultPassword = process.env.WP_IMPORT_DEFAULT_PASSWORD || 'AluplanTest!';
     const defaultHash = await bcrypt.hash(defaultPassword, 12);
 
     let successCount = 0;

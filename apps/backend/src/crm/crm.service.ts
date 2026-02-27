@@ -185,6 +185,39 @@ export class CrmService {
         });
     }
 
+    async getAccountById(id: string) {
+        const account = await this.prisma.crmAccount.findUnique({
+            where: { id },
+            include: {
+                customers: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                email: true,
+                                fullName: true,
+                                status: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!account) throw new NotFoundException('Şirket kaydı bulunamadı.');
+        return account;
+    }
+
+    async bulkDeleteAccounts(ids: string[]) {
+        if (!ids || ids.length === 0) return { deletedCount: 0 };
+
+        const result = await this.prisma.crmAccount.deleteMany({
+            where: { id: { in: ids } }
+        });
+
+        return { deletedCount: result.count };
+    }
+
     async processDynamics365Webhook(payload: any) {
         this.logger.debug(`Processing Dynamics 365 Webhook payload for entity: ${payload.entity}`);
         const adapter = this.getAdapter(CrmProvider.DYNAMICS_365) as Dynamics365Adapter;

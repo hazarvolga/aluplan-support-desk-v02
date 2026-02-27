@@ -251,6 +251,23 @@ export const api = {
         verifyProvider: () => request<{ provider: string; available: boolean }>('/email/admin/provider/verify', { method: 'POST' }),
         getGmailAuthUrl: () => request<{ url: string }>('/email/gmail/auth-url'),
     },
+    announcements: {
+        list: () => request<any[]>('/announcements'),
+        getFilters: () => request<{ industries: string[], statuses: string[], companies: string[] }>('/announcements/filters'),
+        get: (id: string) => request<any>(`/announcements/${id}`),
+        create: (body: any) => request<any>('/announcements', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: any) => request<any>(`/announcements/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        delete: (id: string) => request<any>(`/announcements/${id}`, { method: 'DELETE' }),
+        getTargetCount: (criteria: any) => request<{ count: number }>('/announcements/target-count', { method: 'POST', body: JSON.stringify(criteria) }),
+        broadcast: (id: string) => request<{ success: true; count: number }>(`/announcements/${id}/broadcast`, { method: 'POST' }),
+    },
+    announcementTemplates: {
+        list: () => request<any[]>('/announcement-templates'),
+        get: (id: string) => request<any>(`/announcement-templates/${id}`),
+        create: (body: any) => request<any>('/announcement-templates', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: any) => request<any>(`/announcement-templates/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        delete: (id: string) => request<any>(`/announcement-templates/${id}`, { method: 'DELETE' }),
+    },
     branding: {
         uploadLogo: (file: File) => {
             const formData = new FormData();
@@ -270,6 +287,8 @@ export const api = {
         triggerSync: (id: string) => request<any>(`/crm/sync/${id}`, { method: 'POST' }),
         getLogs: (connectionId: string) => request<any[]>(`/crm/logs/${connectionId}`),
         getAccounts: () => request<any[]>('/crm/accounts'),
+        getAccount: (id: string) => request<any>(`/crm/accounts/${id}`),
+        bulkDeleteAccounts: (ids: string[]) => request<any>('/crm/accounts/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
     },
     get: (url: string) => request<any>(url),
     post: (url: string, body: any) =>

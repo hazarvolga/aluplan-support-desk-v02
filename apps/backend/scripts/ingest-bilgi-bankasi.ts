@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
 async function main() {
-    const KNOWLEDGE_PATH = '/Users/hazarekiz/Projects/aluplan-support-desk-V02/Bilgi Bankası';
+    const KNOWLEDGE_PATH = process.env.KNOWLEDGE_BASE_PATH || path.join(__dirname, '../../../../Bilgi Bankası');
 
     console.log('🚀 Starting Intelligent Knowledge Ingestion...');
 

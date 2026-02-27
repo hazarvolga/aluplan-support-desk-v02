@@ -41,32 +41,46 @@ export class TemplateService {
     let compiledTemplate = this.cache.get(templateName);
 
     if (!compiledTemplate) {
-      // Find template in screens/
-      const mjmlPath = path.join(this.mjmlBaseDir, 'screens', `${templateName}.mjml`);
-      const layoutPath = path.join(this.mjmlBaseDir, 'layouts', 'base.mjml');
-
-      if (!fs.existsSync(mjmlPath)) {
-        throw new Error(`Template formulation failed: ${mjmlPath} does not exist`);
-      }
-
-      const childContent = fs.readFileSync(mjmlPath, 'utf8');
       let mjmlContent = '';
 
-      // Hybrid Detection: If child already has <mjml> tag, don't wrap with base layout
-      const isFullMjml = childContent.trim().toLowerCase().startsWith('<mjml>');
+      if (templateName === 'raw' && data.mjml) {
+        const rawContent = data.mjml.trim();
+        const isFullMjml = rawContent.toLowerCase().startsWith('<mjml>');
+        const layoutPath = path.join(this.mjmlBaseDir, 'layouts', 'base.mjml');
 
-      if (!isFullMjml && templateName !== 'base' && fs.existsSync(layoutPath)) {
-        const baseContent = fs.readFileSync(layoutPath, 'utf8');
-        mjmlContent = baseContent.replace('{{{content}}}', childContent);
+        if (!isFullMjml && fs.existsSync(layoutPath)) {
+          const baseContent = fs.readFileSync(layoutPath, 'utf8');
+          mjmlContent = baseContent.replace('{{{content}}}', rawContent);
+        } else {
+          mjmlContent = rawContent;
+        }
       } else {
-        mjmlContent = childContent;
+        // Find template in screens/
+        const mjmlPath = path.join(this.mjmlBaseDir, 'screens', `${templateName}.mjml`);
+        const layoutPath = path.join(this.mjmlBaseDir, 'layouts', 'base.mjml');
+
+        if (!fs.existsSync(mjmlPath)) {
+          throw new Error(`Template formulation failed: ${mjmlPath} does not exist`);
+        }
+
+        const childContent = fs.readFileSync(mjmlPath, 'utf8');
+
+        // Hybrid Detection: If child already has <mjml> tag, don't wrap with base layout
+        const isFullMjml = childContent.trim().toLowerCase().startsWith('<mjml>');
+
+        if (!isFullMjml && templateName !== 'base' && fs.existsSync(layoutPath)) {
+          const baseContent = fs.readFileSync(layoutPath, 'utf8');
+          mjmlContent = baseContent.replace('{{{content}}}', childContent);
+        } else {
+          mjmlContent = childContent;
+        }
       }
 
       const { html, errors } = mjml2html(mjmlContent, {
         beautify: false,
         minify: true,
         validationLevel: 'soft',
-        filePath: layoutPath // Important for mj-include resolution
+        filePath: path.join(this.mjmlBaseDir, 'layouts', 'base.mjml') // Important for mj-include resolution
       });
 
       if (errors && errors.length > 0) {
@@ -74,7 +88,11 @@ export class TemplateService {
       }
 
       compiledTemplate = Handlebars.compile(html);
-      this.cache.set(templateName, compiledTemplate);
+
+      // Only cache named templates, not raw ones to avoid memory bloat
+      if (templateName !== 'raw') {
+        this.cache.set(templateName, compiledTemplate);
+      }
     }
 
     // 1. Prepare Brand Context

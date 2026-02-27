@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Ticket, BookOpen, Bot,
     MessageSquareQuote, Settings, LogOut, ChevronRight, Users, User,
-    Brain, Database, Layers, Mail, Link2
+    Brain, Database, Layers, Mail, Link2, Megaphone
 } from 'lucide-react';
 
 import { api } from '@/lib/api';
@@ -36,6 +36,7 @@ const ADMIN_NAV = [
             { href: '/customers/crm', icon: Link2, label: 'CRM Yönetimi' },
             { href: '/products', icon: Layers, label: 'Ürünler & Modüller' },
             { href: '/teams', icon: Users, label: 'Destek Ekipleri' },
+            { href: '/admin/announcements', icon: Megaphone, label: 'Duyuru Yönetimi' },
             { href: '/admin/emails', icon: Mail, label: 'E-Posta Yönetimi' },
             { href: '/users', icon: Settings, label: 'Tüm Kullanıcılar' },
             { href: '/admin/settings', icon: Settings, label: 'Sistem Ayarları' },

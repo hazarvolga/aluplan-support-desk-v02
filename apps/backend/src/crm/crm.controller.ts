@@ -34,4 +34,14 @@ export class CrmController {
     async getAccounts() {
         return this.crmService.getAccounts();
     }
+
+    @Get('accounts/:id')
+    async getAccount(@Param('id') id: string) {
+        return this.crmService.getAccountById(id);
+    }
+
+    @Post('accounts/bulk-delete')
+    async bulkDeleteAccounts(@Body('ids') ids: string[]) {
+        return this.crmService.bulkDeleteAccounts(ids);
+    }
 }

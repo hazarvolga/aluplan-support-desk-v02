@@ -17,6 +17,7 @@ import { Upload, Search, ArrowUpDown, Trash2, Link2, RefreshCw, History, Buildin
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 
 interface CustomerItem {
     id: string;
@@ -73,7 +74,10 @@ export default function CustomersPage() {
     const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+    const [activeTab, setActiveTab] = useState('list');
     const [deleting, setDeleting] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const loadCustomers = () => {
         setLoading(true);
@@ -151,18 +155,51 @@ export default function CustomersPage() {
     };
 
     const handleBulkDelete = async () => {
-        if (!confirm(`${selectedIds.length} müşteriyi silmek istediğinize emin misiniz?`)) return;
+        const isAccounts = activeTab === 'accounts';
+        const ids = isAccounts ? selectedAccountIds : selectedIds;
+
+        if (ids.length === 0) return;
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmBulkDelete = async () => {
+        const isAccounts = activeTab === 'accounts';
+        const ids = isAccounts ? selectedAccountIds : selectedIds;
 
         setDeleting(true);
         try {
-            await api.customers.bulkDelete(selectedIds);
-            toast({ title: '✅ Başarılı', description: 'Seçilen müşteriler silindi.' });
-            loadCustomers();
+            if (isAccounts) {
+                await api.crm.bulkDeleteAccounts(ids);
+                toast({ title: '✅ Başarılı', description: 'Seçilen şirketler silindi.' });
+                loadAccounts();
+                setSelectedAccountIds([]);
+            } else {
+                await api.customers.bulkDelete(ids);
+                toast({ title: '✅ Başarılı', description: 'Seçilen müşteriler silindi.' });
+                loadCustomers();
+                setSelectedIds([]);
+            }
         } catch (error: any) {
             console.error(error);
             toast({ variant: 'destructive', title: '❌ Hata', description: 'Silme işlemi başarısız: ' + (error.message || 'Bilinmeyen hata') });
         } finally {
             setDeleting(false);
+        }
+    };
+
+    const handleSelectAllAccounts = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedAccountIds(filteredAccounts.map(a => a.id));
+        } else {
+            setSelectedAccountIds([]);
+        }
+    };
+
+    const handleSelectOneAccount = (id: string, checked: boolean) => {
+        if (checked) {
+            setSelectedAccountIds(prev => [...prev, id]);
+        } else {
+            setSelectedAccountIds(prev => prev.filter(item => item !== id));
         }
     };
 
@@ -261,6 +298,7 @@ export default function CustomersPage() {
     }, [accounts, searchTerm]);
 
     const isAllSelected = filteredAndSortedCustomers.length > 0 && selectedIds.length === filteredAndSortedCustomers.length;
+    const isAllAccountsSelected = filteredAccounts.length > 0 && selectedAccountIds.length === filteredAccounts.length;
 
     if (loading && customers.length === 0) {
         return (
@@ -290,10 +328,10 @@ export default function CustomersPage() {
                     <p className="text-muted-foreground">Kayıtlı müşterilerin ve şirketlerin listesi</p>
                 </div>
                 <div className="flex items-center space-x-3">
-                    {selectedIds.length > 0 && (
+                    {((activeTab === 'list' && selectedIds.length > 0) || (activeTab === 'accounts' && selectedAccountIds.length > 0)) && (
                         <Button variant="destructive" disabled={deleting} onClick={handleBulkDelete}>
                             <Trash2 className="mr-2 h-4 w-4" />
-                            {deleting ? 'Siliniyor...' : `${selectedIds.length} Seçiliyi Sil`}
+                            {deleting ? 'Siliniyor...' : `${activeTab === 'accounts' ? selectedAccountIds.length : selectedIds.length} Seçiliyi Sil`}
                         </Button>
                     )}
                     <Button asChild disabled={loading}>
@@ -305,7 +343,7 @@ export default function CustomersPage() {
                 </div>
             </div>
 
-            <Tabs defaultValue="list" className="space-y-6">
+            <Tabs defaultValue="list" className="space-y-6" onValueChange={setActiveTab}>
                 <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
                     <TabsTrigger value="list" className="flex items-center gap-2">
                         <Users className="h-4 w-4" />
@@ -433,6 +471,14 @@ export default function CustomersPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead className="w-12">
+                                        <input
+                                            type="checkbox"
+                                            checked={isAllAccountsSelected}
+                                            onChange={handleSelectAllAccounts}
+                                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        />
+                                    </TableHead>
                                     <TableHead>Şirket Adı</TableHead>
                                     <TableHead>Web Sitesi</TableHead>
                                     <TableHead>Sektör / Endüstri</TableHead>
@@ -455,11 +501,19 @@ export default function CustomersPage() {
                                 ) : (
                                     filteredAccounts.map((a) => (
                                         <TableRow key={a.id}>
+                                            <TableCell>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedAccountIds.includes(a.id)}
+                                                    onChange={(e) => handleSelectOneAccount(a.id, e.target.checked)}
+                                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                                />
+                                            </TableCell>
                                             <TableCell className="font-semibold">
-                                                <div className="flex items-center gap-2">
+                                                <Link href={`/customers/accounts/${a.id}`} className="flex items-center gap-2 hover:underline text-primary">
                                                     <Building2 className="h-4 w-4 text-muted-foreground" />
                                                     {a.name}
-                                                </div>
+                                                </Link>
                                             </TableCell>
                                             <TableCell>
                                                 {a.website ? (
@@ -630,6 +684,18 @@ export default function CustomersPage() {
                     )}
                 </TabsContent>
             </Tabs>
+
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmBulkDelete}
+                title="Silme İşlemini Onayla"
+                description={`${activeTab === 'accounts' ? selectedAccountIds.length : selectedIds.length} ${activeTab === 'accounts' ? 'şirket kaydını' : 'müşteri kaydını'} kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`}
+                confirmText="Evet, Sil"
+                cancelText="Vazgeç"
+                variant="danger"
+                loading={deleting}
+            />
         </div>
     );
 }
