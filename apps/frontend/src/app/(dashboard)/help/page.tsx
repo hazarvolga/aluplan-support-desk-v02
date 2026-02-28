@@ -1,197 +1,234 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bot, CheckCircle2, Database, Zap, BookOpen, ChevronRight, MessageCircle, Clock, Layers, Sparkles } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Ticket, Bot, BookOpen, User, Settings,
+    MessageSquareQuote, Database, Layers, Mail,
+    Zap, Clock, ListChecks, HelpCircle, ArrowRight,
+    Users
+} from 'lucide-react';
+import { useAuth } from '@/components/auth/role-guard';
 
 export default function SystemGuidePage() {
+    const { user } = useAuth();
+    const isStaff = (user?.roles || []).some((r: string) => ['admin', 'agent'].includes(r.toLowerCase())) || ['ADMIN', 'AGENT'].includes((user as any)?.role);
+
+    const [activeTab, setActiveTab] = useState(isStaff ? 'admin' : 'customer');
+
+    useEffect(() => {
+        if (isStaff) {
+            setActiveTab('admin');
+        } else {
+            setActiveTab('customer');
+        }
+    }, [isStaff]);
     return (
-        <div className="max-w-5xl mx-auto space-y-8 py-8 animate-in fade-in slide-in-from-bottom-4">
-            <div className="space-y-3">
-                <h1 className="text-4xl font-bold tracking-tight">Sistem Rehberi & AI Altyapısı</h1>
-                <p className="text-muted-foreground text-lg">
-                    Platformun akıllı yönlendirme, yapay zeka analizleri ve bilgi bankası sistemlerinin nasıl birbirine entegre çalıştığını öğrenin.
+        <div className="max-w-6xl mx-auto space-y-8 py-8 animate-in fade-in slide-in-from-bottom-4">
+            <div className="space-y-3 pb-6 border-b border-white/10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-2">
+                    <HelpCircle className="h-4 w-4" />
+                    SİSTEM REHBERİ
+                </div>
+                <h1 className="text-4xl font-bold tracking-tight">Kullanım Kılavuzu & İş Akışları</h1>
+                <p className="text-muted-foreground text-lg max-w-3xl">
+                    Aluplan Destek platformunun tüm özelliklerini, yapay zeka modüllerini ve günlük operasyonları nasıl yürüteceğinizi adım adım öğrenin.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="bg-gradient-to-br from-brand-900/40 to-transparent border-white/5">
-                    <CardHeader>
-                        <Bot className="h-8 w-8 text-brand-400 mb-2" />
-                        <CardTitle>Akıllı Triage (Yönlendirme)</CardTitle>
-                        <CardDescription>Biletler nasıl otomatik kategorize ediliyor?</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-sm text-muted-foreground space-y-2">
-                        Müşteriler bir bilet oluşturduğunda, önce sistemde tanımlı <strong>Ürün veya Modülü</strong> seçer. Seçim yapıldıktan sonra sistem arka planda Ollama LLM altyapısını kullanarak biletin içeriğini analiz eder ve ilgili ürünün alt <strong>kategorilerindeki anahtar kelimelere</strong> göre talebi otomatik etiketler.
-                    </CardContent>
-                </Card>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+                <TabsList className="bg-white/5 border border-white/10 p-1">
+                    <TabsTrigger value="customer" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs font-bold uppercase tracking-widest px-6">
+                        Müşteriler
+                    </TabsTrigger>
+                    {isStaff && (
+                        <TabsTrigger value="admin" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-xs font-bold uppercase tracking-widest px-6">
+                            Destek Ekibi & Yöneticiler
+                        </TabsTrigger>
+                    )}
+                </TabsList>
 
-                <Card className="bg-gradient-to-br from-blue-900/40 to-transparent border-white/5">
-                    <CardHeader>
-                        <Database className="h-8 w-8 text-blue-400 mb-2" />
-                        <CardTitle>Vektör Veritabanı & RAG</CardTitle>
-                        <CardDescription>Geçmiş biletlerden nasıl öğreniyor?</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-sm text-muted-foreground space-y-2">
-                        Sistem, çözülmüş ve müşteri tarafından <strong>4 veya 5 yıldız (yüksek memnuniyet)</strong> ile puanlanmış biletleri otomatik olarak vektörize eder (Embedding). Yeni bir bilet geldiğinde yapay zeka, standart kategorilerin yanı sıra bu <strong>başarılı geçmiş biletlerle benzerlik (Similarity Search)</strong> kurarak etiketleme doğruluğunu artırır.
-                    </CardContent>
-                </Card>
+                {/* =========================================
+                    MÜŞTERİ KILAVUZU
+                ========================================= */}
+                <TabsContent value="customer" className="space-y-8 mt-6">
 
-                <Card className="bg-gradient-to-br from-green-900/40 to-transparent border-white/5">
-                    <CardHeader>
-                        <Zap className="h-8 w-8 text-green-400 mb-2" />
-                        <CardTitle>Otomatik Çözüm Önerileri</CardTitle>
-                        <CardDescription>Müşteriye beklemeden direkt cevap sunma</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-sm text-muted-foreground space-y-2">
-                        Bilet açıldığında sistem "Bilgi Havuzu" (URL'ler, PDF'ler vb.) içerisindeki dokümanları analiz eder. Gelen sorun eğer standart bir SSS veya dokümantasyon üzerinden çözülebiliyorsa, biletin içerisine otomatik olarak <strong>bir yapay zeka yanıt taslağı veya çözüm önerisi</strong> bırakır.
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="mt-12 space-y-6 pt-8 border-t border-white/10">
-                <h2 className="text-2xl font-semibold flex items-center gap-2 mb-4">
-                    <Zap className="h-6 w-6 text-brand-400" />
-                    Gelişmiş Operasyonel Özellikler
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="bg-gradient-to-br from-emerald-900/40 to-transparent border-white/5">
-                        <CardHeader>
-                            <MessageCircle className="h-8 w-8 text-emerald-400 mb-2" />
-                            <CardTitle className="text-lg">WhatsApp Omni-channel Köprüsü</CardTitle>
-                            <CardDescription>Meta Business API üzerinden doğrudan iletişim</CardDescription>
-                        </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground space-y-2">
-                            Müşterileriniz WhatsApp üzerinden yazdığında, sistem otomatik olarak telefon numarası üzerinden lead eşleşmesi yapar ve bilet oluşturur. Temsilci panel içinden cevap verdiğinde, bu yanıt otomatik olarak müşterinin WhatsApp hattına iletilir.
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-amber-900/40 to-transparent border-white/5">
-                        <CardHeader>
-                            <Clock className="h-8 w-8 text-amber-400 mb-2" />
-                            <CardTitle className="text-lg">Gelişmiş SLA & Mesai Kontrolü</CardTitle>
-                            <CardDescription>Gerçek çalışma saatlerine dayalı zamanlama</CardDescription>
-                        </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground space-y-2">
-                            SLA süreleri artık sadece mesai saatleri (09:00 - 18:00) içerisinde işlemektedir. Hafta sonları ve tanımlı resmi tatiller süre hesabına katılmaz, böylece destek ekibinizin gerçek performans analizi korunur.
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-blue-900/40 to-transparent border-white/5">
-                        <CardHeader>
-                            <Layers className="h-8 w-8 text-blue-400 mb-2" />
-                            <CardTitle className="text-lg">Acente Verimliliği & Toplu İşlemler</CardTitle>
-                            <CardDescription>Yüzlerce bileti saniyeler içinde yönetin</CardDescription>
-                        </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground space-y-2">
-                            Bilet listesinde çoklu seçim yaparak durum güncelleme (RESOLVED, CLOSED), öncelik değiştirme veya toplu atama yapabilirsiniz. Alt kısımda beliren "Yüzen Komut Çubuğu" ile operasyonel hızınızı artırın.
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-purple-900/40 to-transparent border-white/5">
-                        <CardHeader>
-                            <Sparkles className="h-8 w-8 text-purple-400 mb-2" />
-                            <CardTitle className="text-lg">AI Co-pilot (Yanıt Taslakları)</CardTitle>
-                            <CardDescription>Bilgi havuzu sentezi ile saniyeler içinde yanıt</CardDescription>
-                        </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground space-y-2">
-                            Karmaşık teknik sorularda, yapay zeka bilgi bankasındaki dökümanları ve bilet geçmişini tarayarak size profesyonel bir yanıt taslağı sunar. Taslağı tek tuşla mesaj alanına aktarıp üzerinde düzenleme yapabilirsiniz.
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-
-            <div className="mt-12 space-y-6 pt-8 border-t border-white/10">
-                <h2 className="text-2xl font-semibold flex items-center gap-2 mb-4">
-                    <BookOpen className="h-6 w-6 text-brand-400" />
-                    Sıkça Sorulan Sorular & İş Akışları
-                </h2>
-
-                <div className="grid grid-cols-1 gap-4">
-                    <Card className="bg-slate-900/40 border-white/5">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-base text-brand-400 flex items-center gap-2">
-                                <ChevronRight className="h-4 w-4" />
-                                1. Müşteriler bilet oluştururken neden yeni ürün kartlarını görmüyor?
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground space-y-4">
-                            <p>
-                                Eğer <strong>Ürünler & Modüller</strong> (Products) sayfasında hiçbir ürün tanımlamadıysanız, sistem müşteri deneyimini sekteye uğratmamak adına doğrudan klasik bilet formuyla açılır ve ürün seçim adımını gizler.
-                            </p>
-                            <div className="bg-brand-500/5 border border-brand-500/10 p-3 rounded-md flex items-start gap-3 text-slate-200">
-                                <CheckCircle2 className="h-4 w-4 text-brand-400 shrink-0 mt-0.5" />
-                                <p className="text-xs"><strong>Çözüm:</strong> Sol taraftaki "Ürünler & Modüller" menüsüne gidip sisteminizdeki platformları ekleyin. Ardından müşteriler bilet açarken bu ürünleri kart formatında seçecektir.</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-slate-900/40 border-white/5">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-base text-brand-400 flex items-center gap-2">
-                                <ChevronRight className="h-4 w-4" />
-                                2. Yapay Zekanın Akıllı Etiketleme Kalitesini Nasıl Artırabilirim? (Taksonomi Rehberi)
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground space-y-4">
-                            <p>
-                                Sistemimiz, biletleri sınıflandırırken yalnızca ürün özelliklerine ("duvar", "kolon", "ifc") değil, <strong>Sorun/Niyet odaklı (Symptom-driven) gelişmiş bir hibrit taksonomi (Option C V3)</strong> kullanır.
-                            </p>
-                            <div className="bg-blue-500/5 border border-blue-500/10 p-4 rounded-md space-y-3">
-                                <h4 className="text-blue-400 font-medium">Bunun anlamı nedir?</h4>
-                                <p className="text-slate-300">
-                                    AEC/BIM sektöründeki global destek tecrübelerine (Autodesk, Graphisoft modelleri) göre kullanıcılar "Render ayarlarım bozuldu" demek yerine genellikle "Program çöküyor", "Kasıyor" veya "Siyah ekran veriyor" şeklinde kriz kelimeleri kullanırlar.
-                                </p>
-                                <p className="text-slate-300">
-                                    Sistem yapay zekası (RAG), kullanıcıların bu panik/kriz kelimelerini anlar. Bu yüzden ürünlerinize (<span className="text-brand-400">Ürünler & Modüller</span> sekmesinde) anahtar kelime girerken şu kuralları izleyin:
-                                </p>
-                                <ul className="list-disc pl-5 space-y-2 text-slate-300 italic">
-                                    <li><strong>Sorun Belirten Kelimeler Ekleyin:</strong> Teknik isimlerin yanına mutlaka "bozuk dosya", "çökme", "yavaşlama", "açılmıyor" gibi niyet kelimeleri ekleyin.</li>
-                                    <li><strong>Eğitim (How-to) Niyetleri:</strong> "Nasıl yapılır", "ayarlar", "kütüphane ekleme" gibi eğitim amaçlı sorguları yakalayacak kelimeler girin.</li>
-                                    <li><strong>Benzerlik (Similarity):</strong> Kapatılan biletlerde müşteri memnuniyet puanı yüksek çıkarsa o sorun otomatik olarak Vektör Veritabanına alınır. Ne kadar çok bilet başarılı çözülürse, yapay zeka jenerik kelimeleri o kadar iyi eşleştirir.</li>
+                    {/* 1. Sisteme Giriş ve Genel Bakış */}
+                    <section className="space-y-4">
+                        <h2 className="text-2xl font-bold flex items-center gap-2">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary text-sm">1</span>
+                            Sisteme Giriş ve Genel Bakış
+                        </h2>
+                        <Card className="bg-gradient-to-br from-slate-900/50 to-transparent border-white/5">
+                            <CardContent className="pt-6 space-y-4">
+                                <p className="text-slate-300">Sisteme giriş yaptığınızda karşınıza çıkan ilk ekran <strong>Genel Bakış (Dashboard)</strong> ekranıdır. Bu ekranda:</p>
+                                <ul className="space-y-2 text-sm text-slate-400">
+                                    <li className="flex gap-2 items-start"><ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" /> Devam eden ve cevap bekleyen aktif destek taleplerinizi görebilirsiniz.</li>
+                                    <li className="flex gap-2 items-start"><ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" /> Son oluşturulan makalelere hızlıca erişebilirsiniz.</li>
+                                    <li className="flex gap-2 items-start"><ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" /> Sizin için paylaşılan sistem duyurularını "Duyurular" panosundan okuyabilirsiniz.</li>
                                 </ul>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    </section>
 
-                    <Card className="bg-slate-900/40 border-white/5">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-base text-brand-400 flex items-center gap-2">
-                                <ChevronRight className="h-4 w-4" />
-                                3. Bilgi Bankası (Knowledge Base) ile Bilgi Havuzu (Pool) Farkı Nedir?
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground space-y-3">
-                            <div>
-                                <Badge variant="outline" className="bg-brand-500/10 text-brand-400 border-brand-500/20 mb-1">Bilgi Havuzu</Badge>
-                                <p className="text-xs">Yapay Zekanın okuyup analiz ettiği, müşteriye doğrudan gösterilmeyen devasa dokümantasyon merkezidir. Sadece otomatik cevap üretirken kaynak olarak kullanılır.</p>
-                            </div>
-                            <div>
-                                <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 mb-1">Bilgi Bankası</Badge>
-                                <p className="text-xs">Müşterilerinizin tarayıcılarında görebileceği, sizin tasarladığınız SSS veya Yardım Makaleleridir.</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    {/* 2. Yapay Zeka Asistanı Kullanımı */}
+                    <section className="space-y-4">
+                        <h2 className="text-2xl font-bold flex items-center gap-2">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary text-sm">2</span>
+                            Yapay Zeka Asistanı Kullanımı
+                        </h2>
+                        <Card className="bg-gradient-to-br from-emerald-900/20 to-transparent border-white/5">
+                            <CardContent className="pt-6 space-y-4">
+                                <p className="text-slate-300">Bilet açmadan önce sorununuzu hızlıca çözmek için <strong>Yapay Zeka Asistanı</strong> (/ai) menüsünü kullanmanızı öneririz.</p>
+                                <ol className="space-y-4 text-sm text-slate-400 list-decimal pl-5">
+                                    <li className="pl-2">Sol menüden <Bot className="inline h-4 w-4 mx-1 text-primary" /> <strong>Yapay Zeka Asistanı</strong> sekmesine tıklayın.</li>
+                                    <li className="pl-2">Mesaj kutusuna almak istediğiniz hatayı veya öğrenmek istediğiniz konuyu yazın (Örn: <em>"Duvar çizerken program çöküyor"</em>).</li>
+                                    <li className="pl-2">Yapay zeka, tüm bilgi bankasını tarayarak size çözüm adımlarını doğrudan sunacaktır. Çözüm bulunamazsa size bir destek talebi oluşturmanızı önerecektir.</li>
+                                </ol>
+                                <div className="bg-white/5 p-4 rounded-lg flex gap-3 mt-4 items-start">
+                                    <Zap className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+                                    <span className="text-sm text-slate-300"><strong>İpucu:</strong> Yapay zeka RAG (Öğrenen Algoritma) kullandığı için, yazılım modüllerinin adını (Örn: AX3000) belirterek soru sorarsanız daha isabetli cevaplar alırsınız.</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </section>
 
-                    <Card className="bg-slate-900/40 border-white/5">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-base text-brand-400 flex items-center gap-2">
-                                <ChevronRight className="h-4 w-4" />
-                                4. WhatsApp İletişim Süreci Nasıl İşliyor? Temsilci Numarası Gerekli mi?
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground space-y-3">
-                            <p>
-                                <strong>Hayır, temsilcilerin bireysel numara girmesine gerek yoktur.</strong> Sistem kurumsal bir WhatsApp Business hattı üzerinden (Meta API) çalışır:
-                            </p>
-                            <ul className="list-disc pl-5 space-y-1 text-xs">
-                                <li><strong>Merkezi Hat:</strong> Tüm mesajlar tek bir kurumsal hat üzerinden gönderilir ve alınır.</li>
-                                <li><strong>Otomatik Eşleşme:</strong> Gelen mesajın telefon numarası CRM'deki müşteri profili ile eşleşirse, bilet otomatik olarak o müşteri adına açılır.</li>
-                                <li><strong>Doğrudan Yanıt:</strong> Temsilci panelden cevap yazdığında, sistem bu yanıtı müşterinin WhatsApp'ına kurumsal kimliğinizle iletir.</li>
-                            </ul>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+                    {/* 3. Destek Talebi (Bilet) Açma */}
+                    <section className="space-y-4">
+                        <h2 className="text-2xl font-bold flex items-center gap-2">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary text-sm">3</span>
+                            Destek Talebi (Bilet) Açma ve Takip
+                        </h2>
+                        <Card className="bg-gradient-to-br from-blue-900/20 to-transparent border-white/5">
+                            <CardContent className="pt-6 space-y-4">
+                                <p className="text-slate-300">Konuyu temsilcilere iletmek için <Ticket className="inline h-4 w-4 mx-1 text-blue-400" /> <strong>Destek Taleplerim</strong> sayfasından yeni bir kayıt oluşturabilirsiniz.</p>
+
+                                <div className="space-y-4 border-l-2 border-slate-700 pl-4 ml-2">
+                                    <div>
+                                        <h4 className="font-bold text-white mb-1">Adım 1: Ürün Seçimi</h4>
+                                        <p className="text-sm text-slate-400">Yeni Talep butonuna tıkladıktan sonra, sorunu yaşadığınız ürün ailesini (Örn: ALLPLAN, AX3000) seçin. Bu sayede talebiniz direkt ilgili uzman ekibe yönlendirilir.</p>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-white mb-1">Adım 2: Konu ve Detaylar</h4>
+                                        <p className="text-sm text-slate-400">Karşılaştığınız sorunu anlatan açık bir başlık ve detayları girin. Zorunluluk derecesini (SLA belirler) seçin.</p>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-white mb-1">Adım 3: Dosya Ekleri</h4>
+                                        <p className="text-sm text-slate-400">Ekran görüntüsü, PDF veya proje dosyalarını (Maks 10MB) doğrudan sürükleyip bırakarak yükleyebilirsiniz.</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </section>
+                </TabsContent>
+
+
+                {/* =========================================
+                    ADMİN & AGENT KILAVUZU
+                ========================================= */}
+                {isStaff && (
+                    <TabsContent value="admin" className="space-y-8 mt-6">
+
+                        {/* 1. Bilet Yönetimi */}
+                        <section className="space-y-4">
+                            <h2 className="text-2xl font-bold flex items-center gap-2">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600/20 text-blue-500 text-sm">1</span>
+                                Bilet Kuyruğu (Ticket Management)
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Card className="bg-slate-900/50 border-white/5">
+                                    <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><ListChecks className="text-blue-400 h-5 w-5" /> Operasyonel Havuz</CardTitle></CardHeader>
+                                    <CardContent className="text-sm text-slate-300 space-y-2">
+                                        <p><strong>Bilet Kuyruğu</strong> sayfasında tüm müşterilerden gelen talepler toplanır.</p>
+                                        <ul className="list-disc pl-5 space-y-1 text-slate-400">
+                                            <li><strong className="text-slate-200">Durum Değiştirme:</strong> Bilet içerisine girip sağ paneldeki dropdown'dan durumu değiştirebilirsiniz (Açık, Cevaplandı, Kapalı).</li>
+                                            <li><strong className="text-slate-200">İç Notlar:</strong> Müşterinin göremeyeceği sadece ekip içi notlar almak için <code>İç Not (Internal Only)</code> sekmesini kullanın.</li>
+                                            <li><strong className="text-slate-200">Atama:</strong> "Ata" butonunu kullanarak bileti spesifik bir uzman temsilciye devredebilirsiniz.</li>
+                                        </ul>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="bg-slate-900/50 border-white/5">
+                                    <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><Bot className="text-emerald-400 h-5 w-5" /> AI Co-Pilot (Yapay Zeka Destekli Yanıt)</CardTitle></CardHeader>
+                                    <CardContent className="text-sm text-slate-300 space-y-2">
+                                        <p>Biletin içine girdiğinizde sağ üstte yer alan <strong>"AI Yanıt Taslağı Oluştur"</strong> butonuna basın.</p>
+                                        <p className="text-slate-400">
+                                            Sistem, müşterinin mesajını ve firmanızın Bilgi Havuzunu tarar. Vektörel veri eşleşmesi yaparak 5-10 saniye içerisinde ilgili dokümanlara atıfta bulunan profesyonel bir taslak hazırlar.
+                                            Taslağı onaylayıp kendi tarzınıza göre düzenleyerek müşteriye anında yanıt dönebilirsiniz.
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </section>
+
+                        {/* 2. Yapay Zeka / Bilgi Havuzu */}
+                        <section className="space-y-4">
+                            <h2 className="text-2xl font-bold flex items-center gap-2">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600/20 text-blue-500 text-sm">2</span>
+                                Bilgi Havuzu & Öğrenme Döngüsü
+                            </h2>
+                            <Card className="bg-slate-900/50 border-white/5">
+                                <CardContent className="pt-6 space-y-6">
+
+                                    <div className="space-y-2">
+                                        <h3 className="font-bold flex items-center gap-2 text-white">
+                                            <Database className="h-4 w-4 text-emerald-400" />
+                                            Bilgi Havuzu (Knowledge Pool) Yönetimi
+                                        </h3>
+                                        <p className="text-sm text-slate-400">Yapay zekanın cevap verebilmesi için altyapıya sürekli yeni veri sağlamanız gerekir. Bunun 3 yolu vardır:</p>
+                                        <ul className="text-sm text-slate-300 space-y-2 pl-4 border-l-2 border-emerald-500/30">
+                                            <li><strong>PDF / Dosya Yükleme:</strong> Doğrudan teknik şartnameleri PDF olarak veritabanına ekleyin. Sistem bunları <u>Embedding (Vektör)</u> parçalarına ayırır.</li>
+                                            <li><strong>Web Scraper:</strong> Sitenizdeki güncel "Nasıl Yapılır" URL adreslerini sisteme verdiğinizde yapay zeka web sitenizi okuyup hafızasına kaydeder.</li>
+                                            <li><strong>Özel Metin (Raw Text):</strong> Sıkça sorulan soruları el ile girerek AI için "Instruction" yaratabilirsiniz.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <h3 className="font-bold flex items-center gap-2 text-white">
+                                            <MessageSquareQuote className="h-4 w-4 text-amber-400" />
+                                            Öğrenme Döngüsü ve AI Onayları
+                                        </h3>
+                                        <p className="text-sm text-slate-400">
+                                            Müşteriler kapalı biletleri <strong>5 yıldız</strong> ile oyladığında, sistem o çözümün mükemmel olduğunu düşünür. Ancak bu çözümün direkt ana veritabanına yazılmasını önlemek için <strong>AI Onayları</strong> (%/kb-approvals%) sekmesine düşer.
+                                            Yönetici olarak bu sekmede çözümün yapay zeka tarafından öğrenilmesini (Onay) veya atlanmasını (Red) seçebilirsiniz.
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </section>
+
+                        {/* 3. CRM & Ürün (Taxonomy) */}
+                        <section className="space-y-4">
+                            <h2 className="text-2xl font-bold flex items-center gap-2">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600/20 text-blue-500 text-sm">3</span>
+                                CRM & Ürün (Taksonomi) Yapılandırması
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Card className="bg-slate-900/50 border-white/5 p-4 space-y-2">
+                                    <Layers className="h-6 w-6 text-purple-400 mb-2" />
+                                    <h3 className="font-bold text-white">Ürünler ve Modüller</h3>
+                                    <p className="text-sm text-slate-400">
+                                        Müşteri bilet açtığında gördüğü Ürün kartlarını buradan yönetirsiniz. En önemli kısım <strong>Kategoriler ve Anahtar Kelimelerdir.</strong><br /><br />
+                                        <em>Taksonomi Kuralı:</em> Kategorilere (Örn: Model Çökmesi) sadece ürün özellikleri (Duvar, Kiriş) değil, müşteri semptomlarını da (kasıyor, siyah ekran, kapanıyor) yazın. AI bu anahtar kelimeleri okuyarak bileti doğru takıma (Triage) yönlendirir.
+                                    </p>
+                                </Card>
+                                <Card className="bg-slate-900/50 border-white/5 p-4 space-y-2">
+                                    <Users className="h-6 w-6 text-blue-400 mb-2" />
+                                    <h3 className="font-bold text-white">Müşteri ve Ekip Yönetimi</h3>
+                                    <p className="text-sm text-slate-400">
+                                        Sol panonun <strong>SİSTEM</strong> menüsü altından Müşterileri onaylayabilir ve Destek Ekiplerini (Departmanları) oluşturabilirsiniz.
+                                        Biletlerin otomatik atanabilmesi için SLA kurallarını (Kaç saatte yanıt verilecek, mesai saati dışında dursun mu?) Ekip Yönetimi sekmesinden ayarlamayı unutmayın.
+                                    </p>
+                                </Card>
+                            </div>
+                        </section>
+
+                    </TabsContent>
+                )}
+
+            </Tabs>
         </div>
     );
 }
