@@ -11,6 +11,7 @@ import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
 
 import { CrawlService } from './crawl.service';
 import { hierarchicalChunk } from '../knowledge-base/utils/smart-chunker';
+import { AiService } from '../ai/ai.service';
 
 @Processor('knowledge-sync')
 export class KnowledgePoolProcessor extends WorkerHost {
@@ -22,6 +23,7 @@ export class KnowledgePoolProcessor extends WorkerHost {
         private readonly embeddingService: EmbeddingService,
         private readonly parserService: KnowledgePoolParserService,
         private readonly crawlService: CrawlService,
+        private readonly aiService: AiService,
     ) {
         super();
     }
@@ -149,7 +151,7 @@ export class KnowledgePoolProcessor extends WorkerHost {
 
     private async handleFileSync(source: any, logId: string) {
         if (!source.filePath) throw new Error('File path missing for source');
-        const content = await this.parserService.parseFile(source.type, source.filePath);
+        let content = await this.parserService.parseFile(source.type, source.filePath);
         const hash = crypto.createHash('sha256').update(content).digest('hex');
 
         if (hash === source.lastHash) {
@@ -162,6 +164,12 @@ export class KnowledgePoolProcessor extends WorkerHost {
                 data: { status: KnowledgeSourceStatus.ACTIVE, lastSyncedAt: new Date() }
             });
             return;
+        }
+
+        // Apply AI Pre-processing if enabled in metadata
+        if (source.metadata?.useAiPreprocessing) {
+            this.logger.log(`🧠 Applying AI Pre-processing for formatting and noise reduction: ${source.fileName}`);
+            content = await this.aiService.cleanKnowledgeDocument(content);
         }
 
         const hierarchies = hierarchicalChunk(content, { title: source.name || source.fileName });

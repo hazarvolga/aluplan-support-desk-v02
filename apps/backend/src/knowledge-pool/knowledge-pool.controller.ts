@@ -97,6 +97,13 @@ export class KnowledgePoolController {
         return this.knowledgePoolService.getSyncLogs(id);
     }
 
+    @Post('sync-dataset')
+    @Roles('admin', 'super-admin')
+    @ApiOperation({ summary: 'Manually trigger a sync of the local /dataset folder' })
+    async triggerDatasetSync() {
+        return this.knowledgePoolService.syncLocalDataset();
+    }
+
     private determineTypeFromExt(ext: string): KnowledgeSourceType {
         switch (ext.toLowerCase()) {
             case '.pdf': return KnowledgeSourceType.FILE_PDF;

@@ -4,6 +4,8 @@ import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateKnowledgeSourceDto } from './dto/create-knowledge-source.dto';
 import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
+import * as path from 'path';
+import * as fs from 'fs';
 
 @Injectable()
 export class KnowledgePoolService {
@@ -79,6 +81,79 @@ export class KnowledgePoolService {
         });
 
         this.logger.log(`🔄 Enqueued sync job for source: ${source.name} (${id})`);
+    }
+
+    async syncLocalDataset() {
+        const datasetDir = path.resolve(process.cwd(), '../../dataset');
+
+        if (!fs.existsSync(datasetDir)) {
+            this.logger.error(`Dataset directory not found at ${datasetDir}`);
+            return { success: false, message: 'Dataset directory not found', scanned: 0 };
+        }
+
+        const filesToSync: string[] = [];
+        const validExts = ['.md', '.json', '.csv', '.pdf', '.txt'];
+
+        const walkSync = (dir: string) => {
+            const files = fs.readdirSync(dir);
+            for (const file of files) {
+                const filePath = path.join(dir, file);
+                const stat = fs.statSync(filePath);
+                if (stat.isDirectory()) {
+                    walkSync(filePath);
+                } else if (validExts.includes(path.extname(file).toLowerCase())) {
+                    filesToSync.push(filePath);
+                }
+            }
+        };
+
+        walkSync(datasetDir);
+
+        let addedCount = 0;
+        let existingCount = 0;
+
+        for (const filePath of filesToSync) {
+            const ext = path.extname(filePath).toLowerCase();
+            let type: KnowledgeSourceType = KnowledgeSourceType.FILE_TXT;
+            if (ext === '.md') type = KnowledgeSourceType.FILE_MD;
+            if (ext === '.json') type = KnowledgeSourceType.FILE_TXT;
+            if (ext === '.pdf') type = KnowledgeSourceType.FILE_PDF;
+            if (ext === '.csv') type = KnowledgeSourceType.FILE_CSV;
+
+            const fileName = path.basename(filePath);
+
+            // @ts-ignore
+            const existing = await this.prisma.knowledgeSource.findFirst({
+                where: { filePath }
+            });
+
+            if (existing) {
+                await this.triggerSync(existing.id);
+                existingCount++;
+            } else {
+                // @ts-ignore
+                const source = await this.prisma.knowledgeSource.create({
+                    data: {
+                        name: `[Dataset] ${fileName}`,
+                        type,
+                        fileName,
+                        filePath,
+                        status: KnowledgeSourceStatus.ACTIVE,
+                        metadata: {
+                            useAiPreprocessing: true,
+                        }
+                    },
+                });
+                await this.triggerSync(source.id);
+                addedCount++;
+            }
+        }
+
+        return {
+            success: true,
+            message: `Dataset sync initiated. Added ${addedCount} new files. Checked ${existingCount} existing files.`,
+            totalFiles: filesToSync.length
+        };
     }
 
     async getSyncLogs(sourceId: string) {

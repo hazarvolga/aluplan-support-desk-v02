@@ -148,6 +148,29 @@ export class AiService implements AiProvider {
         });
     }
 
+    async cleanKnowledgeDocument(rawContent: string): Promise<string> {
+        const result = await this.runSafe(async () => {
+            const provider = await this.getActiveProvider();
+            const prompt = `You are an expert technical writer and AI data engineer. 
+I am providing you with a raw, unstructured technical document (could be a PDF extract, a raw log file, or messy notes).
+Your task is to extract the core technical knowledge, errors, solutions, and symptoms, and format them into a clean, structured Markdown format 
+that is highly optimized for a RAG (Retrieval-Augmented Generation) system.
+
+Rules:
+1. Remove all noise (page numbers, headers, footers, irrelevant intro/outro).
+2. Group information logically using Markdown headers (##).
+3. If it contains QA pairs or Errors/Solutions, format them clearly (e.g., **Symptom:** ..., **Solution:** ...).
+4. Do NOT make up information. Only use the provided text.
+5. Provide ONLY the final markdown text without any conversational wrapper.
+
+RAW DOCUMENT:
+${rawContent}
+`;
+            return provider.generate(prompt, 60000); // Allow up to 60s for large docs
+        });
+        return result || rawContent; // fallback to raw content if AI fails
+    }
+
     async analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'> {
         const res = await this.runSafe(async () => {
             const provider = await this.getActiveProvider();
