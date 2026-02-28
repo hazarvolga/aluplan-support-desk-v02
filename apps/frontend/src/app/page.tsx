@@ -4,14 +4,15 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import Image from 'next/image';
-import Link from 'next/link';
-import { Terminal, ShieldAlert, Lock, AlertTriangle, CircleDot, FileText, CheckCircle2 } from 'lucide-react';
+import { Lock, Layers, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 export default function SplitScreenGateway() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [mfaPending, setMfaPending] = useState<{ userId: string; email: string } | null>(null);
+    const [mfaToken, setMfaToken] = useState('');
     const [loading, setLoading] = useState(false);
 
     async function handleLogin(e: React.FormEvent) {
@@ -19,180 +20,182 @@ export default function SplitScreenGateway() {
         setError('');
         setLoading(true);
         try {
-            const { access_token } = await api.auth.login(email, password);
+            const res = await api.auth.login(email, password);
+            // @ts-ignore
+            if (res.mfa_required) {
+                // @ts-ignore
+                setMfaPending({ userId: res.userId, email: res.email });
+                return;
+            }
+            // @ts-ignore
+            const { access_token } = res;
             localStorage.setItem('access_token', access_token);
             router.push('/dashboard');
         } catch (err: any) {
-            setError(err.message ?? 'AUTH_FAILURE: Credentials rejected by security node');
+            setError(err.message ?? 'HATA: Giriş bilgileri reddedildi');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleMfaVerify(e: React.FormEvent) {
+        e.preventDefault();
+        if (!mfaPending) return;
+        setError('');
+        setLoading(true);
+        try {
+            const { access_token } = await api.auth.mfa.verify(mfaPending.userId, mfaToken);
+            localStorage.setItem('access_token', access_token);
+            router.push('/dashboard');
+        } catch (err: any) {
+            setError(err.message ?? 'HATA: Geçersiz güvenlik kodu');
         } finally {
             setLoading(false);
         }
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col md:flex-row text-slate-300 font-mono selection:bg-primary/30 selection:text-primary overflow-hidden">
+        <div className="min-h-screen bg-slate-950 flex flex-col md:flex-row text-slate-300 font-sans selection:bg-indigo-500/30 selection:text-indigo-400 overflow-hidden">
 
             {/* LEFT COLUMN: STATUS BOARD (60%) */}
-            <div className="md:w-[60%] flex flex-col relative border-r border-white/10 dark overflow-hidden p-6 md:p-12">
-                {/* Subtle Brand Glow */}
-                <div className="absolute top-[-20%] left-[-10%] w-[80%] h-[80%] bg-primary/10 rounded-full blur-[120px] pointer-events-none opacity-50"></div>
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,#000_10%,transparent_100%)] pointer-events-none"></div>
-
-                {/* Header & Logo */}
-                <div className="relative z-10 flex items-start justify-between mb-16">
-                    <div>
-                        <Image src="/logos/aluplan-logo-white.svg" alt="Aluplan Logo" width={180} height={40} className="mb-6 opacity-90" />
-                        <h1 className="text-[12px] font-bold tracking-[0.3em] uppercase text-muted-foreground/60 flex items-center gap-2">
-                            <Terminal className="h-4 w-4" />
-                            Operasyonel Destek Geçidi
-                        </h1>
-                    </div>
-                    <div className="flex items-center gap-2 border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 flex items-center gap-1.5">
-                            SİSTEM_DURUMU: AKTİF
-                        </span>
-                    </div>
+            <div className="md:w-[60%] flex flex-col relative border-r border-white/10 overflow-hidden p-6 md:p-12">
+                <div className="absolute inset-0 z-0">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_2px_2px,rgba(255,255,255,0.05)_1px,transparent_0)] bg-[size:40px_40px] opacity-20" />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/5 via-transparent to-transparent" />
                 </div>
 
-                {/* Broadcast Center */}
-                <div className="relative z-10 mb-auto w-full max-w-2xl">
-                    <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40 mb-3 ml-1">SİSTEM_YAYINI // SON_BİLDİRİMLER</h2>
-
-                    <div className="space-y-4">
-                        {/* Critical Notice */}
-                        <div className="border border-amber-500/30 bg-amber-500/5 p-4 md:p-6 backdrop-blur-sm">
-                            <div className="flex items-center gap-2 mb-2 text-amber-500">
-                                <AlertTriangle className="h-4 w-4" />
-                                <span className="text-[11px] font-bold tracking-widest uppercase">Bakım Uyarısı</span>
-                                <span className="ml-auto text-[9px] text-amber-500/50">2 SAAT ÖNCE</span>
+                <div className="relative z-10 flex flex-col h-full">
+                    <div className="flex items-center justify-between mb-20">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(79,70,229,0.3)]">
+                                <Layers className="text-white h-6 w-6" />
                             </div>
-                            <p className="text-[13px] leading-relaxed text-amber-500/90 font-medium">
-                                CNC Dizisi B için planlanan kalibrasyon, 02:00-04:00 UTC arasındaki otomatik senkronizasyon hatlarını etkileyecektir. Bu süre zarfında telemetri gecikmesi bekleyin.
-                            </p>
+                            <h1 className="text-2xl font-black tracking-tighter text-white uppercase italic">
+                                ALUPLAN<span className="text-indigo-500 not-italic">.OS</span>
+                            </h1>
                         </div>
-
-                        {/* Standard Notice */}
-                        <div className="border border-white/10 bg-black/40 p-4 md:p-6 backdrop-blur-sm">
-                            <div className="flex items-center gap-2 mb-2 text-primary">
-                                <FileText className="h-4 w-4" />
-                                <span className="text-[11px] font-bold tracking-widest uppercase">Dokümantasyon Güncellemesi</span>
-                                <span className="ml-auto text-[9px] text-muted-foreground/50">DÜN</span>
-                            </div>
-                            <p className="text-[13px] leading-relaxed text-slate-400">
-                                T-Serisi ekstrüzyon kılavuzları güncellendi (Rev. 4.1). Dahili mühendislerin Bilgi Bankasındaki güncel tolerans tablolarını incelemesi rica olunur.
-                            </p>
+                        <div className="flex items-center gap-2 border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 rounded-full">
+                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">
+                                SİSTEM_DURUMU: AKTİF
+                            </span>
                         </div>
                     </div>
-                </div>
 
-                {/* Footer Metrics & Partner Badge */}
-                <div className="relative z-10 mt-12 flex justify-between items-end">
-                    <div className="flex gap-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+                    <div className="flex-1 flex flex-col justify-center">
+                        <h2 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-[0.9] mb-6">
+                            ALUPLAN<br />
+                            <span className="text-slate-500 uppercase">Güvenli</span><br />
+                            Erişim
+                        </h2>
+                        <p className="max-w-md text-slate-400 text-lg font-medium leading-relaxed mb-8">
+                            Kurumsal destek ekosistemi ve akıllı bilgi bankası yönetim merkezi.
+                        </p>
+                    </div>
+
+                    <div className="mt-auto grid grid-cols-3 gap-8 pt-8 border-t border-white/5">
                         <div>
-                            <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">Aktif VT Düğümleri</p>
-                            <p className="text-xl font-bold tracking-tighter">1,402</p>
+                            <p className="text-[9px] uppercase tracking-widest text-slate-500 mb-1">Veri Güvenliği</p>
+                            <p className="text-xl font-bold tracking-tighter text-white">AES-256</p>
                         </div>
                         <div>
-                            <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">Çalışma Süresi (SLA)</p>
+                            <p className="text-[9px] uppercase tracking-widest text-slate-500 mb-1">Aktif Node</p>
+                            <p className="text-xl font-bold tracking-tighter text-white">IST-04</p>
+                        </div>
+                        <div>
+                            <p className="text-[9px] uppercase tracking-widest text-slate-500 mb-1">Çalışma Süresi</p>
                             <p className="text-xl font-bold tracking-tighter text-emerald-500">99.99%</p>
                         </div>
-                    </div>
-
-                    <div className="opacity-40 hover:opacity-100 transition-opacity flex flex-col items-end gap-2">
-                        <span className="text-[8px] uppercase tracking-[0.2em] text-muted-foreground">Sertifikalı Altyapı</span>
-                        <Image src="/logos/Allplan-Authorized-Partner-svg-01.svg" alt="Allplan Partner" width={110} height={30} className="invert" />
                     </div>
                 </div>
             </div>
 
             {/* RIGHT COLUMN: ACCESS GATE (40%) */}
-            <div className="md:w-[40%] bg-black flex flex-col justify-center p-6 md:p-12 relative shadow-[-20px_0_40px_rgba(0,0,0,0.5)] z-20 border-l border-white/5">
-
-                {/* Security Context Header */}
+            <div className="md:w-[40%] bg-black flex flex-col justify-center p-6 md:p-12 relative z-20">
                 <div className="mb-10 flex flex-col items-center text-center">
-                    <div className="h-12 w-12 border border-primary/20 bg-primary/5 flex items-center justify-center mb-4 rounded-full shadow-[0_0_30px_rgba(14,165,233,0.1)]">
-                        <Lock className="h-5 w-5 text-primary" />
+                    <div className="h-12 w-12 rounded-full border border-white/10 flex items-center justify-center mb-4">
+                        <Lock className="h-5 w-5 text-indigo-500" />
                     </div>
-                    <h2 className="text-[18px] font-bold uppercase tracking-widest text-white mb-2">ERİŞİM_GEÇİDİ</h2>
-                    <p className="text-[11px] text-muted-foreground/60 uppercase tracking-widest leading-relaxed max-w-xs">
-                        Telemetri okuma/yazma ve destek modülü erişimi için kimlik doğrulaması gereklidir.
-                    </p>
+                    <h3 className="text-lg font-bold text-white uppercase tracking-widest">Yetki Doğrulama</h3>
+                    <p className="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Kimlik bilgilerinizi giriniz</p>
                 </div>
 
-                {/* Mechanism Wrapper */}
-                <div className="w-full max-w-[340px] mx-auto">
+                <div className="w-full max-w-sm mx-auto">
+                    {!mfaPending ? (
+                        <form onSubmit={handleLogin} className="space-y-6">
+                            <div className="space-y-4">
+                                <div className="relative group">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block ml-1">E-Posta Adresi</label>
+                                    <input
+                                        type="email"
+                                        required
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="operator@aluplan.com"
+                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                                    />
+                                </div>
 
-                    {/* Fake Tabs (UI Only) */}
-                    <div className="flex mb-6 border-b border-white/10">
-                        <div className="px-4 py-2 border-b-2 border-primary text-primary text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 cursor-pointer">
-                            <CircleDot className="h-3 w-3" />
-                            GİRİŞ_YAP
-                        </div>
-                        <Link href="/register" className="px-4 py-2 border-b-2 border-transparent text-muted-foreground/50 hover:text-muted-foreground text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-colors">
-                            YETKİ_İSTE
-                        </Link>
-                    </div>
-
-                    <form onSubmit={handleLogin} className="space-y-5">
-                        <div className="space-y-1.5">
-                            <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">KİMLİK_BELTEGİ [EP_OSTA]</label>
-                            <input
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="operator@aluplan.com"
-                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 text-white text-sm font-mono placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 focus:bg-primary/5 transition-all"
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] flex justify-between">
-                                <span>DOĞRULAMA_ANAHTARI [ŞİFRE]</span>
-                                <span className="opacity-50 hover:opacity-100 cursor-pointer">ANAHTARI_KURTAR?</span>
-                            </label>
-                            <input
-                                type="password"
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 text-white text-[16px] tracking-[0.3em] font-mono placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 focus:bg-primary/5 transition-all"
-                            />
-                        </div>
-
-                        {error && (
-                            <div className="border border-rose-500/30 bg-rose-500/10 px-3 py-2 animate-in fade-in">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-rose-500">
-                                    {error}
-                                </p>
+                                <div className="relative group">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block ml-1">Güvenlik Anahtarı</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white text-[16px] tracking-widest focus:outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                                    />
+                                </div>
                             </div>
-                        )}
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full mt-8 py-3.5 px-4 border border-primary/40 bg-primary/10 hover:bg-primary/20 hover:border-primary/80 text-primary text-[11px] uppercase font-bold tracking-[0.2em] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
-                        >
-                            {loading ? (
-                                <span className="animate-pulse">BAĞLANTI_KURULUYOR...</span>
-                            ) : (
-                                <>
-                                    <span>OTURUMU_BAŞLAT</span>
-                                    <CheckCircle2 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </>
+                            {error && (
+                                <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-medium text-center">
+                                    {error}
+                                </div>
                             )}
-                        </button>
-                    </form>
 
-                    <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-center gap-2 text-[8px] text-muted-foreground/40 uppercase tracking-widest">
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm tracking-widest uppercase transition-all shadow-[0_0_20px_rgba(79,70,229,0.2)] hover:shadow-[0_0_30px_rgba(79,70,229,0.4)] disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {loading ? 'Bağlanıyor...' : 'Oturumu Başlat'}
+                                <CheckCircle2 className="h-4 w-4" />
+                            </button>
+                        </form>
+                    ) : (
+                        <form onSubmit={handleMfaVerify} className="space-y-6">
+                            <div className="space-y-4 text-center">
+                                <h4 className="text-sm font-bold text-white uppercase tracking-widest">MFA Doğrulama</h4>
+                                <p className="text-xs text-slate-500">{mfaPending.email} adresine gönderilen kodu giriniz.</p>
+                                <input
+                                    type="text"
+                                    required
+                                    maxLength={6}
+                                    value={mfaToken}
+                                    onChange={(e) => setMfaToken(e.target.value)}
+                                    placeholder="000000"
+                                    className="w-full px-4 py-4 bg-slate-900/50 border border-white/10 rounded-xl text-white text-3xl text-center font-mono tracking-[0.5em] focus:outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loading || mfaToken.length !== 6}
+                                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm tracking-widest uppercase transition-all shadow-[0_0_20px_rgba(79,70,229,0.2)] disabled:opacity-50"
+                            >
+                                {loading ? 'Doğrulanıyor...' : 'Kodu Onayla'}
+                            </button>
+                        </form>
+                    )}
+
+                    <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-center gap-2 text-[8px] text-slate-600 uppercase tracking-widest">
                         <ShieldAlert className="h-3 w-3" />
                         Bağlantılar Aluplan Sec-Net üzerinden izlenmektedir
                     </div>
                 </div>
             </div>
-
         </div>
     );
 }

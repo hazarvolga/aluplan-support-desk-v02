@@ -5,8 +5,10 @@ import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Ticket, BookOpen, Bot,
     MessageSquareQuote, Settings, LogOut, ChevronRight, Users, User,
-    Brain, Database, Layers, Mail, Link2, Megaphone
+    Brain, Database, Layers, Mail, Link2, Megaphone, HelpCircle
 } from 'lucide-react';
+
+
 
 import { api } from '@/lib/api';
 import { useEffect, useState } from 'react';
@@ -42,6 +44,7 @@ const ADMIN_NAV = [
             { href: '/admin/settings', icon: Settings, label: 'Sistem Ayarları' },
         ]
     },
+    { href: '/help', icon: HelpCircle, label: 'Sistem Rehberi' },
     { href: '/profile', icon: User, label: 'Profil Ayarları' },
 ];
 
@@ -50,6 +53,7 @@ const CUSTOMER_NAV = [
     { href: '/my-tickets', icon: Ticket, label: 'Destek Taleplerim' },
     { href: '/knowledge-base', icon: BookOpen, label: 'Bilgi Bankası' },
     { href: '/ai', icon: Bot, label: 'Yapay Zeka Asistanı' },
+    { href: '/help', icon: HelpCircle, label: 'Sistem Rehberi' },
     { href: '/profile', icon: User, label: 'Hesabım' },
 ];
 
@@ -92,21 +96,24 @@ export function Sidebar({ onNavClick }: SidebarProps) {
     };
 
     return (
-        <aside className="h-full w-full border-r border-white/5 bg-background/50 backdrop-blur-xl">
+        <aside className="h-full w-full border-r border-white/5 bg-[#111111]">
             <div className="flex h-full flex-col px-4 py-6">
                 <div className="mb-8 flex items-center gap-3 px-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                         <Layers className="h-6 w-6 text-primary" />
                     </div>
-                    <span className="text-xl font-bold tracking-tight text-white">Aluplan</span>
+                    <div className="flex flex-col">
+                        <span className="text-lg font-bold tracking-tight text-white leading-none">Aluplan</span>
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest mt-0.5">Destek Masası</span>
+                    </div>
                 </div>
 
-                <nav className="flex-1 space-y-8 overflow-y-auto pr-2 custom-scrollbar">
+                <nav className="flex-1 space-y-6 overflow-y-auto pr-2">
                     {navItems.map((item: any, idx) => {
                         if (item.section) {
                             return (
-                                <div key={idx} className="space-y-3">
-                                    <h4 className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">
+                                <div key={idx} className="space-y-2">
+                                    <h4 className="px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
                                         {item.section}
                                     </h4>
                                     <div className="space-y-1">
@@ -117,21 +124,20 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                                                     key={sIdx}
                                                     href={sub.href}
                                                     onClick={onNavClick}
-                                                    className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${active
+                                                    className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all ${active
                                                         ? 'bg-primary/10 text-primary'
                                                         : 'text-muted-foreground hover:bg-white/5 hover:text-white'
                                                         }`}
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <sub.icon className={`h-4 w-4 transition-colors ${active ? 'text-primary' : 'group-hover:text-white'}`} />
+                                                        <sub.icon className={`h-4 w-4 ${active ? 'text-primary' : 'group-hover:text-white'}`} />
                                                         <span>{sub.label}</span>
                                                     </div>
                                                     {sub.href === '/kb-approvals' && pendingCount > 0 && (
-                                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-black ring-2 ring-background">
+                                                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
                                                             {pendingCount}
                                                         </span>
                                                     )}
-                                                    {active && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
                                                 </Link>
                                             );
                                         })}
@@ -146,13 +152,13 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                                 key={idx}
                                 href={item.href}
                                 onClick={onNavClick}
-                                className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${active
+                                className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all ${active
                                     ? 'bg-primary/10 text-primary'
                                     : 'text-muted-foreground hover:bg-white/5 hover:text-white'
                                     }`}
                             >
                                 <div className="flex items-center gap-3">
-                                    <item.icon className={`h-4 w-4 transition-colors ${active ? 'text-primary' : 'group-hover:text-white'}`} />
+                                    <item.icon className={`h-4 w-4 ${active ? 'text-primary' : 'group-hover:text-white'}`} />
                                     <span>{item.label}</span>
                                 </div>
                                 {active && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
@@ -167,7 +173,7 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                         className="group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:bg-red-500/10 hover:text-red-400"
                     >
                         <LogOut className="h-4 w-4" />
-                        <span>Çıkış Yap</span>
+                        <span>Güvenli Çıkış</span>
                     </button>
                 </div>
             </div>

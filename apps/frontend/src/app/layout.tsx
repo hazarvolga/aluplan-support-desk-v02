@@ -37,7 +37,7 @@ import { CommandMenu } from '@/components/command-menu';
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="tr" suppressHydrationWarning className={`${dmSans.variable} ${mono.variable} ${condensed.variable}`}>
-            <body suppressHydrationWarning className="antialiased industrial-grid min-h-screen">
+            <body suppressHydrationWarning className="antialiased min-h-screen">
                 <AuthProvider>
                     {children}
                     <CommandMenu />

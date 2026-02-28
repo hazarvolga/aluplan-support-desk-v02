@@ -8,25 +8,33 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-
+import { motion } from 'framer-motion';
 import { WireframeBorder } from '@/components/ui/wireframe-border';
 
 function StatCard({ icon: Icon, label, value, indicatorColor }: {
     icon: React.ElementType; label: string; value: string | number; indicatorColor: string;
 }) {
     return (
-        <WireframeBorder className="p-5 flex flex-col justify-between group overflow-hidden transition-colors hover:bg-muted/10 bg-transparent">
-            {/* Top Indicator Line */}
-            <div className={`absolute top-0 left-0 right-0 h-[2px] ${indicatorColor} opacity-70`}></div>
-
+        <motion.div
+            whileHover={{ y: -4 }}
+            className="group relative px-6 py-8 rounded-2xl glass-card transition-all duration-500 overflow-hidden"
+        >
+            <div className={`absolute top-0 left-0 right-0 h-1 ${indicatorColor} opacity-20 group-hover:opacity-100 transition-opacity`} />
             <div className="flex justify-between items-start mb-6">
-                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground font-mono">{label}</p>
-                <Icon className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                <div className="p-2 rounded-lg bg-white/5 border border-white/5 text-muted-foreground group-hover:text-primary transition-all duration-300">
+                    <Icon className="h-5 w-5" />
+                </div>
+                <span className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground uppercase opacity-60">{label}</span>
             </div>
-            <div>
-                <p className="text-3xl font-mono font-bold tracking-tighter text-foreground">{value}</p>
+            <div className="space-y-1">
+                <p className="text-4xl font-bold tracking-tight text-white group-hover:text-primary transition-colors">{value}</p>
+                <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 uppercase tracking-wider">
+                    <TrendingUp className="w-3 h-3" />
+                    <span>Stabil</span>
+                </div>
             </div>
-        </WireframeBorder>
+            <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-primary/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+        </motion.div>
     );
 }
 
@@ -134,22 +142,28 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="space-y-6 relative overflow-hidden">
-            <div className="scanline-overlay pointer-events-none" />
-            <div className="flex justify-between items-end border-b border-border/40 pb-4">
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6 relative"
+        >
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-6">
                 <div>
-                    <h1 className="text-[18px] font-bold tracking-tight uppercase flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5 text-primary" />
-                        KONTROL_MERKEZİ
+                    <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                            <TrendingUp className="h-5 w-5 text-emerald-500" />
+                        </div>
+                        Kontrol Merkezi
                     </h1>
-                    <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-tight">
-                        Aluplan Operasyonel Telemetri — SYS.V2
+                    <p className="text-xs text-muted-foreground mt-1 ml-11 font-medium uppercase tracking-[0.1em]">
+                        Aluplan Enterprise Telemetri — Version 2.4.0
                     </p>
                 </div>
-                <div className="text-right hidden sm:block">
-                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SON_SENK</p>
-                    <p className="text-xs font-mono text-foreground mt-0.5">{new Date().toLocaleTimeString('tr-TR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                        <span className="text-primary animate-pulse ml-1">_</span></p>
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <div className="flex items-center gap-2 border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 rounded-full text-xs text-emerald-500 font-medium">
+                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Sistem Aktif
+                    </div>
                 </div>
             </div>
 
@@ -234,7 +248,7 @@ export default function DashboardPage() {
                     </WireframeBorder>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 }
 
