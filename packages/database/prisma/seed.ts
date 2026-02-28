@@ -1,7 +1,5 @@
 import { PrismaClient, SystemRole, TicketPriority } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import * as fs from 'fs';
-import * as path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -220,85 +218,11 @@ async function main() {
     }
     console.log('✅ Products and Categories seeded');
 
-    // 5. Knowledge Base
-    await seedKnowledgeBase(admin.id);
+    // 5. Knowledge Base seeding removed — articles are now managed via admin UI only.
 
     console.log('\n🎉 Seed complete!');
 }
 
-function generateSlug(text: string) {
-    return text.toString().toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^\w\-]+/g, '')
-        .replace(/\-\-+/g, '-')
-        .replace(/^-+/, '')
-        .replace(/-+$/, '');
-}
-
-async function seedKnowledgeBase(adminId: string) {
-    console.log('\n📚 Knowledge Base Seeding...');
-    const kbPath = path.resolve(__dirname, '../../../Bilgi Bankası/BilgiHavuzuMD');
-
-    if (!fs.existsSync(kbPath)) {
-        console.log(`⚠️ KB directory not found: ${kbPath}`);
-        return;
-    }
-
-    async function walk(dir: string, parentId: string | null = null) {
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-        for (const entry of entries) {
-            if (entry.name.startsWith('.') || entry.name === 'scraper') continue;
-
-            const fullPath = path.join(dir, entry.name);
-
-            if (entry.isDirectory()) {
-                const slug = generateSlug(entry.name);
-                let cat = await prisma.category.findUnique({ where: { slug } });
-                if (!cat) {
-                    cat = await prisma.category.create({
-                        data: { name: entry.name.replace(/_/g, ' '), slug, parentId }
-                    });
-                }
-                await walk(fullPath, cat.id);
-            } else if (entry.name.endsWith('.md')) {
-                const content = fs.readFileSync(fullPath, 'utf-8');
-                const title = entry.name.replace(/\.md$/i, '');
-                const slug = generateSlug(title);
-
-                const existing = await prisma.knowledgeArticle.findUnique({ where: { slug } });
-                if (!existing) {
-                    const article = await prisma.knowledgeArticle.create({
-                        data: {
-                            title,
-                            slug,
-                            status: 'PUBLISHED',
-                            approved: true,
-                            approvedBy: adminId,
-                            createdBy: adminId,
-                            categoryId: parentId,
-                            isInternal: true,
-                        }
-                    });
-
-                    await prisma.knowledgeArticleVersion.create({
-                        data: {
-                            articleId: article.id,
-                            version: 1,
-                            title,
-                            content,
-                            contentPlain: content.replace(/[#*`_\[\]]/g, ''),
-                            createdBy: adminId,
-                        }
-                    });
-                }
-            }
-        }
-    }
-
-    await walk(kbPath);
-    console.log('✅ Knowledge Base seeded');
-}
 
 main()
     .catch((e) => { console.error(e); process.exit(1); })
