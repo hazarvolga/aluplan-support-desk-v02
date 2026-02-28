@@ -7,11 +7,14 @@ import * as bcrypt from 'bcrypt';
 import { ImportCustomerRecordDto } from './dto/import-customers.dto';
 import { HotinfoParserService } from './hotinfo-parser.service';
 
+import { EmailService } from '../email/email.service';
+
 @Injectable()
 export class CustomersService {
     constructor(
         private prisma: PrismaService,
-        private hotinfoParser: HotinfoParserService
+        private hotinfoParser: HotinfoParserService,
+        private emailService: EmailService
     ) { }
 
     async importCustomers(data: ImportCustomerRecordDto[]) {
@@ -119,10 +122,15 @@ export class CustomersService {
         }
 
         // 4. Create User + CustomerProfile in a single transaction
-        return this.prisma.$transaction(async (prisma) => {
+        const resultUser = await this.prisma.$transaction(async (prisma) => {
             // Legacy role lookups removed.
             const passwordHash = await bcrypt.hash(dto.password, 10);
             const fullName = `${dto.firstName} ${dto.lastName}`;
+
+            const hotinfoData = {
+                usedProducts: dto.usedProducts || [],
+                isAllplanUser: dto.isAllplanUser || false,
+            };
 
             // Create User with nested CustomerProfile
             const user = await prisma.user.create({
@@ -140,6 +148,7 @@ export class CustomersService {
                             companyName: dto.company,
                             phoneNumber: dto.phone,
                             crmVerified: true,
+                            hotinfoData: hotinfoData,
                         },
                     },
                 },
@@ -148,10 +157,30 @@ export class CustomersService {
                 },
             });
 
-            // Strip password before returning
-            const { passwordHash: _, ...result } = user;
-            return result;
+            return user;
         });
+
+        // 5. Send welcome email with login details
+        try {
+            await this.emailService.enqueueEmail({
+                template: 'welcome-customer',
+                to: dto.email,
+                subject: 'Aluplan Destek Ekosistemine Hoş Geldiniz',
+                priority: 1,
+                data: {
+                    customerName: `${dto.firstName} ${dto.lastName}`,
+                    email: dto.email,
+                    password: dto.password,
+                    loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`
+                }
+            });
+        } catch (error) {
+            console.error('Failed to send welcome email:', error);
+        }
+
+        // Strip password before returning
+        const { passwordHash: _, ...result } = resultUser;
+        return result;
     }
 
     /**

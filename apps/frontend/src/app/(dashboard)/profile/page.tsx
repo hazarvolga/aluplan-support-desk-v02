@@ -216,6 +216,20 @@ export default function ProfilePage() {
                 </p>
             </div>
 
+            {hotinfoData?.isAllplanUser && !hotinfoUpdatedAt && (
+                <div className="bg-red-500/10 border-l-4 border-red-500 p-4 mb-6 rounded-r-md animate-in slide-in-from-top-2 shadow-[0_0_15px_rgba(239,68,68,0.15)]">
+                    <div className="flex items-start gap-3">
+                        <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 animate-pulse" />
+                        <div>
+                            <h3 className="text-red-500 font-bold text-[13px] tracking-widest uppercase mb-1">DİKKAT: Hotfix Doğrulaması Gerekiyor</h3>
+                            <p className="text-[13px] text-red-400/90 leading-relaxed font-medium">
+                                Allplan kullandığınız tespit edilmiştir. Sistem stabilitesi ve kesintisiz destek için lütfen sayfanın alt kısmından güncel <b>Hotinfo (.hxl)</b> dosyanızı yükleyin.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <Card className="relative overflow-hidden">
                 {crmVerified && (
                     <div className="absolute top-4 right-4 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">

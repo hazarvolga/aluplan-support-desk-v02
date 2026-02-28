@@ -3,9 +3,10 @@ import { CustomersController } from './customers.controller';
 import { CustomersService } from './customers.service';
 import { HotinfoParserService } from './hotinfo-parser.service';
 import { PrismaModule } from '../prisma/prisma.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, EmailModule],
   controllers: [CustomersController],
   providers: [CustomersService, HotinfoParserService]
 })

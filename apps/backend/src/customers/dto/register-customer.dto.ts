@@ -33,4 +33,11 @@ export class RegisterCustomerDto {
   @MinLength(6, { message: 'Şifreniz en az 6 karakter olmalıdır' })
   @IsNotEmpty({ message: 'Şifre zorunludur' })
   password: string;
+
+  @IsString({ each: true })
+  @IsOptional()
+  usedProducts?: string[];
+
+  @IsOptional()
+  isAllplanUser?: boolean;
 }

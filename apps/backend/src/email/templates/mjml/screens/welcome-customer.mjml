@@ -1,0 +1,23 @@
+<mj-section background-color="#FFFFFF" padding="25px 20px">
+  <mj-column>
+    <mj-text font-size="22px" font-weight="700" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}" align="center">
+      Aluplan Destek Ekosistemine Hoş Geldiniz!
+    </mj-text>
+    <mj-text font-size="16px" color="#555555" align="left" line-height="1.5">
+      Sayın {{customerName}},<br/><br/>
+      Kayıt işleminiz başarıyla tamamlandı. Aluplan Destek Ekosistemi üzerinden tüm süreçlerinizi güvenle yönetebilirsiniz.<br/><br/>
+      <b>Giriş Bilgileriniz:</b><br/>
+      E-posta: <b>{{email}}</b><br/>
+      Şifre: <b>{{password}}</b><br/><br/>
+      <i>Güvenliğiniz için sisteme giriş yaptıktan sonra profilinizden şifrenizi değiştirmenizi öneririz.</i>
+    </mj-text>
+  </mj-column>
+</mj-section>
+
+<mj-section background-color="#FFFFFF" padding="0px 20px 25px 20px">
+  <mj-column width="100%">
+    <mj-button href="{{loginUrl}}" background-color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}" color="white" font-weight="bold">
+      Sisteme Giriş Yap
+    </mj-button>
+  </mj-column>
+</mj-section>

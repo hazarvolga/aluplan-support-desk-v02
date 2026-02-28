@@ -3,13 +3,14 @@ import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('products')
 export class ProductsController {
     constructor(private readonly productsService: ProductsService) { }
 
     @Get()
-    @UseGuards(JwtAuthGuard)
+    @Public()
     findAll() {
         return this.productsService.findAllProducts();
     }

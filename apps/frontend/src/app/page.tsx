@@ -21,7 +21,22 @@ export default function SplitScreenGateway() {
         try {
             const { access_token } = await api.auth.login(email, password);
             localStorage.setItem('access_token', access_token);
-            router.push('/dashboard');
+
+            // Check user profile for smart routing
+            try {
+                const user = await api.auth.me();
+                const hotinfoData = user?.customerProfile?.hotinfoData as any;
+
+                if (hotinfoData?.isAllplanUser && !user?.customerProfile?.hotinfoUpdatedAt) {
+                    router.push('/profile');
+                } else {
+                    router.push('/dashboard');
+                }
+            } catch (err) {
+                // Fallback route
+                router.push('/dashboard');
+            }
+
         } catch (err: any) {
             setError(err.message ?? 'AUTH_FAILURE: Credentials rejected by security node');
         } finally {

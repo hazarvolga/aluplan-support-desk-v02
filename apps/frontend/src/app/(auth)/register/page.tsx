@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,26 @@ export default function RegisterPage() {
     const [step, setStep] = useState<1 | 2>(1);
     const [lookupResult, setLookupResult] = useState<{ action: string, companyName: string | null } | null>(null);
     const [resetSent, setResetSent] = useState(false);
+
+    // Products fetched from backend
+    const [products, setProducts] = useState<any[]>([]);
+    const [usedProducts, setUsedProducts] = useState<string[]>([]);
+
+    useEffect(() => {
+        // Fetch products on mount
+        const fetchProducts = async () => {
+            try {
+                const res = await fetch(`${api.getBaseUrl()}/products`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setProducts(data);
+                }
+            } catch (err) {
+                console.error('Failed to load products');
+            }
+        };
+        fetchProducts();
+    }, []);
 
     const [form, setForm] = useState({
         username: '',
@@ -84,6 +104,8 @@ export default function RegisterPage() {
                     phone: form.phone,
                     email: form.email,
                     password: form.password,
+                    usedProducts: usedProducts,
+                    isAllplanUser: usedProducts.some(p => p.toLowerCase().includes('allplan')),
                 }),
             });
 
@@ -93,7 +115,7 @@ export default function RegisterPage() {
             }
 
             setSuccess(true);
-            setTimeout(() => router.push('/login'), 2000);
+            // Wait for user to explicitly click the button to go to login
         } catch (err: any) {
             setError(err.message || 'Bir hata oluştu.');
         } finally {
@@ -122,7 +144,13 @@ export default function RegisterPage() {
                         <CheckCircle2 className="w-8 h-8 text-emerald-400" />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">Kayıt Başarılı!</h2>
-                    <p className="text-slate-400">Giriş sayfasına yönlendiriliyorsunuz...</p>
+                    <p className="text-slate-400">Giriş detaylarınız e-posta adresinize gönderildi.</p>
+                    <p className="text-sm mt-3 text-emerald-500 font-medium">Lütfen e-postanızı kontrol edin ve sisteme giriş yapın.</p>
+                    <div className="mt-8">
+                        <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-500 text-white">
+                            <Link href="/login">Giriş Ekranına Dön</Link>
+                        </Button>
+                    </div>
                 </div>
             </div>
         );
@@ -356,7 +384,35 @@ export default function RegisterPage() {
                                         </div>
                                     </div>
 
-                                    <div className="pt-2 flex gap-3">
+                                    {/* Products Selection */}
+                                    {products.length > 0 && (
+                                        <div className="pt-2">
+                                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                                Hangi Aluplan ürünlerini / modüllerini kullanıyorsunuz?
+                                            </label>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                                {products.map((p) => (
+                                                    <label key={p.id} className="flex items-center gap-2 bg-black/20 border border-white/5 hover:border-sky-500/50 p-2 rounded-lg cursor-pointer transition-colors">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="w-4 h-4 rounded border-slate-600 bg-black/50 text-sky-500 focus:ring-sky-500/50"
+                                                            checked={usedProducts.includes(p.name)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setUsedProducts([...usedProducts, p.name]);
+                                                                } else {
+                                                                    setUsedProducts(usedProducts.filter(x => x !== p.name));
+                                                                }
+                                                            }}
+                                                        />
+                                                        <span className="text-sm text-slate-300">{p.name}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-4 flex gap-3">
                                         <Button
                                             type="button"
                                             variant="ghost"
