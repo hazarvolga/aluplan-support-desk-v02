@@ -8,12 +8,25 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { EmailModule } from '../email/email.module';
+import { PrismaModule } from '../prisma/prisma.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
     imports: [
         PassportModule,
-        JwtModule.register({}), // Config via ConfigService in strategies
+        PrismaModule,
+        ConfigModule,
         EmailModule,
+        JwtModule.registerAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                secret: config.get<string>('JWT_SECRET'),
+                signOptions: {
+                    expiresIn: config.get<string>('JWT_EXPIRES_IN', '15m') as any,
+                },
+            }),
+        }),
     ],
     controllers: [AuthController],
     providers: [

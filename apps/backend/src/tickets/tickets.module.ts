@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
 import { TicketsController } from './tickets.controller';
 import { TicketsService } from './tickets.service';
 import { SlaService } from './sla.service';
@@ -12,7 +11,7 @@ import { AiModule } from '../ai/ai.module';
 import { SlaController } from './sla.controller';
 
 @Module({
-    imports: [JwtModule.register({}), AiModule, NotificationsModule],
+    imports: [AiModule, NotificationsModule],
     controllers: [TicketsController, SlaController],
     providers: [TicketsService, SlaService, PiiMaskingService, RuleEngineService, AutoAssignmentService, BusinessHoursService],
     exports: [TicketsService, SlaService],

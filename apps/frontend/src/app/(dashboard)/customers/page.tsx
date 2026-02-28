@@ -13,11 +13,29 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, Search, ArrowUpDown, Trash2, Link2, RefreshCw, History, Building2, Globe, Users, ExternalLink, Save } from 'lucide-react';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+    Upload,
+    Search,
+    ArrowUpDown,
+    Trash2,
+    Link2,
+    RefreshCw,
+    History,
+    Building2,
+    Globe,
+    Users,
+    ExternalLink,
+    Save,
+    Plus,
+    Filter,
+    ChevronRight,
+    Loader2
+} from 'lucide-react';
+import { Card } from '@/components/ui/card';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface CustomerItem {
     id: string;
@@ -33,6 +51,7 @@ interface CustomerItem {
         middleName?: string;
         jobTitle?: string;
         contractStatus?: string;
+        industry?: string;
         phoneNumber: string | null;
         crmVerified: boolean;
         accountId?: string;
@@ -300,41 +319,54 @@ export default function CustomersPage() {
     const isAllSelected = filteredAndSortedCustomers.length > 0 && selectedIds.length === filteredAndSortedCustomers.length;
     const isAllAccountsSelected = filteredAccounts.length > 0 && selectedAccountIds.length === filteredAccounts.length;
 
-    if (loading && customers.length === 0) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-500" />
-            </div>
-        );
-    }
-
     const SortableHeader = ({ field, children }: { field: SortField, children: React.ReactNode }) => (
         <TableHead
-            className="cursor-pointer hover:bg-muted/50 select-none transition-colors"
+            className="cursor-pointer hover:bg-white/[0.03] select-none transition-colors border-none py-4 px-4"
             onClick={() => handleSort(field)}
         >
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">
                 <span>{children}</span>
-                <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                <ArrowUpDown className="h-3 w-3 opacity-30" />
             </div>
         </TableHead>
     );
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6 relative min-h-screen pb-24"
+        >
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-white/5 pb-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Müşteriler</h1>
-                    <p className="text-muted-foreground">Kayıtlı müşterilerin ve şirketlerin listesi</p>
+                    <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+                            <Users className="h-6 w-6 text-blue-500" />
+                        </div>
+                        Müşteri Portalı
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1 ml-14 font-medium opacity-70">
+                        Kurumsal müşteri portföyü ve CRM entegrasyon merkezi
+                    </p>
                 </div>
-                <div className="flex items-center space-x-3">
+
+                <div className="flex items-center gap-3">
                     {((activeTab === 'list' && selectedIds.length > 0) || (activeTab === 'accounts' && selectedAccountIds.length > 0)) && (
-                        <Button variant="destructive" disabled={deleting} onClick={handleBulkDelete}>
+                        <Button
+                            variant="destructive"
+                            disabled={deleting}
+                            onClick={handleBulkDelete}
+                            className="h-9 px-4 text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-rose-500/10"
+                        >
                             <Trash2 className="mr-2 h-4 w-4" />
                             {deleting ? 'Siliniyor...' : `${activeTab === 'accounts' ? selectedAccountIds.length : selectedIds.length} Seçiliyi Sil`}
                         </Button>
                     )}
-                    <Button asChild disabled={loading}>
+                    <Button
+                        asChild
+                        disabled={loading}
+                        className="h-9 bg-white/5 border border-white/10 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-white/10"
+                    >
                         <Link href="/customers/import">
                             <Upload className="mr-2 h-4 w-4" />
                             İçe Aktar
@@ -343,33 +375,29 @@ export default function CustomersPage() {
                 </div>
             </div>
 
-            <Tabs defaultValue="list" className="space-y-6" onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
-                    <TabsTrigger value="list" className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Kayıtlı Müşteriler
-                    </TabsTrigger>
-                    <TabsTrigger value="accounts" className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        Hesaplar (Şirketler)
-                    </TabsTrigger>
-                    <TabsTrigger value="sync" className="flex items-center gap-2">
-                        <RefreshCw className="h-4 w-4" />
-                        Senkronizasyon
-                    </TabsTrigger>
-                    <TabsTrigger value="history" className="flex items-center gap-2">
-                        <History className="h-4 w-4" />
-                        İşlem Geçmişi
-                    </TabsTrigger>
-                </TabsList>
+            <Tabs defaultValue="list" className="space-y-8" onValueChange={setActiveTab}>
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2">
+                    <TabsList className="bg-white/5 border border-white/5 p-1 rounded-xl h-11 shrink-0">
+                        <TabsTrigger value="list" className="rounded-lg px-6 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                            Müşteriler
+                        </TabsTrigger>
+                        <TabsTrigger value="accounts" className="rounded-lg px-6 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                            Hesaplar
+                        </TabsTrigger>
+                        <TabsTrigger value="sync" className="rounded-lg px-6 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                            Senkronizasyon
+                        </TabsTrigger>
+                        <TabsTrigger value="history" className="rounded-lg px-6 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                            İşlem Geçmişi
+                        </TabsTrigger>
+                    </TabsList>
 
-                <div className="flex items-center justify-between">
-                    <div className="relative flex-1 max-w-sm">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <div className="relative flex-1 max-w-sm group">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-blue-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder="Arama yapın..."
-                            className="flex h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="Müşteri veya Şirket Arayın..."
+                            className="w-full pl-10 pr-4 h-11 bg-white/5 border border-white/10 rounded-xl text-[11px] font-bold uppercase tracking-tight text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -377,311 +405,351 @@ export default function CustomersPage() {
                 </div>
 
                 <TabsContent value="list" className="space-y-6 mt-0">
-                    <div className="rounded-lg border">
+                    <Card className="glass-card overflow-hidden border-white/5">
                         <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-12">
+                            <TableHeader className="bg-white/[0.03]">
+                                <TableRow className="hover:bg-transparent border-white/5">
+                                    <TableHead className="w-12 px-6">
                                         <input
                                             type="checkbox"
                                             checked={isAllSelected}
                                             onChange={handleSelectAll}
-                                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                            className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                         />
                                     </TableHead>
                                     <SortableHeader field="fullName">Ad Soyad</SortableHeader>
+                                    <SortableHeader field="companyName">Şirket</SortableHeader>
                                     <SortableHeader field="jobTitle">Ünvan</SortableHeader>
                                     <SortableHeader field="email">E-posta</SortableHeader>
                                     <SortableHeader field="industry">Sektör</SortableHeader>
-                                    <SortableHeader field="companyName">Şirket Adı</SortableHeader>
-                                    <SortableHeader field="customerNo">Müşteri No</SortableHeader>
-                                    <SortableHeader field="contractStatus">Müşteri Durumu</SortableHeader>
-                                    <SortableHeader field="status">Durum</SortableHeader>
-                                    <SortableHeader field="phoneNumber">Telefon</SortableHeader>
+                                    <SortableHeader field="contractStatus">Durum</SortableHeader>
+                                    <TableHead className="w-10" />
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredAndSortedCustomers.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
-                                            Henüz kayıtlı müşteri yok veya arama sonucu bulunamadı.
+                                {loading ? (
+                                    <TableRow className="border-none">
+                                        <TableCell colSpan={8} className="py-20 text-center">
+                                            <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto mb-4" />
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">Veri Veri Tabanından Çekiliyor</p>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredAndSortedCustomers.length === 0 ? (
+                                    <TableRow className="border-none">
+                                        <TableCell colSpan={8} className="py-20 text-center opacity-30">
+                                            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">Sonuç Bulunamadı</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
                                     filteredAndSortedCustomers.map((c) => (
-                                        <TableRow key={c.id}>
-                                            <TableCell>
+                                        <TableRow key={c.id} className="group border-white/5 hover:bg-white/[0.02] transition-colors h-16">
+                                            <TableCell className="px-6">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedIds.includes(c.id)}
                                                     onChange={(e) => handleSelectOne(c.id, e.target.checked)}
-                                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                                    className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                                 />
                                             </TableCell>
                                             <TableCell>
-                                                <Link href={`/customers/${c.id}`} className="hover:underline text-primary font-medium">
+                                                <Link href={`/customers/${c.id}`} className="font-bold text-white hover:text-blue-400 underline-offset-4 hover:underline transition-colors block">
                                                     {c.fullName}
                                                 </Link>
+                                                <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-tighter mt-1 block">
+                                                    ID: {c.customerProfile?.customerNo || 'UNASSIGNED'}
+                                                </span>
                                             </TableCell>
-                                            <TableCell>{c.customerProfile?.jobTitle || '-'}</TableCell>
-                                            <TableCell>{c.email}</TableCell>
-                                            <TableCell>{c.customerProfile?.industry || '-'}</TableCell>
-                                            <TableCell className="font-medium">
+                                            <TableCell>
                                                 {c.customerProfile?.account ? (
-                                                    <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                                                        <Building2 className="h-3 w-3" />
+                                                    <Badge variant="outline" className="bg-blue-500/5 text-blue-400 border-blue-500/20 text-[9px] font-bold px-2 py-0.5">
+                                                        <Building2 className="h-3 w-3 mr-1" />
                                                         {c.customerProfile.account.name}
                                                     </Badge>
                                                 ) : (
-                                                    c.customerProfile?.companyName || '-'
+                                                    <span className="text-white/40 italic text-xs">{c.customerProfile?.companyName || '-'}</span>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="font-mono text-xs">
-                                                {c.customerProfile?.customerNo || '-'}
-                                            </TableCell>
+                                            <TableCell className="text-white/60 text-xs font-medium">{c.customerProfile?.jobTitle || '-'}</TableCell>
+                                            <TableCell className="text-white/60 font-mono text-[11px]">{c.email}</TableCell>
                                             <TableCell>
-                                                {c.customerProfile?.contractStatus ? (
-                                                    <Badge variant="outline">{c.customerProfile.contractStatus}</Badge>
-                                                ) : (
-                                                    '-'
-                                                )}
+                                                <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/50 border border-white/5">
+                                                    {c.customerProfile?.industry || 'GENEL'}
+                                                </span>
                                             </TableCell>
                                             <TableCell>
                                                 {c.status === 'ACTIVE' ? (
-                                                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
-                                                        Aktif
+                                                    <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[9px] font-black tracking-widest px-2 py-0.5">
+                                                        AKTİF
                                                     </Badge>
                                                 ) : (
-                                                    <Badge variant="outline" className="text-slate-400 border-slate-500/30">
+                                                    <Badge variant="outline" className="text-slate-500 border-white/10 text-[9px] font-black tracking-widest px-2 py-0.5">
                                                         {c.status}
                                                     </Badge>
                                                 )}
                                             </TableCell>
-                                            <TableCell>{c.customerProfile?.phoneNumber || '-'}</TableCell>
+                                            <TableCell className="px-6 text-right">
+                                                <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-blue-500/10 hover:text-blue-500 text-muted-foreground">
+                                                    <Link href={`/customers/${c.id}`}><ChevronRight className="h-4 w-4" /></Link>
+                                                </Button>
+                                            </TableCell>
                                         </TableRow>
                                     ))
                                 )}
                             </TableBody>
                         </Table>
-                    </div>
+                    </Card>
                 </TabsContent>
 
                 <TabsContent value="accounts" className="space-y-6 mt-0">
-                    <div className="rounded-lg border">
+                    <Card className="glass-card overflow-hidden border-white/5">
                         <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-12">
+                            <TableHeader className="bg-white/[0.03]">
+                                <TableRow className="hover:bg-transparent border-white/5">
+                                    <TableHead className="w-12 px-6">
                                         <input
                                             type="checkbox"
                                             checked={isAllAccountsSelected}
                                             onChange={handleSelectAllAccounts}
-                                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                            className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                         />
                                     </TableHead>
-                                    <TableHead>Şirket Adı</TableHead>
-                                    <TableHead>Web Sitesi</TableHead>
-                                    <TableHead>Sektör / Endüstri</TableHead>
-                                    <TableHead>Kayıtlı Kişiler</TableHead>
-                                    <TableHead>CRM Durumu</TableHead>
-                                    <TableHead>Adres</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">Şirket Yapısı</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">Sektör / Domain</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">Ekosistem</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">CRM Doğrulama</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 text-right pr-6">Aksiyon</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {accountsLoading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="text-center py-8">Yükleniyor...</TableCell>
+                                    <TableRow className="border-none">
+                                        <TableCell colSpan={6} className="py-20 text-center">
+                                            <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto mb-4" />
+                                        </TableCell>
                                     </TableRow>
                                 ) : filteredAccounts.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                                            Kayıtlı hesap bulunamadı.
+                                    <TableRow className="border-none">
+                                        <TableCell colSpan={6} className="py-20 text-center opacity-30">
+                                            <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">HESAP BULUNAMADI</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
                                     filteredAccounts.map((a) => (
-                                        <TableRow key={a.id}>
-                                            <TableCell>
+                                        <TableRow key={a.id} className="group border-white/5 hover:bg-white/[0.02] transition-colors h-16">
+                                            <TableCell className="px-6">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedAccountIds.includes(a.id)}
                                                     onChange={(e) => handleSelectOneAccount(a.id, e.target.checked)}
-                                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                                    className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                                 />
                                             </TableCell>
-                                            <TableCell className="font-semibold">
-                                                <Link href={`/customers/accounts/${a.id}`} className="flex items-center gap-2 hover:underline text-primary">
-                                                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                                                    {a.name}
-                                                </Link>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <Link href={`/customers/accounts/${a.id}`} className="font-bold text-white hover:text-blue-400 transition-colors">
+                                                        {a.name}
+                                                    </Link>
+                                                    <div className="flex items-center gap-3 mt-1">
+                                                        {a.website && (
+                                                            <a href={a.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 font-mono uppercase">
+                                                                <Globe className="h-2.5 w-2.5" /> DOMAIN
+                                                            </a>
+                                                        )}
+                                                        <span className="text-[10px] text-muted-foreground/40 font-mono truncate max-w-[200px]">{a.address}</span>
+                                                    </div>
+                                                </div>
                                             </TableCell>
                                             <TableCell>
-                                                {a.website ? (
-                                                    <a href={a.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
-                                                        <Globe className="h-3 w-3" />
-                                                        Siteye Git
-                                                    </a>
-                                                ) : '-'}
-                                            </TableCell>
-                                            <TableCell>{a.industry || '-'}</TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline" className="gap-1">
-                                                    <Users className="h-3 w-3" />
-                                                    {a._count.customers} Kişi
+                                                <Badge variant="outline" className="bg-white/5 border-white/10 text-white/60 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5">
+                                                    {a.industry || 'DEFINED'}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-white/80">
+                                                        <Users className="h-3 w-3 text-blue-500" />
+                                                        {a._count.customers} PROFİL
+                                                    </div>
+                                                    <div className="w-24 h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
+                                                        <div className="h-full bg-blue-500 w-[65%]" />
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
                                                 {a.crmVerified ? (
-                                                    <Badge className="bg-sky-500/10 text-sky-400 border-sky-500/30">
-                                                        CRM Doğrulanmış
-                                                    </Badge>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">DYNAMICS_OK</span>
+                                                    </div>
                                                 ) : (
-                                                    <Badge variant="outline">Manuel</Badge>
+                                                    <div className="flex items-center gap-2 grayscale brightness-50">
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-slate-500" />
+                                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">MANUAL_ENTRY</span>
+                                                    </div>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="max-w-[200px] truncate text-muted-foreground text-xs">
-                                                {a.address || '-'}
+                                            <TableCell className="pr-6 text-right">
+                                                <Button asChild variant="outline" size="sm" className="h-8 border-white/10 text-[9px] font-bold px-3 hover:bg-blue-500/10 hover:text-blue-400">
+                                                    <Link href={`/customers/accounts/${a.id}`}>DETAYLAR</Link>
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))
                                 )}
                             </TableBody>
                         </Table>
-                    </div>
+                    </Card>
                 </TabsContent>
 
-                <TabsContent value="sync">
-                    {connectionsLoading ? (
-                        <div className="flex items-center justify-center h-64 text-muted-foreground italic">
-                            CRM Bağlantıları Kontrol Ediliyor...
-                        </div>
-                    ) : connections.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-lg bg-muted/20">
-                            <Link2 className="h-12 w-12 text-muted-foreground mb-4" />
-                            <h3 className="text-lg font-semibold mb-2">CRM Bağlantısı Gerekli</h3>
-                            <p className="text-muted-foreground text-center max-w-md mb-6">
-                                Dynamics 365 veya diğer CRM sistemlerinden müşteri ve şirket verilerini otomatik çekmek için bağlantı kurmanız gerekmektedir.
-                            </p>
-                            <Button asChild>
-                                <Link href="/customers/crm">CRM Kontrol Merkezine Git</Link>
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            {connections.map((conn) => (
-                                <Card key={conn.id} className="overflow-hidden">
-                                    <CardHeader className="bg-muted/30">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-sky-500/10 rounded-lg">
-                                                    <ExternalLink className="h-5 w-5 text-sky-500" />
-                                                </div>
-                                                <div>
-                                                    <CardTitle className="text-lg">{conn.provider}</CardTitle>
-                                                    <CardDescription className="font-mono text-xs">{conn.instanceUrl}</CardDescription>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {conn.isActive ? (
-                                                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30">Aktif</Badge>
-                                                ) : (
-                                                    <Badge variant="outline">Pasif</Badge>
-                                                )}
-                                                {conn.syncStatus === 'SYNCING' && (
-                                                    <Badge className="bg-sky-500/10 text-sky-400 animate-pulse">Senkronize Ediliyor</Badge>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="pt-6">
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                            <div className="space-y-1">
-                                                <p className="text-xs text-muted-foreground uppercase font-semibold">Son Senkronizasyon</p>
-                                                <p className="text-sm font-medium">
-                                                    {conn.lastSyncAt ? new Date(conn.lastSyncAt).toLocaleString('tr-TR') : 'Hiç yapılmadı'}
-                                                </p>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <p className="text-xs text-muted-foreground uppercase font-semibold">Senk. Durumu</p>
-                                                <p className="text-sm font-medium">{conn.syncStatus || 'IDLE'}</p>
-                                            </div>
-                                            <div className="flex items-end justify-end">
-                                                <Button
-                                                    onClick={() => handleSync(conn.id)}
-                                                    disabled={syncing || conn.syncStatus === 'SYNCING'}
-                                                    variant="secondary"
-                                                    className="gap-2"
-                                                >
-                                                    <RefreshCw className={`h-4 w-4 ${syncing || conn.syncStatus === 'SYNCING' ? 'animate-spin' : ''}`} />
-                                                    Senkronizasyonu Tetikle
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-
-                            <div className="flex justify-center pt-4">
-                                <Button variant="ghost" asChild className="text-muted-foreground hover:text-primary">
-                                    <Link href="/customers/crm" className="flex items-center gap-2">
-                                        <Save className="h-4 w-4" />
-                                        Bağlantı Ayarlarını Düzenle
-                                    </Link>
-                                </Button>
+                <TabsContent value="sync" className="space-y-6">
+                    <AnimatePresence mode="wait">
+                        {connectionsLoading ? (
+                            <div className="flex items-center justify-center py-20 text-muted-foreground font-mono text-[10px] uppercase tracking-widest italic animate-pulse">
+                                CRM VERİ PROTOKOLLERİ KONTROL EDİLİYOR...
                             </div>
-                        </div>
-                    )}
+                        ) : connections.length === 0 ? (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="flex flex-col items-center justify-center p-12 glass-card border-dashed"
+                            >
+                                <div className="h-16 w-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
+                                    <Link2 className="h-8 w-8 text-muted-foreground/50" />
+                                </div>
+                                <h3 className="text-xl font-bold mb-2 text-white">CRM Entegrasyonu Yok</h3>
+                                <p className="text-muted-foreground text-center max-w-md mb-8 text-sm font-medium">
+                                    Dynamics 365 veritabanınızı bağlayarak müşteri ve şirket verilerini otomatik olarak senkronize edin.
+                                </p>
+                                <Button asChild className="h-12 px-8 bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-widest text-[11px] rounded-xl shadow-xl shadow-blue-500/10">
+                                    <Link href="/customers/crm">KONTROL MERKEZİNİ YAPILANDIR</Link>
+                                </Button>
+                            </motion.div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-6">
+                                {connections.map((conn) => (
+                                    <Card key={conn.id} className="glass-card overflow-hidden border-white/5 group hover:border-blue-500/20 transition-all">
+                                        <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-white/5">
+                                            <div className="p-8 md:w-1/3 flex flex-col justify-between">
+                                                <div className="flex items-center gap-4 mb-4">
+                                                    <div className="h-12 w-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                                                        <ExternalLink className="h-6 w-6 text-blue-500" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-xl font-bold text-white uppercase tracking-tight">{conn.provider}</h3>
+                                                        <p className="text-[10px] font-mono text-muted-foreground/60 tracking-tighter truncate max-w-[200px]">{conn.instanceUrl}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-4">
+                                                    {conn.isActive ? (
+                                                        <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[8px] font-black tracking-[0.2em] px-2">AKTİF</Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="text-slate-500 border-white/10 text-[8px] font-black tracking-[0.2em] px-2">PASİF</Badge>
+                                                    )}
+                                                    {conn.syncStatus === 'SYNCING' && (
+                                                        <Badge className="bg-blue-500/10 text-blue-400 animate-pulse border-none text-[8px] font-black tracking-[0.2em] px-2">SENKRONİZE_EDİLİYOR</Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="p-8 flex-1 grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2">Son Transfer</p>
+                                                        <p className="text-sm font-bold text-white">
+                                                            {conn.lastSyncAt ? new Date(conn.lastSyncAt).toLocaleString('tr-TR') : 'YOK'}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2">Sistem Durumu</p>
+                                                        <p className="text-sm font-bold text-blue-400 font-mono">{conn.syncStatus || 'IDLE'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col justify-end items-end gap-3">
+                                                    <Button
+                                                        onClick={() => handleSync(conn.id)}
+                                                        disabled={syncing || conn.syncStatus === 'SYNCING'}
+                                                        className="w-full h-11 bg-white/5 border border-white/10 hover:bg-blue-500/10 hover:text-blue-400 hover:border-blue-500/30 text-[10px] font-bold uppercase tracking-widest transition-all"
+                                                    >
+                                                        <RefreshCw className={`h-4 w-4 mr-2 ${syncing || conn.syncStatus === 'SYNCING' ? 'animate-spin' : ''}`} />
+                                                        Transferi Tetikle
+                                                    </Button>
+                                                    <Button asChild variant="ghost" className="text-[9px] font-bold text-muted-foreground hover:text-white group">
+                                                        <Link href="/customers/crm">
+                                                            AYARLARI DÜZENLE <ArrowRight className="h-3 w-3 ml-2 group-hover:translate-x-1 transition-transform" />
+                                                        </Link>
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </AnimatePresence>
                 </TabsContent>
 
-                <TabsContent value="history">
-                    {logsLoading ? (
-                        <div className="flex items-center justify-center h-64 text-muted-foreground italic">
-                            İşlem geçmişi yükleniyor...
-                        </div>
-                    ) : logs.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground">
-                            Henüz bir senkronizasyon kaydı bulunamadı.
-                        </div>
-                    ) : (
-                        <div className="rounded-lg border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Tarih</TableHead>
-                                        <TableHead>Durum</TableHead>
-                                        <TableHead>Toplam</TableHead>
-                                        <TableHead className="text-emerald-500">Başarılı</TableHead>
-                                        <TableHead className="text-red-500">Hata</TableHead>
-                                        <TableHead>Notlar</TableHead>
+                <TabsContent value="history" className="space-y-6">
+                    <Card className="glass-card overflow-hidden border-white/5">
+                        <Table>
+                            <TableHeader className="bg-white/[0.03]">
+                                <TableRow className="border-white/5">
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 px-6">Timestamp</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">Status</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">Volume</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-emerald-500/70 uppercase py-4 tracking-widest">Passed</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-rose-500/70 uppercase py-4 tracking-widest">Failed</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 pr-6">Logs / Nodes</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {logsLoading ? (
+                                    <TableRow className="border-none">
+                                        <TableCell colSpan={6} className="py-20 text-center">
+                                            <Loader2 className="h-6 w-6 text-blue-500 animate-spin mx-auto" />
+                                        </TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {logs.map((log) => (
-                                        <TableRow key={log.id}>
-                                            <TableCell className="text-xs font-medium">
+                                ) : logs.length === 0 ? (
+                                    <TableRow className="border-none">
+                                        <TableCell colSpan={6} className="py-20 text-center opacity-30">
+                                            <History className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                                            <p className="text-[10px] font-bold uppercase tracking-widest">Geçmiş Verisi Yok</p>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    logs.map((log) => (
+                                        <TableRow key={log.id} className="border-white/5 hover:bg-white/[0.01]">
+                                            <TableCell className="font-mono text-[11px] text-white/50 px-6">
                                                 {new Date(log.startedAt).toLocaleString('tr-TR')}
                                             </TableCell>
                                             <TableCell>
                                                 {log.status === 'SUCCESS' ? (
-                                                    <Badge className="bg-emerald-500/10 text-emerald-400 border-none">Bitti</Badge>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-1 w-3 bg-emerald-500" />
+                                                        <span className="text-[10px] font-black text-emerald-500 tracking-tighter">OK_200</span>
+                                                    </div>
                                                 ) : log.status === 'ERROR' ? (
-                                                    <Badge className="bg-red-500/10 text-red-400 border-none">Hata</Badge>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-1 w-3 bg-rose-500" />
+                                                        <span className="text-[10px] font-black text-rose-500 tracking-tighter">ERR_500</span>
+                                                    </div>
                                                 ) : (
-                                                    <Badge variant="outline" className="animate-pulse">Devam Ediyor</Badge>
+                                                    <Badge variant="outline" className="animate-pulse border-blue-500/20 text-blue-400 text-[9px]">PENDING</Badge>
                                                 )}
                                             </TableCell>
-                                            <TableCell>{log.totalRecords}</TableCell>
-                                            <TableCell className="text-emerald-500">{log.successCount}</TableCell>
-                                            <TableCell className="text-red-500">{log.errorCount}</TableCell>
-                                            <TableCell className="text-xs max-w-[200px] truncate" title={log.errorMessage}>
-                                                {log.errorMessage || '-'}
+                                            <TableCell className="font-bold text-white/80">{log.totalRecords}</TableCell>
+                                            <TableCell className="text-emerald-500 font-mono text-[11px]">{log.successCount}</TableCell>
+                                            <TableCell className="text-rose-500 font-mono text-[11px]">{log.errorCount}</TableCell>
+                                            <TableCell className="text-[10px] text-white/20 font-mono italic max-w-[200px] truncate pr-6" title={log.errorMessage}>
+                                                {log.errorMessage || 'TRANSFER_LOG_EMPTY'}
                                             </TableCell>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    )}
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </Card>
                 </TabsContent>
             </Tabs>
 
@@ -689,13 +757,15 @@ export default function CustomersPage() {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={confirmBulkDelete}
-                title="Silme İşlemini Onayla"
-                description={`${activeTab === 'accounts' ? selectedAccountIds.length : selectedIds.length} ${activeTab === 'accounts' ? 'şirket kaydını' : 'müşteri kaydını'} kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`}
-                confirmText="Evet, Sil"
-                cancelText="Vazgeç"
+                title="Sistem Protokolü: Silme Onayı"
+                description={`${activeTab === 'accounts' ? selectedAccountIds.length : selectedIds.length} adet veri nesnesi kalıcı olarak silinecek. Bu işlem geri alınamaz.`}
+                confirmText="SİLME PROTOKOLÜNÜ BAŞLAT"
+                cancelText="İPTAL"
                 variant="danger"
                 loading={deleting}
             />
-        </div>
+        </motion.div>
     );
 }
+
+import { ArrowRight } from 'lucide-react';

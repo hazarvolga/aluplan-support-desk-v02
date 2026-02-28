@@ -79,6 +79,24 @@ export const api = {
             }
         }>('/auth/me'),
         logout: () => request<{ success: boolean }>('/auth/logout', { method: 'POST' }),
+        mfa: {
+            generate: () => request<{ secret: string; qrCodeDataUrl: string }>('/auth/mfa/generate', { method: 'POST' }),
+            setup: (token: string, secret: string) =>
+                request<{ success: boolean }>('/auth/mfa/setup', {
+                    method: 'POST',
+                    body: JSON.stringify({ token, secret }),
+                }),
+            verify: (userId: string, token: string) =>
+                request<{
+                    user: any;
+                    access_token: string;
+                    refresh_token: string;
+                }>('/auth/mfa/verify', {
+                    method: 'POST',
+                    body: JSON.stringify({ userId, token }),
+                }),
+            disable: () => request<{ success: boolean }>('/auth/mfa/disable', { method: 'POST' }),
+        },
     },
     pool: {
         list: () => request<any[]>('/knowledge-pool/sources'),
@@ -98,6 +116,7 @@ export const api = {
         },
         sync: (id: string) => request<any>(`/knowledge-pool/sources/${id}/sync`, { method: 'POST' }),
         logs: (id: string) => request<any[]>(`/knowledge-pool/sources/${id}/logs`),
+        syncDataset: () => request<any>('/knowledge-pool/sync-dataset', { method: 'POST' }),
     },
     tickets: {
         list: (params?: Record<string, string>) => {

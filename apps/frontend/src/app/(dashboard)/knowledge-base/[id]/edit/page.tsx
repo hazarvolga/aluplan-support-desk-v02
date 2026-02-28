@@ -201,7 +201,7 @@ export default function EditKnowledgeArticlePage() {
                     <textarea
                         id="content"
                         {...register('content', { required: 'İçerik boş bırakılamaz' })}
-                        className="min-h-[60vh] w-full resize-y rounded-md border border-white/10 bg-[#0d1017] p-6 font-mono text-[15px] leading-relaxed text-white placeholder-gray-600 focus:border-orange-500/50 focus:outline-none focus:ring-1 focus:ring-orange-500/50 shadow-inner"
+                        className="min-h-[60vh] w-full resize-y rounded-md border border-white/10 bg-[#1F1F1F] p-6 font-mono text-[15px] leading-relaxed text-white placeholder-gray-600 focus:border-orange-500/50 focus:outline-none focus:ring-1 focus:ring-orange-500/50 shadow-inner"
                         placeholder="# Başlık\n\nMetin buraya..."
                         spellCheck="false"
                     />

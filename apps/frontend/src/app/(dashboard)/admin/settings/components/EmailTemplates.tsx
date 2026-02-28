@@ -250,7 +250,7 @@ export function EmailTemplates() {
                                     setDirty(true);
                                 }}
                                 spellCheck={false}
-                                className="w-full h-[600px] p-4 bg-[#0d1117] text-[#c9d1d9] font-mono text-xs leading-relaxed resize-none border-0 focus:outline-none focus:ring-0 scrollbar-thin"
+                                className="w-full h-[600px] p-4 bg-[#1F1F1F] text-[#F5F5F5] font-mono text-xs leading-relaxed resize-none border-0 focus:outline-none focus:ring-0 scrollbar-thin"
                                 placeholder="MJML içeriğini buraya yazın..."
                             />
                         </CardContent>

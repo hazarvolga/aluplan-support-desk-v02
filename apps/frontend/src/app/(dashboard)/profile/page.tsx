@@ -6,8 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Monitor, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { Monitor, CheckCircle2, AlertTriangle, Loader2, ShieldCheck, QrCode, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { QRCodeSVG } from 'qrcode.react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
@@ -33,6 +43,13 @@ export default function ProfilePage() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
+    // MFA State
+    const [mfaEnabled, setMfaEnabled] = useState(false);
+    const [mfaLoading, setMfaLoading] = useState(false);
+    const [mfaSecret, setMfaSecret] = useState<{ secret: string; qrCodeDataUrl: string } | null>(null);
+    const [mfaToken, setMfaToken] = useState('');
+    const [mfaDialogOpen, setMfaDialogOpen] = useState(false);
+
     useEffect(() => {
         loadProfile();
     }, []);
@@ -46,6 +63,8 @@ export default function ProfilePage() {
             setEmail(user.email || '');
             setRoles(user.role ? [user.role] : []);
             setAccountStatus(user.status || 'ACTIVE');
+            // @ts-ignore
+            setMfaEnabled(user.mfaEnabled || false);
 
             if (user.customerProfile) {
                 setHotinfoData(user.customerProfile.hotinfoData);
@@ -134,6 +153,49 @@ export default function ProfilePage() {
             console.error(error);
         } finally {
             setUploadingHotinfo(false);
+        }
+    };
+
+    const handleGenerateMfa = async () => {
+        setMfaLoading(true);
+        try {
+            const data = await api.auth.mfa.generate();
+            setMfaSecret(data);
+        } catch (error: any) {
+            toast.error('MFA anahtarı oluşturulamadı');
+        } finally {
+            setMfaLoading(false);
+        }
+    };
+
+    const handleEnableMfa = async () => {
+        if (!mfaSecret) return;
+        setMfaLoading(true);
+        try {
+            await api.auth.mfa.setup(mfaToken, mfaSecret.secret);
+            setMfaEnabled(true);
+            setMfaDialogOpen(false);
+            setMfaSecret(null);
+            setMfaToken('');
+            toast.success('İki faktörlü doğrulama aktif edildi.');
+        } catch (error: any) {
+            toast.error('Doğrulama başarısız: ' + error.message);
+        } finally {
+            setMfaLoading(false);
+        }
+    };
+
+    const handleDisableMfa = async () => {
+        if (!confirm('İki faktörlü doğrulamayı devre dışı bırakmak istediğinize emin misiniz? Güvenliğiniz azalacaktır.')) return;
+        setMfaLoading(true);
+        try {
+            await api.auth.mfa.disable();
+            setMfaEnabled(false);
+            toast.success('İki faktörlü doğrulama devre dışı bırakıldı.');
+        } catch (error: any) {
+            toast.error('İşlem başarısız');
+        } finally {
+            setMfaLoading(false);
         }
     };
 
@@ -305,6 +367,111 @@ export default function ProfilePage() {
                             </Button>
                         </div>
                     </form>
+                </CardContent>
+            </Card>
+
+            <Card className="border-slate-200 dark:border-slate-800">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5 text-primary" />
+                        İki Faktörlü Doğrulama (MFA)
+                    </CardTitle>
+                    <CardDescription>
+                        Hesabınızın güvenliğini artırmak için TOTP tabanlı (Google Authenticator, Authy vb.) doğrulama kullanın.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-slate-200 dark:border-slate-800">
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium">MFA Durumu</p>
+                            <div className="flex items-center gap-1.5">
+                                {mfaEnabled ? (
+                                    <>
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">AKTİF</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-2 h-2 rounded-full bg-slate-400" />
+                                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">PASİF</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                            {mfaEnabled ? (
+                                <Button variant="destructive" size="sm" onClick={handleDisableMfa} disabled={mfaLoading}>
+                                    {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                                    Devre Dışı Bırak
+                                </Button>
+                            ) : (
+                                <Dialog open={mfaDialogOpen} onOpenChange={(open) => {
+                                    setMfaDialogOpen(open);
+                                    if (open && !mfaSecret) handleGenerateMfa();
+                                }}>
+                                    <DialogTrigger asChild>
+                                        <Button size="sm" className="bg-primary hover:bg-primary/90">
+                                            <QrCode className="w-4 h-4 mr-2" />
+                                            Kurulumu Başlat
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-md">
+                                        <DialogHeader>
+                                            <DialogTitle>MFA Kurulumu</DialogTitle>
+                                            <DialogDescription>
+                                                Kodu herhangi bir kimlik doğrulama uygulamasıyla (Google Authenticator, Microsoft Authenticator, Authy) tarayın.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="flex flex-col items-center justify-center p-6 space-y-6">
+                                            {mfaLoading && !mfaSecret ? (
+                                                <div className="flex flex-col items-center gap-3 py-8">
+                                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                                    <span className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Anahtar Oluşturuluyor...</span>
+                                                </div>
+                                            ) : mfaSecret ? (
+                                                <>
+                                                    <div className="bg-white p-4 rounded-xl border-4 border-slate-100 shadow-xl">
+                                                        <QRCodeSVG value={`otpauth://totp/Aluplan%20Support:${email}?secret=${mfaSecret.secret}&issuer=Aluplan%20Support`} size={200} />
+                                                    </div>
+                                                    <div className="w-full space-y-4">
+                                                        <div className="p-3 bg-muted/50 rounded-lg border border-white/5 text-center">
+                                                            <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Manuel Giriş Anahtarı</p>
+                                                            <code className="text-sm font-mono text-primary select-all tracking-wider">{mfaSecret.secret}</code>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="mfaToken">Doğrulama Kodu</Label>
+                                                            <Input
+                                                                id="mfaToken"
+                                                                placeholder="000000"
+                                                                maxLength={6}
+                                                                className="text-center text-xl tracking-[0.5em] font-mono"
+                                                                value={mfaToken}
+                                                                onChange={(e) => setMfaToken(e.target.value.replace(/\D/g, ''))}
+                                                            />
+                                                            <p className="text-[10px] text-muted-foreground text-center uppercase tracking-widest transition-all">
+                                                                Uygulamanızdaki 6 haneli kodu girerek aktifleştirin
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            ) : null}
+                                        </div>
+                                        <DialogFooter className="flex sm:justify-between items-center w-full">
+                                            <Button variant="ghost" onClick={() => setMfaDialogOpen(false)}>İptal</Button>
+                                            <Button
+                                                onClick={handleEnableMfa}
+                                                disabled={mfaLoading || mfaToken.length !== 6}
+                                                className="bg-emerald-500 hover:bg-emerald-600 text-white min-w-[140px]"
+                                            >
+                                                {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Doğrula ve Etkinleştir"}
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            )}
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
 

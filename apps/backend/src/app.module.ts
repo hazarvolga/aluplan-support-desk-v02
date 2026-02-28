@@ -27,6 +27,8 @@ import { ProductsModule } from './products/products.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { ReportsModule } from './reports/reports.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { RedisModule } from './redis/redis.module';
 
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -103,6 +105,11 @@ import { AnnouncementTemplatesModule } from './announcement-templates/announceme
         AnnouncementsModule,
         AnnouncementTemplatesModule,
     ],
-    providers: [],
+    providers: [
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: AuditLogInterceptor,
+        },
+    ],
 })
 export class AppModule { }

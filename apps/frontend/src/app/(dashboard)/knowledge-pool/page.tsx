@@ -187,6 +187,17 @@ export default function KnowledgePoolPage() {
         }
     };
 
+    const handleDatasetSync = async () => {
+        try {
+            toast({ title: 'Senkronizasyon Başlatıldı', description: '/dataset klasörü taranıyor...' });
+            const res = await api.pool.syncDataset();
+            toast({ title: 'Akıllı Eşitleme Başarılı', description: res.message || 'Dataset klasöründeki dosyalar işleme alındı.' });
+            loadSources();
+        } catch (err: any) {
+            toast({ title: 'Senkronizasyon Hatası', description: err.message, variant: 'destructive' });
+        }
+    };
+
     const viewLogs = async (source: any) => {
         setActiveSource(source);
         try {
@@ -254,6 +265,13 @@ export default function KnowledgePoolPage() {
                                     <FileText className="h-3 w-3" /> VERİ_SETİ_YÜKLE
                                 </Button>
                             </Link>
+
+                            <Button
+                                onClick={handleDatasetSync}
+                                variant="outline"
+                                className="h-8 border-primary/40 text-[10px] uppercase font-bold tracking-widest gap-2 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all">
+                                <Database className="h-3 w-3" /> FİZİKSEL_KLASÖRÜ_TARA (/dataset)
+                            </Button>
                         </div>
                     </div>
                 </div>

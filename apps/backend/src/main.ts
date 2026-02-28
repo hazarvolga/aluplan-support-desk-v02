@@ -58,6 +58,7 @@ async function bootstrap() {
 
     await app.listen(port);
     logger.log(`🚀 Backend running on http://localhost:${port}/api/v1`);
+    logger.log(`🛡️  Audit Logging System: INITIALIZED`);
 }
 
 bootstrap();

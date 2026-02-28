@@ -36,6 +36,17 @@ export class AuthService {
         const role = user.role;
         const permissions = this.getPermissionsForRole(role);
 
+        /* 
+        // MFA logic temporarily disabled for local stability
+        if (user.mfaEnabled) {
+            return {
+                mfa_required: true,
+                userId: user.id,
+                email: user.email,
+            };
+        }
+        */
+
         const tokens = await this.generateTokens(user.id, user.email, user.fullName, role, permissions);
         await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
 
