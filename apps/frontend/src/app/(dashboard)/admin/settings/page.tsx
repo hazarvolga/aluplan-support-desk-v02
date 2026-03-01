@@ -24,7 +24,12 @@ import {
     Table, TableBody, TableCell, TableHead,
     TableHeader, TableRow
 } from '@/components/ui/table';
-import { TicketPriority } from '@aluplan/database';
+enum TicketPriority {
+    LOW = 'LOW',
+    MEDIUM = 'MEDIUM',
+    HIGH = 'HIGH',
+    CRITICAL = 'CRITICAL'
+}
 
 export default function AdminSettingsPage() {
     const { toast } = useToast();
@@ -734,8 +739,8 @@ export default function AdminSettingsPage() {
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            {Object.values(TicketPriority).map(p => (
-                                                                <SelectItem key={p} value={p}>{p}</SelectItem>
+                                                            {Object.values(TicketPriority).map((p) => (
+                                                                <SelectItem key={p as string} value={p as string}>{p as string}</SelectItem>
                                                             ))}
                                                         </SelectContent>
                                                     </Select>

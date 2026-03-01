@@ -159,6 +159,28 @@ export const api = {
                 method: 'POST',
                 body: JSON.stringify({ query, productId, limit }),
             }),
+        feedback: (interactionId: string, rating: number, comment?: string) =>
+            request<any>(`/ai/interactions/${interactionId}/feedback`, {
+                method: 'POST', body: JSON.stringify({ rating, comment }),
+            }),
+        status: () => request<any>('/ai/status'),
+        getCopilotDraft: (ticketId: string) => request<{ draft: string; model: string }>(`/ai/copilot/draft/${ticketId}`),
+        getHealthMetrics: () => request<{
+            totalInteractions: number;
+            deflectionRate: number;
+            aiAccuracy: number;
+            confidenceDistribution: Array<{ band: string; count: number }>;
+        }>('/ai/health-metrics'),
+        getSourcesStats: () => request<{
+            pillars: {
+                DOCUMENTS: number;
+                ARTICLES: number;
+                URLS: number;
+                TICKETS: number;
+            };
+            pendingFaqs: number;
+            totalSources: number;
+        }>('/ai/sources-stats'),
     },
     kb: {
         list: (params?: Record<string, string>) => {
@@ -191,32 +213,6 @@ export const api = {
             }),
         getGlobalAnalytics: () => request<any>('/kb/analytics'),
         listPending: () => request<any>('/kb/articles?status=REVIEW'),
-    },
-    ai: {
-        query: (userQuery: string) =>
-            request<any>('/ai/query', { method: 'POST', body: JSON.stringify({ query: userQuery }) }),
-        feedback: (interactionId: string, rating: number, comment?: string) =>
-            request<any>(`/ai/interactions/${interactionId}/feedback`, {
-                method: 'POST', body: JSON.stringify({ rating, comment }),
-            }),
-        status: () => request<any>('/ai/status'),
-        getCopilotDraft: (ticketId: string) => request<{ draft: string; model: string }>(`/ai/copilot/draft/${ticketId}`),
-        getHealthMetrics: () => request<{
-            totalInteractions: number;
-            deflectionRate: number;
-            aiAccuracy: number;
-            confidenceDistribution: Array<{ band: string; count: number }>;
-        }>('/ai/health-metrics'),
-        getSourcesStats: () => request<{
-            pillars: {
-                DOCUMENTS: number;
-                ARTICLES: number;
-                URLS: number;
-                TICKETS: number;
-            };
-            pendingFaqs: number;
-            totalSources: number;
-        }>('/ai/sources-stats'),
     },
     faq: {
         published: () => request<any[]>('/faq/published'),
