@@ -1,0 +1,39 @@
+{
+    "project": "Allplan Enterprise Intelligence",
+    "type": "Visual_Asset_Registry",
+    "base_path": "assets/images/",
+    "mappings": [
+        {
+            "article_ref": "allplan_2026_pbc_interaction.md",
+            "section": "Priority Settings",
+            "asset_id": "IMG_PBC_001",
+            "description": "Öncelik (Priority) değerlerinin girildiği nitelik panelinin ekran görüntüsü.",
+            "recommended_format": "PNG",
+            "alt_text": "Allplan Priority Properties Window"
+        },
+        {
+            "article_ref": "ifc_attribute_mapping_data_loss.md",
+            "section": "Attribute Mapping File Selection",
+            "asset_id": "IMG_IFC_001",
+            "description": "IFC Export arayüzünde .cfg dosyasının seçildiği alanın vurgulanmış hali.",
+            "recommended_format": "PNG",
+            "alt_text": "IFC Export Mapping Selection"
+        },
+        {
+            "article_ref": "visual_scripting_automation_tips.md",
+            "section": "CSV Reader Node",
+            "asset_id": "GIF_VS_001",
+            "description": "CSV Reader node'unun giriş ve çıkış bağlantılarını gösteren kısa animasyon.",
+            "recommended_format": "GIF",
+            "alt_text": "Visual Scripting CSV Reader Flow"
+        },
+        {
+            "article_ref": "diagnostic_tree_network_error.md",
+            "section": "ADIM 2",
+            "asset_id": "IMG_SYS_001",
+            "description": "netmanager.xml dosyasının Windows Explorer üzerindeki konumu.",
+            "recommended_format": "PNG",
+            "alt_text": "Netmanager XML Path"
+        }
+    ]
+}

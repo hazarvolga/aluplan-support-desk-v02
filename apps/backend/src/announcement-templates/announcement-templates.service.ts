@@ -42,7 +42,11 @@ export class AnnouncementTemplatesService {
           } catch (updateError) {
             // Handle uniqueness collision (e.g. if two templates now have the same clean name)
             this.logger.warn(`Collision detected during normalization for "${t.name}". Deleting duplicate.`);
-            await this.prisma.announcementTemplate.delete({ where: { id: t.id } });
+            try {
+              await this.prisma.announcementTemplate.delete({ where: { id: t.id } });
+            } catch (deleteError) {
+              this.logger.warn(`Could not delete duplicate "${t.name}" (already deleted?)`);
+            }
           }
         }
       }

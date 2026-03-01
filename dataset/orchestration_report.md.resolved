@@ -1,0 +1,34 @@
+## 🎼 Orchestration Report: Allplan 2026 Deep Research
+
+### Task
+Allplan 2026 ve güncel BIM sorunları üzerine derin internet araştırması (Deep Research) yapılarak mevcut veri setinin zenginleştirilmesi.
+
+### Mode
+`AGENT_MODE_EXECUTION`
+
+### Agents Invoked (MINIMUM 3)
+| # | Agent | Focus Area | Status |
+|---|-------|------------|--------|
+| 1 | `project-planner` | Görev dağılımı ve entegrasyon stratejisi (PLAN.md) | ✅ |
+| 2 | `search-specialist` | Allplan Connect ve BIM forumlarında Deep Research | ✅ |
+| 3 | `data-scientist` | Bulguların analizi, kümelenmesi ve teknik doğrulama | ✅ |
+| 4 | `documentation-writer`| Makale üretimi ve JSON/CSV veri setlerinin güncellenmesi | ✅ |
+
+### Verification Scripts Executed
+- [x] `ls -R` Veri yapısı kontrolü → Pass (Tüm dosyalar hedef dizinde)
+- [x] JSON Syntax Validation → Pass (QA veri seti geçerli)
+
+### Key Findings
+1. **Search Specialist**: Allplan 2026.0.4 hotfix'inin (18 Şubat 2026) Allplan Share ve IFC donatı kancaları üzerindeki kritik düzeltmeleri belirlendi.
+2. **Data Scientist**: PythonParts SDK geliştiricileri için Python 3.13.9 geçişi ve "Reloader" aktif etme gereksinimi analiz edildi.
+3. **Documentation Writer**: IFC 4.3 Altyapı desteği ve georeferans rotasyon hataları teknik makalelere dönüştürüldü.
+
+### Deliverables
+- [x] **New Article:** [allplan_2026_hotfix_notes.md](file:///Users/hazarekiz/.gemini/antigravity/brain/52d5cb69-d7bf-460f-aba0-e65fe002bd2b/support_articles/allplan_2026_hotfix_notes.md)
+- [x] **New Article:** [pythonparts_sdk_debugging.md](file:///Users/hazarekiz/.gemini/antigravity/brain/52d5cb69-d7bf-460f-aba0-e65fe002bd2b/support_articles/pythonparts_sdk_debugging.md)
+- [x] **Updated Dataset:** [allplan_qa_dataset.json](file:///Users/hazarekiz/Documents/Bilgi%20Bankas%C4%B1/dataset/allplan_qa_dataset.json) (6 QA Çifti)
+- [x] **Updated Dataset:** [allplan_intent_classification.csv](file:///Users/hazarekiz/Documents/Bilgi%20Bankas%C4%B1/dataset/allplan_intent_classification.csv) (12 Niyet)
+- [x] **Synced Files:** Tüm veriler `/Documents/Bilgi Bankası/dataset/` dizinine aktarıldı.
+
+### Summary
+Bu orchestration süreciyle veri seti, Allplan'ın en güncel (Şubat 2026) teknik verileriyle zenginleştirilmiştir. Özellikle Allplan Share, IFC 4.3 ve Python API geliştirme konularındaki "hotfix" düzeyindeki bilgiler, AI asistanınızın güncel kalarak profesyonel destek vermesini sağlayacaktır.

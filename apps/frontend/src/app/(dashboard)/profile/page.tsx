@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { HotinfoGrid } from "@/components/ui/hotinfo-grid";
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Monitor, CheckCircle2, AlertTriangle, Loader2, ShieldCheck, QrCode, Trash2 } from 'lucide-react';
+import { Shield, KeyRound, Monitor, UploadCloud, AlertCircle, AlertTriangle, ShieldCheck, History, Clock, FileText, Activity, LayoutDashboard, QrCode, Smartphone, SmartphoneNfc, CheckCircle2, UserCircle, Save, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -512,78 +513,7 @@ export default function ProfilePage() {
                 <CardContent>
                     {hotinfoData ? (
                         <div className="space-y-4">
-                            {(() => {
-                                const sr = (val: any) => {
-                                    if (!val) return null;
-                                    if (typeof val === 'object') {
-                                        return val['@_version'] || val['@_name'] || val['#text'] || JSON.stringify(val);
-                                    }
-                                    return String(val);
-                                };
-                                return (
-                                    <><div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                                            <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Allplan Versiyon</div>
-                                            <div className="text-sm font-semibold text-slate-200">
-                                                {hotinfoData.allplanVersion}
-                                                {hotinfoData.allplanEdition && <span className="text-xs text-slate-400 ml-1">({hotinfoData.allplanEdition})</span>}
-                                            </div>
-                                            {hotinfoData.allplanHotfix && <div className="text-[10px] text-brand-400 mt-0.5">Hotfix: {hotinfoData.allplanHotfix}</div>}
-                                        </div>
-                                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                                            <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">İşletim Sistemi</div>
-                                            <div className="text-sm font-semibold text-slate-200">{hotinfoData.osVersion}</div>
-                                        </div>
-                                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                                            <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">İşlemci (CPU)</div>
-                                            <div className="text-sm font-semibold text-slate-200 truncate">{hotinfoData.cpu || '-'}</div>
-                                        </div>
-                                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                                            <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">RAM</div>
-                                            <div className="text-sm font-semibold text-slate-200">{hotinfoData.ram}</div>
-                                        </div>
-                                        <div className="p-3 rounded-lg bg-white/5 border border-white/10 md:col-span-2">
-                                            <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Ekran Kartı / GPU</div>
-                                            <div className="text-sm font-semibold text-slate-200">{sr(hotinfoData.gpu)}</div>
-                                            <div className="flex gap-3 mt-1 flex-wrap">
-                                                {hotinfoData.gpuDriverVersion && <span className="text-[10px] text-slate-400">Driver: {sr(hotinfoData.gpuDriverVersion)}</span>}
-                                                {hotinfoData.openglVersion && <span className="text-[10px] text-slate-400">OpenGL: {sr(hotinfoData.openglVersion)}</span>}
-                                                {hotinfoData.vram && <span className="text-[10px] text-slate-400">VRAM: {sr(hotinfoData.vram)}</span>}
-                                            </div>
-                                        </div>
-                                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                                            <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Ekran Çözünürlüğü</div>
-                                            <div className="text-sm font-semibold text-slate-200">{sr(hotinfoData.screenResolution) || '-'}</div>
-                                        </div>
-                                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                                            <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Disk</div>
-                                            <div className="text-sm font-semibold text-slate-200 truncate">{sr(hotinfoData.diskInfo) || '-'}</div>
-                                        </div>
-                                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                                            <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Lisans Tipi</div>
-                                            <div className="text-sm font-semibold text-slate-200">{sr(hotinfoData.licenseType) || '-'}</div>
-                                        </div>
-                                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                                            <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">.NET Framework</div>
-                                            <div className="text-sm font-semibold text-slate-200">{sr(hotinfoData.dotnetVersion) || '-'}</div>
-                                        </div>
-                                    </div>
-                                        <div className="p-3 rounded-lg bg-white/5 border border-white/10 mb-3">
-                                            <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Ağ Bilgisi</div>
-                                            <div className="text-sm font-semibold text-slate-200 truncate">{sr(hotinfoData.networkInfo) || '-'}</div>
-                                        </div>
-                                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                                            <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Yüklü Modüller (max 10)</div>
-                                            <div className="flex flex-wrap gap-1.5 mt-1">
-                                                {hotinfoData.installedModules?.length > 0 ? hotinfoData.installedModules.slice(0, 10).map((mod: string, i: number) => (
-                                                    <span key={i} className="text-[10px] bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-slate-300">{sr(mod)}</span>
-                                                )) : <span className="text-sm font-semibold text-slate-200">-</span>}
-                                                {hotinfoData.installedModules?.length > 10 && <span className="text-[10px] text-slate-500">... +{hotinfoData.installedModules.length - 10} daha</span>}
-                                            </div>
-                                        </div>
-                                    </>
-                                );
-                            })()}
+                            <HotinfoGrid data={hotinfoData} />
 
                             <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-emerald-400 text-xs">
                                 <CheckCircle2 className="w-4 h-4" />

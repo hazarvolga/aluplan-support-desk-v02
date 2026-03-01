@@ -18,7 +18,7 @@ export function RecursiveDataViewer({ data, name, level = 0, className }: Recurs
     if (!isObject && !isArray) {
         return (
             <div className={cn("flex justify-between py-1 px-3 border-b border-cyan-900/20 last:border-0 hover:bg-cyan-950/20 transition-colors", className)}>
-                {name && <span className="font-semibold text-cyan-500/80 mr-4 break-words">{name.replace(/_/g, ' ').toUpperCase()}</span>}
+                {name && <span className="font-semibold text-cyan-500/80 mr-4 break-words">{name.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim().toUpperCase()}</span>}
                 <span className="text-cyan-100/90 break-words self-end text-right">{String(data)}</span>
             </div>
         );
@@ -29,7 +29,7 @@ export function RecursiveDataViewer({ data, name, level = 0, className }: Recurs
     if (isEmpty) {
         return (
             <div className={cn("flex justify-between py-1 px-3 border-b border-cyan-900/20 last:border-0", className)}>
-                {name && <span className="font-semibold text-cyan-500/80 mr-4 break-words">{name.replace(/_/g, ' ').toUpperCase()}</span>}
+                {name && <span className="font-semibold text-cyan-500/80 mr-4 break-words">{name.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim().toUpperCase()}</span>}
                 <span className="text-cyan-500/50 italic">{isArray ? '[]' : '{}'}</span>
             </div>
         );
@@ -47,7 +47,7 @@ export function RecursiveDataViewer({ data, name, level = 0, className }: Recurs
                     ) : (
                         <ChevronRight className="h-3 w-3 text-cyan-500/60" />
                     )}
-                    <span className="font-semibold text-cyan-500/90 break-words">{name.replace(/_/g, ' ').toUpperCase()}</span>
+                    <span className="font-semibold text-cyan-500/90 break-words">{name.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim().toUpperCase()}</span>
                     <span className="text-[9px] text-cyan-600/60 font-mono ml-2">
                         {isArray ? `[${data.length}]` : `{${Object.keys(data).length}}`}
                     </span>

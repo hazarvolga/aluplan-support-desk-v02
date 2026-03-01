@@ -1,0 +1,198 @@
+{
+    "project": "Allplan World-Class Support Intelligence",
+    "version": "Enterprise_v3.6_Structural_Intelligence_Edition",
+    "qa_pairs": [
+        {
+            "id": "QA_001",
+            "category": "Allplan 2026 / PBC",
+            "short_answer": "PBC (Priority-Based Connections), özel nesnelerin yerel yapı elemanlarıyla otomatik etkileşime girmesini sağlar. Elemanların 'Priority' değerlerini kontrol ederek yüksek olanın diğerini kesmesini sağlayabilirsiniz.",
+            "long_answer_markdown_ref": "support_articles/allplan_2026_pbc_interaction.md"
+        },
+        {
+            "id": "QA_002",
+            "category": "BIM / IFC",
+            "short_answer": "Veri kaybını önlemek için IFC dışa aktarım ayarlarında 'Attribute Mapping' (.cfg) dosyasını doğru yapılandırmalısınız.",
+            "long_answer_markdown_ref": "support_articles/ifc_attribute_mapping_data_loss.md"
+        },
+        {
+            "id": "QA_003",
+            "category": "Abonelik / Lisans",
+            "short_answer": "Abonelikler otomatik yenilenir; iptal için dönem sonundan 3 ay önce bildirim yapılmalıdır. Lisans hataları için CodeMeter servislerini kontrol edin.",
+            "long_answer_markdown_ref": "support_articles/subscription_management_faq.md"
+        },
+        {
+            "id": "QA_004",
+            "category": "Sistem / Workgroup Manager",
+            "short_answer": "Bağlantı hataları için SQL Server servislerinin aktifliğini ve Windows Auth ayarlarını kontrol edin. Uzak bağlantıda yüksek ping varsa Allplan Share önerilir.",
+            "long_answer_markdown_ref": "support_articles/workgroup_manager_sql_troubleshoot.md"
+        },
+        {
+            "id": "QA_005",
+            "category": "Otomasyon / Visual Scripting",
+            "short_answer": "Visual Scripting içinde 'CSV Reader' node'u kullanarak Excel listesindeki verilere göre modeli toplu güncelleyebilirsiniz.",
+            "long_answer_markdown_ref": "support_articles/visual_scripting_automation_tips.md"
+        },
+        {
+            "id": "QA_006",
+            "category": "Sürüm Hataları / Allplan 2025",
+            "short_answer": "Allplan 2025'e yükseltilen projelerde döşeme referans kaybı için 2025-0-3 Hotfix'i yüklenmeli veya nesneye manuel nitelik atanmalıdır.",
+            "long_answer_markdown_ref": "support_articles/chronic_issues_2021_2025.md"
+        },
+        {
+            "id": "QA_007",
+            "category": "BIM / Cross-Platform",
+            "short_answer": "Revit'ten geçişte 'Direct Revit Import' kullanarak elemanları native nesneye dönüştürebilirsiniz. Revit 'Family' yapısı Allplan tarafında 'SmartPart' veya 'PythonPart' olarak karşılık bulur.",
+            "long_answer_markdown_ref": "support_articles/revit_to_allplan_transition_guide.md"
+        },
+        {
+            "id": "QA_008",
+            "category": "Global / Infrastructure",
+            "short_answer": "Uluslararası projelerde IFC 4.3 (Bridge/Tunnel) sınıfları ve Bimplus üzerinden ISO 19650 federated model iş akışları takip edilmelidir.",
+            "long_answer_markdown_ref": "support_articles/ifc_4_3_infrastructure_expert_notes.md"
+        },
+        {
+            "id": "QA_009",
+            "category": "Allplan 2025 / Modelleme",
+            "short_answer": "Allplan 2025 ile gelen DOB, nesneleri özellikler paletine girmeden doğrudan arayüzdeki tutamaçlar (handles) üzerinden modifiye etmenizi sağlar.",
+            "long_answer_markdown_ref": "support_articles/ultimate_modeling_tricks_2025_2026.md"
+        },
+        {
+            "id": "QA_010",
+            "category": "Allplan 2026 / Donatı",
+            "short_answer": "Allplan 2026'da 'Engineering' paletindeki 'Reinforcement Content Connector' aracını kullanarak tek tıkla kolon geometrisine uygun donatı tasarımı yapabilirsiniz.",
+            "long_answer_markdown_ref": "support_articles/ultimate_modeling_tricks_2025_2026.md"
+        },
+        {
+            "id": "QA_011",
+            "category": "Geliştirici / PythonParts",
+            "short_answer": "System Error 102 genellikle bayat cache kaynaklıdır. %LocalAppData% altındaki Nemetschek cache klasörünü silerek hayali hataları temizleyebilirsiniz.",
+            "long_answer_markdown_ref": "support_articles/community_hacks_and_workarounds.md"
+        },
+        {
+            "id": "QA_012",
+            "category": "Allplan Share / Bulut",
+            "short_answer": "Senkronizasyon döngüsü (Sync Loop) için Windows Credential Manager'daki Nemetschek/Bimplus kayıtlarını silip yeniden giriş yapmak en hızlı çözümdür.",
+            "long_answer_markdown_ref": "support_articles/community_hacks_and_workarounds.md"
+        },
+        {
+            "id": "QA_013",
+            "category": "BIM / Altyapı",
+            "short_answer": "IFC 4.3 'Alignment Based Reference' kullanımı veri kaybını %90 azaltır. Allplan metodu klasik metrajlara göre beton miktarında %3.2 daha yüksek hassasiyet sunar.",
+            "long_answer_markdown_ref": "support_articles/ifc_4_3_infrastructure_deep_dive.md"
+        },
+        {
+            "id": "QA_014",
+            "category": "Geliştirici / API",
+            "short_answer": "Interactors, script çalışırken kullanıcının ekrandan 3D nokta veya nesne seçmesini sağlayan dinamik API modülleridir. CreateElementInteractor ile yapılandırılır.",
+            "long_answer_markdown_ref": "support_articles/developer_god_mode_python_api.md"
+        },
+        {
+            "id": "QA_015",
+            "category": "Geliştirici / Geometri",
+            "short_answer": "Bu fonksiyon, 2D yatay aks ve düşey profil verisini birleştirerek otomatik 3D spline oluşturur. Altyapı ve rampa projelerinde manuel hatayı sıfırlar.",
+            "long_answer_markdown_ref": "support_articles/developer_god_mode_python_api.md"
+        },
+        {
+            "id": "QA_016",
+            "category": "Mevzuat / VDI 2552",
+            "short_answer": "Allplan Blatt 3 ile tam uyumludur. Metrajın yasal geçerliliği için elemanların Material ve Trade nitelikleri standart kodlarla eşleşmeli ve 'VDI Compliant' raporu seçilmelidir.",
+            "long_answer_markdown_ref": "support_articles/vdi_2552_german_bim_standards.md"
+        },
+        {
+            "id": "QA_017",
+            "category": "Mevzuat / Kurumsal",
+            "short_answer": "İşveren Gereksinimleri (EIR), Bimplus Property Set Manager üzerinden Allplan'a enjekte edilir. BEP süreçleri Bimplus Issue Manager ile VDI 10 standartlarında yönetilir.",
+            "long_answer_markdown_ref": "support_articles/vdi_2552_german_bim_standards.md"
+        },
+        {
+            "id": "QA_018",
+            "category": "Geliştirici / Performans",
+            "short_answer": "Allplan'daki SDK Reloader'ı aktif ederek scripti kaydettiğiniz an Allplan'da canlı görebilirsiniz. Cache cleaning scriptleri ile hayali hatalar önlenmelidir.",
+            "long_answer_markdown_ref": "support_articles/developer_god_mode_python_api.md"
+        },
+        {
+            "id": "QA_019",
+            "category": "Türkiye / Yerel Metraj",
+            "short_answer": "Bakanlık projeleri ve Poz No entegrasyonu için nesnelere özel 'Poz_No' niteliği tanımlanmalı ve Visual Scripting ile Excel'e pipe edilmelidir.",
+            "long_answer_markdown_ref": "support_articles/turkey_local_technical_guide.md"
+        },
+        {
+            "id": "QA_020",
+            "category": "Türkiye / Hata-Fix",
+            "short_answer": "Türkçe PDF karakter bozulmaları için yazılı tipi ayarlarında 'Embed Fonts' (Fontları Göm) seçeneği aktif edilmeli veya Vector fontlara geçilmelidir.",
+            "long_answer_markdown_ref": "support_articles/turkey_local_technical_guide.md"
+        },
+        {
+            "id": "QA_021",
+            "category": "Türkiye / Kamu BIM",
+            "short_answer": "Çevre ve Şehircilik Bakanlığı 2023 BIM rehberine göre Allplan projelerinde LOD/LOI parametrelerinin Property Set Manager ile denetlenmesi zorunludur.",
+            "long_answer_markdown_ref": "support_articles/turkey_ministry_bim_compliance.md"
+        },
+        {
+            "id": "QA_022",
+            "category": "Mevzuat / Planlı Alanlar",
+            "short_answer": "Planlı Alanlar İmar Yönetmeliği'ne göre TAKS/KAKS hesapları Allplan Alan Yönetimi modülünde yasal muafiyetler (enerji panelleri vb.) gözetilerek kurgulanmalıdır.",
+            "long_answer_markdown_ref": "support_articles/turkey_regulatory_design_codes.md"
+        },
+        {
+            "id": "QA_023",
+            "category": "Mevzuat / Otopark",
+            "short_answer": "Otopark Yönetmeliği uyarınca her 1 daire için en az 1 otopark yeri ayrılmalıdır. Allplan raporlarında daire sayısı ile araç yeri sayısı 1:1 test edilir.",
+            "long_answer_markdown_ref": "support_articles/turkey_building_codes_validation.md"
+        },
+        {
+            "id": "QA_024",
+            "category": "Mevzuat / Sığınak",
+            "short_answer": "2025 Sığınak Yönetmeliği'ne göre sığınaklar bağımsız enerji kaynaklı havalandırma sistemine sahip olmalı ve Allplan MEP modülünde doğrulanmalıdır.",
+            "long_answer_markdown_ref": "support_articles/turkey_building_codes_validation.md"
+        },
+        {
+            "id": "QA_025",
+            "category": "Mevzuat / Dijital Ruhsat",
+            "short_answer": "2027 BIM E-Ruhsat hedefi kapsamında Allplan modelleri IFC 4.0 formatında, tam metadata (LOD 350) ve Bimplus onay mekanizmasıyla belediyeye sunulmalıdır.",
+            "long_answer_markdown_ref": "support_articles/turkey_digital_building_permit_bim.md"
+        },
+        {
+            "id": "QA_026",
+            "category": "TBDY 2018 / Ground Motion",
+            "short_answer": "TBDY 2018'de 4 deprem yer hareketi (DD-1'den DD-4'e) tanımlanır. Allplan modelleri, hedeflenen performans seviyesine (GÖ, KH, SH) göre bu yükleme durumlarında test edilmelidir.",
+            "long_answer_markdown_ref": "support_articles/tbdy2018_deep_structural_analysis.md"
+        },
+        {
+            "id": "QA_027",
+            "category": "TBDY 2018 / Katsayılar",
+            "short_answer": "Stratejik yapı analizi için R (Sistem Davranış Katsayısı) ve D (Fazla Dayanım Katsayısı) parametreleri Allplan Engineering donatı niteliklerine yasal veri olarak enjekte edilmelidir.",
+            "long_answer_markdown_ref": "support_articles/tbdy2018_deep_structural_analysis.md"
+        },
+        {
+            "id": "QA_028",
+            "category": "TBDY 2018 / Süneklik",
+            "short_answer": "Süneklik düzeyi yüksek betonarme kolonlarda sarılma bölgesi etriye aralığı min. 5cm, max. 10cm olmalıdır. Allplan Reinforcement Specification ile bu kural mühürlenebilir.",
+            "long_answer_markdown_ref": "support_articles/tbdy2018_deep_structural_analysis.md"
+        },
+        {
+            "id": "QA_029",
+            "category": "TBDY 2018 / Yüksek Yapı",
+            "short_answer": "TBDY Chapter 13 uyumlu yüksek yapılarda (BYS=1), bina sağlığı izleme sistemi (Health Monitoring) sensörleri Allplan MEP modülünde 3D olarak konumlandırılmalıdır.",
+            "long_answer_markdown_ref": "support_articles/tbdy2018_deep_structural_analysis.md"
+        },
+        {
+            "id": "QA_030",
+            "category": "TBDY 2018 / Çelik Birleşim",
+            "short_answer": "Çelik moment aktaran birleşimlerde TBDY Annex 9B uyarınca 'Full Penetration Butt Weld' detayı zorunludur. Allplan Steel kütüphanesi bu detayı içerecek şekilde özelleştirilmelidir.",
+            "long_answer_markdown_ref": "support_articles/tbdy2018_deep_structural_analysis.md"
+        },
+        {
+            "id": "QA_031",
+            "category": "TBDY 2018 / Veri Akışı",
+            "short_answer": "STA4CAD veya ideCAD'den Allplan'a veri aktarırken, TBDY 2018 uyumlu donatı alanlarının (As) model nesneleriyle %100 senkronize olduğundan Bimplus ile emin olunmalıdır.",
+            "long_answer_markdown_ref": "support_articles/tbdy2018_deep_structural_analysis.md"
+        },
+        {
+            "id": "QA_032",
+            "category": "TBDY 2018 / Kanca",
+            "short_answer": "Yönetmelik gereği donatı kancaları 135 derece olmalıdır. Allplan Bending Shape kütüphanesinde kanca açısını 135 dereceye sabitleyerek yasal uyum sağlayın.",
+            "long_answer_markdown_ref": "support_articles/turkey_seismic_code_tbdy2018.md"
+        }
+    ]
+}

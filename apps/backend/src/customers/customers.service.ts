@@ -337,18 +337,37 @@ export class CustomersService {
             throw new BadRequestException('Geçersiz Hotinfo dosyası. Lütfen geçerli bir .hxl dosyası yükleyin.');
         }
 
-        const profile = await this.prisma.customerProfile.findUnique({ where: { userId } });
-        if (!profile) {
-            throw new NotFoundException('Müşteri profili bulunamadı.');
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { customerProfile: true }
+        });
+
+        if (!user) {
+            throw new NotFoundException('Kullanıcı bulunamadı.');
         }
 
-        const updatedProfile = await this.prisma.customerProfile.update({
-            where: { userId },
-            data: {
-                hotinfoData: parsedData,
-                hotinfoUpdatedAt: new Date()
-            }
-        });
+        let updatedProfile;
+        if (!user.customerProfile) {
+            updatedProfile = await this.prisma.customerProfile.create({
+                data: {
+                    userId,
+                    firstName: user.fullName ? user.fullName.split(' ')[0] : 'Unknown',
+                    lastName: user.fullName ? user.fullName.split(' ').slice(1).join(' ') || 'User' : 'User',
+                    companyName: 'Bilinmeyen Şirket',
+                    customerNo: `INT-${Date.now()}`,
+                    hotinfoData: parsedData,
+                    hotinfoUpdatedAt: new Date()
+                }
+            });
+        } else {
+            updatedProfile = await this.prisma.customerProfile.update({
+                where: { userId },
+                data: {
+                    hotinfoData: parsedData,
+                    hotinfoUpdatedAt: new Date()
+                }
+            });
+        }
 
         return {
             success: true,

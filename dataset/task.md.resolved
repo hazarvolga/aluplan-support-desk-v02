@@ -1,0 +1,23 @@
+# Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)
+
+- [x] Kaynak Materyallerin İncelenmesi ve Envanter Oluşturma (Türkçe/İngilizce Karma)
+- [x] Taksonomi ve Kategorizasyon Stratejisinin Belirlenmesi (Özel Platforma Uygun)
+- [x] Sorunların Ayıklanması ve Kümelenmesi (Allplan 2026 Öncelikli)
+- [x] Terminoloji Normalizasyonu ve Hata Kodları Haritalama
+- [x] Yapılandırılmış Destek Makalelerinin Oluşturulması (Markdown Formatı)
+- [x] AI-Optimize edilmiş Soru-Cevap (Q&A) Veri Seti Üretimi
+- [x] Niyet (Intent) Sınıflandırması ve Kullanıcı İfadeleri Oluşturma
+- [x] Verilerin Özel Platforma Aktarımı İçin Final Rafinasyonu (JSON/Markdown)
+- [x] Doğrulama ve Kalite Denetimi
+- [x] **Extra: Deep Research ve Veri Seti Zenginleştirme (Orchestration)** [x]
+- [x] **Extra: Geniş Kapsamlı Allplan Bilgi Araştırması (Orchestration)** [x]
+- [ ] **Phase 3: Enterprise Destek Zekası (İleri Seviye)** [/]
+  - [x] Enterprise Bilgi Mühendisliği Strateji Tasarımı (PLAN)
+  - [x] Interaktif Teşhis Ağaçları (Decision Trees) Oluşturma
+  - [x] Log Analiz Kalıpları ve Telemetri Verisi Oluşturma
+  - [ ] Görsel Bağlam (Multimodal) Veri Yapısı Tasarımı [/]
+  - [x] Faz 1: Planlama ve Geniş Kapsamlı Strateji (PLAN_BROAD.md)
+  - [x] Faz 2: Uygulama (Geniş Tarama & Analiz)
+    - [x] Sürüm Bağımsız Teknik İpuçları ve Best Practices Taraması
+    - [x] Yaygın Kullanıcı Hataları (Allplan 2021-2025) ve Çözümleri
+    - [x] Veri Setine Global Entegrasyon

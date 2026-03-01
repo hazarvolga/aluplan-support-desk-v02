@@ -8,7 +8,7 @@ import {
     AlertTriangle, MessageSquare, Loader2, Bot, Star, X,
     MessageCircle, Mail, Globe, Cpu, ExternalLink, User
 } from 'lucide-react';
-import { RecursiveDataViewer } from '@/components/ui/recursive-data-viewer';
+import { HotinfoGrid } from "@/components/ui/hotinfo-grid";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -589,15 +589,17 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
-                            <ScrollArea className="max-h-[200px] w-full bg-black/40">
+                            <div className="w-full bg-black/40 pb-2">
                                 {typeof ticket.hotinfoSnapshot === 'object' && ticket.hotinfoSnapshot !== null ? (
-                                    <RecursiveDataViewer data={ticket.hotinfoSnapshot} />
+                                    <div className="p-2">
+                                        <HotinfoGrid data={ticket.hotinfoSnapshot} variant="compact" />
+                                    </div>
                                 ) : (
                                     <div className="p-3 text-[10px] font-mono text-cyan-300/80 leading-relaxed whitespace-pre-wrap break-all">
                                         {String(ticket.hotinfoSnapshot)}
                                     </div>
                                 )}
-                            </ScrollArea>
+                            </div>
                         </CardContent>
                     </Card>
                 )}
