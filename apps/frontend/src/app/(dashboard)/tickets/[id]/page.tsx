@@ -6,8 +6,9 @@ import {
     Ticket, Clock, Shield, User as UserIcon, Send,
     Paperclip, Download, MoreVertical, CheckCircle2,
     AlertTriangle, MessageSquare, Loader2, Bot, Star, X,
-    MessageCircle, Mail, Globe, Cpu
+    MessageCircle, Mail, Globe, Cpu, ExternalLink, User
 } from 'lucide-react';
+import { RecursiveDataViewer } from '@/components/ui/recursive-data-viewer';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -590,20 +591,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         <CardContent className="p-0">
                             <ScrollArea className="max-h-[200px] w-full bg-black/40">
                                 {typeof ticket.hotinfoSnapshot === 'object' && ticket.hotinfoSnapshot !== null ? (
-                                    <table className="w-full text-[10px] text-left">
-                                        <tbody className="divide-y divide-cyan-900/30">
-                                            {Object.entries(ticket.hotinfoSnapshot).map(([key, value], idx) => (
-                                                <tr key={idx} className="hover:bg-cyan-950/30 transition-colors">
-                                                    <td className="py-2 px-3 font-semibold text-cyan-500/80 align-top w-1/3 break-words border-r border-cyan-900/30">
-                                                        {key.replace(/_/g, ' ').toUpperCase()}
-                                                    </td>
-                                                    <td className="py-2 px-3 text-cyan-100/90 break-words">
-                                                        {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                    <RecursiveDataViewer data={ticket.hotinfoSnapshot} />
                                 ) : (
                                     <div className="p-3 text-[10px] font-mono text-cyan-300/80 leading-relaxed whitespace-pre-wrap break-all">
                                         {String(ticket.hotinfoSnapshot)}
