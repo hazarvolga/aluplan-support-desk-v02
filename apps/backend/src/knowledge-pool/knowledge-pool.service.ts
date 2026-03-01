@@ -17,7 +17,6 @@ export class KnowledgePoolService {
     ) { }
 
     async createSource(dto: CreateKnowledgeSourceDto) {
-        // @ts-ignore
         const source = await this.prisma.knowledgeSource.create({
             data: {
                 name: dto.name,
@@ -33,7 +32,6 @@ export class KnowledgePoolService {
     }
 
     async createFileSource(name: string, type: KnowledgeSourceType, file: Express.Multer.File) {
-        // @ts-ignore
         const source = await this.prisma.knowledgeSource.create({
             data: {
                 name,
@@ -49,7 +47,6 @@ export class KnowledgePoolService {
     }
 
     async getAllSources() {
-        // @ts-ignore
         return this.prisma.knowledgeSource.findMany({
             orderBy: { createdAt: 'desc' },
             include: {
@@ -64,11 +61,9 @@ export class KnowledgePoolService {
     }
 
     async triggerSync(id: string) {
-        // @ts-ignore
         const source = await this.prisma.knowledgeSource.findUnique({ where: { id } });
         if (!source) throw new NotFoundException('Source not found');
 
-        // @ts-ignore
         await this.prisma.knowledgeSource.update({
             where: { id },
             data: { status: KnowledgeSourceStatus.SYNCING },
@@ -122,7 +117,6 @@ export class KnowledgePoolService {
 
             const fileName = path.basename(filePath);
 
-            // @ts-ignore
             const existing = await this.prisma.knowledgeSource.findFirst({
                 where: { filePath }
             });
@@ -131,7 +125,6 @@ export class KnowledgePoolService {
                 await this.triggerSync(existing.id);
                 existingCount++;
             } else {
-                // @ts-ignore
                 const source = await this.prisma.knowledgeSource.create({
                     data: {
                         name: `[Dataset] ${fileName}`,
@@ -157,7 +150,6 @@ export class KnowledgePoolService {
     }
 
     async getSyncLogs(sourceId: string) {
-        // @ts-ignore
         return this.prisma.knowledgeSourceSyncLog.findMany({
             where: { sourceId },
             orderBy: { syncStartedAt: 'desc' },

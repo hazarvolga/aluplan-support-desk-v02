@@ -1,0 +1,15 @@
+
+> @aluplan/frontend@0.1.0 lint /Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/frontend
+> next lint
+
+Converting circular structure to JSON
+    --> starting at object with constructor 'Object'
+    |     property 'configs' -> object with constructor 'Object'
+    |     property 'flat' -> object with constructor 'Object'
+    |     ...
+    |     property 'plugins' -> object with constructor 'Object'
+    --- property 'react' closes the circle
+Referenced from: /Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/frontend/.eslintrc.json
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/frontend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @aluplan/frontend@0.1.0 lint: `next lint`
+Exit status 1

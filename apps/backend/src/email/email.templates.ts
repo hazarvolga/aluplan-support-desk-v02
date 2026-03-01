@@ -1,9 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import mjml2html = require('mjml');
+import mjml2html from 'mjml';
 import * as Handlebars from 'handlebars';
 import { convert } from 'html-to-text';
-import { BaseEmailSchema, BrandSchema } from './contracts/base.contract';
+import { BaseEmailSchema } from './contracts/base.contract';
 
 export interface EmailPayload {
   template: string;

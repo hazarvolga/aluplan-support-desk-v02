@@ -1,0 +1,182 @@
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/ai-query.service.ts
+  164:52  warning  'query' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/ai.controller.ts
+  11:10  warning  'OllamaService' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/ai.service.ts
+  131:18  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/llm-api.service.ts
+  208:30  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/ollama.service.ts
+  148:30  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  172:27  warning  'subject' is defined but never used       @typescript-eslint/no-unused-vars
+  172:44  warning  'conversation' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/prompt-context-builder.service.ts
+  15:25  warning  'userQuery' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  15:36  warning  'kbContent' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/prompts.service.ts
+  46:18  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/tests/ollama-benchmark.ts
+  32:19  warning  'response' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/tests/verify-llmapi.ts
+  12:11  warning  'ai' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/ticket-clustering.service.ts
+  5:16  warning  'CronExpression' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/announcement-templates/announcement-templates.service.ts
+  42:20  warning  'updateError' is defined but never used  @typescript-eslint/no-unused-vars
+  47:22  warning  'deleteError' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/announcements/announcements.service.ts
+  5:10  warning  'AnnouncementStatus' is defined but never used  @typescript-eslint/no-unused-vars
+  5:30  warning  'AnnouncementType' is defined but never used    @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/attachments/attachments.controller.ts
+  7:5  warning  'Body' is defined but never used     @typescript-eslint/no-unused-vars
+  9:5  warning  'Request' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/auth/auth.service.ts
+  185:18  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/automation/automation.service.ts
+  179:68  warning  '_context' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/automation/sla.cron.ts
+  6:10  warning  'subMinutes' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/crm/crm.service.ts
+    4:23  warning  'SyncResult' is defined but never used        @typescript-eslint/no-unused-vars
+  223:15  warning  'adapter' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/customers/customers.service.ts
+    1:81  warning  'Logger' is defined but never used                   @typescript-eslint/no-unused-vars
+    2:13  warning  'jwt' is defined but never used                      @typescript-eslint/no-unused-vars
+  209:31  warning  '_' is assigned a value but never used               @typescript-eslint/no-unused-vars
+  260:15  warning  'updatedProfile' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  280:31  warning  '_' is assigned a value but never used               @typescript-eslint/no-unused-vars
+  294:31  warning  '_' is assigned a value but never used               @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/customers/dto/update-customer-profile.dto.ts
+  1:32  warning  'MaxLength' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/customers/hotinfo-parser.service.ts
+  141:17  warning  'diskInfo' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/email/email-inbound.service.ts
+  7:10  warning  'SIMPLE_MAP_CONFIG' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/email/email.controller.ts
+  35:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  77:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/email/email.service.ts
+  9:25  warning  'SendEmailOptions' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/knowledge-base/dto/article.dto.ts
+  1:20  warning  'IsEnum' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/knowledge-base/knowledge-base.controller.ts
+  9:30  warning  'Roles' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/knowledge-base/knowledge-base.service.ts
+  182:39  warning  '_userId' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/knowledge-pool/knowledge-pool-parser.service.ts
+   3:13  warning  'path' is defined but never used                                                                                     @typescript-eslint/no-unused-vars
+   4:1   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+   5:13  error    A `require()` style import is forbidden                                                                              @typescript-eslint/no-require-imports
+   6:1   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+   7:13  error    A `require()` style import is forbidden                                                                              @typescript-eslint/no-require-imports
+  35:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/knowledge-pool/knowledge-pool.controller.ts
+  1:125  warning  'FileTypeValidator' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/knowledge-pool/knowledge-pool.processor.ts
+    8:1   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+    9:25  error    A `require()` style import is forbidden                                                                              @typescript-eslint/no-require-imports
+   33:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+   46:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+   61:13  error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+   71:13  error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+   77:13  error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  129:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  145:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  161:13  error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  199:15  warning  'oldLength' is assigned a value but never used                                                                       @typescript-eslint/no-unused-vars
+  202:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  216:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/knowledge-pool/knowledge-pool.service.ts
+    1:30  warning  'ConflictException' is defined but never used                                                                        @typescript-eslint/no-unused-vars
+   20:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+   36:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+   52:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+   67:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+   71:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  125:13  error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  134:17  error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  160:9   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/main.ts
+  22:21  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/notifications/notifications.gateway.ts
+  62:22  warning  'client' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/omni-channel/omni-channel.controller.ts
+  1:64  warning  'UseGuards' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/settings/settings.service.ts
+  1:22  warning  'NotFoundException' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/teams/teams.controller.ts
+  1:77  warning  'Query' is defined but never used              @typescript-eslint/no-unused-vars
+  1:84  warning  'NotFoundException' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/tickets/pii-masking.service.ts
+  35:51  warning  'match' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/tickets/tickets.controller.ts
+  13:10  warning  'Roles' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/tickets/tickets.service.ts
+   17:48  warning  'CommunicationChannel' is defined but never used  @typescript-eslint/no-unused-vars
+  197:52  warning  'actorId' is defined but never used               @typescript-eslint/no-unused-vars
+  274:50  warning  'actorId' is defined but never used               @typescript-eslint/no-unused-vars
+  412:71  warning  'customerId' is defined but never used            @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/users/dto/create-user.dto.ts
+  1:52  warning  'IsEnum' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/users/dto/update-user.dto.ts
+  3:22  warning  'IsBoolean' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/users/users.service.ts
+   29:31  warning  '_' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   56:31  warning  '_' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  116:31  warning  '_' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/utils/crypto.service.ts
+  48:18  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/whatsapp/whatsapp.controller.ts
+  1:76  warning  'UseGuards' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/whatsapp/whatsapp.service.ts
+  29:15  warning  'customerName' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 88 problems (26 errors, 62 warnings)
+
+undefined
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: eslint src/**/*.ts

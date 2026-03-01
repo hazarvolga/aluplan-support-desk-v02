@@ -5,8 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../ai/embedding.service';
 import { KnowledgePoolParserService } from './knowledge-pool-parser.service';
 import * as crypto from 'crypto';
-// @ts-ignore
-const TurndownService = require('turndown');
+import * as TurndownService from 'turndown';
 import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
 
 import { CrawlService } from './crawl.service';
@@ -16,7 +15,7 @@ import { AiService } from '../ai/ai.service';
 @Processor('knowledge-sync')
 export class KnowledgePoolProcessor extends WorkerHost {
     private readonly logger = new Logger(KnowledgePoolProcessor.name);
-    private readonly turndown = new TurndownService();
+    private readonly turndown = new (TurndownService as any)();
 
     constructor(
         private readonly prisma: PrismaService,
@@ -30,7 +29,6 @@ export class KnowledgePoolProcessor extends WorkerHost {
 
     async process(job: Job<{ sourceId: string }>): Promise<any> {
         const { sourceId } = job.data;
-        // @ts-ignore
         const source = await this.prisma.knowledgeSource.findUnique({
             where: { id: sourceId },
             include: { product: true }
@@ -43,7 +41,6 @@ export class KnowledgePoolProcessor extends WorkerHost {
 
         this.logger.log(`🏗️ Processing sync for: ${source.name} (${source.type})`);
 
-        // @ts-ignore
         const log = await this.prisma.knowledgeSourceSyncLog.create({
             data: {
                 sourceId,
@@ -58,7 +55,6 @@ export class KnowledgePoolProcessor extends WorkerHost {
                 await this.handleFileSync(source, log.id);
             }
 
-            // @ts-ignore
             await this.prisma.knowledgeSourceSyncLog.update({
                 where: { id: log.id },
                 data: { status: 'SUCCESS', syncFinishedAt: new Date() },
@@ -68,13 +64,11 @@ export class KnowledgePoolProcessor extends WorkerHost {
         } catch (error) {
             this.logger.error(`❌ Sync failed for source ${sourceId}: ${error.message}`, error.stack);
 
-            // @ts-ignore
             await this.prisma.knowledgeSource.update({
                 where: { id: sourceId },
                 data: { status: KnowledgeSourceStatus.FAILED },
             });
 
-            // @ts-ignore
             await this.prisma.knowledgeSourceSyncLog.update({
                 where: { id: log.id },
                 data: { status: 'FAILED', error: error.message, syncFinishedAt: new Date() },
@@ -126,7 +120,6 @@ export class KnowledgePoolProcessor extends WorkerHost {
             }
         }
 
-        // @ts-ignore
         await this.prisma.knowledgeSource.update({
             where: { id: source.id },
             data: {
@@ -142,7 +135,6 @@ export class KnowledgePoolProcessor extends WorkerHost {
             }
         });
 
-        // @ts-ignore
         await this.prisma.knowledgeSourceSyncLog.update({
             where: { id: logId },
             data: { chunksProcessed: totalChunks, newHash: hash }
@@ -158,7 +150,6 @@ export class KnowledgePoolProcessor extends WorkerHost {
             this.logger.log(`⏩ File unchanged (Hash match): ${source.fileName}`);
 
             // Still update status to ACTIVE if it was SYNCING
-            // @ts-ignore
             await this.prisma.knowledgeSource.update({
                 where: { id: source.id },
                 data: { status: KnowledgeSourceStatus.ACTIVE, lastSyncedAt: new Date() }
@@ -199,7 +190,6 @@ export class KnowledgePoolProcessor extends WorkerHost {
         const oldLength = (source.metadata as any)?.lastContentLength || 0;
         const newLength = content.length;
 
-        // @ts-ignore
         await this.prisma.knowledgeSource.update({
             where: { id: source.id },
             data: {
@@ -213,7 +203,6 @@ export class KnowledgePoolProcessor extends WorkerHost {
             }
         });
 
-        // @ts-ignore
         await this.prisma.knowledgeSourceSyncLog.update({
             where: { id: logId },
             data: { chunksProcessed: totalChunks, newHash: hash }

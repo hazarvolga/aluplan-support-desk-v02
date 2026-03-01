@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import * as fs from 'fs';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from './audit.service';
 import { TicketStatus } from '@aluplan/database';
@@ -110,7 +111,7 @@ export class AutomationService {
                 priority: ticket.priority,
             }).catch(err => {
                 this.logger.error(`Failed to send creation email for ${ticket.ticketNumber}: ${err.message}`);
-                require('fs').writeFileSync('/tmp/mail_error.txt', err.stack || err.message);
+                fs.writeFileSync('/tmp/mail_error.txt', err.stack || err.message);
             });
         }
 
@@ -175,7 +176,7 @@ export class AutomationService {
         });
     }
 
-    private async evaluateRules(ticketId: string, trigger: string, context: any) {
+    private async evaluateRules(ticketId: string, trigger: string, _context: any) {
         // Step 3.2 Placeholder: Fetch active TicketRule and match conditions
         this.logger.debug(`Evaluating rules for ${ticketId} [Trigger: ${trigger}]`);
     }
