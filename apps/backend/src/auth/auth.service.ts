@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { EmailService } from '../email/email.service';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +14,7 @@ export class AuthService {
         private readonly jwtService: JwtService,
         private readonly config: ConfigService,
         private readonly emailService: EmailService,
+        private readonly settings: SettingsService,
     ) { }
 
     async login(dto: LoginDto) {
@@ -142,24 +144,47 @@ export class AuthService {
             return { success: true };
         }
 
-        // Generate a random 8-character password
-        const newPassword = Math.random().toString(36).slice(-8);
-        const salt = await bcrypt.genSalt();
-        const passwordHash = await bcrypt.hash(newPassword, salt);
+        // Generate a secure reset token (JWT)
+        const resetToken = this.jwtService.sign(
+            { sub: user.id, email: user.email, type: 'password-reset' },
+            {
+                secret: this.config.get('JWT_SECRET'),
+                expiresIn: '1h'
+            }
+        );
 
-        await this.prisma.user.update({
-            where: { id: user.id },
-            data: { passwordHash },
-        });
+        const frontendUrl = (await this.settings.getValue('general.frontend_url')) || this.config.get('FRONTEND_URL') || 'http://localhost:3000';
+        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-        // Send email with new password
+        // Send email with reset link
         await this.emailService.sendPasswordReset({
             recipientEmail: user.email,
             recipientName: user.fullName || 'Değerli Müşterimiz',
-            newPassword
+            resetUrl
         });
 
         return { success: true };
+    }
+
+    async verifyEmail(token: string) {
+        if (!token) throw new UnauthorizedException('Token gerekli');
+        try {
+            const decoded = this.jwtService.verify(token, { secret: this.config.get('JWT_SECRET') });
+            const userId = decoded.sub;
+
+            const user = await this.prisma.user.findUnique({ where: { id: userId } });
+            if (!user) throw new UnauthorizedException('Kullanıcı bulunamadı');
+
+            if (user.status !== 'ACTIVE') {
+                await this.prisma.user.update({
+                    where: { id: userId },
+                    data: { status: 'ACTIVE' }
+                });
+            }
+            return { success: true, message: 'Hesabınız başarıyla doğrulandı. Artık giriş yapabilirsiniz.' };
+        } catch (err) {
+            throw new UnauthorizedException('Geçersiz veya süresi dolmuş doğrulama bağlantısı.');
+        }
     }
 
     async getProfile(userId: string) {
@@ -235,5 +260,40 @@ export class AuthService {
             where: { id: userId },
             data: { refreshTokenHash: hash },
         });
+    }
+
+    async testEmailConfig() {
+        const health = await this.emailService.healthCheck();
+        const envKey = this.config.get('RESEND_API_KEY');
+        const mailFrom = this.config.get('MAIL_FROM');
+        const frontendUrlEnv = this.config.get('FRONTEND_URL');
+
+        const dbSettings = await this.prisma.setting.findMany({
+            where: {
+                key: {
+                    in: [
+                        'email.active_provider',
+                        'general.frontend_url',
+                        'branding.logo_url',
+                        'branding.help_center_url'
+                    ]
+                }
+            }
+        });
+
+        return {
+            health,
+            config: {
+                env: {
+                    hasResendKey: !!envKey,
+                    resendKeyPrefix: envKey ? `${envKey.substring(0, 10)}...` : null,
+                    mailFrom,
+                    frontendUrl: frontendUrlEnv,
+                },
+                db: dbSettings.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {}),
+                sourceReminder: 'If DATABASE holds a key, it overrides .env'
+            },
+            timestamp: new Date().toISOString()
+        };
     }
 }

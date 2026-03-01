@@ -1,4 +1,7 @@
-import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import * as jwt from 'jsonwebtoken';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { SystemRole } from '@prisma/client';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
@@ -14,7 +17,9 @@ export class CustomersService {
     constructor(
         private prisma: PrismaService,
         private hotinfoParser: HotinfoParserService,
-        private emailService: EmailService
+        private emailService: EmailService,
+        private jwtService: JwtService,
+        private config: ConfigService,
     ) { }
 
     async importCustomers(data: ImportCustomerRecordDto[]) {
@@ -101,24 +106,35 @@ export class CustomersService {
             throw new ConflictException('Bu e-posta adresi sistemde zaten kayıtlı.');
         }
 
-        // 2. Check if customerNo already registered
-        const existingProfile = await this.prisma.customerProfile.findUnique({
-            where: { customerNo: dto.customerNo },
-        });
+        const isAllplan = dto.usedProducts?.some(p => p.toLowerCase().includes('allplan')) || dto.isAllplanUser;
+        let finalCustomerNo = dto.customerNo;
 
-        if (existingProfile) {
-            throw new ConflictException(
-                'Bu Müşteri No daha önce kaydedilmiş. Lütfen destek alınız.',
-            );
-        }
+        if (isAllplan) {
+            if (!finalCustomerNo) {
+                throw new BadRequestException('Allplan kullanıcıları için Müşteri No zorunludur.');
+            }
 
-        // 3. CRM Validation Logic (Mock - will be replaced with real CRM API)
-        const isCrmValid = this.mockVerifyCrmCustomer(dto.customerNo);
+            // 2. Check if customerNo already registered
+            const existingProfile = await this.prisma.customerProfile.findUnique({
+                where: { customerNo: finalCustomerNo },
+            });
 
-        if (!isCrmValid) {
-            throw new BadRequestException(
-                'Bu Müşteri No geçersizdir veya CRM sisteminde bulunamadı.',
-            );
+            if (existingProfile) {
+                throw new ConflictException(
+                    'Bu Müşteri No daha önce kaydedilmiş. Lütfen destek alınız.',
+                );
+            }
+
+            // 3. CRM Validation Logic (Mock - will be replaced with real CRM API)
+            const isCrmValid = this.mockVerifyCrmCustomer(finalCustomerNo);
+
+            if (!isCrmValid) {
+                throw new BadRequestException(
+                    'Bu Müşteri No geçersizdir veya CRM sisteminde bulunamadı.',
+                );
+            }
+        } else {
+            finalCustomerNo = `WEB-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
         }
 
         // 4. Create User + CustomerProfile in a single transaction
@@ -129,7 +145,7 @@ export class CustomersService {
 
             const hotinfoData = {
                 usedProducts: dto.usedProducts || [],
-                isAllplanUser: dto.isAllplanUser || false,
+                isAllplanUser: isAllplan,
             };
 
             // Create User with nested CustomerProfile
@@ -138,16 +154,16 @@ export class CustomersService {
                     email: dto.email,
                     fullName,
                     passwordHash,
-                    status: 'ACTIVE',
+                    status: 'INACTIVE',
                     role: SystemRole.VIEWER,
                     customerProfile: {
                         create: {
                             firstName: dto.firstName,
                             lastName: dto.lastName,
-                            customerNo: dto.customerNo,
+                            customerNo: finalCustomerNo as string,
                             companyName: dto.company,
                             phoneNumber: dto.phone,
-                            crmVerified: true,
+                            crmVerified: !!dto.customerNo,
                             hotinfoData: hotinfoData,
                         },
                     },
@@ -160,18 +176,29 @@ export class CustomersService {
             return user;
         });
 
-        // 5. Send welcome email with login details
+        // 5. Send welcome email with login details and verification link
         try {
+            const verifyToken = this.jwtService.sign(
+                { sub: resultUser.id, email: resultUser.email, type: 'email-verification' }
+            );
+
+            const frontendUrl = (await this.prisma.setting.findUnique({ where: { key: 'general.frontend_url' } }))?.value
+                || this.config.get('FRONTEND_URL')
+                || 'http://localhost:3000';
+
+            const verifyUrl = `${frontendUrl}/verify-email?token=${verifyToken}`;
+
             await this.emailService.enqueueEmail({
                 template: 'welcome-customer',
                 to: dto.email,
-                subject: 'Aluplan Destek Ekosistemine Hoş Geldiniz',
+                subject: 'Aluplan Destek Ekosistemine Hoş Geldiniz - E-postanızı Doğrulayın',
                 priority: 1,
                 data: {
                     customerName: `${dto.firstName} ${dto.lastName}`,
                     email: dto.email,
                     password: dto.password,
-                    loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`
+                    loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
+                    verifyUrl: verifyUrl,
                 }
             });
         } catch (error) {
