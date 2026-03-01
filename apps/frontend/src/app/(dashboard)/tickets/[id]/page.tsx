@@ -534,50 +534,68 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             {/* Sidebar Info Column */}
             <div className="space-y-4">
                 <Card className="border-border/60">
-                    <CardHeader className="py-2 bg-muted/10">
+                    <CardHeader className="py-2 bg-muted/10 border-b border-border/40">
                         <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground">TALEP_METADATASI</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 py-4">
-                        <div className="space-y-1">
-                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">DURUM</label>
-                            <div className="flex items-center gap-2">
+                    <CardContent className="px-3 py-3 grid grid-cols-2 gap-3">
+                        <div className="space-y-0.5">
+                            <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">DURUM</label>
+                            <div className="flex items-center gap-1.5">
                                 <div className="h-1.5 w-1.5 bg-primary animate-pulse" />
-                                <span className="text-[12px] font-bold uppercase tracking-tight text-foreground">{ticket.status === 'NEW' ? 'YENİ' : ticket.status === 'OPEN' ? 'AÇIK' : ticket.status === 'IN_PROGRESS' ? 'İŞLEMDE' : ticket.status === 'PENDING_CUSTOMER' ? 'BEKLEMEDE' : ticket.status === 'PENDING_CUSTOMER_REVIEW' ? 'ONAYDA' : ticket.status === 'RESOLVED' ? 'ÇÖZÜLDÜ' : ticket.status === 'CLOSED' ? 'KAPANDI' : ticket.status}</span>
+                                <span className="text-[10px] font-bold uppercase tracking-tight text-foreground truncate">{ticket.status === 'NEW' ? 'YENİ' : ticket.status === 'OPEN' ? 'AÇIK' : ticket.status === 'IN_PROGRESS' ? 'İŞLEMDE' : ticket.status === 'PENDING_CUSTOMER' ? 'BEKLEMEDE' : ticket.status === 'PENDING_CUSTOMER_REVIEW' ? 'ONAYDA' : ticket.status === 'RESOLVED' ? 'ÇÖZÜLDÜ' : ticket.status === 'CLOSED' ? 'KAPANDI' : ticket.status}</span>
                             </div>
                         </div>
-                        <div className="space-y-1">
-                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">İLETİŞİM_KANALI</label>
-                            <div className="flex items-center gap-2">
+                        <div className="space-y-0.5">
+                            <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">KANAL</label>
+                            <div className="flex items-center gap-1.5">
                                 {(() => {
                                     const Icon = CHANNEL_ICONS[ticket.channel] || Globe;
                                     return <Icon className={`h-3 w-3 ${CHANNEL_COLORS[ticket.channel] || ''}`} />;
                                 })()}
-                                <span className="text-[12px] font-bold uppercase tracking-tight text-foreground">{ticket.channel || 'WEB'}</span>
+                                <span className="text-[10px] font-bold uppercase tracking-tight text-foreground">{ticket.channel || 'WEB'}</span>
                             </div>
                         </div>
-                        <div className="space-y-1">
-                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">KRİTİKLİK</label>
-                            <div className="flex items-center gap-2">
-                                <Badge variant="outline" className={PRIORITY_COLORS[ticket.priority]}>{ticket.priority === 'URGENT' ? 'ACİL' : ticket.priority === 'HIGH' ? 'YÜKSEK' : ticket.priority === 'MEDIUM' ? 'ORTA' : 'DÜŞÜK'}</Badge>
+                        <div className="space-y-0.5">
+                            <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">KRİTİKLİK</label>
+                            <div className="flex items-center gap-1.5">
+                                <Badge variant="outline" className={`text-[9px] h-4 px-1 py-0 rounded-none ${PRIORITY_COLORS[ticket.priority]}`}>{ticket.priority === 'URGENT' ? 'ACİL' : ticket.priority === 'HIGH' ? 'YÜKSEK' : ticket.priority === 'MEDIUM' ? 'ORTA' : 'DÜŞÜK'}</Badge>
                             </div>
                         </div>
-                        <div className="space-y-1">
-                            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">AÇILIŞ_TARİHİ</label>
-                            <p className="text-[11px] font-mono font-medium text-foreground">{new Date(ticket.createdAt).toISOString().replace(/T/, ' ').replace(/\..+/, '')}</p>
+                        <div className="space-y-0.5">
+                            <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">A. TARİHİ</label>
+                            <p className="text-[9px] font-mono font-medium text-foreground truncate">{new Date(ticket.createdAt).toISOString().replace(/T/, ' ').substring(0, 16)}</p>
                         </div>
                         {ticket.assignee && (
-                            <div className="space-y-1 pt-3 border-t border-border/20">
-                                <label className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">ATANAN_YETKİLİ</label>
+                            <div className="space-y-0.5 col-span-2 pt-2 border-t border-border/20">
+                                <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">ATANAN_YETKİLİ</label>
                                 <div className="flex items-center gap-2">
-                                    <div className="h-6 w-6 bg-muted border border-border flex items-center justify-center text-[8px] font-bold">
+                                    <div className="h-5 w-5 bg-muted border border-border flex items-center justify-center text-[8px] font-bold">
                                         {ticket.assignee?.fullName?.[0] || 'AX'}
                                     </div>
-                                    <span className="text-[11px] font-bold uppercase tracking-tight">{ticket.assignee?.fullName || 'ATANMAMIŞ'}</span>
+                                    <span className="text-[9px] font-bold uppercase tracking-tight">{ticket.assignee?.fullName || 'ATANMAMIŞ'}</span>
                                 </div>
                             </div>
                         )}
                     </CardContent>
                 </Card>
+
+                {!isCustomer && ticket.hotinfoSnapshot && (
+                    <Card className="border-cyan-900/50 bg-cyan-950/10">
+                        <CardHeader className="py-2 bg-cyan-950/30 border-b border-cyan-900/30 relative overflow-hidden">
+                            <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%,transparent_100%)] bg-[length:10px_10px]" />
+                            <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-cyan-500 relative z-10 flex items-center gap-1.5">
+                                <Cpu className="h-3 w-3" /> HOTFIX_VERİLERİ
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-3">
+                            <ScrollArea className="h-[120px] w-full bg-black/40 border border-cyan-900/30 p-2">
+                                <pre className="text-[9px] font-mono text-cyan-300/80 leading-relaxed whitespace-pre-wrap break-all">
+                                    {typeof ticket.hotinfoSnapshot === 'object' ? JSON.stringify(ticket.hotinfoSnapshot, null, 2) : ticket.hotinfoSnapshot}
+                                </pre>
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* System Notice */}
                 <div className="bg-primary/5 border border-primary/20 p-3 space-y-2">

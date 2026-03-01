@@ -27,7 +27,7 @@ FRONTEND_PORT=3000
 BACKEND_PORT=4000
 DOCKER_WAIT_TIMEOUT=30
 POSTGRES_WAIT_TIMEOUT=30
-OLLAMA_MODELS=("nomic-embed-text")
+OLLAMA_MODELS=("nomic-embed-text" "llama3.2:3b")
 
 # ── Helpers ────────────────────────────────────────────────────────
 log_step()    { echo -e "\n${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"; echo -e "${BOLD}${BLUE}⚡ STEP $1:${NC} $2"; echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"; }

@@ -38,7 +38,6 @@ export default function NewTicketPage() {
     // AI RAG States
     const [isDiagnosing, setIsDiagnosing] = useState(false);
     const [aiAnswer, setAiAnswer] = useState<string | null>(null);
-    const [suggestions, setSuggestions] = useState<any[]>([]);
     const [interactionId, setInteractionId] = useState<string | null>(null);
 
     const form = useForm<TicketFormValues>({
@@ -128,14 +127,12 @@ export default function NewTicketPage() {
         setIsDiagnosing(true);
         setCurrentStep(2);
         setAiAnswer(null);
-        setSuggestions([]);
 
         try {
             // Switch to specialized query endpoint for conversational RAG
             const response = await api.ai.query(`${subject} ${description}`);
 
             setAiAnswer(response.answer);
-            setSuggestions(response.sources || []);
             setInteractionId(response.interactionId);
 
             if (response.confidence === 'NO_MATCH') {
@@ -500,31 +497,11 @@ export default function NewTicketPage() {
                     </div>
                 )}
 
-                {suggestions.length > 0 && (
+                {aiAnswer && (
                     <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500 mt-8">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <CheckCircle2 className="h-5 w-5" />
-                            <h3 className="font-bold uppercase tracking-widest text-xs">Referans Kaynaklar (Knowledge Pool)</h3>
-                        </div>
-                        <div className="grid gap-3">
-                            {suggestions.map((s, i) => (
-                                <Card key={i} className="bg-emerald-500/5 border-emerald-500/10 hover:bg-emerald-500/20 transition-all cursor-pointer">
-                                    <CardHeader className="p-4 flex flex-row items-start gap-4">
-                                        <div className="h-8 w-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                                            <span className="text-xs font-bold">{i + 1}</span>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <CardTitle className="text-base text-white">{s.title}</CardTitle>
-                                            <CardDescription className="line-clamp-2 text-xs">{s.similarity ? `Güven Skoru: %${Math.round(s.similarity * 100)}` : 'Eşleşen içerik'}</CardDescription>
-                                        </div>
-                                    </CardHeader>
-                                </Card>
-                            ))}
-                        </div>
-
-                        <div className="p-6 rounded-2xl bg-slate-900/80 border border-white/5 text-center space-y-4 backdrop-blur-xl mt-6">
+                        <div className="p-6 rounded-2xl bg-slate-900/80 border border-white/5 text-center space-y-4 backdrop-blur-xl">
                             <p className="text-muted-foreground italic text-sm">
-                                &quot;Bu öneriler sorununuzu çözmeye yardımcı oldu mu?&quot;
+                                &quot;Yapay zeka asistanımızın sunduğu bu çözüm sorununuzu gidermeye yardımcı oldu mu?&quot;
                             </p>
                             <div className="flex gap-3 justify-center">
                                 <Button
