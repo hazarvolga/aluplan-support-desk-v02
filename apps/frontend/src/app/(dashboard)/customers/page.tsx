@@ -422,7 +422,8 @@ export default function CustomersPage() {
                                     <SortableHeader field="jobTitle">Ünvan</SortableHeader>
                                     <SortableHeader field="email">E-posta</SortableHeader>
                                     <SortableHeader field="industry">Sektör</SortableHeader>
-                                    <SortableHeader field="contractStatus">Durum</SortableHeader>
+                                    <SortableHeader field="contractStatus">Müşteri Durumu</SortableHeader>
+                                    <SortableHeader field="status">Hesap Durumu</SortableHeader>
                                     <TableHead className="w-10" />
                                 </TableRow>
                             </TableHeader>
@@ -476,6 +477,14 @@ export default function CustomersPage() {
                                                 <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/50 border border-white/5">
                                                     {c.customerProfile?.industry || 'GENEL'}
                                                 </span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className={`text-[9px] font-black tracking-widest px-2 py-0.5 ${c.customerProfile?.contractStatus === 'ACTIVE'
+                                                        ? 'bg-emerald-500/10 text-emerald-400 border-none'
+                                                        : 'text-slate-500 border-white/10'
+                                                    }`}>
+                                                    {c.customerProfile?.contractStatus || '-'}
+                                                </Badge>
                                             </TableCell>
                                             <TableCell>
                                                 {c.status === 'ACTIVE' ? (
