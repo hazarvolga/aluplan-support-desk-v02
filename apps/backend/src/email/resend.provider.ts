@@ -12,14 +12,27 @@ export class ResendProvider implements EmailProvider {
     ) { }
 
     private async getApiKey(): Promise<string | null> {
-        return (await this.settings.getValue('email.resend.api_key')) ?? process.env.RESEND_API_KEY ?? null;
+        const dbKey = await this.settings.getValue('email.resend.api_key');
+        if (dbKey) {
+            this.logger.debug('Using Resend API key from DATABASE');
+            return dbKey;
+        }
+
+        const envKey = process.env.RESEND_API_KEY;
+        if (envKey) {
+            this.logger.debug('Using Resend API key from ENVIRONMENT (.env)');
+            return envKey;
+        }
+
+        this.logger.error('Resend API key NOT FOUND in Database or Environment');
+        return null;
     }
 
     async send(options: SendEmailOptions): Promise<{ messageId: string }> {
         const apiKey = await this.getApiKey();
         if (!apiKey) throw new Error('Resend API key not configured');
 
-        const from = options.from ?? (await this.settings.getValue('email.from_address')) ?? 'noreply@aluplan.com';
+        const from = options.from ?? (await this.settings.getValue('email.from_address')) ?? process.env.MAIL_FROM ?? 'noreply@aluplan.com';
         const to = Array.isArray(options.to) ? options.to : [options.to];
 
         const res = await fetch(this.apiUrl, {

@@ -37,6 +37,7 @@ export default function NewTicketPage() {
 
     // AI RAG States
     const [isDiagnosing, setIsDiagnosing] = useState(false);
+    const [aiAnswer, setAiAnswer] = useState<string | null>(null);
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [interactionId, setInteractionId] = useState<string | null>(null);
 
@@ -107,6 +108,7 @@ export default function NewTicketPage() {
         try {
             const formData = new FormData();
             formData.append('file', file);
+            formData.append('name', 'Hotinfo Upload');
 
             const response = await api.post('/customers/me/hotinfo', formData);
 
@@ -125,16 +127,23 @@ export default function NewTicketPage() {
 
         setIsDiagnosing(true);
         setCurrentStep(2);
+        setAiAnswer(null);
+        setSuggestions([]);
+
         try {
-            const response = await api.post('/ai/search', {
-                query: `${subject} ${description}`,
-                productId: selectedProductId === 'general' ? null : selectedProductId,
-                limit: 3
-            });
-            setSuggestions(response.results || []);
+            // Switch to specialized query endpoint for conversational RAG
+            const response = await api.ai.query(`${subject} ${description}`);
+
+            setAiAnswer(response.answer);
+            setSuggestions(response.sources || []);
             setInteractionId(response.interactionId);
+
+            if (response.confidence === 'NO_MATCH') {
+                toast.info('Sorunuzu tam olarak anlayamadım ama aşağıda genel bir rehber hazırladım.');
+            }
         } catch (err) {
             console.error('Diagnosis failed', err);
+            toast.error('Yapay zeka teşhis servisine şu anda ulaşılamıyor.');
         } finally {
             setIsDiagnosing(false);
         }
@@ -477,35 +486,66 @@ export default function NewTicketPage() {
                     </Button>
                 </div>
 
-                {suggestions.length > 0 && (
+                {aiAnswer && (
                     <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
                         <div className="flex items-center gap-2 text-brand-400">
+                            <Sparkles className="h-5 w-5" />
+                            <h3 className="font-bold uppercase tracking-widest text-xs">Yapay Zeka Teşhis Sonucu</h3>
+                        </div>
+                        <Card className="bg-brand-500/5 border-brand-500/20 shadow-lg shadow-brand-500/10">
+                            <CardContent className="p-6 prose prose-invert max-w-none">
+                                <p className="text-white/90 leading-relaxed whitespace-pre-wrap">{aiAnswer}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
+                {suggestions.length > 0 && (
+                    <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500 mt-8">
+                        <div className="flex items-center gap-2 text-muted-foreground">
                             <CheckCircle2 className="h-5 w-5" />
-                            <h3 className="font-bold uppercase tracking-widest text-xs">Knowledge Pool Önerileri</h3>
+                            <h3 className="font-bold uppercase tracking-widest text-xs">Referans Kaynaklar (Knowledge Pool)</h3>
                         </div>
                         <div className="grid gap-3">
                             {suggestions.map((s, i) => (
-                                <Card key={i} className="bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10 transition-colors cursor-pointer">
+                                <Card key={i} className="bg-emerald-500/5 border-emerald-500/10 hover:bg-emerald-500/20 transition-all cursor-pointer">
                                     <CardHeader className="p-4 flex flex-row items-start gap-4">
                                         <div className="h-8 w-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                                             <span className="text-xs font-bold">{i + 1}</span>
                                         </div>
                                         <div className="space-y-1">
                                             <CardTitle className="text-base text-white">{s.title}</CardTitle>
-                                            <CardDescription className="line-clamp-2 text-xs">{s.content}</CardDescription>
+                                            <CardDescription className="line-clamp-2 text-xs">{s.similarity ? `Güven Skoru: %${Math.round(s.similarity * 100)}` : 'Eşleşen içerik'}</CardDescription>
                                         </div>
                                     </CardHeader>
                                 </Card>
                             ))}
                         </div>
-                        <div className="p-4 rounded-xl bg-slate-900 border border-white/5 text-center space-y-3">
-                            <p className="text-sm text-muted-foreground italic">&quot;Bu çözümlerden biri sorununuzu giderdi mi?&quot;</p>
-                            <div className="flex gap-2 justify-center">
-                                <Button size="sm" variant="outline" className="text-emerald-400 border-emerald-500/20" onClick={() => {
-                                    toast.success('Çözüm bulmanıza sevindik! 🎉');
-                                    router.push('/dashboard');
-                                }}>Evet, Çözüldü</Button>
-                                <Button size="sm" variant="outline" onClick={() => setCurrentStep(3)}>Hayır, Devam Et</Button>
+
+                        <div className="p-6 rounded-2xl bg-slate-900/80 border border-white/5 text-center space-y-4 backdrop-blur-xl mt-6">
+                            <p className="text-muted-foreground italic text-sm">
+                                &quot;Bu öneriler sorununuzu çözmeye yardımcı oldu mu?&quot;
+                            </p>
+                            <div className="flex gap-3 justify-center">
+                                <Button
+                                    size="lg"
+                                    variant="outline"
+                                    className="text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10 px-8"
+                                    onClick={() => {
+                                        toast.success('Harika! Çözüm bulmanıza sevindik. 🎉');
+                                        router.push('/dashboard');
+                                    }}
+                                >
+                                    Evet, Çözüldü
+                                </Button>
+                                <Button
+                                    size="lg"
+                                    variant="secondary"
+                                    className="bg-white/5 hover:bg-white/10 px-8"
+                                    onClick={() => setCurrentStep(3)}
+                                >
+                                    Hayır, Talebi Oluştur
+                                </Button>
                             </div>
                         </div>
                     </div>

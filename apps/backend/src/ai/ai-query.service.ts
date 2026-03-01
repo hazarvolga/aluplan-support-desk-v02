@@ -122,7 +122,7 @@ export class AiQueryService {
             data: {
                 userId,
                 userQuery,
-                aiResponse: answer,
+                responseGenerated: answer,
                 confidenceBand: confidence === 'NO_MATCH' ? null : (confidence as 'HIGH' | 'MEDIUM' | 'LOW'),
                 autoAnswered: !suggestTicket,
                 similarityScore: topResult?.similarity,

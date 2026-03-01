@@ -100,12 +100,12 @@ export class EmbeddingService {
         LEFT JOIN knowledge_embeddings parent ON ke.parent_id = parent.id
         WHERE ka.status = 'PUBLISHED' 
           AND (${includeInternal} = true OR ka.is_internal = false)
-          AND 1 - (ke.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
+          AND 1 - (ke.embedding <=> ${vectorStr}::vector) > 0.65
           AND ke.parent_id IS NOT NULL -- Only search on children
         
         UNION ALL
         
-        -- Knowledge Pool (General chunks)
+        -- Knowledge Pool (General chunks - Allow for everyone if not internal)
         SELECT 
             ks.id AS article_id, 
             CASE 
@@ -119,13 +119,13 @@ export class EmbeddingService {
         FROM knowledge_pool_embeddings kpe
         JOIN knowledge_sources ks ON kpe.source_id = ks.id
         WHERE ks.status = 'ACTIVE' 
-          AND ${includeInternal} = true
+          -- Allow pool access for everyone, or filter if specific tags exist later
           AND (${productId}::uuid IS NULL OR ks.product_id = ${productId}::uuid) 
-          AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
+          AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > 0.65
       )
       SELECT * 
       FROM combined_search 
-      ORDER BY (similarity * trust_score) DESC 
+      ORDER BY (similarity * (trust_score::float)) DESC 
       LIMIT ${limit}
     `;
 

@@ -28,7 +28,7 @@ export class SmtpProvider implements EmailProvider {
         const transporter = await this.getTransporter();
         if (!transporter) throw new Error('SMTP not configured');
 
-        const from = options.from ?? (await this.settings.getValue('email.from_address')) ?? 'noreply@aluplan.com';
+        const from = options.from ?? (await this.settings.getValue('email.from_address')) ?? process.env.MAIL_FROM ?? 'noreply@aluplan.com';
         const info = await transporter.sendMail({
             from,
             to: Array.isArray(options.to) ? options.to.join(',') : options.to,

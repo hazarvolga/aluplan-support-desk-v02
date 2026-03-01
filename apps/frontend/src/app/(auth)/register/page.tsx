@@ -85,9 +85,13 @@ export default function RegisterPage() {
             return;
         }
 
-        if (form.customerNo.length < 5 || !form.customerNo.startsWith('C')) {
-            setError('Müşteri No formatı geçersiz. Örnek: C300 XX XX XX');
-            return;
+        const isAllplanUser = usedProducts.some(p => p.toLowerCase().includes('allplan'));
+
+        if (isAllplanUser) {
+            if (form.customerNo.length < 5 || !form.customerNo.startsWith('C')) {
+                setError('Müşteri No formatı geçersiz. Örnek: C300 XX XX XX');
+                return;
+            }
         }
 
         setLoading(true);
@@ -320,8 +324,36 @@ export default function RegisterPage() {
                                         </div>
                                     </div>
 
+                                    {/* Products Selection */}
+                                    {products.length > 0 && (
+                                        <div className="pt-2 pb-2">
+                                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                                Hangi Aluplan ürünlerini / modüllerini kullanıyorsunuz?
+                                            </label>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                                {products.map((p) => (
+                                                    <label key={p.id} className="flex items-center gap-2 bg-black/20 border border-white/5 hover:border-sky-500/50 p-2 rounded-lg cursor-pointer transition-colors">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="w-4 h-4 rounded border-slate-600 bg-black/50 text-sky-500 focus:ring-sky-500/50"
+                                                            checked={usedProducts.includes(p.name)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setUsedProducts([...usedProducts, p.name]);
+                                                                } else {
+                                                                    setUsedProducts(usedProducts.filter(x => x !== p.name));
+                                                                }
+                                                            }}
+                                                        />
+                                                        <span className="text-sm text-slate-300">{p.name}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Firma & Müşteri No */}
-                                    <div className="grid sm:grid-cols-2 gap-4">
+                                    <div className={`grid ${usedProducts.some(p => p.toLowerCase().includes('allplan')) ? 'sm:grid-cols-2' : 'grid-cols-1'} gap-4`}>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">
                                                 Firma <span className="text-sky-400">*</span>
@@ -335,19 +367,21 @@ export default function RegisterPage() {
                                                 className={`bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50 ${lookupResult.action === 'NEW_MATCHED_COMPANY' ? 'border-emerald-500/40 text-emerald-100' : ''}`}
                                             />
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                                Müşteri No <span className="text-sky-400">*</span>
-                                            </label>
-                                            <Input
-                                                name="customerNo"
-                                                value={form.customerNo}
-                                                onChange={handleChange}
-                                                placeholder="Örn: C300 00 00 00"
-                                                required
-                                                className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50"
-                                            />
-                                        </div>
+                                        {usedProducts.some(p => p.toLowerCase().includes('allplan')) && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                                    Müşteri No <span className="text-sky-400">*</span>
+                                                </label>
+                                                <Input
+                                                    name="customerNo"
+                                                    value={form.customerNo}
+                                                    onChange={handleChange}
+                                                    placeholder="Örn: C300 00 00 00"
+                                                    required
+                                                    className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Şifre & Onay */}
@@ -383,34 +417,6 @@ export default function RegisterPage() {
                                             />
                                         </div>
                                     </div>
-
-                                    {/* Products Selection */}
-                                    {products.length > 0 && (
-                                        <div className="pt-2">
-                                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                                Hangi Aluplan ürünlerini / modüllerini kullanıyorsunuz?
-                                            </label>
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                                {products.map((p) => (
-                                                    <label key={p.id} className="flex items-center gap-2 bg-black/20 border border-white/5 hover:border-sky-500/50 p-2 rounded-lg cursor-pointer transition-colors">
-                                                        <input
-                                                            type="checkbox"
-                                                            className="w-4 h-4 rounded border-slate-600 bg-black/50 text-sky-500 focus:ring-sky-500/50"
-                                                            checked={usedProducts.includes(p.name)}
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) {
-                                                                    setUsedProducts([...usedProducts, p.name]);
-                                                                } else {
-                                                                    setUsedProducts(usedProducts.filter(x => x !== p.name));
-                                                                }
-                                                            }}
-                                                        />
-                                                        <span className="text-sm text-slate-300">{p.name}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
 
                                     <div className="pt-4 flex gap-3">
                                         <Button

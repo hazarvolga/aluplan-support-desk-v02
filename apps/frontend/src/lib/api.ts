@@ -138,6 +138,28 @@ export const api = {
         bulkUpdate: (body: { ticketIds: string[]; status?: string; priority?: string; assignedTo?: string }) =>
             request<any>('/tickets/bulk', { method: 'PATCH', body: JSON.stringify(body) }),
     },
+    ai: {
+        query: (query: string) =>
+            request<{
+                query: string;
+                answer: string | null;
+                confidence: string;
+                sources: any[];
+                interactionId: string;
+                suggestTicket: boolean;
+            }>('/ai/query', {
+                method: 'POST',
+                body: JSON.stringify({ query }),
+            }),
+        search: (query: string, productId?: string | null, limit = 5) =>
+            request<{
+                results: any[];
+                interactionId: string;
+            }>('/ai/search', {
+                method: 'POST',
+                body: JSON.stringify({ query, productId, limit }),
+            }),
+    },
     kb: {
         list: (params?: Record<string, string>) => {
             const q = params ? '?' + new URLSearchParams(params).toString() : '';
