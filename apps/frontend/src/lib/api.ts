@@ -43,7 +43,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         }
         throw new Error(errStr);
     }
-    return res.json();
+    const text = await res.text();
+    return text ? JSON.parse(text) : {} as T;
 }
 
 export const api = {
@@ -62,6 +63,10 @@ export const api = {
             request<{ success: boolean }>('/auth/forgot-password', {
                 method: 'POST',
                 body: JSON.stringify({ email }),
+            }),
+        verifyEmail: (token: string) =>
+            request<{ success: boolean; message: string }>(`/auth/verify-email?token=${token}`, {
+                method: 'GET',
             }),
         me: () => request<{
             id: string;
