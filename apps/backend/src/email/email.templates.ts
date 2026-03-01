@@ -12,6 +12,7 @@ export interface EmailPayload {
   data: any;
   priority?: number;
   delay?: number;
+  jobId?: string;
 }
 
 export class TemplateService {

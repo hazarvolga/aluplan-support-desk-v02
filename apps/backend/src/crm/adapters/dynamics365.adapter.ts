@@ -218,10 +218,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
     }
 
     private async getAccessToken(config: any): Promise<string> {
-        let { tenantId, clientId, clientSecret, instanceUrl } = config;
-
-        // Normalize instanceUrl: remove trailing slash
-        instanceUrl = instanceUrl.replace(/\/+$/, '');
+        const { tenantId, clientId, clientSecret, instanceUrl: rawInstanceUrl } = config;
+        const instanceUrl = rawInstanceUrl.replace(/\/+$/, '');
 
         const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
 

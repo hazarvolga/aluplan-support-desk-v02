@@ -77,7 +77,7 @@ export class EmailService implements OnModuleInit {
         });
 
         // Delegate to BullMQ for processing logic.
-        const jobId = `${payload.template}:${payload.to}:${payload.data?.ticket?.id ?? 'sys'}-${Date.now()}`;
+        const jobId = payload.jobId || `${payload.template}:${payload.to}:${payload.data?.ticket?.id ?? 'sys'}-${Date.now()}`;
         await this.emailQueue.add('send-email', { ...payload, logRef: draftLog.id }, {
             jobId: jobId,
             delay: payload.delay ?? 0,
@@ -90,7 +90,20 @@ export class EmailService implements OnModuleInit {
             }
         });
 
-        this.logger.log(`Enqueued Email -> ${payload.template} to ${payload.to} (Log ID: ${draftLog.id})`);
+        this.logger.log(`Enqueued Email -> ${payload.template} to ${payload.to} (Log ID: ${draftLog.id}, Job: ${jobId})`);
+    }
+
+    /**
+     * Attempts to remove a pending email job from the queue.
+     */
+    async cancelEmail(jobId: string): Promise<boolean> {
+        const job = await this.emailQueue.getJob(jobId);
+        if (job) {
+            await job.remove();
+            this.logger.log(`🚫 Cancelled pending email job: ${jobId}`);
+            return true;
+        }
+        return false;
     }
 
     // ─── TICKET EVENT EMAILS (Proxied to Enqueuer) ─────────────────────────
@@ -176,13 +189,15 @@ export class EmailService implements OnModuleInit {
         });
     }
 
-    async sendNewMessage(data: any) {
+    async sendNewMessage(data: any, options?: { delay?: number, jobId?: string }) {
         await this.enqueueEmail({
             template: 'ticket-updated',
             to: data.recipientEmail,
             subject: `[${data.ticketNumber}] Yeni Mesaj`,
             priority: 2,
-            data: data
+            data: data,
+            delay: options?.delay,
+            jobId: options?.jobId,
         });
     }
 

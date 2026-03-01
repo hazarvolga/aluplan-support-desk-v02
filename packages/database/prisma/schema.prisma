@@ -62,6 +62,12 @@ enum TicketPriority {
   URGENT
 }
 
+enum ChatStatus {
+  NORMAL
+  REQUESTED
+  LIVE
+}
+
 enum ArticleStatus {
   DRAFT
   REVIEW
@@ -648,6 +654,7 @@ model Ticket {
   suggestedCategories String[]             @default([]) @map("suggested_categories")
   hotinfoSnapshot     Json?                @map("hotinfo_snapshot")
   channel             CommunicationChannel @default(WEB)
+  chatStatus          ChatStatus           @default(NORMAL) @map("chat_status")
   departmentId        String?              @map("department_id") @db.Uuid
   slaWarningSentAt    DateTime?            @map("sla_warning_sent_at")
 

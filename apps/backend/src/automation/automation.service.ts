@@ -75,9 +75,19 @@ export class AutomationService {
 
     @OnEvent('ticket.message_added')
     async handleMessageAdded(payload: { ticket: any; message: any; recipientEmail?: string; userName?: string }) {
-        this.logger.log(`🤖 Automation: Dispatching new message notification for ${payload.ticket.ticketNumber}`);
+        this.logger.log(`🤖 Automation: Processing message notification for ${payload.ticket.ticketNumber} [Channel: ${payload.message.channel}]`);
 
         if (payload.recipientEmail) {
+            const isWeb = payload.message.channel === 'WEB';
+            const options = isWeb ? {
+                delay: 60000, // 1 minute buffer for real-time read
+                jobId: `msg-ntf:${payload.message.id}`
+            } : undefined;
+
+            if (isWeb) {
+                this.logger.debug(`⏳ Smart Buffer: Delaying email for message ${payload.message.id} by 1m`);
+            }
+
             this.emailService.sendNewMessage({
                 recipientEmail: payload.recipientEmail,
                 userName: payload.userName || 'Kullanıcı',
@@ -85,7 +95,7 @@ export class AutomationService {
                 ticketNumber: payload.ticket.ticketNumber,
                 latestMessage: payload.message.message,
                 ticketUrl: `${process.env.FRONTEND_URL}/tickets/${payload.ticket.id}`
-            }).catch(err => this.logger.error(`Failed to send message notification: ${err.message}`));
+            }, options).catch(err => this.logger.error(`Failed to send message notification: ${err.message}`));
         }
     }
 

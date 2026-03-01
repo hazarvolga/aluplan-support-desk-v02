@@ -13,6 +13,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { SystemRole } from '@prisma/client';
+import { RedisService } from '../redis/redis.service';
+import { EmailService } from '../email/email.service';
 
 @WebSocketGateway({
     cors: { origin: '*', credentials: true },
@@ -27,6 +29,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         private readonly jwtService: JwtService,
         private readonly config: ConfigService,
         private readonly prisma: PrismaService,
+        private readonly redisService: RedisService,
+        private readonly emailService: EmailService,
     ) { }
 
     async handleConnection(client: Socket) {
@@ -59,21 +63,83 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         }
     }
 
-    handleDisconnect(client: Socket) {
+    async handleDisconnect(client: Socket) {
         this.connectedClients = Math.max(0, this.connectedClients - 1);
-        this.logger.log(`❌ Client disconnected (total: ${this.connectedClients})`);
+        const userId = client.data.userId;
+
+        if (userId) {
+            const redis = this.redisService.getClient();
+            const userTicketsKey = `presence:user:${userId}:tickets`;
+            const ticketIds = await redis.smembers(userTicketsKey);
+
+            for (const ticketId of ticketIds) {
+                await redis.srem(`presence:ticket:${ticketId}`, userId);
+                await this.updatePresence(ticketId);
+            }
+            await redis.del(userTicketsKey);
+        }
+
+        this.logger.log(`❌ Client disconnected: ${userId} (total: ${this.connectedClients})`);
+    }
+
+    private async updatePresence(ticketId: string) {
+        const redis = this.redisService.getClient();
+        const userIds = await redis.smembers(`presence:ticket:${ticketId}`);
+        this.server.to(`ticket:${ticketId}`).emit('ticket:presence', {
+            ticketId,
+            userIds,
+        });
     }
 
     // Subscribe to a specific ticket room
     @SubscribeMessage('ticket:join')
     async joinTicket(@ConnectedSocket() client: Socket, @MessageBody() ticketId: string) {
+        // Authorization check: User must be an agent or the creator of the ticket
+        const ticket = await this.prisma.ticket.findUnique({
+            where: { id: ticketId },
+            select: { userId: true }
+        });
+
+        if (!ticket) return { error: 'Ticket not found' };
+
+        const isCreator = ticket.userId === client.data.userId;
+        const isAgent = [
+            SystemRole.ADMIN,
+            SystemRole.DEPARTMENT_MANAGER,
+            SystemRole.TEAM_LEAD,
+            SystemRole.SENIOR_AGENT,
+            SystemRole.AGENT
+        ].includes(client.data.role);
+
+        if (!isCreator && !isAgent) {
+            return { error: 'Unauthorized' };
+        }
+
         await client.join(`ticket:${ticketId}`);
+
+        // Presence Logic
+        const userId = client.data.userId;
+        const redis = this.redisService.getClient();
+        await redis.sadd(`presence:ticket:${ticketId}`, userId);
+        await redis.sadd(`presence:user:${userId}:tickets`, ticketId);
+        await redis.expire(`presence:ticket:${ticketId}`, 3600); // 1h safety
+        await this.updatePresence(ticketId);
+
+        this.logger.log(`👤 User ${userId} joined ticket room: ${ticketId}`);
         return { joined: ticketId };
     }
 
     @SubscribeMessage('ticket:leave')
     async leaveTicket(@ConnectedSocket() client: Socket, @MessageBody() ticketId: string) {
         await client.leave(`ticket:${ticketId}`);
+
+        // Presence Logic
+        const userId = client.data.userId;
+        const redis = this.redisService.getClient();
+        await redis.srem(`presence:ticket:${ticketId}`, userId);
+        await redis.srem(`presence:user:${userId}:tickets`, ticketId);
+        await this.updatePresence(ticketId);
+
         return { left: ticketId };
     }
 
@@ -83,6 +149,19 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         client.to(`ticket:${data.ticketId}`).emit('ticket:typing', {
             userId: client.data.userId,
             isTyping: data.isTyping,
+        });
+    }
+
+    @SubscribeMessage('ticket:message_read')
+    async markAsRead(@ConnectedSocket() client: Socket, @MessageBody() data: { ticketId: string, messageId: string }) {
+        // Smart Buffer: If message is read via chat, cancel the pending email notification
+        const jobId = `msg-ntf:${data.messageId}`;
+        await this.emailService.cancelEmail(jobId);
+
+        // Broadcast that a message was read
+        client.to(`ticket:${data.ticketId}`).emit('ticket:message_read', {
+            messageId: data.messageId,
+            readerId: client.data.userId,
         });
     }
 

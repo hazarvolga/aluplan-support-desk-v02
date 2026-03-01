@@ -1,6 +1,6 @@
 import { IsString, IsEnum, IsOptional, IsUUID } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { TicketPriority } from '@aluplan/database';
+import { TicketPriority, ChatStatus } from '@aluplan/database';
 
 export class UpdateTicketDto {
     @ApiPropertyOptional()
@@ -17,6 +17,11 @@ export class UpdateTicketDto {
     @IsEnum(TicketPriority)
     @IsOptional()
     priority?: TicketPriority;
+
+    @ApiPropertyOptional({ enum: ChatStatus })
+    @IsEnum(ChatStatus)
+    @IsOptional()
+    chatStatus?: ChatStatus;
 
     @ApiPropertyOptional()
     @IsUUID()

@@ -74,6 +74,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [someoneTyping, setSomeoneTyping] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+
+    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollIntoView({ behavior, block: 'end' });
+        }
+    };
 
     const load = async () => {
         try {
@@ -83,6 +90,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             ]);
             setTicket(ticketRes);
             setUser(userRes);
+            // Initial scroll to bottom
+            setTimeout(() => scrollToBottom('auto'), 100);
         } catch (err) {
             toast.error('Talep yüklenemedi');
         } finally {
@@ -103,11 +112,15 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
         const handleNewMessage = (data: any) => {
             if (data.ticketId === id && data.message.senderId !== user.id) {
-                setTicket((prev: any) => ({
-                    ...prev,
-                    messages: [...prev.messages, data.message]
-                }));
-                // Auto-scroll logic here or just rely on natural scroll
+                setTicket((prev: any) => {
+                    if (!prev) return prev;
+                    // Prevent duplicate if optimistic message already exists with same content (unlikely but safe)
+                    return {
+                        ...prev,
+                        messages: [...prev.messages, data.message]
+                    };
+                });
+                setTimeout(() => scrollToBottom(), 50);
             }
         };
 
@@ -121,15 +134,23 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             setTicket((prev: any) => ({ ...prev, ...updatedTicket, messages: prev.messages }));
         };
 
+        const handlePresence = (data: { ticketId: string, userIds: string[] }) => {
+            if (data.ticketId === id) {
+                setOnlineUsers(data.userIds);
+            }
+        };
+
         socket.on('ticket:new_message', handleNewMessage);
         socket.on('ticket:typing', handleTyping);
         socket.on('ticket:updated', handleTicketUpdated);
+        socket.on('ticket:presence', handlePresence);
 
         return () => {
             socket.emit('ticket:leave', id);
             socket.off('ticket:new_message', handleNewMessage);
             socket.off('ticket:typing', handleTyping);
             socket.off('ticket:updated', handleTicketUpdated);
+            socket.off('ticket:presence', handlePresence);
             socket.disconnect();
         };
     }, [id, user]);
@@ -152,12 +173,55 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
     const isCustomer = userRoles.includes('customer') || user?.role?.toLowerCase() === 'customer';
 
+    const handleRequestLiveChat = async () => {
+        try {
+            const nextStatus = isCustomer ? 'REQUESTED' : 'LIVE';
+            await api.patch(`/tickets/${id}`, { chatStatus: nextStatus });
+            toast.success(isCustomer ? 'Canlı destek talebi iletildi' : 'Canlı sohbet başlatıldı');
+        } catch (err) {
+            toast.error('Sohbet durumu güncellenemedi');
+        }
+    };
+
+    const handleAcceptLiveChat = async () => {
+        try {
+            await api.patch(`/tickets/${id}`, { chatStatus: 'LIVE' });
+            toast.success('Canlı sohbet kabul edildi');
+        } catch (err) {
+            toast.error('Sohbet başlatılamadı');
+        }
+    };
+
     const handleSendReply = async () => {
         if (!reply.trim() && files.length === 0) return;
+
+        const messageText = reply;
+        setReply(''); // Clear immediately for UX
         setSending(true);
+
+        // Optimistic UI: Add message locally first
+        const tempId = 'temp-' + Date.now();
+        const optimisticMessage = {
+            id: tempId,
+            message: messageText,
+            senderId: user.id,
+            sender: user,
+            createdAt: new Date().toISOString(),
+            isInternal: false,
+            isOptimistic: true,
+            attachments: []
+        };
+
+        setTicket((prev: any) => ({
+            ...prev,
+            messages: [...prev.messages, optimisticMessage]
+        }));
+
+        setTimeout(() => scrollToBottom(), 50);
+
         try {
             const message = await api.tickets.addMessage(id, {
-                message: reply,
+                message: messageText,
                 isInternal: false
             });
 
@@ -167,14 +231,22 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 }
             }
 
-            // Refresh ticket to show new message
-            const updated = await api.tickets.get(id);
-            setTicket(updated);
-            setReply('');
+            // Replace optimistic message with real one
+            setTicket((prev: any) => ({
+                ...prev,
+                messages: prev.messages.map((m: any) => m.id === tempId ? { ...message, sender: user } : m)
+            }));
+
             setFiles([]);
-            toast.success('Mesajınız iletildi');
+            // No toast for success in chat, it's expected
         } catch (error: any) {
             toast.error('Mesaj gönderilemedi: ' + error.message);
+            // Remove optimistic message on failure
+            setTicket((prev: any) => ({
+                ...prev,
+                messages: prev.messages.filter((m: any) => m.id !== tempId)
+            }));
+            setReply(messageText); // Restore input
         } finally {
             setSending(false);
         }
@@ -272,8 +344,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 w-full py-0">
             {/* Main Conversation Column */}
             <div className="lg:col-span-3 space-y-4">
-                <Card className="flex flex-col min-h-[700px] border-border/60">
-                    <CardHeader className="py-3 bg-muted/20">
+                <Card className="flex flex-col min-h-[700px] border-border/60 overflow-hidden">
+                    <CardHeader className="py-3 bg-muted/20 border-b border-border/40 z-10">
                         <div className="flex items-start justify-between">
                             <div className="space-y-1">
                                 <div className="flex items-center gap-2">
@@ -331,8 +403,48 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                         {drafting ? 'TASLAK_HAZIRLANIYOR...' : 'YSA_TASLAĞI'}
                                     </Button>
                                 )}
+                                {ticket.chatStatus === 'NORMAL' && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleRequestLiveChat}
+                                        className="h-7 border-blue-500/30 text-blue-500 bg-blue-500/5 hover:bg-blue-500/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
+                                    >
+                                        <MessageCircle className="h-3 w-3" />
+                                        {isCustomer ? 'CANLI_DESTEK_BAŞLAT' : 'CANLI_SOHBET_TALEP_ET'}
+                                    </Button>
+                                )}
                             </div>
                         </div>
+
+                        {ticket.chatStatus === 'REQUESTED' && (
+                            <div className="mt-2 p-3 border border-blue-500/30 bg-blue-500/5 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400">
+                                        {isCustomer ? 'TEMSİLCİ_ONAYI_BEKLENİYOR...' : 'MÜŞTERİ_CANLI_DESTEK_BEKLİYOR'}
+                                    </span>
+                                </div>
+                                {!isCustomer && (
+                                    <Button
+                                        size="sm"
+                                        onClick={handleAcceptLiveChat}
+                                        className="h-7 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest"
+                                    >
+                                        GÖRÜŞMEYİ_BAŞLAT
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+
+                        {ticket.chatStatus === 'LIVE' && (
+                            <div className="mt-2 p-2 border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-center gap-2">
+                                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+                                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-500">
+                                    CANLI_OTURUM_AKTİF
+                                </span>
+                            </div>
+                        )}
 
                         {ticket.status === 'PENDING_CUSTOMER_REVIEW' && (
                             <div className="mt-2 p-4 border border-orange-500/30 bg-orange-500/5">
@@ -411,84 +523,112 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         )}
                     </CardHeader>
 
-                    <CardContent className="flex-1 p-0 flex flex-col">
+                    <CardContent className="flex-1 p-0 flex flex-col bg-muted/5 relative">
                         <ScrollArea className="flex-1 p-4 h-[550px]">
                             <div className="space-y-6">
                                 {/* Initial Description as first message */}
                                 <div className="flex gap-3 group">
-                                    <div className="h-8 w-8 bg-muted flex items-center justify-center border border-border text-[10px] font-bold uppercase">
-                                        {ticket.creator?.fullName?.[0] || 'OP'}
-                                    </div>
-                                    <div className="flex-1 space-y-1">
-                                        <div className="flex items-baseline justify-between">
-                                            <span className="text-[11px] font-mono font-bold uppercase tracking-tight">{ticket.creator?.fullName || 'EXTERNAL_AGENT'}</span>
-                                            <span className="text-[9px] text-muted-foreground uppercase font-mono">{formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true, locale: tr })}</span>
+                                    <div className="relative shrink-0">
+                                        <div className="h-8 w-8 bg-muted flex items-center justify-center border border-border text-[10px] font-bold uppercase">
+                                            {ticket.creator?.fullName?.[0] || 'OP'}
                                         </div>
-                                        <div className="bg-muted/30 border border-border/50 p-3 text-[12px] leading-relaxed tracking-tight text-foreground font-medium">
+                                        {onlineUsers.includes(ticket.userId) && (
+                                            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500 shadow-sm" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 space-y-1 max-w-[85%]">
+                                        <div className="flex items-baseline justify-between gap-4">
+                                            <span className="text-[11px] font-mono font-bold uppercase tracking-tight truncate">{ticket.creator?.fullName || 'EXTERNAL_AGENT'}</span>
+                                            <span className="text-[9px] text-muted-foreground uppercase font-mono shrink-0">{formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true, locale: tr })}</span>
+                                        </div>
+                                        <div className="bg-muted/30 border border-border/50 p-3 text-[12px] leading-relaxed tracking-tight text-foreground font-medium shadow-sm">
                                             {ticket.description}
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Thread */}
-                                {ticket.messages.map((msg: any) => (
-                                    <div key={msg.id} className={`flex gap-3 ${msg.senderId === user?.id ? 'flex-row-reverse' : ''}`}>
-                                        <div className={`h-8 w-8 flex items-center justify-center border text-[10px] font-bold uppercase ${msg.senderId === user?.id ? 'bg-primary border-primary text-primary-foreground' : 'bg-muted border-border'}`}>
-                                            {msg.sender?.fullName?.[0] || '??'}
-                                        </div>
-                                        <div className={`flex-1 space-y-1 ${msg.senderId === user?.id ? 'items-end flex flex-col' : ''}`}>
-                                            <div className="flex items-baseline gap-2">
-                                                <span className="text-[11px] font-mono font-bold uppercase tracking-tight">{msg.sender?.fullName || 'SİSTEM'}</span>
-                                                <span className="text-[9px] text-muted-foreground uppercase font-mono">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true, locale: tr })}</span>
-                                            </div>
-                                            <div className={`p-3 text-[12px] leading-relaxed tracking-tight font-medium ${msg.senderId === user?.id
-                                                ? 'bg-primary/90 text-primary-foreground border border-primary'
-                                                : 'bg-muted/30 border border-border/50'
-                                                }`}>
-                                                {msg.message}
+                                {ticket.messages.map((msg: any) => {
+                                    const isMe = msg.senderId === user?.id;
+                                    const isSystem = !msg.senderId;
 
-                                                {/* Attachments for this message */}
-                                                {msg.attachments?.length > 0 && (
-                                                    <div className="mt-3 pt-2 border-t border-border/20 space-y-1">
-                                                        {msg.attachments.map((file: any) => (
-                                                            <a
-                                                                key={file.id}
-                                                                href={`${api.getBaseUrl()}/attachments/${file.id}/download`}
-                                                                target="_blank"
-                                                                className="flex items-center gap-2 bg-black/20 p-1.5 hover:bg-black/40 transition-none text-[10px] font-mono border border-border/20"
-                                                            >
-                                                                <Paperclip className="h-3 w-3 opacity-60" />
-                                                                <span className="flex-1 truncate uppercase">{file.fileName}</span>
-                                                                <Download className="h-3 w-3 opacity-60" />
-                                                            </a>
-                                                        ))}
+                                    return (
+                                        <div key={msg.id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} ${isSystem ? 'justify-center' : ''}`}>
+                                            {!isSystem && (
+                                                <div className="relative shrink-0">
+                                                    <div className={`h-8 w-8 flex items-center justify-center border text-[10px] font-bold uppercase ${isMe ? 'bg-primary border-primary text-primary-foreground shadow-md shadow-primary/20' : 'bg-muted border-border'}`}>
+                                                        {msg.sender?.fullName?.[0] || '??'}
                                                     </div>
+                                                    {onlineUsers.includes(msg.senderId) && (
+                                                        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500 shadow-sm" />
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <div className={`flex flex-col space-y-1 ${isSystem ? 'max-w-full items-center' : isMe ? 'items-end max-w-[85%]' : 'items-start max-w-[85%]'}`}>
+                                                {!isSystem && (
+                                                    <div className="flex items-baseline gap-2">
+                                                        <span className="text-[11px] font-mono font-bold uppercase tracking-tight">{msg.sender?.fullName || 'İSİMSİZ'}</span>
+                                                        <span className="text-[9px] text-muted-foreground uppercase font-mono">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true, locale: tr })}</span>
+                                                    </div>
+                                                )}
+
+                                                <div className={`p-3 text-[13px] leading-relaxed tracking-tight font-medium ${isSystem
+                                                    ? 'bg-transparent text-muted-foreground italic text-center text-[11px]'
+                                                    : isMe
+                                                        ? 'bg-primary text-primary-foreground border border-primary rounded-tl-lg rounded-bl-lg rounded-br-none shadow-sm'
+                                                        : 'bg-card border border-border/60 rounded-tr-lg rounded-br-lg rounded-bl-none shadow-sm'
+                                                    } ${msg.isOptimistic ? 'opacity-70 italic' : ''}`}>
+                                                    {msg.message}
+
+                                                    {/* Attachments for this message */}
+                                                    {msg.attachments?.length > 0 && (
+                                                        <div className="mt-3 pt-2 border-t border-border/20 space-y-1">
+                                                            {msg.attachments.map((file: any) => (
+                                                                <a
+                                                                    key={file.id}
+                                                                    href={`${api.getBaseUrl()}/attachments/${file.id}/download`}
+                                                                    target="_blank"
+                                                                    className="flex items-center gap-2 bg-black/20 p-1.5 hover:bg-black/40 transition-none text-[10px] font-mono border border-border/20"
+                                                                >
+                                                                    <Paperclip className="h-3 w-3 opacity-60" />
+                                                                    <span className="flex-1 truncate uppercase">{file.fileName}</span>
+                                                                    <Download className="h-3 w-3 opacity-60" />
+                                                                </a>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {msg.isOptimistic && (
+                                                    <span className="text-[8px] font-bold uppercase tracking-widest text-primary animate-pulse">İLETİLİYOR...</span>
                                                 )}
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
 
                                 {/* Typing Indicator */}
                                 {someoneTyping && (
                                     <div className="flex gap-3">
-                                        <div className="h-8 w-8 bg-muted border border-border flex items-center justify-center text-[10px] animate-pulse">...</div>
+                                        <div className="h-8 w-8 bg-muted border border-border flex items-center justify-center text-[10px] animate-bounce shrink-0">AI</div>
                                         <div className="flex-1 space-y-1">
-                                            <div className="p-3 w-12 bg-muted/30 border border-border/50">
-                                                <span className="flex gap-1 justify-center">
-                                                    <span className="h-1 w-1 bg-muted-foreground animate-bounce" />
-                                                    <span className="h-1 w-1 bg-muted-foreground animate-bounce [animation-delay:0.2s]" />
-                                                    <span className="h-1 w-1 bg-muted-foreground animate-bounce [animation-delay:0.4s]" />
+                                            <div className="p-3 w-16 bg-card border border-border/60 rounded-tr-lg rounded-br-lg rounded-bl-none">
+                                                <span className="flex gap-1 justify-center items-center h-4">
+                                                    <span className="h-1.5 w-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:0s]" />
+                                                    <span className="h-1.5 w-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:0.2s]" />
+                                                    <span className="h-1.5 w-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:0.4s]" />
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
                                 )}
+
+                                <div ref={scrollRef} className="h-px" />
                             </div>
                         </ScrollArea>
                     </CardContent>
 
-                    <CardFooter className="p-3 border-t border-border/50 bg-muted/10 flex flex-col gap-3">
+                    <CardFooter className="p-3 border-t border-border/50 bg-background/50 backdrop-blur-sm flex flex-col gap-3 z-10">
                         {/* Selected Files Preview */}
                         {files.length > 0 && (
                             <div className="flex flex-wrap gap-2 w-full">
@@ -504,28 +644,36 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         )}
 
                         <div className="flex items-end gap-3 w-full">
-                            <label className="mb-1.5 cursor-pointer text-muted-foreground hover:text-primary transition-none">
-                                <Paperclip className="h-4 w-4" />
+                            <label className="mb-2 cursor-pointer text-muted-foreground hover:text-primary transition-all p-1.5 hover:bg-primary/10 rounded-full">
+                                <Paperclip className="h-5 w-5" />
                                 <input type="file" multiple className="hidden" onChange={handleFileChange} />
                             </label>
                             <div className="flex-1 space-y-2">
                                 <div className="flex justify-between items-center mr-1">
                                     <MacroPicker onSelect={(content: string) => setReply((prev) => prev ? `${prev}\n${content}` : content)} />
-                                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">İLETİŞİM_KANALI [ŞİFRELİ]</span>
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-1.5">
+                                        <Shield className="h-2.5 w-2.5" /> GÜVENLİ_CHAT
+                                    </span>
                                 </div>
                                 <Textarea
                                     placeholder="MESAJI_İLET..."
-                                    className="bg-black/30 border-border/50 focus-visible:ring-primary h-20 text-[12px] p-2 rounded-none resize-none uppercase tracking-tight font-medium"
+                                    className="bg-black/20 border-border/40 focus-visible:ring-primary h-20 text-[13px] p-3 rounded-md resize-none shadow-inner"
                                     value={reply}
                                     onChange={handleTypingChange}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleSendReply();
+                                        }
+                                    }}
                                 />
                             </div>
                             <Button
                                 onClick={handleSendReply}
                                 disabled={sending || (!reply.trim() && files.length === 0)}
-                                className="mb-0 bg-primary hover:bg-primary/90 rounded-none h-20 w-12 border-l border-primary/50"
+                                className="mb-0 bg-primary hover:bg-primary/90 rounded-md h-20 w-14 border-border transition-all hover:scale-[1.02] active:scale-[0.98]"
                             >
-                                {sending ? <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" /> : <Send className="h-5 w-5 text-primary-foreground" />}
+                                {sending ? <Loader2 className="h-5 w-5 animate-spin text-primary-foreground" /> : <Send className="h-6 w-6 text-primary-foreground" />}
                             </Button>
                         </div>
                     </CardFooter>
