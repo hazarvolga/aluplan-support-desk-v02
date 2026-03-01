@@ -142,11 +142,11 @@ export class AiQueryService {
             query: userQuery,
             answer,
             confidence,
-            sources: results.slice(0, 3).map((r) => ({
+            sources: isStaff ? results.slice(0, 3).map((r) => ({
                 articleId: r.articleId,
                 title: r.title,
                 similarity: r.similarity,
-            })),
+            })) : [],
             interactionId: interaction.id,
             suggestTicket,
         };

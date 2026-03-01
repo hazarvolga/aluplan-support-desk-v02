@@ -42,6 +42,8 @@ export class GmailProvider implements EmailProvider {
 
         const fromEmail = await this.settings.getValue('mail.gmail.email')
             || await this.settings.getValue('email.from_address')
+            || process.env.MAIL_FROM
+            || process.env.SMTP_USER
             || 'newsletters@aluplan.info';
 
         const transporter = nodemailer.createTransport({

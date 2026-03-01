@@ -14,8 +14,8 @@ export class RegisterCustomerDto {
   lastName: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Müşteri No zorunludur' })
-  customerNo: string;
+  @IsOptional()
+  customerNo?: string;
 
   @IsString()
   @IsNotEmpty({ message: 'Firma adı zorunludur' })

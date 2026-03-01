@@ -248,7 +248,7 @@ export class AuthService {
         if (role === 'TEAM_LEAD') return [...basePermissions, 'ticket:assign', 'reports:read'];
         if (role === 'SENIOR_AGENT') return [...basePermissions, 'ticket:escalate'];
         if (role === 'AGENT') return basePermissions;
-        if (role === 'VIEWER') return ['ticket:read', 'kb:read', 'faq:read'];
+        if (role === 'VIEWER') return ['ticket:create', 'ticket:update', 'ticket:read', 'kb:read', 'faq:read'];
 
         return basePermissions;
     }

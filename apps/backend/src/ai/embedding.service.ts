@@ -122,6 +122,7 @@ export class EmbeddingService {
           -- Allow pool access for everyone, or filter if specific tags exist later
           AND (${productId}::uuid IS NULL OR ks.product_id = ${productId}::uuid) 
           AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > 0.65
+          AND kpe.metadata->>'type' = 'parent'
       )
       SELECT * 
       FROM combined_search 

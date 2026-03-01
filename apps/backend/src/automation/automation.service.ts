@@ -46,10 +46,19 @@ export class AutomationService {
                 ticketUrl: `${process.env.FRONTEND_URL}/tickets/${ticket.id}`
             }).catch(err => this.logger.error(`Failed to send status change email: ${err.message}`));
 
-            // If RESOLVED, also send closed/survey email? 
-            // In Enterprise systems, RESOLVED -> CLOSED transition or direct closure triggers it.
-            if (payload.newStatus === TicketStatus.RESOLVED) {
-                this.emailService.sendTicketResolved({
+            // If RESOLVED or PENDING_CUSTOMER_REVIEW, send closed/survey email
+            if (payload.newStatus === TicketStatus.RESOLVED || payload.newStatus === TicketStatus.PENDING_CUSTOMER_REVIEW) {
+                if (payload.newStatus === TicketStatus.RESOLVED) {
+                    this.emailService.sendTicketResolved({
+                        customerEmail: ticket.creator.email,
+                        customerName: ticket.creator.fullName,
+                        ticketNumber: ticket.ticketNumber,
+                        ticketId: ticket.id,
+                        surveyUrl: `${process.env.FRONTEND_URL}/tickets/${ticket.id}/feedback`
+                    });
+                }
+
+                this.emailService.sendCsatSurvey({
                     customerEmail: ticket.creator.email,
                     customerName: ticket.creator.fullName,
                     ticketNumber: ticket.ticketNumber,
@@ -99,10 +108,71 @@ export class AutomationService {
                 ticketNumber: ticket.ticketNumber,
                 subject: ticket.subject,
                 priority: ticket.priority,
-            }).catch(err => this.logger.error(`Failed to send creation email for ${ticket.ticketNumber}: ${err.message}`));
+            }).catch(err => {
+                this.logger.error(`Failed to send creation email for ${ticket.ticketNumber}: ${err.message}`);
+                require('fs').writeFileSync('/tmp/mail_error.txt', err.stack || err.message);
+            });
         }
 
         this.evaluateRules(ticket.id, 'TICKET_CREATED', ticket);
+    }
+
+    @OnEvent('user.created')
+    async handleUserCreated(user: any) {
+        this.logger.log(`🤖 Automation: User onboarded ${user.email}`);
+
+        // Send confirmation email to customer
+        if (user?.email) {
+            this.emailService.sendWelcomeCustomer({
+                customerEmail: user.email,
+                fullName: user.fullName || 'Değerli Müşterimiz',
+                loginUrl: `${process.env.FRONTEND_URL}/login`
+            }).catch(err => {
+                this.logger.error(`Failed to send welcome email for ${user.email}: ${err.message}`);
+            });
+        }
+    }
+
+    @OnEvent('auth.security_alert')
+    async handleSecurityAlert(payload: { email: string; fullName?: string; location: string; ipValue: string }) {
+        this.logger.log(`🚨 Automation: Security alert triggered for ${payload.email} at IP ${payload.ipValue}`);
+
+        this.emailService.sendSecurityAlert({
+            recipientEmail: payload.email,
+            fullName: payload.fullName || 'Değerli Müşterimiz',
+            location: payload.location,
+            ipValue: payload.ipValue,
+            time: new Date().toLocaleString()
+        }).catch(err => {
+            this.logger.error(`Failed to send security alert email for ${payload.email}: ${err.message}`);
+        });
+    }
+
+    @OnEvent('auth.2fa_requested')
+    async handle2faRequested(payload: { email: string; fullName?: string; code: string }) {
+        this.emailService.sendTwoFactorAuth({
+            recipientEmail: payload.email,
+            fullName: payload.fullName || 'Kullanıcı',
+            code: payload.code
+        }).catch(err => {
+            this.logger.error(`Failed to send 2FA email for ${payload.email}: ${err.message}`);
+        });
+    }
+
+    @OnEvent('sla.warning')
+    async handleSlaWarning(payload: { agentEmail: string; ticketNumber: string; subject: string; timeLeft: string; breachType: 'response' | 'resolution' }) {
+        this.logger.warn(`🚨 Automation: Sending SLA Warning to ${payload.agentEmail} for ticket ${payload.ticketNumber}`);
+
+        this.emailService.sendSlaBreachWarning({
+            recipientEmail: payload.agentEmail,
+            ticketNumber: payload.ticketNumber,
+            subject: payload.subject,
+            breachType: payload.breachType,
+            // Actually reusing `sendSlaBreachWarning` but we'll override the HTML payload subject dynamically inside email.service if needed.
+            // The template sla-breached vs sla-warning uses the same metadata. 
+        }).catch(err => {
+            this.logger.error(`Failed to send SLA warning email for ${payload.ticketNumber}: ${err.message}`);
+        });
     }
 
     private async evaluateRules(ticketId: string, trigger: string, context: any) {

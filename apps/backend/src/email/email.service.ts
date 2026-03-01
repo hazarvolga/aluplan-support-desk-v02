@@ -77,7 +77,7 @@ export class EmailService implements OnModuleInit {
         });
 
         // Delegate to BullMQ for processing logic.
-        const jobId = `${payload.template}:${payload.to}:${payload.data?.ticket?.id ?? 'sys'}`;
+        const jobId = `${payload.template}:${payload.to}:${payload.data?.ticket?.id ?? 'sys'}-${Date.now()}`;
         await this.emailQueue.add('send-email', { ...payload, logRef: draftLog.id }, {
             jobId: jobId,
             delay: payload.delay ?? 0,
@@ -202,6 +202,46 @@ export class EmailService implements OnModuleInit {
             to: data.recipientEmail,
             subject: `E-posta Adresinizi Doğrulayın`,
             priority: 1,
+            data: data
+        });
+    }
+
+    async sendWelcomeCustomer(data: any) {
+        await this.enqueueEmail({
+            template: 'welcome-customer',
+            to: data.customerEmail,
+            subject: `Aluplan Destek Merkezine Hoş Geldiniz`,
+            priority: 2,
+            data: data
+        });
+    }
+
+    async sendCsatSurvey(data: any) {
+        await this.enqueueEmail({
+            template: 'csat-survey',
+            to: data.customerEmail,
+            subject: `[${data.ticketNumber}] Biletiniz için Geri Bildirim Bekliyoruz`,
+            priority: 3,
+            data: data
+        });
+    }
+
+    async sendSecurityAlert(data: any) {
+        await this.enqueueEmail({
+            template: 'security-alert',
+            to: data.recipientEmail,
+            subject: `🚨 [GÜVENLİK UYARISI] Yeni Bir Cihazdan Giriş Yapıldı`,
+            priority: 0, // CRITICAL PRIORITY
+            data: data
+        });
+    }
+
+    async sendTwoFactorAuth(data: any) {
+        await this.enqueueEmail({
+            template: 'two-factor-auth',
+            to: data.recipientEmail,
+            subject: `Aluplan Doğrulama Kodunuz`,
+            priority: 0, // CRITICAL PRIORITY
             data: data
         });
     }

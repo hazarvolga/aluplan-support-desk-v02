@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Request } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -59,5 +59,19 @@ export class AuthController {
     @ApiOperation({ summary: 'Get current user' })
     me(@Request() req: any) {
         return this.authService.getProfile(req.user.id);
+    }
+
+    @Public()
+    @Get('verify-email')
+    @ApiOperation({ summary: 'Verify email registration' })
+    verifyEmail(@Query('token') token: string) {
+        return this.authService.verifyEmail(token);
+    }
+
+    @Public()
+    @Get('test-email-config')
+    @ApiOperation({ summary: 'Test current email configuration state' })
+    async testEmailConfig() {
+        return this.authService.testEmailConfig();
     }
 }
