@@ -54,10 +54,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const logout = () => {
-        localStorage.removeItem('access_token');
-        setUser(null);
-        router.push('/login');
+    const logout = async () => {
+        try {
+            await api.auth.logout();
+        } catch (e) {
+            console.error('Logout API call failed', e);
+        } finally {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            setUser(null);
+            router.push('/login');
+        }
     };
 
     useEffect(() => {

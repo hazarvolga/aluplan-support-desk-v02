@@ -12,6 +12,7 @@ import {
 
 import { api } from '@/lib/api';
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/components/auth/role-guard';
 
 const ADMIN_NAV = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Kontrol Paneli' },
@@ -63,6 +64,7 @@ interface SidebarProps {
 
 export function Sidebar({ onNavClick }: SidebarProps) {
     const pathname = usePathname();
+    const { logout } = useAuth();
     const [user, setUser] = useState<any>(null);
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -91,8 +93,7 @@ export function Sidebar({ onNavClick }: SidebarProps) {
     const navItems = user?.role === 'ADMIN' ? ADMIN_NAV : CUSTOMER_NAV;
 
     const handleLogout = async () => {
-        await api.auth.logout();
-        window.location.href = '/login';
+        await logout();
     };
 
     return (
