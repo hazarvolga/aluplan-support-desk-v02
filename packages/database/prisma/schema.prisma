@@ -649,6 +649,7 @@ model Ticket {
   hotinfoSnapshot     Json?                @map("hotinfo_snapshot")
   channel             CommunicationChannel @default(WEB)
   departmentId        String?              @map("department_id") @db.Uuid
+  slaWarningSentAt    DateTime?            @map("sla_warning_sent_at")
 
   // SLA Fields
   slaResponseDue DateTime? @map("sla_response_due")
