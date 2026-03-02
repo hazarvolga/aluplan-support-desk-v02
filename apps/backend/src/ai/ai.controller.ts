@@ -18,9 +18,9 @@ import { IsBoolean } from 'class-validator';
 
 export class AiQueryDto {
     @ApiProperty({ example: 'Şifremi nasıl sıfırlarım?' })
-    @IsString()
-    @MinLength(3)
-    query: string;
+@IsString()
+@MinLength(3)
+query: string;
 }
 
 export class FeedbackDto {

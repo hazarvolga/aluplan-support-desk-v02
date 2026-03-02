@@ -12,6 +12,8 @@
         "strictNullChecks": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,
         "outDir": "./dist",

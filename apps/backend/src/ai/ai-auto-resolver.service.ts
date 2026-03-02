@@ -16,7 +16,6 @@ export class AiAutoResolverService {
         private readonly prisma: PrismaService,
         private readonly embeddingService: EmbeddingService,
     ) { }
-
     @OnEvent('ticket.created', { async: true })
     async handleTicketCreated(ticket: Ticket) {
         // Skip if already has interaction or if it's not a NEW ticket
@@ -62,13 +61,12 @@ export class AiAutoResolverService {
                     }
                 });
             }
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`❌ Failed to auto-resolve ticket ${ticket.ticketNumber}`, error.stack);
         }
     }
-
     @OnEvent('ticket.message_added', { async: true })
-    async handleMessageAdded(event: { ticket: Ticket, message: TicketMessage }) {
+    async handleMessageAdded(event: { ticket: Ticket; message: TicketMessage }) {
         const { ticket, message } = event;
         // Ignore internal messages and messages from someone who isn't the ticket creator (agents)
         if (message.isInternal || message.senderId !== ticket.userId) return;
@@ -91,7 +89,7 @@ export class AiAutoResolverService {
                     });
                 }
             }
-        } catch (e) {
+        } catch (e: any) {
             this.logger.error(`❌ Failed to analyze sentiment for message ${message.id}`, e.stack);
         }
     }
@@ -130,7 +128,7 @@ export class AiAutoResolverService {
 
             this.logger.log(`✅ Ticket ${ticket.ticketNumber} context saved to Vector DB.`);
 
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`❌ Failed to extract context for ticket ${ticket.ticketNumber}`, error.stack);
         }
     }

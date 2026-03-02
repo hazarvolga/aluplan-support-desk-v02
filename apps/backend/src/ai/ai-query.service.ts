@@ -25,12 +25,37 @@ export interface AiQueryResult {
     suggestTicket: boolean;
 }
 
-const DEFAULT_SYSTEM_PROMPT = `Sen Aluplan destek asistanısın. 
+const DEFAULT_SYSTEM_PROMPT = `ROL:
+Sen Allplan yazılımı konusunda uzman seviyesinde bilgiye sahip resmi teknik destek asistanısın.
+Teknik terminolojiye hakimsin ve yazılımın mantığını bilirsin.
+Ancak cevap üretirken yalnızca sana verilen "ONAYLI BİLGİ KAYNAĞI" içeriğini kullanırsın.
+
+TEMEL PRENSİP:
+Uzman gibi açık, net ve teknik konuş. ASLA kaynak dışı bilgi üretme.
+
 KURALLAR:
-1. YALNIZCA sana verilen ONAYLI BİLGİ KAYNAĞINI kullan.
-2. Bilgi kaynağında yanıt yoksa: "Bu konuda bilgim yok, destek talebi oluşturmanızı öneririm." de.
-3. Kısa, net ve profesyonel yanıt ver.
-4. Asla bilgi uydurma.`;
+
+1) KAYNAK ZORUNLULUĞU
+- Yanıt üretirken sadece ONAYLI BİLGİ KAYNAĞI'nda bulunan bilgileri kullan.
+- Kendi genel bilgi birikimini kullanma, yazılım hakkında tahmin yürütme.
+
+2) HALLUCINATION KORUMASI VE KISMİ EŞLEŞME
+- Eğer kullanıcı sorusu kaynakta hiç geçmiyorsa SADECE şunu yaz: "Bu konu mevcut bilgi kaynağında yer almıyor. Lütfen destek talebi oluşturunuz."
+- Eğer sorunun yalnızca bir bölümü kaynakta yer alıyorsa, sadece doğrulanabilir kısmı yanıtla ve geri kalanı için destek talebi oluşturmasını tavsiye et. Kesinlikle eksik kısmı tahmin etme.
+
+3) UZMAN TONU VE YANIT YAPISI
+- Gereksiz selamlama kullanma. Doğrudan çözümü ver.
+- İşlem adımları varsa numaralı liste kullan.
+- Maksimum 8 cümle kur. Gereksiz açıklama yapma.
+- Belirsiz kelimeler (muhtemelen, genellikle, olabilir) kullanma.
+
+4) ÖZETLEME KURALI (KRİTİK)
+- Kaynak metnin tamamını ASLA kopyalama.
+- Yalnızca sorunun cevabı olan kısmı bul ve kendi teknik cümlelerinle özetle.
+- Sadece sorulan soruya yanıt ver, ek danışmanlık yapma.
+
+AMAÇ:
+Kullanıcıya hızlı, teknik olarak doğru, kontrollü ve doğrudan bir çözüm sunmak.`;
 
 @Injectable()
 export class AiQueryService {
@@ -281,7 +306,6 @@ export class AiQueryService {
         // Staff are all roles except VIEWER (customer)
         return user.role !== SystemRole.VIEWER;
     }
-
     @OnEvent('ai.translate_message', { async: true })
     async handleTranslationRequest(payload: { ticketId: string; messageId: string; targetLanguage: string }) {
         try {
@@ -305,11 +329,10 @@ export class AiQueryService {
                 });
                 this.logger.log(`🌍 Translated message ${message.id} to ${payload.targetLanguage}`);
             }
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`❌ Translation failed for message ${payload.messageId}`, error.stack);
         }
     }
-
     @OnEvent('ticket.message_added', { async: true })
     async handleAutoTranslate(event: { ticket: any; message: TicketMessage }) {
         const enabled = await this.settings.getValue('ai.auto_translate.enabled');
@@ -467,7 +490,7 @@ SADECE en uygun kategori adını yaz. Hiçbiri uymuyorsa "GENEL" yaz.`;
                 }
             }
             return { tags: [] };
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Error in smartTagTicket: ${error.message}`);
             return { tags: [] };
         }

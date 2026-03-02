@@ -396,11 +396,30 @@ export class TicketsService {
             });
         }
 
+        let recipientEmail = ticket.userId === senderId ? ticket.assignee?.email : (ticket.creator?.email || undefined);
+        let userName = ticket.userId === senderId ? (ticket.assignee?.fullName || 'Temsilci') : (ticket.creator?.fullName || 'Müşteri');
+
+        // Unassigned fallback: If customer replied and no agent is assigned, notify department agents
+        if (ticket.userId === senderId && !recipientEmail && ticket.departmentId) {
+            const deptAgents = await this.prisma.user.findMany({
+                where: {
+                    teamMembers: { some: { team: { departmentId: ticket.departmentId } } },
+                    role: { not: 'customer' as any } // Cast to any to avoid potential enum type mismatch in query
+                },
+                select: { email: true }
+            });
+
+            if (deptAgents.length > 0) {
+                recipientEmail = deptAgents.map(a => a.email).join(',');
+                userName = 'Destek Ekibi';
+            }
+        }
+
         this.eventEmitter.emit('ticket.message_added', {
             ticket,
             message,
-            recipientEmail: ticket.userId === senderId ? ticket.assignee?.email : (ticket.creator?.email || undefined),
-            userName: ticket.userId === senderId ? (ticket.assignee?.fullName || 'Temsilci') : (ticket.creator?.fullName || 'Müşteri')
+            recipientEmail,
+            userName
         });
 
         return message;

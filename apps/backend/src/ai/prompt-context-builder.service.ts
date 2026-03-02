@@ -44,9 +44,7 @@ export class PromptContextBuilderService {
             }
         }
 
-        // 3. Knowledge Base
-        // System prompt handles Knowledge Base injection for OLLAMA/OpenAI via AiProvider interfaces
-        context += `[3. Bilgi Bankası (Knowledge Base)]\nAşağıda sağlanan "ONAYLI BİLGİ KAYNAGI" referansını okuyun.\n\n`;
+        
 
         // 4. System Rules
         context += `[4. Sistem Kuralları]\n`;

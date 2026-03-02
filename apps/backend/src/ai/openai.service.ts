@@ -93,8 +93,6 @@ export class OpenAiService implements AiProvider {
 
         try {
             const model = await this.getModel();
-            const prompt = `${systemPrompt}\n\n---\nONAYLI BİLGİ KAYNAGI:\n${kbContent}\n\n---\nKULLANICI SORUSU:\n${userQuery}`;
-
             const response = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -104,8 +102,16 @@ export class OpenAiService implements AiProvider {
                 body: JSON.stringify({
                     model,
                     messages: [
-                        { role: 'system', content: 'Sen bir destek asistanısın. Yalnızca sağlanan bilgiye dayanarak yanıt ver.' },
-                        { role: 'user', content: prompt }
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: `KULLANICI SORUSU:
+${userQuery}
+
+---
+
+ONAYLI BİLGİ KAYNAĞI:
+${kbContent}
+
+Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan soruyu yanıtla. Metni birebir kopyalama.` }
                     ],
                     temperature: 0.1,
                 }),

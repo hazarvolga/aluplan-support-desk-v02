@@ -193,6 +193,96 @@
             "category": "TBDY 2018 / Kanca",
             "short_answer": "Yönetmelik gereği donatı kancaları 135 derece olmalıdır. Allplan Bending Shape kütüphanesinde kanca açısını 135 dereceye sabitleyerek yasal uyum sağlayın.",
             "long_answer_markdown_ref": "support_articles/turkey_seismic_code_tbdy2018.md"
+        },
+        {
+            "id": "QA_033",
+            "category": "Yeni Veri / Donatı",
+            "short_answer": "Karmaşık betonarme düğüm noktalarında veya farklı disiplinlerin (örn. MEP ve Statik) kesişimlerinde donatıların veya taşıyıcı elemanların fiziksel olarak çakışması.",
+            "long_answer_markdown_ref": "support_articles/donati_cakismasi_yonetimi.md"
+        },
+        {
+            "id": "QA_034",
+            "category": "Yeni Veri / Lisans",
+            "short_answer": "Allplan kurulumu sırasında veya sonrasında öğrenci, deneme veya ticari lisans aktivasyonunun başarısız olması.",
+            "long_answer_markdown_ref": "support_articles/lisans_aktivasyon_sorunlari.md"
+        },
+        {
+            "id": "QA_035",
+            "category": "Yeni Veri / Çelik",
+            "short_answer": "Allplan ve SDS2 entegrasyonu ile oluşturulan çelik yapı modellerinde, bağlantı noktalarında (örneğin kolon-kiriş birleşimleri) çarpışma (clash), geometrik uyumsuzluk veya tasarım hesaplama hatalarının ortaya çıkması.",
+            "long_answer_markdown_ref": "support_articles/celik_yapi_sds2_baglanti_hatalari_yonetimi.md"
+        },
+        {
+            "id": "QA_036",
+            "category": "Yeni Veri / Allplan",
+            "short_answer": "Allplan lisanslama altyapısının abonelik ve bulut tabanlı modele geçmesi sonrası, kullanıcı lisanslarının Allplan Connect üzerinden yönetilmesi ve kullanıcılara atanması ihtiyacı.",
+            "long_answer_markdown_ref": "support_articles/allplan_connect_uzerinden_bulut_tabanli_lisans_yonetimi.md"
+        },
+        {
+            "id": "QA_037",
+            "category": "Yeni Veri / Allplan",
+            "short_answer": "Allplan Share ile bulut üzerinden ortak çalışırken çizim dosyalarının (drawing files) diğer kullanıcılara kilitli kalması, değişikliklerin buluta senkronize olmaması veya erişim yavaşlıkları yaşanması.",
+            "long_answer_markdown_ref": "support_articles/allplan_share_senkronizasyon_ve_dosya_kilidi_yonetimi.md"
+        },
+        {
+            "id": "QA_038",
+            "category": "Yeni Veri / Visual",
+            "short_answer": "Visual Scripting arayüzünün donması, pencere düzenlerinin bozulması veya ekranın yanıt vermemesi.",
+            "long_answer_markdown_ref": "support_articles/visual_scripting_arayuz_hatalari_ve_sifirlama.md"
+        },
+        {
+            "id": "QA_039",
+            "category": "Yeni Veri / Allplan",
+            "short_answer": "Allplan'da yapılan model değişikliklerinin Bimplus bulut platformuna yansımaması veya diğer ekip üyeleri tarafından görüntülenememesi.",
+            "long_answer_markdown_ref": "support_articles/allplan_ve_bimplus_senkronizasyon_hatalari.md"
+        },
+        {
+            "id": "QA_040",
+            "category": "Yeni Veri / BCF",
+            "short_answer": "Farklı disiplinlere ait (Mimari, Statik, MEP vb.) uzmanlık modellerinin birleştirilmesi sırasında ortaya çıkan kritik fiziksel kesişimlerin ve hataların (clash), proje ekipleri arasında etkin bir şekilde iletilememesi ve çözüm sürecinin takip edilememesi.",
+            "long_answer_markdown_ref": "support_articles/bcf_ve_bimplus_ile_gelismis_cakisma_yonetimi.md"
+        },
+        {
+            "id": "QA_041",
+            "category": "Yeni Veri / Gelişmiş",
+            "short_answer": "Donatı metraj raporlarında (Bending Schedule) veya pafta lejantlarında büküm şekillerinin (shape codes) eksik/tanımsız çıkması veya modeldeki değişikliklerin listelere otomatik yansımaması.",
+            "long_answer_markdown_ref": "support_articles/gelismis_donati_raporlari_ve_sekil_kodu_shape_code_yonetimi.md"
+        },
+        {
+            "id": "QA_042",
+            "category": "Yeni Veri / Çelik",
+            "short_answer": "Standart çelik bağlantı araçlarının yetersiz kaldığı karmaşık projelerde, tekrarlayan özel çelik birleşim detaylarının manuel olarak modellenmesinin ciddi zaman kaybına ve revizyon hatalarına yol açması.",
+            "long_answer_markdown_ref": "support_articles/celik_yapi_otomasyonunda_pythonpart_kullanimi.md"
+        },
+        {
+            "id": "QA_043",
+            "category": "Yeni Veri / Allplan",
+            "short_answer": "Allplan Share ile çoklu kullanıcı ortamında çalışırken performans kayıpları, yavaşlık ve senkronizasyon sorunları yaşanması.",
+            "long_answer_markdown_ref": "support_articles/allplan_share_ile_bulut_uzerinden_ekip_calismasini_optimize_etme.md"
+        },
+        {
+            "id": "QA_044",
+            "category": "Yeni Veri / Prekast",
+            "short_answer": "Prekast elemanların 3B modelinden fabrikadaki CNC makinelerine (kaynak, kesim, büküm) ve ERP sistemlerine veri aktarımının manuel yapılması, hatalı veya eksik dosya çıktısı alınması.",
+            "long_answer_markdown_ref": "support_articles/prekast_uretim_verileri_ve_makine_entegrasyonu_optimizasyonu.md"
+        },
+        {
+            "id": "QA_045",
+            "category": "Yeni Veri / Allplan",
+            "short_answer": "Altyapı projelerinde (yol, köprü, tünel) güzergah veya kot değişikliklerinin tüm modele manuel olarak işlenmesinin yarattığı zaman kaybı ve disiplinler arası veri uyumsuzlukları.",
+            "long_answer_markdown_ref": "support_articles/allplan_bridge_ve_yol_projelerinin_koordinasyonu.md"
+        },
+        {
+            "id": "QA_046",
+            "category": "Yeni Veri / Allplan",
+            "short_answer": "Allplan Bridge'de LandXML Verilerinin Optimizasyonu",
+            "long_answer_markdown_ref": "support_articles/allplan_bridgede_landxml_verilerinin_optimizasyonu.md"
+        },
+        {
+            "id": "QA_047",
+            "category": "Yeni Veri / Allplan",
+            "short_answer": "Allplan Share Proje Yedekleme (Backup) ve Geri Yükleme (Restore)",
+            "long_answer_markdown_ref": "support_articles/allplan_share_proje_yedekleme_backup_ve_geri_yukleme_restore.md"
         }
     ]
 }

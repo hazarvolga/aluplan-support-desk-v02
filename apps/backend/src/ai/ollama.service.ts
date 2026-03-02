@@ -88,14 +88,24 @@ export class OllamaService implements AiProvider {
         try {
             const baseUrl = await this.getBaseUrl();
             const chatModel = await this.getChatModel();
-            const prompt = `${systemPrompt}\n\n---\nONAYLI BİLGİ KAYNAGI:\n${kbContent}\n\n---\nKULLANICI SORUSU:\n${userQuery}\n\nYUKARIDAKİ ONAYLI BİLGİYE DAYANARAK YANIT VER. Bilgi dışına çıkma.`;
 
-            const response = await fetch(`${baseUrl}/api/generate`, {
+            const response = await fetch(`${baseUrl}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: chatModel,
-                    prompt,
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: `KULLANICI SORUSU:
+${userQuery}
+
+---
+
+ONAYLI BİLGİ KAYNAĞI:
+${kbContent}
+
+Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan soruyu yanıtla. Metni birebir kopyalama.` }
+                    ],
                     stream: false,
                     options: { temperature: 0.1, top_p: 0.9 },
                 }),
@@ -103,8 +113,8 @@ export class OllamaService implements AiProvider {
             });
 
             if (!response.ok) throw new Error(`Ollama chat HTTP ${response.status}`);
-            const data = await response.json() as { response: string };
-            return { response: data.response.trim(), model: chatModel };
+            const data = await response.json() as { message: { content: string } };
+            return { response: data.message.content.trim(), model: chatModel };
         } catch (err: any) {
             this.logger.warn(`⚠️ Ollama reformat failed: ${err.message}`);
             return null;
@@ -115,14 +125,24 @@ export class OllamaService implements AiProvider {
         try {
             const baseUrl = await this.getBaseUrl();
             const chatModel = await this.getChatModel();
-            const prompt = `${systemPrompt}\n\n---\nONAYLI BİLGİ KAYNAGI:\n${kbContent}\n\n---\nKULLANICI SORUSU:\n${userQuery}\n\nYUKARIDAKİ ONAYLI BİLGİYE DAYANARAK YANIT VER. Bilgi dışına çıkma.`;
 
-            const response = await fetch(`${baseUrl}/api/generate`, {
+            const response = await fetch(`${baseUrl}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: chatModel,
-                    prompt,
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: `KULLANICI SORUSU:
+${userQuery}
+
+---
+
+ONAYLI BİLGİ KAYNAĞI:
+${kbContent}
+
+Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan soruyu yanıtla. Metni birebir kopyalama.` }
+                    ],
                     stream: true,
                     options: { temperature: 0.1, top_p: 0.9 },
                 }),
@@ -142,8 +162,8 @@ export class OllamaService implements AiProvider {
                 for (const line of lines) {
                     try {
                         const parsed = JSON.parse(line);
-                        if (parsed.response) {
-                            yield parsed.response;
+                        if (parsed.message?.content) {
+                            yield parsed.message.content;
                         }
                     } catch (e) {
                         // ignore JSON parse error on chunk

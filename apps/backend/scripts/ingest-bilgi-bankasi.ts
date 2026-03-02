@@ -52,7 +52,7 @@ async function main() {
                     if (['.md', '.txt', '.csv'].includes(ext)) {
                         content = fs.readFileSync(fullPath, { encoding: 'utf-8' }).slice(0, 10000);
                     }
-                } catch (e) {
+                } catch (e: any) {
                     console.error(`❌ Error reading ${fullPath}:`, e.message);
                 }
 
@@ -89,7 +89,7 @@ async function main() {
                     if (processedCount % 50 === 0) {
                         console.log(`✅ Processed ${processedCount} files...`);
                     }
-                } catch (e) {
+                } catch (e: any) {
                     console.error(`❌ Failed to ingest ${file}:`, e.message);
                 }
             }
@@ -151,7 +151,7 @@ function determineTypeFromExt(ext: string): string {
     }
 }
 
-main().catch(e => {
+main().catch((e: any) => {
     console.error('💥 Fatal error during ingestion:', e);
     process.exit(1);
 });

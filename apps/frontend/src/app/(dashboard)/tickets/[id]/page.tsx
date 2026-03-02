@@ -112,6 +112,12 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
         const handleNewMessage = (data: any) => {
             if (data.ticketId === id && data.message.senderId !== user.id) {
+                // Smart Buffer: Emit read event immediately if user is viewing the bilet
+                getSocket().emit('ticket:message_read', {
+                    ticketId: id,
+                    messageId: data.message.id
+                });
+
                 setTicket((prev: any) => {
                     if (!prev) return prev;
                     // Prevent duplicate if optimistic message already exists with same content (unlikely but safe)

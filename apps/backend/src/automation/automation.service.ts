@@ -81,7 +81,7 @@ export class AutomationService {
             const isWeb = payload.message.channel === 'WEB';
             const options = isWeb ? {
                 delay: 60000, // 1 minute buffer for real-time read
-                jobId: `msg-ntf:${payload.message.id}`
+                jobId: `msg-ntf-${payload.message.id}`
             } : undefined;
 
             if (isWeb) {
