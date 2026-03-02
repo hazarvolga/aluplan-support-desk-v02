@@ -1,3 +1,89 @@
+# hemen şunu sormak istiyorum ben maliyetlerden biraz kaçınmak ve birazda dışa bağlımlı olmamak adına ollamayı defalut olarak kullandım ama ;rojedi admin istersen diğer aı providerları da kullanıbilir bu projede sence hangigi aı provider en iyi sonuçu verir senin biraz önce veriğin düzeltmeleri yaptıktan sonra önerin nedir
+
+21:01
+
+Değerlendirdi maliyet, bağımsızlık ve kalite dengesini
+Değerlendirdi maliyet, bağımsızlık ve kalite dengesini
+
+
+Çok yerinde bir soru. Önce durumu net koymak lazım, sonra öneri:
+
+Mevcut Durumun Gerçeği
+Projende iki ayrı AI görevi var ve bunlar farklı şeyler:
+
+Görev	Mevcut	Sorun
+Embedding (vektörleştirme)	nomic-embed-text (Ollama)	Türkçe zayıf → asıl sorun buradan
+LLM (yanıt üretimi)	Llama 3.2 3B (Ollama)	Küçük model + büyük context → timeout
+Bunları birbirinden bağımsız değiştirebilirsin. Ollama'da kalmak için bir neden varsa LLM tarafında kalabilirsin, ama embedding tarafında Ollama'da kalmak artık savunulamaz — Türkçe kalitesi için mutlaka değişmeli.
+
+Embedding Tarafı — Net Öneri
+multilingual-e5-large modelini Ollama'ya yükle.
+
+bash
+ollama pull jeffh/intfloat-multilingual-e5-large-instruct
+Neden bu:
+
+Ollama'da çalışır, dışa bağımlılık yok
+100+ dil, Türkçe performansı nomic-embed-text'ten çok daha iyi
+Ücretsiz, self-hosted
+1024 boyutlu vektör — pgvector için ideal
+Eğer bir gün bütçe açılırsa text-embedding-3-large (OpenAI) ile kıyasla — fark göreceksin ama şimdilik bu yeterli.
+
+LLM Tarafı — Seçenekler
+Burada dürüst olmak gerekiyor. Proje yapısın admin'in provider seçebildiğini söylüyor, bu iyi. Şu anki gerçeklik şu:
+
+Seçenek 1: Ollama'da Kal ama Modeli Değiştir
+Llama 3.2 3B çok küçük. En az 8B gerekiyor, tercihen Mistral 7B veya Llama 3.1 8B.
+
+bash
+ollama pull mistral        # 7B — Türkçe makul, hızlı
+ollama pull llama3.1:8b    # 8B — daha iyi reasoning
+Avantaj: Sıfır maliyet, tam kontrol
+Dezavantaj: Hâlâ timeout riski var, donanıma bağlı. Ve 8B model bile karmaşık teknik sorularda yetersiz kalabilir.
+
+Seçenek 2: Groq (Önerim)
+Groq, açık kaynak modelleri (Llama, Mistral) bulutta inanılmaz hızlı çalıştırıyor. Ollama API'sine çok benzer interface — kod değişikliği minimal.
+
+typescript
+// Neredeyse aynı kod
+baseURL: "https://api.groq.com/openai/v1"
+model: "llama-3.3-70b-versatile"  // 70B ama Ollama hızında
+Avantaj: Ücretsiz tier oldukça cömert (günde 14.400 istek), Llama 3.3 70B kalitesi, sıfır timeout
+Dezavantaj: Yine de dışa bağımlı, ücretsiz tier rate-limit var
+
+Seçenek 3: Claude API (Anthropic)
+Support desk için en iyi LLM kalitesi. Uzun teknik context'leri en iyi o anlıyor, Türkçe output kalitesi en yüksek.
+
+typescript
+model: "claude-haiku-4-5"  // Hız + maliyet dengesi için
+// veya
+model: "claude-sonnet-4-6" // Kalite öncelikli için
+```
+
+Avantaj: Timeout yok, kalite fark edilir biçimde yüksek, Türkçe mükemmel  
+Dezavantaj: Ücretli — ama Haiku çok ucuz (1M token ~$0.80)
+
+---
+
+### Seçenek 4: OpenAI
+Güçlü ama en pahalı seçenek. Support desk için Claude veya Groq'tan belirgin üstünlüğü yok.
+
+---
+
+## Net Öneri
+
+Bütçe kısıtın ve "dışa bağımlı olmama" önceliğin göz önünde alınınca şu stratejiyi öneririm:
+```
+Embedding  →  multilingual-e5-large (Ollama, ücretsiz, yerel)
+LLM        →  Groq / Llama 3.3 70B (ücretsiz tier ile başla)
+             + Admin panelinde Claude Haiku'yu opsiyonel tut
+               (sadece VIP müşteriler veya kompleks ticketlar için)
+Yani hybrid: rutin sorular Groq'ta ücretsiz çözülür, sistem "LOW confidence" döndürdüğünde veya premium müşteri varsa Claude'a eskalasyon. Bu hem maliyet hem kalite dengesini optimize eder.
+
+
+
+
+
 # şimdi RAG ve AI yanıt yapımızı geliştirmeni istiyorum biradan vereceğim komutları şuna dikkat ederek ele almalısın: Yapısını kısaca özetleyeyim:# 
 7 ayrı değişiklik bloğu var, her biri // BEFORE → // AFTER kod örnekleriyle net şekilde anlatılmış. Cursor veya Claude Code'a ilgili kaynak dosyalarıyla birlikte verdiğinde hangi satırı nasıl değiştireceğini tam olarak anlayacak.
 # Kritik noktalar şunlar:
