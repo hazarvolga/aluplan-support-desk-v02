@@ -57,7 +57,7 @@ export default () => {
             url: process.env.DATABASE_URL,
         },
         redis: {
-            url: process.env.REDIS_URL || defaultRedisUrl,
+            url: (process.env.REDIS_URL || defaultRedisUrl).replace('redis://default:', 'redis://:'),
             // Keep host/port for backward compatibility if needed, but url is preferred
             host: process.env.REDIS_HOST || defaultRedisHost,
             port: parseInt(defaultRedisPort, 10),
