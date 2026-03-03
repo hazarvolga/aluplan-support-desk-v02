@@ -4,6 +4,11 @@
     "private": true,
     "main": "./index.js",
     "types": "./index.d.ts",
+    "files": [
+        "index.js",
+        "index.d.ts",
+        "prisma"
+    ],
     "scripts": {
         "db:generate": "prisma generate",
         "db:migrate": "prisma migrate dev",
