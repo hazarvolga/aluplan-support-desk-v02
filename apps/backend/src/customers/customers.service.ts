@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { SystemRole } from '@aluplan/database';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 import { ImportCustomerRecordDto } from './dto/import-customers.dto';
 import { HotinfoParserService } from './hotinfo-parser.service';
