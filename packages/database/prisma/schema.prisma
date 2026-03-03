@@ -537,7 +537,7 @@ model KnowledgeEmbedding {
   articleId            String                     @map("article_id") @db.Uuid
   articleVersionId     String                     @map("article_version_id") @db.Uuid
   parentId             String?                    @map("parent_id") @db.Uuid
-  embedding            Unsupported("vector(768)")
+  embedding            Unsupported("vector(1024)")
   content              String                     @db.Text
   sequence             Int                        @default(0)
   modelName            String                     @map("model_name") @db.VarChar(100)
@@ -935,7 +935,7 @@ model KnowledgeSourceSyncLog {
 model KnowledgePoolEmbedding {
   id        String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sourceId  String                     @map("source_id") @db.Uuid
-  embedding Unsupported("vector(768)")
+  embedding Unsupported("vector(1024)")
   content   String                     @db.Text // The raw chunk text
   metadata  Json?                      @db.JsonB
   modelName String                     @map("model_name") @db.VarChar(100)
@@ -983,7 +983,7 @@ model ProductCategory {
 model TicketEmbedding {
   id        String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ticketId  String                     @map("ticket_id") @db.Uuid
-  embedding Unsupported("vector(768)")
+  embedding Unsupported("vector(1024)")
   modelName String                     @map("model_name") @db.VarChar(100)
   createdAt DateTime                   @default(now()) @map("created_at")
 

@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
 async function main() {
-    const KNOWLEDGE_PATH = process.env.KNOWLEDGE_BASE_PATH || path.join(__dirname, '../../../../Bilgi Bankası');
+    const KNOWLEDGE_PATH = process.env.KNOWLEDGE_BASE_PATH || path.join(__dirname, '../../../dataset');
 
     console.log('🚀 Starting Intelligent Knowledge Ingestion...');
 
@@ -19,6 +19,9 @@ async function main() {
     });
 
     console.log(`📦 Loaded ${products.length} products with their categories.`);
+    if (products.length === 0) {
+        console.warn('⚠️ No active products found in DB. Ingestion might misclassify files.');
+    }
 
     // 2. Setup Redis Queue
     const redis = new Redis(REDIS_URL, { maxRetriesPerRequest: null });

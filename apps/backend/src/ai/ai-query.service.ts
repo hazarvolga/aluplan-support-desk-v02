@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
-import { EmbeddingService, SearchResult } from './embedding.service';
+import { EmbeddingService, SearchResult, SearchResponse } from './embedding.service';
 import { TicketMessage } from '@aluplan/database';
 import { ConfigService } from '@nestjs/config';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
@@ -49,10 +49,10 @@ KURALLAR:
 - Maksimum 8 cümle kur. Gereksiz açıklama yapma.
 - Belirsiz kelimeler (muhtemelen, genellikle, olabilir) kullanma.
 
-4) ÖZETLEME KURALI (KRİTİK)
+4) ÖZETLEME VE SENTEZ (KRİTİK)
 - Kaynak metnin tamamını ASLA kopyalama.
-- Yalnızca sorunun cevabı olan kısmı bul ve kendi teknik cümlelerinle özetle.
-- Sadece sorulan soruya yanıt ver, ek danışmanlık yapma.
+- Sorulan sorunun cevabını bul ve kendi teknik cümlelerinle kısa bir özet çıkar.
+- Yanıtı verirken kaynağın en can alıcı kısmını seç ve sentezle.
 
 AMAÇ:
 Kullanıcıya hızlı, teknik olarak doğru, kontrollü ve doğrudan bir çözüm sunmak.`;
@@ -92,10 +92,41 @@ export class AiQueryService {
         }
 
         // 1. Semantic search with role-based filtering
-        let results: SearchResult[] = await this.embeddingService.search(userQuery, 10, null, isStaff);
+        const searchResponse: SearchResponse = await this.embeddingService.search(userQuery, 10, null, isStaff);
+        let results = searchResponse.results;
 
         // 3. Re-ranking Phase (Section 5: Hybrid Retrieval Engine)
         results = this.rerankResults(results, userQuery);
+
+        // CHANGE 5: No-match hard floor — if topScore < LOW_CONFIDENCE_THRESHOLD, do NOT call LLM
+        const LOW_CONFIDENCE_THRESHOLD = parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.72');
+        if (searchResponse.diagnostics.topScore < LOW_CONFIDENCE_THRESHOLD || results.length === 0) {
+            this.logger.warn(`🚫 No reliable context found (topScore=${searchResponse.diagnostics.topScore.toFixed(3)}). Routing to human agent.`);
+
+            const interaction = await this.prisma.aiInteraction.create({
+                data: {
+                    userId,
+                    userQuery,
+                    responseGenerated: 'AI güvenilir bir kaynak bulamadı. Talep insan temsilciye yönlendirildi.',
+                    confidenceBand: null,
+                    autoAnswered: false,
+                    similarityScore: searchResponse.diagnostics.topScore || undefined,
+                    inputTokens: 0,
+                    outputTokens: 0,
+                    totalTokens: 0,
+                    estimatedCost: 0,
+                } as any
+            });
+
+            return {
+                query: userQuery,
+                answer: 'Bu konuda güvenilir bir kaynak bulunamadı. Talebiniz bir destek temsilcisine yönlendirilecektir.',
+                confidence: 'NO_MATCH' as ConfidenceBand,
+                sources: [],
+                interactionId: interaction.id,
+                suggestTicket: true,
+            };
+        }
 
         // 2. Determine confidence band
         const topResult = results[0] ?? null;
@@ -189,22 +220,30 @@ export class AiQueryService {
     private rerankResults(results: SearchResult[], query: string): SearchResult[] {
         if (results.length === 0) return [];
 
+        const RERANK_ARTICLE = parseFloat(process.env.RERANK_MULTIPLIER_ARTICLE || '1.30');
+        const RERANK_DOCUMENT = parseFloat(process.env.RERANK_MULTIPLIER_DOCUMENT || '1.15');
+        const RERANK_URL = parseFloat(process.env.RERANK_MULTIPLIER_URL || '0.60');
+        const RERANK_URL_HARD_FLOOR = parseFloat(process.env.RERANK_URL_HARD_FLOOR || '0.75');
+
         return results
             .map(res => {
                 let boost = 1.0;
 
-                // Pillar-specific boosts based on Trust stability (Section 5.3)
-                if (res.sourceType === 'ARTICLE') boost *= 1.25; // Premium Hand-picked
-                if (res.sourceType === 'DOCUMENT') boost *= 1.1; // Official Docs
-                if (res.sourceType === 'URL' && res.similarity < 0.6) boost *= 0.8; // Penalize low-quality web snippets
-
-                // Recency heuristic (if available in content/metadata)
-                // (Optional: add date parsing if content has dates)
+                if (res.sourceType === 'ARTICLE') boost *= RERANK_ARTICLE;
+                if (res.sourceType === 'DOCUMENT') boost *= RERANK_DOCUMENT;
+                if (res.sourceType === 'URL') boost *= RERANK_URL;
 
                 return {
                     ...res,
                     similarity: res.similarity * boost
                 };
+            })
+            // CHANGE 3: Hard exclusion for URL sources below floor
+            .filter(res => {
+                if (res.sourceType === 'URL' && res.similarity < RERANK_URL_HARD_FLOOR) {
+                    return false;
+                }
+                return true;
             })
             .sort((a, b) => b.similarity - a.similarity)
             .slice(0, 5);
@@ -223,7 +262,8 @@ export class AiQueryService {
             return;
         }
 
-        const results = await this.embeddingService.search(userQuery, 5, null, isStaff);
+        const searchResponse = await this.embeddingService.search(userQuery, 5, null, isStaff);
+        const results = searchResponse.results;
         const topResult = results[0] ?? null;
         // ... rest of logic stays same ...
 
@@ -444,7 +484,8 @@ ${conversation}
             if (!product || product.categories.length === 0) return { tags: [] };
 
             const pastMatches = await this.embeddingService.searchTickets(text, 2);
-            const kbMatches = await this.embeddingService.search(text, 2);
+            const kbSearchResponse = await this.embeddingService.search(text, 2);
+            const kbMatches = kbSearchResponse.results;
             let contextStr = '';
 
             if (pastMatches.length > 0) {

@@ -338,5 +338,11 @@ export const api = {
             method: 'POST',
             body: body instanceof FormData ? body : JSON.stringify(body)
         }),
+    delete: (url: string) => request<any>(url, { method: 'DELETE' }),
+    patch: (url: string, body: any) =>
+        request<any>(url, {
+            method: 'PATCH',
+            body: body instanceof FormData ? body : JSON.stringify(body)
+        }),
     getBaseUrl: () => API,
 };

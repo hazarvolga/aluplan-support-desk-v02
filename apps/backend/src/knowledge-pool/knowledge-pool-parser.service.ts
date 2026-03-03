@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as pdf from 'pdf-parse';
-import csv from 'csv-parser';
+import * as csv from 'csv-parser';
 
 @Injectable()
 export class KnowledgePoolParserService {

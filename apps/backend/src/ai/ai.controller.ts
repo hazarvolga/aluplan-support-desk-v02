@@ -18,9 +18,9 @@ import { IsBoolean } from 'class-validator';
 
 export class AiQueryDto {
     @ApiProperty({ example: 'Şifremi nasıl sıfırlarım?' })
-@IsString()
-@MinLength(3)
-query: string;
+    @IsString()
+    @MinLength(3)
+    query: string;
 }
 
 export class FeedbackDto {
@@ -164,19 +164,19 @@ export class AiController {
     @HttpCode(HttpStatus.OK)
     async search(@Body() dto: { query: string; productId?: string; limit?: number }, @Request() req: any) {
         const isStaff = req.user?.role !== 'customer';
-        const results = await this.embeddingService.search(dto.query, dto.limit ?? 5, dto.productId, isStaff);
+        const searchResponse = await this.embeddingService.search(dto.query, dto.limit ?? 5, dto.productId, isStaff);
 
         // Log as an interaction for traceability
         const interaction = await this.aiQueryService.logSearchInteraction(
             dto.query,
             req.user?.sub,
-            results,
+            searchResponse.results, // Use searchResponse.results here
             dto.productId,
             isStaff
         );
 
         return {
-            results,
+            results: searchResponse.results,
             interactionId: interaction.id
         };
     }

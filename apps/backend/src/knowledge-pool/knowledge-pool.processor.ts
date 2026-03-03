@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../ai/embedding.service';
 import { KnowledgePoolParserService } from './knowledge-pool-parser.service';
 import * as crypto from 'crypto';
-import * as TurndownService from 'turndown';
+import TurndownService from 'turndown';
 import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
 
 import { CrawlService } from './crawl.service';

@@ -69,8 +69,10 @@ export function smartChunk(text: string, options: ChunkerOptions = {}): ChunkRes
  * - Child: Small chunks for vector search (300-500 tokens/chars)
  */
 export function hierarchicalChunk(text: string, options: ChunkerOptions = {}): { parent: string, children: string[] }[] {
-    const { maxTokens = 2000, title = 'Bilinmeyen Döküman' } = options;
-    const CHILD_SIZE = 400;
+    const parentMax = parseInt(process.env.CHUNK_PARENT_MAX_TOKENS || '800', 10);
+    const childMax = parseInt(process.env.CHUNK_CHILD_MAX_TOKENS || '120', 10);
+    const { maxTokens = parentMax, title = 'Bilinmeyen Döküman' } = options;
+    const CHILD_SIZE = childMax;
 
     // 1. Create large Parent chunks
     const parents = smartChunk(text, { maxTokens, title });

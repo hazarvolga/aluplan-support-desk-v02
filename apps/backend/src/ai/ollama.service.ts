@@ -19,7 +19,8 @@ export class OllamaService implements AiProvider {
 
     private async getEmbedModel(): Promise<string> {
         return (await this.settings.getValue('ai.ollama.embed_model')) ??
-            this.config.get<string>('OLLAMA_MODEL', 'nomic-embed-text');
+            this.config.get<string>('EMBEDDING_MODEL',
+                this.config.get<string>('OLLAMA_MODEL', 'bge-m3'));
     }
 
     private async getChatModel(): Promise<string> {
@@ -96,7 +97,8 @@ export class OllamaService implements AiProvider {
                     model: chatModel,
                     messages: [
                         { role: 'system', content: systemPrompt },
-                        { role: 'user', content: `KULLANICI SORUSU:
+                        {
+                            role: 'user', content: `KULLANICI SORUSU:
 ${userQuery}
 
 ---
@@ -133,7 +135,8 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
                     model: chatModel,
                     messages: [
                         { role: 'system', content: systemPrompt },
-                        { role: 'user', content: `KULLANICI SORUSU:
+                        {
+                            role: 'user', content: `KULLANICI SORUSU:
 ${userQuery}
 
 ---

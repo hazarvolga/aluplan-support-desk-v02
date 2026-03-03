@@ -12,12 +12,25 @@ export interface SearchResult {
     confidence: 'HIGH' | 'MEDIUM' | 'LOW';
 }
 
+export interface SearchDiagnostics {
+    topScore: number;
+    passedThreshold: number;
+    queryEmbeddingModel: string;
+}
+
+export interface SearchResponse {
+    results: SearchResult[];
+    diagnostics: SearchDiagnostics;
+}
+
 @Injectable()
 export class EmbeddingService {
     private readonly logger = new Logger(EmbeddingService.name);
 
-    private readonly HIGH_THRESHOLD = 0.90;
-    private readonly MEDIUM_THRESHOLD = 0.75;
+    private readonly SIMILARITY_THRESHOLD = parseFloat(process.env.SIMILARITY_THRESHOLD || '0.78');
+    private readonly LOW_CONFIDENCE_THRESHOLD = parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.72');
+    private readonly HIGH_THRESHOLD = 0.60;
+    private readonly MEDIUM_THRESHOLD = 0.45;
 
     constructor(
         private readonly prisma: PrismaService,
@@ -67,11 +80,11 @@ export class EmbeddingService {
     /**
      * Semantic similarity search using pgvector with Trust Score re-ranking.
      */
-    async search(query: string, limit = 5, productId?: string | null, includeInternal = false): Promise<SearchResult[]> {
+    async search(query: string, limit = 5, productId?: string | null, includeInternal = false): Promise<SearchResponse> {
         const embResult = await this.ai.embed(query);
         if (!embResult) {
             this.logger.warn('Semantic search unavailable — AI offline');
-            return [];
+            return { results: [], diagnostics: { topScore: 0, passedThreshold: 0, queryEmbeddingModel: 'unknown' } };
         }
 
         const vectorStr = JSON.stringify(embResult.embedding);
@@ -100,7 +113,7 @@ export class EmbeddingService {
         LEFT JOIN knowledge_embeddings parent ON ke.parent_id = parent.id
         WHERE ka.status = 'PUBLISHED' 
           AND (${includeInternal} = true OR ka.is_internal = false)
-          AND 1 - (ke.embedding <=> ${vectorStr}::vector) > 0.65
+          AND 1 - (ke.embedding <=> ${vectorStr}::vector) > ${this.SIMILARITY_THRESHOLD}
           AND ke.parent_id IS NOT NULL -- Only search on children
         
         UNION ALL
@@ -121,7 +134,7 @@ export class EmbeddingService {
         WHERE ks.status = 'ACTIVE' 
           -- Allow pool access for everyone, or filter if specific tags exist later
           AND (${productId}::uuid IS NULL OR ks.product_id = ${productId}::uuid) 
-          AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > 0.65
+          AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.SIMILARITY_THRESHOLD}
           AND kpe.metadata->>'type' = 'parent'
       )
       SELECT * 
@@ -130,14 +143,24 @@ export class EmbeddingService {
       LIMIT ${limit}
     `;
 
-        return rows.map((row) => ({
+        const results = rows.map((row) => ({
             articleId: row.article_id,
             sourceType: row.source_type as any,
             title: row.title,
             content: row.content,
             similarity: Number(row.similarity),
-            confidence: row.similarity >= this.HIGH_THRESHOLD ? 'HIGH' : row.similarity >= this.MEDIUM_THRESHOLD ? 'MEDIUM' : 'LOW',
+            confidence: (row.similarity >= this.HIGH_THRESHOLD ? 'HIGH' : row.similarity >= this.MEDIUM_THRESHOLD ? 'MEDIUM' : 'LOW') as 'HIGH' | 'MEDIUM' | 'LOW',
         }));
+
+        const diagnostics: SearchDiagnostics = {
+            topScore: results.length > 0 ? results[0].similarity : 0,
+            passedThreshold: results.length,
+            queryEmbeddingModel: embResult.model,
+        };
+
+        this.logger.log(`📊 Search diagnostics: topScore=${diagnostics.topScore.toFixed(3)}, passed=${diagnostics.passedThreshold}, model=${diagnostics.queryEmbeddingModel}`);
+
+        return { results, diagnostics };
     }
 
     async indexPoolContent(sourceId: string, content: string, metadata: any = {}): Promise<void> {

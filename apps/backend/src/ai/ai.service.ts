@@ -85,16 +85,15 @@ export class AiService implements AiProvider {
 
     async embed(text: string): Promise<EmbeddingResult | null> {
         return this.runSafe(async () => {
-            const provider = await this.getActiveProvider();
-            let result = await provider.embed(text);
+            // Embedding is ALWAYS dedicated to OpenAI for production-grade
+            // Turkish language support (text-embedding-3-small).
+            // Falls back to Ollama if OpenAI key is not configured.
+            const openaiResult = await this.openai.embed(text);
+            if (openaiResult) return openaiResult;
 
-            // AUTO-FALLBACK: If primary provider fails to embed, try Ollama
-            if (!result && provider.getName() !== 'ollama') {
-                this.logger.warn(`🔄 Active provider [${provider.getName()}] failed to embed. Falling back to Ollama...`);
-                result = await this.ollama.embed(text);
-            }
-
-            return result;
+            // Fallback to active provider if OpenAI is not configured
+            this.logger.warn('⚠️ OpenAI embed unavailable. Falling back to Ollama (lower quality for Turkish).');
+            return this.ollama.embed(text);
         });
     }
 
