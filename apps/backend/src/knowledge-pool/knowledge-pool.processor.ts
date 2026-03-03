@@ -15,7 +15,7 @@ import { AiService } from '../ai/ai.service';
 @Processor('knowledge-sync')
 export class KnowledgePoolProcessor extends WorkerHost {
     private readonly logger = new Logger(KnowledgePoolProcessor.name);
-    private readonly turndown = new (TurndownService as any)();
+    private readonly turndown: any;
 
     constructor(
         private readonly prisma: PrismaService,
@@ -25,6 +25,16 @@ export class KnowledgePoolProcessor extends WorkerHost {
         private readonly aiService: AiService,
     ) {
         super();
+        // Robust instantiation for Turndown across different module loaders (CJS/ESM interop)
+        // Checks for direct constructor, .default, or .default.default to prevent 'not a constructor' errors
+        const AnyTurndown = TurndownService as any;
+        const TurndownConstructor = typeof AnyTurndown === 'function'
+            ? AnyTurndown
+            : AnyTurndown.default && typeof AnyTurndown.default === 'function'
+                ? AnyTurndown.default
+                : AnyTurndown.default?.default || AnyTurndown;
+
+        this.turndown = new TurndownConstructor();
     }
 
     async process(job: Job<{ sourceId: string }>): Promise<any> {
