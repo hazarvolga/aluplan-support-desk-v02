@@ -73,9 +73,15 @@ async function bootstrap() {
     app.use(json({ limit: '50mb' }));
     app.use(urlencoded({ extended: true, limit: '50mb' }));
 
+    const frontendUrls = [
+        'http://localhost:3000',
+        'https://allplan.net.tr',
+        ...(frontendUrl.includes(',') ? frontendUrl.split(',') : [frontendUrl]),
+    ];
+
     // CORS
     app.enableCors({
-        origin: frontendUrl,
+        origin: frontendUrls,
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     });
