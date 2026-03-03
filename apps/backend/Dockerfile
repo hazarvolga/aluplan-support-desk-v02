@@ -19,4 +19,4 @@ COPY --from=builder /app/deployed-backend ./
 COPY --from=builder /app/apps/backend/dist ./dist
 
 EXPOSE 3001
-CMD ["sh", "-c", "if [ \"$RESET_DB_ON_START\" = \"true\" ]; then echo 'Wiping DB via DB Execute...'; echo 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' | npx -y prisma@6.3.1 db execute --url \"$DATABASE_URL\" --stdin; fi; npx -y prisma@6.3.1 migrate deploy --schema=./node_modules/@aluplan/database/prisma/schema.prisma && node dist/main"]
+CMD ["sh", "-c", "if [ \"$RESET_DB_ON_START\" = \"true\" ]; then echo 'Wiping DB via DB Execute...'; echo 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' | npx -y prisma@6.3.1 db execute --url \"$DATABASE_URL\" --stdin; fi; node resolve-migration.js || true; npx -y prisma@6.3.1 migrate deploy --schema=./node_modules/@aluplan/database/prisma/schema.prisma && node create-admin.js || true && node dist/main"]
