@@ -12,7 +12,7 @@ import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { SystemRole } from '@prisma/client';
+import { SystemRole } from '@aluplan/database';
 import { RedisService } from '../redis/redis.service';
 import { EmailService } from '../email/email.service';
 

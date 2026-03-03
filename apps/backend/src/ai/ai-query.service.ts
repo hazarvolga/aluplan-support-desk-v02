@@ -11,7 +11,7 @@ import { SettingsService } from '../settings/settings.service';
 import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
 import { createHash } from 'crypto';
-import { SystemRole } from '@prisma/client';
+import { SystemRole } from '@aluplan/database';
 
 // Confidence bands — LOW/HIGH/MEDIUM from schema, NO_MATCH is local
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';

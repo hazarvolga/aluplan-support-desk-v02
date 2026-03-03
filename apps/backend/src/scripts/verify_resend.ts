@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@aluplan/database';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 

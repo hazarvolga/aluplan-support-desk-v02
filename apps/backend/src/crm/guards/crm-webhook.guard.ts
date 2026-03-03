@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CryptoService } from '../../utils/crypto.service';
-import { CrmProvider } from '@prisma/client';
+import { CrmProvider } from '@aluplan/database';
 
 @Injectable()
 export class CrmWebhookGuard implements CanActivate {

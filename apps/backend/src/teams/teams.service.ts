@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AssignmentStrategy, SystemRole, AgentStatus } from '@prisma/client';
+import { AssignmentStrategy, SystemRole, AgentStatus } from '@aluplan/database';
 
 @Injectable()
 export class TeamsService {

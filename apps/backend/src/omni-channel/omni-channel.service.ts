@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TicketsService } from '../tickets/tickets.service';
-import { SystemRole } from '@prisma/client';
+import { SystemRole } from '@aluplan/database';
 
 @Injectable()
 export class OmniChannelService {

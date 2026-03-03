@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { CreateAnnouncementDto, UpdateAnnouncementDto, TargetCriteriaDto } from './dto/announcement.dto';
-import { AnnouncementStatus, AnnouncementType, Prisma } from '@prisma/client';
+import { AnnouncementStatus, AnnouncementType, Prisma } from '@aluplan/database';
 
 @Injectable()
 export class AnnouncementsService {

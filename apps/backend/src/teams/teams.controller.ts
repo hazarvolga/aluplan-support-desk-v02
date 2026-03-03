@@ -3,7 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { TeamsService } from './teams.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
-import { AssignmentStrategy, SystemRole, AgentStatus } from '@prisma/client';
+import { AssignmentStrategy, SystemRole, AgentStatus } from '@aluplan/database';
 
 @ApiTags('Teams')
 @ApiBearerAuth()

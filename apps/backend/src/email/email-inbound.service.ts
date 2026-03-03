@@ -3,7 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { TicketsService } from '../tickets/tickets.service';
-import { SystemRole } from '@prisma/client';
+import { SystemRole } from '@aluplan/database';
 import { SIMPLE_MAP_CONFIG } from './interfaces/imap.interface';
 import * as imaps from 'imap-simple';
 import { simpleParser } from 'mailparser';

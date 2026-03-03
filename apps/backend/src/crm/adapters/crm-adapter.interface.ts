@@ -1,4 +1,4 @@
-import { CrmProvider, SyncStatus } from '@prisma/client';
+import { CrmProvider, SyncStatus } from '@aluplan/database';
 
 export interface CrmAccount {
     externalId: string;

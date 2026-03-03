@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Ticket } from '@aluplan/database';
 import { PrismaService } from '../prisma/prisma.service';
-import { SystemRole } from '@prisma/client';
+import { SystemRole } from '@aluplan/database';
 
 @Injectable()
 export class AutoAssignmentService {

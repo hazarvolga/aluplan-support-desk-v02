@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TeamsService } from './teams.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotFoundException } from '@nestjs/common';
-import { AssignmentStrategy, SystemRole, AgentStatus } from '@prisma/client';
+import { AssignmentStrategy, SystemRole, AgentStatus } from '@aluplan/database';
 
 const mockPrismaService = {
     department: { findMany: jest.fn(), findUnique: jest.fn() },

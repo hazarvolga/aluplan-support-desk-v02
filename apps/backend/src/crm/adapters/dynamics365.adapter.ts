@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CrmProvider, SyncStatus } from '@prisma/client';
+import { CrmProvider, SyncStatus } from '@aluplan/database';
 import { ICrmAdapter, SyncResult } from './crm-adapter.interface';
 import axios from 'axios';
 import { PrismaService } from '../../prisma/prisma.service';

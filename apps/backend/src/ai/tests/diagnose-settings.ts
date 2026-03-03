@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@aluplan/database';
 
 async function diagnose() {
     const prisma = new PrismaClient();

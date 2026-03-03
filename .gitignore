@@ -33,6 +33,7 @@ out/
 # Prisma
 # ========================
 packages/database/generated/
+packages/database/client/
 
 # ========================
 # Testing / Coverage

@@ -1,5 +1,5 @@
 import { IsString, IsOptional, IsObject, IsEnum, IsArray, IsNotEmpty } from 'class-validator';
-import { AnnouncementType } from '@prisma/client';
+import { AnnouncementType } from '@aluplan/database';
 
 export class TargetCriteriaDto {
     @IsOptional()

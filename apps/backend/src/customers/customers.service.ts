@@ -3,7 +3,7 @@ import * as jwt from 'jsonwebtoken';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { SystemRole } from '@prisma/client';
+import { SystemRole } from '@aluplan/database';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
 import * as bcrypt from 'bcrypt';
 

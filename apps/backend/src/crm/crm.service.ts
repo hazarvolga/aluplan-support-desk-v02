@@ -2,7 +2,7 @@ import { Injectable, Logger, BadRequestException, NotFoundException } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { Dynamics365Adapter } from './adapters/dynamics365.adapter';
 import { ICrmAdapter, SyncResult } from './adapters/crm-adapter.interface';
-import { CrmProvider, SyncStatus } from '@prisma/client';
+import { CrmProvider, SyncStatus } from '@aluplan/database';
 import { CryptoService } from '../utils/crypto.service';
 
 @Injectable()

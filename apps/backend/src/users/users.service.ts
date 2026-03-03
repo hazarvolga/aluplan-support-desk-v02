@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { SystemRole } from '@prisma/client';
+import { SystemRole } from '@aluplan/database';
 
 @Injectable()
 export class UsersService {
