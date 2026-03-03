@@ -5,10 +5,51 @@ import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import * as compression from 'compression';
 import { json, urlencoded } from 'express';
+import * as net from 'net';
 import { AppModule } from './app.module';
+
+async function checkConnection(host: string, port: number, timeout = 3000): Promise<boolean> {
+    return new Promise((resolve) => {
+        const socket = new net.Socket();
+        const timer = setTimeout(() => {
+            socket.destroy();
+            resolve(false);
+        }, timeout);
+
+        socket.connect(port, host, () => {
+            clearTimeout(timer);
+            socket.destroy();
+            resolve(true);
+        });
+
+        socket.on('error', () => {
+            clearTimeout(timer);
+            socket.destroy();
+            resolve(false);
+        });
+    });
+}
 
 async function bootstrap() {
     const logger = new Logger('Bootstrap');
+
+    // Pre-boot Network Audit
+    const redisHost = process.env.REDIS_HOST || 'localhost';
+    const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
+    const dbUrl = process.env.DATABASE_URL || '';
+    const dbMatch = dbUrl.match(/@([^:/]+):(\d+)/);
+    const dbHost = dbMatch ? dbMatch[1] : '';
+    const dbPort = dbMatch ? parseInt(dbMatch[2], 10) : 5432;
+
+    logger.log(`[NetCheck] 🔍 Auditing Internal Infrastructure Connectivity...`);
+    const redisOk = await checkConnection(redisHost, redisPort);
+    const dbOk = dbHost ? await checkConnection(dbHost, dbPort) : false;
+
+    logger.log(`[NetCheck] 🔴 Redis (${redisHost}:${redisPort}): ${redisOk ? 'REACHABLE ✅' : 'UNREACHABLE ❌'}`);
+    if (dbHost) {
+        logger.log(`[NetCheck] 🐘 Database (${dbHost}:${dbPort}): ${dbOk ? 'REACHABLE ✅' : 'UNREACHABLE ❌'}`);
+    }
+
     const app = await NestFactory.create(AppModule, { logger: ['log', 'error', 'warn', 'debug'] });
 
     const configService = app.get(ConfigService);

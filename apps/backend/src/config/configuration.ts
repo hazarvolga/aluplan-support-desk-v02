@@ -41,13 +41,28 @@ export function validate(config: Record<string, unknown>) {
     return validatedConfig;
 }
 
-export default () => ({
-    port: parseInt(process.env.PORT || '', 10) || 9002,
-    database: {
-        url: process.env.DATABASE_URL,
-    },
-    redis: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '', 10) || 6379,
-    },
-});
+export default () => {
+    const config = {
+        nodeEnv: process.env.NODE_ENV || 'development',
+        port: parseInt(process.env.PORT || '9002', 10),
+        database: {
+            url: process.env.DATABASE_URL,
+        },
+        redis: {
+            host: process.env.REDIS_HOST || 'localhost',
+            port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        },
+    };
+
+    if (config.nodeEnv === 'production') {
+        const maskedDb = config.database.url?.replace(/\/\/.*@/, '//****:****@');
+        console.log(`[Bootstrap] ⚙️ Config Loaded:
+        - NODE_ENV: ${config.nodeEnv}
+        - PORT: ${config.port}
+        - DATABASE_URL: ${maskedDb}
+        - REDIS_HOST: ${config.redis.host}
+        - REDIS_PORT: ${config.redis.port}`);
+    }
+
+    return config;
+};
