@@ -46,6 +46,10 @@ export default () => {
 
     // In production, we MUST have these variables. 
     // Fallbacks to localhost cause ECONNREFUSED inside Docker networks.
+    const defaultRedisHost = isProduction ? 'redis-cache' : 'localhost';
+    const defaultRedisPort = process.env.REDIS_PORT || '6379';
+    const defaultRedisUrl = `redis://${defaultRedisHost}:${defaultRedisPort}/0`;
+
     const config = {
         nodeEnv: process.env.NODE_ENV || 'development',
         port: parseInt(process.env.PORT || '3001', 10),
@@ -53,9 +57,10 @@ export default () => {
             url: process.env.DATABASE_URL,
         },
         redis: {
-            // Priority: Env -> 'redis-cache' (Coolify naming convention) -> 'localhost'
-            host: process.env.REDIS_HOST || (isProduction ? 'redis-cache' : 'localhost'),
-            port: parseInt(process.env.REDIS_PORT || '6379', 10),
+            url: process.env.REDIS_URL || defaultRedisUrl,
+            // Keep host/port for backward compatibility if needed, but url is preferred
+            host: process.env.REDIS_HOST || defaultRedisHost,
+            port: parseInt(defaultRedisPort, 10),
         },
     };
 
@@ -64,11 +69,14 @@ export default () => {
         console.log(`[Bootstrap] ⚙️ PRODUCTION CONFIG:
         - PORT: ${config.port}
         - DATABASE_HOST: ${config.database.url?.split('@')[1]?.split(':')[0] || 'MISSING'}
+        - REDIS_URL: ${config.redis.url.replace(/\/\/.*@/, '//****:****@')}
         - REDIS_HOST: ${config.redis.host}
         - REDIS_PORT: ${config.redis.port}`);
 
         if (!config.database.url) console.error('[Bootstrap] ❌ CRITICAL: DATABASE_URL is missing!');
-        if (!process.env.REDIS_HOST) console.warn(`[Bootstrap] ⚠️ WARNING: REDIS_HOST missing. Using fallback: ${config.redis.host}`);
+        if (!process.env.REDIS_URL && !process.env.REDIS_HOST) {
+            console.warn(`[Bootstrap] ⚠️ WARNING: Both REDIS_URL and REDIS_HOST missing. Using fallback URL: ${config.redis.url}`);
+        }
     }
 
     return config;

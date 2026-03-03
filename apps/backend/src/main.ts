@@ -34,8 +34,17 @@ async function bootstrap() {
     const logger = new Logger('Bootstrap');
 
     // Pre-boot Network Audit
-    const redisHost = process.env.REDIS_HOST || 'localhost';
-    const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
+    const redisUrlString = process.env.REDIS_URL || '';
+    let redisHost = process.env.REDIS_HOST || 'localhost';
+    let redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
+
+    if (redisUrlString.startsWith('redis://') || redisUrlString.startsWith('rediss://')) {
+        try {
+            const urlObj = new URL(redisUrlString);
+            redisHost = urlObj.hostname;
+            redisPort = parseInt(urlObj.port) || 6379;
+        } catch (e) { }
+    }
     const dbUrl = process.env.DATABASE_URL || '';
     const dbMatch = dbUrl.match(/@([^:/]+):(\d+)/);
     const dbHost = dbMatch ? dbMatch[1] : '';

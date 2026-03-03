@@ -50,12 +50,13 @@ import { AnnouncementTemplatesModule } from './announcement-templates/announceme
         BullModule.forRootAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
-            useFactory: (config: ConfigService) => ({
-                connection: {
-                    host: config.get<string>('redis.host'),
-                    port: config.get<number>('redis.port'),
-                },
-            }),
+            useFactory: (config: ConfigService) => {
+                const IORedis = require('ioredis');
+                const connection = new IORedis(config.get<string>('redis.url'), {
+                    maxRetriesPerRequest: null,
+                });
+                return { connection };
+            },
         }),
         ThrottlerModule.forRootAsync({
             imports: [ConfigModule],
@@ -68,10 +69,7 @@ import { AnnouncementTemplatesModule } from './announcement-templates/announceme
                         limit: 10,
                     },
                 ],
-                storage: new ThrottlerStorageRedisService({
-                    host: config.get<string>('redis.host'),
-                    port: config.get<number>('redis.port'),
-                }),
+                storage: new ThrottlerStorageRedisService(config.get<string>('redis.url')),
             }),
         }),
         EventEmitterModule.forRoot(),
