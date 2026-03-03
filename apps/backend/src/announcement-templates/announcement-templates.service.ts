@@ -19,8 +19,8 @@ export class AnnouncementTemplatesService {
       where: { role: 'ADMIN' },
       select: { id: true }
     });
-    // Fallback to nil UUID if no admin user exists yet
-    const systemUserId = adminUser?.id ?? '00000000-0000-0000-0000-000000000000';
+    // Fallback to null if no admin user exists yet (created_by is nullable)
+    const systemUserId = adminUser?.id ?? null;
 
     try {
       // One-time cleanup: Strip icons from existing template names
