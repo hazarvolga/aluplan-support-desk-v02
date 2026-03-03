@@ -458,3 +458,6 @@ ALTER TABLE "ticket_escalations" ADD CONSTRAINT "ticket_escalations_escalated_by
 
 -- AddForeignKey
 ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- CreateSequence (Relocated from 0_add_ticket_number_seq)
+CREATE SEQUENCE IF NOT EXISTS "ticket_number_seq" START 1000;
