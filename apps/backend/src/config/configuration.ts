@@ -42,26 +42,33 @@ export function validate(config: Record<string, unknown>) {
 }
 
 export default () => {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // In production, we MUST have these variables. 
+    // Fallbacks to localhost cause ECONNREFUSED inside Docker networks.
     const config = {
         nodeEnv: process.env.NODE_ENV || 'development',
-        port: parseInt(process.env.PORT || '9002', 10),
+        port: parseInt(process.env.PORT || '3001', 10),
         database: {
             url: process.env.DATABASE_URL,
         },
         redis: {
-            host: process.env.REDIS_HOST || 'localhost',
+            // Priority: Env -> 'redis-cache' (Coolify naming convention) -> 'localhost'
+            host: process.env.REDIS_HOST || (isProduction ? 'redis-cache' : 'localhost'),
             port: parseInt(process.env.REDIS_PORT || '6379', 10),
         },
     };
 
-    if (config.nodeEnv === 'production') {
+    if (isProduction) {
         const maskedDb = config.database.url?.replace(/\/\/.*@/, '//****:****@');
-        console.log(`[Bootstrap] ⚙️ Config Loaded:
-        - NODE_ENV: ${config.nodeEnv}
+        console.log(`[Bootstrap] ⚙️ PRODUCTION CONFIG:
         - PORT: ${config.port}
-        - DATABASE_URL: ${maskedDb}
+        - DATABASE_HOST: ${config.database.url?.split('@')[1]?.split(':')[0] || 'MISSING'}
         - REDIS_HOST: ${config.redis.host}
         - REDIS_PORT: ${config.redis.port}`);
+
+        if (!config.database.url) console.error('[Bootstrap] ❌ CRITICAL: DATABASE_URL is missing!');
+        if (!process.env.REDIS_HOST) console.warn(`[Bootstrap] ⚠️ WARNING: REDIS_HOST missing. Using fallback: ${config.redis.host}`);
     }
 
     return config;
