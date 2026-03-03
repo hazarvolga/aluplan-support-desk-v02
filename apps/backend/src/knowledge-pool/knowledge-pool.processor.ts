@@ -25,14 +25,23 @@ export class KnowledgePoolProcessor extends WorkerHost {
         private readonly aiService: AiService,
     ) {
         super();
-        // Robust instantiation for Turndown across different module loaders (CJS/ESM interop)
-        // Checks for direct constructor, .default, or .default.default to prevent 'not a constructor' errors
+        // Bulletproof Guard: Handle cases where the library might be undefined (missing in production bundle)
         const AnyTurndown = TurndownService as any;
-        const TurndownConstructor = typeof AnyTurndown === 'function'
-            ? AnyTurndown
-            : AnyTurndown.default && typeof AnyTurndown.default === 'function'
-                ? AnyTurndown.default
-                : AnyTurndown.default?.default || AnyTurndown;
+        let TurndownConstructor: any;
+
+        if (!AnyTurndown) {
+            this.logger.error('🚨 Turndown library is UNDEFINED. Using dummy fallback to prevent crash.');
+            TurndownConstructor = class { addRule() { } turndown(h: string) { return h; } };
+        } else if (typeof AnyTurndown === 'function') {
+            TurndownConstructor = AnyTurndown;
+        } else if (AnyTurndown.default && typeof AnyTurndown.default === 'function') {
+            TurndownConstructor = AnyTurndown.default;
+        } else if (AnyTurndown.default?.default && typeof AnyTurndown.default.default === 'function') {
+            TurndownConstructor = AnyTurndown.default.default;
+        } else {
+            this.logger.error('🚨 Turndown constructor NOT FOUND in export. Using dummy fallback.');
+            TurndownConstructor = class { addRule() { } turndown(h: string) { return h; } };
+        }
 
         this.turndown = new TurndownConstructor();
     }
