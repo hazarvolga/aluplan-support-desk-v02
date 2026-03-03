@@ -1,4 +1,9 @@
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
+const CLIENT_API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
+const SERVER_API = process.env.NEXT_INTERNAL_API_URL ?? CLIENT_API;
+
+const getApiUrl = () => {
+    return typeof window === 'undefined' ? SERVER_API : CLIENT_API;
+};
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
@@ -11,7 +16,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         headers['Content-Type'] = 'application/json';
     }
 
-    const res = await fetch(`${API}${path}`, {
+    const res = await fetch(`${getApiUrl()}${path}`, {
         ...options,
         headers,
     });
@@ -344,5 +349,5 @@ export const api = {
             method: 'PATCH',
             body: body instanceof FormData ? body : JSON.stringify(body)
         }),
-    getBaseUrl: () => API,
+    getBaseUrl: () => getApiUrl(),
 };
