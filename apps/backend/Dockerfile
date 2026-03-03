@@ -19,4 +19,4 @@ COPY --from=builder /app/deployed-backend ./
 COPY --from=builder /app/apps/backend/dist ./dist
 
 EXPOSE 3001
-CMD ["sh", "-c", "npx -y prisma@6.3.1 migrate deploy --schema=./node_modules/@aluplan/database/prisma/schema.prisma && node dist/main"]
+CMD ["sh", "-c", "npx -y prisma@6.3.1 migrate resolve --applied 20260219151110_init_reset --schema=./node_modules/@aluplan/database/prisma/schema.prisma || true && npx -y prisma@6.3.1 migrate deploy --schema=./node_modules/@aluplan/database/prisma/schema.prisma && node dist/main"]
