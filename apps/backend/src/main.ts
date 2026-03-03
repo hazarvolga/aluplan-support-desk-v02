@@ -81,7 +81,10 @@ async function bootstrap() {
 
     // CORS
     app.enableCors({
-        origin: frontendUrls,
+        origin: function (origin: string, callback: (err: Error | null, origin?: any) => void) {
+            // Allow all origins (standard for dynamic multi-domain deployments)
+            callback(null, true);
+        },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     });
