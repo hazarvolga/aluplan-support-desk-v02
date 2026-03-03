@@ -5,13 +5,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../ai/embedding.service';
 import { KnowledgePoolParserService } from './knowledge-pool-parser.service';
 import * as crypto from 'crypto';
-import TurndownService from 'turndown';
 import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
 
 import { CrawlService } from './crawl.service';
 import { hierarchicalChunk } from '../knowledge-base/utils/smart-chunker';
 import { AiService } from '../ai/ai.service';
-
 @Processor('knowledge-sync')
 export class KnowledgePoolProcessor extends WorkerHost {
     private readonly logger = new Logger(KnowledgePoolProcessor.name);
@@ -25,8 +23,14 @@ export class KnowledgePoolProcessor extends WorkerHost {
         private readonly aiService: AiService,
     ) {
         super();
-        // Bulletproof Guard: Handle cases where the library might be undefined (missing in production bundle)
-        const AnyTurndown = TurndownService as any;
+        // Import-Level Safety: Using localized require to bypass top-level property access traps
+        let AnyTurndown: any;
+        try {
+            AnyTurndown = require('turndown');
+        } catch (e) {
+            this.logger.error(`🚨 Turndown library LOAD FAILURE: ${e.message}`);
+        }
+
         let TurndownConstructor: any;
 
         if (!AnyTurndown) {
