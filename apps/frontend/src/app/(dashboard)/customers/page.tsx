@@ -29,7 +29,11 @@ import {
     Plus,
     Filter,
     ChevronRight,
-    Loader2
+    Loader2,
+    ShieldCheck,
+    AlertCircle,
+    CheckCircle2,
+    XCircle
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import Link from 'next/link';
@@ -97,6 +101,10 @@ export default function CustomersPage() {
     const [activeTab, setActiveTab] = useState('list');
     const [deleting, setDeleting] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+    const [validating, setValidating] = useState(false);
+    const [syncing, setSyncing] = useState(false);
+    const [validationResults, setValidationResults] = useState<Record<string, any>>({});
 
     const loadCustomers = () => {
         setLoading(true);
@@ -222,8 +230,6 @@ export default function CustomersPage() {
         }
     };
 
-    const [syncing, setSyncing] = useState(false);
-
     const handleSync = async (connectionId: string) => {
         setSyncing(true);
         try {
@@ -234,6 +240,26 @@ export default function CustomersPage() {
             toast({ variant: 'destructive', title: '❌ Hata', description: error.message });
         } finally {
             setSyncing(false);
+        }
+    };
+
+    const handleBulkVerify = async () => {
+        const emails = filteredAndSortedCustomers.map(c => c.email);
+        if (emails.length === 0) return;
+
+        setValidating(true);
+        try {
+            const results = await api.emailValidator.verifyBulk(emails);
+            const resultMap: Record<string, any> = {};
+            results.forEach(r => {
+                resultMap[r.email] = r;
+            });
+            setValidationResults(resultMap);
+            toast({ title: '✅ Başarılı', description: `${emails.length} e-posta doğrulandı.` });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: '❌ Hata', description: error.message });
+        } finally {
+            setValidating(false);
         }
     };
 
@@ -363,6 +389,14 @@ export default function CustomersPage() {
                         </Button>
                     )}
                     <Button
+                        onClick={handleBulkVerify}
+                        disabled={loading || validating || filteredAndSortedCustomers.length === 0}
+                        className="h-9 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-500/20"
+                    >
+                        {validating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                        Mailleri Doğrula
+                    </Button>
+                    <Button
                         asChild
                         disabled={loading}
                         className="h-9 bg-white/5 border border-white/10 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-white/10"
@@ -472,7 +506,22 @@ export default function CustomersPage() {
                                                 )}
                                             </TableCell>
                                             <TableCell className="text-white/60 text-xs font-medium">{c.customerProfile?.jobTitle || '-'}</TableCell>
-                                            <TableCell className="text-white/60 font-mono text-[11px]">{c.email}</TableCell>
+                                            <TableCell className="text-white/60 font-mono text-[11px]">
+                                                <div className="flex items-center gap-2">
+                                                    {c.email}
+                                                    {validationResults[c.email] && (
+                                                        <div title={`Skor: ${validationResults[c.email].score}`}>
+                                                            {validationResults[c.email].status === 'VALID' ? (
+                                                                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                                            ) : validationResults[c.email].status === 'RISKY' ? (
+                                                                <AlertCircle className="h-3 w-3 text-amber-500" />
+                                                            ) : (
+                                                                <XCircle className="h-3 w-3 text-rose-500" />
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
                                             <TableCell>
                                                 <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/50 border border-white/5">
                                                     {c.customerProfile?.industry || 'GENEL'}
@@ -480,8 +529,8 @@ export default function CustomersPage() {
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant="outline" className={`text-[9px] font-black tracking-widest px-2 py-0.5 ${c.customerProfile?.contractStatus === 'ACTIVE'
-                                                        ? 'bg-emerald-500/10 text-emerald-400 border-none'
-                                                        : 'text-slate-500 border-white/10'
+                                                    ? 'bg-emerald-500/10 text-emerald-400 border-none'
+                                                    : 'text-slate-500 border-white/10'
                                                     }`}>
                                                     {c.customerProfile?.contractStatus || '-'}
                                                 </Badge>

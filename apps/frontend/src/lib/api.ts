@@ -16,6 +16,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         headers['Content-Type'] = 'application/json';
     }
 
+    if (path.includes('preview')) {
+        console.log('[DEBUG_API] Preview Request Payload:', options?.body);
+    }
+
     const res = await fetch(`${getApiUrl()}${path}`, {
         ...options,
         headers,
@@ -325,6 +329,7 @@ export const api = {
     },
     emailValidator: {
         verify: (email: string) => request<any>(`/email-validator/verify?email=${encodeURIComponent(email)}`),
+        verifyBulk: (emails: string[]) => request<any[]>('/email-validator/verify-bulk', { method: 'POST', body: JSON.stringify({ emails }) }),
     },
     branding: {
         uploadLogo: (file: File) => {

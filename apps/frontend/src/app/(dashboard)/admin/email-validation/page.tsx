@@ -36,7 +36,8 @@ export default function EmailValidationPage() {
         return 'text-red-400';
     };
 
-    const getScoreBg = (score: number) => {
+    const getScoreBg = (score?: number) => {
+        if (typeof score !== 'number') return 'bg-white/5 border-white/10';
         if (score >= 80) return 'bg-emerald-400/10 border-emerald-400/20';
         if (score >= 50) return 'bg-amber-400/10 border-amber-400/20';
         return 'bg-red-400/10 border-red-400/20';
@@ -86,7 +87,7 @@ export default function EmailValidationPage() {
             {result && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-500">
                     {/* Score Card */}
-                    <div className={`col-span-1 p-8 rounded-2xl border flex flex-col items-center justify-center text-center ${getScoreBg(result.summary.score)}`}>
+                    <div className={`col-span-1 p-8 rounded-2xl border flex flex-col items-center justify-center text-center ${getScoreBg(result?.summary?.score)}`}>
                         <div className="relative h-32 w-32 mb-4">
                             <svg className="h-full w-full" viewBox="0 0 36 36">
                                 <path
@@ -97,8 +98,8 @@ export default function EmailValidationPage() {
                                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                 />
                                 <path
-                                    className={getScoreColor(result.summary.score).replace('text-', 'stroke-')}
-                                    strokeDasharray={`${result.summary.score}, 100`}
+                                    className={getScoreColor(result?.summary?.score || 0).replace('text-', 'stroke-')}
+                                    strokeDasharray={`${result?.summary?.score || 0}, 100`}
                                     strokeWidth="3"
                                     strokeLinecap="round"
                                     fill="none"
@@ -106,16 +107,16 @@ export default function EmailValidationPage() {
                                 />
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className={`text-4xl font-black ${getScoreColor(result.summary.score)}`}>{result.summary.score}</span>
+                                <span className={`text-4xl font-black ${getScoreColor(result?.summary?.score || 0)}`}>{result?.summary?.score ?? 0}</span>
                                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Skor</span>
                             </div>
                         </div>
                         <h3 className="text-xl font-bold text-white mb-1">
-                            {result.summary.status === 'VALID' ? 'Güvenilir' : result.summary.status === 'RISKY' ? 'Riskli' : 'Geçersiz'}
+                            {result?.summary?.status === 'VALID' ? 'Güvenilir' : result?.summary?.status === 'RISKY' ? 'Riskli' : 'Geçersiz'}
                         </h3>
                         <p className="text-sm text-muted-foreground italic px-4">
-                            {result.intelligence.isDisposable ? 'Geçici e-posta servisi tespit edildi.' :
-                                result.intelligence.isRoleBased ? 'Kurumsal rol adresi (destek, bilgi vb.).' :
+                            {result?.intelligence?.isDisposable ? 'Geçici e-posta servisi tespit edildi.' :
+                                result?.intelligence?.isRoleBased ? 'Kurumsal rol adresi (destek, bilgi vb.).' :
                                     'E-posta adresi kullanımı için uygun görünüyor.'}
                         </p>
                     </div>
@@ -131,7 +132,7 @@ export default function EmailValidationPage() {
                                     </div>
                                     <span className="font-semibold text-white">Sözdizimi</span>
                                 </div>
-                                <StatusBadge isValid={result.syntax.isValid} label={result.syntax.isValid ? 'OK' : 'HATA'} />
+                                <StatusBadge isValid={!!result?.syntax?.isValid} label={result?.syntax?.isValid ? 'OK' : 'HATA'} />
                             </div>
                             <p className="text-xs text-muted-foreground">E-posta formatı RFC standartlarına uygunluk kontrol edildi.</p>
                         </div>
@@ -145,9 +146,9 @@ export default function EmailValidationPage() {
                                     </div>
                                     <span className="font-semibold text-white">DNS / MX Kaydı</span>
                                 </div>
-                                <StatusBadge isValid={result.dns.hasMx} label={result.dns.hasMx ? 'OK' : 'HATA'} />
+                                <StatusBadge isValid={!!result?.dns?.hasMx} label={result?.dns?.hasMx ? 'OK' : 'HATA'} />
                             </div>
-                            <p className="text-xs text-muted-foreground">Alan adının e-posta sunucu kayıtları ({result.dns.mxRecords?.[0]?.exchange || 'Yok'}) doğrulandı.</p>
+                            <p className="text-xs text-muted-foreground">Alan adının e-posta sunucu kayıtları ({result?.dns?.mxRecords?.[0]?.exchange || 'Yok'}) doğrulandı.</p>
                         </div>
 
                         {/* SMTP */}
@@ -159,7 +160,7 @@ export default function EmailValidationPage() {
                                     </div>
                                     <span className="font-semibold text-white">SMTP Bağlantısı</span>
                                 </div>
-                                <StatusBadge isValid={result.smtp.canConnect} label={result.smtp.canConnect ? 'OK' : 'HATA'} />
+                                <StatusBadge isValid={!!result?.smtp?.canConnect} label={result?.smtp?.canConnect ? 'OK' : 'HATA'} />
                             </div>
                             <p className="text-xs text-muted-foreground">Sunucuya socket seviyesinde erişildi ve handshake denendi.</p>
                         </div>
@@ -173,13 +174,13 @@ export default function EmailValidationPage() {
                                     </div>
                                     <span className="font-semibold text-white">Zeka (AI)</span>
                                 </div>
-                                <StatusBadge isValid={!result.intelligence.isDisposable} label={result.intelligence.isDisposable ? 'RİSKLİ' : 'TEMİZ'} />
+                                <StatusBadge isValid={!result?.intelligence?.isDisposable} label={result?.intelligence?.isDisposable ? 'RİSKLİ' : 'TEMİZ'} />
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                {result.intelligence.isDisposable && <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded">Disposable</span>}
-                                {result.intelligence.isRoleBased && <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">Role-Based</span>}
-                                {result.dns.isCatchAll && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded">Catch-All</span>}
-                                {!result.intelligence.isDisposable && !result.intelligence.isRoleBased && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">Personal/Work</span>}
+                                {result?.intelligence?.isDisposable && <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded">Disposable</span>}
+                                {result?.intelligence?.isRoleBased && <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">Role-Based</span>}
+                                {result?.dns?.isCatchAll && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded">Catch-All</span>}
+                                {!result?.intelligence?.isDisposable && !result?.intelligence?.isRoleBased && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">Personal/Work</span>}
                             </div>
                         </div>
                     </div>

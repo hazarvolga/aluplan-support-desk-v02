@@ -54,6 +54,7 @@ export default function AnnouncementsPage() {
     const [previewHtml, setPreviewHtml] = useState<string | null>(null);
     const [rendering, setRendering] = useState(false);
     const [templatePreviewHtml, setTemplatePreviewHtml] = useState<string | null>(null);
+    const [templatePreviewId, setTemplatePreviewId] = useState<string | null>(null);
     const [templateRendering, setTemplateRendering] = useState(false);
     const [saving, setSaving] = useState(false);
     const [broadcasting, setBroadcasting] = useState(false);
@@ -99,7 +100,14 @@ export default function AnnouncementsPage() {
             if (activeTab !== 'create') return;
             setCounting(true);
             try {
-                const res = await api.announcements.getTargetCount(criteria);
+                // Ensure plain arrays and objects for backend DTO validation
+                const cleanCriteria = {
+                    industries: Array.isArray(criteria.industries) ? criteria.industries : [],
+                    statuses: Array.isArray(criteria.statuses) ? criteria.statuses : [],
+                    companyNames: Array.isArray(criteria.companyNames) ? criteria.companyNames : [],
+                    tags: Array.isArray(criteria.tags) ? criteria.tags : []
+                };
+                const res = await api.announcements.getTargetCount(cleanCriteria);
                 setTargetCount(res.count);
             } catch (error) {
                 console.error(error);
@@ -117,9 +125,9 @@ export default function AnnouncementsPage() {
         try {
             const res = await api.email.previewTemplate('raw', {
                 mjml: mjmlOverride || mjmlSource,
-                customer: { name: 'Örnek Müşteri' }
+                customer: { first_name: 'Örnek', full_name: 'Örnek Müşteri', email: 'ornek@aluplan.com' }
             });
-            if (res.success) {
+            if (res.success && res.html) {
                 setPreviewHtml(res.html);
             }
         } catch (error: any) {
@@ -130,21 +138,34 @@ export default function AnnouncementsPage() {
     };
 
     const handleTemplatePreview = async (template: any) => {
-        if (templatePreviewHtml) {
+        // If same template is previewed, toggle off
+        if (templatePreviewId === template.id && templatePreviewHtml) {
             setTemplatePreviewHtml(null);
+            setTemplatePreviewId(null);
             return;
         }
+        // Show new template (even if another is already shown)
         setTemplateRendering(true);
+        setTemplatePreviewId(template.id);
         try {
+            const mjmlContent = template.contentMjml || template.mjml;
+            if (!mjmlContent) {
+                toast.error('Bu şablonun MJML içeriği boş.');
+                return;
+            }
             const res = await api.email.previewTemplate('raw', {
-                mjml: template.contentMjml,
-                customer: { name: 'Örnek Müşteri' }
+                mjml: mjmlContent,
+                customer: { name: 'Örnek Müşteri', email: 'ornek@aluplan.com' }
             });
-            if (res.success) {
+            if (res.success && res.html) {
                 setTemplatePreviewHtml(res.html);
+            } else {
+                toast.error(res.error || 'Şablon derlenemedi. MJML sözdizimini kontrol edin.');
+                setTemplatePreviewId(null);
             }
         } catch (error: any) {
-            toast.error('Önizleme hatası: ' + error.message);
+            toast.error('Önizleme hatası: ' + (error.message || 'Bilinmeyen hata'));
+            setTemplatePreviewId(null);
         } finally {
             setTemplateRendering(false);
         }
@@ -371,14 +392,18 @@ export default function AnnouncementsPage() {
                             </Card>
 
                             {previewHtml && (
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between">
-                                        <CardTitle>Canlı Önizleme</CardTitle>
-                                        <Button variant="ghost" size="sm" onClick={() => setPreviewHtml(null)}>Kapat</Button>
+                                <Card className="glass-card mt-6 border-emerald-500/20">
+                                    <CardHeader className="flex flex-row items-center justify-between py-3 border-b border-white/5 bg-white/5">
+                                        <CardTitle className="text-xs font-bold uppercase tracking-widest text-emerald-500">Hazırlanan İçerik Önizlemesi</CardTitle>
+                                        <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold uppercase" onClick={() => setPreviewHtml(null)}>Kapat</Button>
                                     </CardHeader>
-                                    <CardContent>
-                                        <div className="border rounded-md bg-white p-4 overflow-auto max-h-[600px]">
-                                            <div dangerouslySetInnerHTML={{ __html: typeof window !== 'undefined' ? DOMPurify.sanitize(previewHtml) : '' }} />
+                                    <CardContent className="p-0">
+                                        <div className="w-full bg-white h-[500px] overflow-hidden">
+                                            <iframe
+                                                srcDoc={previewHtml}
+                                                className="w-full h-full border-0"
+                                                title="announcement-preview"
+                                            />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -477,6 +502,9 @@ export default function AnnouncementsPage() {
                                                     </>
                                                 )}
                                             </div>
+                                            {targetCount === 0 && !counting && (
+                                                <p className="text-[10px] text-amber-500/70 relative z-10 font-medium animate-pulse">Lütfen en az bir filtre seçin</p>
+                                            )}
                                             <div className="text-[10px] font-medium text-muted-foreground/40 italic relative z-10">Real-time telemetri verisi</div>
                                         </div>
                                     </div>
@@ -594,11 +622,11 @@ export default function AnnouncementsPage() {
                                                     <div className="flex items-center justify-between mb-3">
                                                         <span className="font-bold text-sm text-white group-hover:text-emerald-400 transition-colors uppercase tracking-tight">{t.name}</span>
                                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-emerald-500 hover:bg-emerald-500/10" title="Önizle" onClick={(e) => {
+                                                            <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 hover:bg-emerald-500/10 ${templatePreviewId === t.id ? 'text-amber-400' : 'text-emerald-500'}`} title="Önizle" onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleTemplatePreview(t);
-                                                            }} disabled={templateRendering}>
-                                                                {templateRendering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
+                                                            }} disabled={templateRendering && templatePreviewId !== t.id}>
+                                                                {(templateRendering && templatePreviewId === t.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
                                                             </Button>
                                                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-rose-500 hover:bg-rose-500/10" onClick={(e) => {
                                                                 e.stopPropagation();
@@ -622,14 +650,18 @@ export default function AnnouncementsPage() {
                             {templatePreviewHtml && (
                                 <Card className="glass-card animate-in slide-in-from-right-4 duration-500">
                                     <CardHeader className="flex flex-row items-center justify-between py-3 border-b border-white/5 bg-white/5">
-                                        <CardTitle className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">Önizleme_Motoru</CardTitle>
-                                        <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold uppercase" onClick={() => setTemplatePreviewHtml(null)}>
+                                        <CardTitle className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">Şablon Önizlemesi</CardTitle>
+                                        <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold uppercase" onClick={() => { setTemplatePreviewHtml(null); setTemplatePreviewId(null); }}>
                                             <EyeOff className="h-3.5 w-3.5 mr-1.5" /> Kapat
                                         </Button>
                                     </CardHeader>
-                                    <CardContent className="pt-4 px-4 pb-4">
-                                        <div className="border border-white/10 rounded-xl bg-white p-6 overflow-auto max-h-[500px] shadow-inner">
-                                            <div dangerouslySetInnerHTML={{ __html: typeof window !== 'undefined' ? DOMPurify.sanitize(templatePreviewHtml) : '' }} />
+                                    <CardContent className="p-0">
+                                        <div className="w-full bg-white h-[500px] overflow-hidden">
+                                            <iframe
+                                                srcDoc={templatePreviewHtml}
+                                                className="w-full h-full border-0"
+                                                title="template-archive-preview"
+                                            />
                                         </div>
                                     </CardContent>
                                 </Card>

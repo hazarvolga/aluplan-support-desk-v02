@@ -316,6 +316,7 @@ export default function AdminSettingsPage() {
                                             <SelectItem value="ollama">Ollama (Yerel)</SelectItem>
                                             <SelectItem value="openai">OpenAI (Bulut)</SelectItem>
                                             <SelectItem value="llmapi">LLMAPI (Önerilen)</SelectItem>
+                                            <SelectItem value="custom">Özel (Grok, DeepSeek, vs.)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -391,14 +392,56 @@ export default function AdminSettingsPage() {
                                         </div>
                                     )}
 
-                                    {/* Custom (llmapi.ai, DeepSeek vb.) Ayarları */}
+                                    {/* LLMAPI Ayarları */}
                                     {getSetting('ai.active_provider') === 'llmapi' && (
                                         <div className="space-y-4 p-5 border-2 border-emerald-500/30 rounded-lg bg-emerald-500/5 max-w-2xl relative overflow-hidden">
                                             <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-bold tracking-widest uppercase px-3 py-1">
                                                 Aktif Sağlayıcı
                                             </div>
                                             <h3 className="font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-emerald-400">
-                                                <ShieldCheck className="h-4 w-4" /> Custom / OpenAI Uyumlu API (llmapi.ai, DeepSeek, vs.)
+                                                <ShieldCheck className="h-4 w-4" /> LLMAPI.ai (Yüksek Performans)
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">API Key</Label>
+                                                    <Input
+                                                        type="password"
+                                                        value={getSetting('ai.llmapi.api_key')}
+                                                        onChange={e => updateValue('ai.llmapi.api_key', e.target.value)}
+                                                        placeholder="llm-..."
+                                                        className="bg-black/50"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Input
+                                                        value={getSetting('ai.llmapi.chat_model')}
+                                                        onChange={e => updateValue('ai.llmapi.chat_model', e.target.value)}
+                                                        placeholder="gpt-4o"
+                                                        className="bg-black/50"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2 md:col-span-2">
+                                                    <Label className="text-xs">Base URL (Opsiyonel)</Label>
+                                                    <Input
+                                                        value={getSetting('ai.llmapi.base_url')}
+                                                        onChange={e => updateValue('ai.llmapi.base_url', e.target.value)}
+                                                        placeholder="https://internal.llmapi.ai/v1"
+                                                        className="bg-black/50"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Custom (Grok, DeepSeek vb.) Ayarları */}
+                                    {getSetting('ai.active_provider') === 'custom' && (
+                                        <div className="space-y-4 p-5 border-2 border-emerald-500/30 rounded-lg bg-emerald-500/5 max-w-2xl relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-bold tracking-widest uppercase px-3 py-1">
+                                                Aktif Sağlayıcı
+                                            </div>
+                                            <h3 className="font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-emerald-400">
+                                                <ShieldCheck className="h-4 w-4" /> Özel / OpenAI Uyumlu API (Grok, DeepSeek, vs.)
                                             </h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-2">
@@ -425,7 +468,7 @@ export default function AdminSettingsPage() {
                                                     <Input
                                                         value={getSetting('ai.custom.chat_model')}
                                                         onChange={e => updateValue('ai.custom.chat_model', e.target.value)}
-                                                        placeholder="gpt-4o"
+                                                        placeholder="grok-beta"
                                                         className="bg-black/50"
                                                     />
                                                 </div>
