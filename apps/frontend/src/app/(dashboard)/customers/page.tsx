@@ -244,18 +244,21 @@ export default function CustomersPage() {
     };
 
     const handleBulkVerify = async () => {
-        const emails = filteredAndSortedCustomers.map(c => c.email);
-        if (emails.length === 0) return;
+        const emailsToVerify = selectedIds.length > 0
+            ? customers.filter(c => selectedIds.includes(c.id)).map(c => c.email)
+            : filteredAndSortedCustomers.map(c => c.email);
+
+        if (emailsToVerify.length === 0) return;
 
         setValidating(true);
         try {
-            const results = await api.emailValidator.verifyBulk(emails);
-            const resultMap: Record<string, any> = {};
+            const results = await api.emailValidator.verifyBulk(emailsToVerify);
+            const resultMap: Record<string, any> = { ...validationResults };
             results.forEach(r => {
                 resultMap[r.email] = r;
             });
             setValidationResults(resultMap);
-            toast({ title: '✅ Başarılı', description: `${emails.length} e-posta doğrulandı.` });
+            toast({ title: '✅ Başarılı', description: `${emailsToVerify.length} e-posta doğrulandı.` });
         } catch (error: any) {
             toast({ variant: 'destructive', title: '❌ Hata', description: error.message });
         } finally {
@@ -390,11 +393,11 @@ export default function CustomersPage() {
                     )}
                     <Button
                         onClick={handleBulkVerify}
-                        disabled={loading || validating || filteredAndSortedCustomers.length === 0}
+                        disabled={loading || validating || (selectedIds.length === 0 && filteredAndSortedCustomers.length === 0)}
                         className="h-9 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-500/20"
                     >
                         {validating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-                        Mailleri Doğrula
+                        {selectedIds.length > 0 ? `Seçilenleri Doğrula (${selectedIds.length})` : 'Mailleri Doğrula'}
                     </Button>
                     <Button
                         asChild
