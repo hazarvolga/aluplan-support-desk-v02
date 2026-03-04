@@ -86,8 +86,18 @@ export class AnnouncementsService {
      * Finds target customers based on criteria without sending
      */
     async getTargetCount(criteria: TargetCriteriaDto) {
+        const hasCriteria = (criteria.industries?.length || 0) +
+            (criteria.statuses?.length || 0) +
+            (criteria.companyNames?.length || 0) +
+            (criteria.tags?.length || 0) > 0;
+
+        if (!hasCriteria) {
+            return { count: 0 };
+        }
+
         const where = await this.buildTargetQuery(criteria);
-        return this.prisma.customerProfile.count({ where });
+        const count = await this.prisma.customerProfile.count({ where });
+        return { count };
     }
 
     /**
@@ -111,6 +121,18 @@ export class AnnouncementsService {
 
         try {
             const criteria = announcement.targetCriteria as any as TargetCriteriaDto;
+
+            // Safety check: if no filters are selected, don't broadcast to everyone (or crash Prisma)
+            const hasIndustries = criteria.industries && criteria.industries.length > 0;
+            const hasStatuses = criteria.statuses && criteria.statuses.length > 0;
+            const hasCompanies = criteria.companyNames && criteria.companyNames.length > 0;
+            const hasTags = criteria.tags && criteria.tags.length > 0;
+
+            if (!hasIndustries && !hasStatuses && !hasCompanies && !hasTags) {
+                this.logger.warn(`Announcement ${id} has no target criteria. Skipping broadcast.`);
+                return { success: true, count: 0 };
+            }
+
             const where = await this.buildTargetQuery(criteria);
 
             const targets = await this.prisma.customerProfile.findMany({
@@ -187,25 +209,25 @@ export class AnnouncementsService {
     private async buildTargetQuery(criteria: TargetCriteriaDto): Promise<Prisma.CustomerProfileWhereInput> {
         const where: Prisma.CustomerProfileWhereInput = {};
 
-        if (criteria.industries && criteria.industries.length > 0) {
+        const hasIndustries = criteria.industries && criteria.industries.length > 0;
+        const hasStatuses = criteria.statuses && criteria.statuses.length > 0;
+        const hasCompanies = criteria.companyNames && criteria.companyNames.length > 0;
+        const hasTags = criteria.tags && criteria.tags.length > 0;
+
+        if (hasIndustries) {
             where.industry = { in: criteria.industries };
         }
 
-        if (criteria.statuses && criteria.statuses.length > 0) {
+        if (hasStatuses) {
             where.contractStatus = { in: criteria.statuses };
         }
 
-        if (criteria.companyNames && criteria.companyNames.length > 0) {
+        if (hasCompanies) {
             where.companyName = { in: criteria.companyNames };
         }
 
-        if (criteria.tags && criteria.tags.length > 0) {
+        if (hasTags) {
             where.tags = { hasSome: criteria.tags };
-        }
-
-        // Advanced filters from hotinfoData if needed
-        if (criteria.hotinfoFilters) {
-            // Logic for deep json filters could go here
         }
 
         return where;

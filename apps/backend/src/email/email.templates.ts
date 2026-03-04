@@ -1,6 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import mjml2html from 'mjml';
+// Robust MJML import to handle ESM/CJS interop crashes
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const mjmlModule = require('mjml');
+const mjml2html = typeof mjmlModule === 'function' ? mjmlModule : (mjmlModule.default || mjmlModule);
 import * as Handlebars from 'handlebars';
 import { convert } from 'html-to-text';
 import { BaseEmailSchema } from './contracts/base.contract';
@@ -16,19 +19,24 @@ export interface EmailPayload {
 }
 
 export class TemplateService {
-  private static cache: Map<string, Handlebars.TemplateDelegate> = new Map();
-  // Fixed paths: In production, assets are in dist/email. In dev, they are in src/email.
-  // We use a relative lookup that works for both.
-  private static mjmlBaseDir = path.join(process.cwd(), 'dist', 'email', 'templates', 'mjml');
-  private static localesDir = path.join(process.cwd(), 'dist', 'email', 'locales');
+  // Fixed paths: In monorepo, we need robust lookup.
+  private static mjmlBaseDir = path.join(__dirname, 'templates', 'mjml');
+  private static localesDir = path.join(__dirname, 'locales');
+  private static cache = new Map<string, Handlebars.TemplateDelegate>();
 
   static {
-    // Fallback for development if dist doesn't exist yet
+    // In production (dist), these paths are correct relative to the compiled file.
+    // In development (nest start), we might need to look back to src.
     if (!fs.existsSync(this.mjmlBaseDir)) {
-      this.mjmlBaseDir = path.join(process.cwd(), 'src', 'email', 'templates', 'mjml');
+      this.mjmlBaseDir = path.join(process.cwd(), 'apps', 'backend', 'src', 'email', 'templates', 'mjml');
     }
     if (!fs.existsSync(this.localesDir)) {
-      this.localesDir = path.join(process.cwd(), 'src', 'email', 'locales');
+      this.localesDir = path.join(process.cwd(), 'apps', 'backend', 'src', 'email', 'locales');
+    }
+
+    // Final fallback to project root src/
+    if (!fs.existsSync(this.mjmlBaseDir)) {
+      this.mjmlBaseDir = path.join(process.cwd(), 'src', 'email', 'templates', 'mjml');
     }
   }
 

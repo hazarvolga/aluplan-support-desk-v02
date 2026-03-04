@@ -102,6 +102,10 @@ async function bootstrap() {
         }),
     );
 
+    // [DEBUG] Global Error Filter for Deep Dive
+    const { GlobalDebugFilter } = require('./common/filters/global-debug.filter');
+    app.useGlobalFilters(new GlobalDebugFilter());
+
     // Swagger (only in development)
     if (configService.get('NODE_ENV') !== 'production') {
         const config = new DocumentBuilder()

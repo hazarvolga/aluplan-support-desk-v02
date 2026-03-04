@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body, Param, Res, HttpStatus, UseGuards, Req, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Param, Res, HttpStatus, UseGuards, Req, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -15,6 +15,8 @@ const MJML_SCREENS_DIR = path.join(MJML_BASE_DIR, 'screens');
 
 @Controller('email')
 export class EmailController {
+  private readonly logger = new Logger(EmailController.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
@@ -204,14 +206,18 @@ export class EmailController {
 
   @UseGuards(JwtAuthGuard)
   @Post('admin/templates/:name/preview')
-  async previewTemplate(@Param('name') name: string, @Body() data: any) {
+  async previewTemplate(@Param('name') name: string, @Req() req: any) {
     try {
+      this.logger.debug(`Preview requested for template: ${name}`);
+      const data = req.body || {};
+
       // Provide some standard mock data if empty
-      const mockData = Object.keys(data).length > 0 ? data : {
-        ticket: { id: 'TCKT-1234', subject: 'Örnek Destek Talebi', priority: 'HIGH', url: 'http://localhost/tickets/TCKT-1234', first_message_snippet: 'Bu bir örnek mesajdır.' },
+      const mockData = {
+        ticket: { id: 'TCKT-1234', subject: 'Örnek Destek Talebi', priority: 'HIGH', url: 'http://localhost/tickets/TCKT-4321', first_message_snippet: 'Bu bir örnek mesajdır.' },
         customer: { first_name: 'John', full_name: 'John Doe', email: 'john@example.com' },
         agent: { first_name: 'Jane', full_name: 'Jane Smith' },
-        sla: { first_response_deadline: new Date().toLocaleString() }
+        sla: { first_response_deadline: new Date().toLocaleString() },
+        ...data
       };
 
       // Fetch branding data for preview context
@@ -253,7 +259,8 @@ export class EmailController {
       const compiled = TemplateService.compile(name, mockData, brandDefaults);
       return { success: true, subject: compiled.subject, html: compiled.html };
     } catch (error: any) {
-      return { success: false, error: error.message || 'Template compilation failed.' };
+      this.logger.error(`Preview compilation failed for "${name}": ${error.message}`, error.stack);
+      throw new BadRequestException(error.message || 'Template compilation failed.');
     }
   }
 
