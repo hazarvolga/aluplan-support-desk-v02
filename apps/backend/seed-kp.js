@@ -12,13 +12,18 @@ async function run() {
     const client = new Client({ connectionString: dbUrl });
     await client.connect();
 
+    // 1. Ensure AI Settings exist (Crucial for AI_NODE: ONLINE)
+    console.log('--- Ensuring AI Settings ---');
+    await client.query("INSERT INTO settings (key, value, \"isSecret\") VALUES ('ai.active_provider', 'ollama', false) ON CONFLICT (key) DO NOTHING");
+    await client.query("INSERT INTO settings (key, value, \"isSecret\") VALUES ('ai.ollama.url', 'http://172.17.0.1:11434', false) ON CONFLICT (key) DO NOTHING");
+    console.log('✅ AI settings verified.');
+
     console.log('--- Seeding Knowledge Pool from /dataset ---');
 
-    // 1. Check if dataset directory exists
-    // In Docker, it should be at the same level as the app or mapped
-    const datasetDir = path.resolve(__dirname, '../../dataset');
+    // 2. Check if dataset directory exists
+    const datasetDir = fs.existsSync('/app/dataset') ? '/app/dataset' : path.resolve(__dirname, '../../dataset');
     if (!fs.existsSync(datasetDir)) {
-        console.warn(`⚠️ Dataset directory not found at ${datasetDir}. Skipping seeder.`);
+        console.warn(`⚠️ Dataset directory not found at ${datasetDir}. Skipping Knowledge Pool seeding.`);
         await client.end();
         return;
     }
@@ -66,13 +71,6 @@ async function run() {
     }
 
     console.log(`✅ Successfully added ${addedCount} new sources to Knowledge Pool.`);
-
-    // 3. Ensure AI Settings exist
-    console.log('--- Ensuring AI Settings ---');
-    await client.query("INSERT INTO settings (key, value, \"isSecret\") VALUES ('ai.active_provider', 'ollama', false) ON CONFLICT (key) DO NOTHING");
-    // Default to host.docker.internal for local ollama if not specified
-    await client.query("INSERT INTO settings (key, value, \"isSecret\") VALUES ('ai.ollama.url', 'http://172.17.0.1:11434', false) ON CONFLICT (key) DO NOTHING");
-    console.log('✅ AI settings verified.');
 
     await client.end();
 }

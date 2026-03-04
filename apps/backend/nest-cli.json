@@ -1,5 +1,17 @@
 {
     "collection": "@nestjs/schematics",
     "sourceRoot": "src",
-    "entryFile": "main"
+    "entryFile": "main",
+    "compilerOptions": {
+        "assets": [
+            {
+                "include": "email/templates/mjml/**/*",
+                "watchAssets": true
+            },
+            {
+                "include": "email/locales/**/*",
+                "watchAssets": true
+            }
+        ]
+    }
 }

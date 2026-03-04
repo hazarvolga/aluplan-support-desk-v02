@@ -51,6 +51,7 @@ import { AnnouncementTemplatesModule } from './announcement-templates/announceme
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: (config: ConfigService) => {
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
                 const IORedis = require('ioredis');
                 const connection = new IORedis(config.get<string>('redis.url'), {
                     maxRetriesPerRequest: null,

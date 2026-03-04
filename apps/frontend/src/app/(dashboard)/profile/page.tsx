@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { HotinfoGrid } from "@/components/ui/hotinfo-grid";
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, KeyRound, Monitor, UploadCloud, AlertCircle, AlertTriangle, ShieldCheck, History, Clock, FileText, Activity, LayoutDashboard, QrCode, Smartphone, SmartphoneNfc, CheckCircle2, UserCircle, Save, Loader2, Trash2 } from 'lucide-react';
+import { Shield, KeyRound, Monitor, UploadCloud, AlertCircle, AlertTriangle, ShieldCheck, History, Clock, FileText, Activity, LayoutDashboard, QrCode, Smartphone, SmartphoneNfc, CheckCircle2, UserCircle, Save, Loader2, Trash2, Mail, BellRing, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -51,9 +51,36 @@ export default function ProfilePage() {
     const [mfaToken, setMfaToken] = useState('');
     const [mfaDialogOpen, setMfaDialogOpen] = useState(false);
 
+    // Email Preferences State
+    const [emailPrefs, setEmailPrefs] = useState<{ emailType: string; enabled: boolean }[]>([]);
+    const [prefsLoading, setPrefsLoading] = useState(false);
+
     useEffect(() => {
         loadProfile();
+        loadEmailPreferences();
     }, []);
+
+    const loadEmailPreferences = async () => {
+        setPrefsLoading(true);
+        try {
+            const data = await api.preferences.getEmail();
+            setEmailPrefs(data);
+        } catch (error) {
+            console.error('Failed to load email preferences', error);
+        } finally {
+            setPrefsLoading(false);
+        }
+    };
+
+    const handleToggleEmailPref = async (type: string, current: boolean) => {
+        try {
+            await api.preferences.updateEmail(type, !current);
+            setEmailPrefs(prev => prev.map(p => p.emailType === type ? { ...p, enabled: !current } : p));
+            toast.success('Tercih güncellendi');
+        } catch (error) {
+            toast.error('Güncelleme başarısız');
+        }
+    };
 
     const loadProfile = async () => {
         setLoading(true);
@@ -486,6 +513,57 @@ export default function ProfilePage() {
                                 </Dialog>
                             )}
                         </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="border-slate-800 bg-slate-900/50">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Mail className="w-5 h-5 text-blue-500" />
+                        E-posta Bildirim Tercihleri
+                    </CardTitle>
+                    <CardDescription>
+                        Hangi kategorilerde e-posta almak istediğinizi belirleyin
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {prefsLoading ? (
+                            <div className="flex items-center justify-center py-6">
+                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            </div>
+                        ) : emailPrefs.map((pref) => (
+                            <div key={pref.emailType} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/40 border border-slate-700/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-full bg-slate-700/30">
+                                        {pref.emailType === 'ANNOUNCEMENTS' && <BellRing className="w-4 h-4 text-amber-400" />}
+                                        {pref.emailType === 'TICKETS' && <History className="w-4 h-4 text-emerald-400" />}
+                                        {pref.emailType === 'SYSTEM' && <ShieldAlert className="w-4 h-4 text-rose-400" />}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-200">
+                                            {pref.emailType === 'ANNOUNCEMENTS' && 'Duyurular ve Yenilikler'}
+                                            {pref.emailType === 'TICKETS' && 'Bilet Güncellemeleri'}
+                                            {pref.emailType === 'SYSTEM' && 'Sistem ve Güvenlik Uyarıları'}
+                                        </p>
+                                        <p className="text-[11px] text-slate-400">
+                                            {pref.emailType === 'ANNOUNCEMENTS' && 'Kampanyalar, haberler ve ürün güncellemeleri'}
+                                            {pref.emailType === 'TICKETS' && 'Destek taleplerinizle ilgili tüm mesajlar'}
+                                            {pref.emailType === 'SYSTEM' && 'Şifre sıfırlama, hesap hareketleri ve kritik uyarılar'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div
+                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${pref.enabled ? 'bg-primary' : 'bg-slate-700'}`}
+                                    onClick={() => handleToggleEmailPref(pref.emailType, pref.enabled)}
+                                >
+                                    <span
+                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${pref.enabled ? 'translate-x-5' : 'translate-x-1'}`}
+                                    />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </CardContent>
             </Card>

@@ -315,6 +315,14 @@ export const api = {
         update: (id: string, body: any) => request<any>(`/announcement-templates/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
         delete: (id: string) => request<any>(`/announcement-templates/${id}`, { method: 'DELETE' }),
     },
+    preferences: {
+        getEmail: () => request<Array<{ emailType: string; enabled: boolean }>>('/preferences/email'),
+        updateEmail: (emailType: string, enabled: boolean) =>
+            request<any>('/preferences/email', {
+                method: 'PATCH',
+                body: JSON.stringify({ emailType, enabled }),
+            }),
+    },
     branding: {
         uploadLogo: (file: File) => {
             const formData = new FormData();

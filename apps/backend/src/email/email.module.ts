@@ -10,6 +10,7 @@ import { SettingsModule } from '../settings/settings.module';
 import { TicketsModule } from '../tickets/tickets.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmailController } from './email.controller';
+import { PreferencesController } from './preferences.controller';
 
 @Module({
     imports: [
@@ -20,7 +21,7 @@ import { EmailController } from './email.controller';
         forwardRef(() => TicketsModule),
         PrismaModule
     ],
-    controllers: [EmailController],
+    controllers: [EmailController, PreferencesController],
     providers: [
         EmailService,
         EmailProcessor,

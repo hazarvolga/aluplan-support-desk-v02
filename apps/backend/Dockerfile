@@ -17,6 +17,8 @@ ENV NODE_ENV=production
 COPY --from=builder /app/deployed-backend ./
 # Manually copy the dist folder since it might be ignored by pnpm deploy
 COPY --from=builder /app/apps/backend/dist ./dist
+# Copy the dataset folder for Knowledge Pool seeding
+COPY --from=builder /app/dataset ./dataset/
 
 EXPOSE 3001
 CMD ["sh", "-c", "if [ \"$RESET_DB_ON_START\" = \"true\" ]; then echo 'Wiping DB via DB Execute...'; echo 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' | npx -y prisma@6.3.1 db execute --url \"$DATABASE_URL\" --stdin; fi; echo \"DELETE FROM _prisma_migrations WHERE migration_name = '20260303220000_fix_diverged_schema_sla';\" | npx -y prisma@6.3.1 db execute --url \"$DATABASE_URL\" --stdin || true; npx -y prisma@6.3.1 migrate deploy --schema=./node_modules/@aluplan/database/prisma/schema.prisma && node create-admin.js || true && node seed-kp.js || true && node dist/main"]

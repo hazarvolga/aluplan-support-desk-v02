@@ -53,17 +53,26 @@ export class EmailService implements OnModuleInit {
      * Entry-point for enqueueing emails securely. Creates Log tracking entries dynamically.
      */
     async enqueueEmail(payload: EmailPayload): Promise<void> {
-        // Evaluate preference limits before proceeding.
-        /*const userObj = await this.prisma.user.findFirst({ where: { email: payload.to }, include: { settings: true } });
+        // 1. Map template to Email Type (Category)
+        const emailType = this.mapTemplateToType(payload.template);
+
+        // 2. Evaluate preference limits before proceeding.
+        const userObj = await this.prisma.user.findUnique({
+            where: { email: payload.to },
+            select: { id: true }
+        });
+
         if (userObj) {
             const pref = await this.prisma.emailPreference.findUnique({
-               where: { userId_emailType: { userId: userObj.id, emailType: payload.template } }
+                where: { userId_emailType: { userId: userObj.id, emailType } }
             });
+
+            // If preference is explicitly disabled, skip. (Default is enabled if missing)
             if (pref && pref.enabled === false) {
-                this.logger.log(`Skipping queue enqueue for ${payload.template} to ${payload.to} (User Opt-Out)`);
+                this.logger.log(`Skipping email: ${payload.template} (${emailType}) to ${payload.to} - User Opted Out`);
                 return;
             }
-        }*/
+        }
 
         // Inject initial mapping schema into our Database logs:
         const draftLog = await this.prisma.emailLog.create({
@@ -91,6 +100,27 @@ export class EmailService implements OnModuleInit {
         });
 
         this.logger.log(`Enqueued Email -> ${payload.template} to ${payload.to} (Log ID: ${draftLog.id}, Job: ${jobId})`);
+    }
+
+    /**
+     * Maps internal template names to user-facing preference categories.
+     */
+    private mapTemplateToType(template: string): string {
+        const tickets = [
+            'ticket-created', 'ticket-assigned', 'ticket-closed',
+            'ticket-reopened', 'ticket-status-changed', 'ticket-updated',
+            'csat-survey', 'sla-breached'
+        ];
+        const system = [
+            'password-reset', 'welcome-customer', 'user-invited',
+            'email-verification', 'security-alert', 'two-factor-auth'
+        ];
+
+        if (template === 'raw' || template === 'broadcast') return 'ANNOUNCEMENTS';
+        if (tickets.includes(template)) return 'TICKETS';
+        if (system.includes(template)) return 'SYSTEM';
+
+        return 'SYSTEM'; // Default fallback
     }
 
     /**
