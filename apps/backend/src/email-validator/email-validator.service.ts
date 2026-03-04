@@ -88,4 +88,19 @@ export class EmailValidatorService {
 
         return result;
     }
+
+    async validateBulk(emails: string[]): Promise<EmailValidationResult[]> {
+        this.logger.log(`Starting bulk validation for ${emails.length} addresses`);
+        const results = await Promise.all(
+            emails.map(email => this.validate(email).catch(err => ({
+                email,
+                status: ValidationStatus.INVALID,
+                score: 0,
+                syntax: { isValid: false },
+                dns: { isValid: false },
+                smtp: { isValid: false, error: err.message }
+            })))
+        );
+        return results;
+    }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
 import { EmailValidatorService } from './email-validator.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/rbac.guard';
@@ -13,5 +13,11 @@ export class EmailValidatorController {
     @Roles('ADMIN') // Restrict to admin for testing
     async verifyEmail(@Query('email') email: string) {
         return this.validatorService.validate(email);
+    }
+
+    @Post('verify-bulk')
+    @Roles('ADMIN')
+    async verifyEmailsBulk(@Body() body: { emails: string[] }) {
+        return this.validatorService.validateBulk(body.emails);
     }
 }
