@@ -323,6 +323,9 @@ export const api = {
                 body: JSON.stringify({ emailType, enabled }),
             }),
     },
+    emailValidator: {
+        verify: (email: string) => request<any>(`/email-validator/verify?email=${encodeURIComponent(email)}`),
+    },
     branding: {
         uploadLogo: (file: File) => {
             const formData = new FormData();

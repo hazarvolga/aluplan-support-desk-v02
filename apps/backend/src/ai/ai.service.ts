@@ -65,18 +65,18 @@ export class AiService implements AiProvider {
     private async getActiveProvider(): Promise<AiProvider> {
         const providerName = await this.settings.getValue('ai.active_provider');
 
-        switch (providerName) {
-            case 'openai':
-                return this.openai;
-            case 'custom':
-                return this.custom;
-            case 'ollama':
-                return this.ollama;
-            case 'llmapi':
-                return this.llmapi;
-            default:
-                return this.ollama;
-        }
+        // Logic: if 'allplan' (internal) or 'openai' or 'custom' or 'llmapi' is set, use it.
+        // If not set, but OPENAI_API_KEY is in env, automatically upgrade from ollama.
+        if (providerName === 'openai') return this.openai;
+        if (providerName === 'custom') return this.custom;
+        if (providerName === 'llmapi') return this.llmapi;
+        if (providerName === 'ollama') return this.ollama;
+
+        // Auto-upgrade logic for production
+        if (process.env.OPENAI_API_KEY) return this.openai;
+        if (process.env.GEMINI_API_KEY) return this.llmapi; // Using llmapi for Gemini
+
+        return this.ollama;
     }
 
     getName(): string {

@@ -17,8 +17,20 @@ export interface EmailPayload {
 
 export class TemplateService {
   private static cache: Map<string, Handlebars.TemplateDelegate> = new Map();
-  private static mjmlBaseDir = path.join(__dirname, '..', '..', 'src', 'email', 'templates', 'mjml');
-  private static localesDir = path.join(__dirname, '..', '..', 'src', 'email', 'locales');
+  // Fixed paths: In production, assets are in dist/email. In dev, they are in src/email.
+  // We use a relative lookup that works for both.
+  private static mjmlBaseDir = path.join(process.cwd(), 'dist', 'email', 'templates', 'mjml');
+  private static localesDir = path.join(process.cwd(), 'dist', 'email', 'locales');
+
+  static {
+    // Fallback for development if dist doesn't exist yet
+    if (!fs.existsSync(this.mjmlBaseDir)) {
+      this.mjmlBaseDir = path.join(process.cwd(), 'src', 'email', 'templates', 'mjml');
+    }
+    if (!fs.existsSync(this.localesDir)) {
+      this.localesDir = path.join(process.cwd(), 'src', 'email', 'locales');
+    }
+  }
 
   public static resetCache(templateName?: string) {
     if (templateName) {

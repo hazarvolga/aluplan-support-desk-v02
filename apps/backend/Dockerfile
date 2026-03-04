@@ -13,12 +13,12 @@ RUN pnpm --filter @aluplan/backend --prod deploy /app/deployed-backend
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-# Copy the deployed application from the builder stage (contains production node_modules)
+# AI Strategic Upgrade: Add OPENAI_API_KEY / GEMINI_API_KEY to Coolify ENV to auto-upgrade from Ollama.
+# MJML & Template Fix: Ensure dist folder contains compiled assets.
 COPY --from=builder /app/deployed-backend ./
-# Manually copy the dist folder since it might be ignored by pnpm deploy
 COPY --from=builder /app/apps/backend/dist ./dist
-# Copy the dataset folder for Knowledge Pool seeding
 COPY --from=builder /app/dataset ./dataset/
 
 EXPOSE 3001
+# Start sequence: Reset (optional) -> Fix Migrations -> Deploy -> Seed Admin -> Seed Knowledge Pool -> Run
 CMD ["sh", "-c", "if [ \"$RESET_DB_ON_START\" = \"true\" ]; then echo 'Wiping DB via DB Execute...'; echo 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' | npx -y prisma@6.3.1 db execute --url \"$DATABASE_URL\" --stdin; fi; echo \"DELETE FROM _prisma_migrations WHERE migration_name = '20260303220000_fix_diverged_schema_sla';\" | npx -y prisma@6.3.1 db execute --url \"$DATABASE_URL\" --stdin || true; npx -y prisma@6.3.1 migrate deploy --schema=./node_modules/@aluplan/database/prisma/schema.prisma && node create-admin.js || true && node seed-kp.js || true && node dist/main"]
