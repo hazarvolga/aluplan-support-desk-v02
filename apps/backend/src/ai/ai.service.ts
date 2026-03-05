@@ -62,30 +62,49 @@ export class AiService implements AiProvider {
         }
     }
 
-    private async getActiveProvider(): Promise<AiProvider> {
-        const providerName = await this.settings.getValue('ai.active_provider');
-
-        // Logic: if 'allplan' (internal) or 'openai' or 'custom' or 'llmapi' is set, use it.
-        // If not set, but OPENAI_API_KEY is in env, automatically upgrade from ollama.
+    private async getProviderByName(providerName: string | null): Promise<AiProvider | null> {
         if (providerName === 'openai') return this.openai;
         if (providerName === 'custom') return this.custom;
         if (providerName === 'llmapi') return this.llmapi;
         if (providerName === 'ollama') return this.ollama;
+        return null;
+    }
+
+    private async getActiveChatProvider(): Promise<AiProvider> {
+        const chatProvider = await this.settings.getValue('ai.chat_provider');
+        const legacyProvider = await this.settings.getValue('ai.active_provider');
+
+        let provider = await this.getProviderByName(chatProvider || legacyProvider);
+        if (provider) return provider;
 
         // Auto-upgrade logic for production
         if (process.env.OPENAI_API_KEY) return this.openai;
-        if (process.env.GEMINI_API_KEY) return this.llmapi; // Using llmapi for Gemini
+        if (process.env.GEMINI_API_KEY) return this.llmapi;
+
+        return this.ollama;
+    }
+
+    private async getActiveEmbedProvider(): Promise<AiProvider> {
+        const embedProvider = await this.settings.getValue('ai.embed_provider');
+        const legacyProvider = await this.settings.getValue('ai.active_provider');
+
+        let provider = await this.getProviderByName(embedProvider || legacyProvider);
+        if (provider) return provider;
+
+        // Auto-upgrade logic for production
+        if (process.env.OPENAI_API_KEY) return this.openai;
+        if (process.env.GEMINI_API_KEY) return this.llmapi;
 
         return this.ollama;
     }
 
     async getActiveProviderName(): Promise<string> {
-        const providerName = await this.settings.getValue('ai.active_provider');
+        // Return chat provider for backwards compatibility in some places
+        const chatProvider = await this.settings.getValue('ai.chat_provider');
+        const legacyProvider = await this.settings.getValue('ai.active_provider');
 
-        if (providerName === 'openai') return 'openai';
-        if (providerName === 'custom') return 'custom';
-        if (providerName === 'llmapi') return 'llmapi';
-        if (providerName === 'ollama') return 'ollama';
+        if (chatProvider) return chatProvider;
+        if (legacyProvider) return legacyProvider;
 
         if (process.env.OPENAI_API_KEY) return 'openai';
         if (process.env.GEMINI_API_KEY) return 'llmapi';
@@ -99,28 +118,21 @@ export class AiService implements AiProvider {
 
     async embed(text: string): Promise<EmbeddingResult | null> {
         return this.runSafe(async () => {
-            // Embedding is ALWAYS dedicated to OpenAI for production-grade
-            // Turkish language support (text-embedding-3-small).
-            // Falls back to Ollama if OpenAI key is not configured.
-            const openaiResult = await this.openai.embed(text);
-            if (openaiResult) return openaiResult;
-
-            // Fallback to active provider if OpenAI is not configured
-            this.logger.warn('⚠️ OpenAI embed unavailable. Falling back to Ollama (lower quality for Turkish).');
-            return this.ollama.embed(text);
+            const provider = await this.getActiveEmbedProvider();
+            return provider.embed(text);
         });
     }
 
     async generate(prompt: string, timeout?: number): Promise<string | null> {
         return this.runSafe(async () => {
-            const provider = await this.getActiveProvider();
+            const provider = await this.getActiveChatProvider();
             return provider.generate(prompt, timeout);
         });
     }
 
     async reformat(systemPrompt: string, userQuery: string, kbContent: string): Promise<ChatResult | null> {
         return this.runSafe(async () => {
-            const provider = await this.getActiveProvider();
+            const provider = await this.getActiveChatProvider();
             return provider.reformat(systemPrompt, userQuery, kbContent);
         });
     }
@@ -132,7 +144,7 @@ export class AiService implements AiProvider {
             return;
         }
 
-        const provider = await this.getActiveProvider();
+        const provider = await this.getActiveChatProvider();
         try {
             if (provider.streamReformat) {
                 yield* provider.streamReformat(systemPrompt, userQuery, kbContent);
@@ -149,21 +161,21 @@ export class AiService implements AiProvider {
 
     async suggestCategory(title: string, content: string, categories: string[]): Promise<string | null> {
         return this.runSafe(async () => {
-            const provider = await this.getActiveProvider();
+            const provider = await this.getActiveChatProvider();
             return provider.suggestCategory(title, content, categories);
         });
     }
 
     async summarizeTicket(subject: string, conversation: string): Promise<string | null> {
         return this.runSafe(async () => {
-            const provider = await this.getActiveProvider();
+            const provider = await this.getActiveChatProvider();
             return provider.summarizeTicket(subject, conversation);
         });
     }
 
     async cleanKnowledgeDocument(rawContent: string): Promise<string> {
         const result = await this.runSafe(async () => {
-            const provider = await this.getActiveProvider();
+            const provider = await this.getActiveChatProvider();
             const prompt = `You are an expert technical writer and AI data engineer. 
 I am providing you with a raw, unstructured technical document (could be a PDF extract, a raw log file, or messy notes).
 Your task is to extract the core technical knowledge, errors, solutions, and symptoms, and format them into a clean, structured Markdown format 
@@ -186,7 +198,7 @@ ${rawContent}
 
     async analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'> {
         const res = await this.runSafe(async () => {
-            const provider = await this.getActiveProvider();
+            const provider = await this.getActiveChatProvider();
             return provider.analyzeSentiment(text);
         });
         return res || 'NEUTRAL';
@@ -194,19 +206,19 @@ ${rawContent}
 
     async translate(text: string, targetLanguage: string): Promise<string | null> {
         return this.runSafe(async () => {
-            const provider = await this.getActiveProvider();
+            const provider = await this.getActiveChatProvider();
             return provider.translate(text, targetLanguage);
         });
     }
 
     async getActiveModelName(): Promise<string> {
-        const provider = await this.getActiveProvider();
+        const provider = await this.getActiveChatProvider();
         return provider.getActiveModelName();
     }
 
     async isAvailable(): Promise<boolean> {
         if (!await this.isCircuitClosed()) return false;
-        const provider = await this.getActiveProvider();
+        const provider = await this.getActiveChatProvider();
         return provider.isAvailable();
     }
 

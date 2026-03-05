@@ -308,14 +308,14 @@ export default function AdminSettingsPage() {
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="space-y-4 pb-6 border-b border-border/40">
-                                    <div className="flex flex-col sm:flex-row gap-4 sm:items-end justify-between">
-                                        <div className="space-y-2">
-                                            <Label className="text-[12px] font-bold tracking-widest uppercase">Varsayılan (Global) Sağlayıcı</Label>
+                                    <div className="flex flex-col md:flex-row gap-6">
+                                        <div className="space-y-2 flex-1">
+                                            <Label className="text-[12px] font-bold tracking-widest uppercase">Varsayılan Sohbet (Chat) Sağlayıcısı</Label>
                                             <Select
-                                                value={getSetting('ai.active_provider') || 'ollama'}
-                                                onValueChange={v => updateValue('ai.active_provider', v)}
+                                                value={getSetting('ai.chat_provider') || getSetting('ai.active_provider') || 'ollama'}
+                                                onValueChange={v => updateValue('ai.chat_provider', v)}
                                             >
-                                                <SelectTrigger className="w-[280px]">
+                                                <SelectTrigger className="w-full">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -325,19 +325,34 @@ export default function AdminSettingsPage() {
                                                     <SelectItem value="custom">Özel (Grok, DeepSeek, vs.)</SelectItem>
                                                 </SelectContent>
                                             </Select>
-                                            <p className="text-xs text-muted-foreground mt-1">Bu sistemin genel varsayılan sağlayıcısıdır. (Ayarlar otomatik kaydedilmez, kaydet butonunu kullanın).</p>
+                                            <p className="text-xs text-muted-foreground mt-1">Ticket yanıtlama ve asistan özellikleri için kullanılır.</p>
+                                        </div>
+                                        <div className="space-y-2 flex-1">
+                                            <Label className="text-[12px] font-bold tracking-widest uppercase">Varsayılan Gömme (Embedding) Sağlayıcısı</Label>
+                                            <Select
+                                                value={getSetting('ai.embed_provider') || getSetting('ai.active_provider') || 'ollama'}
+                                                onValueChange={v => updateValue('ai.embed_provider', v)}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="ollama">Ollama (Yerel)</SelectItem>
+                                                    <SelectItem value="openai">OpenAI (Bulut - Önerilen)</SelectItem>
+                                                    <SelectItem value="llmapi">LLMAPI</SelectItem>
+                                                    <SelectItem value="custom">Özel (Desteği varsa)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <p className="text-xs text-muted-foreground mt-1">Bilgi tabanı araması ve belge indeksleme için kullanılır. (Grok embedding desteklemez).</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                                     {/* Ollama Ayarları */}
-                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 ${getSetting('ai.active_provider') === 'ollama' ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border/60 bg-muted/10'}`}>
-                                        {getSetting('ai.active_provider') === 'ollama' && (
-                                            <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-bold tracking-widest uppercase px-3 py-1">AKTİF</div>
-                                        )}
+                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
                                         <div className="flex justify-between items-center mb-2">
-                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 ${getSetting('ai.active_provider') === 'ollama' ? 'text-emerald-400' : 'text-foreground'}`}>
+                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
                                                 <Bot className="h-4 w-4" /> Ollama
                                             </h3>
                                             <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
@@ -362,12 +377,9 @@ export default function AdminSettingsPage() {
                                     </div>
 
                                     {/* OpenAI Ayarları */}
-                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 ${getSetting('ai.active_provider') === 'openai' ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border/60 bg-muted/10'}`}>
-                                        {getSetting('ai.active_provider') === 'openai' && (
-                                            <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-bold tracking-widest uppercase px-3 py-1">AKTİF</div>
-                                        )}
+                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
                                         <div className="flex justify-between items-center mb-2">
-                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 ${getSetting('ai.active_provider') === 'openai' ? 'text-emerald-400' : 'text-foreground'}`}>
+                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
                                                 <Globe className="h-4 w-4" /> OpenAI
                                             </h3>
                                             <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
@@ -379,19 +391,22 @@ export default function AdminSettingsPage() {
                                             <Label className="text-xs">API Key</Label>
                                             <Input type="password" value={getSetting('ai.openai.api_key')} onChange={e => updateValue('ai.openai.api_key', e.target.value)} placeholder="sk-..." className="bg-black/50 h-8 text-sm" />
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">Model (Chat)</Label>
-                                            <Input value={getSetting('ai.openai.chat_model')} onChange={e => updateValue('ai.openai.chat_model', e.target.value)} placeholder="gpt-4o-mini" className="bg-black/50 h-8 text-sm" />
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">Model (Chat)</Label>
+                                                <Input value={getSetting('ai.openai.chat_model')} onChange={e => updateValue('ai.openai.chat_model', e.target.value)} placeholder="gpt-4o-mini" className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">Embedding Model</Label>
+                                                <Input value={getSetting('ai.openai.embed_model')} onChange={e => updateValue('ai.openai.embed_model', e.target.value)} placeholder="text-embedding-3-small" className="bg-black/50 h-8 text-sm" />
+                                            </div>
                                         </div>
                                     </div>
 
                                     {/* LLMAPI Ayarları */}
-                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 ${getSetting('ai.active_provider') === 'llmapi' ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border/60 bg-muted/10'}`}>
-                                        {getSetting('ai.active_provider') === 'llmapi' && (
-                                            <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-bold tracking-widest uppercase px-3 py-1">AKTİF</div>
-                                        )}
+                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
                                         <div className="flex justify-between items-center mb-2">
-                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 ${getSetting('ai.active_provider') === 'llmapi' ? 'text-emerald-400' : 'text-foreground'}`}>
+                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
                                                 <ShieldCheck className="h-4 w-4" /> LLMAPI.ai
                                             </h3>
                                             <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
@@ -403,25 +418,26 @@ export default function AdminSettingsPage() {
                                             <Label className="text-xs">API Key</Label>
                                             <Input type="password" value={getSetting('ai.llmapi.api_key')} onChange={e => updateValue('ai.llmapi.api_key', e.target.value)} placeholder="llm-..." className="bg-black/50 h-8 text-sm" />
                                         </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs">Base URL (Ops.)</Label>
+                                            <Input value={getSetting('ai.llmapi.base_url')} onChange={e => updateValue('ai.llmapi.base_url', e.target.value)} placeholder="https://api.llmapi.io" className="bg-black/50 h-8 text-sm" />
+                                        </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="space-y-2">
                                                 <Label className="text-xs">Chat Model</Label>
                                                 <Input value={getSetting('ai.llmapi.chat_model')} onChange={e => updateValue('ai.llmapi.chat_model', e.target.value)} placeholder="gpt-4o" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Base URL (Ops.)</Label>
-                                                <Input value={getSetting('ai.llmapi.base_url')} onChange={e => updateValue('ai.llmapi.base_url', e.target.value)} placeholder="https://api.llmapi.io" className="bg-black/50 h-8 text-sm" />
+                                                <Label className="text-xs">Embedding Model</Label>
+                                                <Input value={getSetting('ai.llmapi.embed_model')} onChange={e => updateValue('ai.llmapi.embed_model', e.target.value)} placeholder="text-embedding-3-small" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Custom / Grok Ayarları */}
-                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 ${getSetting('ai.active_provider') === 'custom' ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border/60 bg-muted/10'}`}>
-                                        {getSetting('ai.active_provider') === 'custom' && (
-                                            <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-bold tracking-widest uppercase px-3 py-1">AKTİF</div>
-                                        )}
+                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
                                         <div className="flex justify-between items-center mb-2">
-                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 ${getSetting('ai.active_provider') === 'custom' ? 'text-emerald-400' : 'text-foreground'}`}>
+                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
                                                 <Bot className="h-4 w-4" /> Özel / Grok
                                             </h3>
                                             <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
@@ -453,15 +469,19 @@ export default function AdminSettingsPage() {
                                 <div className="pt-6 mt-4 border-t border-border/40 flex justify-end">
                                     <Button
                                         onClick={() => handleSave([
-                                            'ai.active_provider',
+                                            'ai.chat_provider',
+                                            'ai.embed_provider',
+                                            'ai.active_provider', // kept for backwards compatibility during migration 
                                             'ai.ollama.url',
                                             'ai.ollama.chat_model',
                                             'ai.ollama.embed_model',
                                             'ai.openai.api_key',
                                             'ai.openai.chat_model',
+                                            'ai.openai.embed_model',
                                             'ai.llmapi.api_key',
                                             'ai.llmapi.base_url',
                                             'ai.llmapi.chat_model',
+                                            'ai.llmapi.embed_model',
                                             'ai.custom.url',
                                             'ai.custom.api_key',
                                             'ai.custom.chat_model',
