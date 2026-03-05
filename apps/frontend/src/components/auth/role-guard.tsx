@@ -8,7 +8,9 @@ interface User {
     id: string;
     fullName: string;
     email: string;
-    roles: string[];
+    role: string;
+    roles?: string[];
+    permissions?: string[];
 }
 
 interface AuthContextType {
@@ -74,8 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (!loading && user) {
             if (pathname === '/' || pathname.startsWith('/login')) {
-                const userRoles = (user?.roles || []).map(r => r.toLowerCase());
-                router.push(userRoles.includes('customer') ? '/my-tickets' : '/dashboard');
+                const userRole = (user?.role || (user?.roles && user.roles[0]) || 'customer').toLowerCase();
+                router.push(userRole === 'customer' ? '/my-tickets' : '/dashboard');
             }
         }
     }, [user, loading, pathname, router]);
@@ -102,15 +104,15 @@ export function RoleGuard({
 
     useEffect(() => {
         if (!loading && user) {
-            const userRoles = (user?.roles || []).map(r => r.toLowerCase());
-            const isCustomer = userRoles.includes('customer');
+            const userRole = (user?.role || (user?.roles && user.roles[0]) || 'customer').toLowerCase();
+            const isCustomer = userRole === 'customer';
 
             // Routes that are definitely NOT for customers
             const adminOnlyPaths = ['/users', '/settings', '/reports', '/customers', '/faq/review', '/ai/training', '/faq-learning'];
             const isUnauthorizedTarget = adminOnlyPaths.some(path => pathname.startsWith(path));
 
             if (allowedRoles) {
-                const hasRequiredRole = allowedRoles.some(r => userRoles.includes(r.toLowerCase()));
+                const hasRequiredRole = allowedRoles.some(r => r.toLowerCase() === userRole);
                 if (!hasRequiredRole) {
                     router.push(isCustomer ? '/my-tickets' : '/dashboard');
                 }

@@ -93,7 +93,7 @@ export function Sidebar({ onNavClick }: SidebarProps) {
         checkPending();
     }, []);
 
-    const navItems = user?.role === 'ADMIN' ? ADMIN_NAV : CUSTOMER_NAV;
+    const navItems = user?.role?.toUpperCase() === 'ADMIN' ? ADMIN_NAV : CUSTOMER_NAV;
 
     const handleLogout = async () => {
         await logout();

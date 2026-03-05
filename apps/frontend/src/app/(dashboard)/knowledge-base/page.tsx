@@ -40,7 +40,7 @@ export default function KnowledgeBasePage() {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('PUBLISHED');
 
-    const isStaff = user?.roles?.some(r => ['admin', 'agent'].includes(r.toLowerCase())) ?? false;
+    const isStaff = user?.role && ['admin', 'agent', 'senior_agent', 'team_lead', 'department_manager'].includes(user.role.toLowerCase());
 
     const load = async () => {
         setLoading(true);
