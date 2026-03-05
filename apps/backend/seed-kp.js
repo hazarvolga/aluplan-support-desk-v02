@@ -14,8 +14,8 @@ async function run() {
 
     // 1. Ensure AI Settings exist (Crucial for AI_NODE: ONLINE)
     console.log('--- Ensuring AI Settings ---');
-    await client.query("INSERT INTO settings (key, value, is_secret) VALUES ('ai.active_provider', 'ollama', false) ON CONFLICT (key) DO NOTHING");
-    await client.query("INSERT INTO settings (key, value, is_secret) VALUES ('ai.ollama.url', 'http://172.17.0.1:11434', false) ON CONFLICT (key) DO NOTHING");
+    await client.query("INSERT INTO settings (key, value, is_secret, updated_at) VALUES ('ai.active_provider', 'ollama', false, NOW()) ON CONFLICT (key) DO NOTHING");
+    await client.query("INSERT INTO settings (key, value, is_secret, updated_at) VALUES ('ai.ollama.url', 'http://172.17.0.1:11434', false, NOW()) ON CONFLICT (key) DO NOTHING");
     console.log('✅ AI settings verified.');
 
     console.log('--- Seeding Knowledge Pool from /dataset ---');
