@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = "force-dynamic";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Mail, History, FileText } from 'lucide-react';
 import { EmailTemplates } from '../settings/components/EmailTemplates';

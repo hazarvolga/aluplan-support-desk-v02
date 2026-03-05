@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +25,8 @@ function UnsubscribeContent() {
 
         try {
             setStatus('loading');
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/email/unsubscribe`, {
+            const apiUrl = typeof process !== 'undefined' && process.env ? process.env.NEXT_PUBLIC_API_URL : 'http://localhost:4000/api/v1';
+            const response = await fetch(`${apiUrl}/email/unsubscribe`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token }),

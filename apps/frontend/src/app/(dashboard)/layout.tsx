@@ -1,5 +1,5 @@
 'use client';
-
+export const dynamic = 'force-dynamic';
 import { Sidebar } from '@/components/sidebar';
 import { RoleGuard } from '@/components/auth/role-guard';
 import { MobileHeader } from '@/components/mobile-header';

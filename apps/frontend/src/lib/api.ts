@@ -1,5 +1,5 @@
-const CLIENT_API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
-const SERVER_API = process.env.NEXT_INTERNAL_API_URL ?? CLIENT_API;
+const CLIENT_API = (typeof process !== 'undefined' && process.env ? process.env.NEXT_PUBLIC_API_URL : undefined) ?? 'http://localhost:4000/api/v1';
+const SERVER_API = (typeof process !== 'undefined' && process.env ? process.env.NEXT_INTERNAL_API_URL : undefined) ?? CLIENT_API;
 
 const getApiUrl = () => {
     return typeof window === 'undefined' ? SERVER_API : CLIENT_API;

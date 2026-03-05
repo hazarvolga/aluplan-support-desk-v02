@@ -55,7 +55,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'İçerik giri
         // Only update if the content prop is truly different from what's in the editor
         // We trim to avoid issues with whitespace-only differences
         if (content !== currentHtml) {
-            editor.commands.setContent(content, false); // false = don't emit update event
+            editor.commands.setContent(content, { emitUpdate: false }); // don't emit update event
         }
     }, [content, editor]);
 
