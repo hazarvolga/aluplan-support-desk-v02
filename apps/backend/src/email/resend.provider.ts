@@ -13,7 +13,7 @@ export class ResendProvider implements EmailProvider {
 
     private async getApiKey(): Promise<string | null> {
         const dbKey = await this.settings.getValue('email.resend.api_key');
-        if (dbKey) {
+        if (dbKey && dbKey.trim() !== '') {
             this.logger.debug('Using Resend API key from DATABASE');
             return dbKey;
         }

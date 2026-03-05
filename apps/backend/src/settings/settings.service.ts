@@ -14,6 +14,12 @@ export class SettingsService {
     ) { }
 
     async upsert(dto: UpsertSettingDto, userId?: string) {
+        // Guard: Do not overwrite existing secrets with the masked placeholder
+        if (dto.value === '********') {
+            const existing = await this.get(dto.key, true);
+            if (existing) return existing;
+        }
+
         let finalValue = dto.value;
 
         if (dto.isSecret) {

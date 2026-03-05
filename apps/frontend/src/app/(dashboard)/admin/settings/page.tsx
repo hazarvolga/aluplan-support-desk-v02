@@ -132,10 +132,10 @@ export default function AdminSettingsPage() {
                 'ai.llmapi.api_key',
                 'ai.openai.api_key',
                 'ai.custom.api_key',
-                'mail.resend.api_key',
-                'mail.smtp.pass',
-                'mail.gmail.client_secret',
-                'mail.gmail.refresh_token',
+                'email.resend.api_key',
+                'email.smtp.pass',
+                'email.gmail.client_secret',
+                'email.gmail.refresh_token',
             ];
 
             const promises = keys
@@ -144,7 +144,7 @@ export default function AdminSettingsPage() {
                     const isSecret = secretKeys.includes(key);
                     return { key, value, isSecret };
                 })
-                .filter(item => item.value !== '')
+                .filter(item => item.value !== '' && item.value !== '********')
                 .map(payload => api.settings.upsert(payload));
             await Promise.all(promises);
             toast({
@@ -548,15 +548,15 @@ export default function AdminSettingsPage() {
                                 </div>
 
                                 <div className="pt-4 border-t space-y-4">
-                                    {getSetting('email.active_provider') === 'resend' && (
+                                    {((getSetting('email.active_provider') === 'resend') || !getSetting('email.active_provider')) && (
                                         <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
                                             <h3 className="font-medium">Resend Yapılandırması</h3>
                                             <div className="space-y-2">
                                                 <Label>API Key</Label>
                                                 <Input
                                                     type="password"
-                                                    value={getSetting('mail.resend.api_key')}
-                                                    onChange={e => updateValue('mail.resend.api_key', e.target.value)}
+                                                    value={getSetting('email.resend.api_key')}
+                                                    onChange={e => updateValue('email.resend.api_key', e.target.value)}
                                                     placeholder="re_..."
                                                 />
                                             </div>
@@ -570,32 +570,32 @@ export default function AdminSettingsPage() {
                                                 <div className="space-y-2">
                                                     <Label>Host</Label>
                                                     <Input
-                                                        value={getSetting('mail.smtp.host')}
-                                                        onChange={e => updateValue('mail.smtp.host', e.target.value)}
+                                                        value={getSetting('email.smtp.host')}
+                                                        onChange={e => updateValue('email.smtp.host', e.target.value)}
                                                         placeholder="smtp.gmail.com"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>Port</Label>
                                                     <Input
-                                                        value={getSetting('mail.smtp.port')}
-                                                        onChange={e => updateValue('mail.smtp.port', e.target.value)}
+                                                        value={getSetting('email.smtp.port')}
+                                                        onChange={e => updateValue('email.smtp.port', e.target.value)}
                                                         placeholder="587"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>User</Label>
                                                     <Input
-                                                        value={getSetting('mail.smtp.user')}
-                                                        onChange={e => updateValue('mail.smtp.user', e.target.value)}
+                                                        value={getSetting('email.smtp.user')}
+                                                        onChange={e => updateValue('email.smtp.user', e.target.value)}
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>Password</Label>
                                                     <Input
                                                         type="password"
-                                                        value={getSetting('mail.smtp.pass')}
-                                                        onChange={e => updateValue('mail.smtp.pass', e.target.value)}
+                                                        value={getSetting('email.smtp.pass')}
+                                                        onChange={e => updateValue('email.smtp.pass', e.target.value)}
                                                     />
                                                 </div>
                                             </div>
@@ -622,16 +622,16 @@ export default function AdminSettingsPage() {
                                                 <div className="space-y-2">
                                                     <Label>Gönderen E-Posta Adresi</Label>
                                                     <Input
-                                                        value={getSetting('mail.gmail.email')}
-                                                        onChange={e => updateValue('mail.gmail.email', e.target.value)}
+                                                        value={getSetting('email.gmail.email')}
+                                                        onChange={e => updateValue('email.gmail.email', e.target.value)}
                                                         placeholder="newsletters@aluplan.info"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>Client ID</Label>
                                                     <Input
-                                                        value={getSetting('mail.gmail.client_id')}
-                                                        onChange={e => updateValue('mail.gmail.client_id', e.target.value)}
+                                                        value={getSetting('email.gmail.client_id')}
+                                                        onChange={e => updateValue('email.gmail.client_id', e.target.value)}
                                                         placeholder="258437053886-....apps.googleusercontent.com"
                                                     />
                                                 </div>
@@ -639,8 +639,8 @@ export default function AdminSettingsPage() {
                                                     <Label>Client Secret</Label>
                                                     <Input
                                                         type="password"
-                                                        value={getSetting('mail.gmail.client_secret')}
-                                                        onChange={e => updateValue('mail.gmail.client_secret', e.target.value)}
+                                                        value={getSetting('email.gmail.client_secret')}
+                                                        onChange={e => updateValue('email.gmail.client_secret', e.target.value)}
                                                         placeholder="GOCSPX-..."
                                                     />
                                                 </div>
@@ -662,7 +662,7 @@ export default function AdminSettingsPage() {
                                                     variant="outline"
                                                     className="gap-2"
                                                     disabled={saving}
-                                                    onClick={() => handleSave(['mail.gmail.email', 'mail.gmail.client_id', 'mail.gmail.client_secret'])}
+                                                    onClick={() => handleSave(['email.gmail.email', 'email.gmail.client_id', 'email.gmail.client_secret'])}
                                                 >
                                                     {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                                                     Credentials Kaydet
@@ -704,8 +704,8 @@ export default function AdminSettingsPage() {
                                         className="flex-1"
                                         onClick={() => handleSave([
                                             'email.active_provider', 'email.from_address',
-                                            'mail.resend.api_key', 'mail.smtp.host', 'mail.smtp.port', 'mail.smtp.user', 'mail.smtp.pass',
-                                            'mail.gmail.email', 'mail.gmail.client_id', 'mail.gmail.client_secret',
+                                            'email.resend.api_key', 'email.smtp.host', 'email.smtp.port', 'email.smtp.user', 'email.smtp.pass',
+                                            'email.gmail.email', 'email.gmail.client_id', 'email.gmail.client_secret',
                                         ])}
                                         disabled={saving}
                                     >

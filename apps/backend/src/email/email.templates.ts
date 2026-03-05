@@ -99,8 +99,7 @@ export class TemplateService {
 
       const { html, errors } = mjml2html(mjmlContent, {
         beautify: false,
-        minify: true,
-        validationLevel: 'soft',
+        validationLevel: 'skip',
         filePath: path.join(this.mjmlBaseDir, 'layouts', 'base.mjml') // Important for mj-include resolution
       });
 
