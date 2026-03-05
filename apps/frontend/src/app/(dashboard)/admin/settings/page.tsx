@@ -459,8 +459,9 @@ export default function AdminSettingsPage() {
                                                 <Input value={getSetting('ai.custom.chat_model')} onChange={e => updateValue('ai.custom.chat_model', e.target.value)} placeholder="grok-beta" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Embedding Model</Label>
-                                                <Input value={getSetting('ai.custom.embed_model')} onChange={e => updateValue('ai.custom.embed_model', e.target.value)} placeholder="text-embedding-3-small" className="bg-black/50 h-8 text-sm" />
+                                                <Label className="text-xs text-muted-foreground flex items-center gap-1">Embedding Model</Label>
+                                                <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                                <p className="text-[10px] text-muted-foreground/80 leading-tight">Grok API harici gömme (embedding) desteklemez. Lütfen yukarıdan Embedding için <b>OpenAI</b> seçin.</p>
                                             </div>
                                         </div>
                                     </div>

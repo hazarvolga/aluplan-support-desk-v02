@@ -51,7 +51,10 @@ export class GenericOpenAiService implements AiProvider {
                 signal: AbortSignal.timeout(60_000),
             });
 
-            if (!response.ok) throw new Error(`Custom AI HTTP ${response.status}`);
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`Custom AI HTTP ${response.status}: ${errorBody}`);
+            }
             const data = await response.json();
             return { embedding: data.data[0].embedding, model };
         } catch (err: any) {
@@ -82,7 +85,10 @@ export class GenericOpenAiService implements AiProvider {
                 signal: AbortSignal.timeout(timeout),
             });
 
-            if (!response.ok) throw new Error(`Custom AI HTTP ${response.status}`);
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`Custom AI HTTP ${response.status}: ${errorBody}`);
+            }
             const data = await response.json();
             return data.choices[0].message.content.trim();
         } catch (err: any) {
@@ -125,7 +131,10 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
                 signal: AbortSignal.timeout(60_000),
             });
 
-            if (!response.ok) throw new Error(`Custom AI HTTP ${response.status}`);
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`Custom AI HTTP ${response.status}: ${errorBody}`);
+            }
             const data = await response.json();
             const content = data.choices[0].message.content.trim();
             return { response: content, model };
