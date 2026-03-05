@@ -434,11 +434,11 @@ export default function AdminSettingsPage() {
                                         </div>
                                     </div>
 
-                                    {/* Custom / Grok Ayarları */}
+                                    {/* Custom / DeepSeek Ayarları */}
                                     <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
                                         <div className="flex justify-between items-center mb-2">
                                             <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                <Bot className="h-4 w-4" /> Özel / Grok
+                                                <Bot className="h-4 w-4" /> Özel / Deepseek
                                             </h3>
                                             <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
                                                 const res = await api.ai.testConnection('custom');
@@ -446,22 +446,22 @@ export default function AdminSettingsPage() {
                                             }}>Test Et</Button>
                                         </div>
                                         <div className="space-y-2">
-                                            <Label className="text-xs">Bağlantı URL</Label>
-                                            <Input value={getSetting('ai.custom.url')} onChange={e => updateValue('ai.custom.url', e.target.value)} placeholder="https://api.openai.com/v1" className="bg-black/50 h-8 text-sm" />
+                                            <Label className="text-xs">Bağlantı URL (OpenAI Uyumlu)</Label>
+                                            <Input value={getSetting('ai.custom.url')} onChange={e => updateValue('ai.custom.url', e.target.value)} placeholder="https://api.deepseek.com/v1" className="bg-black/50 h-8 text-sm" />
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-xs">API Key</Label>
-                                            <Input type="password" value={getSetting('ai.custom.api_key')} onChange={e => updateValue('ai.custom.api_key', e.target.value)} placeholder="xai-..." className="bg-black/50 h-8 text-sm" />
+                                            <Input type="password" value={getSetting('ai.custom.api_key')} onChange={e => updateValue('ai.custom.api_key', e.target.value)} placeholder="sk-..." className="bg-black/50 h-8 text-sm" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="space-y-2">
                                                 <Label className="text-xs">Chat Model</Label>
-                                                <Input value={getSetting('ai.custom.chat_model')} onChange={e => updateValue('ai.custom.chat_model', e.target.value)} placeholder="grok-beta" className="bg-black/50 h-8 text-sm" />
+                                                <Input value={getSetting('ai.custom.chat_model')} onChange={e => updateValue('ai.custom.chat_model', e.target.value)} placeholder="deepseek-chat" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs text-muted-foreground flex items-center gap-1">Embedding Model</Label>
                                                 <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
-                                                <p className="text-[10px] text-muted-foreground/80 leading-tight">Grok API harici gömme (embedding) desteklemez. Lütfen yukarıdan Embedding için <b>OpenAI</b> seçin.</p>
+                                                <p className="text-[10px] text-muted-foreground/80 leading-tight">Lütfen Embedding için yukarıdan <b>OpenAI</b> seçin (DeepSeek/Grok RAG/Embedding desteklemiyor olabilir).</p>
                                             </div>
                                         </div>
                                     </div>
