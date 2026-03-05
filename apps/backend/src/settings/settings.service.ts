@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../utils/crypto.service';
 import { UpsertSettingDto } from './dto/upsert-setting.dto';
 
 @Injectable()
 export class SettingsService {
+    private readonly logger = new Logger(SettingsService.name);
     private cache = new Map<string, string>();
     private secretCache = new Map<string, boolean>();
 
@@ -71,7 +72,12 @@ export class SettingsService {
 
         let plaintext = setting.value;
         if (setting.isSecret) {
-            plaintext = this.crypto.decrypt(setting.value);
+            try {
+                plaintext = this.crypto.decrypt(setting.value);
+            } catch (error) {
+                this.logger.error(`Decryption failed for setting: ${key}. ENCRYPTION_KEY mismatch?`);
+                plaintext = ''; // Return empty fallback so UI doesn't break
+            }
         }
 
         // Hydrate cache
@@ -101,10 +107,17 @@ export class SettingsService {
         return settings.map((s) => {
             let value = s.value;
             if (s.isSecret) {
-                const plaintext = this.crypto.decrypt(s.value);
-                this.cache.set(s.key, plaintext);
-                this.secretCache.set(s.key, true);
-                value = decrypt ? plaintext : '********';
+                try {
+                    const plaintext = this.crypto.decrypt(s.value);
+                    this.cache.set(s.key, plaintext);
+                    this.secretCache.set(s.key, true);
+                    value = decrypt ? plaintext : '********';
+                } catch (e) {
+                    this.logger.error(`Decryption failed for setting: ${s.key}`);
+                    this.cache.set(s.key, '');
+                    this.secretCache.set(s.key, true);
+                    value = decrypt ? '' : '********';
+                }
             } else {
                 this.cache.set(s.key, s.value);
                 this.secretCache.set(s.key, false);
