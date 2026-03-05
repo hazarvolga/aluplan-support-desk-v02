@@ -3,6 +3,8 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../ai/embedding.service';
+import * as fs from 'fs';
+import * as path from 'path';
 import { KnowledgePoolParserService } from './knowledge-pool-parser.service';
 import * as crypto from 'crypto';
 import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
@@ -167,7 +169,35 @@ export class KnowledgePoolProcessor extends WorkerHost {
 
     private async handleFileSync(source: any, logId: string) {
         if (!source.filePath) throw new Error('File path missing for source');
-        let content = await this.parserService.parseFile(source.type, source.filePath);
+
+        let targetPath = source.filePath;
+
+        // Smart Path Resolution: 
+        // If path is absolute (Mac style) and doesn't exist, try resolving relative to project root/dataset
+        if (targetPath.startsWith('/') && !fs.existsSync(targetPath)) {
+            this.logger.warn(`⚠️ Absolute path not found: ${targetPath}. Attempting relative resolution...`);
+
+            // Extract relative portion (look for 'dataset' in the path)
+            const datasetIndex = targetPath.indexOf('dataset');
+            if (datasetIndex !== -1) {
+                const relativePath = targetPath.substring(datasetIndex);
+                // Try from CWD (production /app or local root)
+                const candidate = path.resolve(process.cwd(), relativePath);
+                if (fs.existsSync(candidate)) {
+                    this.logger.log(`✅ Resolved path to: ${candidate}`);
+                    targetPath = candidate;
+                }
+            }
+        } else if (!targetPath.startsWith('/') && !fs.existsSync(targetPath)) {
+            // Already relative, resolve from CWD
+            targetPath = path.resolve(process.cwd(), targetPath);
+        }
+
+        if (!fs.existsSync(targetPath)) {
+            throw new Error(`File not found after resolution attempts: ${targetPath}`);
+        }
+
+        let content = await this.parserService.parseFile(source.type, targetPath);
         const hash = crypto.createHash('sha256').update(content).digest('hex');
 
         if (hash === source.lastHash) {
