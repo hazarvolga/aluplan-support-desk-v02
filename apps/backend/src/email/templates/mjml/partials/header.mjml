@@ -3,7 +3,7 @@
     <mj-image
       src="{{brand.logo_url}}"
       alt="{{brand.name}}"
-      width="150px"
+      width="180px"
       align="center"
     />
   </mj-column>

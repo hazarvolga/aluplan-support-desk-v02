@@ -161,15 +161,18 @@ export class AnnouncementsService {
                 });
 
                 // Enqueue Email via existing EmailService
-                // We use the specialized 'raw' template mode we just added to TemplateService
+                // Use master-announcement template for new HTML content, 'raw' for old raw MJML content
+                const content = announcement.contentMjml || '';
+                const isMjml = content.trim().toLowerCase().startsWith('<mjml>') || content.trim().toLowerCase().startsWith('<mj-');
+
                 await this.emailService.enqueueEmail({
-                    template: 'raw',
+                    template: isMjml ? 'raw' : 'master-announcement',
                     to: target.user.email,
                     subject: announcement.subject,
                     data: {
-                        mjml: announcement.contentMjml,
+                        mjml: isMjml ? content : undefined,
+                        contentHtml: isMjml ? undefined : content,
                         customer: target,
-                        // You can add more context here if needed
                     },
                 }).then(async () => {
                     // In a perfect world, we'd link the emailLogId here, 

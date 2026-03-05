@@ -28,7 +28,7 @@ import { PreferencesController } from './preferences.controller';
         ResendProvider,
         SmtpProvider,
         GmailProvider,
-        EmailInboundService
+        EmailInboundService,
     ],
     exports: [EmailService, GmailProvider],
 })

@@ -9,6 +9,7 @@ import { Public } from '../auth/decorators/public.decorator';
 import * as fs from 'fs';
 import * as path from 'path';
 
+
 // MJML files live in src/ not dist/. Resolve reliably from __dirname.
 const MJML_BASE_DIR = path.join(__dirname, '..', '..', 'src', 'email', 'templates', 'mjml');
 const MJML_SCREENS_DIR = path.join(MJML_BASE_DIR, 'screens');
@@ -306,4 +307,5 @@ export class EmailController {
       return res.redirect(`${settingsUrl}&gmail_status=error&gmail_error=${encodeURIComponent(err.message)}`);
     }
   }
+
 }
