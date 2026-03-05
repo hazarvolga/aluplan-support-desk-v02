@@ -37,10 +37,8 @@ DATABASE_PASSWORD=${DATABASE_PASSWORD:-changeme}
 DATABASE_NAME=${DATABASE_NAME:-aluplan_support}
 
 # 1. Export Database
-echo "📦 Exporting Local Database ($DATABASE_NAME)..."
-# We use pg_dump to export the schema and data
-# Excluding Audit logs to keep it light if needed
-PGPASSWORD=$DATABASE_PASSWORD pg_dump -h localhost -U $DATABASE_USER -d $DATABASE_NAME --no-owner --no-privileges > backup_full.sql
+# We use docker exec to run pg_dump inside the Postgres container to avoid version mismatches
+docker exec -i aluplan_postgres pg_dump -U $DATABASE_USER -d $DATABASE_NAME --no-owner --no-privileges > backup_full.sql
 
 echo "✅ Database exported to backup_full.sql"
 
