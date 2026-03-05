@@ -66,27 +66,40 @@ async function bootstrap() {
     const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
     // Security
-    app.use(helmet());
+    app.use(helmet({
+        crossOriginResourcePolicy: { policy: "cross-origin" },
+        contentSecurityPolicy: false, // Relaxed for API stability in production
+    }));
     app.use(compression());
 
     // Payload Limit increase for massive CSV JSON arrays
     app.use(json({ limit: '50mb' }));
     app.use(urlencoded({ extended: true, limit: '50mb' }));
 
-    const frontendUrls = [
+    const allowedOrigins = [
         'http://localhost:3000',
         'https://allplan.net.tr',
+        'https://api.allplan.net.tr',
+        ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []),
         ...(frontendUrl.includes(',') ? frontendUrl.split(',') : [frontendUrl]),
     ];
 
     // CORS
     app.enableCors({
-        origin: function (origin: string, callback: (err: Error | null, origin?: any) => void) {
-            // Allow all origins (standard for dynamic multi-domain deployments)
-            callback(null, true);
+        origin: function (origin, callback) {
+            // If no origin (like mobile apps or curl requests), allow it
+            if (!origin) return callback(null, true);
+
+            if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+                callback(null, true);
+            } else {
+                logger.warn(`CORS blocked for origin: ${origin}`);
+                callback(new Error('Not allowed by CORS'));
+            }
         },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
     });
 
     // Global API prefix
