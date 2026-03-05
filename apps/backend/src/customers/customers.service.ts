@@ -11,6 +11,7 @@ import { ImportCustomerRecordDto } from './dto/import-customers.dto';
 import { HotinfoParserService } from './hotinfo-parser.service';
 
 import { EmailService } from '../email/email.service';
+import { ErrorLoggerService } from '../common/services/error-logger.service';
 
 @Injectable()
 export class CustomersService {
@@ -20,6 +21,7 @@ export class CustomersService {
         private emailService: EmailService,
         private jwtService: JwtService,
         private config: ConfigService,
+        private errorLogger: ErrorLoggerService,
     ) { }
 
     async importCustomers(data: ImportCustomerRecordDto[]) {
@@ -202,7 +204,12 @@ export class CustomersService {
                 }
             });
         } catch (error) {
-            console.error('Failed to send welcome email:', error);
+            await this.errorLogger.logError({
+                action: 'welcome_email_failed',
+                message: 'Failed to send welcome email during registration',
+                error,
+                metadata: { email: dto.email }
+            });
         }
 
         // Strip password before returning

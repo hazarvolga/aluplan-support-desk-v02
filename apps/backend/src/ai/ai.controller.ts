@@ -139,14 +139,14 @@ export class AiController {
     }
 
     @Get('review-queue')
-    @Roles('ADMIN', 'SUPPORT_MANAGER')
+    @Roles('ADMIN', 'SUPERUSER')
     @ApiOperation({ summary: 'Low-confidence queries pending FAQ review (admin only)' })
     getReviewQueue(): Promise<any[]> {
         return this.aiQueryService.getPendingForReview();
     }
 
     @Post('reindex')
-    @Roles('ADMIN')
+    @Roles('ADMIN', 'SUPERUSER')
     @ApiOperation({ summary: 'Re-index all published articles (run after model change)' })
     reindex() {
         return this.embeddingService.reindexAll();
@@ -182,14 +182,14 @@ export class AiController {
     }
 
     @Get('tickets/:id/summarize')
-    @Roles('ADMIN', 'AGENT', 'SUPPORT_MANAGER')
+    @Roles('ADMIN', 'AGENT', 'SUPERUSER')
     @ApiOperation({ summary: 'Generate AI summary of a ticket thread' })
     summarize(@Param('id') ticketId: string) {
         return this.aiQueryService.summarizeTicket(ticketId);
     }
 
     @Get('copilot/draft/:ticketId')
-    @Roles('ADMIN', 'AGENT', 'SUPPORT_MANAGER')
+    @Roles('ADMIN', 'AGENT', 'SUPERUSER')
     @ApiOperation({ summary: 'Generate AI response draft for a ticket' })
     async getCopilotDraft(@Param('ticketId') ticketId: string) {
         return this.aiCopilotService.generateDraft(ticketId);

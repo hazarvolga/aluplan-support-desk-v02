@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CommonModule } from '../common/common.module';
 import { CustomersController } from './customers.controller';
 import { CustomersService } from './customers.service';
 import { HotinfoParserService } from './hotinfo-parser.service';
@@ -12,6 +13,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     PrismaModule,
     EmailModule,
     ConfigModule,
+    CommonModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

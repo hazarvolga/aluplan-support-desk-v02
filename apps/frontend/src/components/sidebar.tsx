@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Ticket, BookOpen, Bot,
     MessageSquareQuote, Settings, LogOut, ChevronRight, Users, User,
-    Brain, Database, Layers, Mail, Link2, Megaphone, HelpCircle, MailCheck
+    Brain, Database, Layers, Mail, Link2, Megaphone, HelpCircle, MailCheck,
+    Activity
 } from 'lucide-react';
 
 
@@ -29,6 +30,7 @@ const ADMIN_NAV = [
         items: [
             { href: '/knowledge-pool', icon: Database, label: 'Veri Kaynakları' },
             { href: '/faq-learning', icon: Brain, label: 'Öğrenme Döngüsü' },
+            { href: '/system-topology', icon: Activity, label: 'Sistem Topolojisi' },
         ]
     },
     {

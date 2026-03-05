@@ -39,6 +39,7 @@ import { CrmModule } from './crm/crm.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { AnnouncementTemplatesModule } from './announcement-templates/announcement-templates.module';
 import { EmailValidatorModule } from './email-validator/email-validator.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
     imports: [
@@ -105,6 +106,7 @@ import { EmailValidatorModule } from './email-validator/email-validator.module';
         AnnouncementsModule,
         AnnouncementTemplatesModule,
         EmailValidatorModule,
+        CommonModule,
     ],
     providers: [
         {

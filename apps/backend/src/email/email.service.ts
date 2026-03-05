@@ -8,6 +8,7 @@ import { SmtpProvider } from './smtp.provider';
 import { GmailProvider } from './gmail.provider';
 import { EmailProvider, SendEmailOptions } from './interfaces/email-provider.interface';
 import { EmailPayload } from './email.templates';
+import { ErrorLoggerService } from '../common/services/error-logger.service';
 
 @Injectable()
 export class EmailService implements OnModuleInit {
@@ -21,6 +22,7 @@ export class EmailService implements OnModuleInit {
         private readonly resend: ResendProvider,
         private readonly smtp: SmtpProvider,
         private readonly gmail: GmailProvider,
+        private readonly errorLogger: ErrorLoggerService,
     ) { }
 
     async onModuleInit() {
@@ -44,8 +46,13 @@ export class EmailService implements OnModuleInit {
                     break;
             }
             this.logger.log(`📧 Email provider: ${providerName}`);
-        } catch {
+        } catch (error) {
             this.provider = this.resend;
+            await this.errorLogger.logError({
+                action: 'email_provider_refresh_failed',
+                message: 'Failed to refresh email provider, falling back to Resend',
+                error
+            });
         }
     }
 
@@ -53,53 +60,62 @@ export class EmailService implements OnModuleInit {
      * Entry-point for enqueueing emails securely. Creates Log tracking entries dynamically.
      */
     async enqueueEmail(payload: EmailPayload): Promise<void> {
-        // 1. Map template to Email Type (Category)
-        const emailType = this.mapTemplateToType(payload.template);
+        try {
+            // 1. Map template to Email Type (Category)
+            const emailType = this.mapTemplateToType(payload.template);
 
-        // 2. Evaluate preference limits before proceeding.
-        const userObj = await this.prisma.user.findUnique({
-            where: { email: payload.to },
-            select: { id: true }
-        });
-
-        if (userObj) {
-            const pref = await this.prisma.emailPreference.findUnique({
-                where: { userId_emailType: { userId: userObj.id, emailType } }
+            // 2. Evaluate preference limits before proceeding.
+            const userObj = await this.prisma.user.findUnique({
+                where: { email: payload.to },
+                select: { id: true }
             });
 
-            // If preference is explicitly disabled, skip. (Default is enabled if missing)
-            if (pref && pref.enabled === false) {
-                this.logger.log(`Skipping email: ${payload.template} (${emailType}) to ${payload.to} - User Opted Out`);
-                return;
+            if (userObj) {
+                const pref = await this.prisma.emailPreference.findUnique({
+                    where: { userId_emailType: { userId: userObj.id, emailType } }
+                });
+
+                // If preference is explicitly disabled, skip. (Default is enabled if missing)
+                if (pref && pref.enabled === false) {
+                    this.logger.log(`Skipping email: ${payload.template} (${emailType}) to ${payload.to} - User Opted Out`);
+                    return;
+                }
             }
+
+            // 3. Create a draft log entry.
+            const draftLog = await this.prisma.emailLog.create({
+                data: {
+                    recipientEmail: payload.to,
+                    subject: payload.subject,
+                    templateName: payload.template,
+                    provider: 'RESEND',
+                    status: 'QUEUED'
+                }
+            });
+
+            // 4. Enqueue the BullMQ job.
+            const job = await this.emailQueue.add(
+                payload.template,
+                { ...payload, logId: draftLog.id },
+                {
+                    priority: payload.priority || 3,
+                    delay: payload.delay || 0,
+                    jobId: payload.jobId,
+                    attempts: 3,
+                    backoff: { type: 'exponential', delay: 1000 }
+                }
+            );
+
+            this.logger.log(`Enqueued Email -> ${payload.template} to ${payload.to} (Log ID: ${draftLog.id}, Job: ${job.id})`);
+        } catch (error) {
+            await this.errorLogger.logError({
+                action: 'email_enqueue_failed',
+                message: `Failed to enqueue email: ${payload.template}`,
+                error,
+                metadata: { to: payload.to, subject: payload.subject }
+            });
+            throw error;
         }
-
-        // Inject initial mapping schema into our Database logs:
-        const draftLog = await this.prisma.emailLog.create({
-            data: {
-                recipientEmail: payload.to,
-                subject: payload.subject,
-                templateName: payload.template,
-                provider: 'RESEND',
-                status: 'QUEUED'
-            }
-        });
-
-        // Delegate to BullMQ for processing logic.
-        const jobId = payload.jobId || `${payload.template}:${payload.to}:${payload.data?.ticket?.id ?? 'sys'}-${Date.now()}`;
-        await this.emailQueue.add('send-email', { ...payload, logRef: draftLog.id }, {
-            jobId: jobId,
-            delay: payload.delay ?? 0,
-            priority: payload.priority ?? 2,
-            removeOnComplete: true,
-            attempts: 3,
-            backoff: {
-                type: 'exponential',
-                delay: 60000
-            }
-        });
-
-        this.logger.log(`Enqueued Email -> ${payload.template} to ${payload.to} (Log ID: ${draftLog.id}, Job: ${jobId})`);
     }
 
     /**

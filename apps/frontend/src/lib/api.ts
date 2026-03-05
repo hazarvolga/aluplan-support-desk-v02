@@ -299,6 +299,8 @@ export const api = {
         getTemplateSource: (name: string) => request<{ content: string }>(`/email/admin/templates/${name}/source`),
         saveTemplate: (name: string, content: string) => request<{ success: true }>(`/email/admin/templates/${name}/save`, { method: 'POST', body: JSON.stringify({ content }) }),
         previewTemplate: (name: string, data: any) => request<any>(`/email/admin/templates/${name}/preview`, { method: 'POST', body: JSON.stringify(data) }),
+        getContentBlocks: (name: string) => request<{ blocks: any[] }>(`/email/admin/templates/${name}/content`),
+        saveContentBlocks: (name: string, blocks: any[]) => request<{ success: true }>(`/email/admin/templates/${name}/content`, { method: 'POST', body: JSON.stringify({ blocks }) }),
         verifyProvider: () => request<{ provider: string; available: boolean }>('/email/admin/provider/verify', { method: 'POST' }),
         getGmailAuthUrl: () => request<{ url: string }>('/email/gmail/auth-url'),
     },

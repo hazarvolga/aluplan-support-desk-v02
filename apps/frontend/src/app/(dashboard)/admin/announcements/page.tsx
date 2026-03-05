@@ -12,9 +12,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Send, Save, Eye, History, Megaphone, Users, User, Trash2, BookOpen, EyeOff, Building2, Target, Globe, Shield, Mail, Clock } from 'lucide-react';
+import { Loader2, Send, Save, Eye, History, Megaphone, Users, User, Trash2, BookOpen, EyeOff, Building2, Target, Globe, Shield, Mail, Clock, Layout, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { RichTextEditor } from '@/components/email/RichTextEditor';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 
 import DOMPurify from 'dompurify';
 
@@ -27,7 +30,7 @@ export default function AnnouncementsPage() {
     // Form State for Announcement
     const [title, setTitle] = useState('');
     const [subject, setSubject] = useState('');
-    const [mjmlSource, setMjmlSource] = useState('<mjml>\n  <mj-body>\n    <mj-section>\n      <mj-column>\n        <mj-text font-size="20px" color="#333">Merhaba {{customer.name}}!</mj-text>\n        <mj-text>Duyuru içeriği buraya gelecek...</mj-text>\n      </mj-column>\n    </mj-section>\n  </mj-body>\n</mjml>');
+    const [contentHtml, setContentHtml] = useState('<p>Merhaba {{customer.name}}!</p><p>Duyuru içeriği buraya gelecek...</p>');
     const [criteria, setCriteria] = useState({
         industries: [] as string[],
         statuses: [] as string[],
@@ -46,7 +49,7 @@ export default function AnnouncementsPage() {
     const [templateName, setTemplateName] = useState('');
     const [templateTopic, setTemplateTopic] = useState('');
     const [templateSubject, setTemplateSubject] = useState('');
-    const [templateMjml, setTemplateMjml] = useState('');
+    const [templateContentHtml, setTemplateContentHtml] = useState('');
     const [templateSaving, setTemplateSaving] = useState(false);
 
     const [targetCount, setTargetCount] = useState<number | null>(null);
@@ -120,11 +123,14 @@ export default function AnnouncementsPage() {
         return () => clearTimeout(timer);
     }, [criteria, activeTab]);
 
-    const handlePreview = async (mjmlOverride?: string) => {
+    const handlePreview = async (contentOverride?: string) => {
         setRendering(true);
         try {
-            const res = await api.email.previewTemplate('raw', {
-                mjml: mjmlOverride || mjmlSource,
+            // For preview, we wrap the RichText content in the master layout
+            // Or we just send the contentHtml to a new API endpoint that does this
+            // For now let's send it as is, and we will update the backend to handle it
+            const res = await api.email.previewTemplate('master-announcement', {
+                contentHtml: contentOverride || contentHtml,
                 customer: { first_name: 'Örnek', full_name: 'Örnek Müşteri', email: 'ornek@aluplan.com' }
             });
             if (res.success && res.html) {
@@ -148,13 +154,13 @@ export default function AnnouncementsPage() {
         setTemplateRendering(true);
         setTemplatePreviewId(template.id);
         try {
-            const mjmlContent = template.contentMjml || template.mjml;
-            if (!mjmlContent) {
-                toast.error('Bu şablonun MJML içeriği boş.');
+            const htmlContent = template.contentHtml || template.contentMjml || template.mjml || '';
+            if (!htmlContent) {
+                toast.error('Bu şablonun içeriği boş.');
                 return;
             }
-            const res = await api.email.previewTemplate('raw', {
-                mjml: mjmlContent,
+            const res = await api.email.previewTemplate('master-announcement', {
+                contentHtml: htmlContent,
                 customer: { name: 'Örnek Müşteri', email: 'ornek@aluplan.com' }
             });
             if (res.success && res.html) {
@@ -172,7 +178,7 @@ export default function AnnouncementsPage() {
     };
 
     const handleSaveTemplate = async () => {
-        if (!templateName || !templateMjml) {
+        if (!templateName || !templateContentHtml) {
             toast.error('Şablon adı ve içeriği gereklidir');
             return;
         }
@@ -182,7 +188,7 @@ export default function AnnouncementsPage() {
                 name: templateName,
                 topic: templateTopic,
                 subject: templateSubject,
-                contentMjml: templateMjml
+                contentMjml: templateContentHtml // Backend hala bu simi bekliyor olabilir, orayı da düzelteceğiz
             };
 
             if (editTemplate) {
@@ -206,13 +212,23 @@ export default function AnnouncementsPage() {
         setTemplateName('');
         setTemplateTopic('');
         setTemplateSubject('');
-        setTemplateMjml('');
+        setTemplateContentHtml('');
         setEditTemplate(null);
     };
 
     const applyTemplate = (temp: any) => {
-        setMjmlSource(temp.contentMjml);
+        setContentHtml(temp.contentMjml || temp.contentHtml || '');
         setSubject(temp.subject || '');
+        setActiveTab('create');
+
+        // Scroll to editor area with a slight delay to ensure tab switch is complete
+        setTimeout(() => {
+            const editorEl = document.getElementById('announcement-editor-area');
+            if (editorEl) {
+                editorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 100);
+
         toast.info(`${temp.name} şablonu uygulandı`);
     };
 
@@ -226,7 +242,7 @@ export default function AnnouncementsPage() {
             await api.announcements.create({
                 title,
                 subject,
-                contentMjml: mjmlSource,
+                contentMjml: contentHtml, // Sending as contentMjml for legacy compatibility if needed
                 targetCriteria: criteria,
                 type: 'BROADCAST'
             });
@@ -366,24 +382,22 @@ export default function AnnouncementsPage() {
                                         </div>
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label className="text-[10px] font-bold uppercase tracking-widest opacity-50">MJML Kaynak Kodu</Label>
-                                        <div className="border border-white/10 rounded-xl font-mono text-sm leading-relaxed overflow-hidden shadow-2xl relative group">
-                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[8px]">Auto-Save</Badge>
-                                            </div>
-                                            <textarea
-                                                className="w-full h-[400px] p-6 bg-slate-950 text-slate-300 outline-none resize-none selection:bg-emerald-500/30"
-                                                value={mjmlSource}
-                                                onChange={e => setMjmlSource(e.target.value)}
+                                        <Label className="text-[10px] font-bold uppercase tracking-widest opacity-50 text-emerald-500/80">Zengin Metin İçeriği</Label>
+                                        <div id="announcement-editor-area" className="border border-white/10 rounded-xl overflow-hidden shadow-2xl bg-white/[0.02]">
+                                            <RichTextEditor
+                                                content={contentHtml}
+                                                onChange={setContentHtml}
                                             />
                                         </div>
                                     </div>
                                 </CardContent>
                                 <CardFooter className="flex justify-between bg-white/[0.02] border-t border-white/5 py-4">
-                                    <Button variant="outline" onClick={() => handlePreview()} disabled={rendering} className="h-9 px-4 border-white/10 hover:bg-white/5">
-                                        {rendering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4 text-emerald-500" />}
-                                        Önizleme
-                                    </Button>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" onClick={() => handlePreview()} disabled={rendering} className="h-9 px-4 border-white/10 hover:bg-white/5">
+                                            {rendering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4 text-emerald-500" />}
+                                            Önizleme
+                                        </Button>
+                                    </div>
                                     <Button onClick={handleSave} disabled={saving} className="h-9 px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
                                         {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                         Taslağı Protokolle
@@ -547,18 +561,17 @@ export default function AnnouncementsPage() {
                                         <Input value={templateSubject} onChange={e => setTemplateSubject(e.target.value)} placeholder="Müşteriye görünecek konu" className="bg-white/5 border-white/10" />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label className="text-[10px] font-bold uppercase tracking-widest opacity-50">MJML Payload</Label>
-                                        <div className="border border-white/10 rounded-xl font-mono text-sm leading-relaxed overflow-hidden">
-                                            <textarea
-                                                className="w-full h-[350px] p-6 bg-slate-950 text-slate-300 outline-none resize-none selection:bg-emerald-500/30"
-                                                value={templateMjml}
-                                                onChange={e => setTemplateMjml(e.target.value)}
+                                        <Label className="text-[10px] font-bold uppercase tracking-widest opacity-50">Zengin Metin İçeriği (Şablon)</Label>
+                                        <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.02]">
+                                            <RichTextEditor
+                                                content={templateContentHtml}
+                                                onChange={setTemplateContentHtml}
                                             />
                                         </div>
                                     </div>
                                 </CardContent>
                                 <CardFooter className="flex justify-between bg-white/[0.02] border-t border-white/5 py-4">
-                                    <Button variant="outline" onClick={() => handlePreview(templateMjml)} disabled={rendering} className="h-9 border-white/10">
+                                    <Button variant="outline" onClick={() => handlePreview(templateContentHtml)} disabled={rendering} className="h-9 border-white/10">
                                         {rendering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4 text-emerald-500" />}
                                         Render Testi
                                     </Button>
@@ -616,12 +629,18 @@ export default function AnnouncementsPage() {
                                                         setTemplateName(t.name);
                                                         setTemplateTopic(t.topic || '');
                                                         setTemplateSubject(t.subject || '');
-                                                        setTemplateMjml(t.contentMjml);
+                                                        setTemplateContentHtml(t.contentMjml || t.contentHtml || '');
                                                         setTemplatePreviewHtml(null);
                                                     }}>
                                                     <div className="flex items-center justify-between mb-3">
                                                         <span className="font-bold text-sm text-white group-hover:text-emerald-400 transition-colors uppercase tracking-tight">{t.name}</span>
                                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-amber-500 hover:bg-amber-500/10" title="Uygula" onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                applyTemplate(t);
+                                                            }}>
+                                                                <Check className="h-3.5 w-3.5" />
+                                                            </Button>
                                                             <Button variant="ghost" size="sm" className={`h-7 w-7 p-0 hover:bg-emerald-500/10 ${templatePreviewId === t.id ? 'text-amber-400' : 'text-emerald-500'}`} title="Önizle" onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleTemplatePreview(t);

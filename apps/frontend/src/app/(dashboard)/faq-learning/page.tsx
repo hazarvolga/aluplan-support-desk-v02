@@ -22,7 +22,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from "@/components/ui/progress";
 
-import { SourceArchitectureView } from '@/components/dashboard/source-architecture-view';
+// import { SourceArchitectureView } from '@/components/dashboard/source-architecture-view';
 
 export default function FaqLearningPage() {
     const [stats, setStats] = useState({
@@ -125,10 +125,8 @@ export default function FaqLearningPage() {
             </div>
 
             {/* Health Dashboard & Pipeline Progress */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <div className="lg:col-span-1">
-                    <SourceArchitectureView stats={sourceStats} />
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Removed SourceArchitectureView column */}
                 <Card className="lg:col-span-2 border-border/60 bg-muted/5">
                     <CardHeader className="py-3 px-4 border-b border-border/20 flex flex-row items-center justify-between">
                         <div>

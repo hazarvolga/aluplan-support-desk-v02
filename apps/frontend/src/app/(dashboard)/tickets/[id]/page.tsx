@@ -663,8 +663,14 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                 </div>
                                 <Textarea
                                     placeholder="MESAJI_İLET..."
-                                    className="bg-black/20 border-border/40 focus-visible:ring-primary h-20 text-[13px] p-3 rounded-md resize-none shadow-inner"
+                                    className="bg-black/20 border-border/40 focus-visible:ring-primary min-h-20 text-[13px] p-3 rounded-md resize-y shadow-inner transition-colors overflow-hidden"
                                     value={reply}
+                                    ref={(el) => {
+                                        if (el) {
+                                            el.style.height = 'auto';
+                                            el.style.height = `${el.scrollHeight}px`;
+                                        }
+                                    }}
                                     onChange={handleTypingChange}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -677,7 +683,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             <Button
                                 onClick={handleSendReply}
                                 disabled={sending || (!reply.trim() && files.length === 0)}
-                                className="mb-0 bg-primary hover:bg-primary/90 rounded-md h-20 w-14 border-border transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                className="shrink-0 bg-primary hover:bg-primary/90 rounded-md h-auto min-h-20 w-14 border-border transition-all hover:scale-[1.02] active:scale-[0.98] self-stretch"
                             >
                                 {sending ? <Loader2 className="h-5 w-5 animate-spin text-primary-foreground" /> : <Send className="h-6 w-6 text-primary-foreground" />}
                             </Button>

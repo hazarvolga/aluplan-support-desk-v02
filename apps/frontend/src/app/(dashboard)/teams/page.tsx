@@ -188,7 +188,7 @@ export default function TeamsPage() {
                                         {team.members?.slice(0, 5).map((m: any) => (
                                             <div key={m.user.id} className="inline-block h-8 w-8 rounded-full border-2 border-background bg-muted overflow-hidden ring-1 ring-border/50">
                                                 {m.user.avatarUrl ? (
-                                                    <img src={m.user.avatarUrl} alt={m.user.fullName} />
+                                                    <img src={m.user.avatarUrl} alt={`${m.user.fullName} profil resmi`} />
                                                 ) : (
                                                     <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground uppercase">
                                                         {m.user.fullName.substring(0, 2)}
@@ -239,7 +239,7 @@ export default function TeamsPage() {
                                             <div className="flex items-center gap-3">
                                                 <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/10 to-blue-500/10 flex items-center justify-center border border-border/40 group-hover:scale-110 transition-transform">
                                                     {m.user.avatarUrl ? (
-                                                        <img src={m.user.avatarUrl} className="rounded-xl" />
+                                                        <img src={m.user.avatarUrl} className="rounded-xl" alt={`${m.user.fullName} profil resmi`} />
                                                     ) : (
                                                         <UserCircle2 className="h-5 w-5 text-muted-foreground" />
                                                     )}

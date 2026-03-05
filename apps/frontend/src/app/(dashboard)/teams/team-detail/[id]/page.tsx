@@ -129,7 +129,7 @@ export default function TeamDetailPage() {
                                 <CardHeader className="flex flex-row items-center gap-4 pb-3">
                                     <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center border border-border/60 group-hover:scale-105 transition-transform overflow-hidden">
                                         {m.user.avatarUrl ? (
-                                            <img src={m.user.avatarUrl} alt={m.user.fullName} className="h-full w-full object-cover" />
+                                            <img src={m.user.avatarUrl} alt={`${m.user.fullName} profil resmi`} className="h-full w-full object-cover" />
                                         ) : (
                                             <UserCircle2 className="h-6 w-6 text-muted-foreground" />
                                         )}

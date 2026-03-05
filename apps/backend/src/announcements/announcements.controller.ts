@@ -7,7 +7,7 @@ import { Roles } from '../rbac/decorators/rbac.decorators';
 
 @Controller('announcements')
 @UseGuards(JwtAuthGuard, RbacGuard)
-@Roles('admin')
+@Roles('ADMIN')
 export class AnnouncementsController {
     constructor(private readonly announcementsService: AnnouncementsService) { }
 

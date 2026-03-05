@@ -5,8 +5,11 @@ import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Eye, Save, FilePlus, Code, Mail } from 'lucide-react';
+import { Loader2, Eye, Save, FilePlus, Code, Mail, Layout } from 'lucide-react';
 import { toast } from 'sonner';
+import { MjmlEditor } from '@/components/email/MjmlEditor';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 
 export function EmailTemplates() {
     const [templates, setTemplates] = useState<string[]>([]);
@@ -21,6 +24,7 @@ export function EmailTemplates() {
     const [showNewDialog, setShowNewDialog] = useState(false);
     const [newTemplateName, setNewTemplateName] = useState('');
     const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
+    const [safeModeOpen, setSafeModeOpen] = useState(false);
 
     // Load template list
     useEffect(() => {
@@ -289,6 +293,24 @@ export function EmailTemplates() {
                     </Card>
                 </div>
             )}
+            {/* Safe Editor Dialog */}
+            <Dialog open={safeModeOpen} onOpenChange={setSafeModeOpen}>
+                <DialogContent className="max-w-[95vw] w-[1400px] h-[90vh] p-0 overflow-hidden bg-background border-white/5">
+                    <VisuallyHidden.Root>
+                        <DialogTitle>Güvenli İçerik Editörü</DialogTitle>
+                        <DialogDescription>MJML iskeletini bozmadan içeriklerinizi düzenleyin.</DialogDescription>
+                    </VisuallyHidden.Root>
+                    <MjmlEditor
+                        type="transactional"
+                        id={selected}
+                        onClose={() => {
+                            setSafeModeOpen(false);
+                            // Refresh source after closing safe editor
+                            api.email.getTemplateSource(selected).then(res => setMjmlSource(res.content));
+                        }}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

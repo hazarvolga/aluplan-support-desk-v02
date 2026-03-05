@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { CommonModule } from '../common/common.module';
 import { BullModule } from '@nestjs/bullmq';
 import { EmailService } from './email.service';
 import { EmailProcessor } from './queues/email.processor';
@@ -19,7 +20,8 @@ import { PreferencesController } from './preferences.controller';
         }),
         SettingsModule,
         forwardRef(() => TicketsModule),
-        PrismaModule
+        PrismaModule,
+        CommonModule,
     ],
     controllers: [EmailController, PreferencesController],
     providers: [
