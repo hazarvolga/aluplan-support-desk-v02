@@ -159,6 +159,14 @@ export class AiController {
         return { available, provider: 'dynamic' };
     }
 
+    @Post('test-connection')
+    @Roles('ADMIN', 'SUPERUSER')
+    @ApiOperation({ summary: 'Test connection for a specific AI provider' })
+    async testConnection(@Body() dto: { provider: string }) {
+        const available = await this.aiService.testProvider(dto.provider);
+        return { available, provider: dto.provider };
+    }
+
     @Post('search')
     @ApiOperation({ summary: 'Semantic search Knowledge Pool + Articles with Product filtering' })
     @HttpCode(HttpStatus.OK)

@@ -178,6 +178,10 @@ export const api = {
                 method: 'POST', body: JSON.stringify({ rating, comment }),
             }),
         status: () => request<any>('/ai/status'),
+        testConnection: (provider: string) => request<{ available: boolean; provider: string }>('/ai/test-connection', {
+            method: 'POST',
+            body: JSON.stringify({ provider }),
+        }),
         getCopilotDraft: (ticketId: string) => request<{ draft: string; model: string }>(`/ai/copilot/draft/${ticketId}`),
         getHealthMetrics: () => request<{
             totalInteractions: number;

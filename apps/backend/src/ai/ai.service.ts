@@ -195,4 +195,19 @@ ${rawContent}
         const provider = await this.getActiveProvider();
         return provider.isAvailable();
     }
+
+    async testProvider(providerName: string): Promise<boolean> {
+        try {
+            switch (providerName) {
+                case 'ollama': return await this.ollama.isAvailable();
+                case 'openai': return await this.openai.isAvailable();
+                case 'llmapi': return await this.llmapi.isAvailable();
+                case 'custom': return await this.custom.isAvailable();
+                default: return false;
+            }
+        } catch (e) {
+            this.logger.error(`Error testing provider ${providerName}:`, e);
+            return false;
+        }
+    }
 }

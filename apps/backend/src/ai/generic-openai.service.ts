@@ -15,7 +15,7 @@ export class GenericOpenAiService implements AiProvider {
     }
 
     private async getApiKey(): Promise<string | null> {
-        return await this.settings.getValue('ai.custom.key');
+        return await this.settings.getValue('ai.custom.api_key');
     }
 
     private async getChatModel(): Promise<string> {
@@ -109,7 +109,8 @@ export class GenericOpenAiService implements AiProvider {
                     model,
                     messages: [
                         { role: 'system', content: systemPrompt },
-                        { role: 'user', content: `KULLANICI SORUSU:
+                        {
+                            role: 'user', content: `KULLANICI SORUSU:
 ${userQuery}
 
 ---
