@@ -77,6 +77,11 @@ export const api = {
             request<{ success: boolean; message: string }>(`/auth/verify-email?token=${token}`, {
                 method: 'GET',
             }),
+        resetPassword: (token: string, newPassword: string) =>
+            request<{ success: boolean; message?: string }>('/auth/reset-password', {
+                method: 'POST',
+                body: JSON.stringify({ token, newPassword }),
+            }),
         me: () => request<{
             id: string;
             fullName: string;

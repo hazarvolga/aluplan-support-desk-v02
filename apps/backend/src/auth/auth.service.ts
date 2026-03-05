@@ -166,6 +166,42 @@ export class AuthService {
         return { success: true };
     }
 
+    async resetPassword(token: string, newPasswordStr: string) {
+        if (!token || !newPasswordStr) {
+            throw new UnauthorizedException('Token ve yeni şifre gerekli.');
+        }
+
+        try {
+            const decoded = this.jwtService.verify(token, { secret: this.config.get('JWT_SECRET') });
+            if (decoded.type !== 'password-reset') {
+                throw new UnauthorizedException('Geçersiz token türü.');
+            }
+
+            const userId = decoded.sub;
+            const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+            if (!user) {
+                throw new UnauthorizedException('Kullanıcı bulunamadı.');
+            }
+
+            const salt = await bcrypt.genSalt();
+            const passwordHash = await bcrypt.hash(newPasswordStr, salt);
+
+            await this.prisma.user.update({
+                where: { id: userId },
+                data: {
+                    passwordHash,
+                    refreshTokenHash: null // Invalidate existing sessions
+                }
+            });
+
+            return { success: true, message: 'Şifreniz başarıyla güncellendi.' };
+
+        } catch (err) {
+            throw new UnauthorizedException('Geçersiz veya süresi dolmuş sıfırlama bağlantısı.');
+        }
+    }
+
     async verifyEmail(token: string) {
         if (!token) throw new UnauthorizedException('Token gerekli');
         try {
