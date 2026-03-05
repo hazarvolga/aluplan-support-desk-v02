@@ -25,6 +25,8 @@ import {
     Table, TableBody, TableCell, TableHead,
     TableHeader, TableRow
 } from '@/components/ui/table';
+import { AiTelemetryDashboard } from '@/components/admin/AiTelemetryDashboard';
+
 enum TicketPriority {
     LOW = 'LOW',
     MEDIUM = 'MEDIUM',
@@ -298,6 +300,7 @@ export default function AdminSettingsPage() {
 
                     {/* ─── AI AYARLARI ─────────────────────────────────────────── */}
                     <TabsContent value="ai">
+                        <AiTelemetryDashboard />
                         <Card>
                             <CardHeader>
                                 <CardTitle>Yapay Zeka Entegrasyonu</CardTitle>

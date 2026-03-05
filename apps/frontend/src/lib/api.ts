@@ -183,6 +183,28 @@ export const api = {
             body: JSON.stringify({ provider }),
         }),
         getCopilotDraft: (ticketId: string) => request<{ draft: string; model: string }>(`/ai/copilot/draft/${ticketId}`),
+        getMetrics: () => request<{
+            global: {
+                _sum: {
+                    inputTokens: number | null;
+                    outputTokens: number | null;
+                    totalTokens: number | null;
+                    estimatedCost: number | null;
+                };
+                _count: { id: number };
+            };
+            providers: Array<{
+                provider: string;
+                model: string;
+                metrics: {
+                    inputTokens: number;
+                    outputTokens: number;
+                    totalTokens: number;
+                    estimatedCost: number;
+                    requests: number;
+                };
+            }>;
+        }>('/ai/metrics'),
         getHealthMetrics: () => request<{
             totalInteractions: number;
             deflectionRate: number;

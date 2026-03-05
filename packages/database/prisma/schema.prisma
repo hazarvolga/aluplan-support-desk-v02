@@ -574,6 +574,8 @@ model AiInteraction {
   // Telemetry details
   isAccepted     Boolean? @map("is_accepted")
   editedResponse String?  @map("edited_response") @db.Text
+  provider       String?  @db.VarChar(50)
+  model          String?  @db.VarChar(100)
 
   // Token usage and Cost telemetry
   inputTokens   Int?     @map("input_tokens")

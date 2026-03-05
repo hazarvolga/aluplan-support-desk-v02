@@ -79,6 +79,20 @@ export class AiService implements AiProvider {
         return this.ollama;
     }
 
+    async getActiveProviderName(): Promise<string> {
+        const providerName = await this.settings.getValue('ai.active_provider');
+
+        if (providerName === 'openai') return 'openai';
+        if (providerName === 'custom') return 'custom';
+        if (providerName === 'llmapi') return 'llmapi';
+        if (providerName === 'ollama') return 'ollama';
+
+        if (process.env.OPENAI_API_KEY) return 'openai';
+        if (process.env.GEMINI_API_KEY) return 'llmapi';
+
+        return 'ollama';
+    }
+
     getName(): string {
         return 'dispatcher';
     }

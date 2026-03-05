@@ -103,6 +103,9 @@ export class AiQueryService {
         if (searchResponse.diagnostics.topScore < LOW_CONFIDENCE_THRESHOLD || results.length === 0) {
             this.logger.warn(`🚫 No reliable context found (topScore=${searchResponse.diagnostics.topScore.toFixed(3)}). Routing to human agent.`);
 
+            const providerName = await this.ai.getActiveProviderName();
+            const modelName = await this.ai.getActiveModelName();
+
             const interaction = await this.prisma.aiInteraction.create({
                 data: {
                     userId,
@@ -111,6 +114,8 @@ export class AiQueryService {
                     confidenceBand: null,
                     autoAnswered: false,
                     similarityScore: searchResponse.diagnostics.topScore || undefined,
+                    provider: providerName,
+                    model: modelName,
                     inputTokens: 0,
                     outputTokens: 0,
                     totalTokens: 0,
@@ -174,6 +179,9 @@ export class AiQueryService {
         const topTrustScore = results[0]?.similarity || 0; // Simplified trust score check
         const suggestTicket = confidence === 'NO_MATCH' || confidence === 'LOW' || topTrustScore < 0.4;
 
+        const providerName = await this.ai.getActiveProviderName();
+        const modelName = await this.ai.getActiveModelName();
+
         const interaction = await this.prisma.aiInteraction.create({
             data: {
                 userId,
@@ -183,6 +191,8 @@ export class AiQueryService {
                 autoAnswered: !suggestTicket,
                 similarityScore: topResult?.similarity,
                 matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
+                provider: providerName,
+                model: modelName,
                 inputTokens,
                 outputTokens,
                 totalTokens,
@@ -313,6 +323,9 @@ export class AiQueryService {
         // Rough estimate based on generic models (e.g. gpt-4o-mini equivalents)
         const estimatedCost = (inputTokens * 0.00000015) + (outputTokens * 0.0000006);
 
+        const providerName = await this.ai.getActiveProviderName();
+        const modelName = await this.ai.getActiveModelName();
+
         const interaction = await this.prisma.aiInteraction.create({
             data: {
                 userId,
@@ -322,6 +335,8 @@ export class AiQueryService {
                 matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
                 similarityScore: topResult ? topResult.similarity : undefined,
                 autoAnswered: confidence === 'HIGH' || confidence === 'MEDIUM',
+                provider: providerName,
+                model: modelName,
                 inputTokens,
                 outputTokens,
                 totalTokens,
@@ -414,7 +429,7 @@ export class AiQueryService {
     }
 
     async getTelemetryMetrics() {
-        const metrics = await this.prisma.aiInteraction.aggregate({
+        const globalMetrics = await this.prisma.aiInteraction.aggregate({
             _sum: {
                 inputTokens: true,
                 outputTokens: true,
@@ -424,8 +439,35 @@ export class AiQueryService {
             _count: {
                 id: true
             }
-        } as any);
-        return metrics;
+        });
+
+        const providersList = await this.prisma.aiInteraction.groupBy({
+            by: ['provider', 'model'],
+            _sum: {
+                inputTokens: true,
+                outputTokens: true,
+                totalTokens: true,
+                estimatedCost: true
+            },
+            _count: {
+                id: true
+            }
+        });
+
+        return {
+            global: globalMetrics,
+            providers: providersList.map(p => ({
+                provider: p.provider || 'unknown',
+                model: p.model || 'unknown',
+                metrics: {
+                    inputTokens: p._sum.inputTokens || 0,
+                    outputTokens: p._sum.outputTokens || 0,
+                    totalTokens: p._sum.totalTokens || 0,
+                    estimatedCost: p._sum.estimatedCost || 0,
+                    requests: p._count.id || 0
+                }
+            }))
+        };
     }
 
     async getPendingForReview(limit = 50): Promise<any[]> {
@@ -540,6 +582,9 @@ SADECE en uygun kategori adını yaz. Hiçbiri uymuyorsa "GENEL" yaz.`;
     async logSearchInteraction(query: string, userId?: string, results: SearchResult[] = [], productId?: string | null, isStaff = false) {
         const topResult = results[0] ?? null;
 
+        const providerName = await this.ai.getActiveProviderName();
+        const modelName = await this.ai.getActiveModelName();
+
         return this.prisma.aiInteraction.create({
             data: {
                 userId,
@@ -549,6 +594,8 @@ SADECE en uygun kategori adını yaz. Hiçbiri uymuyorsa "GENEL" yaz.`;
                 matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
                 similarityScore: topResult ? topResult.similarity : undefined,
                 autoAnswered: false, // This was just a search
+                provider: providerName,
+                model: modelName,
                 userContext: { type: 'WIZARD_SEARCH', resultCount: results.length, isStaff }
             },
         });
