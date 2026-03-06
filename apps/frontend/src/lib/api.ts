@@ -5,6 +5,20 @@ const getApiUrl = () => {
     return typeof window === 'undefined' ? SERVER_API : CLIENT_API;
 };
 
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: (value?: any) => void; reject: (reason?: any) => void }> = [];
+
+const processQueue = (error: Error | null, token: string | null = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     const headers: any = {
@@ -20,16 +34,80 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         console.log('[DEBUG_API] Preview Request Payload:', options?.body);
     }
 
-    const res = await fetch(`${getApiUrl()}${path}`, {
+    let res = await fetch(`${getApiUrl()}${path}`, {
         ...options,
         headers,
     });
+
+    if (res.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
+        const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
+
+        if (refreshToken) {
+            if (isRefreshing) {
+                try {
+                    const newToken = await new Promise<string | null>((resolve, reject) => {
+                        failedQueue.push({ resolve, reject });
+                    });
+
+                    if (newToken) {
+                        headers['Authorization'] = `Bearer ${newToken}`;
+                        res = await fetch(`${getApiUrl()}${path}`, { ...options, headers });
+                        if (res.ok) {
+                            const text = await res.text();
+                            return text ? JSON.parse(text) : {} as T;
+                        }
+                    }
+                } catch (e) {
+                    throw new Error('Oturum süresi doldu. Lütfen tekrar giriş yapın.');
+                }
+            } else {
+                isRefreshing = true;
+                try {
+                    const refreshRes = await fetch(`${getApiUrl()}/auth/refresh`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${refreshToken}`
+                        }
+                    });
+
+                    if (refreshRes.ok) {
+                        const refreshData = await refreshRes.json();
+                        if (refreshData.access_token && refreshData.refresh_token) {
+                            localStorage.setItem('access_token', refreshData.access_token);
+                            localStorage.setItem('refresh_token', refreshData.refresh_token);
+
+                            processQueue(null, refreshData.access_token);
+
+                            headers['Authorization'] = `Bearer ${refreshData.access_token}`;
+                            res = await fetch(`${getApiUrl()}${path}`, { ...options, headers });
+                        } else {
+                            throw new Error('Invalid refresh response');
+                        }
+                    } else {
+                        throw new Error('Refresh failed');
+                    }
+                } catch (e) {
+                    processQueue(e as Error, null);
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    // role-guard.tsx will catch the 401 and redirect to login
+                    throw new Error('Oturum süresi doldu. Lütfen tekrar giriş yapın.');
+                } finally {
+                    isRefreshing = false;
+                }
+            }
+        } else {
+            // No refresh token, let it fail normally
+            localStorage.removeItem('access_token');
+        }
+    }
+
     if (!res.ok) {
         let errStr = `HTTP ${res.status}: ${res.statusText}`;
         let errBody: any = {};
         try {
             errBody = await res.json();
-            // NestJS returns error details in `message` (sometimes an array of strings for validation)
             if (Array.isArray(errBody.message)) {
                 errStr = errBody.message.join(', ');
             } else if (errBody.message) {
@@ -41,7 +119,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
             }
             console.error(`API Error [${res.status}]:`, errBody);
         } catch (e) {
-            // response was not JSON, try text
             try {
                 const text = await res.clone().text();
                 console.error(`API Error [${res.status}] (Non-JSON):`, text);
@@ -178,7 +255,7 @@ export const api = {
                 method: 'POST', body: JSON.stringify({ rating, comment }),
             }),
         status: () => request<any>('/ai/status'),
-        testConnection: (provider: string) => request<{ available: boolean; provider: string }>('/ai/test-connection', {
+        testConnection: (provider: string) => request<{ available: boolean; provider: string; message: string }>('/ai/test-connection', {
             method: 'POST',
             body: JSON.stringify({ provider }),
         }),
