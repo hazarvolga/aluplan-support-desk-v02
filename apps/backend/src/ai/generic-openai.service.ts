@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
 import { AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
@@ -37,6 +37,25 @@ export class GenericOpenAiService implements AiProvider {
             'text-embedding-3-small';
     }
 
+    private validateApiKey(baseUrl: string, apiKey: string) {
+        if (!apiKey) return;
+        if (baseUrl.includes('x.ai') && !apiKey.startsWith('xai-')) {
+            throw new BadRequestException(
+                `Hatalı xAI API Anahtarı: Anahtarınız 'xai-' ile başlamalıdır. Görünüşe göre başka bir servis anahtarı (örneğin Groq) girilmiş olabilir.`
+            );
+        }
+        if (baseUrl.includes('groq.com') && !apiKey.startsWith('gsk-')) {
+            throw new BadRequestException(
+                `Hatalı Groq API Anahtarı: Anahtarınız 'gsk-' ile başlamalıdır. Görünüşe göre başka bir servis anahtarı (örneğin xAI) girilmiş olabilir.`
+            );
+        }
+        if (baseUrl.includes('deepseek.com') && !apiKey.startsWith('sk-')) {
+            throw new BadRequestException(
+                `Hatalı DeepSeek API Anahtarı: Anahtarınız 'sk-' ile başlamalıdır.`
+            );
+        }
+    }
+
     getName(): string {
         return this.providerPrefix.replace('ai.', '');
     }
@@ -52,12 +71,7 @@ export class GenericOpenAiService implements AiProvider {
         }
 
         try {
-            // Diagnostic prefix check
-            if (baseUrl.includes('x.ai') && !apiKey.startsWith('xai-')) {
-                this.logger.warn(`🚩 xAI Provider detected but API Key does not start with 'xai-'. Current prefix: ${apiKey.substring(0, 4)}...`);
-            } else if (baseUrl.includes('groq.com') && !apiKey.startsWith('gsk-')) {
-                this.logger.warn(`🚩 Groq Provider detected but API Key does not start with 'gsk-'. Current prefix: ${apiKey.substring(0, 4)}...`);
-            }
+            this.validateApiKey(baseUrl, apiKey);
 
             const response = await fetch(`${baseUrl}/embeddings`, {
                 method: 'POST',
@@ -89,12 +103,7 @@ export class GenericOpenAiService implements AiProvider {
         if (!baseUrl || !apiKey) return null;
 
         try {
-            // Diagnostic prefix check
-            if (baseUrl.includes('x.ai') && !apiKey.startsWith('xai-')) {
-                this.logger.warn(`🚩 xAI Provider detected but API Key does not start with 'xai-'. Current prefix: ${apiKey.substring(0, 4)}...`);
-            } else if (baseUrl.includes('groq.com') && !apiKey.startsWith('gsk-')) {
-                this.logger.warn(`🚩 Groq Provider detected but API Key does not start with 'gsk-'. Current prefix: ${apiKey.substring(0, 4)}...`);
-            }
+            this.validateApiKey(baseUrl, apiKey);
 
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
@@ -130,12 +139,7 @@ export class GenericOpenAiService implements AiProvider {
         if (!baseUrl || !apiKey) return null;
 
         try {
-            // Diagnostic prefix check
-            if (baseUrl.includes('x.ai') && !apiKey.startsWith('xai-')) {
-                this.logger.warn(`🚩 xAI Provider detected but API Key does not start with 'xai-'. Current prefix: ${apiKey.substring(0, 4)}...`);
-            } else if (baseUrl.includes('groq.com') && !apiKey.startsWith('gsk-')) {
-                this.logger.warn(`🚩 Groq Provider detected but API Key does not start with 'gsk-'. Current prefix: ${apiKey.substring(0, 4)}...`);
-            }
+            this.validateApiKey(baseUrl, apiKey);
 
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
@@ -212,6 +216,7 @@ SONUÇ (YALNIZCA KELİME):`;
         const apiKey = await this.getApiKey();
         const model = await this.getModel();
         if (!baseUrl || !apiKey) return null;
+        this.validateApiKey(baseUrl, apiKey);
 
         try {
             const response = await fetch(`${baseUrl}/chat/completions`, {
