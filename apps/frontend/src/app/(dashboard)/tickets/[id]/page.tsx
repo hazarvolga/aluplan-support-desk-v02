@@ -23,7 +23,6 @@ import { tr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { MacroPicker } from '@/components/macros/macro-picker';
 
-const router = useRouter();
 const STATUS_COLORS: Record<string, string> = {
     NEW: 'border-blue-900/50 text-blue-400 bg-blue-400/5',
     OPEN: 'border-sky-900/50 text-sky-400 bg-sky-400/5',
@@ -56,6 +55,7 @@ const CHANNEL_COLORS: Record<string, string> = {
 };
 
 export default function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const router = useRouter();
     const { id } = use(params);
     const [ticket, setTicket] = useState<any>(null);
     const [user, setUser] = useState<any>(null);
