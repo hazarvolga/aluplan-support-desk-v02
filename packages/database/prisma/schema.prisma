@@ -327,6 +327,7 @@ model CustomerProfile {
   externalContactId String?   @unique @map("external_contact_id") @db.VarChar(255)
   crmVerified       Boolean   @default(false) @map("crm_verified")
   hotinfoData       Json?     @map("hotinfo_data")
+  hotinfoRaw        String?   @map("hotinfo_raw") @db.Text
   hotinfoUpdatedAt  DateTime? @map("hotinfo_updated_at")
   tags              String[]  @default([])
   createdAt         DateTime  @default(now()) @map("created_at")
