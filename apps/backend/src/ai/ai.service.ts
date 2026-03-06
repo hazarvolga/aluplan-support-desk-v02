@@ -64,7 +64,7 @@ export class AiService implements AiProvider {
 
     private async getProviderByName(providerName: string | null): Promise<AiProvider | null> {
         if (providerName === 'openai') return this.openai;
-        if (providerName === 'custom' || providerName === 'xai' || providerName === 'deepseek') {
+        if (providerName === 'custom' || providerName === 'xai' || providerName === 'deepseek' || providerName === 'groq') {
             this.custom.setProvider(providerName as any);
             return this.custom;
         }
@@ -236,6 +236,9 @@ ${rawContent}
                     return await this.custom.isAvailable();
                 case 'deepseek':
                     this.custom.setProvider('deepseek');
+                    return await this.custom.isAvailable();
+                case 'groq':
+                    this.custom.setProvider('groq');
                     return await this.custom.isAvailable();
                 case 'custom':
                     this.custom.setProvider('custom');

@@ -135,6 +135,7 @@ export default function AdminSettingsPage() {
                 'ai.openai.api_key',
                 'ai.xai.api_key',
                 'ai.deepseek.api_key',
+                'ai.groq.api_key',
                 'ai.custom.api_key',
                 'email.resend.api_key',
                 'email.smtp.pass',
@@ -324,6 +325,7 @@ export default function AdminSettingsPage() {
                                                     <SelectItem value="ollama">Ollama (Yerel)</SelectItem>
                                                     <SelectItem value="openai">OpenAI (Bulut)</SelectItem>
                                                     <SelectItem value="xai">xAI (Grok)</SelectItem>
+                                                    <SelectItem value="groq">Groq (Hızlı & Ücretsiz)</SelectItem>
                                                     <SelectItem value="deepseek">DeepSeek</SelectItem>
                                                     <SelectItem value="llmapi">LLMAPI (Önerilen)</SelectItem>
                                                     <SelectItem value="custom">Özel (OpenAI Uyumlu)</SelectItem>
@@ -343,6 +345,7 @@ export default function AdminSettingsPage() {
                                                 <SelectContent>
                                                     <SelectItem value="ollama">Ollama (Yerel)</SelectItem>
                                                     <SelectItem value="openai">OpenAI (Bulut - Önerilen)</SelectItem>
+                                                    <SelectItem value="groq">Groq (Embedding Desteklemez)</SelectItem>
                                                     <SelectItem value="llmapi">LLMAPI</SelectItem>
                                                     <SelectItem value="custom">Özel (Desteği varsa)</SelectItem>
                                                 </SelectContent>
@@ -430,6 +433,37 @@ export default function AdminSettingsPage() {
                                             <div className="space-y-2">
                                                 <Label className="text-xs">Chat Model</Label>
                                                 <Input value={getSetting('ai.xai.chat_model')} onChange={e => updateValue('ai.xai.chat_model', e.target.value)} placeholder="grok-2-latest" className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-muted-foreground">Embedding</Label>
+                                                <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Groq Ayarları */}
+                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
+                                                <Bot className="h-4 w-4" /> Groq
+                                            </h3>
+                                            <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                const res = await api.ai.testConnection('groq');
+                                                toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'Groq bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
+                                            }}>Test Et</Button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs">API Key</Label>
+                                            <Input type="password" value={getSetting('ai.groq.api_key')} onChange={e => updateValue('ai.groq.api_key', e.target.value)} placeholder="gsk_..." className="bg-black/50 h-8 text-sm" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs">Base URL (Opsiyonel)</Label>
+                                            <Input value={getSetting('ai.groq.url')} onChange={e => updateValue('ai.groq.url', e.target.value)} placeholder="https://api.groq.com/openai/v1" className="bg-black/50 h-8 text-sm" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">Chat Model</Label>
+                                                <Input value={getSetting('ai.groq.chat_model')} onChange={e => updateValue('ai.groq.chat_model', e.target.value)} placeholder="llama3-8b-8192" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs text-muted-foreground">Embedding</Label>
@@ -551,6 +585,9 @@ export default function AdminSettingsPage() {
                                             'ai.xai.api_key',
                                             'ai.xai.url',
                                             'ai.xai.chat_model',
+                                            'ai.groq.api_key',
+                                            'ai.groq.url',
+                                            'ai.groq.chat_model',
                                             'ai.deepseek.api_key',
                                             'ai.deepseek.url',
                                             'ai.deepseek.chat_model',

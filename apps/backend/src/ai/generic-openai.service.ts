@@ -13,7 +13,7 @@ export class GenericOpenAiService implements AiProvider {
         private readonly settings: SettingsService,
     ) { }
 
-    setProvider(provider: 'custom' | 'xai' | 'deepseek') {
+    setProvider(provider: 'custom' | 'xai' | 'deepseek' | 'groq') {
         this.providerPrefix = `ai.${provider}`;
     }
 
