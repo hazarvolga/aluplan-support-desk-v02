@@ -285,4 +285,58 @@ SONUÇ (YALNIZCA KELİME):`;
         const apiKey = await this.getApiKey();
         return !!(baseUrl && apiKey);
     }
+
+    async testConnection(): Promise<{ success: boolean; message: string }> {
+        const baseUrl = await this.getBaseUrl();
+        const apiKey = await this.getApiKey();
+
+        if (!baseUrl || !apiKey) {
+            return { success: false, message: 'API Key veya Base URL eksik/çözülemedi.' };
+        }
+
+        try {
+            this.validateApiKey(baseUrl, apiKey);
+
+            // OpenAI uyumlu endpointlerde /models listesini çekmeyi deneriz.
+            const response = await fetch(`${baseUrl}/models`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                signal: AbortSignal.timeout(10_000),
+            });
+
+            if (response.ok) {
+                return { success: true, message: 'Bağlantı başarılı.' };
+            }
+
+            let errorDetail = '';
+            try {
+                const errorData = await response.json();
+                errorDetail = errorData?.error?.message || response.statusText;
+            } catch (e) {
+                errorDetail = response.statusText;
+            }
+
+            if (response.status === 401) {
+                return { success: false, message: `Yetkisiz (401). API Key hatalı olabilir. Detay: ${errorDetail}` };
+            }
+            if (response.status === 429 || errorDetail.includes('credits')) { // XAI bakiye kontrolü
+                return { success: false, message: `Kota/Bakiye yetersiz. Faturalandırmayı kontrol edin. Detay: ${errorDetail}` };
+            }
+
+            return { success: false, message: `Hata: ${response.status} - ${errorDetail}` };
+
+        } catch (error: any) {
+            if (error instanceof BadRequestException) {
+                return { success: false, message: error.message };
+            }
+
+            this.logger.error(`Generic Test Connection error: ${error.message}`);
+            if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+                return { success: false, message: 'Bağlantı zaman aşımına uğradı. Base URL yanlış olabilir.' };
+            }
+            return { success: false, message: `Erişim sağlanamadı: ${error.message}` };
+        }
+    }
 }

@@ -364,8 +364,12 @@ export default function AdminSettingsPage() {
                                                     <Bot className="h-4 w-4" /> Ollama
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                    const res = await api.ai.testConnection('ollama');
-                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'Ollama ile iletişim kuruldu.' : 'Ollama servisine ulaşılamadı.', variant: res.available ? 'default' : 'destructive' });
+                                                    try {
+                                                        const res = await api.ai.testConnection('ollama');
+                                                        toast({ title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.message || (res.success ? 'Ollama ile iletişim kuruldu.' : 'Ollama servisine ulaşılamadı.'), variant: res.success ? 'default' : 'destructive' });
+                                                    } catch (e: any) {
+                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                    }
                                                 }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
@@ -393,8 +397,12 @@ export default function AdminSettingsPage() {
                                                     <Globe className="h-4 w-4" /> OpenAI
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                    const res = await api.ai.testConnection('openai');
-                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'OpenAI key onaylandı.' : 'API Key hatalı veya eksik.', variant: res.available ? 'default' : 'destructive' });
+                                                    try {
+                                                        const res = await api.ai.testConnection('openai');
+                                                        toast({ title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.message || (res.success ? 'OpenAI key onaylandı.' : 'API Key hatalı veya eksik.'), variant: res.success ? 'default' : 'destructive' });
+                                                    } catch (e: any) {
+                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                    }
                                                 }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
@@ -422,8 +430,16 @@ export default function AdminSettingsPage() {
                                                     <Bot className="h-4 w-4" /> xAI (Grok)
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                    const res = await api.ai.testConnection('xai');
-                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'xAI bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
+                                                    try {
+                                                        const res = await api.ai.testConnection('xai');
+                                                        toast({
+                                                            title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız',
+                                                            description: res.message || (res.success ? 'xAI bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.'),
+                                                            variant: res.success ? 'default' : 'destructive'
+                                                        });
+                                                    } catch (e: any) {
+                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                    }
                                                 }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
@@ -455,8 +471,16 @@ export default function AdminSettingsPage() {
                                                     <Bot className="h-4 w-4" /> Groq
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                    const res = await api.ai.testConnection('groq');
-                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'Groq bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
+                                                    try {
+                                                        const res = await api.ai.testConnection('groq');
+                                                        toast({
+                                                            title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız',
+                                                            description: res.message || (res.success ? 'Groq bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.'),
+                                                            variant: res.success ? 'default' : 'destructive'
+                                                        });
+                                                    } catch (e: any) {
+                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                    }
                                                 }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
@@ -488,8 +512,16 @@ export default function AdminSettingsPage() {
                                                     <Bot className="h-4 w-4" /> DeepSeek
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                    const res = await api.ai.testConnection('deepseek');
-                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'DeepSeek bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
+                                                    try {
+                                                        const res = await api.ai.testConnection('deepseek');
+                                                        toast({
+                                                            title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız',
+                                                            description: res.message || (res.success ? 'DeepSeek bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.'),
+                                                            variant: res.success ? 'default' : 'destructive'
+                                                        });
+                                                    } catch (e: any) {
+                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                    }
                                                 }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
@@ -521,8 +553,16 @@ export default function AdminSettingsPage() {
                                                     <ShieldCheck className="h-4 w-4" /> LLMAPI.ai
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                    const res = await api.ai.testConnection('llmapi');
-                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'LLMAPI key onaylandı.' : 'API Key hatalı veya eksik.', variant: res.available ? 'default' : 'destructive' });
+                                                    try {
+                                                        const res = await api.ai.testConnection('llmapi');
+                                                        toast({
+                                                            title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız',
+                                                            description: res.message || (res.success ? 'LLMAPI bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.'),
+                                                            variant: res.success ? 'default' : 'destructive'
+                                                        });
+                                                    } catch (e: any) {
+                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                    }
                                                 }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
@@ -554,8 +594,16 @@ export default function AdminSettingsPage() {
                                                     <Bot className="h-4 w-4" /> Diğer Özel Servis
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                    const res = await api.ai.testConnection('custom');
-                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'Özel API bağlantısı onaylandı.' : 'Custom konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
+                                                    try {
+                                                        const res = await api.ai.testConnection('custom');
+                                                        toast({
+                                                            title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız',
+                                                            description: res.message || (res.success ? 'Özel API bağlantısı onaylandı.' : 'Custom konfigürasyon hatalı.'),
+                                                            variant: res.success ? 'default' : 'destructive'
+                                                        });
+                                                    } catch (e: any) {
+                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                    }
                                                 }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">

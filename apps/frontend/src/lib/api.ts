@@ -255,7 +255,7 @@ export const api = {
                 method: 'POST', body: JSON.stringify({ rating, comment }),
             }),
         status: () => request<any>('/ai/status'),
-        testConnection: (provider: string) => request<{ available: boolean; provider: string; message: string }>('/ai/test-connection', {
+        testConnection: (provider: string) => request<{ success: boolean; provider: string; message: string }>('/ai/test-connection', {
             method: 'POST',
             body: JSON.stringify({ provider }),
         }),

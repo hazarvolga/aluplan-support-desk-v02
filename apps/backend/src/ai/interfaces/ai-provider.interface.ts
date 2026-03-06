@@ -18,6 +18,7 @@ export interface AiProvider {
     analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'>;
     translate(text: string, targetLanguage: string): Promise<string | null>;
     isAvailable(): Promise<boolean>;
+    testConnection(): Promise<{ success: boolean; message: string }>;
     getName(): string;
     getActiveModelName(): Promise<string>;
 }

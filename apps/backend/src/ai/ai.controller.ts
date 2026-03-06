@@ -163,8 +163,12 @@ export class AiController {
     @Roles('ADMIN', 'SUPERUSER')
     @ApiOperation({ summary: 'Test connection for a specific AI provider' })
     async testConnection(@Body() dto: { provider: string }) {
-        const available = await this.aiService.testProvider(dto.provider);
-        return { available, provider: dto.provider };
+        const result = await this.aiService.testProvider(dto.provider);
+        return {
+            available: result.success,
+            provider: dto.provider,
+            message: result.message
+        };
     }
 
     @Post('search')

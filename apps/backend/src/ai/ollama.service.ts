@@ -250,10 +250,30 @@ SONUÇ (YALNIZCA KELİME):`;
     async isAvailable(): Promise<boolean> {
         try {
             const baseUrl = await this.getBaseUrl();
-            const res = await fetch(`${baseUrl}/api/tags`, { signal: AbortSignal.timeout(5_000) });
-            return res.ok;
+            const response = await fetch(`${baseUrl}/api/tags`, {
+                signal: AbortSignal.timeout(2000), // very short timeout for local check
+            });
+            return response.ok;
         } catch {
             return false;
+        }
+    }
+
+    async testConnection(): Promise<{ success: boolean; message: string }> {
+        try {
+            const baseUrl = await this.getBaseUrl();
+            const response = await fetch(`${baseUrl}/api/tags`, {
+                signal: AbortSignal.timeout(5000),
+            });
+
+            if (response.ok) {
+                return { success: true, message: 'Ollama bağlantısı başarılı. Servis çalışıyor.' };
+            }
+
+            return { success: false, message: `Bağlantı hatası: HTTP ${response.status}` };
+        } catch (error: any) {
+            this.logger.error(`Ollama Test Connection error: ${error.message}`);
+            return { success: false, message: `Erişim sağlanamadı (Ollama kapalı olabilir). Hata: ${error.message}` };
         }
     }
 }

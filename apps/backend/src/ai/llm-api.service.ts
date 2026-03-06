@@ -133,7 +133,8 @@ export class LlmApiService implements AiProvider {
                     model,
                     messages: [
                         { role: 'system', content: systemPrompt },
-                        { role: 'user', content: `KULLANICI SORUSU:
+                        {
+                            role: 'user', content: `KULLANICI SORUSU:
 ${userQuery}
 
 ---
@@ -179,7 +180,8 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
                     model,
                     messages: [
                         { role: 'system', content: systemPrompt },
-                        { role: 'user', content: `KULLANICI SORUSU:
+                        {
+                            role: 'user', content: `KULLANICI SORUSU:
 ${userQuery}
 
 ---
@@ -301,5 +303,51 @@ SONUÇ (YALNIZCA KELİME):`;
     async isAvailable(): Promise<boolean> {
         const apiKey = await this.getApiKey();
         return !!apiKey;
+    }
+
+    async testConnection(): Promise<{ success: boolean; message: string }> {
+        const apiKey = await this.getApiKey();
+        const baseUrl = await this.getBaseUrl();
+        if (!apiKey) {
+            return { success: false, message: 'API Key bulunamadı veya çözümsüz.' };
+        }
+
+        try {
+            const response = await fetch(`${baseUrl}/models`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                signal: AbortSignal.timeout(10_000),
+            });
+
+            if (response.ok) {
+                return { success: true, message: 'LLMAPI bağlantısı başarılı.' };
+            }
+
+            let errorDetail = '';
+            try {
+                const errorData = await response.json();
+                errorDetail = errorData?.error?.message || response.statusText;
+            } catch (e) {
+                errorDetail = response.statusText;
+            }
+
+            if (response.status === 401) {
+                return { success: false, message: `Yetkisiz (401). API Key hatalı olabilir. Detay: ${errorDetail}` };
+            }
+            if (response.status === 429) {
+                return { success: false, message: `Kota Aşıldı (429). Detay: ${errorDetail}` };
+            }
+
+            return { success: false, message: `Hata: ${response.status} - ${errorDetail}` };
+
+        } catch (error: any) {
+            this.logger.error(`LLMAPI Test Connection error: ${error.message}`);
+            if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+                return { success: false, message: 'Bağlantı zaman aşımına uğradı.' };
+            }
+            return { success: false, message: `Erişim sağlanamadı: ${error.message}` };
+        }
     }
 }

@@ -225,29 +225,35 @@ ${rawContent}
         return provider.isAvailable();
     }
 
-    async testProvider(providerName: string): Promise<boolean> {
+    async testProvider(providerName: string): Promise<{ success: boolean; message: string }> {
         try {
             switch (providerName) {
-                case 'ollama': return await this.ollama.isAvailable();
-                case 'openai': return await this.openai.isAvailable();
-                case 'llmapi': return await this.llmapi.isAvailable();
+                case 'ollama': return await this.ollama.testConnection();
+                case 'openai': return await this.openai.testConnection();
+                case 'llmapi': return await this.llmapi.testConnection();
                 case 'xai':
                     this.custom.setProvider('xai');
-                    return await this.custom.isAvailable();
+                    return await this.custom.testConnection();
                 case 'deepseek':
                     this.custom.setProvider('deepseek');
-                    return await this.custom.isAvailable();
+                    return await this.custom.testConnection();
                 case 'groq':
                     this.custom.setProvider('groq');
-                    return await this.custom.isAvailable();
+                    return await this.custom.testConnection();
                 case 'custom':
                     this.custom.setProvider('custom');
-                    return await this.custom.isAvailable();
-                default: return false;
+                    return await this.custom.testConnection();
+                default:
+                    return { success: false, message: 'Bilinmeyen AI sağlayıcısı.' };
             }
-        } catch (e) {
+        } catch (e: any) {
             this.logger.error(`Error testing provider ${providerName}:`, e);
-            return false;
+            return { success: false, message: `Beklenmeyen bir hata oluştu: ${e.message}` };
         }
+    }
+
+    async testConnection(): Promise<{ success: boolean; message: string }> {
+        const provider = await this.getActiveChatProvider();
+        return provider.testConnection();
     }
 }

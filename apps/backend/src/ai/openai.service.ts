@@ -103,7 +103,8 @@ export class OpenAiService implements AiProvider {
                     model,
                     messages: [
                         { role: 'system', content: systemPrompt },
-                        { role: 'user', content: `KULLANICI SORUSU:
+                        {
+                            role: 'user', content: `KULLANICI SORUSU:
 ${userQuery}
 
 ---
@@ -198,5 +199,51 @@ SONUÇ (YALNIZCA KELİME):`;
     async isAvailable(): Promise<boolean> {
         const apiKey = await this.getApiKey();
         return !!apiKey;
+    }
+
+    async testConnection(): Promise<{ success: boolean; message: string }> {
+        const apiKey = await this.getApiKey();
+        if (!apiKey) {
+            return { success: false, message: 'API Key bulunamadı veya çözülemedi (ENCRYPTION_KEY x API Key uyumsuzluğu olabilir).' };
+        }
+
+        try {
+            const response = await fetch('https://api.openai.com/v1/models', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                signal: AbortSignal.timeout(10_000), // 10 saniye timeout
+            });
+
+            if (response.ok) {
+                return { success: true, message: 'OpenAI bağlantısı başarılı. Modeller listelendi.' };
+            }
+
+            // Hata detayını yakalamaya çalış
+            let errorDetail = '';
+            try {
+                const errorData = await response.json();
+                errorDetail = errorData?.error?.message || response.statusText;
+            } catch (e) {
+                errorDetail = response.statusText;
+            }
+
+            if (response.status === 401) {
+                return { success: false, message: `Yetkisiz Erişim (401). API Key yanlış veya iptal edilmiş olabilir. Detay: ${errorDetail}` };
+            }
+            if (response.status === 429) {
+                return { success: false, message: `Kota/Limit Aşıldı (429). OpenAI faturanızı kontrol edin. Detay: ${errorDetail}` };
+            }
+
+            return { success: false, message: `Bağlantı hatası: ${response.status} - ${errorDetail}` };
+
+        } catch (error: any) {
+            this.logger.error(`OpenAI Test Connection error: ${error.message}`);
+            if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+                return { success: false, message: 'OpenAI sunucusuna bağlanılamadı (Timeout). Ağ bağlantınızı kontrol edin.' };
+            }
+            return { success: false, message: `Erişim sağlanamadı: ${error.message}` };
+        }
     }
 }
