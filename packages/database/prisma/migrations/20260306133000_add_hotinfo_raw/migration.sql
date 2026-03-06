@@ -1,1 +1,1 @@
-ALTER TABLE "CustomerProfile" ADD COLUMN "hotinfoRaw" TEXT;
+ALTER TABLE "customer_profiles" ADD COLUMN IF NOT EXISTS "hotinfo_raw" TEXT;
