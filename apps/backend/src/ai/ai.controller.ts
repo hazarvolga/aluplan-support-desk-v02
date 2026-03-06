@@ -165,7 +165,7 @@ export class AiController {
     async testConnection(@Body() dto: { provider: string }) {
         const result = await this.aiService.testProvider(dto.provider);
         return {
-            available: result.success,
+            success: result.success,
             provider: dto.provider,
             message: result.message
         };
