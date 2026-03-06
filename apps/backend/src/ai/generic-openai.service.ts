@@ -85,11 +85,18 @@ export class GenericOpenAiService implements AiProvider {
 
             if (!response.ok) {
                 const errorBody = await response.text();
+                // Special handling for xAI credit issues
+                if (baseUrl.includes('x.ai') && errorBody.includes('credits')) {
+                    throw new BadRequestException(
+                        'xAI (Grok) hesabınızda kredi bulunmuyor. Lütfen console.x.ai/billing adresinden bakiye yükleyin.'
+                    );
+                }
                 throw new Error(`Custom AI HTTP ${response.status} at ${baseUrl}: ${errorBody}`);
             }
             const data = await response.json();
             return { embedding: data.data[0].embedding, model };
         } catch (err: any) {
+            if (err instanceof BadRequestException) throw err;
             this.logger.warn(`⚠️ Custom AI embed failed (${baseUrl}): ${err.message}`);
             return null;
         }
@@ -121,11 +128,18 @@ export class GenericOpenAiService implements AiProvider {
 
             if (!response.ok) {
                 const errorBody = await response.text();
+                // Special handling for xAI credit issues
+                if (baseUrl.includes('x.ai') && errorBody.includes('credits')) {
+                    throw new BadRequestException(
+                        'xAI (Grok) hesabınızda kredi bulunmuyor. Lütfen console.x.ai/billing adresinden bakiye yükleyin.'
+                    );
+                }
                 throw new Error(`Custom AI HTTP ${response.status} at ${baseUrl}: ${errorBody}`);
             }
             const data = await response.json();
             return data.choices[0].message.content.trim();
         } catch (err: any) {
+            if (err instanceof BadRequestException) throw err;
             this.logger.warn(`⚠️ Custom AI generate failed (${baseUrl}): ${err.message}`);
             return null;
         }
@@ -169,12 +183,19 @@ Above information source is official. Answer the user question logicially based 
 
             if (!response.ok) {
                 const errorBody = await response.text();
+                // Special handling for xAI credit issues
+                if (baseUrl.includes('x.ai') && errorBody.includes('credits')) {
+                    throw new BadRequestException(
+                        'xAI (Grok) hesabınızda kredi bulunmuyor. Lütfen console.x.ai/billing adresinden bakiye yükleyin.'
+                    );
+                }
                 throw new Error(`Custom AI HTTP ${response.status} at ${baseUrl}: ${errorBody}`);
             }
             const data = await response.json();
             const content = data.choices[0].message.content.trim();
             return { response: content, model };
         } catch (err: any) {
+            if (err instanceof BadRequestException) throw err;
             this.logger.warn(`⚠️ Custom AI reformat failed (${baseUrl}): ${err.message}`);
             return null;
         }
@@ -216,9 +237,9 @@ SONUÇ (YALNIZCA KELİME):`;
         const apiKey = await this.getApiKey();
         const model = await this.getModel();
         if (!baseUrl || !apiKey) return null;
-        this.validateApiKey(baseUrl, apiKey);
 
         try {
+            this.validateApiKey(baseUrl, apiKey);
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {
@@ -236,10 +257,20 @@ SONUÇ (YALNIZCA KELİME):`;
                 }),
                 signal: AbortSignal.timeout(60_000),
             });
-            if (!response.ok) throw new Error(`Custom OpenAI HTTP ${response.status}`);
+            if (!response.ok) {
+                const errorBody = await response.text();
+                // Special handling for xAI credit issues
+                if (baseUrl.includes('x.ai') && errorBody.includes('credits')) {
+                    throw new BadRequestException(
+                        'xAI (Grok) hesabınızda kredi bulunmuyor. Lütfen console.x.ai/billing adresinden bakiye yükleyin.'
+                    );
+                }
+                throw new Error(`Custom OpenAI HTTP ${response.status}`);
+            }
             const data = await response.json();
             return data.choices[0]?.message?.content?.trim() || null;
         } catch (error: any) {
+            if (error instanceof BadRequestException) throw error;
             this.logger.error(`GenericOpenAI Translation API error: ${error.message}`);
             return null;
         }
