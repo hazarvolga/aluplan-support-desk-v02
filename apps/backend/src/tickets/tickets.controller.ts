@@ -46,7 +46,7 @@ export class TicketsController {
     @ApiQuery({ name: 'limit', required: false, type: Number })
     findAll(@Query() query: any, @Request() req: any) {
         // If user is a customer, force filter by their own userId
-        const userId = req.user.role === 'customer' ? req.user.sub : query.userId;
+        const userId = (req.user.role === 'customer' || req.user.role === 'VIEWER') ? req.user.sub : query.userId;
 
         return this.ticketsService.findAll({
             status: query.status,

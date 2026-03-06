@@ -270,7 +270,13 @@ export default function ProfilePage() {
                 <CardHeader>
                     <CardTitle>Kişisel Bilgiler</CardTitle>
                     <CardDescription>
-                        Hesap bilgileriniz ({roles.map(r => r === 'admin' ? 'Yönetici' : r === 'agent' ? 'Temsilci' : r === 'customer' ? 'Müşteri' : r).join(', ')})
+                        Hesap bilgileriniz ({roles.map(r => {
+                            const rt = r.toLowerCase();
+                            if (rt === 'admin') return 'Yönetici';
+                            if (rt === 'agent') return 'Temsilci';
+                            if (rt === 'customer' || rt === 'viewer') return 'Müşteri';
+                            return r;
+                        }).join(', ')})
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

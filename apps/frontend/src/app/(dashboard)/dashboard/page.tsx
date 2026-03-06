@@ -65,7 +65,7 @@ export default function DashboardPage() {
     }, []);
 
     const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
-    const isCustomer = userRoles.includes('customer');
+    const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer');
 
     if (loading) {
         return (

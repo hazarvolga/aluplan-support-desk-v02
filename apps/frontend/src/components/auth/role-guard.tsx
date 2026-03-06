@@ -86,8 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (!loading && user) {
             if (pathname === '/' || pathname.startsWith('/login')) {
-                const userRole = (user?.role || (user?.roles && user.roles[0]) || 'customer').toLowerCase();
-                router.push(userRole === 'customer' ? '/my-tickets' : '/dashboard');
+                const userRole = (user?.role || (user?.roles && user.roles[0]) || 'viewer').toLowerCase();
+                router.push(userRole === 'customer' || userRole === 'viewer' ? '/my-tickets' : '/dashboard');
             }
         }
     }, [user, loading, pathname, router]);
@@ -114,8 +114,8 @@ export function RoleGuard({
 
     useEffect(() => {
         if (!loading && user) {
-            const userRole = (user?.role || (user?.roles && user.roles[0]) || 'customer').toLowerCase();
-            const isCustomer = userRole === 'customer';
+            const userRole = (user?.role || (user?.roles && user.roles[0]) || 'viewer').toLowerCase();
+            const isCustomer = userRole === 'customer' || userRole === 'viewer';
 
             // Routes that are definitely NOT for customers
             const adminOnlyPaths = ['/users', '/settings', '/reports', '/customers', '/faq/review', '/ai/training', '/faq-learning'];

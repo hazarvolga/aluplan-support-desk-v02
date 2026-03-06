@@ -60,7 +60,7 @@ YANIT TASLAĞI:`;
         const response = await this.ai.generate(prompt, 60_000);
 
         return {
-            draft: response || 'Taslak oluşturulamadı.',
+            draft: response || 'Taslak oluşturulamadı. AI sağlayıcısı yapılandırmasında bir hata oluştu (Geçersiz API Anahtarı vb.). Lütfen Yönetici panelinden AI ayarlarını kontrol edin.',
             model: 'dynamic' // Provider info is abstracted
         };
     }

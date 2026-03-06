@@ -96,7 +96,7 @@ export class EmailService implements OnModuleInit {
             // 4. Enqueue the BullMQ job.
             const job = await this.emailQueue.add(
                 payload.template,
-                { ...payload, logId: draftLog.id },
+                { ...payload, logRef: draftLog.id },
                 {
                     priority: payload.priority || 3,
                     delay: payload.delay || 0,

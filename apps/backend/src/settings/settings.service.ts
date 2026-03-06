@@ -75,7 +75,7 @@ export class SettingsService {
             try {
                 plaintext = this.crypto.decrypt(setting.value);
             } catch (error) {
-                this.logger.error(`Decryption failed for setting: ${key}. ENCRYPTION_KEY mismatch?`);
+                this.logger.warn(`Decryption failed for setting: ${key}. ENCRYPTION_KEY mismatch?`);
                 plaintext = ''; // Return empty fallback so UI doesn't break
             }
         }
@@ -113,7 +113,7 @@ export class SettingsService {
                     this.secretCache.set(s.key, true);
                     value = decrypt ? plaintext : '********';
                 } catch (e) {
-                    this.logger.error(`Decryption failed for setting: ${s.key}`);
+                    this.logger.warn(`Decryption failed for setting: ${s.key}`);
                     this.cache.set(s.key, '');
                     this.secretCache.set(s.key, true);
                     value = decrypt ? '' : '********';

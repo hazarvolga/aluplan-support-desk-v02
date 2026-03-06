@@ -217,17 +217,17 @@ export default function TicketsPage() {
             <Card className="glass-card overflow-hidden border-white/5">
                 <div className="overflow-x-auto scrollbar-thin">
                     {loading ? (
-                        <div className="p-20 text-center bg-white/[0.01] min-w-[800px]">
+                        <div className="p-20 text-center bg-white/[0.01] min-w-[1000px]">
                             <Loader2 className="inline-block h-8 w-8 text-primary animate-spin" />
                             <p className="text-[10px] font-bold mt-4 text-muted-foreground uppercase tracking-[0.3em] opacity-40">Veri_Protokolü_Bekleniyor</p>
                         </div>
                     ) : tickets.length === 0 ? (
-                        <div className="p-20 text-center min-w-[800px] opacity-30">
+                        <div className="p-20 text-center min-w-[1000px] opacity-30">
                             <Ticket className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">Kuyruk_Boş</p>
                         </div>
                     ) : (
-                        <table className="w-full text-left min-w-[800px]">
+                        <table className="w-full text-left min-w-[1000px]">
                             <thead>
                                 <tr className="border-b border-white/5 bg-white/[0.03] h-12">
                                     <th className="px-6 w-12">
@@ -239,6 +239,8 @@ export default function TicketsPage() {
                                         </button>
                                     </th>
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">Sistem_ID</th>
+                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">Firma</th>
+                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">Müşteri</th>
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">Olay_Tanımı</th>
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">Durum</th>
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">Kritiklik</th>
@@ -269,6 +271,27 @@ export default function TicketsPage() {
                                                         return <Icon className={`h-3.5 w-3.5 ${CHANNEL_COLORS[t.channel] || 'text-muted-foreground'}`} />;
                                                     })()}
                                                     #{t.ticketNumber}
+                                                </div>
+                                            </td>
+                                            <td className="px-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[12px] font-bold text-slate-300">
+                                                        {t.creator?.customerProfile?.companyName || 'Bireysel'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4">
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[12px] font-medium text-white">
+                                                            {t.creator?.fullName || 'Bilinmiyor'}
+                                                        </span>
+                                                        {t.creator?.customerProfile?.contractStatus && (
+                                                            <Badge variant="outline" className="text-[8px] font-bold tracking-widest bg-white/5 text-slate-400 border-white/10 uppercase px-1.5 py-0">
+                                                                {t.creator.customerProfile.contractStatus}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-4">

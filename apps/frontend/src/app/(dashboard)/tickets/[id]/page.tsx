@@ -2,6 +2,7 @@
 
 export const dynamic = "force-dynamic";
 import { useState, useEffect, use, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import {
@@ -22,6 +23,7 @@ import { tr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { MacroPicker } from '@/components/macros/macro-picker';
 
+const router = useRouter();
 const STATUS_COLORS: Record<string, string> = {
     NEW: 'border-blue-900/50 text-blue-400 bg-blue-400/5',
     OPEN: 'border-sky-900/50 text-sky-400 bg-sky-400/5',
@@ -179,7 +181,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     };
 
     const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
-    const isCustomer = userRoles.includes('customer') || user?.role?.toLowerCase() === 'customer';
+    const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer') || user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'viewer';
 
     const handleRequestLiveChat = async () => {
         try {
@@ -319,8 +321,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 score: csatScore,
                 comment: csatComment
             });
-            toast.success(`${csatScore}/5 puanı ile değerlendirme yaptınız. Teşekkürler!`);
-            load(); // reload ticket
+            toast.success(`${csatScore}/5 puanı ile değerlendirme yaptınız. Bilet kapatıldı, teşekkürler!`);
+            router.push('/my-tickets'); // Redirect out or they stay on a closed ticket view.
         } catch (error) {
             toast.error('Değerlendirme gönderilemedi.');
         } finally {

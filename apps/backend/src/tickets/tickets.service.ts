@@ -138,7 +138,22 @@ export class TicketsService {
             this.prisma.ticket.findMany({
                 where,
                 include: {
-                    creator: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
+                    creator: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            email: true,
+                            avatarUrl: true,
+                            status: true,
+                            customerProfile: {
+                                select: {
+                                    companyName: true,
+                                    contractStatus: true,
+                                    customerNo: true
+                                }
+                            }
+                        }
+                    },
                     assignee: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
                     _count: { select: { messages: true } },
                 },
@@ -162,7 +177,7 @@ export class TicketsService {
                 creator: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
                 assignee: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
                 messages: {
-                    where: requester?.role === 'customer' ? { isInternal: false } : {},
+                    where: (requester?.role === 'customer' || requester?.role === 'VIEWER') ? { isInternal: false } : {},
                     include: {
                         sender: { select: { id: true, fullName: true, avatarUrl: true } },
                         attachments: true,
@@ -178,7 +193,7 @@ export class TicketsService {
         if (!ticket) throw new NotFoundException(`Ticket not found`);
 
         // ownership check for customers
-        if (requester?.role === 'customer' && ticket.userId !== requester.id) {
+        if ((requester?.role === 'customer' || requester?.role === 'VIEWER') && ticket.userId !== requester.id) {
             throw new ForbiddenException('You do not have access to this ticket');
         }
 
