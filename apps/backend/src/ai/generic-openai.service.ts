@@ -84,7 +84,7 @@ export class GenericOpenAiService implements AiProvider {
     async generate(prompt: string, timeout = 30_000): Promise<string | null> {
         const baseUrl = await this.getBaseUrl();
         const apiKey = await this.getApiKey();
-        const model = await this.getChatModel();
+        const model = await this.getModel();
 
         if (!baseUrl || !apiKey) return null;
 
@@ -125,7 +125,7 @@ export class GenericOpenAiService implements AiProvider {
     async reformat(systemPrompt: string, userQuery: string, kbContent: string): Promise<ChatResult | null> {
         const baseUrl = await this.getBaseUrl();
         const apiKey = await this.getApiKey();
-        const model = await this.getChatModel();
+        const model = await this.getModel();
 
         if (!baseUrl || !apiKey) return null;
 
@@ -210,7 +210,7 @@ SONUÇ (YALNIZCA KELİME):`;
     async translate(text: string, targetLanguage: string): Promise<string | null> {
         const baseUrl = await this.getBaseUrl();
         const apiKey = await this.getApiKey();
-        const model = await this.getChatModel();
+        const model = await this.getModel();
         if (!baseUrl || !apiKey) return null;
 
         try {
@@ -241,7 +241,7 @@ SONUÇ (YALNIZCA KELİME):`;
     }
 
     async getActiveModelName(): Promise<string> {
-        return this.getChatModel();
+        return this.getModel();
     }
 
     async isAvailable(): Promise<boolean> {
