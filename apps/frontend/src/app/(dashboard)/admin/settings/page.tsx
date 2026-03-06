@@ -356,214 +356,228 @@ export default function AdminSettingsPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                                    {/* Ollama Ayarları */}
-                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                <Bot className="h-4 w-4" /> Ollama
-                                            </h3>
-                                            <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                const res = await api.ai.testConnection('ollama');
-                                                toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'Ollama ile iletişim kuruldu.' : 'Ollama servisine ulaşılamadı.', variant: res.available ? 'default' : 'destructive' });
-                                            }}>Test Et</Button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">Base URL</Label>
-                                            <Input value={getSetting('ai.ollama.url')} onChange={e => updateValue('ai.ollama.url', e.target.value)} placeholder="http://localhost:11434" className="bg-black/50 h-8 text-sm" />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs">Chat Model</Label>
-                                                <Input value={getSetting('ai.ollama.chat_model')} onChange={e => updateValue('ai.ollama.chat_model', e.target.value)} placeholder="llama3.2:3b" className="bg-black/50 h-8 text-sm" />
+                                    {(getSetting('ai.chat_provider') === 'ollama' || getSetting('ai.embed_provider') === 'ollama') && (
+                                        /* Ollama Ayarları */
+                                        <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
+                                                    <Bot className="h-4 w-4" /> Ollama
+                                                </h3>
+                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                    const res = await api.ai.testConnection('ollama');
+                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'Ollama ile iletişim kuruldu.' : 'Ollama servisine ulaşılamadı.', variant: res.available ? 'default' : 'destructive' });
+                                                }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Embedding Model</Label>
-                                                <Input value={getSetting('ai.ollama.embed_model')} onChange={e => updateValue('ai.ollama.embed_model', e.target.value)} placeholder="nomic-embed-text" className="bg-black/50 h-8 text-sm" />
+                                                <Label className="text-xs">Base URL</Label>
+                                                <Input value={getSetting('ai.ollama.url')} onChange={e => updateValue('ai.ollama.url', e.target.value)} placeholder="http://localhost:11434" className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Input value={getSetting('ai.ollama.chat_model')} onChange={e => updateValue('ai.ollama.chat_model', e.target.value)} placeholder="llama3.2:3b" className="bg-black/50 h-8 text-sm" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Embedding Model</Label>
+                                                    <Input value={getSetting('ai.ollama.embed_model')} onChange={e => updateValue('ai.ollama.embed_model', e.target.value)} placeholder="nomic-embed-text" className="bg-black/50 h-8 text-sm" />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
 
-                                    {/* OpenAI Ayarları */}
-                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                <Globe className="h-4 w-4" /> OpenAI
-                                            </h3>
-                                            <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                const res = await api.ai.testConnection('openai');
-                                                toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'OpenAI key onaylandı.' : 'API Key hatalı veya eksik.', variant: res.available ? 'default' : 'destructive' });
-                                            }}>Test Et</Button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">API Key</Label>
-                                            <Input type="password" value={getSetting('ai.openai.api_key')} onChange={e => updateValue('ai.openai.api_key', e.target.value)} placeholder="sk-..." className="bg-black/50 h-8 text-sm" />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs">Model (Chat)</Label>
-                                                <Input value={getSetting('ai.openai.chat_model')} onChange={e => updateValue('ai.openai.chat_model', e.target.value)} placeholder="gpt-4o-mini" className="bg-black/50 h-8 text-sm" />
+                                    {(getSetting('ai.chat_provider') === 'openai' || getSetting('ai.embed_provider') === 'openai') && (
+                                        /* OpenAI Ayarları */
+                                        <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
+                                                    <Globe className="h-4 w-4" /> OpenAI
+                                                </h3>
+                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                    const res = await api.ai.testConnection('openai');
+                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'OpenAI key onaylandı.' : 'API Key hatalı veya eksik.', variant: res.available ? 'default' : 'destructive' });
+                                                }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Embedding Model</Label>
-                                                <Input value={getSetting('ai.openai.embed_model')} onChange={e => updateValue('ai.openai.embed_model', e.target.value)} placeholder="text-embedding-3-small" className="bg-black/50 h-8 text-sm" />
+                                                <Label className="text-xs">API Key</Label>
+                                                <Input type="password" value={getSetting('ai.openai.api_key')} onChange={e => updateValue('ai.openai.api_key', e.target.value)} placeholder="sk-..." className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Model (Chat)</Label>
+                                                    <Input value={getSetting('ai.openai.chat_model')} onChange={e => updateValue('ai.openai.chat_model', e.target.value)} placeholder="gpt-4o-mini" className="bg-black/50 h-8 text-sm" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Embedding Model</Label>
+                                                    <Input value={getSetting('ai.openai.embed_model')} onChange={e => updateValue('ai.openai.embed_model', e.target.value)} placeholder="text-embedding-3-small" className="bg-black/50 h-8 text-sm" />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
 
-                                    {/* xAI (Grok) Ayarları */}
-                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                <Bot className="h-4 w-4" /> xAI (Grok)
-                                            </h3>
-                                            <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                const res = await api.ai.testConnection('xai');
-                                                toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'xAI bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
-                                            }}>Test Et</Button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">API Key</Label>
-                                            <Input type="password" value={getSetting('ai.xai.api_key')} onChange={e => updateValue('ai.xai.api_key', e.target.value)} placeholder="xai-..." className="bg-black/50 h-8 text-sm" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">Base URL (Opsiyonel)</Label>
-                                            <Input value={getSetting('ai.xai.url')} onChange={e => updateValue('ai.xai.url', e.target.value)} placeholder="https://api.x.ai/v1" className="bg-black/50 h-8 text-sm" />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs">Chat Model</Label>
-                                                <Input value={getSetting('ai.xai.chat_model')} onChange={e => updateValue('ai.xai.chat_model', e.target.value)} placeholder="grok-2-latest" className="bg-black/50 h-8 text-sm" />
+                                    {(getSetting('ai.chat_provider') === 'xai') && (
+                                        /* xAI (Grok) Ayarları */
+                                        <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
+                                                    <Bot className="h-4 w-4" /> xAI (Grok)
+                                                </h3>
+                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                    const res = await api.ai.testConnection('xai');
+                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'xAI bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
+                                                }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs text-muted-foreground">Embedding</Label>
-                                                <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                                <Label className="text-xs">API Key</Label>
+                                                <Input type="password" value={getSetting('ai.xai.api_key')} onChange={e => updateValue('ai.xai.api_key', e.target.value)} placeholder="xai-..." className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">Base URL (Opsiyonel)</Label>
+                                                <Input value={getSetting('ai.xai.url')} onChange={e => updateValue('ai.xai.url', e.target.value)} placeholder="https://api.x.ai/v1" className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Input value={getSetting('ai.xai.chat_model')} onChange={e => updateValue('ai.xai.chat_model', e.target.value)} placeholder="grok-2-latest" className="bg-black/50 h-8 text-sm" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs text-muted-foreground">Embedding</Label>
+                                                    <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
 
-                                    {/* Groq Ayarları */}
-                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                <Bot className="h-4 w-4" /> Groq
-                                            </h3>
-                                            <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                const res = await api.ai.testConnection('groq');
-                                                toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'Groq bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
-                                            }}>Test Et</Button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">API Key</Label>
-                                            <Input type="password" value={getSetting('ai.groq.api_key')} onChange={e => updateValue('ai.groq.api_key', e.target.value)} placeholder="gsk_..." className="bg-black/50 h-8 text-sm" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">Base URL (Opsiyonel)</Label>
-                                            <Input value={getSetting('ai.groq.url')} onChange={e => updateValue('ai.groq.url', e.target.value)} placeholder="https://api.groq.com/openai/v1" className="bg-black/50 h-8 text-sm" />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs">Chat Model</Label>
-                                                <Input value={getSetting('ai.groq.chat_model')} onChange={e => updateValue('ai.groq.chat_model', e.target.value)} placeholder="llama3-8b-8192" className="bg-black/50 h-8 text-sm" />
+                                    {(getSetting('ai.chat_provider') === 'groq' || getSetting('ai.embed_provider') === 'groq') && (
+                                        /* Groq Ayarları */
+                                        <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
+                                                    <Bot className="h-4 w-4" /> Groq
+                                                </h3>
+                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                    const res = await api.ai.testConnection('groq');
+                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'Groq bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
+                                                }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs text-muted-foreground">Embedding</Label>
-                                                <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                                <Label className="text-xs">API Key</Label>
+                                                <Input type="password" value={getSetting('ai.groq.api_key')} onChange={e => updateValue('ai.groq.api_key', e.target.value)} placeholder="gsk_..." className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">Base URL (Opsiyonel)</Label>
+                                                <Input value={getSetting('ai.groq.url')} onChange={e => updateValue('ai.groq.url', e.target.value)} placeholder="https://api.groq.com/openai/v1" className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Input value={getSetting('ai.groq.chat_model')} onChange={e => updateValue('ai.groq.chat_model', e.target.value)} placeholder="llama3-8b-8192" className="bg-black/50 h-8 text-sm" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs text-muted-foreground">Embedding</Label>
+                                                    <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
 
-                                    {/* DeepSeek Ayarları */}
-                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                <Bot className="h-4 w-4" /> DeepSeek
-                                            </h3>
-                                            <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                const res = await api.ai.testConnection('deepseek');
-                                                toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'DeepSeek bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
-                                            }}>Test Et</Button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">API Key</Label>
-                                            <Input type="password" value={getSetting('ai.deepseek.api_key')} onChange={e => updateValue('ai.deepseek.api_key', e.target.value)} placeholder="sk-..." className="bg-black/50 h-8 text-sm" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">Base URL (Opsiyonel)</Label>
-                                            <Input value={getSetting('ai.deepseek.url')} onChange={e => updateValue('ai.deepseek.url', e.target.value)} placeholder="https://api.deepseek.com/v1" className="bg-black/50 h-8 text-sm" />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs">Chat Model</Label>
-                                                <Input value={getSetting('ai.deepseek.chat_model')} onChange={e => updateValue('ai.deepseek.chat_model', e.target.value)} placeholder="deepseek-chat" className="bg-black/50 h-8 text-sm" />
+                                    {(getSetting('ai.chat_provider') === 'deepseek') && (
+                                        /* DeepSeek Ayarları */
+                                        <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
+                                                    <Bot className="h-4 w-4" /> DeepSeek
+                                                </h3>
+                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                    const res = await api.ai.testConnection('deepseek');
+                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'DeepSeek bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
+                                                }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs text-muted-foreground">Embedding</Label>
-                                                <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                                <Label className="text-xs">API Key</Label>
+                                                <Input type="password" value={getSetting('ai.deepseek.api_key')} onChange={e => updateValue('ai.deepseek.api_key', e.target.value)} placeholder="sk-..." className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">Base URL (Opsiyonel)</Label>
+                                                <Input value={getSetting('ai.deepseek.url')} onChange={e => updateValue('ai.deepseek.url', e.target.value)} placeholder="https://api.deepseek.com/v1" className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Input value={getSetting('ai.deepseek.chat_model')} onChange={e => updateValue('ai.deepseek.chat_model', e.target.value)} placeholder="deepseek-chat" className="bg-black/50 h-8 text-sm" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs text-muted-foreground">Embedding</Label>
+                                                    <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
 
-                                    {/* LLMAPI Ayarları */}
-                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                <ShieldCheck className="h-4 w-4" /> LLMAPI.ai
-                                            </h3>
-                                            <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                const res = await api.ai.testConnection('llmapi');
-                                                toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'LLMAPI key onaylandı.' : 'API Key hatalı veya eksik.', variant: res.available ? 'default' : 'destructive' });
-                                            }}>Test Et</Button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">API Key</Label>
-                                            <Input type="password" value={getSetting('ai.llmapi.api_key')} onChange={e => updateValue('ai.llmapi.api_key', e.target.value)} placeholder="llm-..." className="bg-black/50 h-8 text-sm" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">Base URL (Ops.)</Label>
-                                            <Input value={getSetting('ai.llmapi.base_url')} onChange={e => updateValue('ai.llmapi.base_url', e.target.value)} placeholder="https://api.llmapi.io" className="bg-black/50 h-8 text-sm" />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs">Chat Model</Label>
-                                                <Input value={getSetting('ai.llmapi.chat_model')} onChange={e => updateValue('ai.llmapi.chat_model', e.target.value)} placeholder="gpt-4o" className="bg-black/50 h-8 text-sm" />
+                                    {(getSetting('ai.chat_provider') === 'llmapi' || getSetting('ai.embed_provider') === 'llmapi') && (
+                                        /* LLMAPI Ayarları */
+                                        <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
+                                                    <ShieldCheck className="h-4 w-4" /> LLMAPI.ai
+                                                </h3>
+                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                    const res = await api.ai.testConnection('llmapi');
+                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'LLMAPI key onaylandı.' : 'API Key hatalı veya eksik.', variant: res.available ? 'default' : 'destructive' });
+                                                }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Embedding Model</Label>
-                                                <Input value={getSetting('ai.llmapi.embed_model')} onChange={e => updateValue('ai.llmapi.embed_model', e.target.value)} placeholder="text-embedding-3-small" className="bg-black/50 h-8 text-sm" />
+                                                <Label className="text-xs">API Key</Label>
+                                                <Input type="password" value={getSetting('ai.llmapi.api_key')} onChange={e => updateValue('ai.llmapi.api_key', e.target.value)} placeholder="llm-..." className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">Base URL (Ops.)</Label>
+                                                <Input value={getSetting('ai.llmapi.base_url')} onChange={e => updateValue('ai.llmapi.base_url', e.target.value)} placeholder="https://api.llmapi.io" className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Input value={getSetting('ai.llmapi.chat_model')} onChange={e => updateValue('ai.llmapi.chat_model', e.target.value)} placeholder="gpt-4o" className="bg-black/50 h-8 text-sm" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Embedding Model</Label>
+                                                    <Input value={getSetting('ai.llmapi.embed_model')} onChange={e => updateValue('ai.llmapi.embed_model', e.target.value)} placeholder="text-embedding-3-small" className="bg-black/50 h-8 text-sm" />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
 
-                                    {/* Custom OpenAI Ayarları */}
-                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                <Bot className="h-4 w-4" /> Diğer Özel Servis
-                                            </h3>
-                                            <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                const res = await api.ai.testConnection('custom');
-                                                toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'Özel API bağlantısı onaylandı.' : 'Custom konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
-                                            }}>Test Et</Button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">Bağlantı URL (OpenAI Uyumlu)</Label>
-                                            <Input value={getSetting('ai.custom.url')} onChange={e => updateValue('ai.custom.url', e.target.value)} placeholder="https://..." className="bg-black/50 h-8 text-sm" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs">API Key</Label>
-                                            <Input type="password" value={getSetting('ai.custom.api_key')} onChange={e => updateValue('ai.custom.api_key', e.target.value)} placeholder="sk-..." className="bg-black/50 h-8 text-sm" />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs">Chat Model</Label>
-                                                <Input value={getSetting('ai.custom.chat_model')} onChange={e => updateValue('ai.custom.chat_model', e.target.value)} placeholder="model-name" className="bg-black/50 h-8 text-sm" />
+                                    {(getSetting('ai.chat_provider') === 'custom' || getSetting('ai.embed_provider') === 'custom') && (
+                                        /* Custom OpenAI Ayarları */
+                                        <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
+                                                    <Bot className="h-4 w-4" /> Diğer Özel Servis
+                                                </h3>
+                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                    const res = await api.ai.testConnection('custom');
+                                                    toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'Özel API bağlantısı onaylandı.' : 'Custom konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
+                                                }}>Test Et</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Embedding Model</Label>
-                                                <Input value={getSetting('ai.custom.embed_model')} onChange={e => updateValue('ai.custom.embed_model', e.target.value)} placeholder="embed-name" className="bg-black/50 h-8 text-sm" />
+                                                <Label className="text-xs">Bağlantı URL (OpenAI Uyumlu)</Label>
+                                                <Input value={getSetting('ai.custom.url')} onChange={e => updateValue('ai.custom.url', e.target.value)} placeholder="https://..." className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">API Key</Label>
+                                                <Input type="password" value={getSetting('ai.custom.api_key')} onChange={e => updateValue('ai.custom.api_key', e.target.value)} placeholder="sk-..." className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Input value={getSetting('ai.custom.chat_model')} onChange={e => updateValue('ai.custom.chat_model', e.target.value)} placeholder="model-name" className="bg-black/50 h-8 text-sm" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Embedding Model</Label>
+                                                    <Input value={getSetting('ai.custom.embed_model')} onChange={e => updateValue('ai.custom.embed_model', e.target.value)} placeholder="embed-name" className="bg-black/50 h-8 text-sm" />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
 
                                 <div className="pt-6 mt-4 border-t border-border/40 flex justify-end">
