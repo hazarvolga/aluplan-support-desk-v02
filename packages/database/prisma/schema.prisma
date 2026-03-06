@@ -471,6 +471,8 @@ model KnowledgeArticle {
   approvedBy     String?       @map("approved_by") @db.Uuid
   approvedAt     DateTime?     @map("approved_at")
   currentVersion Int           @default(1) @map("current_version")
+  source         String?       @default("internal") @db.VarChar(50)
+  originalId     String?       @map("original_id") @db.VarChar(255)
   isInternal     Boolean       @default(false) @map("is_internal")
   isAutoImported Boolean       @default(false) @map("is_auto_imported")
   trustScore     Decimal       @default(0.95) @map("trust_score") @db.Decimal(5, 4)

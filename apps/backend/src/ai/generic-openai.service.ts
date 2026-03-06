@@ -1,33 +1,44 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
 import { AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
 
 @Injectable()
 export class GenericOpenAiService implements AiProvider {
     private readonly logger = new Logger(GenericOpenAiService.name);
+    private providerPrefix = 'ai.custom';
 
     constructor(
+        private readonly config: ConfigService,
         private readonly settings: SettingsService,
     ) { }
 
+    setProvider(provider: 'custom' | 'xai' | 'deepseek') {
+        this.providerPrefix = `ai.${provider}`;
+    }
+
     private async getBaseUrl(): Promise<string | null> {
-        return await this.settings.getValue('ai.custom.url');
+        const val = await this.settings.getValue(`${this.providerPrefix}.url`);
+        return val ?? null;
     }
 
     private async getApiKey(): Promise<string | null> {
-        return await this.settings.getValue('ai.custom.api_key');
+        const val = await this.settings.getValue(`${this.providerPrefix}.api_key`);
+        return val ?? null;
     }
 
-    private async getChatModel(): Promise<string> {
-        return (await this.settings.getValue('ai.custom.chat_model')) ?? 'gpt-4o';
+    private async getModel(): Promise<string> {
+        return (await this.settings.getValue(`${this.providerPrefix}.chat_model`)) ??
+            'gpt-4o-mini';
     }
 
     private async getEmbedModel(): Promise<string> {
-        return (await this.settings.getValue('ai.custom.embed_model')) ?? 'text-embedding-3-small';
+        return (await this.settings.getValue(`${this.providerPrefix}.embed_model`)) ??
+            'text-embedding-3-small';
     }
 
     getName(): string {
-        return 'custom';
+        return this.providerPrefix.replace('ai.', '');
     }
 
     async embed(text: string): Promise<EmbeddingResult | null> {
@@ -41,6 +52,13 @@ export class GenericOpenAiService implements AiProvider {
         }
 
         try {
+            // Diagnostic prefix check
+            if (baseUrl.includes('x.ai') && !apiKey.startsWith('xai-')) {
+                this.logger.warn(`🚩 xAI Provider detected but API Key does not start with 'xai-'. Current prefix: ${apiKey.substring(0, 4)}...`);
+            } else if (baseUrl.includes('groq.com') && !apiKey.startsWith('gsk-')) {
+                this.logger.warn(`🚩 Groq Provider detected but API Key does not start with 'gsk-'. Current prefix: ${apiKey.substring(0, 4)}...`);
+            }
+
             const response = await fetch(`${baseUrl}/embeddings`, {
                 method: 'POST',
                 headers: {
@@ -53,12 +71,12 @@ export class GenericOpenAiService implements AiProvider {
 
             if (!response.ok) {
                 const errorBody = await response.text();
-                throw new Error(`Custom AI HTTP ${response.status}: ${errorBody}`);
+                throw new Error(`Custom AI HTTP ${response.status} at ${baseUrl}: ${errorBody}`);
             }
             const data = await response.json();
             return { embedding: data.data[0].embedding, model };
         } catch (err: any) {
-            this.logger.warn(`⚠️ Custom AI embed failed: ${err.message}`);
+            this.logger.warn(`⚠️ Custom AI embed failed (${baseUrl}): ${err.message}`);
             return null;
         }
     }
@@ -71,6 +89,13 @@ export class GenericOpenAiService implements AiProvider {
         if (!baseUrl || !apiKey) return null;
 
         try {
+            // Diagnostic prefix check
+            if (baseUrl.includes('x.ai') && !apiKey.startsWith('xai-')) {
+                this.logger.warn(`🚩 xAI Provider detected but API Key does not start with 'xai-'. Current prefix: ${apiKey.substring(0, 4)}...`);
+            } else if (baseUrl.includes('groq.com') && !apiKey.startsWith('gsk-')) {
+                this.logger.warn(`🚩 Groq Provider detected but API Key does not start with 'gsk-'. Current prefix: ${apiKey.substring(0, 4)}...`);
+            }
+
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {
@@ -87,12 +112,12 @@ export class GenericOpenAiService implements AiProvider {
 
             if (!response.ok) {
                 const errorBody = await response.text();
-                throw new Error(`Custom AI HTTP ${response.status}: ${errorBody}`);
+                throw new Error(`Custom AI HTTP ${response.status} at ${baseUrl}: ${errorBody}`);
             }
             const data = await response.json();
             return data.choices[0].message.content.trim();
         } catch (err: any) {
-            this.logger.warn(`⚠️ Custom AI generate failed: ${err.message}`);
+            this.logger.warn(`⚠️ Custom AI generate failed (${baseUrl}): ${err.message}`);
             return null;
         }
     }
@@ -105,6 +130,13 @@ export class GenericOpenAiService implements AiProvider {
         if (!baseUrl || !apiKey) return null;
 
         try {
+            // Diagnostic prefix check
+            if (baseUrl.includes('x.ai') && !apiKey.startsWith('xai-')) {
+                this.logger.warn(`🚩 xAI Provider detected but API Key does not start with 'xai-'. Current prefix: ${apiKey.substring(0, 4)}...`);
+            } else if (baseUrl.includes('groq.com') && !apiKey.startsWith('gsk-')) {
+                this.logger.warn(`🚩 Groq Provider detected but API Key does not start with 'gsk-'. Current prefix: ${apiKey.substring(0, 4)}...`);
+            }
+
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {
@@ -124,7 +156,7 @@ ${userQuery}
 ONAYLI BİLGİ KAYNAĞI:
 ${kbContent}
 
-Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan soruyu yanıtla. Metni birebir kopyalama.` }
+Above information source is official. Answer the user question logicially based ONLY on the source. Do not hallucinate.` }
                     ],
                     temperature: 0.1,
                 }),
@@ -133,13 +165,13 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
 
             if (!response.ok) {
                 const errorBody = await response.text();
-                throw new Error(`Custom AI HTTP ${response.status}: ${errorBody}`);
+                throw new Error(`Custom AI HTTP ${response.status} at ${baseUrl}: ${errorBody}`);
             }
             const data = await response.json();
             const content = data.choices[0].message.content.trim();
             return { response: content, model };
         } catch (err: any) {
-            this.logger.warn(`⚠️ Custom AI reformat failed: ${err.message}`);
+            this.logger.warn(`⚠️ Custom AI reformat failed (${baseUrl}): ${err.message}`);
             return null;
         }
     }

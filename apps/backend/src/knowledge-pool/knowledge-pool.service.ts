@@ -156,4 +156,79 @@ export class KnowledgePoolService {
             take: 10,
         });
     }
+
+    async syncExternalDocs(docs: { title: string; content: string; originalId: string; url?: string }[]) {
+        let addedCount = 0;
+        let skippedCount = 0;
+
+        // Ensure a placeholder source exists for external API syncs
+        let extSource = await this.prisma.knowledgeSource.findFirst({
+            where: { name: 'NotebookLM Sync', type: KnowledgeSourceType.FILE_MD }
+        });
+
+        if (!extSource) {
+            extSource = await this.prisma.knowledgeSource.create({
+                data: {
+                    name: 'NotebookLM Sync',
+                    type: KnowledgeSourceType.FILE_MD,
+                    status: KnowledgeSourceStatus.ACTIVE,
+                    fileName: 'notebooklm_virtual.md',
+                }
+            });
+        }
+
+        for (const doc of docs) {
+            // Check if exact originalId already exists to prevent duplication
+            const existing = await this.prisma.knowledgeArticle.findFirst({
+                where: { originalId: doc.originalId }
+            });
+
+            if (existing) {
+                skippedCount++;
+                continue;
+            }
+
+            // Create the article
+            const article = await this.prisma.knowledgeArticle.create({
+                data: {
+                    title: doc.title,
+                    slug: `ext-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+                    status: 'PUBLISHED', // Auto-published for internal RAG
+                    isInternal: true,
+                    isAutoImported: true,
+                    source: 'notebooklm',
+                    originalId: doc.originalId,
+                }
+            });
+
+            // Create the initial version
+            await this.prisma.knowledgeArticleVersion.create({
+                data: {
+                    articleId: article.id,
+                    version: 1,
+                    title: doc.title,
+                    content: doc.content,
+                    contentPlain: doc.content, // Map content to contentPlain for now
+                    changeSummary: 'Initial sync from NotebookLM',
+                }
+            });
+
+            addedCount++;
+        }
+
+        this.logger.log(`External Sync Complete: ${addedCount} added, ${skippedCount} skipped.`);
+
+        // Force embeddings processing if articles were added
+        // Trigger a background task to process newly added documents or existing source
+        if (addedCount > 0) {
+            await this.triggerSync(extSource.id);
+        }
+
+        return {
+            success: true,
+            added: addedCount,
+            skipped: skippedCount,
+            total: docs.length
+        };
+    }
 }

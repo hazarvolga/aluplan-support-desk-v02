@@ -1,0 +1,19 @@
+{
+    "name": "notebooklm-extractor",
+    "version": "1.0.0",
+    "description": "A standalone bot to sync data from Google NotebookLM to Aluplan Support Desk",
+    "main": "index.ts",
+    "scripts": {
+        "start": "ts-node index.ts"
+    },
+    "dependencies": {
+        "axios": "^1.7.9",
+        "dotenv": "^16.4.7",
+        "google-auth-library": "^9.15.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.17.16",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.7.3"
+    }
+}

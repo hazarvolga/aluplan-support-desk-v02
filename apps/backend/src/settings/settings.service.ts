@@ -74,8 +74,8 @@ export class SettingsService {
         if (setting.isSecret) {
             try {
                 plaintext = this.crypto.decrypt(setting.value);
-            } catch (error) {
-                this.logger.warn(`Decryption failed for setting: ${key}. ENCRYPTION_KEY mismatch?`);
+            } catch (error: any) {
+                this.logger.warn(`❌ Decryption failed for setting: ${key}. ENCRYPTION_KEY mismatch or corrupt data? Error: ${error.message}`);
                 plaintext = ''; // Return empty fallback so UI doesn't break
             }
         }

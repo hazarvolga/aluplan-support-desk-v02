@@ -133,6 +133,8 @@ export default function AdminSettingsPage() {
             const secretKeys = [
                 'ai.llmapi.api_key',
                 'ai.openai.api_key',
+                'ai.xai.api_key',
+                'ai.deepseek.api_key',
                 'ai.custom.api_key',
                 'email.resend.api_key',
                 'email.smtp.pass',
@@ -304,7 +306,7 @@ export default function AdminSettingsPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Yapay Zeka Entegrasyonu</CardTitle>
-                                <CardDescription>Ollama, OpenAI veya Özel servisleri yapılandırın.</CardDescription>
+                                <CardDescription>Grok (xAI), DeepSeek, OpenAI veya Ollama servislerini yapılandırın.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="space-y-4 pb-6 border-b border-border/40">
@@ -321,8 +323,10 @@ export default function AdminSettingsPage() {
                                                 <SelectContent>
                                                     <SelectItem value="ollama">Ollama (Yerel)</SelectItem>
                                                     <SelectItem value="openai">OpenAI (Bulut)</SelectItem>
+                                                    <SelectItem value="xai">xAI (Grok)</SelectItem>
+                                                    <SelectItem value="deepseek">DeepSeek</SelectItem>
                                                     <SelectItem value="llmapi">LLMAPI (Önerilen)</SelectItem>
-                                                    <SelectItem value="custom">Özel (Grok, DeepSeek, vs.)</SelectItem>
+                                                    <SelectItem value="custom">Özel (OpenAI Uyumlu)</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <p className="text-xs text-muted-foreground mt-1">Ticket yanıtlama ve asistan özellikleri için kullanılır.</p>
@@ -403,6 +407,68 @@ export default function AdminSettingsPage() {
                                         </div>
                                     </div>
 
+                                    {/* xAI (Grok) Ayarları */}
+                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
+                                                <Bot className="h-4 w-4" /> xAI (Grok)
+                                            </h3>
+                                            <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                const res = await api.ai.testConnection('xai');
+                                                toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'xAI bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
+                                            }}>Test Et</Button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs">API Key</Label>
+                                            <Input type="password" value={getSetting('ai.xai.api_key')} onChange={e => updateValue('ai.xai.api_key', e.target.value)} placeholder="xai-..." className="bg-black/50 h-8 text-sm" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs">Base URL (Opsiyonel)</Label>
+                                            <Input value={getSetting('ai.xai.url')} onChange={e => updateValue('ai.xai.url', e.target.value)} placeholder="https://api.x.ai/v1" className="bg-black/50 h-8 text-sm" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">Chat Model</Label>
+                                                <Input value={getSetting('ai.xai.chat_model')} onChange={e => updateValue('ai.xai.chat_model', e.target.value)} placeholder="grok-2-latest" className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-muted-foreground">Embedding</Label>
+                                                <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* DeepSeek Ayarları */}
+                                    <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
+                                                <Bot className="h-4 w-4" /> DeepSeek
+                                            </h3>
+                                            <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                const res = await api.ai.testConnection('deepseek');
+                                                toast({ title: res.available ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.available ? 'DeepSeek bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.', variant: res.available ? 'default' : 'destructive' });
+                                            }}>Test Et</Button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs">API Key</Label>
+                                            <Input type="password" value={getSetting('ai.deepseek.api_key')} onChange={e => updateValue('ai.deepseek.api_key', e.target.value)} placeholder="sk-..." className="bg-black/50 h-8 text-sm" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs">Base URL (Opsiyonel)</Label>
+                                            <Input value={getSetting('ai.deepseek.url')} onChange={e => updateValue('ai.deepseek.url', e.target.value)} placeholder="https://api.deepseek.com/v1" className="bg-black/50 h-8 text-sm" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">Chat Model</Label>
+                                                <Input value={getSetting('ai.deepseek.chat_model')} onChange={e => updateValue('ai.deepseek.chat_model', e.target.value)} placeholder="deepseek-chat" className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-muted-foreground">Embedding</Label>
+                                                <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     {/* LLMAPI Ayarları */}
                                     <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
                                         <div className="flex justify-between items-center mb-2">
@@ -434,11 +500,11 @@ export default function AdminSettingsPage() {
                                         </div>
                                     </div>
 
-                                    {/* Custom / DeepSeek Ayarları */}
+                                    {/* Custom OpenAI Ayarları */}
                                     <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-border/60 bg-muted/10`}>
                                         <div className="flex justify-between items-center mb-2">
                                             <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                <Bot className="h-4 w-4" /> Özel / Deepseek
+                                                <Bot className="h-4 w-4" /> Diğer Özel Servis
                                             </h3>
                                             <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
                                                 const res = await api.ai.testConnection('custom');
@@ -447,7 +513,7 @@ export default function AdminSettingsPage() {
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-xs">Bağlantı URL (OpenAI Uyumlu)</Label>
-                                            <Input value={getSetting('ai.custom.url')} onChange={e => updateValue('ai.custom.url', e.target.value)} placeholder="https://api.deepseek.com/v1" className="bg-black/50 h-8 text-sm" />
+                                            <Input value={getSetting('ai.custom.url')} onChange={e => updateValue('ai.custom.url', e.target.value)} placeholder="https://..." className="bg-black/50 h-8 text-sm" />
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-xs">API Key</Label>
@@ -456,12 +522,11 @@ export default function AdminSettingsPage() {
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="space-y-2">
                                                 <Label className="text-xs">Chat Model</Label>
-                                                <Input value={getSetting('ai.custom.chat_model')} onChange={e => updateValue('ai.custom.chat_model', e.target.value)} placeholder="deepseek-chat" className="bg-black/50 h-8 text-sm" />
+                                                <Input value={getSetting('ai.custom.chat_model')} onChange={e => updateValue('ai.custom.chat_model', e.target.value)} placeholder="model-name" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs text-muted-foreground flex items-center gap-1">Embedding Model</Label>
-                                                <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
-                                                <p className="text-[10px] text-muted-foreground/80 leading-tight">Lütfen Embedding için yukarıdan <b>OpenAI</b> seçin (DeepSeek/Grok RAG/Embedding desteklemiyor olabilir).</p>
+                                                <Label className="text-xs">Embedding Model</Label>
+                                                <Input value={getSetting('ai.custom.embed_model')} onChange={e => updateValue('ai.custom.embed_model', e.target.value)} placeholder="embed-name" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                         </div>
                                     </div>
@@ -483,6 +548,12 @@ export default function AdminSettingsPage() {
                                             'ai.llmapi.base_url',
                                             'ai.llmapi.chat_model',
                                             'ai.llmapi.embed_model',
+                                            'ai.xai.api_key',
+                                            'ai.xai.url',
+                                            'ai.xai.chat_model',
+                                            'ai.deepseek.api_key',
+                                            'ai.deepseek.url',
+                                            'ai.deepseek.chat_model',
                                             'ai.custom.url',
                                             'ai.custom.api_key',
                                             'ai.custom.chat_model',

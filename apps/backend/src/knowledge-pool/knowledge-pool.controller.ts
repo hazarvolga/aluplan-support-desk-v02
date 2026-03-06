@@ -104,6 +104,16 @@ export class KnowledgePoolController {
         return this.knowledgePoolService.syncLocalDataset();
     }
 
+    @Post('sync-external')
+    @Roles('admin', 'super-admin')
+    @ApiOperation({ summary: 'Sync documents from an external source (e.g. NotebookLM MCP script)' })
+    async syncExternal(@Body('docs') docs: { title: string; content: string; originalId: string; url?: string }[]) {
+        if (!docs || !Array.isArray(docs)) {
+            throw new Error('docs payload must be an array');
+        }
+        return this.knowledgePoolService.syncExternalDocs(docs);
+    }
+
     private determineTypeFromExt(ext: string): KnowledgeSourceType {
         switch (ext.toLowerCase()) {
             case '.pdf': return KnowledgeSourceType.FILE_PDF;
