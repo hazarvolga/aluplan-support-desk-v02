@@ -36,7 +36,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!token) {
             setUser(null);
             setLoading(false);
-            if (pathname !== '/' && !pathname.startsWith('/login') && !pathname.startsWith('/register')) {
+            if (
+                pathname !== '/' &&
+                !pathname.startsWith('/login') &&
+                !pathname.startsWith('/register') &&
+                !pathname.startsWith('/reset-password')
+            ) {
                 router.push('/login');
             }
             return;
@@ -48,7 +53,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
             localStorage.removeItem('access_token');
             setUser(null);
-            if (pathname !== '/' && !pathname.startsWith('/login') && !pathname.startsWith('/register')) {
+            if (
+                pathname !== '/' &&
+                !pathname.startsWith('/login') &&
+                !pathname.startsWith('/register') &&
+                !pathname.startsWith('/reset-password')
+            ) {
                 router.push('/login');
             }
         } finally {
