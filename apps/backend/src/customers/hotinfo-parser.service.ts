@@ -64,7 +64,12 @@ export class HotinfoParserService {
             // ── Operating System ──
             let osVersion = 'Unknown';
             if (system?.platform) {
-                osVersion = system.platform['@_name'] || system.platform['system-caption'] || this.extractValue(system.platform) || 'Unknown';
+                const s = system.platform;
+                osVersion = s['system-caption'] || s['@_name'] || this.extractValue(s) || 'Unknown';
+                // If it's just "Windows" or similar, try to get more detail if available
+                if (osVersion === 'Windows' && s['os-version']) {
+                    osVersion = `Windows ${this.extractValue(s['os-version'])}`;
+                }
             }
 
             // ── CPU ──
@@ -106,10 +111,13 @@ export class HotinfoParserService {
 
             // ── RAM ──
             let ram = 'Unknown';
-            if (system?.memory?.physical?.['@_total']) {
-                const totalBytes = Number(system.memory.physical['@_total']);
+            const memTotal = system?.memory?.physical?.['@_total'] || system?.memory?.['@_total-physical'];
+            if (memTotal) {
+                const totalBytes = Number(memTotal);
                 if (!isNaN(totalBytes)) {
                     ram = `${Math.round(totalBytes / (1024 * 1024 * 1024))} GB`;
+                } else {
+                    ram = String(memTotal);
                 }
             }
 

@@ -9,10 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Building, Edit, Save, Key } from 'lucide-react';
+import { ArrowLeft, User, Building, Edit, Save, Key, Monitor, Download } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { HotinfoGrid } from '@/components/ui/hotinfo-grid';
 
 export default function CustomerProfilePage() {
     const { toast } = useToast();
@@ -80,6 +81,42 @@ export default function CustomerProfilePage() {
         } catch (error: any) {
             console.error(error);
             toast({ variant: 'destructive', title: '❌ Hata', description: error.message || 'Şifre sıfırlama başarısız.' });
+        }
+    };
+
+    const handleDownloadHotinfo = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const url = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/customers/${id}/hotinfo/download`;
+
+            toast({ title: '📥 İndiriliyor', description: 'Hotinfo dosyası hazırlanıyor...' });
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) throw new Error('İndirme başarısız oldu');
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = 'hotinfo.hxl';
+            if (contentDisposition && contentDisposition.includes('filename=')) {
+                filename = contentDisposition.split('filename=')[1].replace(/"/g, '');
+            }
+
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (error: any) {
+            console.error(error);
+            toast({ variant: 'destructive', title: '❌ Hata', description: 'Dosya indirilemedi.' });
         }
     };
 
@@ -193,6 +230,31 @@ export default function CustomerProfilePage() {
                     </Card>
                 </div>
             </form>
+
+            {customer.customerProfile?.hotinfoData && (
+                <Card className="border-slate-800 bg-slate-900/50">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Monitor className="w-5 h-5 text-brand-500" />
+                                    Sistem Bilgileri (Hotinfo)
+                                </CardTitle>
+                                <CardDescription>
+                                    Cihaz konfigürasyonu ve Allplan detayları
+                                </CardDescription>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={handleDownloadHotinfo} className="border-slate-700 hover:bg-slate-800">
+                                <Download className="w-4 h-4 mr-2" />
+                                .HXL İndir
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <HotinfoGrid data={customer.customerProfile.hotinfoData} />
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }

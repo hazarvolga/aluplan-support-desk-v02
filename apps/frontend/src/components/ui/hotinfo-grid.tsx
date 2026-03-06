@@ -91,7 +91,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
                 <div className={`${valContainerClass} ${isCompact ? 'text-left w-full' : ''}`}>
                     <div className={`${valClass} whitespace-pre-wrap`}>{sr(data.gpu) || '-'}</div>
                     <div className={`${subValClass} ${isCompact ? 'flex flex-row flex-wrap gap-2' : ''}`}>
-                        {data.gpuDriverVersion && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">Driver: <span className="text-slate-300 dark:text-cyan-300">{sr(data.gpuDriverVersion)}</span></span>}
+                        {data.gpuDriverVersion && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">Sürücü: <span className="text-slate-300 dark:text-cyan-300">{sr(data.gpuDriverVersion)}</span></span>}
                         {data.openglVersion && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">OpenGL: <span className="text-slate-300 dark:text-cyan-300">{sr(data.openglVersion)}</span></span>}
                         {data.vram && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">VRAM: <span className="text-slate-300 dark:text-cyan-300">{sr(data.vram)}</span></span>}
                     </div>

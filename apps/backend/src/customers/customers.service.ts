@@ -362,7 +362,8 @@ export class CustomersService {
                     lastName: user.fullName ? user.fullName.split(' ').slice(1).join(' ') || 'User' : 'User',
                     companyName: 'Bilinmeyen Şirket',
                     customerNo: `INT-${Date.now()}`,
-                    hotinfoData: parsedData,
+                    hotinfoData: parsedData as any,
+                    hotinfoRaw: xmlString,
                     hotinfoUpdatedAt: new Date()
                 }
             });
@@ -370,9 +371,10 @@ export class CustomersService {
             updatedProfile = await this.prisma.customerProfile.update({
                 where: { userId },
                 data: {
-                    hotinfoData: parsedData,
-                    hotinfoUpdatedAt: new Date()
-                }
+                    hotinfoData: parsedData as any,
+                    hotinfoRaw: xmlString,
+                    hotinfoUpdatedAt: new Date(),
+                },
             });
         }
 
@@ -380,6 +382,22 @@ export class CustomersService {
             success: true,
             hotinfo: updatedProfile.hotinfoData,
             updatedAt: updatedProfile.hotinfoUpdatedAt
+        };
+    }
+
+    async getHotinfoRaw(userId: string) {
+        const profile = await this.prisma.customerProfile.findUnique({
+            where: { userId },
+            select: { hotinfoRaw: true, user: { select: { fullName: true } } },
+        });
+
+        if (!profile || !profile.hotinfoRaw) {
+            throw new NotFoundException('Hotinfo dosyası bulunamadı');
+        }
+
+        return {
+            content: profile.hotinfoRaw,
+            filename: `hotinfo_${profile.user.fullName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.hxl`,
         };
     }
 }
