@@ -40,9 +40,25 @@ import { AnnouncementsModule } from './announcements/announcements.module';
 import { AnnouncementTemplatesModule } from './announcement-templates/announcement-templates.module';
 import { EmailValidatorModule } from './email-validator/email-validator.module';
 import { CommonModule } from './common/common.module';
+import { WinstonModule } from 'nest-winston';
+import * as winston from 'winston';
 
 @Module({
     imports: [
+        WinstonModule.forRoot({
+            transports: [
+                new winston.transports.Console({
+                    format: winston.format.combine(
+                        winston.format.timestamp(),
+                        winston.format.ms(),
+                        winston.format.colorize(),
+                        winston.format.printf(({ timestamp, level, message, context, ms }) => {
+                            return `[Nest] ${timestamp} ${level} [${context || 'Application'}] ${message} ${ms}`;
+                        }),
+                    ),
+                }),
+            ],
+        }),
         ConfigModule.forRoot({
             isGlobal: true,
             load: [configuration],

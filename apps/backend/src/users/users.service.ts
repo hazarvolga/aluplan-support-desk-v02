@@ -124,10 +124,22 @@ export class UsersService {
         });
     }
 
-    async remove(id: string) {
-        return this.prisma.user.update({
+    async remove(id: string, actorId?: string) {
+        const user = await this.prisma.user.update({
             where: { id },
             data: { deletedAt: new Date(), status: 'INACTIVE' },
         });
+
+        await this.prisma.auditLog.create({
+            data: {
+                action: 'user.delete',
+                actorId: actorId || null,
+                entityType: 'USER',
+                entityId: id,
+                newValue: { status: 'INACTIVE', deletedAt: user.deletedAt },
+            },
+        });
+
+        return user;
     }
 }

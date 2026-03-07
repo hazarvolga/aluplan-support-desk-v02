@@ -131,38 +131,39 @@ model User {
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
-  role             SystemRole @default(AGENT)
+  roleId           String?     @map("role_id") @db.Uuid
+  role             Role?       @relation(fields: [roleId], references: [id])
   agentStatus      AgentStatus @default(DND) @map("agent_status")
-  title            String?    @db.VarChar(100)
-  bio              String?    @db.Text
-  timezone         String     @default("UTC") @db.VarChar(50)
-  language         String     @default("tr") @db.VarChar(10)
-  maxActiveTickets Int        @default(5) @map("max_active_tickets")
+  title            String?     @db.VarChar(100)
+  bio              String?     @db.Text
+  timezone         String      @default("UTC") @db.VarChar(50)
+  language         String      @default("tr") @db.VarChar(10)
+  maxActiveTickets Int         @default(5) @map("max_active_tickets")
 
   // Relations
-  teamMembers       TeamMember[]
-  agentSkills       AgentSkill[]
-  shifts            Shift[]
-  availability      AvailabilityOverride[]
-  ticketsCreated    Ticket[]               @relation("TicketCreatedBy")
-  ticketsAssigned   Ticket[]               @relation("TicketAssignedTo")
-  ticketMessages    TicketMessage[]
-  ticketEscalations TicketEscalation[]
-  articlesCreated   KnowledgeArticle[]     @relation("ArticleCreatedBy")
-  articlesApproved  KnowledgeArticle[]     @relation("ArticleApprovedBy")
-  articleVersions   KnowledgeArticleVersion[]
-  aiInteractions    AiInteraction[]
-  announcements     Announcement[]
-  announcementTemplates AnnouncementTemplate[] @relation("TemplateAuthor")
-  feedbacks         InteractionFeedback[]
-  articleFeedbacks  ArticleFeedback[]
-  trainingReviews   TrainingQueue[]
-  auditLogs         AuditLog[]
-  settings          Setting[]
-  macrosCreated     Macro[]
-  customerProfile   CustomerProfile?
-  notifications     Notification[]
-  emailPreferences  EmailPreference[]
+  teamMembers           TeamMember[]
+  agentSkills           AgentSkill[]
+  shifts                Shift[]
+  availability          AvailabilityOverride[]
+  ticketsCreated        Ticket[]                  @relation("TicketCreatedBy")
+  ticketsAssigned       Ticket[]                  @relation("TicketAssignedTo")
+  ticketMessages        TicketMessage[]
+  ticketEscalations     TicketEscalation[]
+  articlesCreated       KnowledgeArticle[]        @relation("ArticleCreatedBy")
+  articlesApproved      KnowledgeArticle[]        @relation("ArticleApprovedBy")
+  articleVersions       KnowledgeArticleVersion[]
+  aiInteractions        AiInteraction[]
+  announcements         Announcement[]
+  announcementTemplates AnnouncementTemplate[]    @relation("TemplateAuthor")
+  feedbacks             InteractionFeedback[]
+  articleFeedbacks      ArticleFeedback[]
+  trainingReviews       TrainingQueue[]
+  auditLogs             AuditLog[]
+  settings              Setting[]
+  macrosCreated         Macro[]
+  customerProfile       CustomerProfile?
+  notifications         Notification[]
+  emailPreferences      EmailPreference[]
 
   @@map("users")
 }
@@ -188,16 +189,16 @@ model Department {
 }
 
 model Team {
-  id                     String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  departmentId           String             @map("department_id") @db.Uuid
-  name                   String             @db.VarChar(100)
-  slug                   String             @unique @db.VarChar(100)
-  description            String?            @db.Text
-  isArchived             Boolean            @default(false) @map("is_archived")
-  autoAssignmentEnabled  Boolean            @default(false) @map("auto_assignment_enabled")
-  assignmentStrategy     AssignmentStrategy @default(MANUAL) @map("assignment_strategy")
-  createdAt              DateTime           @default(now()) @map("created_at")
-  updatedAt              DateTime           @updatedAt @map("updated_at")
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  departmentId          String             @map("department_id") @db.Uuid
+  name                  String             @db.VarChar(100)
+  slug                  String             @unique @db.VarChar(100)
+  description           String?            @db.Text
+  isArchived            Boolean            @default(false) @map("is_archived")
+  autoAssignmentEnabled Boolean            @default(false) @map("auto_assignment_enabled")
+  assignmentStrategy    AssignmentStrategy @default(MANUAL) @map("assignment_strategy")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
 
   department Department   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   members    TeamMember[]
@@ -206,11 +207,11 @@ model Team {
 }
 
 model TeamMember {
-  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId        String      @map("user_id") @db.Uuid
-  teamId        String      @map("team_id") @db.Uuid
-  roleOverride  SystemRole? @map("role_override")
-  joinedAt      DateTime    @default(now()) @map("joined_at")
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String      @map("user_id") @db.Uuid
+  teamId       String      @map("team_id") @db.Uuid
+  roleOverride SystemRole? @map("role_override")
+  joinedAt     DateTime    @default(now()) @map("joined_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
@@ -245,13 +246,13 @@ model AgentSkill {
 }
 
 model Shift {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  dayOfWeek  Int      @map("day_of_week") @db.SmallInt // 0=Sunday, 6=Saturday
-  startTime  String   @map("start_time") // Using string for simple TIME storage or specific format
-  endTime    String   @map("end_time")
-  timezone   String?  @db.VarChar(100)
-  createdAt  DateTime @default(now()) @map("created_at")
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  dayOfWeek Int      @map("day_of_week") @db.SmallInt // 0=Sunday, 6=Saturday
+  startTime String   @map("start_time") // Using string for simple TIME storage or specific format
+  endTime   String   @map("end_time")
+  timezone  String?  @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -302,54 +303,92 @@ model Notification {
   @@map("notifications")
 }
 
-// Role and Permission models removed to simplify for ENUM usage in this single-org phase.
-// In the future, if dynamic permissions are needed, they can be reintroduced.
+// =============================================
+// RBAC MODELS
+// =============================================
+
+model Role {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar(100) // e.g., 'ticket.create', 'settings.write'
+  description String?  @db.Text
+  group       String   @db.VarChar(50) // e.g., 'TICKETS', 'ADMIN'
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
 
 // =============================================
 // CUSTOMER PROFILES (CRM Integration)
 // =============================================
 
 model CustomerProfile {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId            String    @unique @map("user_id") @db.Uuid
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  firstName         String    @map("first_name") @db.VarChar(100)
-  lastName          String    @map("last_name") @db.VarChar(100)
-  middleName        String?   @map("middle_name") @db.VarChar(100)
-  customerNo        String    @unique @map("customer_no") @db.VarChar(50) // CRM ID (e.g. C300 XX XX XX)
-  companyName       String    @map("company_name") @db.VarChar(255)
-  accountId         String?   @map("account_id") @db.Uuid
+  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String      @unique @map("user_id") @db.Uuid
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName         String      @map("first_name") @db.VarChar(100)
+  lastName          String      @map("last_name") @db.VarChar(100)
+  middleName        String?     @map("middle_name") @db.VarChar(100)
+  customerNo        String      @unique @map("customer_no") @db.VarChar(50) // CRM ID (e.g. C300 XX XX XX)
+  companyName       String      @map("company_name") @db.VarChar(255)
+  accountId         String?     @map("account_id") @db.Uuid
   account           CrmAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  industry          String?   @db.VarChar(255)
-  jobTitle          String?   @map("job_title") @db.VarChar(255)
-  phoneNumber       String?   @map("phone_number") @db.VarChar(50)
-  contractStatus    String?   @map("contract_status") @db.VarChar(100)
-  externalContactId String?   @unique @map("external_contact_id") @db.VarChar(255)
-  crmVerified       Boolean   @default(false) @map("crm_verified")
-  hotinfoData       Json?     @map("hotinfo_data")
-  hotinfoRaw        String?   @map("hotinfo_raw") @db.Text
-  hotinfoUpdatedAt  DateTime? @map("hotinfo_updated_at")
-  tags              String[]  @default([])
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  industry          String?     @db.VarChar(255)
+  jobTitle          String?     @map("job_title") @db.VarChar(255)
+  phoneNumber       String?     @map("phone_number") @db.VarChar(50)
+  contractStatus    String?     @map("contract_status") @db.VarChar(100)
+  externalContactId String?     @unique @map("external_contact_id") @db.VarChar(255)
+  crmVerified       Boolean     @default(false) @map("crm_verified")
+  hotinfoData       Json?       @map("hotinfo_data")
+  hotinfoRaw        String?     @map("hotinfo_raw") @db.Text
+  hotinfoUpdatedAt  DateTime?   @map("hotinfo_updated_at")
+  tags              String[]    @default([])
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
 
-  announcementLogs  AnnouncementLog[]
+  announcementLogs AnnouncementLog[]
 
   @@map("customer_profiles")
 }
 
 model CrmAccount {
-  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name              String            @db.VarChar(255)
-  industry          String?           @db.VarChar(255)
-  website           String?           @db.VarChar(255)
-  address           String?           @db.Text
-  externalAccountId String?           @unique @map("external_account_id") @db.VarChar(255)
-  crmVerified       Boolean           @default(false) @map("crm_verified")
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String   @db.VarChar(255)
+  industry          String?  @db.VarChar(255)
+  website           String?  @db.VarChar(255)
+  address           String?  @db.Text
+  externalAccountId String?  @unique @map("external_account_id") @db.VarChar(255)
+  crmVerified       Boolean  @default(false) @map("crm_verified")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
-  customers         CustomerProfile[]
+  customers CustomerProfile[]
 
   @@map("crm_accounts")
 }
@@ -373,23 +412,23 @@ model CrmConnection {
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
 
-  syncLogs      CrmSyncLog[]
+  syncLogs CrmSyncLog[]
 
   @@map("crm_connections")
 }
 
 model CrmSyncLog {
-  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  connectionId    String        @map("connection_id") @db.Uuid
-  connection      CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  status          SyncStatus
-  startedAt       DateTime      @default(now()) @map("started_at")
-  completedAt     DateTime?     @map("completed_at")
-  totalRecords    Int           @default(0) @map("total_records")
-  successCount    Int           @default(0) @map("success_count")
-  errorCount      Int           @default(0) @map("error_count")
-  errorMessage    String?       @map("error_message") @db.Text
-  details         Json?         // Detailed record-level results
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId String        @map("connection_id") @db.Uuid
+  connection   CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  status       SyncStatus
+  startedAt    DateTime      @default(now()) @map("started_at")
+  completedAt  DateTime?     @map("completed_at")
+  totalRecords Int           @default(0) @map("total_records")
+  successCount Int           @default(0) @map("success_count")
+  errorCount   Int           @default(0) @map("error_count")
+  errorMessage String?       @map("error_message") @db.Text
+  details      Json? // Detailed record-level results
 
   @@map("crm_sync_logs")
 }
@@ -537,16 +576,16 @@ model KnowledgeArticleVersion {
 }
 
 model KnowledgeEmbedding {
-  id                   String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  articleId            String                     @map("article_id") @db.Uuid
-  articleVersionId     String                     @map("article_version_id") @db.Uuid
-  parentId             String?                    @map("parent_id") @db.Uuid
+  id                   String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  articleId            String                      @map("article_id") @db.Uuid
+  articleVersionId     String                      @map("article_version_id") @db.Uuid
+  parentId             String?                     @map("parent_id") @db.Uuid
   embedding            Unsupported("vector(1024)")
-  content              String                     @db.Text
-  sequence             Int                        @default(0)
-  modelName            String                     @map("model_name") @db.VarChar(100)
-  isActive             Boolean                    @default(true) @map("is_active")
-  embeddingGeneratedAt DateTime                   @default(now()) @map("embedding_generated_at")
+  content              String                      @db.Text
+  sequence             Int                         @default(0)
+  modelName            String                      @map("model_name") @db.VarChar(100)
+  isActive             Boolean                     @default(true) @map("is_active")
+  embeddingGeneratedAt DateTime                    @default(now()) @map("embedding_generated_at")
 
   article        KnowledgeArticle        @relation(fields: [articleId], references: [id], onDelete: Cascade)
   articleVersion KnowledgeArticleVersion @relation(fields: [articleVersionId], references: [id], onDelete: Cascade)
@@ -572,7 +611,7 @@ model AiInteraction {
   autoAnswered      Boolean         @default(false) @map("auto_answered")
   ticketCreated     Boolean         @default(false) @map("ticket_created")
   productId         String?         @map("product_id") @db.Uuid
-  userContext       Json?           @map("user_context") // page, segment, etc.
+  userContext       Json?           @map("user_context") @db.JsonB // page, segment, etc.
 
   // Telemetry details
   isAccepted     Boolean? @map("is_accepted")
@@ -599,6 +638,7 @@ model AiInteraction {
   @@index([sessionId], map: "idx_ai_session")
   @@index([matchedArticleId], map: "idx_ai_article")
   @@index([createdAt(sort: Desc)], map: "idx_ai_created")
+  @@index([userContext], map: "idx_ai_context", type: Gin)
   @@map("ai_interactions")
 }
 
@@ -658,7 +698,7 @@ model Ticket {
   tags                String[]             @default([])
   productId           String?              @map("product_id") @db.Uuid
   suggestedCategories String[]             @default([]) @map("suggested_categories")
-  hotinfoSnapshot     Json?                @map("hotinfo_snapshot")
+  hotinfoSnapshot     Json?                @map("hotinfo_snapshot") @db.JsonB
   channel             CommunicationChannel @default(WEB)
   chatStatus          ChatStatus           @default(NORMAL) @map("chat_status")
   departmentId        String?              @map("department_id") @db.Uuid
@@ -704,6 +744,7 @@ model Ticket {
   @@index([assignedTo], map: "idx_tickets_assigned")
   @@index([priority], map: "idx_tickets_priority")
   @@index([isSlaBreached], map: "idx_tickets_sla")
+  @@index([hotinfoSnapshot], map: "idx_tickets_hotinfo", type: Gin)
   @@map("tickets")
 }
 
@@ -715,7 +756,8 @@ model TicketMessage {
   isInternal Boolean              @default(false) @map("is_internal")
   channel    CommunicationChannel @default(WEB)
   sentiment  Sentiment? // AI classification
-  metadata   Json? // For translations, etc.
+  metadata   Json? @db.JsonB // For translations, etc.
+  deletedAt  DateTime?            @map("deleted_at")
   createdAt  DateTime             @default(now()) @map("created_at")
   updatedAt  DateTime             @updatedAt @map("updated_at")
 
@@ -723,6 +765,7 @@ model TicketMessage {
   sender      User?        @relation(fields: [senderId], references: [id])
   attachments Attachment[]
 
+  @@index([metadata], map: "idx_ticket_msg_metadata", type: Gin)
   @@map("ticket_messages")
 }
 
@@ -734,6 +777,7 @@ model Attachment {
   fileSize  Int           @map("file_size")
   mimeType  String        @map("mime_type") @db.VarChar(100)
   url       String        @db.Text // Storage path or URL
+  deletedAt DateTime?     @map("deleted_at")
   createdAt DateTime      @default(now()) @map("created_at")
 
   @@index([messageId], map: "idx_attachment_message")
@@ -801,6 +845,8 @@ model AuditLog {
   @@index([entityType, entityId], map: "idx_audit_entity")
   @@index([actorId], map: "idx_audit_actor")
   @@index([createdAt(sort: Desc)], map: "idx_audit_created")
+  @@index([oldValue], map: "idx_audit_old", type: Gin)
+  @@index([newValue], map: "idx_audit_new", type: Gin)
   @@map("audit_logs")
 }
 
@@ -819,11 +865,13 @@ model TicketRule {
   description String?     @db.Text
   isActive    Boolean     @default(true) @map("is_active")
   triggerOn   RuleTrigger @default(TICKET_CREATED) @map("trigger_on")
-  conditions  Json // Format: { "subject:contains": "acil", "priority:equals": "HIGH" }
-  actions     Json // Format: { "setPriority": "URGENT", "addTag": "acil-talep" }
+  conditions  Json        @db.JsonB // Format: { "subject:contains": "acil", "priority:equals": "HIGH" }
+  actions     Json        @db.JsonB // Format: { "setPriority": "URGENT", "addTag": "acil-talep" }
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
+  @@index([conditions], map: "idx_rule_conditions", type: Gin)
+  @@index([actions], map: "idx_rule_actions", type: Gin)
   @@map("ticket_rules")
 }
 
@@ -920,6 +968,7 @@ model KnowledgeSource {
   syncLogs   KnowledgeSourceSyncLog[]
   embeddings KnowledgePoolEmbedding[]
 
+  @@index([metadata], map: "idx_ks_metadata", type: Gin)
   @@map("knowledge_sources")
 }
 
@@ -939,13 +988,13 @@ model KnowledgeSourceSyncLog {
 }
 
 model KnowledgePoolEmbedding {
-  id        String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sourceId  String                     @map("source_id") @db.Uuid
+  id        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId  String                      @map("source_id") @db.Uuid
   embedding Unsupported("vector(1024)")
-  content   String                     @db.Text // The raw chunk text
-  metadata  Json?                      @db.JsonB
-  modelName String                     @map("model_name") @db.VarChar(100)
-  createdAt DateTime                   @default(now()) @map("created_at")
+  content   String                      @db.Text // The raw chunk text
+  metadata  Json?                       @db.JsonB
+  modelName String                      @map("model_name") @db.VarChar(100)
+  createdAt DateTime                    @default(now()) @map("created_at")
 
   source KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
@@ -987,11 +1036,11 @@ model ProductCategory {
 }
 
 model TicketEmbedding {
-  id        String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ticketId  String                     @map("ticket_id") @db.Uuid
+  id        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticketId  String                      @map("ticket_id") @db.Uuid
   embedding Unsupported("vector(1024)")
-  modelName String                     @map("model_name") @db.VarChar(100)
-  createdAt DateTime                   @default(now()) @map("created_at")
+  modelName String                      @map("model_name") @db.VarChar(100)
+  createdAt DateTime                    @default(now()) @map("created_at")
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
@@ -1044,7 +1093,7 @@ model EmailLog {
   sentAt         DateTime?    @map("sent_at")
   createdAt      DateTime     @default(now()) @map("created_at")
 
-  events EmailEvent[]
+  events          EmailEvent[]
   announcementLog AnnouncementLog?
 
   @@index([recipientEmail], map: "idx_email_logs_recipient")
@@ -1083,37 +1132,37 @@ model EmailPreference {
 // =============================================
 
 model Announcement {
-  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title          String           @db.VarChar(255)
-  subject        String           @db.VarChar(255)
-  contentMjml    String           @map("content_mjml") @db.Text
-  targetCriteria Json             @map("target_criteria") // Segment filters (industry, tags, contract status etc.)
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String             @db.VarChar(255)
+  subject        String             @db.VarChar(255)
+  contentMjml    String             @map("content_mjml") @db.Text
+  targetCriteria Json               @map("target_criteria") // Segment filters (industry, tags, contract status etc.)
   status         AnnouncementStatus @default(DRAFT)
-  type           AnnouncementType @default(BROADCAST)
-  scheduledAt    DateTime?        @map("scheduled_at")
-  sentAt         DateTime?        @map("sent_at")
-  createdBy      String?          @map("created_by") @db.Uuid
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
+  type           AnnouncementType   @default(BROADCAST)
+  scheduledAt    DateTime?          @map("scheduled_at")
+  sentAt         DateTime?          @map("sent_at")
+  createdBy      String?            @map("created_by") @db.Uuid
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
 
-  author         User?            @relation(fields: [createdBy], references: [id])
-  logs           AnnouncementLog[]
+  author User?             @relation(fields: [createdBy], references: [id])
+  logs   AnnouncementLog[]
 
   @@map("announcements")
 }
 
 model AnnouncementLog {
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  announcementId String       @map("announcement_id") @db.Uuid
-  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-  customerId     String       @map("customer_id") @db.Uuid
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  announcementId String          @map("announcement_id") @db.Uuid
+  announcement   Announcement    @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  customerId     String          @map("customer_id") @db.Uuid
   customer       CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  status         String       @default("PENDING") @db.VarChar(50) // PENDING, SENT, FAILED
-  sentAt         DateTime?    @map("sent_at")
-  error          String?      @db.Text
-  emailLogId     String?      @unique @map("email_log_id") @db.Uuid
-  emailLog       EmailLog?    @relation(fields: [emailLogId], references: [id], onDelete: SetNull)
-  createdAt      DateTime     @default(now()) @map("created_at")
+  status         String          @default("PENDING") @db.VarChar(50) // PENDING, SENT, FAILED
+  sentAt         DateTime?       @map("sent_at")
+  error          String?         @db.Text
+  emailLogId     String?         @unique @map("email_log_id") @db.Uuid
+  emailLog       EmailLog?       @relation(fields: [emailLogId], references: [id], onDelete: SetNull)
+  createdAt      DateTime        @default(now()) @map("created_at")
 
   @@map("announcement_logs")
 }
@@ -1126,9 +1175,9 @@ model AnnouncementTemplate {
   contentMjml String   @map("content_mjml") @db.Text
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-  
-  createdBy   String?  @map("created_by") @db.Uuid
-  author      User?    @relation("TemplateAuthor", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  createdBy String? @map("created_by") @db.Uuid
+  author    User?   @relation("TemplateAuthor", fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@map("announcement_templates")
 }

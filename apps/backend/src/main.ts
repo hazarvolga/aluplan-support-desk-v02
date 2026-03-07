@@ -59,7 +59,12 @@ async function bootstrap() {
         logger.log(`[NetCheck] 🐘 Database (${dbHost}:${dbPort}): ${dbOk ? 'REACHABLE ✅' : 'UNREACHABLE ❌'}`);
     }
 
-    const app = await NestFactory.create(AppModule, { logger: ['log', 'error', 'warn', 'debug'] });
+    const app = await NestFactory.create(AppModule, {
+        logger: ['log', 'error', 'warn', 'debug'],
+    });
+
+    const { WINSTON_MODULE_NEST_PROVIDER } = require('nest-winston');
+    app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
     const configService = app.get(ConfigService);
     const port = configService.get<number>('PORT', 3001);
@@ -114,6 +119,12 @@ async function bootstrap() {
             transformOptions: { enableImplicitConversion: true },
         }),
     );
+
+    // Global Exception Filter
+    const { httpAdapter } = app.get(require('@nestjs/core').HttpAdapterHost);
+    const errorLogger = app.get(require('./common/services/error-logger.service').ErrorLoggerService);
+    const { GlobalExceptionFilter } = require('./common/filters/global-exception.filter');
+    app.useGlobalFilters(new GlobalExceptionFilter({ httpAdapter }, errorLogger));
 
 
     // Swagger (only in development)

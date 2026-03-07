@@ -35,8 +35,13 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        const role = user.role;
-        const permissions = this.getPermissionsForRole(role);
+        const roleWithPerms = user.roleId ? await this.prisma.role.findUnique({
+            where: { id: user.roleId },
+            include: { permissions: { include: { permission: true } } }
+        }) : null;
+
+        const role = roleWithPerms?.name || 'AGENT';
+        const permissions = roleWithPerms?.permissions.map(p => p.permission.name) || this.getPermissionsForRole(role);
 
         /* 
         // MFA logic temporarily disabled for local stability
@@ -58,8 +63,7 @@ export class AuthService {
                 email: user.email,
                 fullName: user.fullName,
                 avatarUrl: user.avatarUrl,
-                role,
-                permissions,
+                role: roleWithPerms || { name: role, permissions: permissions.map(p => ({ permission: { name: p } })) },
             },
             ...tokens,
         };
@@ -76,8 +80,14 @@ export class AuthService {
             throw new ForbiddenException('Access denied');
         }
 
-        const role = user.role;
-        const permissions = this.getPermissionsForRole(role);
+        const roleWithPerms = user.roleId ? await this.prisma.role.findUnique({
+            where: { id: user.roleId },
+            include: { permissions: { include: { permission: true } } }
+        }) : null;
+
+        const role = roleWithPerms?.name || 'AGENT';
+        const permissions = roleWithPerms?.permissions.map(p => p.permission.name) || this.getPermissionsForRole(role);
+
         const tokens = await this.generateTokens(userId, user.email, user.fullName, role, permissions);
         await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
 

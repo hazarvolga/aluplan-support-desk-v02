@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { CustomersService } from './customers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { HotinfoParserService } from './hotinfo-parser.service';
+import { EmailService } from '../email/email.service';
+import { ErrorLoggerService } from '../common/services/error-logger.service';
 
 describe('CustomersService', () => {
   let service: CustomersService;
@@ -23,6 +27,30 @@ describe('CustomersService', () => {
           provide: HotinfoParserService,
           useValue: {
             parseHotinfo: jest.fn(),
+          },
+        },
+        {
+          provide: EmailService,
+          useValue: {
+            enqueueEmail: jest.fn(),
+          },
+        },
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn(),
+          },
+        },
+        {
+          provide: ErrorLoggerService,
+          useValue: {
+            logError: jest.fn(),
           },
         },
       ],

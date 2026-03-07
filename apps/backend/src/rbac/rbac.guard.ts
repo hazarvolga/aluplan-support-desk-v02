@@ -25,19 +25,22 @@ export class RbacGuard implements CanActivate {
 
         // Role check
         if (requiredRoles?.length) {
-            const userRole = user.role?.toUpperCase();
+            const userRoleName = (user.role as any)?.name || user.role;
+            const userRole = typeof userRoleName === 'string' ? userRoleName.toUpperCase() : null;
+
             const hasRole = requiredRoles.some(role => role.toUpperCase() === userRole);
-            if (!hasRole) {
+            if (!hasRole && !user.permissions?.includes('*')) {
                 throw new ForbiddenException(`Requires role: ${requiredRoles.join(' | ')}`);
             }
         }
 
         // Permission check
         if (requiredPermissions?.length) {
-            if (user.permissions?.includes('*')) return true;
+            const userPermissions = user.permissions || [];
+            if (userPermissions.includes('*') || userPermissions.includes('admin')) return true;
 
             const hasPermission = requiredPermissions.every((perm) =>
-                user.permissions?.includes(perm),
+                userPermissions.includes(perm),
             );
             if (!hasPermission) {
                 throw new ForbiddenException(`Requires permission: ${requiredPermissions.join(', ')}`);
