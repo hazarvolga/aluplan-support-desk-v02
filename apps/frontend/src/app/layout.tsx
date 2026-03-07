@@ -33,6 +33,7 @@ export const viewport: Viewport = {
 
 import { AuthProvider } from '@/components/auth/role-guard';
 import { CommandMenu } from '@/components/command-menu';
+import { Toaster } from '@/components/ui/toaster';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <AuthProvider>
                     {children}
                     <CommandMenu />
+                    <Toaster />
                 </AuthProvider>
             </body>
         </html>
