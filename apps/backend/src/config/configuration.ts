@@ -62,6 +62,14 @@ export default () => {
             host: process.env.REDIS_HOST || defaultRedisHost,
             port: parseInt(defaultRedisPort, 10),
         },
+        storage: {
+            endpoint: process.env.STORAGE_ENDPOINT || 'http://localhost:9000',
+            accessKey: process.env.STORAGE_ACCESS_KEY || 'admin',
+            secretKey: process.env.STORAGE_SECRET_KEY || 'changeme',
+            bucket: process.env.STORAGE_BUCKET || 'aluplan-storage',
+            region: process.env.STORAGE_REGION || 'us-east-1',
+            usePathStyle: process.env.STORAGE_USE_PATH_STYLE === 'true' || true,
+        },
     };
 
     if (isProduction) {

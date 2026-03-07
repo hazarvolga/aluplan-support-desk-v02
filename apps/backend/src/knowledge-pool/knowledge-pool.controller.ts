@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import { extname } from 'path';
 import { KnowledgePoolService } from './knowledge-pool.service';
 import { CreateKnowledgeSourceDto } from './dto/create-knowledge-source.dto';
@@ -9,12 +9,16 @@ import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { KnowledgeSourceType } from '@aluplan/database';
+import { StorageService } from '../common/services/storage.service';
 
 @ApiTags('Knowledge Pool')
 @Controller('knowledge-pool')
 @UseGuards(JwtAuthGuard, RbacGuard)
 export class KnowledgePoolController {
-    constructor(private readonly knowledgePoolService: KnowledgePoolService) { }
+    constructor(
+        private readonly knowledgePoolService: KnowledgePoolService,
+        private readonly storageService: StorageService,
+    ) { }
 
     @Post('sources')
     @Roles('admin', 'super-admin')
@@ -27,14 +31,7 @@ export class KnowledgePoolController {
     @Roles('admin', 'super-admin')
     @UseInterceptors(
         FileInterceptor('file', {
-            storage: diskStorage({
-                destination: './uploads/knowledge-pool',
-                filename: (req, file, callback) => {
-                    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-                    const ext = extname(file.originalname);
-                    callback(null, `${uniqueSuffix}${ext}`);
-                },
-            }),
+            storage: memoryStorage(), // Use memory storage so we can stream to MinIO
         }),
     )
     @ApiOperation({ summary: 'Upload a knowledge file (PDF, TXT, CSV, MD)' })
@@ -42,7 +39,7 @@ export class KnowledgePoolController {
         @UploadedFile(
             new ParseFilePipe({
                 validators: [
-                    new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }), // Increased to 50MB
+                    new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }), // 50MB
                 ],
             }),
         )
@@ -68,10 +65,15 @@ export class KnowledgePoolController {
 
         if (!isMimeValid && !isExtValid) {
             logger.error(`Validation Failed: mimetype=${file.mimetype}, ext=${ext}`);
-            throw new Error(`VALIDATION_FAILED: ${file.mimetype.toUpperCase()} (${ext.toUpperCase()}) is not supported. Please upload PDF, TXT, CSV, or MD files.`);
+            throw new Error(`VALIDATION_FAILED: ${file.mimetype.toUpperCase()} (${ext.toUpperCase()}) is not supported.`);
         }
 
         const type = this.determineTypeFromExt(ext);
+
+        // Upload to MinIO/S3 and get storage key
+        const storageKey = await this.storageService.uploadFile(file, 'knowledge-pool');
+        file = { ...file, path: storageKey } as Express.Multer.File;
+
         return this.knowledgePoolService.createFileSource(name, type, file);
     }
 

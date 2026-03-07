@@ -272,7 +272,6 @@ export class CrmService {
                     data: {
                         email: data.emailaddress1,
                         fullName: `${data.firstname || ''} ${data.lastname || ''}`.trim() || 'CRM Contact',
-                        role: 'VIEWER',
                         status: 'ACTIVE',
                         passwordHash: 'CRM_SYNCED',
                     },

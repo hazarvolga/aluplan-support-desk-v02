@@ -2,7 +2,7 @@
 import { Provider } from '@nestjs/common';
 import { PrismaService } from '../../src/prisma/prisma.service';
 
-export const mockPrismaService = {
+export const mockPrismaService: Record<string, any> = {
     department: { findMany: jest.fn(), findUnique: jest.fn() },
     team: { findMany: jest.fn(), create: jest.fn(), findUnique: jest.fn() },
     teamMember: { upsert: jest.fn(), delete: jest.fn() },

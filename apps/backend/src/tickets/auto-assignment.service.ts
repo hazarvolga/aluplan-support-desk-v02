@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Ticket } from '@aluplan/database';
 import { PrismaService } from '../prisma/prisma.service';
-import { SystemRole } from '@aluplan/database';
 
 @Injectable()
 export class AutoAssignmentService {
@@ -21,17 +20,11 @@ export class AutoAssignmentService {
         if (!currentTicket || currentTicket.assignedTo) return;
 
         try {
-            // Find all active agent users based on new SystemRole enum
+            // Find all active agent users — exclude users with 'customer' role
             const agents = await this.prisma.user.findMany({
                 where: {
                     role: {
-                        in: [
-                            SystemRole.ADMIN,
-                            SystemRole.DEPARTMENT_MANAGER,
-                            SystemRole.TEAM_LEAD,
-                            SystemRole.SENIOR_AGENT,
-                            SystemRole.AGENT
-                        ]
+                        name: { not: 'customer' }
                     },
                     status: 'ACTIVE'
                 },

@@ -16,7 +16,11 @@ export class AnnouncementTemplatesService {
 
     // Find a valid admin user ID for system seed attribution
     const adminUser = await this.prisma.user.findFirst({
-      where: { role: 'ADMIN' },
+      where: {
+        role: {
+          name: { in: ['admin', 'super-admin'] }
+        }
+      },
       select: { id: true }
     });
     // Fallback to null if no admin user exists yet (created_by is nullable)

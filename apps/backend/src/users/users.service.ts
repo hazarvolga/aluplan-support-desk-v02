@@ -2,13 +2,12 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { SystemRole } from '@aluplan/database';
 
 @Injectable()
 export class UsersService {
     constructor(private prisma: PrismaService) { }
 
-    async create(dto: { email: string; password: string; fullName: string; role?: SystemRole }) {
+    async create(dto: { email: string; password: string; fullName: string; roleName?: string }) {
         const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
         if (existing) {
             throw new ConflictException('Bu e-posta adresi zaten kayıtlı.');
@@ -22,7 +21,6 @@ export class UsersService {
                 fullName: dto.fullName,
                 passwordHash,
                 status: 'ACTIVE',
-                role: dto.role || SystemRole.AGENT,
             },
         });
 
@@ -32,8 +30,6 @@ export class UsersService {
 
     async findAll(type?: 'agent' | 'customer') {
         const where: any = { deletedAt: null };
-        if (type === 'agent') where.role = { not: SystemRole.VIEWER }; // Simplified logic for example
-        else if (type === 'customer') where.role = SystemRole.VIEWER; // Assuming viewers are customers for now, or use a flag
 
         return this.prisma.user.findMany({
             where,

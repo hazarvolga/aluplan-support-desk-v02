@@ -3,7 +3,6 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { TicketsService } from '../tickets/tickets.service';
-import { SystemRole } from '@aluplan/database';
 import { SIMPLE_MAP_CONFIG } from './interfaces/imap.interface';
 import * as imaps from 'imap-simple';
 import { simpleParser } from 'mailparser';
@@ -100,10 +99,11 @@ export class EmailInboundService implements OnModuleInit {
                 if (ticket) {
                     // Identify sender
                     const sender = await this.prisma.user.findUnique({
-                        where: { email: from }
+                        where: { email: from },
+                        include: { role: true }
                     });
                     const senderId = sender?.id || ticket.userId;
-                    const role = sender?.role || 'customer';
+                    const role = sender?.role?.name || 'customer';
 
                     await this.ticketsService.addMessage(ticket.id, {
                         message: body,
@@ -125,7 +125,6 @@ export class EmailInboundService implements OnModuleInit {
                             email: from,
                             fullName: from.split('@')[0], // Use email prefix as temporary name
                             passwordHash: 'inbound-only', // System account
-                            role: SystemRole.VIEWER,
                             status: 'ACTIVE'
                         }
                     });

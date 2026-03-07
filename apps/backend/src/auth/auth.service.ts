@@ -237,6 +237,7 @@ export class AuthService {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
             include: {
+                role: true,
                 customerProfile: {
                     select: {
                         id: true,
@@ -255,7 +256,7 @@ export class AuthService {
             fullName: user.fullName,
             avatarUrl: user.avatarUrl,
             status: user.status,
-            role: user.role,
+            role: user.role?.name || 'customer',
             customerProfile: user.customerProfile
         };
     }
@@ -289,12 +290,14 @@ export class AuthService {
             'kb:read', 'faq:read'
         ];
 
-        if (role === 'ADMIN') return ['*']; // Full access
-        if (role === 'DEPARTMENT_MANAGER') return [...basePermissions, 'ticket:assign', 'reports:read', 'settings:read'];
-        if (role === 'TEAM_LEAD') return [...basePermissions, 'ticket:assign', 'reports:read'];
-        if (role === 'SENIOR_AGENT') return [...basePermissions, 'ticket:escalate'];
-        if (role === 'AGENT') return basePermissions;
-        if (role === 'VIEWER') return ['ticket:create', 'ticket:update', 'ticket:read', 'kb:read', 'faq:read'];
+        const r = role.toLowerCase();
+
+        if (r === 'admin' || r === 'super-admin') return ['*']; // Full access
+        if (r === 'department-manager') return [...basePermissions, 'ticket:assign', 'reports:read', 'settings:read'];
+        if (r === 'team-lead') return [...basePermissions, 'ticket:assign', 'reports:read'];
+        if (r === 'senior-agent') return [...basePermissions, 'ticket:escalate'];
+        if (r === 'agent') return basePermissions;
+        if (r === 'customer') return ['ticket:create', 'ticket:update', 'ticket:read', 'kb:read', 'faq:read'];
 
         return basePermissions;
     }

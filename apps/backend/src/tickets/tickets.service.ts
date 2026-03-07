@@ -419,7 +419,7 @@ export class TicketsService {
             const deptAgents = await this.prisma.user.findMany({
                 where: {
                     teamMembers: { some: { team: { departmentId: ticket.departmentId } } },
-                    role: { not: 'customer' as any } // Cast to any to avoid potential enum type mismatch in query
+                    role: { name: { not: 'customer' } }
                 },
                 select: { email: true }
             });

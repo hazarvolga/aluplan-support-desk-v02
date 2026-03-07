@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TicketsService } from '../tickets/tickets.service';
-import { SystemRole } from '@aluplan/database';
 
 @Injectable()
 export class OmniChannelService {
@@ -55,7 +54,7 @@ export class OmniChannelService {
                         where: { email: from }
                     });
                     const senderId = sender?.id || ticket.userId;
-                    const role = sender?.role || 'customer';
+                    const role = 'customer'; // Default to customer role for webhook senders
 
                     await this.ticketsService.addMessage(ticket.id, {
                         message: body,
@@ -75,8 +74,8 @@ export class OmniChannelService {
                             email: from,
                             fullName: from.split('@')[0],
                             passwordHash: 'webhook-inbound-only',
-                            role: SystemRole.VIEWER,
                             status: 'ACTIVE'
+                            // role is managed by dynamic RBAC, not set here
                         }
                     });
                     this.logger.log(`Created skeleton user for webhook email: ${from}`);

@@ -134,7 +134,6 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                 data: {
                                     email: contact.emailaddress1,
                                     fullName: `${contact.firstname || ''} ${contact.lastname || ''}`.trim() || 'CRM Contact',
-                                    role: 'VIEWER',
                                     status: 'ACTIVE',
                                     passwordHash: 'CRM_SYNCED',
                                 },

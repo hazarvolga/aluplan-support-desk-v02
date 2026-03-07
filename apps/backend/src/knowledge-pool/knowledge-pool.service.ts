@@ -37,7 +37,7 @@ export class KnowledgePoolService {
                 name,
                 type,
                 fileName: file.originalname,
-                filePath: file.path,
+                filePath: file.path, // Now stores MinIO object key (e.g., 'knowledge-pool/1234-doc.pdf')
                 status: KnowledgeSourceStatus.ACTIVE,
             },
         });

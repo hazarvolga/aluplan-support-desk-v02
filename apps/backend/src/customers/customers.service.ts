@@ -3,7 +3,6 @@ import * as jwt from 'jsonwebtoken';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { SystemRole } from '@aluplan/database';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
 import * as bcrypt from 'bcryptjs';
 
@@ -29,8 +28,6 @@ export class CustomersService {
         let errorCount = 0;
         const errors = [];
 
-        // Legacy role lookups removed. Using SystemRole.VIEWER for customers.
-
         for (const record of data) {
             try {
                 await this.prisma.$transaction(async (prisma) => {
@@ -48,8 +45,7 @@ export class CustomersService {
                                 email: record.email,
                                 fullName: record.fullName || `${record.firstName} ${record.lastName}`,
                                 passwordHash,
-                                status: record.status?.toLowerCase() === 'active' ? 'ACTIVE' : 'INACTIVE',
-                                role: SystemRole.VIEWER,
+                                status: record.status?.toLowerCase() === 'active' ? 'ACTIVE' : 'INACTIVE'
                             },
                             include: { customerProfile: true },
                         });
@@ -141,7 +137,6 @@ export class CustomersService {
 
         // 4. Create User + CustomerProfile in a single transaction
         const resultUser = await this.prisma.$transaction(async (prisma) => {
-            // Legacy role lookups removed.
             const passwordHash = await bcrypt.hash(dto.password, 10);
             const fullName = `${dto.firstName} ${dto.lastName}`;
 
@@ -157,7 +152,6 @@ export class CustomersService {
                     fullName,
                     passwordHash,
                     status: 'INACTIVE',
-                    role: SystemRole.VIEWER,
                     customerProfile: {
                         create: {
                             firstName: dto.firstName,
@@ -228,7 +222,9 @@ export class CustomersService {
     async getAllCustomers() {
         return this.prisma.user.findMany({
             where: {
-                role: SystemRole.VIEWER,
+                role: {
+                    name: 'customer'
+                },
                 deletedAt: null
             },
             select: {

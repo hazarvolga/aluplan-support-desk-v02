@@ -55,6 +55,23 @@ services:
       - redis_data:/data
 
   # ============================================
+  # MinIO — Self-Hosted Object Storage
+  # ============================================
+  minio:
+    image: minio/minio:latest
+    container_name: aluplan_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-changeme}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  # ============================================
   # NestJS Backend
   # ============================================
   backend:
@@ -77,12 +94,19 @@ services:
       MAIL_FROM: ${MAIL_FROM}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
+      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-changeme}
+      STORAGE_BUCKET: aluplan-storage
+      STORAGE_USE_PATH_STYLE: "true"
     ports:
       - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_started
+      minio:
         condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/health"]
@@ -111,3 +135,4 @@ volumes:
   postgres_data:
   ollama_data:
   redis_data:
+  minio_data:

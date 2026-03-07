@@ -3,7 +3,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { EmbeddingService, SearchResult, SearchResponse } from './embedding.service';
-import { TicketMessage } from '@aluplan/database';
+import { TicketStatus, TicketPriority, Prisma, TicketMessage, KnowledgeSourceType } from '@aluplan/database';
 import { ConfigService } from '@nestjs/config';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { PromptsService } from './prompts.service';
@@ -11,7 +11,6 @@ import { SettingsService } from '../settings/settings.service';
 import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
 import { createHash } from 'crypto';
-import { SystemRole } from '@aluplan/database';
 
 // Confidence bands — LOW/HIGH/MEDIUM from schema, NO_MATCH is local
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -31,30 +30,30 @@ Teknik terminolojiye hakimsin ve yazılımın mantığını bilirsin.
 Ancak cevap üretirken yalnızca sana verilen "ONAYLI BİLGİ KAYNAĞI" içeriğini kullanırsın.
 
 TEMEL PRENSİP:
-Uzman gibi açık, net ve teknik konuş. ASLA kaynak dışı bilgi üretme.
+Uzman gibi açık, net ve teknik konuş.ASLA kaynak dışı bilgi üretme.
 
-KURALLAR:
+    KURALLAR:
 
 1) KAYNAK ZORUNLULUĞU
-- Yanıt üretirken sadece ONAYLI BİLGİ KAYNAĞI'nda bulunan bilgileri kullan.
-- Kendi genel bilgi birikimini kullanma, yazılım hakkında tahmin yürütme.
+    - Yanıt üretirken sadece ONAYLI BİLGİ KAYNAĞI'nda bulunan bilgileri kullan.
+        - Kendi genel bilgi birikimini kullanma, yazılım hakkında tahmin yürütme.
 
 2) HALLUCINATION KORUMASI VE KISMİ EŞLEŞME
-- Eğer kullanıcı sorusu kaynakta hiç geçmiyorsa SADECE şunu yaz: "Bu konu mevcut bilgi kaynağında yer almıyor. Lütfen destek talebi oluşturunuz."
-- Eğer sorunun yalnızca bir bölümü kaynakta yer alıyorsa, sadece doğrulanabilir kısmı yanıtla ve geri kalanı için destek talebi oluşturmasını tavsiye et. Kesinlikle eksik kısmı tahmin etme.
+    - Eğer kullanıcı sorusu kaynakta hiç geçmiyorsa SADECE şunu yaz: "Bu konu mevcut bilgi kaynağında yer almıyor. Lütfen destek talebi oluşturunuz."
+        - Eğer sorunun yalnızca bir bölümü kaynakta yer alıyorsa, sadece doğrulanabilir kısmı yanıtla ve geri kalanı için destek talebi oluşturmasını tavsiye et.Kesinlikle eksik kısmı tahmin etme.
 
 3) UZMAN TONU VE YANIT YAPISI
-- Gereksiz selamlama kullanma. Doğrudan çözümü ver.
+    - Gereksiz selamlama kullanma.Doğrudan çözümü ver.
 - İşlem adımları varsa numaralı liste kullan.
-- Maksimum 8 cümle kur. Gereksiz açıklama yapma.
-- Belirsiz kelimeler (muhtemelen, genellikle, olabilir) kullanma.
+- Maksimum 8 cümle kur.Gereksiz açıklama yapma.
+- Belirsiz kelimeler(muhtemelen, genellikle, olabilir) kullanma.
 
-4) ÖZETLEME VE SENTEZ (KRİTİK)
-- Kaynak metnin tamamını ASLA kopyalama.
+4) ÖZETLEME VE SENTEZ(KRİTİK)
+    - Kaynak metnin tamamını ASLA kopyalama.
 - Sorulan sorunun cevabını bul ve kendi teknik cümlelerinle kısa bir özet çıkar.
 - Yanıtı verirken kaynağın en can alıcı kısmını seç ve sentezle.
 
-AMAÇ:
+    AMAÇ:
 Kullanıcıya hızlı, teknik olarak doğru, kontrollü ve doğrudan bir çözüm sunmak.`;
 
 @Injectable()
@@ -82,7 +81,7 @@ export class AiQueryService {
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
         const queryHash = createHash('sha256').update(userQuery + isStaff).digest('hex');
-        const cacheKey = `ai:query:cache:${queryHash}`;
+        const cacheKey = `ai: query: cache:${queryHash} `;
         const cached = await this.redis.get(cacheKey);
 
         if (cached) {
@@ -101,7 +100,7 @@ export class AiQueryService {
         // CHANGE 5: No-match hard floor — if topScore < LOW_CONFIDENCE_THRESHOLD, do NOT call LLM
         const LOW_CONFIDENCE_THRESHOLD = parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.72');
         if (searchResponse.diagnostics.topScore < LOW_CONFIDENCE_THRESHOLD || results.length === 0) {
-            this.logger.warn(`🚫 No reliable context found (topScore=${searchResponse.diagnostics.topScore.toFixed(3)}). Routing to human agent.`);
+            this.logger.warn(`🚫 No reliable context found(topScore = ${searchResponse.diagnostics.topScore.toFixed(3)}).Routing to human agent.`);
 
             const providerName = await this.ai.getActiveProviderName();
             const modelName = await this.ai.getActiveModelName();
@@ -151,7 +150,7 @@ export class AiQueryService {
                 userQuery,
                 kbContent: topResult.content,
             });
-            const finalPrompt = `${systemPrompt}\n\n${contextPrompt}`;
+            const finalPrompt = `${systemPrompt} \n\n${contextPrompt} `;
             const aiResult = await this.ai.reformat(finalPrompt, userQuery, topResult.content);
             answer = aiResult?.response ?? topResult.content;
 
@@ -201,7 +200,7 @@ export class AiQueryService {
         });
 
         this.logger.log(
-            `🤖 AI Query: "${userQuery.slice(0, 60)}" → ${confidence} (${topResult?.similarity?.toFixed(3) ?? 'n/a'}) [Src: ${topResult?.sourceType}]`,
+            `🤖 AI Query: "${userQuery.slice(0, 60)}" → ${confidence} (${topResult?.similarity?.toFixed(3) ?? 'n/a'})[Src: ${topResult?.sourceType}]`,
         );
 
         const finalResult: AiQueryResult = {
@@ -263,7 +262,7 @@ export class AiQueryService {
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
         const queryHash = createHash('sha256').update(userQuery + isStaff).digest('hex');
-        const cacheKey = `ai:query:stream_cache:${queryHash}`;
+        const cacheKey = `ai: query: stream_cache:${queryHash} `;
         const cached = await this.redis.get(cacheKey);
 
         if (cached) {
@@ -295,7 +294,7 @@ export class AiQueryService {
                 userQuery,
                 kbContent: topResult.content,
             });
-            const finalPrompt = `${systemPrompt}\n\n${contextPrompt}`;
+            const finalPrompt = `${systemPrompt} \n\n${contextPrompt} `;
             usedPrompt = finalPrompt;
 
             const stream = this.ai.streamReformat(finalPrompt, userQuery, topResult.content);
@@ -354,12 +353,12 @@ export class AiQueryService {
         if (!userId) return false;
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            select: { role: true }
+            select: { role: { select: { name: true } } }
         });
 
-        if (!user) return false;
-        // Staff are all roles except VIEWER (customer)
-        return user.role !== SystemRole.VIEWER;
+        if (!user || !user.role) return false;
+        // Staff are all roles except customer
+        return user.role.name !== 'customer';
     }
     @OnEvent('ai.translate_message', { async: true })
     async handleTranslationRequest(payload: { ticketId: string; messageId: string; targetLanguage: string }) {
@@ -382,7 +381,7 @@ export class AiQueryService {
                         }
                     }
                 });
-                this.logger.log(`🌍 Translated message ${message.id} to ${payload.targetLanguage}`);
+                this.logger.log(`🌍 Translated message ${message.id} to ${payload.targetLanguage} `);
             }
         } catch (error: any) {
             this.logger.error(`❌ Translation failed for message ${payload.messageId}`, error.stack);
@@ -496,15 +495,15 @@ export class AiQueryService {
         });
 
         const conversation = ticket.messages.map(m =>
-            `${m.sender?.fullName || 'Sistem'}: ${m.message}`
+            `${m.sender?.fullName || 'Sistem'}: ${m.message} `
         ).join('\n');
 
-        const prompt = `Görevin: Aşağıdaki destek talebi yazışmalarını ajanlar için kısa (en fazla 3-4 cümle) ve profesyonel şekilde özetlemek.
-Konu: ${ticket.subject}
+        const prompt = `Görevin: Aşağıdaki destek talebi yazışmalarını ajanlar için kısa(en fazla 3 - 4 cümle) ve profesyonel şekilde özetlemek.
+    Konu: ${ticket.subject}
 Yazışmalar:
 ${conversation}
 
-Özetle ve en kritik noktaları belirt:`;
+Özetle ve en kritik noktaları belirt: `;
 
         const result = await this.ai.reformat('', 'Lütfen bu talebi özetle.', prompt);
         return result?.response ?? 'Özet oluşturulamadı.';
@@ -531,25 +530,25 @@ ${conversation}
             let contextStr = '';
 
             if (pastMatches.length > 0) {
-                contextStr += '\nBENZER GEÇMİŞ BİLETLER:\n' + pastMatches.map(m => `- ${m.subject}`).join('\n');
+                contextStr += '\nBENZER GEÇMİŞ BİLETLER:\n' + pastMatches.map(m => `- ${m.subject} `).join('\n');
             }
             if (kbMatches.length > 0) {
-                contextStr += '\nBİLGİ HAVUZU REFERANSLARI:\n' + kbMatches.map(m => `- ${m.title}`).join('\n');
+                contextStr += '\nBİLGİ HAVUZU REFERANSLARI:\n' + kbMatches.map(m => `- ${m.title} `).join('\n');
             }
 
             if (hotinfoContext) {
                 const h = hotinfoContext;
-                contextStr += `\nMÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO):`;
-                contextStr += `\n- Allplan: ${h.allplanVersion}${h.allplanEdition ? ` (${h.allplanEdition})` : ''}${h.allplanHotfix ? ` Hotfix: ${h.allplanHotfix}` : ''}`;
-                contextStr += `\n- OS: ${h.osVersion}`;
-                contextStr += `\n- CPU: ${h.cpu}`;
-                contextStr += `\n- GPU: ${h.gpu}${h.gpuDriverVersion ? ` (Driver: ${h.gpuDriverVersion})` : ''}${h.openglVersion ? ` OpenGL: ${h.openglVersion}` : ''}`;
-                contextStr += `\n- RAM: ${h.ram}${h.vram ? ` | VRAM: ${h.vram}` : ''}`;
-                if (h.screenResolution) contextStr += `\n- Çözünürlük: ${h.screenResolution}`;
-                if (h.diskInfo) contextStr += `\n- Disk: ${h.diskInfo}`;
-                if (h.licenseType) contextStr += `\n- Lisans: ${h.licenseType}`;
-                if (h.dotnetVersion) contextStr += `\n- .NET: ${h.dotnetVersion}`;
-                if (h.installedModules?.length) contextStr += `\n- Modüller: ${h.installedModules.join(', ')}`;
+                contextStr += `\nMÜŞTERİ SİSTEM BİLGİLERİ(HOTINFO): `;
+                contextStr += `\n - Allplan: ${h.allplanVersion}${h.allplanEdition ? ` (${h.allplanEdition})` : ''}${h.allplanHotfix ? ` Hotfix: ${h.allplanHotfix}` : ''} `;
+                contextStr += `\n - OS: ${h.osVersion} `;
+                contextStr += `\n - CPU: ${h.cpu} `;
+                contextStr += `\n - GPU: ${h.gpu}${h.gpuDriverVersion ? ` (Driver: ${h.gpuDriverVersion})` : ''}${h.openglVersion ? ` OpenGL: ${h.openglVersion}` : ''} `;
+                contextStr += `\n - RAM: ${h.ram}${h.vram ? ` | VRAM: ${h.vram}` : ''} `;
+                if (h.screenResolution) contextStr += `\n - Çözünürlük: ${h.screenResolution} `;
+                if (h.diskInfo) contextStr += `\n - Disk: ${h.diskInfo} `;
+                if (h.licenseType) contextStr += `\n - Lisans: ${h.licenseType} `;
+                if (h.dotnetVersion) contextStr += `\n - .NET: ${h.dotnetVersion} `;
+                if (h.installedModules?.length) contextStr += `\n - Modüller: ${h.installedModules.join(', ')} `;
                 contextStr += '\n';
             }
 
@@ -560,7 +559,7 @@ ${allowedTags.join(', ')}
 ${contextStr}
 MÜŞTERİ TALEBİ:
 ${text.substring(0, 1000)}
-SADECE en uygun kategori adını yaz. Hiçbiri uymuyorsa "GENEL" yaz.`;
+SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
 
             const result = await this.ai.reformat('Sen akıllı bir etiketleme asistanısın. Sadece tek kelime/kalıp dönersin.', 'Analiz et', prompt);
 
@@ -574,7 +573,7 @@ SADECE en uygun kategori adını yaz. Hiçbiri uymuyorsa "GENEL" yaz.`;
             }
             return { tags: [] };
         } catch (error: any) {
-            this.logger.error(`Error in smartTagTicket: ${error.message}`);
+            this.logger.error(`Error in smartTagTicket: ${error.message} `);
             return { tags: [] };
         }
     }

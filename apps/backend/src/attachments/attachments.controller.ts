@@ -4,43 +4,35 @@ import {
     UseInterceptors,
     UploadedFile,
     Param,
-    Body,
     UseGuards,
-    Request,
+    Get,
+    NotFoundException,
+    Res,
     ParseFilePipe,
     MaxFileSizeValidator,
     FileTypeValidator,
-    Get,
-    Res,
-    NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 import { AttachmentsService } from './attachments.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { RequirePermissions } from '../rbac/decorators/rbac.decorators';
+import { StorageService } from '../common/services/storage.service';
 import { Response } from 'express';
-import { join } from 'path';
-import { existsSync } from 'fs';
 
 @Controller('attachments')
 @UseGuards(RbacGuard)
 export class AttachmentsController {
-    constructor(private readonly attachmentsService: AttachmentsService) { }
+    constructor(
+        private readonly attachmentsService: AttachmentsService,
+        private readonly storageService: StorageService,
+    ) { }
 
     @Post('upload/:messageId')
     @RequirePermissions('ticket:update')
     @UseInterceptors(
         FileInterceptor('file', {
-            storage: diskStorage({
-                destination: './uploads/attachments',
-                filename: (req, file, callback) => {
-                    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-                    const ext = extname(file.originalname);
-                    callback(null, `${uniqueSuffix}${ext}`);
-                },
-            }),
+            storage: memoryStorage(), // Use memory storage so we can stream to MinIO
         }),
     )
     async uploadFile(
@@ -55,12 +47,15 @@ export class AttachmentsController {
         )
         file: Express.Multer.File,
     ) {
+        // Upload to MinIO/S3 object storage
+        const storageKey = await this.storageService.uploadFile(file, 'attachments');
+
         return this.attachmentsService.create({
             messageId,
             fileName: file.originalname,
             fileSize: file.size,
             mimeType: file.mimetype,
-            url: file.path, // or filename if we want relative
+            url: storageKey, // Store the object key, not a local path
         });
     }
 
@@ -68,12 +63,11 @@ export class AttachmentsController {
     @RequirePermissions('ticket:read')
     async download(@Param('id') id: string, @Res() res: Response) {
         const attachment = await this.attachmentsService.findOne(id);
-        const filePath = join(process.cwd(), attachment.url);
 
-        if (!existsSync(filePath)) {
-            throw new NotFoundException('File not found on disk');
-        }
+        // Generate a presigned URL from MinIO/S3
+        const downloadUrl = await this.storageService.getDownloadUrl(attachment.url);
 
-        return res.download(filePath, attachment.fileName);
+        // Redirect to the presigned URL
+        return res.redirect(downloadUrl);
     }
 }

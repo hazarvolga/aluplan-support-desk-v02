@@ -12,7 +12,6 @@ import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { SystemRole } from '@aluplan/database';
 import { RedisService } from '../redis/redis.service';
 import { EmailService } from '../email/email.service';
 
@@ -103,13 +102,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         if (!ticket) return { error: 'Ticket not found' };
 
         const isCreator = ticket.userId === client.data.userId;
-        const isAgent = [
-            SystemRole.ADMIN,
-            SystemRole.DEPARTMENT_MANAGER,
-            SystemRole.TEAM_LEAD,
-            SystemRole.SENIOR_AGENT,
-            SystemRole.AGENT
-        ].includes(client.data.role);
+        const isAgent = client.data.role && client.data.role !== 'customer';
 
         if (!isCreator && !isAgent) {
             return { error: 'Unauthorized' };
@@ -168,17 +161,11 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     // ─── EMIT METHODS (called from services) ────────────────
 
     async emitTicketCreated(ticket: any) {
-        // Find users with agent roles
+        // Find users with agent roles (not customer)
         const potentialAgents = await this.prisma.user.findMany({
             where: {
                 role: {
-                    in: [
-                        SystemRole.ADMIN,
-                        SystemRole.DEPARTMENT_MANAGER,
-                        SystemRole.TEAM_LEAD,
-                        SystemRole.SENIOR_AGENT,
-                        SystemRole.AGENT
-                    ]
+                    name: { not: 'customer' }
                 }
             },
             select: { id: true }
@@ -197,8 +184,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             });
         }
 
-        // Notify all agents/managers via their standard rooms
-        this.server.to(`role:${SystemRole.ADMIN}`).to(`role:${SystemRole.DEPARTMENT_MANAGER}`).to(`role:${SystemRole.TEAM_LEAD}`).emit('ticket:created', {
+        // Notify admin/manager/team-lead rooms via JWT role names
+        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').emit('ticket:created', {
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
             subject: ticket.subject,
@@ -222,8 +209,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         }
 
         this.server.to(`ticket:${ticket.id}`).emit('ticket:updated', ticket);
-        // Also broadcast to dashboard subscribers
-        this.server.to(`role:${SystemRole.ADMIN}`).to(`role:${SystemRole.DEPARTMENT_MANAGER}`).emit('ticket:status_changed', {
+        this.server.to('role:admin').to('role:department-manager').emit('ticket:status_changed', {
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
             status: ticket.status,
@@ -233,8 +219,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     emitTicketEscalated(ticket: any) {
         // High-priority broadcast to managers
         this.server
-            .to(`role:${SystemRole.ADMIN}`)
-            .to(`role:${SystemRole.DEPARTMENT_MANAGER}`)
+            .to('role:admin')
+            .to('role:department-manager')
             .emit('ticket:escalated', {
                 id: ticket.id,
                 ticketNumber: ticket.ticketNumber,
@@ -245,7 +231,11 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     async emitSlaBreached(ticket: any) {
         const managers = await this.prisma.user.findMany({
-            where: { role: { in: [SystemRole.ADMIN, SystemRole.DEPARTMENT_MANAGER] } },
+            where: {
+                role: {
+                    name: { in: ['admin', 'super-admin', 'department-manager'] }
+                }
+            },
             select: { id: true }
         });
         const userIds = new Set(managers.map(a => a.id));
@@ -264,8 +254,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         }
 
         this.server
-            .to(`role:${SystemRole.ADMIN}`)
-            .to(`role:${SystemRole.DEPARTMENT_MANAGER}`)
+            .to('role:admin')
+            .to('role:department-manager')
             .to(`user:${ticket.assignedTo}`)
             .emit('ticket:sla_breach', {
                 id: ticket.id,
@@ -283,11 +273,10 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     }
 
     emitBulkUpdate(ticketIds: string[]) {
-        // Notify all agents/managers that multiple tickets changed
         this.server
-            .to(`role:${SystemRole.ADMIN}`)
-            .to(`role:${SystemRole.DEPARTMENT_MANAGER}`)
-            .to(`role:${SystemRole.TEAM_LEAD}`)
+            .to('role:admin')
+            .to('role:department-manager')
+            .to('role:team-lead')
             .emit('tickets:bulk_updated', { ticketIds });
     }
 }
