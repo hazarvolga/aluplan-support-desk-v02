@@ -75,7 +75,7 @@ export class SettingsService {
             try {
                 plaintext = this.crypto.decrypt(setting.value);
             } catch (error: any) {
-                this.logger.warn(`❌ Decryption failed for setting: ${key}. ENCRYPTION_KEY mismatch or corrupt data? Error: ${error.message}`);
+                this.logger.warn(`❌ Decryption failed for setting: ${key}. This usually means ENCRYPTION_KEY has changed or data is corrupt. ACTION: Please re-save this setting in the Admin Panel to update the encryption. Error: ${error.message}`);
                 plaintext = ''; // Return empty fallback so UI doesn't break
             }
         }

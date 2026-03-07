@@ -29,8 +29,9 @@ export class AnnouncementTemplatesService {
       });
 
       for (const t of currentTemplates) {
-        // Improved regex for broader emoji/symbol coverage
-        const cleanName = t.name.replace(/([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDDFF]|\uD83E[\uDD10-\uDDFF]|[\u2011-\u26FF]|\uD83C[\uDDE6-\uDDFF])/g, '').trim();
+        // Improved regex for broader emoji/symbol coverage + normalize en/em dashes to simple hyphen
+        let cleanName = t.name.replace(/([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDDFF]|\uD83E[\uDD10-\uDDFF]|[\u2011-\u26FF]|\uD83C[\uDDE6-\uDDFF])/g, '');
+        cleanName = cleanName.replace(/[\u2013\u2014]/g, '-').replace(/\s+/g, ' ').trim();
 
         if (cleanName !== t.name) {
           try {
@@ -40,12 +41,12 @@ export class AnnouncementTemplatesService {
               data: { name: cleanName }
             });
           } catch (updateError) {
-            // Handle uniqueness collision (e.g. if two templates now have the same clean name)
+            // Uniqueness collision: Delete the one currently being processed since it's now a duplicate
             this.logger.warn(`Collision detected during normalization for "${t.name}". Deleting duplicate.`);
             try {
               await this.prisma.announcementTemplate.delete({ where: { id: t.id } });
             } catch (deleteError) {
-              this.logger.warn(`Could not delete duplicate "${t.name}" (already deleted?)`);
+              this.logger.warn(`Could not delete duplicate "${t.name}" (${deleteError.message})`);
             }
           }
         }

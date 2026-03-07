@@ -27,9 +27,19 @@ export class GenericOpenAiService implements AiProvider {
         return val ?? null;
     }
 
+    private getProviderDefaultModel(baseUrl: string): string {
+        if (baseUrl.includes('groq.com')) return 'llama-3.3-70b-versatile';
+        if (baseUrl.includes('deepseek.com')) return 'deepseek-chat';
+        if (baseUrl.includes('x.ai') || baseUrl.includes('grok.com')) return 'grok-2-latest';
+        return 'gpt-4o-mini';
+    }
+
     private async getModel(): Promise<string> {
-        return (await this.settings.getValue(`${this.providerPrefix}.chat_model`)) ??
-            'gpt-4o-mini';
+        const customModel = await this.settings.getValue(`${this.providerPrefix}.chat_model`);
+        if (customModel) return customModel;
+
+        const baseUrl = await this.getBaseUrl();
+        return this.getProviderDefaultModel(baseUrl || '');
     }
 
     private async getEmbedModel(): Promise<string> {
