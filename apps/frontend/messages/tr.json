@@ -1,0 +1,197 @@
+{
+    "common": {
+        "dashboard": "Panel",
+        "tickets": "Biletler",
+        "settings": "Ayarlar",
+        "logout": "Çıkış Yap",
+        "loading": "Yükleniyor...",
+        "error": "Bir hata oluştu",
+        "save": "Kaydet",
+        "cancel": "İptal",
+        "unknown": "Bilinmiyor",
+        "individual": "Bireysel",
+        "system": "SİSTEM",
+        "anonymous": "İSİMSİZ"
+    },
+    "dashboard": {
+        "title": "Kontrol Merkezi",
+        "telemetry_version": "Aluplan Enterprise Telemetri — Version 2.4.0",
+        "system_active": "Sistem Aktif",
+        "user_portal": "KULLANICI_PORTALI",
+        "user_identity": "Kimlik: {name} | Erişim_Seviyesi: {level}",
+        "access_level_standard": "Standart",
+        "stats": {
+            "active_tickets": "AKTİF_TALEPLER",
+            "resolved_tickets": "ÇÖZÜMLENEN_TALEPLER",
+            "avg_response": "ORT_YANIT_SÜRESİ",
+            "sla_violations": "SLA_İHLALLERİ",
+            "daily_resolved": "GÜNLÜK_ÇÖZÜMLENEN",
+            "ai_confidence": "YSA_GÜVEN_ORT",
+            "status_stable": "Stabil"
+        },
+        "knowledge_base": {
+            "title": "BİLGİ_BANKASI_SORGULA",
+            "description": "Kayıtlı çözümlere ve bilinen iş akışlarına erişin.",
+            "cta": "KAYITLARI_İNCELE"
+        },
+        "ai_diagnostic": {
+            "title": "YSA_DİAGNOSTİK",
+            "description": "Hızlı teknik yönlendirme için yapay zeka analizini başlatın.",
+            "cta": "OTURUMU_BAŞLAT"
+        },
+        "actions": {
+            "create_ticket": "YENİ_TALEP_OLUŞTUR",
+            "manage_queue": "KUYRUĞU_YÖNET",
+            "neural_analysis": "NÖRAL_ANALİZ"
+        },
+        "sections": {
+            "priority_distribution": "TALEP_KRİTİKLİK_DAĞILIMI",
+            "system_telemetry": "SİSTEM_TELEMETRİSİ",
+            "quick_access": "HIZLI_ERİŞİM"
+        },
+        "priorities": {
+            "URGENT": "ACİL",
+            "HIGH": "YÜKSEK",
+            "MEDIUM": "ORTA",
+            "LOW": "DÜŞÜK"
+        }
+    },
+    "sidebar": {
+        "app_subtitle": "Destek Masası",
+        "logout": "Güvenli Çıkış",
+        "nav": {
+            "dashboard": "Kontrol Paneli",
+            "overview": "Genel Bakış",
+            "tickets": "Bilet Kuyruğu",
+            "my_tickets": "Destek Taleplerim",
+            "kb_section": "BİLGİ BANKASI",
+            "articles": "Makaleler",
+            "ai_approvals": "AI Onayları",
+            "kp_section": "BİLGİ HAVUZU",
+            "data_sources": "Veri Kaynakları",
+            "learning_loop": "Öğrenme Döngüsü",
+            "topology": "Sistem Topolojisi",
+            "system_section": "SİSTEM",
+            "ai_config": "AI Yapılandırması",
+            "customers": "Müşteriler",
+            "crm": "CRM Yönetimi",
+            "products": "Ürünler & Modüller",
+            "teams": "Destek Ekiplerim",
+            "announcements": "Duyurular",
+            "emails": "E-Postalar",
+            "email_validation": "E-Posta Doğrulama",
+            "users": "Kullanıcı Yönetimi",
+            "settings": "Ayarlar",
+            "help": "Yardım & Destek",
+            "profile": "Profilim",
+            "account": "Hesabım",
+            "ai_assistant": "YSA Asistanı"
+        }
+    },
+    "tickets": {
+        "title": "Talep Yönetimi",
+        "subtitle": "Aktif destek talepleri ve SLA performans takibi",
+        "filters": {
+            "all": "Tüm Talepler"
+        },
+        "bulk": {
+            "selected": "Seçili_Talepler",
+            "start_process": "Süreci_Başlat",
+            "resolve_all": "Hepsini_Çöz",
+            "success": "SİSTEM_KOMUTU_BAŞARILI: {count}_KAYIT_GÜNCELLENDİ",
+            "error": "SİSTEM_KOMUTU_HATASI: {message}"
+        },
+        "table": {
+            "loading": "Veri_Protokolü_Bekleniyor",
+            "empty": "Kuyruk_Boş",
+            "header": {
+                "system_id": "Sistem_ID",
+                "company": "Firma",
+                "customer": "Müşteri",
+                "subject": "Olay_Tanımı",
+                "status": "Durum",
+                "priority": "Kritiklik",
+                "timestamp": "Zaman_Damgası"
+            },
+            "badges": {
+                "kb_sync": "KB_SYNC",
+                "sla_vio": "SLA_VIO"
+            }
+        },
+        "status": {
+            "NEW": "YENİ",
+            "OPEN": "AÇIK",
+            "IN_PROGRESS": "İŞLEMDE",
+            "PENDING_CUSTOMER": "BEKLEMEDE",
+            "PENDING_CUSTOMER_REVIEW": "ONAY_BEKLENİYOR",
+            "RESOLVED": "ÇÖZÜLDÜ",
+            "CLOSED": "KAPALI"
+        },
+        "priority": {
+            "LOW": "DÜŞÜK",
+            "MEDIUM": "ORTA",
+            "HIGH": "YÜKSEK",
+            "URGENT": "ACİL"
+        },
+        "detail": {
+            "not_found": "Talep Bulunamadı",
+            "not_found_desc": "İstediğiniz talep silinmiş veya erişim yetkiniz olmayabilir.",
+            "ticket_id": "TALEP_{id}",
+            "started_by": "BAŞLATAN: {name}",
+            "timestamp": "ZD: {date}",
+            "finish_resolution": "ÇÖZÜMLEMEYİ_TAMAMLA",
+            "summarizing": "ÖZETLENİYOR...",
+            "ai_summary_btn": "YSA_ÖZETİ",
+            "drafting": "TASLAK_HAZIRLANIYOR...",
+            "ai_draft_btn": "YSA_TASLAĞI",
+            "start_live_support": "CANLI_DESTEK_BAŞLAT",
+            "request_live_chat": "CANLI_SOHBET_TALEP_ET",
+            "waiting_agent": "TEMSİLCİ_ONAYI_BEKLENİYOR...",
+            "customer_waiting_live": "MÜŞTERİ_CANLI_DESTEK_BEKLİYOR",
+            "start_conversation": "GÖRÜŞMEYİ_BAŞLAT",
+            "live_session_active": "CANLI_OTURUM_AKTİF",
+            "review_pending_title": "TALEP_ÇÖZÜM_ONAYI_BEKLENİYOR",
+            "review_pending_desc": "Kanalı kapatmak için lütfen çözüm performansını değerlendirin.",
+            "feedback_placeholder": "OPERASYONEL_GERİ_BİLDİRİM_EKLE (OPSİYONEL)",
+            "saving": "KAYDEDİLİYOR...",
+            "save_and_close": "GERİ_BİLDİRİMİ_KAYDET_&_KAPAT",
+            "customer_verification_pending": "MÜŞTERİ_DOĞRULAMASI_BEKLENİYOR",
+            "auto_sync_active": "Durum: İNCELEME_BEKLENİYOR | +4 Puan için Oto-Senk aktif",
+            "debug_reject": "HATA_AYIKLA:REDDET(2)",
+            "debug_approve": "HATA_AYIKLA:ONAYLA(5)",
+            "ai_summary_record": "YSA_ÖZET_KAYDI",
+            "sending": "İLETİLİYOR...",
+            "secure_chat": "GÜVENLİ_CHAT",
+            "send_placeholder": "MESAJI_İLET...",
+            "metadata_title": "TALEP_METADATASI",
+            "label_status": "DURUM",
+            "label_channel": "KANAL",
+            "label_priority": "KRİTİKLİK",
+            "label_created": "A. TARİHİ",
+            "label_assignee": "ATANAN_YETKİLİ",
+            "unassigned": "ATANMAMIŞ",
+            "hotfix_data": "HOTFIX_VERİLERİ",
+            "security_warning_title": "GÜVENLİK_UYARISI",
+            "security_warning_desc": "OPERASYONEL_GÜVENLİK_ZORUNLUDUR. ERİŞİM_BİLGİLERİNİ_VEYA_SİSTEM_YETKİLERİNİ_ASLA_PAYLAŞMAYIN. İLETİLERDEKİ_HASSAS_VERİLERİ_TEMİZLEYİN.",
+            "load_error": "Talep yüklenemedi",
+            "live_request_success": "Canlı destek talebi iletildi",
+            "live_start_success": "Canlı sohbet başlatıldı",
+            "chat_update_error": "Sohbet durumu güncellenemedi",
+            "live_accept_success": "Canlı sohbet kabul edildi",
+            "chat_start_error": "Sohbet başlatılamadı",
+            "send_error": "Mesaj gönderilemedi: {error}",
+            "summary_success": "Yapay zeka özeti oluşturuldu",
+            "summary_error": "Özet oluşturulurken hata",
+            "draft_success": "Yapay zeka yanıt taslağı oluşturdu",
+            "draft_error": "Taslak oluşturulamadı: {error}",
+            "review_success": "Talep onaya gönderildi (Müşteri Doğrulaması Bekleniyor)",
+            "status_update_error": "Durum değiştirilemedi",
+            "feedback_sent": "Müşteri {score}/5 puanı ile değerlendirme yaptı.",
+            "feedback_error": "Test değerlendirmesi gönderilemedi.",
+            "csat_success": "{score}/5 puanı ile değerlendirme yaptınız. Bilet kapatıldı, teşekkürler!",
+            "csat_error": "Değerlendirme gönderilemedi.",
+            "resolved_comment": "Sorunum tamamen çözüldü, teşekkürler.",
+            "pending_comment": "Hala eksikler var."
+        }
+    }
+}

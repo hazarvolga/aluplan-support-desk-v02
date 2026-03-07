@@ -31,20 +31,45 @@ export const viewport: Viewport = {
     themeColor: '#00FFD1', // Cyan Active
 };
 
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
+import { notFound } from 'next/navigation';
+import { routing } from '@/i18n/routing';
+
 import { AuthProvider } from '@/components/auth/role-guard';
 import { CommandMenu } from '@/components/command-menu';
 import { Toaster } from '@/components/ui/toaster';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({
+    children,
+    params
+}: {
+    children: React.ReactNode;
+    params: Promise<{ locale: string }>;
+}) {
+    const { locale } = await params;
+
+    // Ensure that the incoming `locale` is valid
+    if (!routing.locales.includes(locale as any)) {
+        notFound();
+    }
+
+    // Providing all messages to the client
+    // side is the easiest way to get started
+    const messages = await getMessages();
+
     return (
-        <html lang="tr" suppressHydrationWarning className={`${dmSans.variable} ${mono.variable} ${condensed.variable}`}>
+        <html lang={locale} suppressHydrationWarning className={`${dmSans.variable} ${mono.variable} ${condensed.variable}`}>
             <body suppressHydrationWarning className="antialiased min-h-screen">
-                <AuthProvider>
-                    {children}
-                    <CommandMenu />
-                    <Toaster />
-                </AuthProvider>
+                <NextIntlClientProvider messages={messages}>
+                    <AuthProvider>
+                        {children}
+                        <CommandMenu />
+                        <Toaster />
+                    </AuthProvider>
+                </NextIntlClientProvider>
             </body>
         </html>
     );
 }
+

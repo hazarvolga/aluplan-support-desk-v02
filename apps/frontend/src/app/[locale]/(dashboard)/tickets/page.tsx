@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useTranslations, useLocale } from 'next-intl';
 
 const STATUS_COLORS: Record<string, string> = {
     NEW: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -61,6 +62,9 @@ const CHANNEL_COLORS: Record<string, string> = {
 };
 
 export default function TicketsPage() {
+    const t = useTranslations('tickets');
+    const tc = useTranslations('common');
+    const locale = useLocale();
     const [tickets, setTickets] = useState<any[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -103,11 +107,11 @@ export default function TicketsPage() {
         setBulkLoading(true);
         try {
             await api.tickets.bulkUpdate({ ticketIds: selectedIds, status });
-            toast.success(`SİSTEM_KOMUTU_BAŞARILI: ${selectedIds.length}_KAYIT_GÜNCELLENDİ`);
+            toast.success(t('bulk.success', { count: selectedIds.length }));
             setSelectedIds([]);
             load();
         } catch (err: any) {
-            toast.error(`SİSTEM_KOMUTU_HATASI: ${err.message}`);
+            toast.error(t('bulk.error', { message: err.message }));
         } finally {
             setBulkLoading(false);
         }
@@ -125,10 +129,10 @@ export default function TicketsPage() {
                         <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                             <Ticket className="h-6 w-6 text-primary" />
                         </div>
-                        Talep Yönetimi
+                        {t('title')}
                     </h2>
                     <p className="text-sm text-muted-foreground mt-1 ml-14 font-medium opacity-70">
-                        Aktif destek talepleri ve SLA performans takibi
+                        {t('subtitle')}
                     </p>
                 </div>
 
@@ -140,9 +144,9 @@ export default function TicketsPage() {
                             onChange={(e) => setFilter(e.target.value)}
                             className="pl-9 pr-8 h-9 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-widest text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer hover:bg-white/10"
                         >
-                            <option value="" className="bg-slate-900">Tüm Talepler</option>
+                            <option value="" className="bg-slate-900">{t('filters.all')}</option>
                             {Object.keys(STATUS_COLORS).map((s) => (
-                                <option key={s} value={s} className="bg-slate-900">{s.replace(/_/g, ' ')}</option>
+                                <option key={s} value={s} className="bg-slate-900">{t(`status.${s}`)}</option>
                             ))}
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -155,7 +159,7 @@ export default function TicketsPage() {
                 {Object.entries(STATUS_COLORS).slice(0, 5).map(([status, style]) => (
                     <div key={status} className="flex flex-col min-w-[140px] bg-white/[0.02] border border-white/5 p-3 rounded-xl backdrop-blur-sm group hover:border-emerald-500/20 transition-all">
                         <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">
-                            {status.replace(/_/g, ' ')}
+                            {t(`status.${status}`)}
                         </span>
                         <div className="flex items-baseline gap-2 mt-1">
                             <span className="text-xl font-bold font-mono text-white">--</span>
@@ -179,7 +183,7 @@ export default function TicketsPage() {
                     >
                         <div className="bg-slate-900/90 border border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.1)] px-8 py-4 flex items-center gap-8 backdrop-blur-2xl rounded-2xl">
                             <div className="flex flex-col border-r border-white/10 pr-8">
-                                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em]">Seçili_Talepler</span>
+                                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em]">{t('bulk.selected')}</span>
                                 <span className="text-2xl font-black font-mono leading-none text-white">{selectedIds.length.toString().padStart(2, '0')}</span>
                             </div>
 
@@ -190,7 +194,7 @@ export default function TicketsPage() {
                                     className="h-10 px-5 bg-white/5 border border-white/10 text-[10px] font-bold uppercase hover:bg-amber-500/10 hover:border-amber-500/30 transition-all"
                                 >
                                     {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4 text-amber-500 mr-2" />}
-                                    Süreci_Başlat
+                                    {t('bulk.start_process')}
                                 </Button>
                                 <Button
                                     onClick={() => handleBulkAction('RESOLVED')}
@@ -198,7 +202,7 @@ export default function TicketsPage() {
                                     className="h-10 px-5 bg-white/5 border border-white/10 text-[10px] font-bold uppercase hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all"
                                 >
                                     <CheckCircle2 className="h-4 w-4 text-emerald-500 mr-2" />
-                                    Hepsini_Çöz
+                                    {t('bulk.resolve_all')}
                                 </Button>
                                 <Button
                                     variant="ghost"
@@ -219,12 +223,12 @@ export default function TicketsPage() {
                     {loading ? (
                         <div className="p-20 text-center bg-white/[0.01] min-w-[1000px]">
                             <Loader2 className="inline-block h-8 w-8 text-primary animate-spin" />
-                            <p className="text-[10px] font-bold mt-4 text-muted-foreground uppercase tracking-[0.3em] opacity-40">Veri_Protokolü_Bekleniyor</p>
+                            <p className="text-[10px] font-bold mt-4 text-muted-foreground uppercase tracking-[0.3em] opacity-40">{t('table.loading')}</p>
                         </div>
                     ) : tickets.length === 0 ? (
                         <div className="p-20 text-center min-w-[1000px] opacity-30">
                             <Ticket className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">Kuyruk_Boş</p>
+                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('table.empty')}</p>
                         </div>
                     ) : (
                         <table className="w-full text-left min-w-[1000px]">
@@ -238,13 +242,13 @@ export default function TicketsPage() {
                                             }
                                         </button>
                                     </th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">Sistem_ID</th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">Firma</th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">Müşteri</th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">Olay_Tanımı</th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">Durum</th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">Kritiklik</th>
-                                    <th className="px-6 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-right">Zaman_Damgası</th>
+                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.system_id')}</th>
+                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.company')}</th>
+                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.customer')}</th>
+                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.subject')}</th>
+                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">{t('table.header.status')}</th>
+                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">{t('table.header.priority')}</th>
+                                    <th className="px-6 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-right">{t('table.header.timestamp')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
@@ -276,7 +280,7 @@ export default function TicketsPage() {
                                             <td className="px-4">
                                                 <div className="flex flex-col">
                                                     <span className="text-[12px] font-bold text-slate-300">
-                                                        {t.creator?.customerProfile?.companyName || 'Bireysel'}
+                                                        {t.creator?.customerProfile?.companyName || tc('individual')}
                                                     </span>
                                                 </div>
                                             </td>
@@ -284,7 +288,7 @@ export default function TicketsPage() {
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-[12px] font-medium text-white">
-                                                            {t.creator?.fullName || 'Bilinmiyor'}
+                                                            {t.creator?.fullName || tc('unknown')}
                                                         </span>
                                                         {t.creator?.customerProfile?.contractStatus && (
                                                             <Badge variant="outline" className="text-[8px] font-bold tracking-widest bg-white/5 text-slate-400 border-white/10 uppercase px-1.5 py-0">
@@ -301,30 +305,30 @@ export default function TicketsPage() {
                                                     </span>
                                                     {t.knowledgeBaseAdded && (
                                                         <Badge variant="outline" className="text-[8px] font-bold tracking-widest bg-primary/5 text-primary border-primary/20">
-                                                            KB_SYNC
+                                                            {t('table.badges.kb_sync')}
                                                         </Badge>
                                                     )}
                                                     {t.isSlaBreached && (
                                                         <Badge variant="destructive" className="text-[8px] font-bold tracking-widest animate-pulse">
-                                                            SLA_VIO
+                                                            {t('table.badges.sla_vio')}
                                                         </Badge>
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="px-4 text-center">
                                                 <Badge className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest border-none ${STATUS_COLORS[t.status] ?? 'bg-muted text-muted'}`}>
-                                                    {t.status.replace(/_/g, ' ')}
+                                                    {t(`status.${t.status}`)}
                                                 </Badge>
                                             </td>
                                             <td className="px-4 text-center">
                                                 <div className="flex items-center justify-center">
                                                     <span className={`text-[10px] font-black uppercase italic tracking-tighter ${PRIORITY_COLORS[t.priority] ?? ''}`}>
-                                                        {t.priority}
+                                                        {t(`priority.${t.priority}`)}
                                                     </span>
                                                 </div>
                                             </td>
                                             <td className="px-6 text-right font-mono text-[11px] text-muted-foreground group-hover:text-white transition-colors">
-                                                {new Date(t.createdAt).toLocaleDateString('tr-TR')} {new Date(t.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(t.createdAt).toLocaleDateString(locale)} {new Date(t.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                                             </td>
                                         </tr>
                                     );
@@ -337,3 +341,4 @@ export default function TicketsPage() {
         </motion.div>
     );
 }
+

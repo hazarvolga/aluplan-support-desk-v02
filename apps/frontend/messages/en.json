@@ -1,0 +1,197 @@
+{
+    "common": {
+        "dashboard": "Dashboard",
+        "tickets": "Tickets",
+        "settings": "Settings",
+        "logout": "Logout",
+        "loading": "Loading...",
+        "error": "An error occurred",
+        "save": "Save",
+        "cancel": "Cancel",
+        "unknown": "Unknown",
+        "individual": "Individual",
+        "system": "SYSTEM",
+        "anonymous": "ANONYMOUS"
+    },
+    "dashboard": {
+        "title": "Control Center",
+        "telemetry_version": "Aluplan Enterprise Telemetry — Version 2.4.0",
+        "system_active": "System Active",
+        "user_portal": "USER_PORTAL",
+        "user_identity": "Identity: {name} | Access_Level: {level}",
+        "access_level_standard": "Standard",
+        "stats": {
+            "active_tickets": "ACTIVE_TICKETS",
+            "resolved_tickets": "RESOLVED_TICKETS",
+            "avg_response": "AVG_RESPONSE_TIME",
+            "sla_violations": "SLA_VIOLATIONS",
+            "daily_resolved": "DAILY_RESOLVED",
+            "ai_confidence": "AI_CONFIDENCE_AVG",
+            "status_stable": "Stable"
+        },
+        "knowledge_base": {
+            "title": "QUERY_KNOWLEDGE_BASE",
+            "description": "Access recorded solutions and known workflows.",
+            "cta": "REVIEW_RECORDS"
+        },
+        "ai_diagnostic": {
+            "title": "AI_DIAGNOSTIC",
+            "description": "Start AI analysis for rapid technical guidance.",
+            "cta": "START_SESSION"
+        },
+        "actions": {
+            "create_ticket": "CREATE_NEW_TICKET",
+            "manage_queue": "MANAGE_QUEUE",
+            "neural_analysis": "NEURAL_ANALYSIS"
+        },
+        "sections": {
+            "priority_distribution": "TICKET_PRIORITY_DISTRIBUTION",
+            "system_telemetry": "SYSTEM_TELEMETRY",
+            "quick_access": "QUICK_ACCESS"
+        },
+        "priorities": {
+            "URGENT": "URGENT",
+            "HIGH": "HIGH",
+            "MEDIUM": "MEDIUM",
+            "LOW": "LOW"
+        }
+    },
+    "sidebar": {
+        "app_subtitle": "Support Desk",
+        "logout": "Secure Logout",
+        "nav": {
+            "dashboard": "Control Panel",
+            "overview": "Overview",
+            "tickets": "Ticket Queue",
+            "my_tickets": "My Tickets",
+            "kb_section": "KNOWLEDGE BASE",
+            "articles": "Articles",
+            "ai_approvals": "AI Approvals",
+            "kp_section": "KNOWLEDGE POOL",
+            "data_sources": "Data Sources",
+            "learning_loop": "Learning Loop",
+            "topology": "System Topology",
+            "system_section": "SYSTEM",
+            "ai_config": "AI Configuration",
+            "customers": "Customers",
+            "crm": "CRM Management",
+            "products": "Products & Modules",
+            "teams": "Support Teams",
+            "announcements": "Announcements",
+            "emails": "Emails",
+            "email_validation": "Email Validation",
+            "users": "User Management",
+            "settings": "Settings",
+            "help": "Help & Support",
+            "profile": "My Profile",
+            "account": "My Account",
+            "ai_assistant": "AI Assistant"
+        }
+    },
+    "tickets": {
+        "title": "Ticket Management",
+        "subtitle": "Active support tickets and SLA performance tracking",
+        "filters": {
+            "all": "All Tickets"
+        },
+        "bulk": {
+            "selected": "Selected_Tickets",
+            "start_process": "Start_Process",
+            "resolve_all": "Resolve_All",
+            "success": "SYSTEM_COMMAND_SUCCESS: {count}_RECORDS_UPDATED",
+            "error": "SYSTEM_COMMAND_ERROR: {message}"
+        },
+        "table": {
+            "loading": "Waiting_For_Data_Protocol",
+            "empty": "Queue_Empty",
+            "header": {
+                "system_id": "System_ID",
+                "company": "Company",
+                "customer": "Customer",
+                "subject": "Incident_Description",
+                "status": "Status",
+                "priority": "Priority",
+                "timestamp": "Timestamp"
+            },
+            "badges": {
+                "kb_sync": "KB_SYNC",
+                "sla_vio": "SLA_VIO"
+            }
+        },
+        "status": {
+            "NEW": "NEW",
+            "OPEN": "OPEN",
+            "IN_PROGRESS": "IN_PROGRESS",
+            "PENDING_CUSTOMER": "PENDING",
+            "PENDING_CUSTOMER_REVIEW": "REVIEW_PENDING",
+            "RESOLVED": "RESOLVED",
+            "CLOSED": "CLOSED"
+        },
+        "priority": {
+            "LOW": "LOW",
+            "MEDIUM": "MEDIUM",
+            "HIGH": "HIGH",
+            "URGENT": "URGENT"
+        },
+        "detail": {
+            "not_found": "Ticket Not Found",
+            "not_found_desc": "The ticket you requested may have been deleted or you may not have access.",
+            "ticket_id": "TICKET_{id}",
+            "started_by": "STARTED_BY: {name}",
+            "timestamp": "TS: {date}",
+            "finish_resolution": "FINISH_RESOLUTION",
+            "summarizing": "SUMMARIZING...",
+            "ai_summary_btn": "AI_SUMMARY",
+            "drafting": "DRAFTING...",
+            "ai_draft_btn": "AI_DRAFT",
+            "start_live_support": "START_LIVE_SUPPORT",
+            "request_live_chat": "REQUEST_LIVE_CHAT",
+            "waiting_agent": "WAITING_AGENT_APPROVAL...",
+            "customer_waiting_live": "CUSTOMER_WAITING_LIVE_SUPPORT",
+            "start_conversation": "START_CONVERSATION",
+            "live_session_active": "LIVE_SESSION_ACTIVE",
+            "review_pending_title": "TICKET_RESOLUTION_PENDING_REVIEW",
+            "review_pending_desc": "Please evaluate the resolution performance to close the channel.",
+            "feedback_placeholder": "ADD_OPERATIONAL_FEEDBACK (OPTIONAL)",
+            "saving": "SAVING...",
+            "save_and_close": "SAVE_FEEDBACK_&_CLOSE",
+            "customer_verification_pending": "CUSTOMER_VERIFICATION_PENDING",
+            "auto_sync_active": "Status: REVIEW_PENDING | Auto-Sync active for +4 score",
+            "debug_reject": "DEBUG:REJECT(2)",
+            "debug_approve": "DEBUG:APPROVE(5)",
+            "ai_summary_record": "AI_SUMMARY_RECORD",
+            "sending": "SENDING...",
+            "secure_chat": "SECURE_CHAT",
+            "send_placeholder": "SEND_MESSAGE...",
+            "metadata_title": "TICKET_METADATA",
+            "label_status": "STATUS",
+            "label_channel": "CHANNEL",
+            "label_priority": "PRIORITY",
+            "label_created": "CREATED_AT",
+            "label_assignee": "ASSIGNED_AGENT",
+            "unassigned": "UNASSIGNED",
+            "hotfix_data": "HOTFIX_DATA",
+            "security_warning_title": "SECURITY_WARNING",
+            "security_warning_desc": "OPERATIONAL_SECURITY_MANDATORY. NEVER SHARE ACCESS CREDENTIALS OR SYSTEM PERMISSIONS. CLEAN SENSITIVE DATA FROM MESSAGES.",
+            "load_error": "Failed to load ticket",
+            "live_request_success": "Live support request sent",
+            "live_start_success": "Live chat started",
+            "chat_update_error": "Failed to update chat status",
+            "live_accept_success": "Live chat accepted",
+            "chat_start_error": "Failed to start chat",
+            "send_error": "Failed to send message: {error}",
+            "summary_success": "AI summary created",
+            "summary_error": "Error creating summary",
+            "draft_success": "AI created a response draft",
+            "draft_error": "Failed to create draft: {error}",
+            "review_success": "Ticket sent for review (Waiting for Customer Verification)",
+            "status_update_error": "Failed to change status",
+            "feedback_sent": "Customer provided evaluation with score {score}/5.",
+            "feedback_error": "Failed to send test evaluation.",
+            "csat_success": "You evaluated with {score}/5. Ticket closed, thanks!",
+            "csat_error": "Failed to send evaluation.",
+            "resolved_comment": "My issue is completely resolved, thanks.",
+            "pending_comment": "There are still missing points."
+        }
+    }
+}
