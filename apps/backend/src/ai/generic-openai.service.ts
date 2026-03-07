@@ -39,14 +39,14 @@ export class GenericOpenAiService implements AiProvider {
 
     private validateApiKey(baseUrl: string, apiKey: string) {
         if (!apiKey) return;
-        if (baseUrl.includes('x.ai') && !apiKey.startsWith('xai-')) {
+        if ((baseUrl.includes('x.ai') || baseUrl.includes('grok.com')) && !apiKey.startsWith('xai-')) {
             throw new BadRequestException(
                 `Hatalı xAI API Anahtarı: Anahtarınız 'xai-' ile başlamalıdır. Görünüşe göre başka bir servis anahtarı (örneğin Groq) girilmiş olabilir.`
             );
         }
-        if (baseUrl.includes('groq.com') && !apiKey.startsWith('gsk-')) {
+        if (baseUrl.includes('groq.com') && !apiKey.startsWith('gsk_')) {
             throw new BadRequestException(
-                `Hatalı Groq API Anahtarı: Anahtarınız 'gsk-' ile başlamalıdır. Görünüşe göre başka bir servis anahtarı (örneğin xAI) girilmiş olabilir.`
+                `Hatalı Groq API Anahtarı: Anahtarınız 'gsk_' ile başlamalıdır. Görünüşe göre başka bir servis anahtarı (örneğin xAI) girilmiş olabilir.`
             );
         }
         if (baseUrl.includes('deepseek.com') && !apiKey.startsWith('sk-')) {
