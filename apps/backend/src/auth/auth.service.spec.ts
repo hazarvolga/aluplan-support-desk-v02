@@ -99,7 +99,7 @@ describe('AuthService', () => {
             (bcrypt.genSalt as jest.Mock).mockResolvedValue('salt');
             (bcrypt.hash as jest.Mock).mockResolvedValue('newHash');
 
-            jwt.signAsync.mockImplementation(async (payload) => `token-${payload.role}`);
+            jwt.signAsync.mockImplementation(async (payload: any) => `token-${payload.role}`);
 
             // Act
             const result = await service.login(loginDto);

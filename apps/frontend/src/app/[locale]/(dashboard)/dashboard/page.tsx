@@ -88,7 +88,7 @@ export default function DashboardPage() {
                             {t('user_portal')}
                         </h1>
                         <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-tight">
-                            {t('user_identity', { name: user?.fullName, level: t('access_level_standard') })}
+                            {t('user_identity', { name: user?.fullName || '', level: t('access_level_standard') })}
                         </p>
                     </div>
                 </div>

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
@@ -45,6 +46,7 @@ import * as winston from 'winston';
 
 @Module({
     imports: [
+        SentryModule.forRoot(),
         WinstonModule.forRoot({
             transports: [
                 new winston.transports.Console({

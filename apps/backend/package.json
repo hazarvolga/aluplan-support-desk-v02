@@ -34,6 +34,8 @@
         "@nestjs/throttler": "^6.5.0",
         "@nestjs/websockets": "^11.0.0",
         "@prisma/client": "^7.4.2",
+        "@sentry/nestjs": "^10.42.0",
+        "@sentry/profiling-node": "^10.42.0",
         "@types/cheerio": "^1.0.0",
         "@types/imap-simple": "^4.2.10",
         "@types/mailparser": "^3.4.6",

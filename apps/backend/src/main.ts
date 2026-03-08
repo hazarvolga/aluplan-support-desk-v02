@@ -1,3 +1,8 @@
+// Initialize Sentry BEFORE any other imports so the auto-instrumentation wraps subsequent modules
+import './instrument';
+
+import { SentryGlobalFilter } from '@sentry/nestjs/setup';
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -124,7 +129,7 @@ async function bootstrap() {
     const { httpAdapter } = app.get(require('@nestjs/core').HttpAdapterHost);
     const errorLogger = app.get(require('./common/services/error-logger.service').ErrorLoggerService);
     const { GlobalExceptionFilter } = require('./common/filters/global-exception.filter');
-    app.useGlobalFilters(new GlobalExceptionFilter({ httpAdapter }, errorLogger));
+    app.useGlobalFilters(new GlobalExceptionFilter({ httpAdapter }, errorLogger), new SentryGlobalFilter());
 
 
     // Swagger (only in development)

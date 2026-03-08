@@ -1,4 +1,4 @@
-export const mockPrismaService = {
+export const mockPrismaService: any = {
     user: {
         findUnique: jest.fn(),
         findFirst: jest.fn(),
@@ -32,7 +32,7 @@ export const mockPrismaService = {
         findUnique: jest.fn(),
         findMany: jest.fn(),
     },
-    $transaction: jest.fn((callback) => callback(mockPrismaService)),
+    $transaction: jest.fn((callback: any) => callback(mockPrismaService)),
 };
 
 export const mockConfigService = {
