@@ -42,6 +42,7 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 
 interface CustomerItem {
     id: string;
@@ -84,6 +85,7 @@ type SortField = 'companyName' | 'fullName' | 'jobTitle' | 'email' | 'status' | 
 type SortOrder = 'asc' | 'desc';
 
 export default function CustomersPage() {
+    const t = useTranslations('customers');
     const { toast } = useToast();
     const [customers, setCustomers] = useState<CustomerItem[]>([]);
     const [accounts, setAccounts] = useState<AccountItem[]>([]);
@@ -199,18 +201,18 @@ export default function CustomersPage() {
         try {
             if (isAccounts) {
                 await api.crm.bulkDeleteAccounts(ids);
-                toast({ title: '✅ Başarılı', description: 'Seçilen şirketler silindi.' });
+                toast({ title: '✅ ' + t('toasts.delete_success', { type: '' }), description: t('toasts.delete_success', { type: 'accounts' }) });
                 loadAccounts();
                 setSelectedAccountIds([]);
             } else {
                 await api.customers.bulkDelete(ids);
-                toast({ title: '✅ Başarılı', description: 'Seçilen müşteriler silindi.' });
+                toast({ title: '✅ ' + t('toasts.delete_success', { type: '' }), description: t('toasts.delete_success', { type: 'customers' }) });
                 loadCustomers();
                 setSelectedIds([]);
             }
         } catch (error: any) {
             console.error(error);
-            toast({ variant: 'destructive', title: '❌ Hata', description: 'Silme işlemi başarısız: ' + (error.message || 'Bilinmeyen hata') });
+            toast({ variant: 'destructive', title: '❌ Hata', description: t('toasts.bulk_update_error', { message: error.message || 'Bilinmeyen hata' }) });
         } finally {
             setDeleting(false);
         }
@@ -236,7 +238,7 @@ export default function CustomersPage() {
         setSyncing(true);
         try {
             await api.crm.triggerSync(connectionId);
-            toast({ title: '🔄 Senkronizasyon', description: 'Senkronizasyon işlemi arka planda başlatıldı.' });
+            toast({ title: '🔄 ' + t('sync.trigger_sync'), description: t('toasts.sync_started') });
             loadConnections();
         } catch (error: any) {
             toast({ variant: 'destructive', title: '❌ Hata', description: error.message });
@@ -260,7 +262,7 @@ export default function CustomersPage() {
                 resultMap[r.email] = r;
             });
             setValidationResults(resultMap);
-            toast({ title: '✅ Başarılı', description: `${emailsToVerify.length} e-posta doğrulandı.` });
+            toast({ title: '✅ Başarılı', description: t('toasts.verify_success', { count: emailsToVerify.length }) });
         } catch (error: any) {
             toast({ variant: 'destructive', title: '❌ Hata', description: error.message });
         } finally {
@@ -374,10 +376,10 @@ export default function CustomersPage() {
                         <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
                             <Users className="h-6 w-6 text-blue-500" />
                         </div>
-                        Müşteri Portalı
+                        {t('title')}
                     </h2>
                     <p className="text-sm text-muted-foreground mt-1 ml-14 font-medium opacity-70">
-                        Kurumsal müşteri portföyü ve CRM entegrasyon merkezi
+                        {t('subtitle')}
                     </p>
                 </div>
 
@@ -390,7 +392,7 @@ export default function CustomersPage() {
                             className="h-9 px-4 text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-rose-500/10"
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            {deleting ? 'Siliniyor...' : `${activeTab === 'accounts' ? selectedAccountIds.length : selectedIds.length} Seçiliyi Sil`}
+                            {deleting ? t('actions.deleting') : t('actions.delete_selected', { count: activeTab === 'accounts' ? selectedAccountIds.length : selectedIds.length })}
                         </Button>
                     )}
                     <Button
@@ -399,7 +401,7 @@ export default function CustomersPage() {
                         className="h-9 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-500/20"
                     >
                         {validating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-                        {selectedIds.length > 0 ? `Seçilenleri Doğrula (${selectedIds.length})` : 'Mailleri Doğrula'}
+                        {selectedIds.length > 0 ? t('actions.verify_selected', { count: selectedIds.length }) : t('actions.verify_emails')}
                     </Button>
                     <Button
                         asChild
@@ -408,7 +410,7 @@ export default function CustomersPage() {
                     >
                         <Link href="/customers/import">
                             <Upload className="mr-2 h-4 w-4" />
-                            İçe Aktar
+                            {t('actions.import')}
                         </Link>
                     </Button>
                 </div>
@@ -418,16 +420,16 @@ export default function CustomersPage() {
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2">
                     <TabsList className="bg-white/5 border border-white/5 p-1 rounded-xl h-11 shrink-0">
                         <TabsTrigger value="list" className="rounded-lg px-6 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-                            Müşteriler
+                            {t('tabs.customers')}
                         </TabsTrigger>
                         <TabsTrigger value="accounts" className="rounded-lg px-6 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-                            Hesaplar
+                            {t('tabs.accounts')}
                         </TabsTrigger>
                         <TabsTrigger value="sync" className="rounded-lg px-6 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-                            Senkronizasyon
+                            {t('tabs.sync')}
                         </TabsTrigger>
                         <TabsTrigger value="history" className="rounded-lg px-6 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-                            İşlem Geçmişi
+                            {t('tabs.history')}
                         </TabsTrigger>
                     </TabsList>
 
@@ -435,7 +437,7 @@ export default function CustomersPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-blue-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder="Müşteri veya Şirket Arayın..."
+                            placeholder={t('search.placeholder')}
                             className="w-full pl-10 pr-4 h-11 bg-white/5 border border-white/10 rounded-xl text-[11px] font-bold uppercase tracking-tight text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -456,13 +458,13 @@ export default function CustomersPage() {
                                             className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                         />
                                     </TableHead>
-                                    <SortableHeader field="fullName">Ad Soyad</SortableHeader>
-                                    <SortableHeader field="companyName">Şirket</SortableHeader>
-                                    <SortableHeader field="jobTitle">Ünvan</SortableHeader>
-                                    <SortableHeader field="email">E-posta</SortableHeader>
-                                    <SortableHeader field="industry">Sektör</SortableHeader>
-                                    <SortableHeader field="contractStatus">Müşteri Durumu</SortableHeader>
-                                    <SortableHeader field="status">Hesap Durumu</SortableHeader>
+                                    <SortableHeader field="fullName">{t('table.headers.name')}</SortableHeader>
+                                    <SortableHeader field="companyName">{t('table.headers.company')}</SortableHeader>
+                                    <SortableHeader field="jobTitle">{t('table.headers.title')}</SortableHeader>
+                                    <SortableHeader field="email">{t('table.headers.email')}</SortableHeader>
+                                    <SortableHeader field="industry">{t('table.headers.industry')}</SortableHeader>
+                                    <SortableHeader field="contractStatus">{t('table.headers.customer_status')}</SortableHeader>
+                                    <SortableHeader field="status">{t('table.headers.account_status')}</SortableHeader>
                                     <TableHead className="w-10" />
                                 </TableRow>
                             </TableHeader>
@@ -471,14 +473,14 @@ export default function CustomersPage() {
                                     <TableRow className="border-none">
                                         <TableCell colSpan={8} className="py-20 text-center">
                                             <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto mb-4" />
-                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">Veri Veri Tabanından Çekiliyor</p>
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('table.loading')}</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : filteredAndSortedCustomers.length === 0 ? (
                                     <TableRow className="border-none">
                                         <TableCell colSpan={8} className="py-20 text-center opacity-30">
                                             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">Sonuç Bulunamadı</p>
+                                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('table.empty')}</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -577,11 +579,11 @@ export default function CustomersPage() {
                                             className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                         />
                                     </TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">Şirket Yapısı</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">Sektör / Domain</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">Ekosistem</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">CRM Doğrulama</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 text-right pr-6">Aksiyon</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">{t('accounts.structure')}</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">{t('accounts.industry_domain')}</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">{t('accounts.ecosystem')}</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">{t('accounts.crm_verification')}</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 text-right pr-6">{t('table.headers.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -595,7 +597,7 @@ export default function CustomersPage() {
                                     <TableRow className="border-none">
                                         <TableCell colSpan={6} className="py-20 text-center opacity-30">
                                             <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">HESAP BULUNAMADI</p>
+                                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('accounts.not_found')}</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -633,7 +635,7 @@ export default function CustomersPage() {
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-1.5 text-[11px] font-bold text-white/80">
                                                         <Users className="h-3 w-3 text-blue-500" />
-                                                        {a._count.customers} PROFİL
+                                                        {t('accounts.profiles', { count: a._count.customers })}
                                                     </div>
                                                     <div className="w-24 h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
                                                         <div className="h-full bg-blue-500 w-[65%]" />
@@ -655,7 +657,7 @@ export default function CustomersPage() {
                                             </TableCell>
                                             <TableCell className="pr-6 text-right">
                                                 <Button asChild variant="outline" size="sm" className="h-8 border-white/10 text-[9px] font-bold px-3 hover:bg-blue-500/10 hover:text-blue-400">
-                                                    <Link href={`/customers/accounts/${a.id}`}>DETAYLAR</Link>
+                                                    <Link href={`/customers/accounts/${a.id}`}>{t('accounts.details')}</Link>
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
@@ -670,7 +672,7 @@ export default function CustomersPage() {
                     <AnimatePresence mode="wait">
                         {connectionsLoading ? (
                             <div className="flex items-center justify-center py-20 text-muted-foreground font-mono text-[10px] uppercase tracking-widest italic animate-pulse">
-                                CRM VERİ PROTOKOLLERİ KONTROL EDİLİYOR...
+                                {t('sync.checking')}
                             </div>
                         ) : connections.length === 0 ? (
                             <motion.div
@@ -681,12 +683,12 @@ export default function CustomersPage() {
                                 <div className="h-16 w-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
                                     <Link2 className="h-8 w-8 text-muted-foreground/50" />
                                 </div>
-                                <h3 className="text-xl font-bold mb-2 text-white">CRM Entegrasyonu Yok</h3>
+                                <h3 className="text-xl font-bold mb-2 text-white">{t('sync.no_integration')}</h3>
                                 <p className="text-muted-foreground text-center max-w-md mb-8 text-sm font-medium">
-                                    Dynamics 365 veritabanınızı bağlayarak müşteri ve şirket verilerini otomatik olarak senkronize edin.
+                                    {t('sync.no_integration_desc')}
                                 </p>
                                 <Button asChild className="h-12 px-8 bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-widest text-[11px] rounded-xl shadow-xl shadow-blue-500/10">
-                                    <Link href="/customers/crm">KONTROL MERKEZİNİ YAPILANDIR</Link>
+                                    <Link href="/customers/crm">{t('sync.configure_btn')}</Link>
                                 </Button>
                             </motion.div>
                         ) : (
@@ -719,13 +721,13 @@ export default function CustomersPage() {
                                             <div className="p-8 flex-1 grid grid-cols-1 sm:grid-cols-2 gap-8">
                                                 <div className="space-y-4">
                                                     <div>
-                                                        <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2">Son Transfer</p>
+                                                        <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2">{t('sync.last_transfer')}</p>
                                                         <p className="text-sm font-bold text-white">
-                                                            {conn.lastSyncAt ? new Date(conn.lastSyncAt).toLocaleString('tr-TR') : 'YOK'}
+                                                            {conn.lastSyncAt ? new Date(conn.lastSyncAt).toLocaleString('tr-TR') : t('sync.last_transfer_none')}
                                                         </p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2">Sistem Durumu</p>
+                                                        <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2">{t('sync.system_status')}</p>
                                                         <p className="text-sm font-bold text-blue-400 font-mono">{conn.syncStatus || 'IDLE'}</p>
                                                     </div>
                                                 </div>
@@ -736,11 +738,11 @@ export default function CustomersPage() {
                                                         className="w-full h-11 bg-white/5 border border-white/10 hover:bg-blue-500/10 hover:text-blue-400 hover:border-blue-500/30 text-[10px] font-bold uppercase tracking-widest transition-all"
                                                     >
                                                         <RefreshCw className={`h-4 w-4 mr-2 ${syncing || conn.syncStatus === 'SYNCING' ? 'animate-spin' : ''}`} />
-                                                        Transferi Tetikle
+                                                        {t('sync.trigger_sync')}
                                                     </Button>
                                                     <Button asChild variant="ghost" className="text-[9px] font-bold text-muted-foreground hover:text-white group">
                                                         <Link href="/customers/crm">
-                                                            AYARLARI DÜZENLE <ArrowRight className="h-3 w-3 ml-2 group-hover:translate-x-1 transition-transform" />
+                                                            {t('sync.edit_settings')} <ArrowRight className="h-3 w-3 ml-2 group-hover:translate-x-1 transition-transform" />
                                                         </Link>
                                                     </Button>
                                                 </div>
@@ -777,7 +779,7 @@ export default function CustomersPage() {
                                     <TableRow className="border-none">
                                         <TableCell colSpan={6} className="py-20 text-center opacity-30">
                                             <History className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                                            <p className="text-[10px] font-bold uppercase tracking-widest">Geçmiş Verisi Yok</p>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest">{t('history.no_data')}</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : (

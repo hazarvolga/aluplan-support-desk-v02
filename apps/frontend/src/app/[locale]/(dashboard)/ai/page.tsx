@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 interface QueryResult {
     query: string;
@@ -39,6 +40,7 @@ const CONFIDENCE_COLORS: Record<string, string> = {
 };
 
 export default function AiPage() {
+    const t = useTranslations('ai');
     const [query, setQuery] = useState('');
     const [result, setResult] = useState<QueryResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -75,15 +77,15 @@ export default function AiPage() {
                         <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.1)]">
                             <Bot className="h-6 w-6 text-orange-500" />
                         </div>
-                        AI Destek Navigatörü
+                        {t('title')}
                     </h2>
                     <p className="text-sm text-muted-foreground mt-1 ml-14 font-medium opacity-70">
-                        Birleşik bilgi havuzunda anlamsal zeka sorguları
+                        {t('subtitle')}
                     </p>
                 </div>
 
                 <Badge variant="outline" className="h-7 border-orange-500/20 bg-orange-500/5 text-orange-500 font-bold tracking-widest px-3">
-                    BETA PROTOKOLÜ
+                    {t('beta_protocol')}
                 </Badge>
             </div>
 
@@ -96,7 +98,7 @@ export default function AiPage() {
                             type="text"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Zeka havuzuna bir soru yöneltin..."
+                            placeholder={t('input.placeholder')}
                             className="w-full pl-12 pr-4 h-14 bg-transparent text-white font-bold text-[14px] tracking-tight focus:outline-none placeholder:text-muted-foreground/30"
                         />
                     </div>
@@ -110,7 +112,7 @@ export default function AiPage() {
                         ) : (
                             <>
                                 <Zap className="h-4 w-4 mr-2" />
-                                SORGULA
+                                {t('input.submit')}
                             </>
                         )}
                     </Button>
@@ -130,10 +132,10 @@ export default function AiPage() {
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-3">
                                     <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.8)]" />
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">Yapay Zeka Yanıtı</span>
+                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('response.header')}</span>
                                 </div>
                                 <Badge className={`px-2 py-0.5 font-bold text-[9px] tracking-widest ${CONFIDENCE_COLORS[result.confidence] ?? ''}`}>
-                                    GÜVEN SKORU: {result.confidence}
+                                    {t('response.confidence_score', { confidence: result.confidence })}
                                 </Badge>
                             </div>
 
@@ -147,8 +149,8 @@ export default function AiPage() {
                                     <div className="flex items-start gap-4 p-4 rounded-xl border border-rose-500/20 bg-rose-500/5">
                                         <AlertCircle className="h-6 w-6 text-rose-500 shrink-0 mt-0.5" />
                                         <div>
-                                            <p className="text-rose-500 font-bold uppercase text-[11px] tracking-widest mb-1">VERİ KESİNTİSİ</p>
-                                            <p className="text-muted-foreground text-sm">Mevcut bilgi havuzunda bu sorguyla eşleşen bir veri seti bulunamadı.</p>
+                                            <p className="text-rose-500 font-bold uppercase text-[11px] tracking-widest mb-1">{t('response.data_gap_title')}</p>
+                                            <p className="text-muted-foreground text-sm">{t('response.data_gap_desc')}</p>
                                         </div>
                                     </div>
                                 )}
@@ -166,11 +168,11 @@ export default function AiPage() {
                                             <Target className="h-4 w-4 text-primary" />
                                         </div>
                                         <p className="text-[11px] font-bold text-white uppercase tracking-tight">
-                                            Bu yanıt yeterli değil mi? Bir uzmanla iletişime geçin.
+                                            {t('suggest_ticket.text')}
                                         </p>
                                     </div>
                                     <Button asChild size="sm" className="bg-primary text-primary-foreground text-[10px] font-bold">
-                                        <Link href="/tickets/new">DESTEK TALEBİ OLUŞTUR</Link>
+                                        <Link href="/tickets/new">{t('suggest_ticket.cta')}</Link>
                                     </Button>
                                 </motion.div>
                             )}
@@ -178,7 +180,7 @@ export default function AiPage() {
                             {/* Sources */}
                             {result.sources.length > 0 && (
                                 <div className="mt-8 pt-6 border-t border-white/5">
-                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.4em] mb-4 opacity-50">REFERANS KAYNAKLARI</p>
+                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.4em] mb-4 opacity-50">{t('sources.title')}</p>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         {result.sources.map((s) => (
                                             <div key={s.articleId} className="group/item flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] hover:border-orange-500/20 transition-all cursor-pointer">
@@ -191,7 +193,7 @@ export default function AiPage() {
                                                     </span>
                                                 </div>
                                                 <span className="text-[10px] font-mono text-orange-500/60 font-bold ml-2 shrink-0">
-                                                    %{Math.round(s.similarity * 100)} MATCH
+                                                    {t('sources.match', { percent: Math.round(s.similarity * 100) })}
                                                 </span>
                                             </div>
                                         ))}
@@ -202,10 +204,10 @@ export default function AiPage() {
                             {/* Feedback */}
                             {result.answer && (
                                 <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">DOĞRULUK ANALİZİ</span>
+                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('feedback.title')}</span>
                                     <div className="flex items-center gap-2">
                                         {feedback ? (
-                                            <span className="text-[9px] font-mono text-emerald-500 uppercase font-bold tracking-tighter">PROTOKOL KAYDEDİLDİ. TEŞEKKÜRLER.</span>
+                                            <span className="text-[9px] font-mono text-emerald-500 uppercase font-bold tracking-tighter">{t('feedback.success')}</span>
                                         ) : (
                                             <>
                                                 <Button
@@ -241,12 +243,12 @@ export default function AiPage() {
             {!result && !loading && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-12 opacity-40 grayscale group-hover:grayscale-0 transition-all duration-700">
                     <div className="p-4 rounded-xl border border-white/5 bg-white/[0.01]">
-                        <p className="text-[9px] font-mono text-muted-foreground uppercase mb-2">INFRASTRUCTURE</p>
-                        <p className="text-xs font-bold text-white tracking-widest">Ollama-VEC Compute Node</p>
+                        <p className="text-[9px] font-mono text-muted-foreground uppercase mb-2">{t('system_info.infrastructure')}</p>
+                        <p className="text-xs font-bold text-white tracking-widest">{t('system_info.node')}</p>
                     </div>
                     <div className="p-4 rounded-xl border border-white/5 bg-white/[0.01]">
-                        <p className="text-[9px] font-mono text-muted-foreground uppercase mb-2">LATENCY</p>
-                        <p className="text-xs font-bold text-white tracking-widest"><span className="text-emerald-500 mr-2">●</span>24ms Semantic Lookup</p>
+                        <p className="text-[9px] font-mono text-muted-foreground uppercase mb-2">{t('system_info.latency')}</p>
+                        <p className="text-xs font-bold text-white tracking-widest"><span className="text-emerald-500 mr-2">●</span>{t('system_info.lookup', { ms: 24 })}</p>
                     </div>
                 </div>
             )}

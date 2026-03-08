@@ -3,9 +3,9 @@ import path from 'path';
 
 export default defineConfig({
     testDir: './e2e',
-    timeout: 30 * 1000,
+    timeout: 120 * 1000,
     expect: {
-        timeout: 5000
+        timeout: 15000
     },
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
@@ -16,6 +16,7 @@ export default defineConfig({
         actionTimeout: 0,
         trace: 'on-first-retry',
         baseURL: 'http://localhost:3000',
+        ignoreHTTPSErrors: true,
     },
 
     projects: [

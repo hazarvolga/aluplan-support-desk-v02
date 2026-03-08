@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Coins, Server, Zap, LineChart } from 'lucide-react';
+import { Loader2, Coins, Server, Zap, LineChart, MessageCircle, Globe, Mail } from 'lucide-react';
 import { api } from '@/lib/api';
 
 export function AiTelemetryDashboard() {
@@ -16,8 +16,17 @@ export function AiTelemetryDashboard() {
     const loadMetrics = async () => {
         try {
             setLoading(true);
-            const data = await api.ai.getMetrics();
-            setMetrics(data);
+            const [data, health] = await Promise.allSettled([
+                api.ai.getMetrics(),
+                api.ai.getHealthMetrics?.() ?? Promise.resolve(null),
+            ]);
+            const metricsData = data.status === 'fulfilled' ? data.value : null;
+            const healthData = health.status === 'fulfilled' ? health.value : null;
+            setMetrics({
+                ...metricsData,
+                deflectionRate: healthData?.deflectionRate ?? 0,
+                globalAccuracy: healthData?.aiAccuracy ?? 0,
+            });
         } catch (error) {
             console.error('Failed to load AI telemetry metrics', error);
         } finally {
@@ -100,6 +109,80 @@ export function AiTelemetryDashboard() {
                     </CardContent>
                 </Card>
             </div>
+
+            {metrics.channels && metrics.channels.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                        <CardHeader className="pb-3 border-b">
+                            <CardTitle className="text-sm">Kanal Dağılımı</CardTitle>
+                            <CardDescription className="text-xs">
+                                İsteklerin hangi kanallardan geldiğini görün.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="divide-y">
+                                {metrics.channels.map((c: any, idx: number) => (
+                                    <div key={idx} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-lg ${c.channel === 'WHATSAPP' ? 'bg-emerald-500/10 text-emerald-600' :
+                                                c.channel === 'EMAIL' ? 'bg-blue-500/10 text-blue-600' :
+                                                    'bg-primary/10 text-primary'
+                                                }`}>
+                                                {c.channel === 'WHATSAPP' ? <MessageCircle className="h-4 w-4" /> :
+                                                    c.channel === 'EMAIL' ? <Mail className="h-4 w-4" /> :
+                                                        <Globe className="h-4 w-4" />}
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-bold">{c.channel}</div>
+                                                <div className="text-[10px] text-muted-foreground">{c.requests} İstek</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-sm font-mono">${c.cost.toFixed(4)}</div>
+                                            <div className="text-[10px] text-muted-foreground">{c.tokens.toLocaleString('tr-TR')} Token</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-3 border-b">
+                            <CardTitle className="text-sm">Performans Özeti</CardTitle>
+                            <CardDescription className="text-xs">
+                                AI yanıt kalitesi ve sistem sağlığı.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-4">
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-xs font-medium">
+                                    <span>RAG Doğruluğu (Yüksek Güven)</span>
+                                    <span>{metrics.globalAccuracy || 0}%</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-emerald-500 transition-all duration-500"
+                                        style={{ width: `${metrics.globalAccuracy || 0}%` }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-xs font-medium">
+                                    <span>Talep Savuşturma (Deflection)</span>
+                                    <span>{metrics.deflectionRate || 0}%</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-blue-500 transition-all duration-500"
+                                        style={{ width: `${metrics.deflectionRate || 0}%` }}
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             {sortedProviders.length > 0 && (
                 <Card>

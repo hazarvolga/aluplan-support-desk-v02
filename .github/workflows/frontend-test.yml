@@ -2,43 +2,90 @@ name: Frontend CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'apps/frontend/**'
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'apps/frontend/**'
 
 jobs:
-  test:
+  unit:
+    name: Frontend Unit Tests (Vitest)
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 9.15.4
 
       - name: Setup Node.js
-        uses: actions/core/setup-node@v4
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
-
-      - name: Install Playwright Browsers
-        run: pnpm --filter frontend exec playwright install --with-deps
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm --filter frontend lint
+        run: pnpm --filter @aluplan/frontend lint
 
-      - name: Build
-        run: pnpm --filter frontend build
+      - name: Run Unit Tests with Coverage
+        run: pnpm --filter @aluplan/frontend test:unit:cov
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-unit-coverage
+          path: apps/frontend/coverage/
+
+  e2e:
+    name: Frontend E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    # E2E depends on a running backend+frontend — only runs on main
+    if: github.ref == 'refs/heads/main'
+    needs: [unit]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Browsers
+        run: pnpm --filter @aluplan/frontend exec playwright install --with-deps chromium
+
+      - name: Build Frontend
+        run: pnpm --filter @aluplan/frontend build
 
       - name: Run E2E Tests
-        run: pnpm --filter frontend test:e2e
+        run: pnpm --filter @aluplan/frontend test:e2e
+        env:
+          CI: true
+          NEXT_PUBLIC_API_URL: ${{ vars.STAGING_API_URL || 'http://localhost:4000' }}
+
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/frontend/playwright-report/

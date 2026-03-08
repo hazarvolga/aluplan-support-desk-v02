@@ -29,6 +29,7 @@ export class KnowledgePoolProcessor extends WorkerHost {
         let AnyTurndown: any;
         try {
             // eslint-disable-next-line @typescript-eslint/no-require-imports
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             AnyTurndown = require('turndown');
         } catch (e) {
             this.logger.error(`🚨 Turndown library LOAD FAILURE: ${e.message}`);

@@ -5,11 +5,13 @@ import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Mail, CheckCircle2, XCircle, Clock, RefreshCw, Eye } from 'lucide-react';
+import { Loader2, Mail, CheckCircle2, XCircle, Clock, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 export function EmailLogs() {
+    const t = useTranslations('settings.email.logs');
     const [logs, setLogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
@@ -22,7 +24,7 @@ export function EmailLogs() {
             setLogs(res.data);
             setTotal(res.total);
         } catch (error: any) {
-            toast.error('Loglar yüklenemedi: ' + error.message);
+            toast.error(t('toasts.logs_load_error') || 'Logs could not be loaded');
         } finally {
             setLoading(false);
         }
@@ -35,15 +37,15 @@ export function EmailLogs() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'SENT':
-                return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20"><CheckCircle2 className="h-3 w-3 mr-1" /> GÖNDERİLDİ</Badge>;
+                return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20"><CheckCircle2 className="h-3 w-3 mr-1" /> {t('status.sent')}</Badge>;
             case 'DELIVERED':
-                return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20"><CheckCircle2 className="h-3 w-3 mr-1" /> ULAŞTI</Badge>;
+                return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20"><CheckCircle2 className="h-3 w-3 mr-1" /> {t('status.delivered')}</Badge>;
             case 'BOUNCED':
-                return <Badge className="bg-red-500/10 text-red-500 border-red-500/20"><XCircle className="h-3 w-3 mr-1" /> GERİ DÖNDÜ</Badge>;
+                return <Badge className="bg-red-500/10 text-red-500 border-red-500/20"><XCircle className="h-3 w-3 mr-1" /> {t('status.bounced')}</Badge>;
             case 'FAILED':
-                return <Badge className="bg-destructive/10 text-destructive border-destructive/20"><XCircle className="h-3 w-3 mr-1" /> HATA</Badge>;
+                return <Badge className="bg-destructive/10 text-destructive border-destructive/20"><XCircle className="h-3 w-3 mr-1" /> {t('status.failed')}</Badge>;
             default:
-                return <Badge className="bg-slate-500/10 text-slate-500 border-slate-500/20"><Clock className="h-3 w-3 mr-1" /> BEKLIYOR</Badge>;
+                return <Badge className="bg-slate-500/10 text-slate-500 border-slate-500/20"><Clock className="h-3 w-3 mr-1" /> {t('status.pending')}</Badge>;
         }
     };
 
@@ -52,9 +54,9 @@ export function EmailLogs() {
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                     <CardTitle className="text-lg flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-brand-500" /> Gönderim Geçmişi
+                        <Mail className="h-4 w-4 text-brand-500" /> {t('title')}
                     </CardTitle>
-                    <CardDescription>Sistem tarafından gönderilen tüm transactional e-postaların dökümü.</CardDescription>
+                    <CardDescription>{t('description')}</CardDescription>
                 </div>
                 <Button variant="ghost" size="icon" onClick={loadLogs} disabled={loading}>
                     <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -70,17 +72,17 @@ export function EmailLogs() {
                         <Table>
                             <TableHeader className="bg-white/5">
                                 <TableRow>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Alıcı</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Şablon</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Durum</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-right">Tarih</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">{t('table.recipient')}</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">{t('table.template')}</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">{t('table.status')}</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-right">{t('table.date')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {logs.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-xs italic">
-                                            Henüz bir e-posta gönderimi kaydı bulunmuyor.
+                                            {t('table.empty')}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -99,7 +101,7 @@ export function EmailLogs() {
                                                 {getStatusBadge(log.status)}
                                             </TableCell>
                                             <TableCell className="text-right text-[10px] text-muted-foreground font-mono">
-                                                {new Date(log.createdAt).toLocaleString('tr-TR')}
+                                                {new Date(log.createdAt).toLocaleString()}
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -118,9 +120,9 @@ export function EmailLogs() {
                             disabled={page === 1}
                             className="h-8 border-white/5 bg-slate-900/50"
                         >
-                            Önceki
+                            {t('pagination.prev')}
                         </Button>
-                        <span className="text-[10px] font-mono text-muted-foreground px-2">SAYFA {page}</span>
+                        <span className="text-[10px] font-mono text-muted-foreground px-2">{t('pagination.page')} {page}</span>
                         <Button
                             variant="outline"
                             size="sm"
@@ -128,7 +130,7 @@ export function EmailLogs() {
                             disabled={logs.length < 10}
                             className="h-8 border-white/5 bg-slate-900/50"
                         >
-                            Sonraki
+                            {t('pagination.next')}
                         </Button>
                     </div>
                 )}

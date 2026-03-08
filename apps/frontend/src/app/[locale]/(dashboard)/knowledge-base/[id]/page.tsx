@@ -248,21 +248,37 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ id: st
                                     {compLoading ? (
                                         <div className="py-20 text-center"><div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>
                                     ) : (
-                                        <div className="grid grid-cols-2 gap-6 h-full">
+                                        <div className="grid grid-cols-2 gap-6 h-full font-mono text-[13px]">
                                             <div className="space-y-4">
-                                                <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                                <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider font-sans">
                                                     <FileText className="h-3.5 w-3.5" /> Versiyon {compData.older.version}
                                                 </div>
-                                                <div className="p-4 rounded-2xl bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 text-sm whitespace-pre-wrap text-slate-600 dark:text-slate-400 italic">
-                                                    {compData.older.content}
+                                                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 h-[500px] overflow-y-auto custom-scrollbar">
+                                                    {compData.older.content.split('\n').map((line: string, i: number) => {
+                                                        const isRemoved = !compData.newer.content.split('\n').includes(line);
+                                                        return (
+                                                            <div key={i} className={`px-2 py-0.5 whitespace-pre-wrap ${isRemoved ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-l-2 border-red-500' : ''}`}>
+                                                                {isRemoved && <span className="mr-2 opacity-50">-</span>}
+                                                                {line || ' '}
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                             <div className="space-y-4">
-                                                <div className="flex items-center gap-2 text-xs font-bold text-brand-500 uppercase tracking-wider">
+                                                <div className="flex items-center gap-2 text-xs font-bold text-brand-500 uppercase tracking-wider font-sans">
                                                     <FileText className="h-3.5 w-3.5" /> Versiyon {compData.newer.version}
                                                 </div>
-                                                <div className="p-4 rounded-2xl bg-green-50/50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/20 text-sm whitespace-pre-wrap text-slate-900 dark:text-white font-medium">
-                                                    {compData.newer.content}
+                                                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 h-[500px] overflow-y-auto custom-scrollbar">
+                                                    {compData.newer.content.split('\n').map((line: string, i: number) => {
+                                                        const isAdded = !compData.older.content.split('\n').includes(line);
+                                                        return (
+                                                            <div key={i} className={`px-2 py-0.5 whitespace-pre-wrap ${isAdded ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-l-2 border-green-500' : ''}`}>
+                                                                {isAdded && <span className="mr-2 opacity-50">+</span>}
+                                                                {line || ' '}
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         </div>

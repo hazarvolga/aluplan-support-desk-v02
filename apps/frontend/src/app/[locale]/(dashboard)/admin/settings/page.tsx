@@ -26,6 +26,7 @@ import {
     TableHeader, TableRow
 } from '@/components/ui/table';
 import { AiTelemetryDashboard } from '@/components/admin/AiTelemetryDashboard';
+import { useTranslations } from 'next-intl';
 
 enum TicketPriority {
     LOW = 'LOW',
@@ -35,6 +36,8 @@ enum TicketPriority {
 }
 
 export default function AdminSettingsPage() {
+    const t = useTranslations('settings');
+    const tCommon = useTranslations('common.priorities');
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
@@ -69,9 +72,9 @@ export default function AdminSettingsPage() {
         const gmailEmail = searchParams.get('gmail_email');
         const gmailError = searchParams.get('gmail_error');
         if (gmailStatus === 'success') {
-            toast({ title: '✅ Gmail Yetkilendirildi', description: `${gmailEmail} hesabı başarıyla bağlandı.` });
+            toast({ title: '✅ ' + t('email.authorized'), description: t('toasts.gmail_success') });
         } else if (gmailStatus === 'error') {
-            toast({ title: 'Gmail Hatası', description: gmailError || 'Yetkilendirme başarısız.', variant: 'destructive' });
+            toast({ title: t('email.gmail_title'), description: gmailError || t('toasts.gmail_error'), variant: 'destructive' });
         }
     }, []);
 
@@ -82,8 +85,8 @@ export default function AdminSettingsPage() {
             setSettings(data);
         } catch (error: any) {
             toast({
-                title: 'Hata',
-                description: 'Ayarlar yüklenirken bir sorun oluştu.',
+                title: t('toasts.error'),
+                description: t('toasts.load_error'),
                 variant: 'destructive',
             });
         } finally {
@@ -113,11 +116,11 @@ export default function AdminSettingsPage() {
             setUploadingLogo(true);
             const res = await api.branding.uploadLogo(file);
             updateValue('branding.logo_url', res.url);
-            toast({ title: '✅ Logo Yüklendi', description: 'Logo başarıyla kaydedildi.' });
+            toast({ title: '✅ ' + t('branding.logo_title'), description: t('toasts.logo_success') });
         } catch (error: any) {
             toast({
-                title: 'Hata',
-                description: 'Logo yüklenirken bir sorun oluştu: ' + error.message,
+                title: t('toasts.error'),
+                description: t('toasts.logo_error') + ': ' + error.message,
                 variant: 'destructive',
             });
         } finally {
@@ -153,13 +156,13 @@ export default function AdminSettingsPage() {
                 .map(payload => api.settings.upsert(payload));
             await Promise.all(promises);
             toast({
-                title: 'Başarılı',
-                description: 'Ayarlar kaydedildi.',
+                title: t('toasts.success'),
+                description: t('toasts.save_success'),
             });
         } catch (error: any) {
             toast({
-                title: 'Hata',
-                description: 'Ayarlar kaydedilirken bir sorun oluştu.',
+                title: t('toasts.error'),
+                description: t('toasts.save_error'),
                 variant: 'destructive',
             });
         } finally {
@@ -185,10 +188,10 @@ export default function AdminSettingsPage() {
             setSaving(true);
             if (editingPolicy) {
                 await api.sla.update(editingPolicy.id, newPolicy);
-                toast({ title: 'Başarılı', description: 'Politika güncellendi.' });
+                toast({ title: t('toasts.success'), description: t('toasts.policy_save_success') });
             } else {
                 await api.sla.create(newPolicy);
-                toast({ title: 'Başarılı', description: 'Yeni politika eklendi.' });
+                toast({ title: t('toasts.success'), description: t('toasts.policy_save_success') });
             }
             setIsAddingPolicy(false);
             setEditingPolicy(null);
@@ -201,13 +204,13 @@ export default function AdminSettingsPage() {
     };
 
     const handleDeletePolicy = async (id: string) => {
-        if (!confirm('Bu politikayı silmek istediğinize emin misiniz?')) return;
+        if (!confirm(t('toasts.policy_confirm_delete'))) return;
         try {
             await api.sla.delete(id);
-            toast({ title: 'Başarılı', description: 'Politika silindi.' });
+            toast({ title: t('toasts.success'), description: t('toasts.policy_delete_success') });
             loadSlaData();
         } catch (err: any) {
-            toast({ title: 'Hata', description: err.message, variant: 'destructive' });
+            toast({ title: t('toasts.error'), description: err.message, variant: 'destructive' });
         }
     };
 
@@ -226,12 +229,13 @@ export default function AdminSettingsPage() {
 
     const getPriorityBadge = (priority: string) => {
         const styles: any = {
+            URGENT: 'bg-red-500/10 text-red-500 border-red-500/20',
             CRITICAL: 'bg-red-500/10 text-red-500 border-red-500/20',
             HIGH: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
             MEDIUM: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
             LOW: 'bg-green-500/10 text-green-500 border-green-500/20',
         };
-        return <Badge variant="outline" className={styles[priority] || ''}>{priority}</Badge>;
+        return <Badge variant="outline" className={styles[priority] || ''}>{tCommon(priority as any)}</Badge>;
     };
 
     if (loading) {
@@ -245,26 +249,26 @@ export default function AdminSettingsPage() {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Sistem Ayarları</h1>
-                <p className="text-muted-foreground">Platform genelindeki yapılandırmaları ve entegrasyonları yönetin.</p>
+                <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+                <p className="text-muted-foreground">{t('subtitle')}</p>
             </div>
 
             <Tabs defaultValue="general" className="w-full">
                 <TabsList className="grid w-full grid-cols-5 lg:w-[600px]">
                     <TabsTrigger value="general" className="flex items-center gap-2">
-                        <Globe className="h-4 w-4" /> Genel
+                        <Globe className="h-4 w-4" /> {t('tabs.general')}
                     </TabsTrigger>
                     <TabsTrigger value="ai" className="flex items-center gap-2">
-                        <Bot className="h-4 w-4" /> AI
+                        <Bot className="h-4 w-4" /> {t('tabs.ai')}
                     </TabsTrigger>
                     <TabsTrigger value="email" className="flex items-center gap-2">
-                        <Mail className="h-4 w-4" /> E-Posta
+                        <Mail className="h-4 w-4" /> {t('tabs.email')}
                     </TabsTrigger>
                     <TabsTrigger value="sla" className="flex items-center gap-2">
-                        <ShieldCheck className="h-4 w-4" /> SLA
+                        <ShieldCheck className="h-4 w-4" /> {t('tabs.sla')}
                     </TabsTrigger>
                     <TabsTrigger value="branding" className="flex items-center gap-2">
-                        <Palette className="h-4 w-4" /> Marka
+                        <Palette className="h-4 w-4" /> {t('tabs.branding')}
                     </TabsTrigger>
                 </TabsList>
 
@@ -273,29 +277,29 @@ export default function AdminSettingsPage() {
                     <TabsContent value="general">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Genel Yapılandırma</CardTitle>
-                                <CardDescription>Temel platform ayarları.</CardDescription>
+                                <CardTitle>{t('general.title')}</CardTitle>
+                                <CardDescription>{t('general.description')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label>Platform Adı</Label>
+                                    <Label>{t('general.portal_name')}</Label>
                                     <Input
                                         value={getSetting('general.portal_name')}
                                         onChange={e => updateValue('general.portal_name', e.target.value)}
-                                        placeholder="Örn: Aluplan Destek"
+                                        placeholder={t('general.portal_name_placeholder')}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Frontend URL</Label>
+                                    <Label>{t('general.frontend_url')}</Label>
                                     <Input
                                         value={getSetting('general.frontend_url')}
                                         onChange={e => updateValue('general.frontend_url', e.target.value)}
-                                        placeholder="https://support.aluplan.com"
+                                        placeholder={t('general.frontend_url_placeholder')}
                                     />
                                 </div>
                                 <Button onClick={() => handleSave(['general.portal_name', 'general.frontend_url'])} disabled={saving}>
                                     {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Kaydet
+                                    {t('ai.save_btn')}
                                 </Button>
                             </CardContent>
                         </Card>
@@ -306,14 +310,14 @@ export default function AdminSettingsPage() {
                         <AiTelemetryDashboard />
                         <Card>
                             <CardHeader>
-                                <CardTitle>Yapay Zeka Entegrasyonu</CardTitle>
-                                <CardDescription>Grok (xAI), DeepSeek, OpenAI veya Ollama servislerini yapılandırın.</CardDescription>
+                                <CardTitle>{t('ai.title')}</CardTitle>
+                                <CardDescription>{t('ai.description')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="space-y-4 pb-6 border-b border-border/40">
                                     <div className="flex flex-col md:flex-row gap-6">
                                         <div className="space-y-2 flex-1">
-                                            <Label className="text-[12px] font-bold tracking-widest uppercase">Varsayılan Sohbet (Chat) Sağlayıcısı</Label>
+                                            <Label className="text-[12px] font-bold tracking-widest uppercase">{t('ai.chat_provider')}</Label>
                                             <Select
                                                 value={getSetting('ai.chat_provider') || getSetting('ai.active_provider') || 'ollama'}
                                                 onValueChange={v => updateValue('ai.chat_provider', v)}
@@ -322,19 +326,19 @@ export default function AdminSettingsPage() {
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="ollama">Ollama (Yerel)</SelectItem>
-                                                    <SelectItem value="openai">OpenAI (Bulut)</SelectItem>
-                                                    <SelectItem value="xai">xAI (Grok)</SelectItem>
-                                                    <SelectItem value="groq">Groq (Hızlı & Ücretsiz)</SelectItem>
-                                                    <SelectItem value="deepseek">DeepSeek</SelectItem>
-                                                    <SelectItem value="llmapi">LLMAPI (Önerilen)</SelectItem>
-                                                    <SelectItem value="custom">Özel (OpenAI Uyumlu)</SelectItem>
+                                                    <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
+                                                    <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
+                                                    <SelectItem value="xai">{t('ai.providers.xai')}</SelectItem>
+                                                    <SelectItem value="groq">{t('ai.providers.groq')}</SelectItem>
+                                                    <SelectItem value="deepseek">{t('ai.providers.deepseek')}</SelectItem>
+                                                    <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
+                                                    <SelectItem value="custom">{t('ai.providers.custom')}</SelectItem>
                                                 </SelectContent>
                                             </Select>
-                                            <p className="text-xs text-muted-foreground mt-1">Ticket yanıtlama ve asistan özellikleri için kullanılır.</p>
+                                            <p className="text-xs text-muted-foreground mt-1">{t('ai.chat_provider_desc')}</p>
                                         </div>
                                         <div className="space-y-2 flex-1">
-                                            <Label className="text-[12px] font-bold tracking-widest uppercase">Varsayılan Gömme (Embedding) Sağlayıcısı</Label>
+                                            <Label className="text-[12px] font-bold tracking-widest uppercase">{t('ai.embed_provider')}</Label>
                                             <Select
                                                 value={getSetting('ai.embed_provider') || getSetting('ai.active_provider') || 'ollama'}
                                                 onValueChange={v => updateValue('ai.embed_provider', v)}
@@ -343,14 +347,14 @@ export default function AdminSettingsPage() {
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="ollama">Ollama (Yerel)</SelectItem>
-                                                    <SelectItem value="openai">OpenAI (Bulut - Önerilen)</SelectItem>
-                                                    <SelectItem value="groq">Groq (Embedding Desteklemez)</SelectItem>
-                                                    <SelectItem value="llmapi">LLMAPI</SelectItem>
-                                                    <SelectItem value="custom">Özel (Desteği varsa)</SelectItem>
+                                                    <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
+                                                    <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
+                                                    <SelectItem value="groq">{t('ai.providers.groq_no_embed')}</SelectItem>
+                                                    <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
+                                                    <SelectItem value="custom">{t('ai.providers.custom_info')}</SelectItem>
                                                 </SelectContent>
                                             </Select>
-                                            <p className="text-xs text-muted-foreground mt-1">Bilgi tabanı araması ve belge indeksleme için kullanılır. (Grok embedding desteklemez).</p>
+                                            <p className="text-xs text-muted-foreground mt-1">{t('ai.embed_provider_desc')}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -361,16 +365,16 @@ export default function AdminSettingsPage() {
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
                                                 <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                    <Bot className="h-4 w-4" /> Ollama
+                                                    <Bot className="h-4 w-4" /> {t('ai.ollama.title')}
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
                                                     try {
                                                         const res = await api.ai.testConnection('ollama');
-                                                        toast({ title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.message || (res.success ? 'Ollama ile iletişim kuruldu.' : 'Ollama servisine ulaşılamadı.'), variant: res.success ? 'default' : 'destructive' });
+                                                        toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || (res.success ? t('toasts.ollama_ok') : t('toasts.ollama_fail')), variant: res.success ? 'default' : 'destructive' });
                                                     } catch (e: any) {
-                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
                                                     }
-                                                }}>Test Et</Button>
+                                                }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs">Base URL</Label>
@@ -378,11 +382,11 @@ export default function AdminSettingsPage() {
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Label className="text-xs">{t('ai.ollama.chat_model')}</Label>
                                                     <Input value={getSetting('ai.ollama.chat_model')} onChange={e => updateValue('ai.ollama.chat_model', e.target.value)} placeholder="llama3.2:3b" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Embedding Model</Label>
+                                                    <Label className="text-xs">{t('ai.ollama.embed_model')}</Label>
                                                     <Input value={getSetting('ai.ollama.embed_model')} onChange={e => updateValue('ai.ollama.embed_model', e.target.value)} placeholder="nomic-embed-text" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                             </div>
@@ -394,16 +398,16 @@ export default function AdminSettingsPage() {
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
                                                 <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                    <Globe className="h-4 w-4" /> OpenAI
+                                                    <Globe className="h-4 w-4" /> {t('ai.openai.title')}
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
                                                     try {
                                                         const res = await api.ai.testConnection('openai');
-                                                        toast({ title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız', description: res.message || (res.success ? 'OpenAI key onaylandı.' : 'API Key hatalı veya eksik.'), variant: res.success ? 'default' : 'destructive' });
+                                                        toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || (res.success ? t('toasts.openai_ok') : t('toasts.openai_fail')), variant: res.success ? 'default' : 'destructive' });
                                                     } catch (e: any) {
-                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
                                                     }
-                                                }}>Test Et</Button>
+                                                }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs">API Key</Label>
@@ -411,11 +415,11 @@ export default function AdminSettingsPage() {
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Model (Chat)</Label>
+                                                    <Label className="text-xs">{t('ai.openai.chat_model')}</Label>
                                                     <Input value={getSetting('ai.openai.chat_model')} onChange={e => updateValue('ai.openai.chat_model', e.target.value)} placeholder="gpt-4o-mini" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Embedding Model</Label>
+                                                    <Label className="text-xs">{t('ai.openai.embed_model')}</Label>
                                                     <Input value={getSetting('ai.openai.embed_model')} onChange={e => updateValue('ai.openai.embed_model', e.target.value)} placeholder="text-embedding-3-small" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                             </div>
@@ -427,20 +431,20 @@ export default function AdminSettingsPage() {
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
                                                 <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                    <Bot className="h-4 w-4" /> xAI (Grok)
+                                                    <Bot className="h-4 w-4" /> {t('ai.xai.title')}
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
                                                     try {
                                                         const res = await api.ai.testConnection('xai');
                                                         toast({
-                                                            title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız',
-                                                            description: res.message || (res.success ? 'xAI bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.'),
+                                                            title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'),
+                                                            description: res.message || (res.success ? t('toasts.xai_ok') : t('toasts.xai_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
                                                     } catch (e: any) {
-                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
                                                     }
-                                                }}>Test Et</Button>
+                                                }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs">API Key</Label>
@@ -452,12 +456,12 @@ export default function AdminSettingsPage() {
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Label className="text-xs">{t('ai.xai.chat_model')}</Label>
                                                     <Input value={getSetting('ai.xai.chat_model')} onChange={e => updateValue('ai.xai.chat_model', e.target.value)} placeholder="grok-2-latest" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs text-muted-foreground">Embedding</Label>
-                                                    <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                                    <Label className="text-xs text-muted-foreground">{t('tabs.ai')}</Label>
+                                                    <Input disabled value={t('ai.xai.not_supported')} className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
                                                 </div>
                                             </div>
                                         </div>
@@ -468,20 +472,20 @@ export default function AdminSettingsPage() {
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
                                                 <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                    <Bot className="h-4 w-4" /> Groq
+                                                    <Bot className="h-4 w-4" /> {t('ai.providers.groq')}
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
                                                     try {
                                                         const res = await api.ai.testConnection('groq');
                                                         toast({
-                                                            title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız',
-                                                            description: res.message || (res.success ? 'Groq bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.'),
+                                                            title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'),
+                                                            description: res.message || (res.success ? t('toasts.groq_ok') : t('toasts.groq_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
                                                     } catch (e: any) {
-                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
                                                     }
-                                                }}>Test Et</Button>
+                                                }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs">API Key</Label>
@@ -509,20 +513,20 @@ export default function AdminSettingsPage() {
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
                                                 <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                    <Bot className="h-4 w-4" /> DeepSeek
+                                                    <Bot className="h-4 w-4" /> {t('ai.providers.deepseek')}
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
                                                     try {
                                                         const res = await api.ai.testConnection('deepseek');
                                                         toast({
-                                                            title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız',
-                                                            description: res.message || (res.success ? 'DeepSeek bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.'),
+                                                            title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'),
+                                                            description: res.message || (res.success ? t('toasts.deepseek_ok') : t('toasts.deepseek_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
                                                     } catch (e: any) {
-                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
                                                     }
-                                                }}>Test Et</Button>
+                                                }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs">API Key</Label>
@@ -556,14 +560,14 @@ export default function AdminSettingsPage() {
                                                     try {
                                                         const res = await api.ai.testConnection('llmapi');
                                                         toast({
-                                                            title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız',
-                                                            description: res.message || (res.success ? 'LLMAPI bağlantısı onaylandı.' : 'API Key veya konfigürasyon hatalı.'),
+                                                            title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'),
+                                                            description: res.message || (res.success ? t('toasts.llmapi_ok') : t('toasts.llmapi_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
                                                     } catch (e: any) {
-                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
                                                     }
-                                                }}>Test Et</Button>
+                                                }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs">API Key</Label>
@@ -591,23 +595,23 @@ export default function AdminSettingsPage() {
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
                                                 <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                    <Bot className="h-4 w-4" /> Diğer Özel Servis
+                                                    <Bot className="h-4 w-4" /> {t('ai.providers.other_custom')}
                                                 </h3>
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
                                                     try {
                                                         const res = await api.ai.testConnection('custom');
                                                         toast({
-                                                            title: res.success ? 'Bağlantı Başarılı' : 'Bağlantı Başarısız',
-                                                            description: res.message || (res.success ? 'Özel API bağlantısı onaylandı.' : 'Custom konfigürasyon hatalı.'),
+                                                            title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'),
+                                                            description: res.message || (res.success ? t('toasts.custom_ok') : t('toasts.custom_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
                                                     } catch (e: any) {
-                                                        toast({ title: 'Bağlantı Hatası', description: e.message || 'Sunucuya ulaşılamadı.', variant: 'destructive' });
+                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
                                                     }
-                                                }}>Test Et</Button>
+                                                }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Bağlantı URL (OpenAI Uyumlu)</Label>
+                                                <Label className="text-xs">{t('email.redirect_uri_label')}</Label>
                                                 <Input value={getSetting('ai.custom.url')} onChange={e => updateValue('ai.custom.url', e.target.value)} placeholder="https://..." className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
@@ -662,7 +666,7 @@ export default function AdminSettingsPage() {
                                         className="h-10 px-8 font-bold"
                                     >
                                         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Değişiklikleri Kaydet
+                                        {t('ai.save_btn')}
                                     </Button>
                                 </div>
                             </CardContent>
@@ -673,13 +677,13 @@ export default function AdminSettingsPage() {
                     <TabsContent value="email">
                         <Card>
                             <CardHeader>
-                                <CardTitle>E-Posta Servis Ayarları</CardTitle>
-                                <CardDescription>Sistem bildirimleri ve müşteri yazışmaları için sağlayıcı yapılandırması.</CardDescription>
+                                <CardTitle>{t('email.title')}</CardTitle>
+                                <CardDescription>{t('email.description')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label>Aktif Sağlayıcı</Label>
+                                        <Label>{t('email.active_provider')}</Label>
                                         <Select
                                             value={getSetting('email.active_provider') || 'resend'}
                                             onValueChange={v => updateValue('email.active_provider', v)}
@@ -695,7 +699,7 @@ export default function AdminSettingsPage() {
                                         </Select>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Gönderen Email (From Address)</Label>
+                                        <Label>{t('email.from_address')}</Label>
                                         <Input
                                             value={getSetting('email.from_address')}
                                             onChange={e => updateValue('email.from_address', e.target.value)}
@@ -707,7 +711,7 @@ export default function AdminSettingsPage() {
                                 <div className="pt-4 border-t space-y-4">
                                     {((getSetting('email.active_provider') === 'resend') || !getSetting('email.active_provider')) && (
                                         <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
-                                            <h3 className="font-medium">Resend Yapılandırması</h3>
+                                            <h3 className="font-medium">{t('email.resend_title')}</h3>
                                             <div className="space-y-2">
                                                 <Label>API Key</Label>
                                                 <Input
@@ -722,7 +726,7 @@ export default function AdminSettingsPage() {
 
                                     {getSetting('email.active_provider') === 'smtp' && (
                                         <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
-                                            <h3 className="font-medium">SMTP Yapılandırması</h3>
+                                            <h3 className="font-medium">{t('email.smtp_title')}</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <Label>Host</Label>
@@ -762,22 +766,22 @@ export default function AdminSettingsPage() {
                                     {getSetting('email.active_provider') === 'gmail' && (
                                         <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
                                             <div className="flex items-center justify-between">
-                                                <h3 className="font-medium">Gmail OAuth2 Yapılandırması</h3>
+                                                <h3 className="font-medium">{t('email.gmail_title')}</h3>
                                                 {gmailTokenStatus === 'ok' && (
                                                     <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
-                                                        <CheckCircle2 className="h-3.5 w-3.5" /> Yetkilendirilmiş
+                                                        <CheckCircle2 className="h-3.5 w-3.5" /> {t('email.authorized')}
                                                     </span>
                                                 )}
                                                 {gmailTokenStatus === 'missing' && (
                                                     <span className="flex items-center gap-1.5 text-xs text-red-400 font-medium">
-                                                        <XCircle className="h-3.5 w-3.5" /> Yetkilendirilmemiş
+                                                        <XCircle className="h-3.5 w-3.5" /> {t('email.not_authorized')}
                                                     </span>
                                                 )}
                                             </div>
 
                                             <div className="grid grid-cols-1 gap-4">
                                                 <div className="space-y-2">
-                                                    <Label>Gönderen E-Posta Adresi</Label>
+                                                    <Label>{t('email.from_address_label')}</Label>
                                                     <Input
                                                         value={getSetting('email.gmail.email')}
                                                         onChange={e => updateValue('email.gmail.email', e.target.value)}
@@ -822,7 +826,7 @@ export default function AdminSettingsPage() {
                                                     onClick={() => handleSave(['email.gmail.email', 'email.gmail.client_id', 'email.gmail.client_secret'])}
                                                 >
                                                     {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                                                    Credentials Kaydet
+                                                    {t('email.gmail.credentials_save')}
                                                 </Button>
                                                 <Button
                                                     size="sm"
@@ -834,7 +838,7 @@ export default function AdminSettingsPage() {
                                                             const { url } = await api.email.getGmailAuthUrl();
                                                             window.open(url, '_blank');
                                                         } catch (err: any) {
-                                                            toast({ title: 'Hata', description: err.message || 'Auth URL alınamadı. Önce Client ID ve Secret kaydedin.', variant: 'destructive' });
+                                                            toast({ title: t('toasts.connection_error'), description: err.message || t('toasts.gmail_credentials_hint'), variant: 'destructive' });
                                                         } finally {
                                                             setGmailAuthorizing(false);
                                                         }
@@ -844,13 +848,12 @@ export default function AdminSettingsPage() {
                                                         ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                                         : <ExternalLink className="h-3.5 w-3.5" />
                                                     }
-                                                    Google ile Yetkilendir
+                                                    {t('email.gmail.authorize_btn')}
                                                 </Button>
                                             </div>
 
                                             <p className="text-xs text-muted-foreground">
-                                                Önce credentials'ları kaydedin, ardından "Google ile Yetkilendir" butonuna tıklayın.
-                                                Google consent ekranında izin verdikten sonra bu sayfaya otomatik dönülecektir.
+                                                {t('email.gmail.auth_hint')}
                                             </p>
                                         </div>
                                     )}
@@ -867,7 +870,7 @@ export default function AdminSettingsPage() {
                                         disabled={saving}
                                     >
                                         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        E-Posta Sağlayıcısını Kaydet
+                                        {t('email.save_provider_btn')}
                                     </Button>
                                     <Button
                                         variant="outline"
@@ -876,16 +879,16 @@ export default function AdminSettingsPage() {
                                             try {
                                                 const res = await api.email.verifyProvider();
                                                 if (res.available) {
-                                                    toast({ title: 'Bağlantı Başarılı', description: `${res.provider.toUpperCase()} servisine erişim sağlandı.` });
+                                                    toast({ title: t('toasts.connection_success'), description: t('toasts.generic_success_hint', { provider: res.provider.toUpperCase() }) || `${res.provider.toUpperCase()} servisine erişim sağlandı.` });
                                                 } else {
-                                                    toast({ title: 'Bağlantı Başarısız', description: 'Servis şu an erişilebilir değil.', variant: 'destructive' });
+                                                    toast({ title: t('toasts.connection_failed'), description: t('toasts.generic_fail_hint'), variant: 'destructive' });
                                                 }
                                             } catch (err: any) {
-                                                toast({ title: 'Hata', description: err.message || 'Doğrulama sırasında bir hata oluştu.', variant: 'destructive' });
+                                                toast({ title: t('toasts.error'), description: err.message || t('toasts.generic_error'), variant: 'destructive' });
                                             }
                                         }}
                                     >
-                                        Bağlantıyı Test Et
+                                        {t('email.test_connection_btn')}
                                     </Button>
                                 </div>
                             </CardContent>
@@ -897,205 +900,164 @@ export default function AdminSettingsPage() {
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <div>
-                                    <CardTitle>SLA Politikaları</CardTitle>
-                                    <CardDescription>Öncelik ve departman bazlı hedef yanıt/çözüm süreleri.</CardDescription>
+                                    <CardTitle>{t('sla.title')}</CardTitle>
+                                    <CardDescription>{t('sla.description')}</CardDescription>
                                 </div>
-                                <Dialog open={isAddingPolicy} onOpenChange={(open) => {
-                                    setIsAddingPolicy(open);
-                                    if (!open) {
-                                        setEditingPolicy(null);
-                                        setNewPolicy({
-                                            name: '', priority: 'MEDIUM', departmentId: '',
-                                            firstResponseMinutes: 480, resolutionMinutes: 1440, businessHoursOnly: true
-                                        });
-                                    }
-                                }}>
-                                    <DialogTrigger asChild>
-                                        <Button className="gap-2">
-                                            <Plus className="h-4 w-4" /> Politika Ekle
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="sm:max-w-[500px]">
-                                        <DialogHeader>
-                                            <DialogTitle>{editingPolicy ? 'Politikayı Düzenle' : 'Yeni SLA Politikası'}</DialogTitle>
-                                            <DialogDescription>Bilet önceliği ve departmana göre süre hedeflerini tanımlayın.</DialogDescription>
-                                        </DialogHeader>
-                                        <div className="grid gap-4 py-4">
-                                            <div className="space-y-2">
-                                                <Label>Politika Adı</Label>
-                                                <Input
-                                                    placeholder="Örn: Standart Destek"
-                                                    value={newPolicy.name}
-                                                    onChange={e => setNewPolicy({ ...newPolicy, name: e.target.value })}
-                                                />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label>Öncelik</Label>
-                                                    <Select
-                                                        value={newPolicy.priority}
-                                                        onValueChange={val => setNewPolicy({ ...newPolicy, priority: val })}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {Object.values(TicketPriority).map((p) => (
-                                                                <SelectItem key={p as string} value={p as string}>{p as string}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Departman</Label>
-                                                    <Select
-                                                        value={newPolicy.departmentId}
-                                                        onValueChange={val => setNewPolicy({ ...newPolicy, departmentId: val })}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Departman Seçin" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {(departments as any[]).map(d => (
-                                                                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label>İlk Yanıt (Dakika)</Label>
-                                                    <Input
-                                                        type="number"
-                                                        value={newPolicy.firstResponseMinutes}
-                                                        onChange={e => setNewPolicy({ ...newPolicy, firstResponseMinutes: parseInt(e.target.value) })}
-                                                    />
-                                                    <p className="text-[10px] text-muted-foreground">≈ {(newPolicy.firstResponseMinutes / 60).toFixed(1)} saat</p>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Çözüm Süresi (Dakika)</Label>
-                                                    <Input
-                                                        type="number"
-                                                        value={newPolicy.resolutionMinutes}
-                                                        onChange={e => setNewPolicy({ ...newPolicy, resolutionMinutes: parseInt(e.target.value) })}
-                                                    />
-                                                    <p className="text-[10px] text-muted-foreground">≈ {(newPolicy.resolutionMinutes / 60).toFixed(1)} saat</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between rounded-lg border p-3">
-                                                <div className="space-y-0.5">
-                                                    <Label>Sadece Mesai Saatleri</Label>
-                                                    <p className="text-xs text-muted-foreground italic">Hesaplama iş takvimine göre yapılır.</p>
-                                                </div>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
-                                                    checked={newPolicy.businessHoursOnly}
-                                                    onChange={e => setNewPolicy({ ...newPolicy, businessHoursOnly: e.target.checked })}
-                                                />
-                                            </div>
-                                        </div>
-                                        <DialogFooter>
-                                            <Button variant="outline" onClick={() => setIsAddingPolicy(false)}>İptal</Button>
-                                            <Button onClick={handleSavePolicy} disabled={saving || !newPolicy.name || !newPolicy.departmentId}>
-                                                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                {editingPolicy ? 'Güncelle' : 'Oluştur'}
-                                            </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
+                                <Button onClick={() => { setEditingPolicy(null); setIsAddingPolicy(true); }}>
+                                    <Plus className="mr-2 h-4 w-4" /> {t('sla.add_policy')}
+                                </Button>
                             </CardHeader>
                             <CardContent>
-                                <div className="rounded-md border">
-                                    <Table>
-                                        <TableHeader>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>{t('sla.table.name')}</TableHead>
+                                            <TableHead>{t('sla.table.priority')}</TableHead>
+                                            <TableHead>{t('sla.table.department')}</TableHead>
+                                            <TableHead className="text-center">{t('sla.table.response')}</TableHead>
+                                            <TableHead className="text-center">{t('sla.table.resolution')}</TableHead>
+                                            <TableHead>{t('sla.table.hours')}</TableHead>
+                                            <TableHead className="text-right">{t('sla.table.actions')}</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {policies.length === 0 ? (
                                             <TableRow>
-                                                <TableHead>Politika</TableHead>
-                                                <TableHead>Departman</TableHead>
-                                                <TableHead>Öncelik</TableHead>
-                                                <TableHead>Yanıt / Çözüm</TableHead>
-                                                <TableHead className="text-right">İşlemler</TableHead>
+                                                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic">
+                                                    Henüz bir SLA politikası tanımlanmamış.
+                                                </TableCell>
                                             </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {policies.length === 0 ? (
-                                                <TableRow>
-                                                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground italic">
-                                                        Henüz bir SLA politikası tanımlanmamış.
+                                        ) : (
+                                            policies.map((p) => (
+                                                <TableRow key={p.id}>
+                                                    <TableCell className="font-medium">
+                                                        <div className="flex flex-col">
+                                                            <span>{p.name}</span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>{getPriorityBadge(p.priority)}</TableCell>
+                                                    <TableCell>{p.department?.name || '-'}</TableCell>
+                                                    <TableCell className="text-center font-medium text-blue-500">{p.firstResponseMinutes} dk</TableCell>
+                                                    <TableCell className="text-center font-medium text-blue-500">{p.resolutionMinutes} dk</TableCell>
+                                                    <TableCell>
+                                                        {p.businessHoursOnly ? (
+                                                            <span className="flex items-center gap-1.5 text-xs text-amber-500">
+                                                                <Clock className="h-3.5 w-3.5" /> {t('sla.form.business_hours')}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">24/7</span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button variant="ghost" size="icon" onClick={() => openEditPolicy(p)}>
+                                                                <Edit2 className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeletePolicy(p.id)}>
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
-                                            ) : (
-                                                policies.map((p) => (
-                                                    <TableRow key={p.id}>
-                                                        <TableCell className="font-medium">
-                                                            <div className="flex flex-col">
-                                                                <span>{p.name}</span>
-                                                                {p.businessHoursOnly && (
-                                                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                                                        <Clock className="h-2.5 w-2.5" /> Mesai Saatleri
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell>{p.department?.name || '-'}</TableCell>
-                                                        <TableCell>{getPriorityBadge(p.priority)}</TableCell>
-                                                        <TableCell>
-                                                            <div className="flex items-center gap-2 text-xs">
-                                                                <Badge variant="secondary" className="font-normal">{p.firstResponseMinutes}dk</Badge>
-                                                                <span className="text-muted-foreground">/</span>
-                                                                <Badge variant="secondary" className="font-normal">{p.resolutionMinutes}dk</Badge>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <div className="flex justify-end gap-2">
-                                                                <Button variant="ghost" size="icon" onClick={() => openEditPolicy(p)}>
-                                                                    <Edit2 className="h-4 w-4" />
-                                                                </Button>
-                                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeletePolicy(p.id)}>
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
 
                                 <div className="mt-6 p-4 rounded-lg bg-blue-500/5 border border-blue-500/10 flex gap-3">
                                     <AlertCircle className="h-5 w-5 text-blue-500 shrink-0" />
                                     <div className="text-xs text-blue-700/80 leading-relaxed">
-                                        <strong>Nasıl Çalışır?</strong> Yeni bir bilet oluşturulduğunda, sistem önce o departman ve önceliğe uygun bir politika arar.
+                                        <strong>{t('sla.how_it_works')}</strong> {t('sla.how_it_works_desc')}
                                         Eğer bulunamazsa, sistem varsayılan (fallback) süreleri kullanır. Politikalar gelecekteki biletleri etkiler,
                                         mevcut biletlerin SLA süreleri ancak öncelik değişikliğinde yeniden hesaplanır.
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <Dialog open={isAddingPolicy} onOpenChange={setIsAddingPolicy}>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>{editingPolicy ? t('sla.form.edit_title') : t('sla.form.new_title')}</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <Label>{t('sla.form.name_label')}</Label>
+                                        <Input id="sla_name" placeholder={t('sla.form.placeholders.name')} defaultValue={editingPolicy?.name} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>{t('sla.form.priority_label')}</Label>
+                                            <Select defaultValue={editingPolicy?.priority || 'MEDIUM'}>
+                                                <SelectTrigger id="sla_priority_trigger">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="LOW">{tCommon('LOW')}</SelectItem>
+                                                    <SelectItem value="MEDIUM">{tCommon('MEDIUM')}</SelectItem>
+                                                    <SelectItem value="HIGH">{tCommon('HIGH')}</SelectItem>
+                                                    <SelectItem value="URGENT">{tCommon('URGENT')}</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>{t('sla.form.department_label')}</Label>
+                                            <Input id="sla_department" placeholder={t('sla.form.placeholders.department')} defaultValue={editingPolicy?.department || ''} />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>{t('sla.form.response_label')}</Label>
+                                            <Input id="sla_response" type="number" defaultValue={editingPolicy?.firstResponseMinutes || 60} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>{t('sla.form.resolve_label')}</Label>
+                                            <Input id="sla_resolve" type="number" defaultValue={editingPolicy?.resolutionMinutes || 240} />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-2 pt-2">
+                                        <input
+                                            type="checkbox"
+                                            id="sla_business"
+                                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+                                            defaultChecked={editingPolicy?.businessHoursOnly}
+                                        />
+                                        <Label htmlFor="sla_business" className="text-sm font-normal">
+                                            {t('sla.form.business_hours')}
+                                        </Label>
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button variant="outline" onClick={() => setIsAddingPolicy(false)}>{t('sla.form.cancel_btn')}</Button>
+                                    <Button onClick={handleSavePolicy} disabled={saving}>
+                                        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        {t('ai.save_btn')}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </TabsContent>
 
                     {/* ─── MARKA AYARLARI ────────────────────────────────────────── */}
                     <TabsContent value="branding">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Marka & Görsel Kimlik</CardTitle>
-                                <CardDescription>Kurumsal kimlik ve iletişim bilgileri. Bu bilgiler e-posta Footer alanında otomatik gösterilir.</CardDescription>
+                                <CardTitle>{t('branding.title')}</CardTitle>
+                                <CardDescription>{t('branding.description')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label>Firma Adı</Label>
+                                            <Label>{t('branding.company_label')}</Label>
                                             <Input
                                                 value={getSetting('branding.company_name')}
                                                 onChange={e => updateValue('branding.company_name', e.target.value)}
-                                                placeholder="Örn: Aluplan A.Ş."
+                                                placeholder={t('branding.placeholders.company')}
                                             />
                                         </div>
                                         <div className="space-y-4">
-                                            <Label>Kurumsal Logo</Label>
+                                            <Label>{t('branding.logo_label')}</Label>
                                             <div className="flex items-center gap-4">
                                                 <div className="h-16 w-16 rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
                                                     {getSetting('branding.logo_url') ? (
@@ -1121,12 +1083,12 @@ export default function AdminSettingsPage() {
                                                             {uploadingLogo ? (
                                                                 <>
                                                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                                    Yükleniyor...
+                                                                    {t('branding.uploading')}
                                                                 </>
                                                             ) : (
                                                                 <>
                                                                     <Upload className="mr-2 h-4 w-4" />
-                                                                    Logo Yükle
+                                                                    {t('branding.upload_btn')}
                                                                 </>
                                                             )}
                                                             <input
@@ -1147,40 +1109,40 @@ export default function AdminSettingsPage() {
                                                         )}
                                                     </div>
                                                     <p className="text-[10px] text-muted-foreground">
-                                                        PNG, JPG veya SVG (Maks. 2MB)
+                                                        {t('branding.logo_hint')}
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Şirket E-posta</Label>
+                                            <Label>{t('branding.email_label')}</Label>
                                             <Input
                                                 value={getSetting('branding.email')}
                                                 onChange={e => updateValue('branding.email', e.target.value)}
-                                                placeholder="destek@firma.com"
+                                                placeholder={t('branding.placeholders.email')}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Şirket Telefon</Label>
+                                            <Label>{t('branding.phone_label')}</Label>
                                             <Input
                                                 value={getSetting('branding.phone')}
                                                 onChange={e => updateValue('branding.phone', e.target.value)}
-                                                placeholder="+90 212 ..."
+                                                placeholder={t('branding.placeholders.phone')}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>İletişim Adresi (Footer)</Label>
+                                            <Label>{t('branding.address_label')}</Label>
                                             <textarea
                                                 className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                                 value={getSetting('branding.address')}
                                                 onChange={e => updateValue('branding.address', e.target.value)}
-                                                placeholder="Örn: Barbaros Mah. Çiğdem Sok. No:1..."
+                                                placeholder={t('branding.placeholders.address')}
                                             />
                                         </div>
                                     </div>
 
                                     <div className="space-y-4">
-                                        <h3 className="text-sm font-medium border-b pb-2">Sosyal Medya Linkleri</h3>
+                                        <h3 className="text-sm font-medium border-b pb-2">{t('branding.social_links')}</h3>
                                         <div className="space-y-2">
                                             <Label>LinkedIn</Label>
                                             <Input
@@ -1241,7 +1203,7 @@ export default function AdminSettingsPage() {
                                     disabled={saving}
                                 >
                                     {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Marka Ayarlarını Kaydet
+                                    {t('branding.save_btn')}
                                 </Button>
                             </CardContent>
                         </Card>

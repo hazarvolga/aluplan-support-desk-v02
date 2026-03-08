@@ -5,7 +5,12 @@ import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 
 const prisma = new PrismaClient();
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL = process.env.REDIS_URL;
+if (!REDIS_URL) {
+    console.error('❌ "REDIS_URL" is required.');
+    process.exit(1);
+}
+
 
 async function main() {
     const KNOWLEDGE_PATH = process.env.KNOWLEDGE_BASE_PATH || path.join(__dirname, '../../../dataset');

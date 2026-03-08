@@ -135,6 +135,11 @@ export class CustomersService {
             finalCustomerNo = `WEB-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
         }
 
+        // Obtain the default customer role
+        const customerRole = await this.prisma.role.findUnique({
+            where: { name: 'customer' }
+        });
+
         // 4. Create User + CustomerProfile in a single transaction
         const resultUser = await this.prisma.$transaction(async (prisma) => {
             const passwordHash = await bcrypt.hash(dto.password, 10);
@@ -152,6 +157,7 @@ export class CustomersService {
                     fullName,
                     passwordHash,
                     status: 'INACTIVE',
+                    roleId: customerRole?.id, // Explicitly assign the customer role ID
                     customerProfile: {
                         create: {
                             firstName: dto.firstName,

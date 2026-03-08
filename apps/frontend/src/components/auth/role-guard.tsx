@@ -119,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (!loading && user) {
             const cleanPath = stripLocale(pathname);
+            console.log('[RoleGuard Trace] AuthProvider checking redirect. cleanPath:', cleanPath, 'User Role:', user?.role);
             if (cleanPath === '/' || cleanPath.startsWith('/login')) {
                 const userRole = (user?.role || (user?.roles && user.roles[0]) || 'viewer').toLowerCase();
                 router.push(userRole === 'customer' || userRole === 'viewer' ? '/my-tickets' : '/dashboard');

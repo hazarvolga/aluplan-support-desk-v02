@@ -3,7 +3,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { EmbeddingService, SearchResult, SearchResponse } from './embedding.service';
-import { TicketStatus, TicketPriority, Prisma, TicketMessage, KnowledgeSourceType } from '@aluplan/database';
+import { TicketStatus, TicketPriority, Prisma, TicketMessage, KnowledgeSourceType, CommunicationChannel } from '@aluplan/database';
 import { ConfigService } from '@nestjs/config';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { PromptsService } from './prompts.service';
@@ -77,7 +77,7 @@ export class AiQueryService {
         this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.75'));
     }
 
-    async query(userQuery: string, userId?: string | null): Promise<AiQueryResult> {
+    async query(userQuery: string, userId?: string | null, channel: CommunicationChannel = 'WEB'): Promise<AiQueryResult> {
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
         const queryHash = createHash('sha256').update(userQuery + isStaff).digest('hex');
@@ -108,6 +108,7 @@ export class AiQueryService {
             const interaction = await this.prisma.aiInteraction.create({
                 data: {
                     userId,
+                    channel,
                     userQuery,
                     responseGenerated: 'AI güvenilir bir kaynak bulamadı. Talep insan temsilciye yönlendirildi.',
                     confidenceBand: null,
@@ -184,6 +185,7 @@ export class AiQueryService {
         const interaction = await this.prisma.aiInteraction.create({
             data: {
                 userId,
+                channel,
                 userQuery,
                 responseGenerated: answer,
                 confidenceBand: confidence === 'NO_MATCH' ? null : (confidence as 'HIGH' | 'MEDIUM' | 'LOW'),
@@ -427,8 +429,11 @@ export class AiQueryService {
         });
     }
 
-    async getTelemetryMetrics() {
+    async getTelemetryMetrics(channel?: CommunicationChannel) {
+        const where: Prisma.AiInteractionWhereInput = channel ? { channel } : {};
+
         const globalMetrics = await this.prisma.aiInteraction.aggregate({
+            where,
             _sum: {
                 inputTokens: true,
                 outputTokens: true,
@@ -442,9 +447,21 @@ export class AiQueryService {
 
         const providersList = await this.prisma.aiInteraction.groupBy({
             by: ['provider', 'model'],
+            where,
             _sum: {
                 inputTokens: true,
                 outputTokens: true,
+                totalTokens: true,
+                estimatedCost: true
+            },
+            _count: {
+                id: true
+            }
+        });
+
+        const channelBreakdown = await this.prisma.aiInteraction.groupBy({
+            by: ['channel'],
+            _sum: {
                 totalTokens: true,
                 estimatedCost: true
             },
@@ -465,6 +482,12 @@ export class AiQueryService {
                     estimatedCost: p._sum.estimatedCost || 0,
                     requests: p._count.id || 0
                 }
+            })),
+            channels: channelBreakdown.map(c => ({
+                channel: c.channel,
+                requests: c._count.id,
+                tokens: Number(c._sum.totalTokens || 0),
+                cost: Number(c._sum.estimatedCost || 0)
             }))
         };
     }
@@ -578,7 +601,7 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
         }
     }
 
-    async logSearchInteraction(query: string, userId?: string, results: SearchResult[] = [], productId?: string | null, isStaff = false) {
+    async logSearchInteraction(query: string, userId?: string, results: SearchResult[] = [], productId?: string | null, isStaff = false, channel: CommunicationChannel = 'WEB') {
         const topResult = results[0] ?? null;
 
         const providerName = await this.ai.getActiveProviderName();
@@ -587,6 +610,7 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
         return this.prisma.aiInteraction.create({
             data: {
                 userId,
+                channel,
                 productId,
                 userQuery: query,
                 confidenceBand: topResult ? (topResult.confidence as any) : null,

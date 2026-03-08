@@ -28,7 +28,12 @@ async function main() {
     }
 
     // Use environment variable for default password, with a fallback for dev only
-    const defaultPassword = process.env.WP_IMPORT_DEFAULT_PASSWORD || 'AluplanTest!';
+    const defaultPassword = process.env.WP_IMPORT_DEFAULT_PASSWORD;
+    if (!defaultPassword) {
+        console.error('❌ "WP_IMPORT_DEFAULT_PASSWORD" is required.');
+        process.exit(1);
+    }
+
     const defaultHash = await bcrypt.hash(defaultPassword, 12);
 
     let successCount = 0;
@@ -63,14 +68,7 @@ async function main() {
                         email: email.toLowerCase(),
                         fullName: name || 'Bilinmeyen Kullanıcı',
                         passwordHash: defaultHash,
-                        status: 'ACTIVE'
-                    }
-                });
-
-                // Role Ata
-                await prisma.userRole.create({
-                    data: {
-                        userId: user.id,
+                        status: 'ACTIVE',
                         roleId: customerRole.id
                     }
                 });

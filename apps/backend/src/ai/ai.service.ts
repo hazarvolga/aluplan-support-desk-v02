@@ -77,7 +77,7 @@ export class AiService implements AiProvider {
         const chatProvider = await this.settings.getValue('ai.chat_provider');
         const legacyProvider = await this.settings.getValue('ai.active_provider');
 
-        let provider = await this.getProviderByName(chatProvider || legacyProvider);
+        const provider = await this.getProviderByName(chatProvider || legacyProvider);
         if (provider) return provider;
 
         // Auto-upgrade logic for production
@@ -91,7 +91,12 @@ export class AiService implements AiProvider {
         const embedProvider = await this.settings.getValue('ai.embed_provider');
         const legacyProvider = await this.settings.getValue('ai.active_provider');
 
-        let provider = await this.getProviderByName(embedProvider || legacyProvider);
+        // Env check (Priority)
+        const envProvider = process.env.EMBEDDING_PROVIDER?.toLowerCase();
+        if (envProvider === 'openai') return this.openai;
+        if (envProvider === 'ollama') return this.ollama;
+
+        const provider = await this.getProviderByName(embedProvider || legacyProvider);
         if (provider) return provider;
 
         // Auto-upgrade logic for production
@@ -100,6 +105,7 @@ export class AiService implements AiProvider {
 
         return this.ollama;
     }
+
 
     async getActiveProviderName(): Promise<string> {
         // Return chat provider for backwards compatibility in some places

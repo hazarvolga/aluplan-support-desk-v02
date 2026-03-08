@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { api } from '@/lib/api';
 import Image from 'next/image';
 import Link from 'next/link';

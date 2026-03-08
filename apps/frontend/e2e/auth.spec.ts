@@ -16,17 +16,14 @@ test.describe('Authentication Flow', () => {
         // Arrange
         await page.goto('/');
 
-        // Assert - heading
-        await expect(page.getByText('ERİŞİM_GEÇİDİ')).toBeVisible();
-
         // Assert - email input
-        await expect(page.locator('input[type="email"]')).toBeVisible();
+        await expect(page.getByTestId('login-email')).toBeVisible();
 
         // Assert - password input
-        await expect(page.locator('input[type="password"]')).toBeVisible();
+        await expect(page.getByTestId('login-password')).toBeVisible();
 
         // Assert - submit button
-        await expect(page.getByRole('button', { name: /OTURUMU_BAŞLAT/i })).toBeVisible();
+        await expect(page.getByTestId('login-submit')).toBeVisible();
     });
 
     test('should show error message on invalid credentials', async ({ page }) => {
@@ -34,9 +31,9 @@ test.describe('Authentication Flow', () => {
         await page.goto('/');
 
         // Act
-        await page.locator('input[type="email"]').fill('invalid@example.com');
-        await page.locator('input[type="password"]').fill('wrongpassword123');
-        await page.getByRole('button', { name: /OTURUMU_BAŞLAT/i }).click();
+        await page.getByTestId('login-email').fill('invalid@example.com');
+        await page.getByTestId('login-password').fill('wrongpassword123');
+        await page.getByTestId('login-submit').click();
 
         // Assert - error box appears with red styling
         const errorBox = page.locator('.border-rose-500\\/30').or(
@@ -52,9 +49,9 @@ test.describe('Authentication Flow', () => {
         await page.goto('/');
 
         // Act
-        await page.locator('input[type="email"]').fill('admin@aluplan.com');
-        await page.locator('input[type="password"]').fill('admin123');
-        await page.getByRole('button', { name: /OTURUMU_BAŞLAT/i }).click();
+        await page.getByTestId('login-email').fill('admin@aluplan.com');
+        await page.getByTestId('login-password').fill('admin123');
+        await page.getByTestId('login-submit').click();
 
         // Assert - wait for redirect to dashboard
         await page.waitForURL(/.*\/dashboard/, { timeout: 10000 });

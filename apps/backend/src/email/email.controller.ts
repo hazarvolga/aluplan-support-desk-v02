@@ -2,6 +2,8 @@ import { Controller, Get, Post, Query, Body, Param, Res, HttpStatus, UseGuards, 
 import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RbacGuard } from '../rbac/rbac.guard';
+import { RequirePermissions } from '../rbac/decorators/rbac.decorators';
 import { TemplateService } from './email.templates';
 import { EmailService } from './email.service';
 import { GmailProvider } from './gmail.provider';
@@ -147,7 +149,8 @@ export class EmailController {
   }
 
   // Admin Endpoints
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequirePermissions('settings:read')
   @Get('admin/logs')
   async getEmailLogs(@Query() query: any) {
     const { page = 1, limit = 50, status } = query;
@@ -169,7 +172,8 @@ export class EmailController {
     return { data, total, page: Number(page), limit: Number(limit) };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequirePermissions('settings:read')
   @Get('admin/templates')
   async getTemplates() {
     if (!fs.existsSync(MJML_SCREENS_DIR)) return { templates: [] };
@@ -181,7 +185,8 @@ export class EmailController {
     return { templates: files };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequirePermissions('settings:read')
   @Get('admin/templates/:name/source')
   async getTemplateSource(@Param('name') name: string) {
     const mjmlPath = path.join(MJML_SCREENS_DIR, `${name}.mjml`);
@@ -191,7 +196,8 @@ export class EmailController {
     return { content };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequirePermissions('settings:write')
   @Post('admin/templates/:name/save')
   async saveTemplate(@Param('name') name: string, @Body() body: { content: string }) {
     const mjmlPath = path.join(MJML_SCREENS_DIR, `${name}.mjml`);
@@ -205,7 +211,8 @@ export class EmailController {
     return { success: true };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequirePermissions('settings:read')
   @Post('admin/templates/:name/preview')
   async previewTemplate(@Param('name') name: string, @Req() req: any) {
     try {
@@ -265,7 +272,8 @@ export class EmailController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequirePermissions('settings:read')
   @Post('admin/provider/verify')
   async verifyProvider() {
     return this.emailService.healthCheck();
@@ -277,7 +285,8 @@ export class EmailController {
    * Returns the Google OAuth2 consent URL.
    * Admin opens this URL in a new tab to authorize the app.
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequirePermissions('settings:write')
   @Get('gmail/auth-url')
   async getGmailAuthUrl() {
     const url = await this.gmailProvider.buildAuthUrl();

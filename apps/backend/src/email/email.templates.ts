@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 // Robust MJML import to handle ESM/CJS interop crashes
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const mjmlModule = require('mjml');
 const mjml2html = typeof mjmlModule === 'function' ? mjmlModule : (mjmlModule.default || mjmlModule);
 import * as Handlebars from 'handlebars';

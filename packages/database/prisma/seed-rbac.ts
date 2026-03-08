@@ -5,18 +5,17 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('🌱 Seeding Dynamic RBAC...');
 
-    // 1. Create Permissions
     const permissions = [
-        { name: 'ticket.read', group: 'TICKETS', description: 'View tickets' },
-        { name: 'ticket.create', group: 'TICKETS', description: 'Create new tickets' },
-        { name: 'ticket.write', group: 'TICKETS', description: 'Update ticket status/details' },
-        { name: 'ticket.delete', group: 'TICKETS', description: 'Delete tickets (Soft delete)' },
-        { name: 'article.read', group: 'KNOWLEDGE', description: 'Read knowledge base' },
-        { name: 'article.write', group: 'KNOWLEDGE', description: 'Create/Edit articles' },
-        { name: 'article.approve', group: 'KNOWLEDGE', description: 'Approve draft articles' },
-        { name: 'settings.read', group: 'ADMIN', description: 'Read system settings' },
-        { name: 'settings.write', group: 'ADMIN', description: 'Update system settings' },
-        { name: 'users.manage', group: 'ADMIN', description: 'Manage users and roles' },
+        { name: 'ticket:read', group: 'TICKETS', description: 'View tickets' },
+        { name: 'ticket:create', group: 'TICKETS', description: 'Create new tickets' },
+        { name: 'ticket:update', group: 'TICKETS', description: 'Update ticket status/details' },
+        { name: 'ticket:delete', group: 'TICKETS', description: 'Delete tickets (Soft delete)' },
+        { name: 'kb:read', group: 'KNOWLEDGE', description: 'Read knowledge base' },
+        { name: 'article:write', group: 'KNOWLEDGE', description: 'Create/Edit articles' },
+        { name: 'kb:approve', group: 'KNOWLEDGE', description: 'Approve draft articles' },
+        { name: 'settings:read', group: 'ADMIN', description: 'Read system settings' },
+        { name: 'settings:write', group: 'ADMIN', description: 'Update system settings' },
+        { name: 'users:manage', group: 'ADMIN', description: 'Manage users and roles' },
     ];
 
     for (const p of permissions) {
@@ -31,9 +30,9 @@ async function main() {
     // 2. Create Roles and Assign Permissions
     const sysRoles = [
         { name: 'ADMIN', isSystem: true, perms: permissions.map(p => p.name) },
-        { name: 'AGENT', isSystem: true, perms: ['ticket.read', 'ticket.write', 'article.read'] },
-        { name: 'DEPARTMENT_MANAGER', isSystem: true, perms: ['ticket.read', 'ticket.write', 'article.read', 'article.approve'] },
-        { name: 'CUSTOMER', isSystem: true, perms: ['ticket.read', 'ticket.create'] },
+        { name: 'AGENT', isSystem: true, perms: ['ticket:read', 'ticket:update', 'kb:read'] },
+        { name: 'DEPARTMENT_MANAGER', isSystem: true, perms: ['ticket:read', 'ticket:update', 'kb:read', 'kb:approve'] },
+        { name: 'CUSTOMER', isSystem: true, perms: ['ticket:read', 'ticket.create'] },
     ];
 
     for (const r of sysRoles) {

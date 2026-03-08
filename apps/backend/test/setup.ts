@@ -1,5 +1,4 @@
 // apps/backend/test/setup.ts
-import { jest } from '@jest/globals';
 
 // Mock IORedis
 jest.mock('ioredis', () => {

@@ -1,21 +1,17 @@
 module.exports = {
-    moduleFileExtensions: ['js', 'json', 'ts'],
-    rootDir: 'src',
-    testRegex: '.*\\.spec\\.ts$',
+    moduleFileExtensions: ["js", "json", "ts"],
+    rootDir: ".",
+    testMatch: ["**/*.spec.ts"],
     transform: {
-        '^.+\\.(t|j)s$': ['ts-jest', { isolatedModules: true }],
+        "^.+\\.ts$": require.resolve("ts-jest")
     },
-    collectCoverageFrom: ['**/*.(t|j)s'],
-    coverageDirectory: '../coverage',
-    testEnvironment: 'node',
-    setupFiles: ['<rootDir>/../test/setup.ts'],
-    transformIgnorePatterns: [
-        '/node_modules/(?!(langfuse|turndown)/)',
-    ],
+    testEnvironment: "node",
+    // Eklenen yardımcı ayarlar (NestJS için kritik)
     moduleNameMapper: {
-        '^@/(.*)$': '<rootDir>/$1',
+        "^@/(.*)$": "<rootDir>/src/$1",
+        "^@aluplan/database$": "<rootDir>/../../packages/database"
     },
-    workerIdleMemoryLimit: '512MB',
-    // Workaround for ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG in some environments
-    // but the real fix is passing the flag to the node process.
+    setupFiles: ["<rootDir>/test/setup.ts"],
+    collectCoverageFrom: ["src/**/*.(t|j)s"],
+    coverageDirectory: "./coverage"
 };

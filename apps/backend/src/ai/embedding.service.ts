@@ -16,6 +16,7 @@ export interface SearchDiagnostics {
     topScore: number;
     passedThreshold: number;
     queryEmbeddingModel: string;
+    thresholdUsed: number;
 }
 
 export interface SearchResponse {
@@ -41,9 +42,11 @@ export class EmbeddingService {
      * Store embedding for a published article version using Hierarchical (Parent-Child) chunking.
      */
     async indexArticle(articleId: string, versionId: string, title: string, content: string): Promise<void> {
-        const hierarchies = hierarchicalChunk(content, { title, maxTokens: 2000 });
+        const parentMax = parseInt(process.env.CHUNK_PARENT_MAX_TOKENS || '800', 10);
+        const hierarchies = hierarchicalChunk(content, { title, maxTokens: parentMax });
 
         await this.prisma.$executeRaw`DELETE FROM knowledge_embeddings WHERE article_version_id = ${versionId}::uuid`;
+
 
         for (const h of hierarchies) {
             // 1. Index the Parent (for context storage)
@@ -84,7 +87,7 @@ export class EmbeddingService {
         const embResult = await this.ai.embed(query);
         if (!embResult) {
             this.logger.warn('Semantic search unavailable — AI offline');
-            return { results: [], diagnostics: { topScore: 0, passedThreshold: 0, queryEmbeddingModel: 'unknown' } };
+            return { results: [], diagnostics: { topScore: 0, passedThreshold: 0, queryEmbeddingModel: 'unknown', thresholdUsed: 0 } };
         }
 
         const vectorStr = JSON.stringify(embResult.embedding);
@@ -156,9 +159,11 @@ export class EmbeddingService {
             topScore: results.length > 0 ? results[0].similarity : 0,
             passedThreshold: results.length,
             queryEmbeddingModel: embResult.model,
+            thresholdUsed: this.SIMILARITY_THRESHOLD,
         };
 
-        this.logger.log(`📊 Search diagnostics: topScore=${diagnostics.topScore.toFixed(3)}, passed=${diagnostics.passedThreshold}, model=${diagnostics.queryEmbeddingModel}`);
+        this.logger.log(`📊 Search diagnostics: topScore=${diagnostics.topScore.toFixed(3)}, passed=${diagnostics.passedThreshold}, threshold=${diagnostics.thresholdUsed}, model=${diagnostics.queryEmbeddingModel}`);
+
 
         return { results, diagnostics };
     }

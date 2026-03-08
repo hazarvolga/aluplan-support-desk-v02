@@ -489,7 +489,6 @@ export class TicketsService {
             data: {
                 parentId,
                 status: 'CLOSED',
-                resolutionNote: `Merged into parent ticket #${parent.ticketNumber}`,
                 closedAt: new Date()
             } as any
         });

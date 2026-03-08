@@ -5,13 +5,15 @@ import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Eye, Save, FilePlus, Code, Mail, Layout } from 'lucide-react';
+import { Loader2, Eye, Save, FilePlus, Code, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { MjmlEditor } from '@/components/email/MjmlEditor';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
+import { useTranslations } from 'next-intl';
 
 export function EmailTemplates() {
+    const t = useTranslations('settings.email.templates');
     const [templates, setTemplates] = useState<string[]>([]);
     const [selected, setSelected] = useState('');
     const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ export function EmailTemplates() {
                 }
             } catch (error) {
                 console.error(error);
-                toast.error('Şablonlar yüklenemedi');
+                toast.error(t('toasts.logs_load_error') || 'Templates could not be loaded');
             } finally {
                 setLoading(false);
             }
@@ -55,7 +57,7 @@ export function EmailTemplates() {
                 setDirty(false);
                 setPreviewHtml(null);
             } catch (error: any) {
-                toast.error('Şablon kaynağı yüklenemedi: ' + error.message);
+                toast.error(t('toasts.load_error') || 'Template source could not be loaded');
                 setMjmlSource('');
             }
         };
@@ -72,10 +74,10 @@ export function EmailTemplates() {
                 setPreviewSubject(result.subject);
                 setActiveTab('preview');
             } else {
-                toast.error(result.error || 'Derleme hatası');
+                toast.error(result.error || 'Compilation error');
             }
         } catch (error: any) {
-            toast.error('Önizleme yüklenemedi: ' + error.message);
+            toast.error(t('toasts.preview_error') || 'Preview could not be loaded');
             setPreviewHtml(null);
         } finally {
             setRendering(false);
@@ -88,11 +90,11 @@ export function EmailTemplates() {
         try {
             await api.email.saveTemplate(selected, mjmlSource);
             setDirty(false);
-            toast.success(`"${selected}" şablonu kaydedildi.`);
+            toast.success(`${selected} template saved.`);
             // Auto-preview after save
             handlePreview();
         } catch (error: any) {
-            toast.error('Kayıt başarısız: ' + error.message);
+            toast.error('Save failed: ' + error.message);
         } finally {
             setSaving(false);
         }
@@ -101,7 +103,7 @@ export function EmailTemplates() {
     const handleCreateNew = useCallback(async () => {
         const name = newTemplateName.trim().toLowerCase().replace(/\s+/g, '-').replace(/\.mjml$/, '');
         if (!name) {
-            toast.error('Şablon adı gerekli');
+            toast.error('Template name is required');
             return;
         }
 
@@ -123,13 +125,13 @@ export function EmailTemplates() {
         </mj-text>
         <mj-divider border-width="1px" border-color="#f1f5f9" padding="20px 0" />
         <mj-text font-size="16px">
-          Yeni e-posta şablonunuz başarıyla oluşturuldu.
+          Your new email template has been successfully created.
         </mj-text>
         <mj-text padding-top="20px">
-          Düzenlemek için sol taraftaki MJML editörünü kullanabilirsiniz. Sağ taraftaki önizleme panelinden canlı sonucu görebilirsiniz.
+          You can use the MJML editor on the left to edit it. You can see the live result in the preview panel on the right.
         </mj-text>
         <mj-button background-color="#0ea5e9" color="white" border-radius="8px" padding-top="30px" href="{{brand.help_center_url}}">
-          Yardım Merkezi
+          Help Center
         </mj-button>
       </mj-column>
     </mj-section>
@@ -142,9 +144,9 @@ export function EmailTemplates() {
             setSelected(name);
             setNewTemplateName('');
             setShowNewDialog(false);
-            toast.success(`"${name}" şablonu oluşturuldu.`);
+            toast.success(`${name} template created.`);
         } catch (error: any) {
-            toast.error('Oluşturma başarısız: ' + error.message);
+            toast.error('Creation failed: ' + error.message);
         }
     }, [newTemplateName]);
 
@@ -167,7 +169,7 @@ export function EmailTemplates() {
                         <div className="flex gap-3 items-center flex-wrap">
                             <Select value={selected} onValueChange={setSelected}>
                                 <SelectTrigger className="w-[220px] bg-slate-900/50">
-                                    <SelectValue placeholder="Şablon seçin..." />
+                                    <SelectValue placeholder={t('select_placeholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {templates.map(t => (
@@ -183,7 +185,7 @@ export function EmailTemplates() {
                                 className="border-white/10 hover:bg-white/5"
                             >
                                 <FilePlus className="h-4 w-4 mr-2" />
-                                Yeni Şablon
+                                {t('new_btn')}
                             </Button>
                         </div>
 
@@ -196,7 +198,7 @@ export function EmailTemplates() {
                                 className="border-white/10 hover:bg-white/5"
                             >
                                 {rendering ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Eye className="h-4 w-4 mr-2" />}
-                                Önizle
+                                {t('preview_btn')}
                             </Button>
 
                             <Button
@@ -206,7 +208,7 @@ export function EmailTemplates() {
                                 className="bg-primary text-primary-foreground hover:bg-primary/90"
                             >
                                 {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                                Kaydet
+                                {t('save_btn')}
                                 {dirty && <span className="ml-1 h-2 w-2 rounded-full bg-amber-400 inline-block" />}
                             </Button>
                         </div>
@@ -219,15 +221,15 @@ export function EmailTemplates() {
                                 type="text"
                                 value={newTemplateName}
                                 onChange={(e) => setNewTemplateName(e.target.value)}
-                                placeholder="ornek-sablon-adi"
+                                placeholder={t('new_placeholder')}
                                 className="flex-1 px-3 py-2 bg-background border border-white/10 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                                 onKeyDown={(e) => e.key === 'Enter' && handleCreateNew()}
                             />
                             <Button size="sm" onClick={handleCreateNew} className="bg-primary text-primary-foreground">
-                                Oluştur
+                                {t('create_btn')}
                             </Button>
                             <Button size="sm" variant="ghost" onClick={() => { setShowNewDialog(false); setNewTemplateName(''); }}>
-                                İptal
+                                {t('cancel_btn')}
                             </Button>
                         </div>
                     )}
@@ -242,7 +244,7 @@ export function EmailTemplates() {
                         <CardHeader className="py-3 px-4 border-b border-white/5">
                             <div className="flex items-center gap-2">
                                 <Code className="h-4 w-4 text-primary" />
-                                <CardTitle className="text-sm font-medium">MJML Editör</CardTitle>
+                                <CardTitle className="text-sm font-medium">{t('editor_title')}</CardTitle>
                                 <span className="text-xs text-muted-foreground ml-auto">{selected}.mjml</span>
                             </div>
                         </CardHeader>
@@ -255,7 +257,7 @@ export function EmailTemplates() {
                                 }}
                                 spellCheck={false}
                                 className="w-full h-[600px] p-4 bg-[#1F1F1F] text-[#F5F5F5] font-mono text-xs leading-relaxed resize-none border-0 focus:outline-none focus:ring-0 scrollbar-thin"
-                                placeholder="MJML içeriğini buraya yazın..."
+                                placeholder={t('editor_placeholder')}
                             />
                         </CardContent>
                     </Card>
@@ -265,10 +267,10 @@ export function EmailTemplates() {
                         <CardHeader className="py-3 px-4 border-b border-white/5">
                             <div className="flex items-center gap-2">
                                 <Mail className="h-4 w-4 text-primary" />
-                                <CardTitle className="text-sm font-medium">E-Posta Önizleme</CardTitle>
+                                <CardTitle className="text-sm font-medium">{t('preview_title')}</CardTitle>
                                 {previewSubject && (
                                     <span className="text-xs text-muted-foreground ml-auto truncate max-w-[200px]">
-                                        Konu: {previewSubject}
+                                        {t('subject_label')}: {previewSubject}
                                     </span>
                                 )}
                             </div>
@@ -278,6 +280,7 @@ export function EmailTemplates() {
                                 <div className="w-full bg-white h-[600px] overflow-auto">
                                     <iframe
                                         srcDoc={previewHtml}
+                                        sandbox="allow-popups"
                                         className="w-full h-full border-0"
                                         title="email-preview"
                                     />
@@ -285,8 +288,8 @@ export function EmailTemplates() {
                             ) : (
                                 <div className="flex flex-col items-center justify-center h-[600px] text-muted-foreground">
                                     <Eye className="h-10 w-10 mb-3 opacity-30" />
-                                    <p className="text-sm">Önizleme için &quot;Önizle&quot; butonuna tıklayın.</p>
-                                    <p className="text-xs mt-1 opacity-60">Kaydet &rarr; Önizle akışı önerilir.</p>
+                                    <p className="text-sm">{t('preview_hint')}</p>
+                                    <p className="text-xs mt-1 opacity-60">{t('preview_flow_hint')}</p>
                                 </div>
                             )}
                         </CardContent>
@@ -297,8 +300,8 @@ export function EmailTemplates() {
             <Dialog open={safeModeOpen} onOpenChange={setSafeModeOpen}>
                 <DialogContent className="max-w-[95vw] w-[1400px] h-[90vh] p-0 overflow-hidden bg-background border-white/5">
                     <VisuallyHidden.Root>
-                        <DialogTitle>Güvenli İçerik Editörü</DialogTitle>
-                        <DialogDescription>MJML iskeletini bozmadan içeriklerinizi düzenleyin.</DialogDescription>
+                        <DialogTitle>{t('safe_editor_title')}</DialogTitle>
+                        <DialogDescription>{t('safe_editor_desc')}</DialogDescription>
                     </VisuallyHidden.Root>
                     <MjmlEditor
                         type="transactional"

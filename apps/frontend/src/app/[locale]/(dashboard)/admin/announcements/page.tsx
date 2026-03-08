@@ -679,7 +679,7 @@ export default function AnnouncementsPage() {
                                     <CardContent className="p-0">
                                         <div className="w-full bg-white h-[500px] overflow-hidden">
                                             <iframe
-                                                srcDoc={templatePreviewHtml}
+                                                srcDoc={templatePreviewHtml ? DOMPurify.sanitize(templatePreviewHtml) : ''}
                                                 className="w-full h-full border-0"
                                                 title="template-archive-preview"
                                             />
