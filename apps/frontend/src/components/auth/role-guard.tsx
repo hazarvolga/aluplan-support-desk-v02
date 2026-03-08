@@ -1,8 +1,22 @@
 'use client';
 
-import { useEffect, useState, createContext, useContext } from 'react';
+import { useEffect, useState, useRef, createContext, useContext } from 'react';
 import { api } from '@/lib/api';
 import { useRouter, usePathname } from 'next/navigation';
+import { routing } from '@/i18n/routing';
+
+/**
+ * Strip the locale prefix from a pathname for route matching.
+ * e.g., "/en/login" → "/login", "/tr/dashboard" → "/dashboard", "/en" → "/"
+ */
+function stripLocale(pathname: string): string {
+    for (const locale of routing.locales) {
+        const prefix = `/${locale}`;
+        if (pathname === prefix) return '/';
+        if (pathname.startsWith(`${prefix}/`)) return pathname.slice(prefix.length);
+    }
+    return pathname;
+}
 
 interface User {
     id: string;
@@ -16,12 +30,14 @@ interface User {
 interface AuthContextType {
     user: User | null;
     loading: boolean;
+    login: (user: User) => void;
     logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
     loading: true,
+    login: () => { },
     logout: () => { },
 });
 
@@ -33,15 +49,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const fetchUser = async () => {
         const token = localStorage.getItem('access_token');
+        const cleanPath = stripLocale(pathname);
         if (!token) {
             setUser(null);
             setLoading(false);
-            if (
-                pathname !== '/' &&
-                !pathname.startsWith('/login') &&
-                !pathname.startsWith('/register') &&
-                !pathname.startsWith('/reset-password')
-            ) {
+            // Only redirect to login if user is on a protected route
+            const isPublicRoute =
+                cleanPath === '/' ||
+                cleanPath.startsWith('/login') ||
+                cleanPath.startsWith('/register') ||
+                cleanPath.startsWith('/reset-password');
+            if (!isPublicRoute) {
                 router.push('/login');
             }
             return;
@@ -53,12 +71,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
             localStorage.removeItem('access_token');
             setUser(null);
-            if (
-                pathname !== '/' &&
-                !pathname.startsWith('/login') &&
-                !pathname.startsWith('/register') &&
-                !pathname.startsWith('/reset-password')
-            ) {
+            const isPublicRoute =
+                cleanPath === '/' ||
+                cleanPath.startsWith('/login') ||
+                cleanPath.startsWith('/register') ||
+                cleanPath.startsWith('/reset-password');
+            if (!isPublicRoute) {
                 router.push('/login');
             }
         } finally {
@@ -79,13 +97,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const login = (userData: User) => {
+        setUser(userData);
+        setLoading(false);
+    };
+
+    // Run fetchUser on mount
     useEffect(() => {
         fetchUser();
-    }, [pathname]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Re-sync if path changes and we have a token but no user (handles cross-page navigation)
+    useEffect(() => {
+        const token = localStorage.getItem('access_token');
+        if (token && !user) {
+            fetchUser();
+        }
+    }, [pathname, user]);
 
     useEffect(() => {
         if (!loading && user) {
-            if (pathname === '/' || pathname.startsWith('/login')) {
+            const cleanPath = stripLocale(pathname);
+            if (cleanPath === '/' || cleanPath.startsWith('/login')) {
                 const userRole = (user?.role || (user?.roles && user.roles[0]) || 'viewer').toLowerCase();
                 router.push(userRole === 'customer' || userRole === 'viewer' ? '/my-tickets' : '/dashboard');
             }
@@ -93,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, [user, loading, pathname, router]);
 
     return (
-        <AuthContext.Provider value={{ user, loading, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, logout }}>
             {children}
         </AuthContext.Provider>
     );
@@ -116,10 +150,11 @@ export function RoleGuard({
         if (!loading && user) {
             const userRole = (user?.role || (user?.roles && user.roles[0]) || 'viewer').toLowerCase();
             const isCustomer = userRole === 'customer' || userRole === 'viewer';
+            const cleanPath = stripLocale(pathname);
 
             // Routes that are definitely NOT for customers
             const adminOnlyPaths = ['/users', '/settings', '/reports', '/customers', '/faq/review', '/ai/training', '/faq-learning'];
-            const isUnauthorizedTarget = adminOnlyPaths.some(path => pathname.startsWith(path));
+            const isUnauthorizedTarget = adminOnlyPaths.some(path => cleanPath.startsWith(path));
 
             if (allowedRoles) {
                 const hasRequiredRole = allowedRoles.some(r => r.toLowerCase() === userRole);

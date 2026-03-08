@@ -260,7 +260,7 @@ export const api = {
             body: JSON.stringify({ provider }),
         }),
         getCopilotDraft: (ticketId: string) => request<{ draft: string; model: string }>(`/ai/copilot/draft/${ticketId}`),
-        getMetrics: () => request<{
+        getMetrics: (channel?: string) => request<{
             global: {
                 _sum: {
                     inputTokens: number | null;
@@ -281,7 +281,13 @@ export const api = {
                     requests: number;
                 };
             }>;
-        }>('/ai/metrics'),
+            channels?: Array<{
+                channel: string;
+                requests: number;
+                tokens: number;
+                cost: number;
+            }>;
+        }>(`/ai/metrics${channel ? `?channel=${channel}` : ''}`),
         getHealthMetrics: () => request<{
             totalInteractions: number;
             deflectionRate: number;
