@@ -1,7 +1,3 @@
-// Initialize Sentry BEFORE any other imports so the auto-instrumentation wraps subsequent modules
-import './instrument';
-
-import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
@@ -65,21 +61,36 @@ async function bootstrap() {
     }
 
     const app = await NestFactory.create(AppModule, {
-        logger: ['log', 'error', 'warn', 'debug'],
+        bufferLogs: true,
     });
 
-    const { WINSTON_MODULE_NEST_PROVIDER } = require('nest-winston');
-    app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Logger: PinoLogger } = require('nestjs-pino');
+    app.useLogger(app.get(PinoLogger));
 
     const configService = app.get(ConfigService);
     const port = configService.get<number>('PORT', 3001);
     const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
-    // Security
+    // Security Hardening
     app.use(helmet({
         crossOriginResourcePolicy: { policy: "cross-origin" },
-        contentSecurityPolicy: false, // Relaxed for API stability in production
+        contentSecurityPolicy: configService.get('NODE_ENV') === 'production' ? {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                imgSrc: ["'self'", "data:", "https:"],
+                connectSrc: ["'self'", "https:", "http:"],
+                frameSrc: ["'self'"],
+            }
+        } : false,
+        hsts: true,
+        noSniff: true,
+        xssFilter: true,
+        hidePoweredBy: true,
     }));
+
     app.use(compression());
 
     // Payload Limit increase for massive CSV JSON arrays
@@ -126,10 +137,13 @@ async function bootstrap() {
     );
 
     // Global Exception Filter
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { httpAdapter } = app.get(require('@nestjs/core').HttpAdapterHost);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const errorLogger = app.get(require('./common/services/error-logger.service').ErrorLoggerService);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { GlobalExceptionFilter } = require('./common/filters/global-exception.filter');
-    app.useGlobalFilters(new GlobalExceptionFilter({ httpAdapter }, errorLogger), new SentryGlobalFilter());
+    app.useGlobalFilters(new GlobalExceptionFilter({ httpAdapter }, errorLogger));
 
 
     // Swagger (only in development)

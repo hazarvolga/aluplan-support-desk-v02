@@ -6,7 +6,6 @@ import * as path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 export default defineConfig({
-    earlyAccess: true,
     schema: 'prisma/schema.prisma',
     datasource: {
         url: process.env.DATABASE_URL,

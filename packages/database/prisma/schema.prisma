@@ -1,10 +1,6 @@
-// =============================================
-// Prisma Schema — Aluplan Support Desk
-// =============================================
-
 generator client {
   provider        = "prisma-client-js"
-  output          = "../client"
+  binaryTargets   = ["native"]
   previewFeatures = ["postgresqlExtensions"]
 }
 
@@ -610,6 +606,7 @@ model AiInteraction {
   autoAnswered      Boolean         @default(false) @map("auto_answered")
   ticketCreated     Boolean         @default(false) @map("ticket_created")
   productId         String?         @map("product_id") @db.Uuid
+  channel           CommunicationChannel @default(WEB) @map("channel")
   userContext       Json?           @map("user_context") @db.JsonB // page, segment, etc.
 
   // Telemetry details

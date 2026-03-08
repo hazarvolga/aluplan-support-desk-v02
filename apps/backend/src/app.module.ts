@@ -41,25 +41,30 @@ import { AnnouncementsModule } from './announcements/announcements.module';
 import { AnnouncementTemplatesModule } from './announcement-templates/announcement-templates.module';
 import { EmailValidatorModule } from './email-validator/email-validator.module';
 import { CommonModule } from './common/common.module';
-import { WinstonModule } from 'nest-winston';
-import * as winston from 'winston';
+import { LoggerModule } from 'nestjs-pino';
 
 @Module({
     imports: [
         SentryModule.forRoot(),
-        WinstonModule.forRoot({
-            transports: [
-                new winston.transports.Console({
-                    format: winston.format.combine(
-                        winston.format.timestamp(),
-                        winston.format.ms(),
-                        winston.format.colorize(),
-                        winston.format.printf(({ timestamp, level, message, context, ms }) => {
-                            return `[Nest] ${timestamp} ${level} [${context || 'Application'}] ${message} ${ms}`;
-                        }),
-                    ),
-                }),
-            ],
+        LoggerModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                pinoHttp: {
+                    level: config.get('nodeEnv') !== 'production' ? 'debug' : 'info',
+                    transport: config.get('nodeEnv') !== 'production'
+                        ? { target: 'pino-pretty', options: { colorize: true } }
+                        : {
+                            target: 'pino-loki',
+                            options: {
+                                batching: true,
+                                interval: 5,
+                                host: config.get('LOKI_HOST', 'http://loki:3100'),
+                                labels: { app: 'aluplan-backend' }
+                            }
+                        }
+                },
+            }),
         }),
         ConfigModule.forRoot({
             isGlobal: true,
