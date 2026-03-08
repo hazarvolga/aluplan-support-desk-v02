@@ -14,7 +14,41 @@ const nextConfig: NextConfig = {
     experimental: {
         typedRoutes: false,
     },
+    async headers() {
+        return [
+            {
+                source: '/(.*)',
+                headers: [
+                    {
+                        key: 'X-Frame-Options',
+                        value: 'DENY',
+                    },
+                    {
+                        key: 'X-Content-Type-Options',
+                        value: 'nosniff',
+                    },
+                    {
+                        key: 'Referrer-Policy',
+                        value: 'strict-origin-when-cross-origin',
+                    },
+                    {
+                        key: 'Permissions-Policy',
+                        value: 'camera=(), microphone=(), geolocation=()',
+                    },
+                    {
+                        key: 'Strict-Transport-Security',
+                        value: 'max-age=31536000; includeSubDomains; preload',
+                    },
+                    {
+                        key: 'X-XSS-Protection',
+                        value: '1; mode=block',
+                    },
+                ],
+            },
+        ];
+    },
 };
+
 
 import { withSentryConfig } from '@sentry/nextjs';
 
@@ -34,10 +68,7 @@ export default withSentryConfig(withNextIntl(nextConfig), {
     // Upload a larger set of source maps for prettier stack traces (increases build time)
     widenClientFileUpload: true,
 
-    // Automatically annotate React components to show their full name in breadcrumbs and session replay
-    reactComponentAnnotation: {
-        enabled: true,
-    },
+
 
     // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
     // This can increase your server load as well as your hosting bill.
@@ -46,10 +77,13 @@ export default withSentryConfig(withNextIntl(nextConfig), {
     tunnelRoute: '/monitoring',
 
     // Automatically tree-shake Sentry logger statements to reduce bundle size
-    disableLogger: true,
+    // and automatically annotate React components to show their full name in breadcrumbs and session replay
+    webpack: {
+        treeshake: { removeDebugLogging: true },
+        reactComponentAnnotation: { enabled: true }
+    },
 
     sourcemaps: {
         disable: false,
     }
 });
-
