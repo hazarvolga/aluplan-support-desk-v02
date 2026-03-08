@@ -1,26 +1,45 @@
-import { PrismaClient, SystemRole, TicketPriority } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import { config } from 'dotenv';
+import { resolve } from 'path';
 
-const prisma = new PrismaClient();
+// Load root .env
+config({ path: resolve(__dirname, '../../../.env') });
+
+import { PrismaClient, TicketPriority } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({
+    connectionString: connectionString,
+});
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
     console.log('🌱 Seeding database...');
 
     // 1. Seed Admin User
-    const adminPassword = process.env.ADMIN_PASSWORD ?? 'Vol1872017';
+    const adminPassword = process.env.ADMIN_PASSWORD ?? 'Vol?*187';
     const hash = await bcrypt.hash(adminPassword, 12);
+
+    let adminRole = await prisma.role.findFirst({ where: { name: 'admin' } });
+    if (!adminRole) { // Fallback if roles aren't seeded yet
+        adminRole = await prisma.role.create({ data: { name: 'admin', isSystem: true } });
+    }
 
     const admin = await prisma.user.upsert({
         where: { email: 'hazarvolga@gmail.com' },
         update: {
-            role: SystemRole.ADMIN,
+            roleId: adminRole.id,
             passwordHash: hash,
+            fullName: 'hazarvolga',
         },
         create: {
             email: 'hazarvolga@gmail.com',
-            fullName: 'Hazar Ekiz (Admin)',
+            fullName: 'hazarvolga',
             passwordHash: hash,
-            role: SystemRole.ADMIN,
+            roleId: adminRole.id,
             status: 'ACTIVE',
         },
     });

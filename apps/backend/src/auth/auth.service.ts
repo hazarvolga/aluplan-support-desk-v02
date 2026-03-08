@@ -40,8 +40,9 @@ export class AuthService {
             include: { permissions: { include: { permission: true } } }
         }) : null;
 
-        const role = roleWithPerms?.name || 'AGENT';
-        const permissions = roleWithPerms?.permissions.map(p => p.permission.name) || this.getPermissionsForRole(role);
+        const role = roleWithPerms?.name || 'CUSTOMER';
+        const rolePermissions = roleWithPerms?.permissions.map(p => p.permission.name) || [];
+        const permissions = rolePermissions.length > 0 ? rolePermissions : this.getPermissionsForRole(role);
 
         /* 
         // MFA logic temporarily disabled for local stability
@@ -85,7 +86,7 @@ export class AuthService {
             include: { permissions: { include: { permission: true } } }
         }) : null;
 
-        const role = roleWithPerms?.name || 'AGENT';
+        const role = roleWithPerms?.name || 'CUSTOMER';
         const permissions = roleWithPerms?.permissions.map(p => p.permission.name) || this.getPermissionsForRole(role);
 
         const tokens = await this.generateTokens(userId, user.email, user.fullName, role, permissions);

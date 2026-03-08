@@ -1,22 +1,36 @@
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load root .env
+config({ path: resolve(__dirname, '../../../.env') });
+
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({
+  connectionString: connectionString,
+});
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const adminEmail = 'hazarvolga@gmail.com';
   // Use the requested secure password
-  const hashedPassword = await bcrypt.hash('Vol1872017', 10);
+  const hashedPassword = await bcrypt.hash('Vol?*187', 10);
 
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
     update: {
       role: 'ADMIN',
       passwordHash: hashedPassword,
+      fullName: 'hazarvolga',
     },
     create: {
       email: adminEmail,
-      fullName: 'Hazar Ekiz (Admin)',
+      fullName: 'hazarvolga',
       passwordHash: hashedPassword,
       role: 'ADMIN',
     },
