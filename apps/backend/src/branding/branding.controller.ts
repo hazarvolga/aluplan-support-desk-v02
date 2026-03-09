@@ -1,6 +1,9 @@
 import {
     Controller,
+    Get,
     Post,
+    Param,
+    Res,
     UseInterceptors,
     UploadedFile,
     UseGuards,
@@ -9,53 +12,49 @@ import {
     FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
+import { StorageService } from '../common/services/storage.service';
+import { Response } from 'express';
 
 @Controller('branding')
-@UseGuards(JwtAuthGuard, RbacGuard)
 export class BrandingController {
+    constructor(private readonly storageService: StorageService) { }
+
+    @Get('assets/*')
+    async getAsset(@Param('0') key: string, @Res() res: Response) {
+        // Creates a fresh presigned URL valid for 1 hour and redirects the user securely
+        try {
+            const url = await this.storageService.getDownloadUrl(key);
+            return res.redirect(url);
+        } catch (error) {
+            return res.status(404).send('Asset not found');
+        }
+    }
+
     @Post('upload-logo')
+    @UseGuards(JwtAuthGuard, RbacGuard)
     @Roles('ADMIN', 'SUPERUSER')
-    @UseInterceptors(
-        FileInterceptor('file', {
-            storage: diskStorage({
-                destination: (req, file, callback) => {
-                    // Save directly to frontend public directory for local dev accessibility
-                    // Ensure we reach the root from apps/backend if needed
-                    let root = process.cwd();
-                    if (root.endsWith('apps/backend')) {
-                        root = join(root, '../..');
-                    }
-                    const dest = join(root, 'apps/frontend/public/logos');
-                    callback(null, dest);
-                },
-                filename: (req, file, callback) => {
-                    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-                    const ext = extname(file.originalname);
-                    callback(null, `logo-${uniqueSuffix}${ext}`);
-                },
-            }),
-        }),
-    )
+    @UseInterceptors(FileInterceptor('file')) // Uses MemoryStorage by default
     async uploadLogo(
         @UploadedFile(
             new ParseFilePipe({
                 validators: [
-                    new MaxFileSizeValidator({ maxSize: 2 * 1024 * 1024 }), // 2MB
-                    new FileTypeValidator({ fileType: /(jpg|jpeg|png|svg)$/ }),
+                    new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+                    new FileTypeValidator({ fileType: /image\/(jpeg|png|webp|svg\+xml)/ }),
                 ],
             }),
         )
         file: Express.Multer.File,
     ) {
-        // Return the relative path that the frontend can use
+        // Upload to S3/MinIO in specific taxonomy folder
+        const key = await this.storageService.uploadFile(file, 'brand/logos');
+
+        // Return the dynamic proxy endpoint instead of raw expiring S3 url
         return {
-            url: `/logos/${file.filename}`,
-            filename: file.filename,
+            url: `/api/v1/branding/assets/${key}`,
+            filename: key,
         };
     }
 }

@@ -41,14 +41,15 @@ export class AttachmentsController {
             new ParseFilePipe({
                 validators: [
                     new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
-                    new FileTypeValidator({ fileType: /(jpg|jpeg|png|pdf|doc|docx|zip)$/ }),
+                    // Matches standard image/application mimetypes rather than naive file extensions
+                    new FileTypeValidator({ fileType: /image\/(jpeg|png|webp|gif)|application\/(pdf|msword|vnd\.openxmlformats|zip|x-zip-compressed)/i }),
                 ],
             }),
         )
         file: Express.Multer.File,
     ) {
-        // Upload to MinIO/S3 object storage
-        const storageKey = await this.storageService.uploadFile(file, 'attachments');
+        // Enforce classification: tickets/msg_{id}
+        const storageKey = await this.storageService.uploadFile(file, `tickets/msg_${messageId}`);
 
         return this.attachmentsService.create({
             messageId,
