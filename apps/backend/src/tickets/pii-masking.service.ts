@@ -19,26 +19,26 @@ export class PiiMaskingService {
         let masked = text;
 
         // Mask Credit Cards (keep last 4 visible)
-        masked = masked.replace(this.creditCardRegex, (match) => {
-            const last4 = match.slice(-4);
+        masked = masked.replace(this.creditCardRegex, (_match) => {
+            const last4 = _match.slice(-4);
             return `[KREDİ KARTI GİZLENDİ: ****-****-****-${last4}]`;
         });
 
         // Mask TCKN (Keep first 2 and last 2 visible)
-        masked = masked.replace(this.tcknRegex, (match) => {
-            const first2 = match.substring(0, 2);
-            const last2 = match.substring(match.length - 2);
+        masked = masked.replace(this.tcknRegex, (_match) => {
+            const first2 = _match.substring(0, 2);
+            const last2 = _match.substring(_match.length - 2);
             return `[TCKN GİZLENDİ: ${first2}*******${last2}]`;
         });
 
         // Mask Phone Numbers
-        masked = masked.replace(this.phoneRegex, (match) => {
+        masked = masked.replace(this.phoneRegex, () => {
             return `[TELEFON GİZLENDİ]`;
         });
 
         // Mask Emails
-        masked = masked.replace(this.emailRegex, (match) => {
-            const [local, domain] = match.split('@');
+        masked = masked.replace(this.emailRegex, (_match) => {
+            const [local, domain] = _match.split('@');
             return `[E-POSTA GİZLENDİ: ${local.charAt(0)}***@${domain}]`;
         });
 

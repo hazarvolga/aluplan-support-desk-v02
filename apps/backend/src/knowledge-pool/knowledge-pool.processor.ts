@@ -242,7 +242,7 @@ export class KnowledgePoolProcessor extends WorkerHost {
         }
 
         // Section 3.5.3: Change Monitor (Partial for files - size track)
-        const oldLength = (source.metadata as any)?.lastContentLength || 0;
+        const _oldLength = (source.metadata as any)?.lastContentLength || 0;
         const newLength = content.length;
 
         await this.prisma.knowledgeSource.update({

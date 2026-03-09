@@ -39,19 +39,23 @@ export class AnnouncementTemplatesService {
 
         if (cleanName !== t.name) {
           try {
-            this.logger.log(`Normalizing template name: "${t.name}" -> "${cleanName}"`);
-            await this.prisma.announcementTemplate.update({
-              where: { id: t.id },
-              data: { name: cleanName }
+            // Check if another template already has the clean name
+            const existingWithCleanName = await this.prisma.announcementTemplate.findFirst({
+              where: { name: cleanName, NOT: { id: t.id } }
             });
-          } catch (updateError) {
-            // Uniqueness collision: Delete the one currently being processed since it's now a duplicate
-            this.logger.warn(`Collision detected during normalization for "${t.name}". Deleting duplicate.`);
-            try {
+
+            if (existingWithCleanName) {
+              this.logger.warn(`Collision detected for "${cleanName}". Merging/Deleting duplicate.`);
               await this.prisma.announcementTemplate.delete({ where: { id: t.id } });
-            } catch (deleteError) {
-              this.logger.warn(`Could not delete duplicate "${t.name}" (${deleteError.message})`);
+            } else {
+              this.logger.log(`Normalizing template name: "${t.name}" -> "${cleanName}"`);
+              await this.prisma.announcementTemplate.update({
+                where: { id: t.id },
+                data: { name: cleanName }
+              });
             }
+          } catch (error) {
+            this.logger.error(`Failed to normalize/cleanup template "${t.name}": ${error.message}`);
           }
         }
       }

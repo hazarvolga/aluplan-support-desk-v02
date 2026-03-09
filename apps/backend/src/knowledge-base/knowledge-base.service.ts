@@ -179,7 +179,7 @@ export class KnowledgeBaseService {
     }
 
     // ─── SUBMIT FOR REVIEW ──────────────────────────────────
-    async submitForReview(id: string, _userId?: string) {
+    async submitForReview(id: string) {
         const article = await this.findOne(id);
 
         if (article.status !== 'DRAFT') {

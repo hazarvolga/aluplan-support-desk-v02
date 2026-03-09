@@ -24,7 +24,7 @@ export class UsersService {
             },
         });
 
-        const { passwordHash: _, ...result } = user;
+        const { passwordHash: _passwordHash, ...result } = user;
         return result;
     }
 
@@ -49,7 +49,7 @@ export class UsersService {
             },
         });
         if (!user) throw new NotFoundException(`User ${id} not found`);
-        const { passwordHash: _, ...result } = user;
+        const { passwordHash: _passwordHash, ...result } = user;
         return result;
     }
 
@@ -109,7 +109,7 @@ export class UsersService {
             }
         }
 
-        const { passwordHash: _, ...result } = user;
+        const { passwordHash: _passwordHash, ...result } = user;
         return result;
     }
 

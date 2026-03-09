@@ -10,7 +10,7 @@ import { BulkUpdateTicketDto } from './dto/bulk-update-ticket.dto';
 import { AddMessageDto } from './dto/add-message.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { RbacGuard } from '../rbac/rbac.guard';
-import { Roles, RequirePermissions } from '../rbac/decorators/rbac.decorators';
+import { RequirePermissions } from '../rbac/decorators/rbac.decorators';
 import { TicketStatus, TicketPriority } from '@aluplan/database';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 

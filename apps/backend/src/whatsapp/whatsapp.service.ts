@@ -26,8 +26,6 @@ export class WhatsAppService {
 
         const fromPhone = message.from; // WhatsApp ID / Phone
         const text = message.text?.body;
-        const customerName = contact?.profile?.name || 'WhatsApp User';
-
         const cleanPhone = fromPhone.replace(/\D/g, '');
 
         // 1. Match customer by phone number (using contains or exact match after normalization)

@@ -15,6 +15,11 @@ export class SettingsService {
     ) { }
 
     async upsert(dto: UpsertSettingDto, userId?: string) {
+        // AI Validation Logic
+        if (dto.key.startsWith('ai.')) {
+            await this.validateAiSetting(dto.key, dto.value);
+        }
+
         // Guard: Do not overwrite existing secrets with the masked placeholder
         if (dto.value === '********') {
             const existing = await this.get(dto.key, true);
@@ -47,6 +52,42 @@ export class SettingsService {
         this.secretCache.set(dto.key, dto.isSecret ?? false);
 
         return setting;
+    }
+
+    private async validateAiSetting(key: string, value: string) {
+        // 1. If key is a provider switch, check if its models are configured
+        if (key === 'ai.chat_provider' || key === 'ai.embed_provider') {
+            if (value === 'ollama') {
+                const url = await this.getValue('ai.ollama.url');
+                const chatModel = await this.getValue('ai.ollama.chat_model');
+                const embedModel = await this.getValue('ai.ollama.embed_model');
+                if (!url || !chatModel || !embedModel) {
+                    throw new Error(`Ollama yapılandırması eksik (URL, Chat Model veya Embed Model).`);
+                }
+            }
+            if (value === 'openai') {
+                const key = await this.getValue('ai.openai.api_key');
+                const chatModel = await this.getValue('ai.openai.chat_model');
+                const embedModel = await this.getValue('ai.openai.embed_model');
+                if (!key || !chatModel || !embedModel) {
+                    throw new Error(`OpenAI yapılandırması eksik (API Key, Chat Model veya Embed Model).`);
+                }
+            }
+        }
+
+        // 2. If key is a model field being emptied, check if it's the active provider
+        if (key.endsWith('.chat_model') || key.endsWith('.embed_model') || key.endsWith('.api_key')) {
+            if (!value || value.trim() === '') {
+                const parts = key.split('.');
+                const providerName = parts[1]; // e.g. 'openai' from 'ai.openai.chat_model'
+                const currentChat = await this.getValue('ai.chat_provider');
+                const currentEmbed = await this.getValue('ai.embed_provider');
+
+                if (currentChat === providerName || currentEmbed === providerName) {
+                    throw new Error(`Aktif AI sağlayıcısı (${providerName}) için "${key}" alanı boş bırakılamaz.`);
+                }
+            }
+        }
     }
 
     async get(key: string, decrypt = false): Promise<any> {

@@ -44,7 +44,7 @@ async function bootstrap() {
             const urlObj = new URL(redisUrlString);
             redisHost = urlObj.hostname;
             redisPort = parseInt(urlObj.port) || 6379;
-        } catch (e) { }
+        } catch { }
     }
     const dbUrl = process.env.DATABASE_URL || '';
     const dbMatch = dbUrl.match(/@([^:/]+):(\d+)/);

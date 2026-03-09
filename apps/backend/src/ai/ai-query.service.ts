@@ -107,7 +107,7 @@ export class AiQueryService {
 
             const interaction = await this.prisma.aiInteraction.create({
                 data: {
-                    userId,
+                    userId: userId || undefined,
                     channel,
                     userQuery,
                     responseGenerated: 'AI güvenilir bir kaynak bulamadı. Talep insan temsilciye yönlendirildi.',
@@ -120,7 +120,7 @@ export class AiQueryService {
                     outputTokens: 0,
                     totalTokens: 0,
                     estimatedCost: 0,
-                } as any
+                }
             });
 
             return {
@@ -198,7 +198,7 @@ export class AiQueryService {
                 outputTokens,
                 totalTokens,
                 estimatedCost
-            } as any
+            }
         });
 
         this.logger.log(
@@ -260,7 +260,7 @@ export class AiQueryService {
             .slice(0, 5);
     }
 
-    async *streamQuery(userQuery: string, userId?: string | null): AsyncGenerator<any, void, unknown> {
+    async * streamQuery(userQuery: string, userId?: string | null): AsyncGenerator<any, void, unknown> {
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
         const queryHash = createHash('sha256').update(userQuery + isStaff).digest('hex');

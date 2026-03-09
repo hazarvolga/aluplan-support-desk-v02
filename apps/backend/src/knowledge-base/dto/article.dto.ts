@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsArray, MinLength, MaxLength, IsUUID, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsArray, MinLength, MaxLength, IsUUID, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 // ArticleStatus is a string union — defined inline to avoid Prisma client resolution order issues
 

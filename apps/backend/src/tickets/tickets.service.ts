@@ -14,7 +14,7 @@ import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { AddMessageDto } from './dto/add-message.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { BulkUpdateTicketDto } from './dto/bulk-update-ticket.dto';
-import { TicketStatus, TicketPriority, Prisma, CommunicationChannel } from '@aluplan/database';
+import { TicketStatus, TicketPriority, Prisma } from '@aluplan/database';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiQueryService } from '../ai/ai-query.service';
 
@@ -209,7 +209,7 @@ export class TicketsService {
     // =============================================
     // UPDATE
     // =============================================
-    async update(id: string, dto: UpdateTicketDto, actorId: string) {
+    async update(id: string, dto: UpdateTicketDto, _actorId: string) {
         await this.findOne(id); // throws if not found
 
         let slaUpdate = {};
@@ -286,7 +286,7 @@ export class TicketsService {
     // =============================================
     // ASSIGN
     // =============================================
-    async assign(id: string, assigneeId: string, actorId: string) {
+    async assign(id: string, assigneeId: string, _actorId: string) {
         const ticket = await this.findOne(id);
         if (ticket.status === TicketStatus.CLOSED) {
             throw new BadRequestException('Cannot assign a closed ticket');
@@ -443,7 +443,7 @@ export class TicketsService {
     // =============================================
     // SUBMIT FEEDBACK (Self-Learning KB Trigger)
     // =============================================
-    async submitFeedback(id: string, score: number, comment?: string, customerId?: string) {
+    async submitFeedback(id: string, score: number, comment?: string, _customerId?: string) {
         const ticket = await this.findOne(id);
 
         if (ticket.status !== TicketStatus.PENDING_CUSTOMER_REVIEW && ticket.status !== TicketStatus.RESOLVED) {
