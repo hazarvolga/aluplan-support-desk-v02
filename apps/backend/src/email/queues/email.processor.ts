@@ -86,26 +86,52 @@ export class EmailProcessor extends WorkerHost {
         text: compiled.text
       });
 
-      await this.prisma.emailLog.update({
-        where: { id: logRef },
-        data: {
-          status: 'SENT',
-          messageId: result.messageId,
-          sentAt: new Date()
-        }
-      });
+      if (logRef) {
+        await this.prisma.emailLog.update({
+          where: { id: logRef },
+          data: {
+            status: 'SENT',
+            messageId: result.messageId,
+            sentAt: new Date()
+          }
+        });
+      } else {
+        await this.prisma.emailLog.create({
+          data: {
+            recipientEmail: Array.isArray(to) ? to.join(', ') : to,
+            subject: compiled.subject || subject || 'No Subject',
+            templateName: template,
+            status: 'SENT',
+            messageId: result.messageId,
+            sentAt: new Date()
+          }
+        });
+      }
 
       this.logger.log(`Email successfully dispatched: ${job.id} - MsgId: ${result.messageId}`);
     } catch (error: any) {
       this.logger.error(`Failed to dispatch email job: ${job.id}`, error.stack);
 
-      await this.prisma.emailLog.update({
-        where: { id: logRef },
-        data: {
-          status: 'FAILED',
-          error: error.message
-        }
-      });
+      if (logRef) {
+        await this.prisma.emailLog.update({
+          where: { id: logRef },
+          data: {
+            status: 'FAILED',
+            error: error.message
+          }
+        });
+      } else {
+        await this.prisma.emailLog.create({
+          data: {
+            recipientEmail: Array.isArray(to) ? to.join(', ') : to,
+            subject: subject || 'No Subject',
+            templateName: template,
+            status: 'FAILED',
+            error: error.message
+          }
+        });
+      }
+
       // Pick up BullMQ retries mechanism
       throw error;
     }
