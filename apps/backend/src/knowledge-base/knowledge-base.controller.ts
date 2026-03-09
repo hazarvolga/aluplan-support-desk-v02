@@ -6,7 +6,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { CreateArticleDto, UpdateArticleDto, ReviewArticleDto, SubmitFeedbackDto } from './dto/article.dto';
 import { RbacGuard } from '../rbac/rbac.guard';
-import { RequirePermissions, Roles } from '../rbac/decorators/rbac.decorators';
+import { RequirePermissions } from '../rbac/decorators/rbac.decorators';
 import { Public } from '../auth/decorators/public.decorator';
 
 const ArticleStatus = {
@@ -84,8 +84,8 @@ export class KnowledgeBaseController {
     @Post('articles/:id/submit')
     @RequirePermissions('kb:submit_review')
     @ApiOperation({ summary: 'Submit article for review' })
-    submitForReview(@Param('id') id: string, @Request() req: any) {
-        return this.kbService.submitForReview(id, req.user.sub);
+    submitForReview(@Param('id') id: string) {
+        return this.kbService.submitForReview(id);
     }
 
     @Post('articles/:id/review')
