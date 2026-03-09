@@ -3,7 +3,7 @@ module.exports = {
     rootDir: ".",
     testMatch: ["**/*.spec.ts"],
     transform: {
-        "^.+\\.ts$": require.resolve("ts-jest")
+        "^.+\\.ts$": "@swc/jest"
     },
     testEnvironment: "node",
     // Eklenen yardımcı ayarlar (NestJS için kritik)

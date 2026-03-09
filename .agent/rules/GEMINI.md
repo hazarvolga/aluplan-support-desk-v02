@@ -8,22 +8,13 @@ trigger: always_on
 
 ---
 
-## CRITICAL: AGENT & SKILL PROTOCOL (START HERE)
+### 3. The Unbreakable Brain (Continuity Protocol)
 
-> **MANDATORY:** You MUST read the appropriate agent file and its skills BEFORE performing any implementation. This is the highest priority rule.
+> 🔴 **MANDATORY:** You MUST read `.agent/PROJECT_BRAIN.md` at session start AND update it at task end.
 
-### 1. Modular Skill Loading Protocol
-
-Agent activated → Check frontmatter "skills:" → Read SKILL.md (INDEX) → Read specific sections.
-
-- **Selective Reading:** DO NOT read ALL files in a skill folder. Read `SKILL.md` first, then only read sections matching the user's request.
-- **Rule Priority:** P0 (GEMINI.md) > P1 (Agent .md) > P2 (SKILL.md). All rules are binding.
-
-### 2. Enforcement Protocol
-
-1. **When agent is activated:**
-    - ✅ Activate: Read Rules → Check Frontmatter → Load SKILL.md → Apply All.
-2. **Forbidden:** Never skip reading agent rules or skill instructions. "Read → Understand → Apply" is mandatory.
+1. **Session Start:** Read Project Brain to understand mission, feature status, and "Protected" areas.
+2. **Task End:** Update Project Brain with your progress, "Yarım Kaldı" (Incomplete) features, and next steps.
+3. **Regression Guard:** Never modify "Protected Features" listed in the Brain without running relevant validation scripts (`checklist.py`).
 
 ---
 
