@@ -133,6 +133,54 @@ export default function AdminSettingsPage() {
     const handleSave = async (keys: string[]) => {
         try {
             setSaving(true);
+
+            // AI Validation
+            const aiKeys = keys.filter(k => k.startsWith('ai.'));
+            if (aiKeys.length > 0) {
+                const currentChatProvider = getSetting('ai.chat_provider');
+                const currentEmbedProvider = getSetting('ai.embed_provider');
+
+                const validateProvider = (p: string) => {
+                    const fieldLabels: Record<string, string> = {
+                        'api_key': t('ai.validation.fields.api_key'),
+                        'chat_model': t('ai.validation.fields.chat_model'),
+                        'embed_model': t('ai.validation.fields.embed_model'),
+                        'url': t('ai.validation.fields.url')
+                    };
+
+                    const checkFields = (providerName: string, fields: string[]) => {
+                        const missing = fields.filter(f => !getSetting(f));
+                        if (missing.length > 0) {
+                            const missingLabels = missing.map(f => {
+                                const lastPart = f.split('.').pop() || '';
+                                return fieldLabels[lastPart] || lastPart;
+                            }).join(', ');
+
+                            throw new Error(t('ai.validation.missing_fields', { fields: missingLabels }));
+                        }
+                    };
+
+                    if (p === 'openai') {
+                        checkFields('OpenAI', ['ai.openai.api_key', 'ai.openai.chat_model', 'ai.openai.embed_model']);
+                    } else if (p === 'ollama') {
+                        checkFields('Ollama', ['ai.ollama.url', 'ai.ollama.chat_model', 'ai.ollama.embed_model']);
+                    } else if (['xai', 'deepseek', 'groq', 'custom', 'llmapi'].includes(p)) {
+                        const models = {
+                            xai: ['ai.xai.api_key', 'ai.xai.chat_model'],
+                            deepseek: ['ai.deepseek.api_key', 'ai.deepseek.chat_model'],
+                            groq: ['ai.groq.api_key', 'ai.groq.chat_model'],
+                            custom: ['ai.custom.api_key', 'ai.custom.url', 'ai.custom.chat_model', 'ai.custom.embed_model'],
+                            llmapi: ['ai.llmapi.api_key', 'ai.llmapi.chat_model', 'ai.llmapi.embed_model']
+                        };
+                        checkFields(p.toUpperCase(), (models as any)[p]);
+                    }
+                };
+
+                if (currentChatProvider) validateProvider(currentChatProvider);
+                if (currentEmbedProvider && currentEmbedProvider !== currentChatProvider) validateProvider(currentEmbedProvider);
+            }
+
+
             const secretKeys = [
                 'ai.llmapi.api_key',
                 'ai.openai.api_key',
@@ -161,8 +209,8 @@ export default function AdminSettingsPage() {
             });
         } catch (error: any) {
             toast({
-                title: t('toasts.error'),
-                description: t('toasts.save_error'),
+                title: t('toasts.generic_error'),
+                description: error.message || t('toasts.save_error'),
                 variant: 'destructive',
             });
         } finally {
