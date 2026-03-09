@@ -51,8 +51,9 @@ Elite, AI-powered customer support platform integrating modern web (Next.js), re
   - Modernized `trigger-sync.ts` (removed deprecated namespaces).
   - Cleaned up unused variables/imports across core services and DTOs.
   - Fixed Prisma Engine Error by correcting re-export logic in `@aluplan/database` and enabling `driverAdapters` support.
-- **Active Blockers:** None. Backend and Database are fully operational.
-- **Next Step:** Proceed with feature development or further system maintenance.
+- **Active Blockers:** 
+  - **Duyuru Yönetimi (Admin):** Preview (önizleme) butonu 400 Bad Request hatası veriyor. Eskiden çalışıyordu, muhtemelen DTO değişimi veya backend validation şeması uyumsuzluğu oluştu.
+- **Next Step:** Fix Announcement Preview 400 error.
 
 ---
 
