@@ -268,7 +268,8 @@ export class EmailController {
       return { success: true, subject: compiled.subject, html: compiled.html };
     } catch (error: any) {
       this.logger.error(`Preview compilation failed for "${name}": ${error.message}`, error.stack);
-      throw new BadRequestException(error.message || 'Template compilation failed.');
+      // Temporarily include the actual error message to diagnose the 400 Bad Request
+      throw new BadRequestException(`Compilation Error: ${error.message}. Name: ${name}. Internal Path: ${MJML_SCREENS_DIR}`);
     }
   }
 

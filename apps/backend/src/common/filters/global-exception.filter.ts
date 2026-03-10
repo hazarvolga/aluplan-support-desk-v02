@@ -43,18 +43,23 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         };
 
         // Log the error using the centralized service (persists to AuditLog)
-        await this.errorLogger.logError({
-            action: 'api_exception',
-            message: responseBody.message,
-            error: exception,
-            actorId: request.user?.id,
-            entityType: 'API',
-            metadata: {
-                path: responseBody.path,
-                method: request.method,
-                statusCode: httpStatus
-            }
-        });
+        try {
+            await this.errorLogger.logError({
+                action: 'api_exception',
+                message: responseBody.message,
+                error: exception,
+                actorId: request.user?.id,
+                entityType: 'API',
+                metadata: {
+                    path: responseBody.path,
+                    method: request.method,
+                    statusCode: httpStatus
+                }
+            });
+        } catch (logError) {
+            // If logging to DB fails, still log to console but don't crash the response
+            this.logger.error('Failed to log error to AuditLog:', logError);
+        }
 
         httpAdapter.reply(response, responseBody, httpStatus);
     }

@@ -21,25 +21,26 @@ export interface EmailPayload {
 
 export class TemplateService {
   // Fixed paths: In monorepo, we need robust lookup.
-  private static mjmlBaseDir = path.join(__dirname, 'templates', 'mjml');
-  private static localesDir = path.join(__dirname, 'locales');
-  private static cache = new Map<string, Handlebars.TemplateDelegate>();
+  private static mjmlBaseDir: string = '';
+  private static localesDir: string = '';
+  private static readonly cache = new Map<string, Handlebars.TemplateDelegate>();
 
-  static {
-    // In production (dist), these paths are correct relative to the compiled file.
-    // In development (nest start), we might need to look back to src.
-    if (!fs.existsSync(this.mjmlBaseDir)) {
-      this.mjmlBaseDir = path.join(process.cwd(), 'apps', 'backend', 'src', 'email', 'templates', 'mjml');
-    }
-    if (!fs.existsSync(this.localesDir)) {
-      this.localesDir = path.join(process.cwd(), 'apps', 'backend', 'src', 'email', 'locales');
-    }
+  private static ensurePaths() {
+    const cwd = process.cwd();
+    // If we're already running from inside apps/backend, don't append it again
+    const backendRoot = cwd.endsWith('apps/backend') ? cwd : path.join(cwd, 'apps', 'backend');
 
-    // Final fallback to project root src/
-    if (!fs.existsSync(this.mjmlBaseDir)) {
-      this.mjmlBaseDir = path.join(process.cwd(), 'src', 'email', 'templates', 'mjml');
-    }
+    // Always prefer the source files in dev and built files in dist (if they exist)
+    const localMjml = path.join(__dirname, 'templates', 'mjml');
+    const localLocales = path.join(__dirname, 'locales');
+
+    const srcMjml = path.join(backendRoot, 'src', 'email', 'templates', 'mjml');
+    const srcLocales = path.join(backendRoot, 'src', 'email', 'locales');
+
+    this.mjmlBaseDir = fs.existsSync(localMjml) ? localMjml : srcMjml;
+    this.localesDir = fs.existsSync(localLocales) ? localLocales : srcLocales;
   }
+
 
   public static resetCache(templateName?: string) {
     if (templateName) {
@@ -60,15 +61,18 @@ export class TemplateService {
   }
 
   public static compile(templateName: string, data: any, brandDefaults?: any): { html: string; text: string; subject: string } {
+    this.ensurePaths();
     let compiledTemplate = this.cache.get(templateName);
 
     if (!compiledTemplate) {
       let mjmlContent = '';
 
+      let mjmlPath = '';
       if (templateName === 'raw' && data.mjml) {
         const rawContent = data.mjml.trim();
         const isFullMjml = rawContent.toLowerCase().startsWith('<mjml>');
         const layoutPath = path.join(this.mjmlBaseDir, 'layouts', 'base.mjml');
+        mjmlPath = layoutPath;
 
         if (!isFullMjml && fs.existsSync(layoutPath)) {
           const baseContent = fs.readFileSync(layoutPath, 'utf8');
@@ -78,13 +82,12 @@ export class TemplateService {
         }
       } else {
         // Find template in screens/
-        const mjmlPath = path.join(this.mjmlBaseDir, 'screens', `${templateName}.mjml`);
+        mjmlPath = path.join(this.mjmlBaseDir, 'screens', `${templateName}.mjml`);
         const layoutPath = path.join(this.mjmlBaseDir, 'layouts', 'base.mjml');
 
         if (!fs.existsSync(mjmlPath)) {
           throw new Error(`Template formulation failed: ${mjmlPath} does not exist`);
         }
-
         const childContent = fs.readFileSync(mjmlPath, 'utf8');
 
         // Hybrid Detection: If child already has <mjml> tag, don't wrap with base layout
@@ -100,12 +103,14 @@ export class TemplateService {
 
       const { html, errors } = mjml2html(mjmlContent, {
         beautify: false,
-        validationLevel: 'skip',
-        filePath: path.join(this.mjmlBaseDir, 'layouts', 'base.mjml') // Important for mj-include resolution
+        validationLevel: 'soft',
+        filePath: mjmlPath || path.join(this.mjmlBaseDir, 'layouts', 'base.mjml')
       });
 
       if (errors && errors.length > 0) {
-        console.warn(`MJML Validation Warnings for ${templateName}:`, errors);
+        const errorMsg = `MJML Compilation Errors for ${templateName}: ${errors.map((e: any) => e.message).join(', ')}`;
+        console.error(errorMsg);
+        throw new Error(errorMsg);
       }
 
       compiledTemplate = Handlebars.compile(html);
@@ -158,21 +163,27 @@ export class TemplateService {
       console.error(`[CTO-AUDIT] Context Data Contract Violation in ${templateName}:`, validationResult.error.format());
     }
 
-    const htmlOutput = compiledTemplate(renderContext);
+    try {
+      const htmlOutput = compiledTemplate(renderContext);
+      console.log(`[TEMPLATE-SERVICE] Handlebars rendering success.`);
 
-    // 6. [PILLAR 5] - High Quality Plane Text
-    const textOutput = convert(htmlOutput, {
-      wordwrap: 130,
-      selectors: [
-        { selector: 'a', options: { hideLinkHrefIfSameAsText: true } },
-        { selector: 'img', format: 'skip' }
-      ]
-    });
+      // 6. [PILLAR 5] - High Quality Plane Text
+      const textOutput = convert(htmlOutput, {
+        wordwrap: 130,
+        selectors: [
+          { selector: 'a', options: { hideLinkHrefIfSameAsText: true } },
+          { selector: 'img', format: 'skip' }
+        ]
+      });
 
-    return {
-      html: htmlOutput,
-      text: textOutput,
-      subject: data.dynamicSubject || `Aluplan Destek - Yeni Bildirim`
-    };
+      return {
+        html: htmlOutput,
+        text: textOutput,
+        subject: data.dynamicSubject || `Aluplan Destek - Yeni Bildirim`
+      };
+    } catch (e: any) {
+      console.error(`[TEMPLATE-SERVICE] CRITICAL FAILURE in ${templateName}:`, e.message);
+      throw e;
+    }
   }
 }
