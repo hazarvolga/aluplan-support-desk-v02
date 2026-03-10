@@ -194,6 +194,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             const nextStatus = isCustomer ? 'REQUESTED' : 'LIVE';
             await api.patch(`/tickets/${id}`, { chatStatus: nextStatus });
             toast.success(isCustomer ? t('live_request_success') : t('live_start_success'));
+            load(); // Refresh state to show WAITING_AGENT UI
         } catch (err) {
             toast.error(t('chat_update_error'));
         }
@@ -203,6 +204,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         try {
             await api.patch(`/tickets/${id}`, { chatStatus: 'LIVE' });
             toast.success(t('live_accept_success'));
+            load(); // Refresh state to show LIVE_SESSION_ACTIVE UI
         } catch (err) {
             toast.error(t('chat_start_error'));
         }
@@ -254,6 +256,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             }));
 
             setFiles([]);
+            load(); // Refresh state to ensure attachments appear correctly
             // No toast for success in chat, it's expected
         } catch (error: any) {
             toast.error(t('send_error', { error: error.message }));

@@ -41,8 +41,8 @@ export class AttachmentsController {
             new ParseFilePipe({
                 validators: [
                     new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
-                    // Matches standard image/application mimetypes rather than naive file extensions
-                    new FileTypeValidator({ fileType: /image\/(jpeg|png|webp|gif)|application\/(pdf|msword|vnd\.openxmlformats|zip|x-zip-compressed)/i }),
+                    // Standard types allowed: Images, PDFs/Docs/Zips, and Text/CSV
+                    new FileTypeValidator({ fileType: 'image/.*|application/.*|text/.*' }),
                 ],
             }),
         )

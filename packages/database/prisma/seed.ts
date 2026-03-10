@@ -248,6 +248,53 @@ async function main() {
     }
     console.log('✅ Products and Categories seeded');
 
+    // 5. Seed Test Customers
+    let customerRole = await prisma.role.findFirst({ where: { name: 'customer' } });
+    if (!customerRole) {
+        customerRole = await prisma.role.create({ data: { name: 'customer', isSystem: true } });
+    }
+
+    const testCustomers = [
+        {
+            email: 'e2e-customer@aluplan.com',
+            fullName: 'E2E Test Customer',
+            phoneNumber: '905550009988'
+        },
+        {
+            email: 'hazarvolga@gmail.com', // Admin but also having profile for testing convenience
+            fullName: 'hazarvolga',
+            phoneNumber: '905550007766'
+        }
+    ];
+
+    for (const testCust of testCustomers) {
+        const user = await prisma.user.upsert({
+            where: { email: testCust.email },
+            update: { fullName: testCust.fullName },
+            create: {
+                email: testCust.email,
+                fullName: testCust.fullName,
+                passwordHash: hash,
+                roleId: testCust.email === 'hazarvolga@gmail.com' ? adminRole.id : customerRole.id,
+                status: 'ACTIVE',
+            }
+        });
+
+        await prisma.customerProfile.upsert({
+            where: { userId: user.id },
+            update: { phoneNumber: testCust.phoneNumber },
+            create: {
+                userId: user.id,
+                firstName: testCust.fullName.split(' ')[0],
+                lastName: testCust.fullName.split(' ')[1] || 'User',
+                companyName: 'Test Corp',
+                customerNo: `CUST-${user.id.substring(0, 5)}`,
+                phoneNumber: testCust.phoneNumber
+            }
+        });
+    }
+    console.log('✅ Test customers seeded');
+
     // 5. Knowledge Base seeding removed — articles are now managed via admin UI only.
 
     console.log('\n🎉 Seed complete!');

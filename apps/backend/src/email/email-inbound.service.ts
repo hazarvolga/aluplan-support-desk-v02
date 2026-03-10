@@ -90,11 +90,11 @@ export class EmailInboundService implements OnModuleInit {
 
         try {
             // Logic: Ticket Threading
-            const ticketMatch = subject.match(/\[#SUP-(\d+)\]/);
+            const ticketMatch = subject.match(/\[(SUP-\d+)\]/);
             let ticketId = null;
 
             if (ticketMatch) {
-                const ticketNumber = `SUP-${ticketMatch[1]}`;
+                const ticketNumber = ticketMatch[1];
                 const ticket = await this.prisma.ticket.findUnique({ where: { ticketNumber } });
                 if (ticket) {
                     // Identify sender

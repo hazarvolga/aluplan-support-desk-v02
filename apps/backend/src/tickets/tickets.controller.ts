@@ -87,8 +87,10 @@ export class TicketsController {
     @Patch(':id')
     @RequirePermissions('ticket:update')
     @ApiOperation({ summary: 'Update ticket fields' })
-    update(@Param('id') id: string, @Body() dto: UpdateTicketDto, @Request() req: any) {
-        return this.ticketsService.update(id, dto, req.user.sub);
+    async update(@Param('id') id: string, @Body() dto: UpdateTicketDto, @Request() req: any) {
+        const updated = await this.ticketsService.update(id, dto, req.user.sub);
+        this.notificationsGateway.emitTicketUpdated(updated);
+        return updated;
     }
 
     @Patch('bulk')

@@ -121,7 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const cleanPath = stripLocale(pathname);
             console.log('[RoleGuard Trace] AuthProvider checking redirect. cleanPath:', cleanPath, 'User Role:', user?.role);
             if (cleanPath === '/' || cleanPath.startsWith('/login')) {
-                const userRole = (user?.role || (user?.roles && user.roles[0]) || 'viewer').toLowerCase();
+                const userRoleName = (user?.role as any)?.name || user?.role || (user?.roles && user.roles[0]) || 'viewer';
+                const userRole = (typeof userRoleName === 'string' ? userRoleName : 'viewer').toLowerCase();
                 router.push(userRole === 'customer' || userRole === 'viewer' ? '/my-tickets' : '/dashboard');
             }
         }
@@ -149,7 +150,8 @@ export function RoleGuard({
 
     useEffect(() => {
         if (!loading && user) {
-            const userRole = (user?.role || (user?.roles && user.roles[0]) || 'viewer').toLowerCase();
+            const userRoleName = (user?.role as any)?.name || user?.role || (user?.roles && user.roles[0]) || 'viewer';
+            const userRole = (typeof userRoleName === 'string' ? userRoleName : 'viewer').toLowerCase();
             const isCustomer = userRole === 'customer' || userRole === 'viewer';
             const cleanPath = stripLocale(pathname);
 
