@@ -24,37 +24,38 @@ export interface AiQueryResult {
     suggestTicket: boolean;
 }
 
-const DEFAULT_SYSTEM_PROMPT = `ROL:
-Sen Allplan yazılımı konusunda uzman seviyesinde bilgiye sahip resmi teknik destek asistanısın.
-Teknik terminolojiye hakimsin ve yazılımın mantığını bilirsin.
-Ancak cevap üretirken yalnızca sana verilen "ONAYLI BİLGİ KAYNAĞI" içeriğini kullanırsın.
+const DEFAULT_SYSTEM_PROMPT = `ROLE:
+You are an official technical support assistant for Allplan software.
+You have expert-level technical knowledge and understand the software's logic.
+However, you only use the provided "APPROVED KNOWLEDGE SOURCE" to generate answers.
 
-TEMEL PRENSİP:
-Uzman gibi açık, net ve teknik konuş.ASLA kaynak dışı bilgi üretme.
+CORE PRINCIPLE:
+Speak clearly, concisely, and technically like an expert. NEVER produce information outside of the provided source.
 
-    KURALLAR:
+RULES:
+1) SOURCE COMPLIANCE
+    - Use only information found in the APPROVED KNOWLEDGE SOURCE.
+    - Do not use your own general knowledge or make guesses about the software.
 
-1) KAYNAK ZORUNLULUĞU
-    - Yanıt üretirken sadece ONAYLI BİLGİ KAYNAĞI'nda bulunan bilgileri kullan.
-        - Kendi genel bilgi birikimini kullanma, yazılım hakkında tahmin yürütme.
+2) HALLUCINATION PROTECTION AND PARTIAL MATCH
+    - If the user's question is not in the source, respond ONLY with: "This topic is not included in the current knowledge base. Please create a support ticket." (in the same language as the query).
+    - If only a part of the question is in the source, answer only the verifiable part and suggest creating a ticket for the rest. Do not guess.
 
-2) HALLUCINATION KORUMASI VE KISMİ EŞLEŞME
-    - Eğer kullanıcı sorusu kaynakta hiç geçmiyorsa SADECE şunu yaz: "Bu konu mevcut bilgi kaynağında yer almıyor. Lütfen destek talebi oluşturunuz."
-        - Eğer sorunun yalnızca bir bölümü kaynakta yer alıyorsa, sadece doğrulanabilir kısmı yanıtla ve geri kalanı için destek talebi oluşturmasını tavsiye et.Kesinlikle eksik kısmı tahmin etme.
+3) TONE AND STRUCTURE
+    - Do not use unnecessary greetings. Provide the solution directly.
+    - Use numbered lists for steps.
+    - Maximum 8 sentences.
+    - Do not use vague words (probably, usually, might).
+    - ALWAYS respond in the same language used by the user in their query (Turkish, English, or German).
 
-3) UZMAN TONU VE YANIT YAPISI
-    - Gereksiz selamlama kullanma.Doğrudan çözümü ver.
-- İşlem adımları varsa numaralı liste kullan.
-- Maksimum 8 cümle kur.Gereksiz açıklama yapma.
-- Belirsiz kelimeler(muhtemelen, genellikle, olabilir) kullanma.
+4) SUMMARIZATION AND SYNTHESIS
+    - Do not copy the source text in full.
+    - Find the answer and summarize it in your own technical sentences.
+    - Select and synthesize the most critical part of the source.
 
-4) ÖZETLEME VE SENTEZ(KRİTİK)
-    - Kaynak metnin tamamını ASLA kopyalama.
-- Sorulan sorunun cevabını bul ve kendi teknik cümlelerinle kısa bir özet çıkar.
-- Yanıtı verirken kaynağın en can alıcı kısmını seç ve sentezle.
+GOAL:
+To provide users with fast, technically accurate, controlled, and direct solutions in their preferred language.`;
 
-    AMAÇ:
-Kullanıcıya hızlı, teknik olarak doğru, kontrollü ve doğrudan bir çözüm sunmak.`;
 
 @Injectable()
 export class AiQueryService {
@@ -110,7 +111,7 @@ export class AiQueryService {
                     userId: userId || undefined,
                     channel,
                     userQuery,
-                    responseGenerated: 'AI güvenilir bir kaynak bulamadı. Talep insan temsilciye yönlendirildi.',
+                    responseGenerated: 'AI could not find a reliable source. Request routed to human agent.',
                     confidenceBand: null,
                     autoAnswered: false,
                     similarityScore: searchResponse.diagnostics.topScore || undefined,
@@ -125,7 +126,7 @@ export class AiQueryService {
 
             return {
                 query: userQuery,
-                answer: 'Bu konuda güvenilir bir kaynak bulunamadı. Talebiniz bir destek temsilcisine yönlendirilecektir.',
+                answer: 'No reliable source found. Your request will be routed to a support representative.',
                 confidence: 'NO_MATCH' as ConfidenceBand,
                 sources: [],
                 interactionId: interaction.id,
@@ -164,8 +165,9 @@ export class AiQueryService {
         }
 
         if (!answer) {
-            answer = 'Bu konuda henüz bilgim yok ama yardım etmek için buradayım.';
+            answer = 'I don\'t have information on this topic yet, but I\'m here to help.';
         }
+
 
         const inputStr = userQuery;
         const inputTokens = Math.ceil(inputStr.length / 4);
@@ -312,7 +314,7 @@ export class AiQueryService {
                 userId,
             });
         } else {
-            fullAnswer = 'Bu konuda henüz bilgim yok, bir destek talebi oluşturmayı deneyebilirsiniz.';
+            fullAnswer = 'I don\'t have information on this topic yet, you may try creating a support ticket.';
             yield { chunk: fullAnswer };
         }
 
@@ -521,15 +523,16 @@ export class AiQueryService {
             `${m.sender?.fullName || 'Sistem'}: ${m.message} `
         ).join('\n');
 
-        const prompt = `Görevin: Aşağıdaki destek talebi yazışmalarını ajanlar için kısa(en fazla 3 - 4 cümle) ve profesyonel şekilde özetlemek.
-    Konu: ${ticket.subject}
-Yazışmalar:
+        const prompt = `Task: Summarize the following support ticket conversation for agents in a concise (max 3-4 sentences) and professional manner.
+Subject: ${ticket.subject}
+Conversation:
 ${conversation}
 
-Özetle ve en kritik noktaları belirt: `;
+Summarize and highlight the most critical points:`;
 
-        const result = await this.ai.reformat('', 'Lütfen bu talebi özetle.', prompt);
-        return result?.response ?? 'Özet oluşturulamadı.';
+        const result = await this.ai.reformat('', 'Please summarize this request.', prompt);
+        return result?.response ?? 'Summary could not be generated.';
+
     }
 
     /**

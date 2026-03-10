@@ -27,18 +27,23 @@ export class TemplateService {
 
   private static ensurePaths() {
     const cwd = process.cwd();
-    // If we're already running from inside apps/backend, don't append it again
+    // In monorepo, we need to handle both 'apps/backend' CWD and root CWD
     const backendRoot = cwd.endsWith('apps/backend') ? cwd : path.join(cwd, 'apps', 'backend');
 
-    // Always prefer the source files in dev and built files in dist (if they exist)
+    // Priority 1: Check __dirname/templates/mjml (likely in dist or local dev)
     const localMjml = path.join(__dirname, 'templates', 'mjml');
     const localLocales = path.join(__dirname, 'locales');
 
+    // Priority 2: Check src relative to backendRoot
     const srcMjml = path.join(backendRoot, 'src', 'email', 'templates', 'mjml');
     const srcLocales = path.join(backendRoot, 'src', 'email', 'locales');
 
     this.mjmlBaseDir = fs.existsSync(localMjml) ? localMjml : srcMjml;
     this.localesDir = fs.existsSync(localLocales) ? localLocales : srcLocales;
+
+    if (!fs.existsSync(this.mjmlBaseDir)) {
+      console.warn(`[TEMPLATE-SERVICE] MJML Base Dir NOT FOUND: ${this.mjmlBaseDir}. Falling back to src path.`);
+    }
   }
 
 
@@ -108,9 +113,11 @@ export class TemplateService {
       });
 
       if (errors && errors.length > 0) {
-        const errorMsg = `MJML Compilation Errors for ${templateName}: ${errors.map((e: any) => e.message).join(', ')}`;
-        console.error(errorMsg);
-        throw new Error(errorMsg);
+        const errorMsg = `MJML Compilation Errors for template "${templateName}": ${errors.map((e: any) => `[Line ${e.line}] ${e.message}`).join('; ')}`;
+        console.error(`[MJML-ERROR] ${errorMsg}`);
+        // We log but don't strictly throw if html is still generated, to avoid breaking mail delivery
+        // unless it's a critical failure.
+        if (!html) throw new Error(errorMsg);
       }
 
       compiledTemplate = Handlebars.compile(html);

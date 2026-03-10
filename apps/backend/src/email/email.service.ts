@@ -67,7 +67,7 @@ export class EmailService implements OnModuleInit {
             // 2. Evaluate preference limits before proceeding.
             const userObj = await this.prisma.user.findUnique({
                 where: { email: payload.to },
-                select: { id: true }
+                select: { id: true, email: true }
             });
 
             if (userObj) {
@@ -77,7 +77,7 @@ export class EmailService implements OnModuleInit {
 
                 // If preference is explicitly disabled, skip. (Default is enabled if missing)
                 if (pref && pref.enabled === false) {
-                    this.logger.log(`Skipping email: ${payload.template} (${emailType}) to ${payload.to} - User Opted Out`);
+                    this.logger.warn(`🚫 Skipping email: ${payload.template} (${emailType}) to ${payload.to} - User Opted Out`);
                     return;
                 }
             }
@@ -88,7 +88,7 @@ export class EmailService implements OnModuleInit {
                     recipientEmail: payload.to,
                     subject: payload.subject,
                     templateName: payload.template,
-                    provider: 'RESEND',
+                    provider: 'RESEND', // Use a valid enum value as initial draft
                     status: 'QUEUED'
                 }
             });
@@ -101,13 +101,14 @@ export class EmailService implements OnModuleInit {
                     priority: payload.priority || 3,
                     delay: payload.delay || 0,
                     jobId: payload.jobId,
-                    attempts: 3,
-                    backoff: { type: 'exponential', delay: 1000 }
+                    attempts: 5, // Increased attempts for enterprise reliability
+                    backoff: { type: 'exponential', delay: 2000 } // More generous backoff
                 }
             );
 
-            this.logger.log(`Enqueued Email -> ${payload.template} to ${payload.to} (Log ID: ${draftLog.id}, Job: ${job.id})`);
+            this.logger.log(`✅ Enqueued Email -> ${payload.template} to ${payload.to} (Log: ${draftLog.id}, Job: ${job.id}, Priority: ${payload.priority || 3})`);
         } catch (error) {
+            this.logger.error(`❌ Failed to enqueue email: ${payload.template} to ${payload.to}`, error.stack);
             await this.errorLogger.logError({
                 action: 'email_enqueue_failed',
                 message: `Failed to enqueue email: ${payload.template}`,

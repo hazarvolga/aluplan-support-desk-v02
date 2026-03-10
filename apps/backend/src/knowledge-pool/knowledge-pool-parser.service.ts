@@ -53,13 +53,29 @@ export class KnowledgePoolParserService {
         return this.fixEncoding(fs.readFileSync(filePath, 'utf-8'));
     }
 
+    async parseMsg(filePath: string): Promise<string> {
+        const { simpleParser } = await import('mailparser');
+        const dataBuffer = fs.readFileSync(filePath);
+        const parsed = await simpleParser(dataBuffer);
+        const content = [
+            `Subject: ${parsed.subject}`,
+            `From: ${parsed.from?.text}`,
+            `Date: ${parsed.date}`,
+            `Content:`,
+            parsed.text || parsed.html || ''
+        ].join('\n');
+        return this.fixEncoding(content);
+    }
+
     async parseFile(type: string, filePath: string): Promise<string> {
         switch (type) {
             case 'FILE_PDF': return this.parsePdf(filePath);
             case 'FILE_CSV': return this.parseCsv(filePath);
             case 'FILE_TXT': return this.parseTxt(filePath);
             case 'FILE_MD': return this.parseMd(filePath);
+            case 'FILE_MSG': return this.parseMsg(filePath);
             default: throw new Error(`Unsupported file type: ${type}`);
         }
     }
 }
+

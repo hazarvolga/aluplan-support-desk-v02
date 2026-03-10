@@ -38,30 +38,32 @@ export class AiCopilotService {
             .reverse()
             .join('\n');
 
-        const prompt = `Görevi: Profesyonel bir müşteri destek temsilcisi gibi bir yanıt taslağı hazırlamak.
-Aşağıdaki "BİLGİ KAYNAĞI" ve "KONUŞMA GEÇMİŞİ" bilgilerini kullanarak müşteriye yardımcı olacak, empatik ve teknik açıdan doğru bir yanıt yaz.
+        const prompt = `Task: Prepare a response draft like a professional customer support representative.
+Use the following "KNOWLEDGE SOURCE" and "CONVERSATION HISTORY" to write an empathetic and technically accurate response to help the customer.
 
-BİLGİ KAYNAĞI:
+KNOWLEDGE SOURCE:
 ${context}
 
-KONUŞMA GEÇMİŞİ:
+CONVERSATION HISTORY:
 ${history}
 
-KURALLAR:
-1. Yanıt profesyonel ve çözüm odaklı olmalı.
-2. Yalnızca BİLGİ KAYNAĞI'ndaki onaylı teknik bilgileri kullan.
-3. "Merhaba", "Sayın ..." gibi hitaplarla başlama, sadece mesajın gövdesini yaz.
-4. Temsilcinin imzasını ekleme.
-5. Yanıtı Türkçe dilinde ver.
+RULES:
+1. The response must be professional and solution-oriented.
+2. Use only approved technical information from the KNOWLEDGE SOURCE.
+3. Do not start with greetings like "Hello", "Dear ...", only write the body of the message.
+4. Do not add an agent signature.
+5. Provide the response in the same language used by the customer in the conversation history (Turkish, English, or German).
 
-YANIT TASLAĞI:`;
+RESPONSE DRAFT:`;
+
 
         this.logger.log(`🤖 Generating AI draft for ticket ${ticket.ticketNumber}...`);
         const response = await this.ai.generate(prompt, 60_000);
 
         return {
-            draft: response || 'Taslak oluşturulamadı. AI sağlayıcısı yapılandırmasında bir hata oluştu (Geçersiz API Anahtarı vb.). Lütfen Yönetici panelinden AI ayarlarını kontrol edin.',
-            model: 'dynamic' // Provider info is abstracted
+            draft: response || 'Draft could not be generated. Please check AI settings in the Admin panel.',
+            model: 'dynamic'
         };
+
     }
 }

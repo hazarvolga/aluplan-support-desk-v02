@@ -48,7 +48,7 @@ export class EmailProcessor extends WorkerHost {
       const [
         companyName, logoUrl, address, phone, email,
         linkedin, twitter, facebook, instagram, pinterest,
-        frontendUrl
+        frontendUrl, activeProvider
       ] = await Promise.all([
         this.settings.getValue('branding.company_name'),
         this.settings.getValue('branding.logo_url'),
@@ -61,6 +61,7 @@ export class EmailProcessor extends WorkerHost {
         this.settings.getValue('branding.social_instagram'),
         this.settings.getValue('branding.social_pinterest'),
         this.settings.getValue('general.frontend_url'),
+        this.settings.getValue('email.active_provider'),
       ]);
 
       const brandDefaults = {
@@ -86,11 +87,14 @@ export class EmailProcessor extends WorkerHost {
         text: compiled.text
       });
 
+      const providerEnum = (activeProvider?.toUpperCase() || 'RESEND') as any;
+
       if (logRef) {
         await this.prisma.emailLog.update({
           where: { id: logRef },
           data: {
             status: 'SENT',
+            provider: providerEnum,
             messageId: result.messageId,
             sentAt: new Date()
           }
@@ -102,6 +106,7 @@ export class EmailProcessor extends WorkerHost {
             subject: compiled.subject || subject || 'No Subject',
             templateName: template,
             status: 'SENT',
+            provider: providerEnum,
             messageId: result.messageId,
             sentAt: new Date()
           }

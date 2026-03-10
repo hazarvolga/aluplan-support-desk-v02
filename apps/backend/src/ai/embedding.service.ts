@@ -95,11 +95,12 @@ export class EmbeddingService {
         const rows = await this.prisma.$queryRaw<
             Array<{
                 article_id: string;
-                source_type: 'ARTICLE' | 'POOL';
+                source_type: 'ARTICLE' | 'POOL' | 'URL' | 'DOCUMENT';
                 title: string;
                 content: string;
                 similarity: number;
                 trust_score: number;
+                language: string;
             }>
         >`
       WITH combined_search AS (
@@ -110,7 +111,8 @@ export class EmbeddingService {
             ka.title, 
             COALESCE(parent.content, ke.content) AS content, 
             1 - (ke.embedding <=> ${vectorStr}::vector) AS similarity,
-            ka.trust_score
+            ka.trust_score,
+            ka.language
         FROM knowledge_embeddings ke
         JOIN knowledge_articles ka ON ka.id = ke.article_id
         LEFT JOIN knowledge_embeddings parent ON ke.parent_id = parent.id
@@ -131,13 +133,15 @@ export class EmbeddingService {
             ks.name AS title, 
             kpe.content, 
             1 - (kpe.embedding <=> ${vectorStr}::vector) AS similarity,
-            ks.trust_score
+            ks.trust_score,
+            ks.language
         FROM knowledge_pool_embeddings kpe
         JOIN knowledge_sources ks ON kpe.source_id = ks.id
         WHERE ks.status = 'ACTIVE' 
           -- Allow pool access for everyone, or filter if specific tags exist later
           AND (${productId}::uuid IS NULL OR ks.product_id = ${productId}::uuid) 
           AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.SIMILARITY_THRESHOLD}
+
           AND kpe.metadata->>'type' = 'parent'
       )
       SELECT * 

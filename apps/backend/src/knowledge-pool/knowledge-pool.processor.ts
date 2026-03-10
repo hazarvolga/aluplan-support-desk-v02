@@ -229,17 +229,20 @@ export class KnowledgePoolProcessor extends WorkerHost {
             await this.embeddingService.indexPoolContent(source.id, h.parent, {
                 fileName: source.fileName,
                 type: 'parent',
-                status: 'ACTIVE'
+                status: 'ACTIVE',
+                language: source.language
             });
             for (const child of h.children) {
                 await this.embeddingService.indexPoolContent(source.id, child, {
                     fileName: source.fileName,
                     type: 'child',
-                    status: 'ACTIVE'
+                    status: 'ACTIVE',
+                    language: source.language
                 });
                 totalChunks++;
             }
         }
+
 
         // Section 3.5.3: Change Monitor (Partial for files - size track)
         const _oldLength = (source.metadata as any)?.lastContentLength || 0;

@@ -87,7 +87,7 @@ export class KnowledgePoolService {
         }
 
         const filesToSync: string[] = [];
-        const validExts = ['.md', '.json', '.csv', '.pdf', '.txt'];
+        const validExts = ['.md', '.json', '.csv', '.pdf', '.txt', '.msg'];
 
         const walkSync = (dir: string) => {
             const files = fs.readdirSync(dir);
@@ -114,12 +114,18 @@ export class KnowledgePoolService {
             if (ext === '.json') type = KnowledgeSourceType.FILE_TXT;
             if (ext === '.pdf') type = KnowledgeSourceType.FILE_PDF;
             if (ext === '.csv') type = KnowledgeSourceType.FILE_CSV;
+            if (ext === '.msg') type = KnowledgeSourceType.FILE_MSG;
 
             const fileName = path.basename(filePath);
 
             const existing = await this.prisma.knowledgeSource.findFirst({
                 where: { filePath }
             });
+
+            // Basic language detection from filename or directory
+            let language = 'tr';
+            if (filePath.toLowerCase().includes('_de') || filePath.toLowerCase().includes('/de/') || fileName.toLowerCase().includes('germany')) language = 'de';
+            else if (filePath.toLowerCase().includes('_en') || filePath.toLowerCase().includes('/en/') || fileName.toLowerCase().includes('english')) language = 'en';
 
             if (existing) {
                 await this.triggerSync(existing.id);
@@ -132,6 +138,7 @@ export class KnowledgePoolService {
                         fileName,
                         filePath,
                         status: KnowledgeSourceStatus.ACTIVE,
+                        language,
                         metadata: {
                             useAiPreprocessing: true,
                         }
@@ -141,6 +148,7 @@ export class KnowledgePoolService {
                 addedCount++;
             }
         }
+
 
         return {
             success: true,

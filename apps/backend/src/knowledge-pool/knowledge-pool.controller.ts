@@ -60,7 +60,7 @@ export class KnowledgePoolController {
 
         const isMimeValid = validMimes.some(mime => file.mimetype.toLowerCase().includes(mime.toLowerCase()));
         const ext = extname(file.originalname).toLowerCase();
-        const validExts = ['.pdf', '.txt', '.csv', '.md'];
+        const validExts = ['.pdf', '.txt', '.csv', '.md', '.msg'];
         const isExtValid = validExts.includes(ext);
 
         if (!isMimeValid && !isExtValid) {
@@ -122,7 +122,9 @@ export class KnowledgePoolController {
             case '.csv': return KnowledgeSourceType.FILE_CSV;
             case '.txt': return KnowledgeSourceType.FILE_TXT;
             case '.md': return KnowledgeSourceType.FILE_MD;
+            case '.msg': return KnowledgeSourceType.FILE_MSG;
             default: throw new Error(`Unsupported file extension: ${ext}`);
         }
     }
 }
+
