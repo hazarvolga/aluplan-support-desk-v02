@@ -51,6 +51,11 @@
       "HIGH": "Yüksek",
       "CRITICAL": "Kritik",
       "URGENT": "Acil"
+    },
+    "languages": {
+      "tr": "Türkçe",
+      "en": "İngilizce",
+      "de": "Almanca"
     }
   },
   "dashboard": {

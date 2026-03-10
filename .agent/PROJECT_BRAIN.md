@@ -31,7 +31,12 @@ Elite, AI-powered customer support platform integrating modern web (Next.js), re
 | **Trilingual Support** | [x] BİTTİ | HIGH | TR/EN/DE support across Gateway, App & RAG. |
 | **SLA Policies UI** | [x] BİTTİ | HIGH | i18n nesting issue resolved. Fully stable. |
 | **Backend Code Stability** | [x] BİTTİ | ELITE | Zero-error lint baseline. Modernized syntax. |
-| **Enterprise Email System** | [x] BİTTİ | ELITE | Hardened BullMQ queue, dynamic providers & robust pathing. |
+| **Enterprise Email System** | [x] BİTTİ | ELITE | Robust MJML pathing, BullMQ hardening, branding sync. |
+| **Admin Language Switcher** | [x] BİTTİ | ELITE | Trilingual (TR, EN, DE), persistent user preference, button-based UI. |
+
+---
+
+## 🛠 Project Status & Brain Focus (Liquid Glass Era)
 
 ---
 

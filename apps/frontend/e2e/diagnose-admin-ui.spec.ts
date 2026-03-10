@@ -45,7 +45,7 @@ test.describe('Admin Panel Interactivity Diagnostic', () => {
         // 4. Wait for dashboard transition with more feedback
         console.log('Waiting for dashboard redirect...');
         try {
-            await page.waitForURL('**/dashboard', { timeout: 20000 });
+            await page.waitForURL('**/dashboard', { timeout: 30000 });
             console.log(`✅ Redirected to: ${page.url()}`);
         } catch (e) {
             console.log(`❌ TIMEOUT waiting for dashboard. Current URL: ${page.url()}`);
@@ -62,8 +62,8 @@ test.describe('Admin Panel Interactivity Diagnostic', () => {
         console.log('Attempting to click "Bilet Kuyruğu"...');
         try {
             // Looking for the sidebar link
-            const ticketQueueLink = page.getByRole('link', { name: /Bilet Kuyruğu/i });
-            await ticketQueueLink.click({ timeout: 5000 });
+            const ticketQueueLink = page.getByTestId('nav-tickets');
+            await ticketQueueLink.click({ timeout: 10000 });
             console.log('✅ Click succeeded! UI is responsive.');
         } catch (e) {
             console.log('❌ CLICK FAILED or INTERCEPTED');

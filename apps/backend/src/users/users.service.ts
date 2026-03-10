@@ -63,6 +63,7 @@ export class UsersService {
         if (dto.password) {
             updateData.passwordHash = await bcrypt.hash(dto.password, 10);
         }
+        if (dto.language) updateData.language = dto.language;
 
         // Update User
         const user = await this.prisma.user.update({

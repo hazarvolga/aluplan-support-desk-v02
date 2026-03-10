@@ -18,9 +18,11 @@ export class AuthService {
     ) { }
 
     async login(dto: LoginDto) {
+        console.log(`[DEBUG] Attempting login for: [${dto.email}]`);
         const user = await this.prisma.user.findUnique({
             where: { email: dto.email },
         });
+        if (!user) console.log(`[DEBUG] User NOT found in DB for email: [${dto.email}]`);
 
         if (!user || user.deletedAt) {
             throw new UnauthorizedException('Invalid credentials');

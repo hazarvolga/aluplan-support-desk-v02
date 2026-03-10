@@ -1,0 +1,27 @@
+{
+    "jsc": {
+        "parser": {
+            "syntax": "typescript",
+            "decorators": true,
+            "tsx": false,
+            "dynamicImport": true
+        },
+        "transform": {
+            "decoratorMetadata": true,
+            "legacyDecorator": true
+        },
+        "target": "es2021",
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "src/*"
+            ],
+            "@aluplan/database": [
+                "../../packages/database"
+            ]
+        }
+    },
+    "module": {
+        "type": "commonjs"
+    }
+}

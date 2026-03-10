@@ -144,7 +144,7 @@ describe('AiQueryService', () => {
             // Assert
             expect(result.confidence).toBe('NO_MATCH');
             expect(result.suggestTicket).toBe(true);
-            expect(result.answer).toContain('güvenilir bir kaynak');
+            expect(result.answer).toContain('No reliable source found');
             expect(mockAiService.reformat).not.toHaveBeenCalled();
         });
     });
@@ -181,9 +181,9 @@ describe('AiQueryService', () => {
             mockPrismaService.user.findUnique.mockResolvedValue(null);
             mockEmbeddingService.search.mockResolvedValue({
                 results: [
-                    { articleId: 'a1', sourceType: 'DOCUMENT', title: 'Doc', content: 'Content', similarity: 0.82, confidence: 'MEDIUM' }
+                    { articleId: 'a1', sourceType: 'DOCUMENT', title: 'Doc', content: 'Content', similarity: 0.75, confidence: 'MEDIUM' }
                 ],
-                diagnostics: { topScore: 0.82, passedThreshold: 1, queryEmbeddingModel: 'nomic', thresholdUsed: 0.78 },
+                diagnostics: { topScore: 0.75, passedThreshold: 1, queryEmbeddingModel: 'nomic', thresholdUsed: 0.65 },
             });
             mockAiService.reformat.mockResolvedValue({ response: 'Medium answer' });
 

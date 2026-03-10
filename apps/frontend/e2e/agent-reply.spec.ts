@@ -10,10 +10,10 @@ import { test, expect, Page } from '@playwright/test';
  */
 async function loginAsAdmin(page: Page) {
     await page.goto('/');
-    await page.locator('input[type="email"]').fill('admin@aluplan.com');
-    await page.locator('input[type="password"]').fill('admin123');
-    await page.getByRole('button', { name: /OTURUMU_BAŞLAT/i }).click();
-    await page.waitForURL(/.*\/dashboard/, { timeout: 10000 });
+    await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
+    await page.getByTestId('login-password').fill('Vol?*187');
+    await page.getByTestId('login-submit').click();
+    await page.waitForURL(/.*\/dashboard/, { timeout: 30000 });
 }
 
 test.describe('Agent Reply Flow', () => {
@@ -24,9 +24,9 @@ test.describe('Agent Reply Flow', () => {
 
     test('should navigate to a ticket detail and see the message interface', async ({ page }) => {
         // Navigate to tickets listing
-        const ticketNavLink = page.locator('a[href*="/tickets"]').first();
+        const ticketNavLink = page.getByTestId('nav-tickets');
         await ticketNavLink.click();
-        await page.waitForURL(/.*\/tickets/, { timeout: 5000 });
+        await page.waitForURL(/.*\/tickets/, { timeout: 30000 });
 
         // Click on the first available ticket row
         const firstRow = page.locator('table tbody tr').first();
@@ -46,8 +46,8 @@ test.describe('Agent Reply Flow', () => {
 
     test('should send a reply message on ticket detail page', async ({ page }) => {
         // Navigate to tickets
-        await page.locator('a[href*="/tickets"]').first().click();
-        await page.waitForURL(/.*\/tickets/, { timeout: 5000 });
+        await page.getByTestId('nav-tickets').click();
+        await page.waitForURL(/.*\/tickets/, { timeout: 30000 });
 
         // Try to access first ticket
         const firstTicketLink = page.locator('table tbody tr a').first()

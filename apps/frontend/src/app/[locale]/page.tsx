@@ -193,7 +193,7 @@ export default function SplitScreenGateway() {
                         </div>
 
                         {error && (
-                            <div className="border border-rose-500/30 bg-rose-500/10 px-3 py-2 animate-in fade-in">
+                            <div data-testid="error-message" className="border border-rose-500/30 bg-rose-500/10 px-3 py-2 animate-in fade-in">
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-rose-500">
                                     {error}
                                 </p>

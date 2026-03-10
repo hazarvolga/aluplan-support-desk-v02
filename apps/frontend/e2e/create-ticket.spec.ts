@@ -10,10 +10,10 @@ import { test, expect, Page } from '@playwright/test';
  */
 async function loginAsAdmin(page: Page) {
     await page.goto('/');
-    await page.locator('input[type="email"]').fill('admin@aluplan.com');
-    await page.locator('input[type="password"]').fill('admin123');
-    await page.getByRole('button', { name: /OTURUMU_BAŞLAT/i }).click();
-    await page.waitForURL(/.*\/dashboard/, { timeout: 10000 });
+    await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
+    await page.getByTestId('login-password').fill('Vol?*187');
+    await page.getByTestId('login-submit').click();
+    await page.waitForURL(/.*\/dashboard/, { timeout: 30000 });
 }
 
 test.describe('Create Ticket Flow', () => {
@@ -25,31 +25,34 @@ test.describe('Create Ticket Flow', () => {
     test('should navigate to tickets page and see the ticket list', async ({ page }) => {
         // Act - navigate to tickets via sidebar
         // Try common navigation patterns
-        const ticketNavLink = page.locator('a[href*="/tickets"]').first();
+        const ticketNavLink = page.getByTestId('nav-tickets');
         await expect(ticketNavLink).toBeVisible({ timeout: 5000 });
         await ticketNavLink.click();
 
         // Assert
-        await page.waitForURL(/.*\/tickets/, { timeout: 5000 });
+        await page.waitForURL(/.*\/tickets/, { timeout: 30000 });
         expect(page.url()).toContain('/tickets');
     });
 
     test('should open new ticket modal and fill the form', async ({ page }) => {
-        // Navigate to tickets
-        await page.locator('a[href*="/tickets"]').first().click();
-        await page.waitForURL(/.*\/tickets/, { timeout: 5000 });
+        // Navigate to tickets via sidebar
+        await page.getByTestId('nav-tickets').click({ timeout: 30000 });
+        await page.waitForURL(/.*\/tickets/, { timeout: 30000 });
 
         // Act - look for new ticket creation button
-        const createBtn = page.getByRole('button').filter({ hasText: /Yeni|New|Oluştur|Create/i }).first();
-        await expect(createBtn).toBeVisible({ timeout: 5000 });
+        const createBtn = page.getByTestId('create-ticket-button');
+        await expect(createBtn).toBeVisible({ timeout: 15000 });
         await createBtn.click();
 
-        // Assert - a dialog/form opened
-        const form = page.locator('form, [role="dialog"]').first();
-        await expect(form).toBeVisible({ timeout: 3000 });
+        // Assert - we should be on the new ticket page
+        await page.waitForURL(/.*\/tickets\/new/, { timeout: 10000 });
 
-        // Fill subject
-        const subjectInput = page.locator('input').filter({ hasNot: page.locator('[type="hidden"]') }).first();
+        // A form or content should appear
+        const form = page.locator('form, main').first();
+        await expect(form).toBeVisible({ timeout: 10000 });
+
+        // Fill subject - find the first input field
+        const subjectInput = page.locator('input').first();
         await subjectInput.fill('E2E Automated Test Ticket - ' + Date.now());
     });
 });

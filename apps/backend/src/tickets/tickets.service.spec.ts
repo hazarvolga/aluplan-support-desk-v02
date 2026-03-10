@@ -127,5 +127,75 @@ describe('TicketsService', () => {
                 data: expect.objectContaining({ assignedTo: 'agent1' })
             }));
         });
+        describe('findAll', () => {
+            it('should return paginated and filtered tickets', async () => {
+                // Arrange
+                const mockTickets = [{ id: '1' }, { id: '2' }];
+                prisma.ticket.findMany.mockResolvedValue(mockTickets);
+                prisma.ticket.count.mockResolvedValue(10);
+
+                // Act
+                const result = await service.findAll({ status: TicketStatus.OPEN, page: 2, limit: 5 });
+
+                // Assert
+                expect(result.data).toEqual(mockTickets);
+                expect(result.total).toBe(10);
+                expect(result.page).toBe(2);
+                expect(result.pages).toBe(2);
+                expect(prisma.ticket.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({ status: TicketStatus.OPEN }),
+                        skip: 5,
+                        take: 5
+                    })
+                );
+            });
+        });
+
+        describe('addMessage', () => {
+            it('should throw BadRequestException when adding a message to a closed ticket', async () => {
+                // Arrange
+                const ticket = { id: 'tik1', status: 'CLOSED', userId: 'user1' };
+                prisma.ticket.findUnique.mockResolvedValue(ticket);
+
+                // Act & Assert
+                await expect(service.addMessage('tik1', { message: 'hello' }, 'user1', 'customer'))
+                    .rejects.toThrow(BadRequestException);
+            });
+
+            it('should reopen ticket if customer replies to PENDING_CUSTOMER', async () => {
+                // Arrange
+                const ticket = { id: 'tik1', status: 'PENDING_CUSTOMER', userId: 'user1' };
+                prisma.ticket.findUnique.mockResolvedValue(ticket);
+                prisma.ticketMessage.create.mockResolvedValue({ id: 'msg1' });
+
+                // Act
+                await service.addMessage('tik1', { message: 'hello' }, 'user1', 'customer');
+
+                // Assert
+                expect(prisma.ticket.update).toHaveBeenCalledWith(
+                    expect.objectContaining({ data: { status: 'OPEN' } })
+                );
+            });
+        });
+
+        describe('transition', () => {
+            it('should set closedAt when transitioning to CLOSED', async () => {
+                // Arrange
+                const ticket = { id: 'tik1', status: 'RESOLVED', ticketNumber: 'SUP-00001' };
+                prisma.ticket.findUnique.mockResolvedValue(ticket);
+                prisma.ticket.update.mockResolvedValue({ ...ticket, status: 'CLOSED' });
+
+                // Act
+                await service.transition('tik1', TicketStatus.CLOSED, 'agent1');
+
+                // Assert
+                expect(prisma.ticket.update).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        data: expect.objectContaining({ status: 'CLOSED', closedAt: expect.any(Date) })
+                    })
+                );
+            });
+        });
     });
 });

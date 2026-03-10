@@ -137,6 +137,15 @@ export default function TicketsPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    <Button
+                        onClick={() => window.location.href = `/tickets/new`}
+                        data-testid="create-ticket-button"
+                        className="h-9 px-4 bg-primary hover:bg-primary/90 text-white text-[10px] font-bold uppercase tracking-widest transition-all"
+                    >
+                        <Ticket className="w-3.5 h-3.5 mr-2" />
+                        {t('new_ticket') || 'YENİ TALEP'}
+                    </Button>
+
                     <div className="relative group">
                         <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                         <select

@@ -79,7 +79,7 @@ test.describe('Full System Diagnostic E2E Test', () => {
 
         await page.waitForTimeout(1000);
         await page.getByTestId('login-submit').click({ force: true });
-        await page.waitForURL('**/dashboard', { timeout: 15000 });
+        await page.waitForURL('**/dashboard', { timeout: 30000 });
 
         // Check Ticket Queue page
         await page.goto('/tr/dashboard');

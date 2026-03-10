@@ -1,0 +1,79 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img "Aluplan Logo" [ref=e6]
+          - heading "Operasyonel Destek Geçidi" [level=1] [ref=e7]:
+            - img [ref=e8]
+            - text: Operasyonel Destek Geçidi
+        - generic [ref=e10]:
+          - generic [ref=e11]:
+            - button "TR" [ref=e12] [cursor=pointer]
+            - button "EN" [ref=e13] [cursor=pointer]
+            - button "DE" [ref=e14] [cursor=pointer]
+          - generic [ref=e17]: "SİSTEM_DURUMU: AKTİF"
+      - generic [ref=e18]:
+        - heading "SİSTEM_YAYINI // SON_BİLDİRİMLER" [level=2] [ref=e19]
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e22]:
+              - img [ref=e23]
+              - generic [ref=e25]: Bakım Uyarısı
+              - generic [ref=e26]: 2 SAAT ÖNCE
+            - paragraph [ref=e27]: CNC Dizisi B için planlanan kalibrasyon, 02:00-04:00 UTC arasındaki otomatik senkronizasyon hatlarını etkileyecektir. Bu süre zarfında telemetri gecikmesi bekleyin.
+          - generic [ref=e28]:
+            - generic [ref=e29]:
+              - img [ref=e30]
+              - generic [ref=e33]: Dokümantasyon Güncellemesi
+              - generic [ref=e34]: DÜN
+            - paragraph [ref=e35]: T-Serisi ekstrüzyon kılavuzları güncellendi (Rev. 4.1). Dahili mühendislerin Bilgi Bankasındaki güncel tolerans tablolarını incelemesi rica olunur.
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e38]:
+            - paragraph [ref=e39]: Aktif VT Düğümleri
+            - paragraph [ref=e40]: 1,402
+          - generic [ref=e41]:
+            - paragraph [ref=e42]: Çalışma Süresi (SLA)
+            - paragraph [ref=e43]: 99.99%
+        - generic [ref=e44]:
+          - generic [ref=e45]: Sertifikalı Altyapı
+          - img "Allplan Partner" [ref=e46]
+    - generic [ref=e47]:
+      - generic [ref=e48]:
+        - img [ref=e50]
+        - heading "ERİŞİM GEÇİDİ" [level=2] [ref=e53]
+        - paragraph [ref=e54]: Telemetri okuma/yazma ve destek modülü erişimi için kimlik doğrulaması gereklidir.
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - generic [ref=e57] [cursor=pointer]:
+            - img [ref=e58]
+            - text: GİRİŞ_YAP
+          - link "YETKİ_İSTE" [ref=e61] [cursor=pointer]:
+            - /url: /register
+        - generic [ref=e62]:
+          - generic [ref=e63]:
+            - text: KİMLİK_BELTEGİ [EP_OSTA]
+            - textbox "operator@aluplan.com" [ref=e64]
+          - generic [ref=e65]:
+            - generic [ref=e66]:
+              - generic [ref=e67]: DOĞRULAMA_ANAHTARI [ŞİFRE]
+              - generic [ref=e68] [cursor=pointer]: ANAHTARI_KURTAR?
+            - textbox "••••••••" [ref=e69]
+          - button "OTURUMU BAŞLAT" [ref=e70] [cursor=pointer]:
+            - generic [ref=e71]: OTURUMU BAŞLAT
+            - img [ref=e72]
+          - link "Hesabınız yok mu? Kayıt Olun" [ref=e76] [cursor=pointer]:
+            - /url: /register
+        - generic [ref=e77]:
+          - img [ref=e78]
+          - text: Bağlantılar Aluplan Sec-Net üzerinden izlenmektedir
+  - region "Notifications (F8)":
+    - list
+  - alert [ref=e80]
+  - button "Open Next.js Dev Tools" [ref=e86] [cursor=pointer]:
+    - img [ref=e87]
+```

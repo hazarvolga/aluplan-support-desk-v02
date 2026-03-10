@@ -36,4 +36,10 @@ export class UpdateProfileDto {
     @IsOptional()
     @IsString()
     password?: string;
+
+    @ApiPropertyOptional({ example: 'tr', description: 'Preferred language' })
+    @IsOptional()
+    @IsString()
+    @MaxLength(10)
+    language?: string;
 }

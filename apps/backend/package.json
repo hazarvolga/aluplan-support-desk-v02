@@ -94,6 +94,8 @@
         "@nestjs/schematics": "^11.0.0",
         "@nestjs/testing": "^11.1.14",
         "@prisma/adapter-pg": "^7.4.2",
+        "@swc/core": "^1.15.18",
+        "@swc/jest": "^0.2.39",
         "@types/bcryptjs": "^3.0.0",
         "@types/compression": "^1.7.5",
         "@types/express": "^5.0.6",

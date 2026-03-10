@@ -51,6 +51,11 @@
             "HIGH": "Hoch",
             "CRITICAL": "Kritisch",
             "URGENT": "Dringend"
+        },
+        "languages": {
+            "tr": "Türkisch",
+            "en": "Englisch",
+            "de": "Deutsch"
         }
     },
     "dashboard": {

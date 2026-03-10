@@ -12,8 +12,8 @@ test.describe('Happy Path: Unauthenticated Access', () => {
     test('should show login button/form when unauthenticated', async ({ page }) => {
         await page.goto('/');
 
-        // Use the exact labels found: OTURUMU_BAŞLAT
-        const loginBtn = page.getByRole('button', { name: /OTURUMU_BAŞLAT/i }).or(page.getByText(/OTURUMU_BAŞLAT/i));
-        await expect(loginBtn.first()).toBeVisible();
+        // Use testid for localized robustness
+        const loginBtn = page.getByTestId('login-submit');
+        await expect(loginBtn).toBeVisible({ timeout: 15000 });
     });
 });

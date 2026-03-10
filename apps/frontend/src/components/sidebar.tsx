@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth/role-guard';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
+import { LanguageSwitcher } from './language-switcher';
 
 const ADMIN_NAV = [
     { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
@@ -69,22 +70,10 @@ interface SidebarProps {
 export function Sidebar({ onNavClick }: SidebarProps) {
     const pathname = usePathname();
     const t = useTranslations('sidebar');
-    const { logout } = useAuth();
-    const [user, setUser] = useState<any>(null);
+    const { user, logout } = useAuth();
     const [pendingCount, setPendingCount] = useState(0);
 
     useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const me = await api.auth.me();
-                setUser(me);
-            } catch (error) {
-                console.error('Failed to fetch user', error);
-            }
-        };
-
-        fetchUser();
-
         // KB Approvals count check
         const checkPending = async () => {
             try {
@@ -92,8 +81,10 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                 setPendingCount(res.total || 0);
             } catch (e) { }
         };
-        checkPending();
-    }, []);
+        if (user?.role?.toUpperCase() === 'ADMIN') {
+            checkPending();
+        }
+    }, [user]);
 
     const navItems = user?.role?.toUpperCase() === 'ADMIN' ? ADMIN_NAV : CUSTOMER_NAV;
 
@@ -132,6 +123,7 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                                                     key={sIdx}
                                                     href={sub.href}
                                                     onClick={onNavClick}
+                                                    data-testid={`nav-${sub.labelKey}`}
                                                     className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all ${active
                                                         ? 'bg-primary/10 text-primary'
                                                         : 'text-muted-foreground hover:bg-white/5 hover:text-white'
@@ -160,6 +152,7 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                                 key={idx}
                                 href={item.href}
                                 onClick={onNavClick}
+                                data-testid={`nav-${item.labelKey}`}
                                 className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all ${active
                                     ? 'bg-primary/10 text-primary'
                                     : 'text-muted-foreground hover:bg-white/5 hover:text-white'
@@ -175,7 +168,8 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                     })}
                 </nav>
 
-                <div className="mt-auto border-t border-white/5 pt-4 space-y-1">
+                <div className="mt-auto border-t border-white/5 pt-4 space-y-4">
+                    <LanguageSwitcher />
                     <button
                         onClick={handleLogout}
                         className="group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:bg-red-500/10 hover:text-red-400"

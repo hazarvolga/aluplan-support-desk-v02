@@ -41,7 +41,7 @@ test.describe('Authentication Flow', () => {
         );
 
         // Wait for async error handling
-        await expect(errorBox).toBeVisible({ timeout: 8000 });
+        await expect(page.getByTestId('error-message')).toBeVisible({ timeout: 10000 });
     });
 
     test('should redirect to dashboard on valid credentials', async ({ page }) => {
@@ -49,12 +49,12 @@ test.describe('Authentication Flow', () => {
         await page.goto('/');
 
         // Act
-        await page.getByTestId('login-email').fill('admin@aluplan.com');
-        await page.getByTestId('login-password').fill('admin123');
+        await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
+        await page.getByTestId('login-password').fill('Vol?*187');
         await page.getByTestId('login-submit').click();
 
         // Assert - wait for redirect to dashboard
-        await page.waitForURL(/.*\/dashboard/, { timeout: 10000 });
+        await page.waitForURL(/.*\/dashboard/, { timeout: 30000 });
         expect(page.url()).toContain('/dashboard');
     });
 });

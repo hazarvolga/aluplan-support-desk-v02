@@ -1,5 +1,26 @@
 // apps/backend/test/setup.ts
 
+// Mock Langfuse (prevents ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG)
+jest.mock('langfuse', () => ({
+    Langfuse: jest.fn().mockImplementation(() => ({
+        trace: jest.fn().mockReturnValue({
+            span: jest.fn().mockReturnValue({
+                end: jest.fn(),
+                generation: jest.fn().mockReturnValue({ end: jest.fn() }),
+            }),
+            end: jest.fn(),
+        }),
+        generation: jest.fn().mockReturnValue({ end: jest.fn() }),
+        flush: jest.fn().mockResolvedValue(undefined),
+        shutdown: jest.fn().mockResolvedValue(undefined),
+    })),
+}));
+
+jest.mock('langfuse-core', () => ({
+    LangfuseCore: jest.fn(),
+    LangfuseMedia: jest.fn(),
+}));
+
 // Mock IORedis
 jest.mock('ioredis', () => {
     return jest.fn().mockImplementation(() => {

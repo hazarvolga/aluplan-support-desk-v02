@@ -60,7 +60,7 @@ export default function MyTicketsPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Destek Taleplerim</h1>
                     <p className="text-muted-foreground">Açtığınız tüm destek taleplerini buradan takip edebilirsiniz.</p>
                 </div>
-                <Button asChild>
+                <Button asChild data-testid="create-ticket-button">
                     <Link href="/tickets/new">
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Yeni Talep Oluştur

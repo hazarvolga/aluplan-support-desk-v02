@@ -1,28 +1,57 @@
 'use client';
 
-import { useLocale } from 'next-intl';
-import { usePathname, useRouter, routing } from '@/i18n/routing';
-import { Languages } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { usePathname, useRouter } from '@/i18n/routing';
+import { api } from '@/lib/api';
 
 export function LanguageSwitcher() {
     const locale = useLocale();
     const pathname = usePathname();
     const router = useRouter();
+    const t = useTranslations('common.languages');
 
-    const toggleLocale = () => {
-        const nextLocale = locale === 'en' ? 'tr' : 'en';
-        router.replace(pathname, { locale: nextLocale });
+    const locales = [
+        { code: 'tr', label: 'TR' },
+        { code: 'en', label: 'EN' },
+        { code: 'de', label: 'DE' }
+    ] as const;
+
+    const setLocale = async (newLocale: string) => {
+        if (newLocale === locale) return;
+
+        // 1. Immediate UI switch via URL
+        router.replace(pathname, { locale: newLocale as any });
+
+        // 2. Background sync with DB
+        try {
+            await api.users.updateProfile({ language: newLocale });
+        } catch (error) {
+            console.error('Failed to persist language preference:', error);
+            // We don't block the UI if DB sync fails
+        }
     };
 
     return (
-        <button
-            onClick={toggleLocale}
-            className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-1.5 hover:bg-white/10 transition-all group shadow-[0_0_15px_rgba(255,255,255,0.02)]"
-        >
-            <Languages className="h-3.5 w-3.5 text-muted-foreground/60 group-hover:text-primary transition-colors" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 group-hover:text-white">
-                {locale === 'en' ? 'TR' : 'EN'}
-            </span>
-        </button>
+        <div className="flex items-center gap-1 p-1 border border-white/5 bg-white/5 rounded-lg backdrop-blur-sm shadow-xl">
+            {locales.map((loc) => {
+                const isActive = locale === loc.code;
+                return (
+                    <button
+                        key={loc.code}
+                        onClick={() => setLocale(loc.code)}
+                        title={t(loc.code)}
+                        className={`
+                            flex-1 px-3 py-1.5 text-[10px] font-bold tracking-widest rounded-md transition-all duration-300
+                            ${isActive
+                                ? 'bg-primary/20 text-primary shadow-[0_0_10px_rgba(var(--primary),0.3)] border border-primary/20'
+                                : 'text-muted-foreground/60 hover:bg-white/5 hover:text-white border border-transparent'
+                            }
+                        `}
+                    >
+                        {loc.label}
+                    </button>
+                );
+            })}
+        </div>
     );
 }
