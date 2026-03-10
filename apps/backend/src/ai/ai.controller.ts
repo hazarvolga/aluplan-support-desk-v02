@@ -13,6 +13,7 @@ import { AiService } from './ai.service';
 import { AiCopilotService } from './ai-copilot.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
+import { Public } from '../auth/decorators/public.decorator';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { IsBoolean } from 'class-validator';
 
@@ -152,6 +153,7 @@ export class AiController {
         return this.embeddingService.reindexAll();
     }
 
+    @Public()
     @Get('status')
     @ApiOperation({ summary: 'Check AI service availability' })
     async status() {
