@@ -52,6 +52,7 @@ export class ResendProvider implements EmailProvider {
 
         if (!res.ok) {
             const err = await res.text();
+            this.logger.error(`❌ Resend API error ${res.status} (from: ${from}, to: ${JSON.stringify(to)}): ${err}`);
             throw new Error(`Resend API error ${res.status}: ${err}`);
         }
 
