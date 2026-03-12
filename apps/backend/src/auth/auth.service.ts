@@ -210,7 +210,7 @@ export class AuthService {
 
             return { success: true, message: 'Şifreniz başarıyla güncellendi.' };
 
-        } catch (err) {
+        } catch (_err) {
             throw new UnauthorizedException('Geçersiz veya süresi dolmuş sıfırlama bağlantısı.');
         }
     }
@@ -231,7 +231,7 @@ export class AuthService {
                 });
             }
             return { success: true, message: 'Hesabınız başarıyla doğrulandı. Artık giriş yapabilirsiniz.' };
-        } catch (err) {
+        } catch (_err) {
             throw new UnauthorizedException('Geçersiz veya süresi dolmuş doğrulama bağlantısı.');
         }
     }
@@ -315,10 +315,10 @@ export class AuthService {
     }
 
     async testEmailConfig() {
-        const health = await this.emailService.healthCheck();
-        const envKey = this.config.get('RESEND_API_KEY');
-        const mailFrom = this.config.get('MAIL_FROM');
-        const frontendUrlEnv = this.config.get('FRONTEND_URL');
+        const _health = await this.emailService.healthCheck();
+        const _envKey = this.config.get('RESEND_API_KEY');
+        const _mailFrom = this.config.get('MAIL_FROM');
+        const _frontendUrlEnv = this.config.get('FRONTEND_URL');
 
         const dbSettings = await this.prisma.setting.findMany({
             where: {
@@ -334,13 +334,13 @@ export class AuthService {
         });
 
         return {
-            health,
+            _health,
             config: {
                 env: {
-                    hasResendKey: !!envKey,
-                    resendKeyPrefix: envKey ? `${envKey.substring(0, 10)}...` : null,
-                    mailFrom,
-                    frontendUrl: frontendUrlEnv,
+                    hasResendKey: !!_envKey,
+                    resendKeyPrefix: _envKey ? `${_envKey.substring(0, 10)}...` : null,
+                    mailFrom: _mailFrom,
+                    frontendUrl: _frontendUrlEnv,
                 },
                 db: dbSettings.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {}),
                 sourceReminder: 'If DATABASE holds a key, it overrides .env'

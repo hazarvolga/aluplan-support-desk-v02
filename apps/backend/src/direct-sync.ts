@@ -40,27 +40,34 @@ async function main() {
         if (ext === '.md') type = 'FILE_MD';
         if (ext === '.pdf') type = 'FILE_PDF';
         if (ext === '.csv') type = 'FILE_CSV';
+        if (ext === '.json') type = 'FILE_JSON'; // Added missing JSON type
 
         console.log(`⏳ Processing: ${fileName}...`);
 
         try {
-            // Find or create source
-            const source = await prisma.knowledgeSource.upsert({
-                where: { id: '00000000-0000-0000-0000-000000000000' }, // Dummy to force findFirst/create pattern if needed
-                create: {
-                    name: `[Dataset] ${fileName}`,
-                    type: type as any,
-                    fileName,
-                    filePath,
-                    status: 'ACTIVE',
-                    metadata: { useAiPreprocessing: true }
-                },
-                update: {
-                    status: 'ACTIVE',
-                }
+            let _source;
+            const existingSource = await prisma.knowledgeSource.findFirst({
+                where: { filePath }
             });
+            if (existingSource) {
+                _source = await prisma.knowledgeSource.update({
+                    where: { id: existingSource.id },
+                    data: { status: 'ACTIVE' }
+                });
+            } else {
+                _source = await prisma.knowledgeSource.create({
+                    data: {
+                        name: `[Dataset] ${fileName}`,
+                        type: type as any,
+                        fileName,
+                        filePath,
+                        status: 'ACTIVE',
+                        metadata: { useAiPreprocessing: true }
+                    }
+                });
+            }
             console.log(`✅ Synced: ${fileName}`);
-        } catch (e) {
+        } catch (_e) {
             // Logic for non-unique id dummy
             const existing = await prisma.knowledgeSource.findFirst({
                 where: { filePath }

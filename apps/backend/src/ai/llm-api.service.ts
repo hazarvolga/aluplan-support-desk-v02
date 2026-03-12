@@ -221,7 +221,7 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
                         const parsed = JSON.parse(cleanLine);
                         const content = parsed.choices[0]?.delta?.content;
                         if (content) yield content;
-                    } catch (e) {
+                    } catch (_e) {
                         // Skip malformed JSON
                     }
                 }
@@ -329,7 +329,7 @@ SONUÇ (YALNIZCA KELİME):`;
             try {
                 const errorData = await response.json();
                 errorDetail = errorData?.error?.message || response.statusText;
-            } catch (e) {
+            } catch (_e) {
                 errorDetail = response.statusText;
             }
 

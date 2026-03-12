@@ -1,0 +1,85 @@
+
+> @aluplan/backend@0.1.0 lint /Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend
+> eslint "{src,apps,libs,test}/**/*.ts"
+
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/ai-query.service.ts
+    6:10  warning  'TicketStatus' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+    6:24  warning  'TicketPriority' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+    6:63  warning  'KnowledgeSourceType' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  233:52  warning  'query' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/ai.controller.ts
+  11:10  warning  'OllamaService' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/ai.service.ts
+  165:18  warning  'err' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/generic-openai.service.ts
+  327:22  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/llm-api.service.ts
+  224:30  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  332:22  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/ollama.service.ts
+  171:30  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u    @typescript-eslint/no-unused-vars
+  195:27  warning  'subject' is defined but never used. Allowed unused args must match /^_/u       @typescript-eslint/no-unused-vars
+  195:44  warning  'conversation' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/openai.service.ts
+  228:22  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/prompt-context-builder.service.ts
+  15:25  warning  'userQuery' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  15:36  warning  'kbContent' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/prompts.service.ts
+  46:18  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/tests/ollama-benchmark.ts
+  32:19  warning  'response' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/tests/verify-llmapi.ts
+  12:11  warning  'ai' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/ai/ticket-clustering.service.ts
+  5:16  warning  'CronExpression' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/announcements/announcements.service.ts
+  5:10  warning  'AnnouncementStatus' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  5:30  warning  'AnnouncementType' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/attachments/attachments.controller.ts
+  9:5  warning  'NotFoundException' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/auth/auth.service.ts
+  213:18  warning  'err' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  234:18  warning  'err' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/automation/sla.cron.ts
+  6:10  warning  'subMinutes' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/branding/branding.controller.ts
+  31:18  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/config/configuration.ts
+  76:15  warning  'maskedDb' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/crm/crm.service.ts
+    4:23  warning  'SyncResult' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  223:15  warning  'adapter' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/customers/customers.service.ts
+    1:81  warning  'Logger' is defined but never used. Allowed unused vars must match /^_/u                   @typescript-eslint/no-unused-vars
+    2:13  warning  'jwt' is defined but never used. Allowed unused vars must match /^_/u                      @typescript-eslint/no-unused-vars
+  270:15  warning  'updatedProfile' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/customers/hotinfo-parser.service.ts
+  149:17  warning  'diskInfo' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/hazarekiz/Projects/aluplan-support-desk-V02/apps/backend/src/email/email.service.ts
+  9:25  warning  'SendEmailOptions' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 34 problems (0 errors, 34 warnings)
+

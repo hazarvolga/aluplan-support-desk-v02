@@ -29,7 +29,7 @@ async function testOllama() {
 
         const startTime = Date.now();
         try {
-            const response = await axios.post(`${baseUrl}/api/embeddings`, {
+            const _response = await axios.post(`${baseUrl}/api/embeddings`, {
                 model,
                 prompt: text
             }, {

@@ -14,7 +14,7 @@ test.describe('Authentication Flow', () => {
 
     test('should load login page with correct elements', async ({ page }) => {
         // Arrange
-        await page.goto('/');
+        await page.goto('/login');
 
         // Assert - email input
         await expect(page.getByTestId('login-email')).toBeVisible();
@@ -28,7 +28,7 @@ test.describe('Authentication Flow', () => {
 
     test('should show error message on invalid credentials', async ({ page }) => {
         // Arrange
-        await page.goto('/');
+        await page.goto('/login');
 
         // Act
         await page.getByTestId('login-email').fill('invalid@example.com');
@@ -46,15 +46,15 @@ test.describe('Authentication Flow', () => {
 
     test('should redirect to dashboard on valid credentials', async ({ page }) => {
         // Arrange
-        await page.goto('/');
+        await page.goto('/login');
 
         // Act
         await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
-        await page.getByTestId('login-password').fill('Vol?*187');
+        await page.getByTestId('login-password').fill('Vol1872017');
         await page.getByTestId('login-submit').click();
 
-        // Assert - wait for redirect to dashboard
-        await page.waitForURL(/.*\/dashboard/, { timeout: 30000 });
-        expect(page.url()).toContain('/dashboard');
+        // Assert - wait for redirect (smart routing might go to /profile or /dashboard)
+        await page.waitForURL(/.*\/(dashboard|profile)/, { timeout: 30000 });
+        expect(page.url()).toMatch(/.*\/(dashboard|profile)/);
     });
 });

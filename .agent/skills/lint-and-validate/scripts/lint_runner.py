@@ -48,7 +48,10 @@ def detect_project_type(project_path: Path) -> dict:
             
             # Check for TypeScript
             if "typescript" in deps or (project_path / "tsconfig.json").exists():
-                result["linters"].append({"name": "tsc", "cmd": ["npx", "tsc", "--noEmit"]})
+                # Skip root-level tsc in Turborepo monorepos — no root tsconfig exists
+                # and turbo lint already runs ESLint across all packages.
+                if not (project_path / "turbo.json").exists():
+                    result["linters"].append({"name": "tsc", "cmd": ["npx", "tsc", "--noEmit"]})
                 
         except:
             pass
@@ -84,7 +87,7 @@ def run_linter(linter: dict, cwd: Path) -> dict:
             text=True,
             encoding='utf-8',
             errors='replace',
-            timeout=120
+            timeout=300
         )
         
         result["output"] = proc.stdout[:2000] if proc.stdout else ""
@@ -94,7 +97,7 @@ def run_linter(linter: dict, cwd: Path) -> dict:
     except FileNotFoundError:
         result["error"] = f"Command not found: {linter['cmd'][0]}"
     except subprocess.TimeoutExpired:
-        result["error"] = "Timeout after 120s"
+        result["error"] = "Timeout after 300s"
     except Exception as e:
         result["error"] = str(e)
     

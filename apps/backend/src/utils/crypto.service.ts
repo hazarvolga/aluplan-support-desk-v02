@@ -45,7 +45,7 @@ export class CryptoService {
             decrypted += decipher.final('utf8');
 
             return decrypted;
-        } catch (error) {
+        } catch (_error) {
             throw new InternalServerErrorException('Failed to decrypt data');
         }
     }

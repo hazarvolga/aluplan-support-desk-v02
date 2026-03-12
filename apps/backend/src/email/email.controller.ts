@@ -37,7 +37,7 @@ export class EmailController {
           occurredAt: new Date(),
         }
       });
-    } catch (e) {
+        } catch (_e) {
       // Silently fail if log ID doesn't align or event fails to insert. Tracking pixel shouldn't crash.
     }
 
@@ -79,7 +79,7 @@ export class EmailController {
           await this.prisma.emailLog.update({ where: { id: log.id }, data: { status: 'BOUNCED' } });
         }
       }
-    } catch (e) {
+    } catch (_e) {
       // Log but acknowledge webhook 
     }
 

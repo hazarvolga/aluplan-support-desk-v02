@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface ContextOptions {
-    userId?: string | null;
+    userId?: string;
     userQuery: string;
-    kbContent?: string;
+    kbContent: string;
 }
 
 @Injectable()
@@ -12,7 +12,7 @@ export class PromptContextBuilderService {
     constructor(private readonly prisma: PrismaService) { }
 
     async buildContext(options: ContextOptions): Promise<string> {
-        const { userId, userQuery, kbContent } = options;
+        const { userId, userQuery, kbContent: _kbContent } = options;
         let context = '';
 
         // 1. User Profile & Preferences
@@ -44,7 +44,8 @@ export class PromptContextBuilderService {
             }
         }
 
-        
+        // 3. Current Query
+        context += `[3. Mevcut Sorgu]\n${userQuery}\n\n`;
 
         // 4. System Rules
         context += `[4. Sistem Kuralları]\n`;

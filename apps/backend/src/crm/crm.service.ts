@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Dynamics365Adapter } from './adapters/dynamics365.adapter';
-import { ICrmAdapter, SyncResult } from './adapters/crm-adapter.interface';
+import { ICrmAdapter } from './adapters/crm-adapter.interface';
 import { CrmProvider, SyncStatus } from '@aluplan/database';
 import { CryptoService } from '../utils/crypto.service';
 
@@ -197,7 +197,7 @@ export class CrmService {
                                 email: true,
                                 fullName: true,
                                 status: true
-                            }
+                              }
                         }
                     }
                 }
@@ -220,7 +220,7 @@ export class CrmService {
 
     async processDynamics365Webhook(payload: any) {
         this.logger.debug(`Processing Dynamics 365 Webhook payload for entity: ${payload.entity}`);
-        const adapter = this.getAdapter(CrmProvider.DYNAMICS_365) as Dynamics365Adapter;
+        const _adapter = this.getAdapter(CrmProvider.DYNAMICS_365) as Dynamics365Adapter;
 
         if (payload.entity === 'account') {
             return this.syncSingleAccount(payload.data);

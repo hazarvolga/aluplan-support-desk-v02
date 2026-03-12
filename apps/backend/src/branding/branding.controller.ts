@@ -28,7 +28,7 @@ export class BrandingController {
         try {
             const url = await this.storageService.getDownloadUrl(key);
             return res.redirect(url);
-        } catch (error) {
+        } catch (_error) {
             return res.status(404).send('Asset not found');
         }
     }

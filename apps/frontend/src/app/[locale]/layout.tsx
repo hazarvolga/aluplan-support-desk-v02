@@ -23,8 +23,21 @@ const condensed = Barlow_Condensed({
 });
 
 export const metadata: Metadata = {
-    title: { default: 'Aluplan Destek', template: '%s · Aluplan' },
-    description: 'Aluplan müşteri destek yönetim platformu',
+    title: { default: 'Aluplan Support Desk — Allplan Technical Hub', template: '%s · Aluplan' },
+    description: 'Advanced technical support and resource management platform for Allplan engineering and BIM solutions in Turkey and beyond.',
+    openGraph: {
+        title: 'Aluplan Support Desk — Professional Allplan Solutions',
+        description: 'BIM, Engineering, and Technical Support Hub for Allplan users. Turkey authorized dealer resources.',
+        url: 'https://destek.aluplan.com.tr',
+        siteName: 'Aluplan Support',
+        locale: 'tr_TR',
+        type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Aluplan Support Desk',
+        description: 'Advanced technical support for Allplan engineering solutions.',
+    },
 };
 
 export const viewport: Viewport = {

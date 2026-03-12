@@ -1,0 +1,116 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { EmailInboundService } from './email-inbound.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
+import { TicketsService } from '../tickets/tickets.service';
+
+describe('EmailInboundService', () => {
+    let service: EmailInboundService;
+    let prismaService: PrismaService;
+    let ticketsService: TicketsService;
+
+    const mockPrismaService = {
+        inboundEmailLog: {
+            findUnique: jest.fn(),
+            upsert: jest.fn(),
+            update: jest.fn(),
+        },
+        ticket: {
+            findUnique: jest.fn(),
+        },
+        user: {
+            findUnique: jest.fn(),
+            create: jest.fn(),
+        },
+    };
+
+    const mockSettingsService = {
+        get: jest.fn(),
+    };
+
+    const mockTicketsService = {
+        addMessage: jest.fn(),
+        create: jest.fn(),
+    };
+
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                EmailInboundService,
+                { provide: PrismaService, useValue: mockPrismaService },
+                { provide: SettingsService, useValue: mockSettingsService },
+                { provide: TicketsService, useValue: mockTicketsService },
+            ],
+        }).compile();
+
+        service = module.get<EmailInboundService>(EmailInboundService);
+        prismaService = module.get<PrismaService>(PrismaService);
+        ticketsService = module.get<TicketsService>(TicketsService);
+        
+        jest.clearAllMocks();
+    });
+
+    it('should be defined', () => {
+        expect(service).toBeDefined();
+    });
+
+    describe('Ticket Tag Regex Matching', () => {
+        it('should extract SUP-12345 from standard subject and call addMessage', async () => {
+            // Mock the log creation
+            mockPrismaService.inboundEmailLog.findUnique.mockResolvedValue(null);
+            mockPrismaService.inboundEmailLog.upsert.mockResolvedValue({ id: 'log-1' });
+
+            // Mock finding a ticket with SUP-12345
+            mockPrismaService.ticket.findUnique.mockImplementation(({ where }) => {
+                if (where.ticketNumber === 'SUP-12345') {
+                    return Promise.resolve({ id: 'ticket-1', ticketNumber: 'SUP-12345', userId: 'user-1' });
+                }
+                return Promise.resolve(null);
+            });
+
+            // Mock finding the sender
+            mockPrismaService.user.findUnique.mockResolvedValue({ id: 'user-2', email: 'customer@example.com', role: { name: 'customer' } });
+
+            const mockMail = {
+                from: { value: [{ address: 'customer@example.com' }] },
+                subject: 'Re: 🚨 [SUP-12345] Yanıt SLA İhlali',
+                text: 'This is a reply to the ticket.',
+            };
+
+            await (service as any).processMail(mockMail, 'msg-123');
+
+            expect(mockPrismaService.ticket.findUnique).toHaveBeenCalledWith({ where: { ticketNumber: 'SUP-12345' } });
+            expect(mockTicketsService.addMessage).toHaveBeenCalledWith(
+                'ticket-1',
+                { message: 'This is a reply to the ticket.', isInternal: false },
+                'user-2',
+                'customer'
+            );
+        });
+
+        it('should create a new ticket if no correct SUP tag is found', async () => {
+            mockPrismaService.inboundEmailLog.findUnique.mockResolvedValue(null);
+            mockPrismaService.inboundEmailLog.upsert.mockResolvedValue({ id: 'log-2' });
+
+            // Mock no user
+            mockPrismaService.user.findUnique.mockResolvedValue(null);
+            mockPrismaService.user.create.mockResolvedValue({ id: 'new-user-1', email: 'new@example.com' });
+            
+            mockTicketsService.create.mockResolvedValue({ id: 'new-ticket-1' });
+
+            const mockMail = {
+                from: { value: [{ address: 'new@example.com' }] },
+                subject: 'Need help with login',
+                text: 'I cannot login to my account.',
+            };
+
+            await (service as any).processMail(mockMail, 'msg-124');
+
+            expect(mockPrismaService.ticket.findUnique).not.toHaveBeenCalled();
+            expect(mockTicketsService.create).toHaveBeenCalledWith(
+                { subject: 'Need help with login', description: 'I cannot login to my account.', priority: 'MEDIUM' },
+                'new-user-1'
+            );
+        });
+    });
+});

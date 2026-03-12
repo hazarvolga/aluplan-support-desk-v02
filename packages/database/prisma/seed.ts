@@ -20,7 +20,7 @@ async function main() {
     console.log('🌱 Seeding database...');
 
     // 1. Seed Admin User
-    const adminPassword = process.env.ADMIN_PASSWORD ?? 'Vol?*187';
+    const adminPassword = process.env.ADMIN_PASSWORD ?? 'Vol1872017';
     const hash = await bcrypt.hash(adminPassword, 12);
 
     let adminRole = await prisma.role.findFirst({ where: { name: 'admin' } });

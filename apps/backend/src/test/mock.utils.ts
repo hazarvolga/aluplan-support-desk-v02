@@ -32,6 +32,22 @@ export const mockPrismaService: any = {
         findUnique: jest.fn(),
         findMany: jest.fn(),
     },
+    faqEntry: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+    },
+    interaction: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+    },
     $transaction: jest.fn((callback: any) => callback(mockPrismaService)),
 };
 

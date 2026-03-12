@@ -68,7 +68,7 @@ test.describe('Admin Panel Interactivity Diagnostic', () => {
         } catch (e) {
             console.log('❌ CLICK FAILED or INTERCEPTED');
             console.log('--- ERROR DETAILS ---');
-            console.error(e.message);
+            console.error(e instanceof Error ? e.message : String(e));
 
             // Capture a diagnostic screenshot
             await page.screenshot({ path: 'e2e-blocker-diagnostic.png', fullPage: true });

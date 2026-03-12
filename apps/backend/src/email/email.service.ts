@@ -6,7 +6,7 @@ import { SettingsService } from '../settings/settings.service';
 import { ResendProvider } from './resend.provider';
 import { SmtpProvider } from './smtp.provider';
 import { GmailProvider } from './gmail.provider';
-import { EmailProvider, SendEmailOptions } from './interfaces/email-provider.interface';
+import { EmailProvider } from './interfaces/email-provider.interface';
 import { EmailPayload } from './email.templates';
 import { ErrorLoggerService } from '../common/services/error-logger.service';
 

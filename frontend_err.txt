@@ -1,5 +1,0 @@
-src/app/(dashboard)/admin/settings/page.tsx(27,32): error TS2307: Cannot find module '@aluplan/database' or its corresponding type declarations.
-src/app/(dashboard)/admin/settings/page.tsx(738,77): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
-src/app/(dashboard)/admin/settings/page.tsx(738,85): error TS2322: Type 'unknown' is not assignable to type 'string'.
-src/app/(dashboard)/admin/settings/page.tsx(738,95): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/lib/api.ts(195,5): error TS1117: An object literal cannot have multiple properties with the same name.

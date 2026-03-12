@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 import { Public } from '../auth/decorators/public.decorator';
+import { UpdateCustomerProfileDto } from './dto/update-customer-profile.dto';
 import { Response as Res } from 'express';
 
 @Controller('customers')
@@ -55,7 +56,7 @@ export class CustomersController {
     @Roles('admin', 'support_manager')
     async updateCustomer(
         @Param('id') id: string,
-        @Body() dto: import('./dto/update-customer-profile.dto').UpdateCustomerProfileDto
+        @Body() dto: UpdateCustomerProfileDto
     ) {
         return this.customersService.updateCustomer(id, dto);
     }

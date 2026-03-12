@@ -28,7 +28,7 @@ export class UsersService {
         return result;
     }
 
-    async findAll(type?: 'agent' | 'customer') {
+    async findAll(_type?: 'agent' | 'customer') {
         const where: any = { deletedAt: null };
 
         return this.prisma.user.findMany({

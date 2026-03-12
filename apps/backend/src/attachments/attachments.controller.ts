@@ -6,7 +6,6 @@ import {
     Param,
     UseGuards,
     Get,
-    NotFoundException,
     Res,
     ParseFilePipe,
     MaxFileSizeValidator,

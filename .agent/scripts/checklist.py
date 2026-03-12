@@ -57,6 +57,10 @@ def print_error(text: str):
 # Define priority-ordered checks
 CORE_CHECKS = [
     ("Security Scan", ".agent/skills/vulnerability-scanner/scripts/security_scan.py", True),
+    ("DAST Endpoint Scan", ".agent/scripts/security/dast_endpoint_scanner.py", False),
+    ("Semantic SAST", ".agent/scripts/security/semantic_sast.py", False),
+    ("LLM Security Audit", ".agent/scripts/security/llm_security_audit.py", False),
+    ("Infra Security Audit", ".agent/scripts/security/infra_audit.py", False),
     ("Lint Check", ".agent/skills/lint-and-validate/scripts/lint_runner.py", True),
     ("Schema Validation", ".agent/skills/database-design/scripts/schema_validator.py", False),
     ("Test Runner", ".agent/skills/testing-patterns/scripts/test_runner.py", False),

@@ -73,7 +73,6 @@ export default () => {
     };
 
     if (isProduction) {
-        const maskedDb = config.database.url?.replace(/\/\/.*@/, '//****:****@');
         console.log(`[Bootstrap] ⚙️ PRODUCTION CONFIG:
         - PORT: ${config.port}
         - DATABASE_HOST: ${config.database.url?.split('@')[1]?.split(':')[0] || 'MISSING'}

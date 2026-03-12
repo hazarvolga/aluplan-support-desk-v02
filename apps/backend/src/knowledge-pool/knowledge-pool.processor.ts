@@ -28,7 +28,7 @@ export class KnowledgePoolProcessor extends WorkerHost {
         // Import-Level Safety: Using localized require to bypass top-level property access traps
         let AnyTurndown: any;
         try {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
+             
             // eslint-disable-next-line @typescript-eslint/no-require-imports
             AnyTurndown = require('turndown');
         } catch (e) {

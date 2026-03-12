@@ -3,7 +3,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { EmbeddingService, SearchResult, SearchResponse } from './embedding.service';
-import { TicketStatus, TicketPriority, Prisma, TicketMessage, KnowledgeSourceType, CommunicationChannel } from '@aluplan/database';
+import { Prisma, TicketMessage, CommunicationChannel } from '@aluplan/database';
 import { ConfigService } from '@nestjs/config';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { PromptsService } from './prompts.service';
@@ -96,7 +96,7 @@ export class AiQueryService {
         let results = searchResponse.results;
 
         // 3. Re-ranking Phase (Section 5: Hybrid Retrieval Engine)
-        results = this.rerankResults(results, userQuery);
+        results = this.rerankResults(results);
 
         // CHANGE 5: No-match hard floor — if topScore < LOW_CONFIDENCE_THRESHOLD, do NOT call LLM
         const LOW_CONFIDENCE_THRESHOLD = parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.72');
@@ -148,7 +148,7 @@ export class AiQueryService {
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
             const systemPrompt = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', DEFAULT_SYSTEM_PROMPT);
             const contextPrompt = await this.promptContextBuilder.buildContext({
-                userId,
+                userId: userId ?? undefined,
                 userQuery,
                 kbContent: topResult.content,
             });
@@ -230,7 +230,7 @@ export class AiQueryService {
      * Heuristic Re-ranking (Cohort Search)
      * Section 5.3: Re-ranking with weights
      */
-    private rerankResults(results: SearchResult[], query: string): SearchResult[] {
+    private rerankResults(results: SearchResult[]): SearchResult[] {
         if (results.length === 0) return [];
 
         const RERANK_ARTICLE = parseFloat(process.env.RERANK_MULTIPLIER_ARTICLE || '1.30');
@@ -294,7 +294,7 @@ export class AiQueryService {
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
             const systemPrompt = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', DEFAULT_SYSTEM_PROMPT);
             const contextPrompt = await this.promptContextBuilder.buildContext({
-                userId,
+                userId: userId ?? undefined,
                 userQuery,
                 kbContent: topResult.content,
             });

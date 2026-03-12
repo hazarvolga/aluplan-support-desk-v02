@@ -83,6 +83,7 @@ docker-compose.override.yml
 # ========================
 # Miscellaneous
 # ========================
+.archive/
 *.pid
 *.seed
 *.pid.lock
@@ -96,7 +97,6 @@ docs/
 havuz.md
 All Contacts(All Contacts).csv
 Destek Sistemi İmport(Destek Sistemi İmport).csv
-wordpress_1_2025-09-23_13-22-07.sql
 maillerindesorunolmayanonaylanmısmaillimusteriler/
 tickets:_operational_queue_overview
 
@@ -107,3 +107,29 @@ env/
 .env*
 bin/
 obj/
+
+# Archives / Backups
+*.sql
+*.log
+*_err.txt
+root_startup.log
+app_restart.log
+wordpress_1_2025-09-23_13-22-07.sql
+
+# Diagnostics
+backend_*.txt
+frontend_*.txt
+security_scan_results.json
+
+# Temporary Dev Scripts
+check_logs.js
+db-check.js
+test_api.js
+test_db.ts
+test_email.ts
+test_llm.ts
+repro-preview.ts
+patch_ollama.ts
+patch_builder.py
+patch_providers.py
+parse_sql.js

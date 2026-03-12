@@ -1,9 +1,8 @@
 generator client {
   provider        = "prisma-client-js"
-  engineType      = "library"
-
-  previewFeatures = ["postgresqlExtensions", "driverAdapters"]
+  previewFeatures = ["driverAdapters", "postgresqlExtensions"]
   binaryTargets   = ["native"]
+  engineType      = "library"
 }
 
 datasource db {
@@ -433,7 +432,6 @@ model AiInteraction {
   matchedVersionId  String?                  @map("matched_version_id") @db.Uuid
   similarityScore   Decimal?                 @map("similarity_score") @db.Decimal(5, 4)
   confidenceBand    ConfidenceBand?          @map("confidence_band")
-  channel           CommunicationChannel     @default(WEB)
   responseGenerated String?                  @map("response_generated")
   autoAnswered      Boolean                  @default(false) @map("auto_answered")
   ticketCreated     Boolean                  @default(false) @map("ticket_created")
@@ -448,6 +446,7 @@ model AiInteraction {
   totalTokens       Int?                     @map("total_tokens")
   estimatedCost     Decimal?                 @map("estimated_cost") @db.Decimal(10, 6)
   createdAt         DateTime                 @default(now()) @map("created_at")
+  channel           CommunicationChannel     @default(WEB)
   matchedArticle    KnowledgeArticle?        @relation(fields: [matchedArticleId], references: [id])
   matchedVersion    KnowledgeArticleVersion? @relation("MatchedVersion", fields: [matchedVersionId], references: [id])
   product           Product?                 @relation(fields: [productId], references: [id])
@@ -708,10 +707,9 @@ model KnowledgeSource {
   lastSyncedAt DateTime?                @map("last_synced_at")
   lastEtag     String?                  @map("last_etag") @db.VarChar(255)
   lastHash     String?                  @map("last_hash") @db.VarChar(255)
-  language     String                   @default("tr") @db.VarChar(10)
   createdAt    DateTime                 @default(now()) @map("created_at")
   updatedAt    DateTime                 @updatedAt @map("updated_at")
-
+  language     String                   @default("tr") @db.VarChar(10)
   embeddings   KnowledgePoolEmbedding[]
   syncLogs     KnowledgeSourceSyncLog[]
   product      Product?                 @relation(fields: [productId], references: [id])
@@ -982,7 +980,6 @@ enum TrainingQueueStatus {
 enum MailProvider {
   RESEND
   SMTP
-  GMAIL
   MAILGUN
   SENDGRID
 }
@@ -1027,7 +1024,6 @@ enum KnowledgeSourceType {
   FILE_CSV
   FILE_MSG
 }
-
 
 enum KnowledgeSourceStatus {
   INACTIVE

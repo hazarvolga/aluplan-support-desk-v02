@@ -43,7 +43,7 @@ export class PromptsService {
                     }
                 });
             }
-        } catch (e) {
+        } catch (_e) {
             // Ignore unique constraint or missing table errors temporarily
         }
 

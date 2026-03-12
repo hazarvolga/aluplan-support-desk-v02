@@ -153,7 +153,7 @@ export class SettingsService {
                     this.cache.set(s.key, plaintext);
                     this.secretCache.set(s.key, true);
                     value = decrypt ? plaintext : '********';
-                } catch (e) {
+                } catch (_e) {
                     this.logger.warn(`Decryption failed for setting: ${s.key}`);
                     this.cache.set(s.key, '');
                     this.secretCache.set(s.key, true);

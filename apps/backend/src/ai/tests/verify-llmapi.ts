@@ -9,7 +9,7 @@ async function verify() {
     const app = await NestFactory.createApplicationContext(AppModule);
     const settings = app.get(SettingsService);
     const llmApi = app.get(LlmApiService);
-    const ai = app.get(AiService);
+    const _ai = app.get(AiService);
 
     try {
         // 1. Check current state

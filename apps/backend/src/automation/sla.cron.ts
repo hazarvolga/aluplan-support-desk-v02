@@ -3,7 +3,6 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { TicketStatus } from '@aluplan/database';
-import { subMinutes } from 'date-fns';
 
 @Injectable()
 export class SlaCronService {

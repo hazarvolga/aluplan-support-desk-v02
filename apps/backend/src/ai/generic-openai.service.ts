@@ -324,7 +324,7 @@ SONUÇ (YALNIZCA KELİME):`;
             try {
                 const errorData = await response.json();
                 errorDetail = errorData?.error?.message || response.statusText;
-            } catch (e) {
+            } catch (_e) {
                 errorDetail = response.statusText;
             }
 

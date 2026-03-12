@@ -1,0 +1,324 @@
+{
+  "project": ".",
+  "timestamp": "2026-03-12T18:37:41.641003",
+  "scan_type": "all",
+  "scans": {
+    "dependencies": {
+      "tool": "dependency_scanner",
+      "findings": [
+        {
+          "type": "Missing Lock File",
+          "severity": "high",
+          "message": "npm: No lock file found. Supply chain integrity at risk."
+        },
+        {
+          "type": "Missing Lock File",
+          "severity": "high",
+          "message": "yarn: No lock file found. Supply chain integrity at risk."
+        }
+      ],
+      "status": "[OK] Secure",
+      "npm_audit": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      }
+    },
+    "secrets": {
+      "tool": "secret_scanner",
+      "findings": [
+        {
+          "file": ".archive/security_scan_results.json",
+          "type": "Bearer Token",
+          "severity": "critical",
+          "count": 2
+        },
+        {
+          "file": "packages/database/client/query_compiler_fast_bg.wasm-base64.js",
+          "type": "AWS Access Key",
+          "severity": "critical",
+          "count": 859
+        },
+        {
+          "file": "packages/database/client/index.js",
+          "type": "AWS Access Key",
+          "severity": "critical",
+          "count": 2
+        },
+        {
+          "file": "packages/database/client/edge.js",
+          "type": "AWS Access Key",
+          "severity": "critical",
+          "count": 2
+        },
+        {
+          "file": "packages/database/client/runtime/client.js",
+          "type": "Database Connection String",
+          "severity": "critical",
+          "count": 1
+        },
+        {
+          "file": "packages/database/client/runtime/wasm-compiler-edge.js",
+          "type": "Database Connection String",
+          "severity": "critical",
+          "count": 1
+        },
+        {
+          "file": ".github/workflows/backend-test.yml",
+          "type": "Database Connection String",
+          "severity": "critical",
+          "count": 3
+        },
+        {
+          "file": ".github/workflows/ci.yml",
+          "type": "Database Connection String",
+          "severity": "critical",
+          "count": 1
+        },
+        {
+          "file": ".agent/skills/playwright-skill/lib/helpers.js",
+          "type": "Password",
+          "severity": "high",
+          "count": 1
+        },
+        {
+          "file": ".agent/skills/vulnerability-scanner/scripts/security_scan.py",
+          "type": "Bearer Token",
+          "severity": "critical",
+          "count": 1
+        },
+        {
+          "file": ".agent/skills/mcp-builder/scripts/evaluation.py",
+          "type": "Bearer Token",
+          "severity": "critical",
+          "count": 1
+        },
+        {
+          "file": "apps/frontend/e2e/live-chat.spec.ts",
+          "type": "Password",
+          "severity": "high",
+          "count": 2
+        },
+        {
+          "file": "apps/frontend/e2e/email-reply.spec.ts",
+          "type": "Password",
+          "severity": "high",
+          "count": 1
+        },
+        {
+          "file": "apps/frontend/e2e/attachment.spec.ts",
+          "type": "Password",
+          "severity": "high",
+          "count": 1
+        },
+        {
+          "file": "apps/frontend/e2e/lifecycle.spec.ts",
+          "type": "Password",
+          "severity": "high",
+          "count": 2
+        }
+      ],
+      "status": "[!!] CRITICAL: Secrets exposed!",
+      "scanned_files": 1040,
+      "by_severity": {
+        "critical": 877,
+        "high": 19,
+        "medium": 0
+      }
+    },
+    "code_patterns": {
+      "tool": "pattern_scanner",
+      "findings": [
+        {
+          "file": "scripts/notebooklm-extractor/index.ts",
+          "line": 63,
+          "pattern": "exec() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "while ((match = pattern.exec(rawBody)) !== null) {"
+        },
+        {
+          "file": "packages/database/client/query_compiler_fast_bg.js",
+          "line": 1,
+          "pattern": "exec() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "\"use strict\";var h=Object.defineProperty;var T=Object.getOwnPropertyDescriptor;v"
+        },
+        {
+          "file": "packages/database/client/runtime/client.js",
+          "line": 5,
+          "pattern": "SQL String Concat",
+          "severity": "critical",
+          "category": "SQL Injection risk",
+          "snippet": "\"use strict\";var tu=Object.create;var Jt=Object.defineProperty;var ru=Object.get"
+        },
+        {
+          "file": "packages/database/client/runtime/client.js",
+          "line": 6,
+          "pattern": "exec() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "`);return t.length<e?t:t.slice(-e)}function Di(){ut.length=0}var $i=U(Li(),1);fu"
+        },
+        {
+          "file": "packages/database/client/runtime/client.js",
+          "line": 10,
+          "pattern": "exec() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "`)}};var Vu={red:be,gray:lt,dim:it,bold:G,underline:ot,highlightSource:e=>e.high"
+        },
+        {
+          "file": "packages/database/client/runtime/client.js",
+          "line": 15,
+          "pattern": "exec() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "`);return t.reduce(function(r,n){var i=Dc(n)||Mc(n)||$c(n)||Uc(n)||qc(n);return "
+        },
+        {
+          "file": "packages/database/client/runtime/client.js",
+          "line": 62,
+          "pattern": "exec() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "${n.backtrace}`,{clientVersion:this.config.clientVersion})}catch{return t}}#d(t)"
+        },
+        {
+          "file": "packages/database/client/runtime/wasm-compiler-edge.js",
+          "line": 5,
+          "pattern": "SQL String Concat",
+          "severity": "critical",
+          "category": "SQL Injection risk",
+          "snippet": "\"use strict\";var Fl=Object.create;var wr=Object.defineProperty;var $l=Object.get"
+        },
+        {
+          "file": "packages/database/client/runtime/wasm-compiler-edge.js",
+          "line": 10,
+          "pattern": "exec() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "`)}};function bt(e){return new Gn(ns(e))}function ns(e){let t=new yt;for(let[r,n"
+        },
+        {
+          "file": "packages/database/client/runtime/wasm-compiler-edge.js",
+          "line": 57,
+          "pattern": "exec() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "${n.backtrace}`,{clientVersion:this.config.clientVersion})}catch{return t}}#d(t)"
+        },
+        {
+          "file": ".agent/skills/playwright-skill/lib/helpers.js",
+          "line": 174,
+          "pattern": "eval() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "return await page.$$eval(selector, elements =>"
+        },
+        {
+          "file": ".agent/skills/vulnerability-scanner/scripts/security_scan.py",
+          "line": 63,
+          "pattern": "eval() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "(r'eval\\s*\\(', \"eval() usage\", \"critical\", \"Code Injection risk\"),"
+        },
+        {
+          "file": ".agent/skills/vulnerability-scanner/scripts/security_scan.py",
+          "line": 64,
+          "pattern": "exec() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "(r'exec\\s*\\(', \"exec() usage\", \"critical\", \"Code Injection risk\"),"
+        },
+        {
+          "file": ".agent/skills/vulnerability-scanner/scripts/security_scan.py",
+          "line": 70,
+          "pattern": "dangerouslySetInnerHTML",
+          "severity": "high",
+          "category": "XSS risk",
+          "snippet": "(r'dangerouslySetInnerHTML', \"dangerouslySetInnerHTML\", \"high\", \"XSS risk\"),"
+        },
+        {
+          "file": ".agent/skills/vulnerability-scanner/scripts/security_scan.py",
+          "line": 80,
+          "pattern": "Insecure flag",
+          "severity": "medium",
+          "category": "Security disabled",
+          "snippet": "(r'--insecure', \"Insecure flag\", \"medium\", \"Security disabled\"),"
+        },
+        {
+          "file": ".agent/skills/algorithmic-art/templates/generator_template.js",
+          "line": 133,
+          "pattern": "exec() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "const result = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex);"
+        },
+        {
+          "file": ".agent/skills/notebooklm/scripts/cleanup_manager.py",
+          "line": 178,
+          "pattern": "SQL f-string",
+          "severity": "critical",
+          "category": "SQL Injection risk",
+          "snippet": "print(f\"  \u2705 Deleted: {path.name}\")"
+        },
+        {
+          "file": ".agent/skills/notebooklm/scripts/cleanup_manager.py",
+          "line": 288,
+          "pattern": "SQL f-string",
+          "severity": "critical",
+          "category": "SQL Injection risk",
+          "snippet": "print(f\"  Deleted: {result['deleted_count']} items\")"
+        },
+        {
+          "file": ".agent/skills/notebooklm/scripts/notebook_manager.py",
+          "line": 195,
+          "pattern": "SQL f-string",
+          "severity": "critical",
+          "category": "SQL Injection risk",
+          "snippet": "print(f\"\u2705 Updated notebook: {notebook['name']}\")"
+        },
+        {
+          "file": ".agent/skills/loki-mode/examples/todo-app-generated/backend/src/db/migrations.ts",
+          "line": 13,
+          "pattern": "exec() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "db.exec(schema);"
+        }
+      ],
+      "status": "[!!] CRITICAL: 26 dangerous patterns",
+      "scanned_files": 899,
+      "by_category": {
+        "Code Injection risk": 16,
+        "SQL Injection risk": 10,
+        "XSS risk": 3,
+        "Security disabled": 1
+      }
+    },
+    "configuration": {
+      "tool": "config_scanner",
+      "findings": [
+        {
+          "issue": "No security headers configuration found",
+          "severity": "medium",
+          "recommendation": "Configure CSP, HSTS, X-Frame-Options headers"
+        }
+      ],
+      "status": "[?] Minor configuration issues",
+      "checks": {
+        "security_headers_config": false
+      }
+    }
+  },
+  "summary": {
+    "total_findings": 38,
+    "critical": 28,
+    "high": 8,
+    "overall_status": "[!!] CRITICAL ISSUES FOUND"
+  }
+}

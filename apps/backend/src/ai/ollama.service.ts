@@ -168,7 +168,7 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
                         if (parsed.message?.content) {
                             yield parsed.message.content;
                         }
-                    } catch (e) {
+                    } catch (_e) {
                         // ignore JSON parse error on chunk
                     }
                 }
@@ -192,7 +192,7 @@ Yalnızca kategori adını yaz. Başka bir şey yazma. Eğer uygun kategori yoks
         return this.generate(prompt, 30_000);
     }
 
-    async summarizeTicket(subject: string, conversation: string): Promise<string | null> {
+    async summarizeTicket(_subject: string, _conversation: string): Promise<string | null> {
         const prompt = `Görevin: Aşağıdaki müşteri destek bileti (ticket) konuşmasını okuyup... [truncated for brevity, keep logic same]`;
         // ... rest of the summarize ticket logic ...
         return this.generate(prompt, 180_000);

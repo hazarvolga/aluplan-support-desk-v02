@@ -181,6 +181,7 @@ export class HotinfoParserService {
                 screenResolution,
                 dotnetVersion,
                 networkInfo,
+                diskInfo,
                 installedModules,
                 parsedAt: new Date().toISOString()
             };

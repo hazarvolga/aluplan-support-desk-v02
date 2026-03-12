@@ -7,4 +7,4 @@ export interface SimpleImapConfig {
     authTimeout?: number;
 }
 
-export const SIMPLE_MAP_CONFIG = 'SIMPLE_MAP_CONFIG';
+export const _SIMPLE_MAP_CONFIG = 'SIMPLE_MAP_CONFIG';

@@ -20,7 +20,7 @@ export class WhatsAppService {
         const changes = entry?.changes?.[0];
         const value = changes?.value;
         const message = value?.messages?.[0];
-        const contact = value?.contacts?.[0];
+        const _contact = value?.contacts?.[0];
 
         if (!message) return { status: 'no_message' };
 

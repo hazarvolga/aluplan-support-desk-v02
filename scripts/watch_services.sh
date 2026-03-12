@@ -36,16 +36,23 @@ check() {
         fi
     fi
 
+    redis_status="down"
+    if command -v redis-cli &> /dev/null; then
+        if redis-cli ping 2>/dev/null | grep -q 'PONG'; then
+            redis_status="up"
+        fi
+    fi
+
     # Ensure db_errors is not empty
     if [ -z "$db_errors" ]; then db_errors=0; fi
 
     # Update Status File
-    echo "{\"backend\": \"$backend_status\", \"frontend\": \"$frontend_status\", \"db_errors\": $db_errors, \"lastCheck\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > "$STATUS_FILE"
+    echo "{\"backend\": \"$backend_status\", \"frontend\": \"$frontend_status\", \"redis\": \"$redis_status\", \"db_errors\": $db_errors, \"lastCheck\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > "$STATUS_FILE"
     
-    if [ "$backend_status" != "up" ] || [ "$frontend_status" != "up" ] || [ "$db_errors" -gt 0 ]; then
-        log "⚠️ ALERT! Backend:$backend_status Frontend:$frontend_status DB_Errors:$db_errors"
+    if [ "$backend_status" != "up" ] || [ "$frontend_status" != "up" ] || [ "$redis_status" != "up" ] || [ "$db_errors" -gt 0 ]; then
+        log "⚠️ ALERT! Backend:$backend_status Frontend:$frontend_status Redis:$redis_status DB_Errors:$db_errors"
     else
-        log "✅ Services healthy. (B:up, F:up, DB:0-errors)"
+        log "✅ Services healthy. (B:up, F:up, R:up, DB:0-errors)"
     fi
 }
 

@@ -3,25 +3,37 @@ import { UsersService } from '../../src/users/users.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { truncateDatabase } from '../helpers/db-utils';
 import { userFactory } from '../factories/user.factory';
-import { AppModule } from '../../src/app.module';
+import { UsersModule } from '../../src/users/users.module';
+import { PrismaModule } from '../../src/prisma/prisma.module';
+import { ConfigModule } from '@nestjs/config';
 
 describe('UsersService (Integration)', () => {
+    let testModule: TestingModule;
     let service: UsersService;
     let prisma: PrismaService;
-    let module: TestingModule;
 
     beforeAll(async () => {
-        module = await Test.createTestingModule({
-            imports: [AppModule],
-        }).compile();
+        try {
+            testModule = await Test.createTestingModule({
+                imports: [
+                    ConfigModule.forRoot({ isGlobal: true }),
+                    PrismaModule,
+                    UsersModule,
+                ],
+            }).compile();
 
-        service = module.get<UsersService>(UsersService);
-        prisma = module.get<PrismaService>(PrismaService);
+            service = testModule.get<UsersService>(UsersService);
+            prisma = testModule.get<PrismaService>(PrismaService);
+        } catch (error) {
+            console.error('FAILED TO COMPILE TESTING MODULE:', error);
+            throw error;
+        }
     });
 
     afterAll(async () => {
-        await prisma.$disconnect();
-        await module.close();
+        if (testModule) {
+            await testModule.close();
+        }
     });
 
     beforeEach(async () => {

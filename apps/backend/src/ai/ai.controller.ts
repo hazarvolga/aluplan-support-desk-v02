@@ -54,6 +54,7 @@ export class AiController {
         private readonly embeddingService: EmbeddingService,
         private readonly aiService: AiService,
         private readonly aiCopilotService: AiCopilotService,
+        private readonly _ollama: OllamaService,
     ) { }
 
     @Post('query')

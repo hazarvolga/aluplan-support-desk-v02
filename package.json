@@ -10,6 +10,7 @@
         "test:all": "turbo test",
         "test:e2e": "pnpm --filter @aluplan/frontend test:e2e",
         "lint": "turbo lint",
+        "typecheck": "turbo typecheck",
         "db:generate": "turbo db:generate",
         "db:migrate": "turbo db:migrate"
     },

@@ -1,5 +1,4 @@
-import { Injectable, ConflictException, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
+import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,6 +10,7 @@ import { HotinfoParserService } from './hotinfo-parser.service';
 
 import { EmailService } from '../email/email.service';
 import { ErrorLoggerService } from '../common/services/error-logger.service';
+import { UpdateCustomerProfileDto } from './dto/update-customer-profile.dto';
 
 @Injectable()
 export class CustomersService {
@@ -245,7 +245,7 @@ export class CustomersService {
         });
     }
 
-    async updateCustomer(id: string, dto: import('./dto/update-customer-profile.dto').UpdateCustomerProfileDto) {
+    async updateCustomer(id: string, dto: UpdateCustomerProfileDto) {
         // Find existing custom profile
         const user = await this.prisma.user.findUnique({
             where: { id },
@@ -266,7 +266,7 @@ export class CustomersService {
         if (dto.contractStatus !== undefined) updatedConfig.contractStatus = dto.contractStatus;
         if (dto.customerNo !== undefined) updatedConfig.customerNo = dto.customerNo;
 
-        const updatedProfile = await this.prisma.customerProfile.update({
+        const _updatedProfile = await this.prisma.customerProfile.update({
             where: { userId: id },
             data: updatedConfig,
         });

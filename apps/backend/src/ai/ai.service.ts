@@ -162,7 +162,7 @@ export class AiService implements AiProvider {
                 if (result?.response) yield result.response;
             }
             this.recordSuccess();
-        } catch (err) {
+        } catch (_err) {
             this.recordFailure();
             yield 'AI yanıtı oluşturulurken bir hata oluştu.';
         }
@@ -261,5 +261,26 @@ ${rawContent}
     async testConnection(): Promise<{ success: boolean; message: string }> {
         const provider = await this.getActiveChatProvider();
         return provider.testConnection();
+    }
+
+    getProviderKeyMappings(provider: string): string[] {
+        switch (provider) {
+            case 'openai':
+                return ['ai.openai.api_key', 'ai.openai.chat_model', 'ai.openai.embed_model'];
+            case 'ollama':
+                return ['ai.ollama.url', 'ai.ollama.chat_model', 'ai.ollama.embed_model'];
+            case 'llmapi':
+                return ['ai.llmapi.api_key', 'ai.llmapi.chat_model', 'ai.llmapi.embed_model'];
+            case 'xai':
+                return ['ai.xai.api_key', 'ai.xai.url', 'ai.xai.chat_model', 'ai.xai.embed_model'];
+            case 'deepseek':
+                return ['ai.deepseek.api_key', 'ai.deepseek.url', 'ai.deepseek.chat_model', 'ai.deepseek.embed_model'];
+            case 'groq':
+                return ['ai.groq.api_key', 'ai.groq.url', 'ai.groq.chat_model', 'ai.groq.embed_model'];
+            case 'custom':
+                return ['ai.custom.api_key', 'ai.custom.url', 'ai.custom.chat_model', 'ai.custom.embed_model'];
+            default:
+                return [];
+        }
     }
 }
