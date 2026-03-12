@@ -1,4 +1,47 @@
 {
+  "home": {
+    "title": "Aluplan Support-System",
+    "cta_login": "Anmelden",
+    "cta_register": "Registrieren",
+    "footer_copy": "© 2025 Aluplan A.Ş. Alle Rechte vorbehalten.",
+    "footer_status": "STATUS: AKTIV",
+    "footer_encryption": "VERSCHLÜSSELUNG: AES-256",
+    "hero": {
+      "badge": "Next-Gen Engineering-Support",
+      "ai_badge": "POWERED BY ALLPLAN AI",
+      "title": "Willkommen bei der Aluplan Support-Plattform",
+      "subtitle": "Das Zentrum für technische Expertise und Ressourcen, die Ihnen helfen, Allplan so effizient wie möglich in Ihren Architektur- und Ingenieurprojekten einzusetzen.",
+      "cta_primary": "Login / Registrieren",
+      "cta_secondary": "14-Tage Testversion Herunterladen"
+    },
+    "training": {
+      "title": "FÜR_NEUE_BENUTZER",
+      "card1_title": "Aluplan Youtube-Kanal",
+      "card1_desc": "Starten Sie sofort mit Allplan-Schulungsvideos auf unserem Youtube-Kanal.",
+      "card1_cta": "Youtube-Training-Serie",
+      "card2_title": "Studentenlizenzen",
+      "card2_desc": "Holen Sie sich sofort Ihre kostenlose Studenten- und Dozentenlizenz über Allplan Campus.",
+      "card2_cta": "Campus-Portal",
+      "oska_link": "https://aluplan.com.tr/solutions/bimx5",
+      "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi"
+    },
+    "faq": {
+      "title": "POPULÄRE_LÖSUNGEN",
+      "item1_title": "Lizenzregistrierung",
+      "item1_desc": "Schritt-für-Schritt-Anleitung für Softlock- und Wibu-Aktivierungsprozesse.",
+      "item2_title": "Lizenztransfer",
+      "item2_desc": "Transferverfahren vor dem PC-Austausch oder der Formatierung.",
+      "item3_title": "Systemanforderungen",
+      "item3_desc": "Aktuelle Hardware-Empfehlungen für Allplan, um die maximale Leistung zu erzielen."
+    },
+    "integrations": {
+      "title": "LOKALE_INTEGRATIONEN",
+      "oska_title": "Oska e-Hakediş Integration",
+      "oska_desc": "Exportieren Sie Allplan-Mengenermittlungsdaten über Katalogeinstellungen direkt nach e-Hakediş.",
+      "plugins_title": "Marktspezifische Plugins",
+      "plugins_desc": "Werkzeuge für lokale Vorschriften wie TAKS, KAKS, Parkplatzberechnungen und Flächenpläne."
+    }
+  },
     "auth": {
         "title": "Aluplan Support Desk",
         "subtitle": "Zentrale Wissensautomatisierung",
@@ -557,6 +600,10 @@
         }
     },
     "admin": {
+        "live_support_request": {
+            "title": "Support-Anfragen",
+            "description": "Systemweite offene und aktive Support-Anfragen verwalten."
+        },
         "ai_health": {
             "title": "KI-Gesundheit & Telemetrie",
             "description": "Echtzeit-Überwachung von KI-Modellen, Token-Verbrauch und RAG-Leistung."
