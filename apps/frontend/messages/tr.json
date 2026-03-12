@@ -42,69 +42,571 @@
       "plugins_desc": "TAKS, KAKS, Otopark hesabı ve m2 cetvelleri gibi Planlı Alanlara özel araçlar."
     }
   },
-  "common": {
-    "dashboard": "Panel",
-    "tickets": "Talepler",
-    "settings": "Ayarlar",
-    "logout": "Çıkış Yap",
-    "loading": "Yükleniyor...",
-    "error": "Bir hata oluştu",
-    "save": "Kaydet",
-    "cancel": "İptal",
-    "unknown": "Bilinmiyor",
-    "individual": "Bireysel",
-    "system": "SİSTEM",
-    "anonymous": "ANONİM",
-    "priorities": {
-      "LOW": "Düşük",
-      "MEDIUM": "Orta",
-      "HIGH": "Yüksek",
-      "CRITICAL": "Kritik",
-      "URGENT": "Acil"
+    "auth": {
+        "title": "Aluplan Destek Sistemi",
+        "subtitle": "Merkezi Bilgi Otomasyonu",
+        "gateway_title": "Operasyonel Destek Geçidi",
+        "system_status": "SİSTEM_DURUMU: AKTİF",
+        "broadcast_title": "SİSTEM_YAYINI // GÜNCEL_BİLDİRİMLER",
+        "maintenance_notice_title": "Bakım Uyarısı",
+        "maintenance_notice_time": "2 SAAT ÖNCE",
+        "maintenance_notice_desc": "CNC Array B için planlanan kalibrasyon 02:00-04:00 UTC saatleri arasında otomatik senkronizasyon hatlarını etkileyecektir. Bu süre zarfında telemetri gecikmeleri bekleyin.",
+        "docs_notice_title": "Dokümantasyon Güncellemesi",
+        "docs_notice_time": "DÜN",
+        "docs_notice_desc": "T-Serisi ekstrüzyon kılavuzları güncellendi (Rev. 4.1). Mühendislerin Bilgi Bankasındaki güncel tolerans tablolarını incelemesi rica olunur.",
+        "db_nodes_label": "Aktif DB Düğümleri",
+        "uptime_label": "Hizmet Süresi (SLA)",
+        "certified_label": "Sertifikalı Altyapı",
+        "login_title": "ERİŞİM KAPISI",
+        "access_gate_desc": "Telemetri okuma/yazma ve destek modülü erişimi için kimlik doğrulaması gereklidir.",
+        "login_tab": "GİRİŞ YAP",
+        "request_tab": "ERİŞİM_TALEBİ",
+        "email_label": "KİMLİK_BELİRTECİ [EPÖSTA]",
+        "email_placeholder": "operator@aluplan.com",
+        "password_label": "DOĞRULAMA_ANAHTARI [ŞİFRE]",
+        "password_placeholder": "••••••••",
+        "recovery_link": "ANAHTAR_KURTAR?",
+        "submit_button": "OTURUMU BAŞLAT",
+        "submitting": "BAĞLANTI_KURULUYOR...",
+        "no_account": "Hesabınız yok mu?",
+        "register_link": "Kayıt Ol",
+        "security_tagline": "Bağlantılar Aluplan Sec-Net üzerinden izlenmektedir",
+        "error_heading": "YETKİ REDDİDİ",
+        "error_default": "AUTH_FAILURE: Kimlik bilgileri güvenlik düğümü tarafından reddedildi",
+        "error_credentials": "Geçersiz e-posta adresi veya şifre."
     },
-    "languages": {
-      "tr": "Türkçe",
-      "en": "English",
-      "de": "Deutsch"
+    "common": {
+        "dashboard": "Panel",
+        "tickets": "Talepler",
+        "settings": "Ayarlar",
+        "logout": "Çıkış Yap",
+        "loading": "Yükleniyor...",
+        "error": "Bir hata oluştu",
+        "save": "Kaydet",
+        "cancel": "İptal",
+        "unknown": "Bilinmiyor",
+        "individual": "Bireysel",
+        "system": "SİSTEM",
+        "anonymous": "ANONİM",
+        "priorities": {
+            "LOW": "Düşük",
+            "MEDIUM": "Orta",
+            "HIGH": "Yüksek",
+            "CRITICAL": "Kritik",
+            "URGENT": "Acil"
+        },
+        "languages": {
+            "tr": "Türkçe",
+            "en": "English",
+            "de": "Almanca"
+        }
+    },
+    "dashboard": {
+        "title": "Kontrol Merkezi",
+        "telemetry_version": "Aluplan Kurumsal Telemetri — Versiyon 2.4.0",
+        "system_active": "Sistem Aktif",
+        "user_portal": "KULLANICI_PORTALI",
+        "user_identity": "ID: {name} | Erişim_Seviyesi: {level}",
+        "access_level_standard": "Standart",
+        "stats": {
+            "active_tickets": "AKTİF_TALEPLER",
+            "resolved_tickets": "ÇÖZÜLEN_TALEPLER",
+            "avg_response": "ORT_YANIT_SÜRESİ",
+            "sla_violations": "SLA_İHLALLERİ",
+            "daily_resolved": "GÜNLÜK_ÇÖZÜLEN",
+            "ai_confidence": "ANN_GÜVEN_ORT",
+            "status_stable": "Stabil"
+        },
+        "knowledge_base": {
+            "title": "BİLGİ_BANKASI_SORGUSU",
+            "description": "Kaydedilmiş çözümlere ve bilinen iş akışlarına erişin.",
+            "cta": "KAYITLARI_İNCELE"
+        },
+        "ai_diagnostic": {
+            "title": "ANN_TANILAMA",
+            "description": "Hızlı teknik yönlendirme için bir yapay zeka analizi başlatın.",
+            "cta": "OTURUMU_BAŞLAT"
+        },
+        "actions": {
+            "create_ticket": "YENİ_TALEP_OLUŞTUR",
+            "manage_queue": "KUYRUĞU_YÖNET",
+            "neural_analysis": "NÖRAL_ANALİZ"
+        },
+        "sections": {
+            "priority_distribution": "TALEP_KRİTİKLİK_DAĞILIMI",
+            "system_telemetry": "SİSTEM_TELEMETRİSİ",
+            "quick_access": "HIZLI_ERİŞİM"
+        },
+        "priorities": {
+            "LOW": "Düşük",
+            "MEDIUM": "Orta",
+            "HIGH": "Yüksek",
+            "URGENT": "Acil"
+        }
+    },
+    "sidebar": {
+        "app_subtitle": "Destek Masası",
+        "logout": "Güvenli Çıkış",
+        "nav": {
+            "dashboard": "Kontrol Paneli",
+            "overview": "Genel Bakış",
+            "tickets": "Talep Kuyruğu",
+            "my_tickets": "Destek Taleplerim",
+            "kb_section": "BİLGİ BANKASI",
+            "articles": "Makaleler",
+            "ai_approvals": "YZE Onayları",
+            "kp_section": "BİLGİ HAVUZU",
+            "data_sources": "Veri Kaynakları",
+            "learning_loop": "Öğrenme Döngüsü",
+            "topology": "Sistem Topolojisi",
+            "system_section": "SİSTEM",
+            "ai_config": "YZE Yapılandırması",
+            "customers": "Müşteriler",
+            "crm": "CRM Yönetimi",
+            "products": "Ürünler ve Modüller",
+            "teams": "Destek Ekiplerim",
+            "announcements": "Duyurular",
+            "emails": "E-postalar",
+            "ai_health": "YZE Sağlığı ve Telemetri",
+            "email_validation": "E-posta Doğrulama",
+            "users": "Kullanıcı Yönetimi",
+            "settings": "Ayarlar",
+            "help": "Yardım ve Destek",
+            "profile": "Profilim",
+            "account": "Hesabım",
+            "ai_assistant": "ANN Asistanı"
+        }
+    },
+    "tickets": {
+        "title": "Talepler Yönetimi",
+        "subtitle": "Aktif destek talepleri ve SLA performans takibi",
+        "filters": {
+            "all": "Tüm Talepler"
+        },
+        "bulk": {
+            "selected": "Seçilen_Talepler",
+            "start_process": "Süreci_Başlat",
+            "resolve_all": "Tümünü_Çöz",
+            "success": "SİSTEM_KOMUTU_BAŞARILI: {count}_KAYIT_GÜNCELLENDİ",
+            "error": "SİSTEM_KOMUTU_HATASI: {message}"
+        },
+        "table": {
+            "loading": "Veri Günlükleri Bekleniyor",
+            "empty": "Kuyruk Boş",
+            "header": {
+                "system_id": "Sistem_ID",
+                "company": "Şirket",
+                "customer": "Müşteri",
+                "subject": "Olay Tanımı",
+                "status": "Durum",
+                "priority": "Kritiklik",
+                "timestamp": "Zaman Damgası"
+            },
+            "badges": {
+                "kb_sync": "KB_SENK",
+                "sla_vio": "SLA_İHL"
+            }
+        },
+        "status": {
+            "NEW": "YENİ",
+            "OPEN": "AÇIK",
+            "IN_PROGRESS": "İŞLEMDE",
+            "PENDING_CUSTOMER": "BEKLEMEDE",
+            "PENDING_CUSTOMER_REVIEW": "ONAY_BEKLİYOR",
+            "RESOLVED": "ÇÖZÜLDÜ",
+            "CLOSED": "KAPANDI"
+        },
+        "priority": {
+            "LOW": "DÜŞÜK",
+            "MEDIUM": "ORTA",
+            "HIGH": "YÜKSEK",
+            "URGENT": "ACİL"
+        },
+        "detail": {
+            "not_found": "Talep bulunamadı",
+            "not_found_desc": "İstenen öğe silinmiş olabilir veya erişim yetkiniz yok.",
+            "ticket_id": "TALEP_{id}",
+            "started_by": "BAŞLATAN: {name}",
+            "timestamp": "ZD: {date}",
+            "finish_resolution": "ÇÖZÜMÜ TAMAMLA",
+            "summarizing": "ÖZETLEME_DEVAM_EDİYOR...",
+            "ai_summary_btn": "ANN_ÖZET",
+            "drafting": "TASLAK_HAZIRLANIYOR...",
+            "ai_draft_btn": "ANN_TASLAK",
+            "start_live_support": "CANLI DESTEĞİ BAŞLAT",
+            "request_live_chat": "CANLI SOHBET TALEP ET",
+            "waiting_agent": "TEMSİLCİ ONAYI BEKLENİYOR...",
+            "customer_waiting_live": "MÜŞTERİ_CANLI_DESTEK_BEKLİYOR",
+            "start_conversation": "SOHBETİ BAŞLAT",
+            "live_session_active": "CANLI_OTURUM_AKTİF",
+            "review_pending_title": "BEKLEYEN_TALEP_ÇÖZÜM_ONAYI",
+            "review_pending_desc": "Kanalı kapatmak için lütfen çözüm performansını oylayın.",
+            "feedback_placeholder": "OPERASYONEL_GERİ_BİLDİRİM_EKLE (OPSİYONEL)",
+            "saving": "KAYDEDİLİYOR...",
+            "save_and_close": "GERİ_BİLDİRİMİ_KAYDET_VE_KAPAT",
+            "customer_verification_pending": "MÜŞTERİ_DOĞRULAMASI_BEKLENİYOR",
+            "auto_sync_active": "Durum: İNCELEME_BEKLENİYOR | +4 puan için Otomatik Senkronizasyon aktif",
+            "debug_reject": "HATA_AYIKLAMA:REDDET(2)",
+            "debug_approve": "HATA_AYIKLAMA:ONAYLA(5)",
+            "ai_summary_record": "ANN_ÖZET_KAYDI",
+            "sending": "TRANSFER_DEVAM_EDİYOR...",
+            "secure_chat": "GÜVENLİ_SOHBET",
+            "send_placeholder": "MESAJI_GÖNDER...",
+            "ticket_metadata": "TALEP_METAVERİSİ",
+            "status_label": "DURUM",
+            "channel_label": "KANAL",
+            "priority_label": "KRİTİKLİK",
+            "open_date": "OLUŞTURMA_TARİHİ",
+            "assignee_label": "ATANAN_TEMSİLCİ",
+            "unassigned": "ATANMAMIŞ",
+            "hotfix_data": "HOTFIX_VERİSİ",
+            "security_warning": "GÜVENLİK UYARISI",
+            "security_warning_desc": "OPERASYONEL_GÜVENLİK_ZORUNLUDUR. ERİŞİM_BİLGİLERİNİ_VEYA_SİSTEM_YETKİLERİNİ_ASLA_PAYLAŞMAYIN. MESAJLARDAKİ_HASSAS_VERİLERİ_TEMİZLEYİN.",
+            "load_error": "Talep yüklenemedi",
+            "live_request_success": "Canlı destek talebi iletildi",
+            "live_start_success": "Canlı sohbet başlatıldı",
+            "chat_update_error": "Sohbet durumu güncellenemedi",
+            "live_accept_success": "Canlı sohbet kabul edildi",
+            "chat_start_error": "Sohbet başlatılamadı",
+            "send_error": "Mesaj gönderilemedi: {error}",
+            "summary_success": "Yapay Zeka Özeti oluşturuldu",
+            "summary_error": "Özet oluşturulurken hata",
+            "draft_success": "Yapay Zeka taslak yanıt oluşturdu",
+            "draft_error": "Taslak oluşturulamadı: {error}",
+            "review_success": "Talep onaya gönderildi (Müşteri doğrulaması bekleniyor)",
+            "status_update_error": "Durum değiştirilemedi",
+            "feedback_sent": "Müşteri {score}/5 puan ile oyladı.",
+            "feedback_error": "Test oylaması gönderilemedi.",
+            "csat_success": "{score}/5 puan ile oyladınız. Talep kapandı, teşekkür ederiz!",
+            "csat_error": "Oylama gönderilemedi.",
+            "resolved_comment": "Sorunum tamamen çözüldü, teşekkürler.",
+            "pending_comment": "Hala eksik noktalar var."
+        }
+    },
+    "ai": {
+        "title": "YZE Destek Gezgini",
+        "subtitle": "Birleşik bilgi havuzunda anlamsal zeka sorguları",
+        "beta_protocol": "BETA-PROTOKOLÜ",
+        "input": {
+            "placeholder": "Zeka havuzuna bir soru yöneltin...",
+            "submit": "SORGULA"
+        },
+        "response": {
+            "header": "Yapay Zeka Yanıtı",
+            "confidence_score": "GÜVEN-DEĞERİ: {confidence}",
+            "data_gap_title": "VERİ BOŞLUĞU",
+            "data_gap_desc": "Mevcut bilgi havuzunda bu sorgu için eşleşen kayıt bulunamadı."
+        },
+        "suggest_ticket": {
+            "text": "Cevaptan memnun kalmadınız mı? Bir uzmana danışın.",
+            "cta": "DESTEK TALEBİ OLUŞTUR"
+        },
+        "sources": {
+            "title": "REFERANS KAYNAKLARI",
+            "match": "%{percent} EŞLEŞME"
+        },
+        "feedback": {
+            "title": "DOĞRULUK ANALİZİ",
+            "success": "PROTOKOL KAYDEDİLDİ. TEŞEKKÜRLER."
+        },
+        "system_info": {
+            "infrastructure": "ALTYAPI",
+            "node": "Ollama-VEC Hesaplama Düğümü",
+            "latency": "GECİKME",
+            "lookup": "{ms}ms Anlamsal Arama"
+        }
+    },
+    "customers": {
+        "title": "Müşteri Portalı",
+        "subtitle": "Kurumsal Müşteri Portföyü ve CRM Entegrasyon Merkezi",
+        "actions": {
+            "import": "İçe Aktar",
+            "verify_emails": "E-postaları Doğrula",
+            "verify_selected": "Seçilenleri Doğrula ({count})",
+            "delete_selected": "Seçili {count} Kaydı Sil",
+            "deleting": "Siliniyor..."
+        },
+        "tabs": {
+            "customers": "Müşteriler",
+            "accounts": "Hesaplar",
+            "sync": "Senkronizasyon",
+            "history": "İşlem Geçmişi"
+        },
+        "search": {
+            "placeholder": "Müşteri veya şirket ara..."
+        },
+        "table": {
+            "loading": "Veriler veritabanından çekiliyor",
+            "empty": "Sonuç bulunamadı",
+            "headers": {
+                "name": "Ad Soyad",
+                "company": "Şirket",
+                "title": "Unvan",
+                "email": "E-posta",
+                "industry": "Sektör",
+                "customer_status": "Müşteri Durumu",
+                "account_status": "Hesap Durumu",
+                "actions": "İşlem"
+            }
+        },
+        "accounts": {
+            "structure": "Şirket Yapısı",
+            "industry_domain": "Sektör / Alan",
+            "ecosystem": "Ekosistem",
+            "crm_verification": "CRM Doğrulaması",
+            "profiles": "{count} PROFİL",
+            "details": "DETAYLAR",
+            "manual_entry": "MANUEL_GİRİŞ",
+            "dynamics_ok": "DYNAMICS_OK",
+            "not_found": "HESAP BULUNAMADI"
+        },
+        "sync": {
+            "checking": "CRM VERİ GÜNLÜKLERİ KONTROL EDİLİYOR...",
+            "no_integration": "CRM Entegrasyonu Yok",
+            "no_integration_desc": "Müşteri ve şirket verilerini otomatik senkronize etmek için Dynamics 365 veritabanınızı bağlayın.",
+            "configure_btn": "KONTROL MERKEZİNİ YAPILANDIR",
+            "last_transfer": "Son Transfer",
+            "last_transfer_none": "YOK",
+            "system_status": "Sistem Durumu",
+            "trigger_sync": "Transferi Tetikle",
+            "edit_settings": "AYARLARI DÜZENLE"
+        },
+        "history": {
+            "no_data": "Geçmiş verisi yok"
+        },
+        "toasts": {
+            "delete_success": "Seçili {type} silindi.",
+            "sync_started": "Arka plan senkronizasyonu başlatıldı.",
+            "verify_success": "{count} e-posta doğrulandı.",
+            "bulk_update_success": "SİSTEM_KOMUTU_BAŞARILI: {count}_KAYIT_GÜNCELLENDİ",
+            "bulk_update_error": "SİSTEM_KOMUTU_HATASI: {message}"
+        }
+    },
+    "settings": {
+        "title": "Sistem Ayarları",
+        "subtitle": "Platform genelindeki yapılandırmaları ve entegrasyonları yönetin.",
+        "tabs": {
+            "general": "Genel",
+            "ai": "YZE",
+            "email": "E-posta",
+            "sla": "SLA",
+            "branding": "Markalama"
+        },
+        "general": {
+            "title": "Genel Yapılandırma",
+            "description": "Temel platform ayarları.",
+            "portal_name": "Platform Adı",
+            "portal_name_placeholder": "örn: Aluplan Destek",
+            "frontend_url": "Frontend URL",
+            "frontend_url_placeholder": "https://destek.aluplan.com"
+        },
+        "ai": {
+            "title": "Yapay Zeka Entegrasyonu",
+            "description": "Grok (xAI), DeepSeek, OpenAI veya Ollama servislerini yapılandırın.",
+            "chat_provider": "Varsayılan Sohbet Sağlayıcısı",
+            "chat_provider_desc": "Talep yanıtları ve asistan işlevleri için kullanılır.",
+            "embed_provider": "Varsayılan Vektörleştirme Sağlayıcısı",
+            "embed_provider_desc": "Bilgi bankası araması ve doküman indeksleme için kullanılır.",
+            "test_btn": "Bağlantıyı Test Et",
+            "save_btn": "Değişiklikleri Kaydet",
+            "ollama": {
+                "title": "Ollama (Yerel)",
+                "chat_model": "Sohbet Modeli",
+                "embed_model": "Vektör Modeli"
+            },
+            "openai": {
+                "title": "OpenAI (Bulut)",
+                "chat_model": "Sohbet Modeli",
+                "embed_model": "Vektör Modeli"
+            },
+            "xai": {
+                "title": "xAI (Grok)",
+                "chat_model": "Sohbet Modeli",
+                "not_supported": "Desteklenmiyor"
+            },
+            "providers": {
+                "ollama": "Ollama (Yerel)",
+                "openai": "OpenAI (Bulut)",
+                "openai_cloud": "OpenAI (Bulut - Önerilen)",
+                "xai": "xAI (Grok)",
+                "groq": "Groq (Hızlı ve Ücretsiz)",
+                "deepseek": "DeepSeek",
+                "llmapi": "LLMAPI (Önerilen)",
+                "custom": "Özel (OpenAI Uyumlu)",
+                "custom_info": "Özel (Destekleniyorsa)",
+                "other_custom": "Diğer özel servis",
+                "groq_no_embed": "Groq (Vektörleme desteklenmiyor)"
+            }
+        },
+        "email": {
+            "title": "E-posta Servis Ayarları",
+            "description": "Sistem bildirimleri ve müşteri yazışmaları için sağlayıcı yapılandırması.",
+            "active_provider": "Aktif Sağlayıcı",
+            "from_address": "Gönderen E-posta Adresi",
+            "ollama_title": "Ollama (Yerel) Yapılandırması",
+            "openai_title": "OpenAI Altyapı Yapılandırması",
+            "azure_title": "Azure OpenAI Yapılandırması",
+            "status_active": "Aktif",
+            "status_inactive": "Devre Dışı",
+            "resend_title": "Resend Yapılandırması",
+            "smtp_title": "SMTP Yapılandırması",
+            "gmail_title": "Gmail OAuth2 Yapılandırması",
+            "authorized": "Yetkilendirildi",
+            "not_authorized": "Yetkilendirilmedi",
+            "from_address_label": "Gönderen E-posta Adresi",
+            "smtp_user": "Kullanıcı Adı",
+            "smtp_pass": "Şifre",
+            "redirect_uri_label": "Yetkili Yönlendirme URI (Google Cloud Console'a ekleyin)",
+            "save_provider_btn": "E-posta Sağlayıcısını Kaydet",
+            "test_connection_btn": "Bağlantıyı Test Et",
+            "gmail": {
+                "credentials_save": "Kimlik Bilgilerini Kaydet",
+                "authorize_btn": "Google ile Yetkilendir",
+                "auth_hint": "Önce kimlik bilgilerinizi kaydedin, ardından 'Google ile Yetkilendir' butonuna tıklayın. İzin verdikten sonra buraya yönlendirileceksiniz."
+            },
+            "tabs": {
+                "config": "Yapılandırma",
+                "templates": "Şablonlar",
+                "logs": "Günlükler"
+            },
+            "logs": {
+                "title": "Gönderim Geçmişi",
+                "description": "Sistem tarafından gönderilen tüm işlemsel e-postaların dökümü.",
+                "table": {
+                    "recipient": "Alıcı",
+                    "template": "Şablon",
+                    "status": "Durum",
+                    "date": "Tarih",
+                    "empty": "Henüz e-posta gönderim kaydı bulunamadı."
+                },
+                "status": {
+                    "sent": "GÖNDERİLDİ",
+                    "delivered": "ULAŞTI",
+                    "bounced": "GERİ_DÖNDÜ",
+                    "failed": "BAŞARISIZ",
+                    "pending": "BEKLEMEDE"
+                },
+                "pagination": {
+                    "prev": "Geri",
+                    "next": "İleri",
+                    "page": "SAYFA"
+                }
+            },
+            "templates": {
+                "title": "E-posta Şablonları",
+                "description": "MJML tabanlı e-posta şablonlarını yönetin ve özelleştirin.",
+                "select_placeholder": "Şablon seçin...",
+                "new_btn": "Yeni Şablon",
+                "preview_btn": "Önizleme",
+                "save_btn": "Kaydet",
+                "create_btn": "Oluştur",
+                "cancel_btn": "İptal",
+                "editor_title": "MJML Düzenleyici",
+                "preview_title": "E-posta Önizlemesi",
+                "subject_label": "Konu",
+                "preview_hint": "İçeriği görmek için 'Önizleme'ye tıklayın.",
+                "preview_flow_hint": "Kaydet → Önizle akışı önerilir.",
+                "new_placeholder": "ornek-sablon-adi",
+                "safe_editor_title": "Güvenli İçerik Düzenleyici",
+                "safe_editor_desc": "MJML yapısına zarar vermeden içeriklerinizi düzenleyin.",
+                "editor_placeholder": "MJML içeriğini buraya girin..."
+            }
+        },
+        "sla": {
+            "title": "SLA Politikaları",
+            "description": "Müşteri destek sürelerini ve hizmet seviyesi hedeflerini yönetin.",
+            "add_policy": "Politika Ekle",
+            "table": {
+                "name": "Politika Adı",
+                "priority": "Öncelik",
+                "department": "Departman",
+                "response": "İlk Yanıt",
+                "resolution": "Çözüm",
+                "hours": "Çalışma Saatleri",
+                "actions": "İşlemler"
+            },
+            "how_it_works": "Nasıl çalışır?",
+            "how_it_works_desc": "Yeni bir talep oluşturulduğunda sistem önce bu departman ve önceliğe eşleşen bir politika arar.",
+            "form": {
+                "edit_title": "Politikayı Düzenle",
+                "new_title": "Yeni SLA Politikası",
+                "name_label": "Politika Adı",
+                "priority_label": "Öncelik Seviyesi",
+                "department_label": "İlgili Departman",
+                "response_label": "İlk Yanıt Süresi (dakika)",
+                "resolve_label": "Çözüm Süresi (dakika)",
+                "business_hours": "Sadece çalışma saatleri içinde",
+                "placeholders": {
+                    "name": "örn: Standart Destek",
+                    "department": "Departman seçin"
+                },
+                "cancel_btn": "İptal"
+            }
+        },
+        "branding": {
+            "title": "Markalama ve Kurumsal Kimlik",
+            "description": "Kurumsal kimlik ve iletişim bilgileri. Bu bilgiler e-posta footer alanında otomatik gösterilir.",
+            "company_label": "Şirket Adı",
+            "logo_label": "Şirket Logosu",
+            "email_label": "Şirket E-posta",
+            "phone_label": "Şirket Telefon",
+            "address_label": "İletişim Adresi (Footer)",
+            "social_links": "Sosyal Medya Linkleri",
+            "upload_btn": "Logo Yükle",
+            "uploading": "Yükleniyor...",
+            "logo_hint": "PNG, JPG veya SVG (Maks 2MB)",
+            "save_btn": "Marka Ayarlarını Kaydet",
+            "placeholders": {
+                "company": "örn: Aluplan A.Ş.",
+                "email": "destek@aluplan.com.tr",
+                "phone": "+90 ...",
+                "address": "örn: Örnek Mah. Örnek Cad. No:123..."
+            }
+        },
+        "toasts": {
+            "save_success": "Ayarlar kaydedildi.",
+            "save_error": "Ayarlar kaydedilirken hata oluştu.",
+            "load_error": "Ayarlar yüklenirken hata oluştu.",
+            "gmail_success": "Gmail hesabı başarıyla bağlandı.",
+            "gmail_error": "Yetkilendirme başarısız oldu.",
+            "logo_success": "Logo başarıyla kaydedildi.",
+            "logo_error": "Logo yüklenirken hata oluştu.",
+            "policy_save_success": "Politika kaydedildi.",
+            "policy_delete_success": "Politika silindi.",
+            "policy_confirm_delete": "Bu politikayı silmek istediğinizden emin misiniz?",
+            "connection_success": "Bağlantı başarılı",
+            "connection_failed": "Bağlantı başarısız",
+            "connection_error": "Bağlantı hatası",
+            "ollama_ok": "Ollama ile iletişim sağlandı.",
+            "ollama_fail": "Ollama servisine ulaşılamadı.",
+            "openai_ok": "OpenAI anahtarları doğrulandı.",
+            "openai_fail": "API anahtarı geçersiz veya eksik.",
+            "xai_ok": "xAI bağlantısı başarılı.",
+            "xai_fail": "xAI bağlantısı başarısız.",
+            "groq_ok": "Groq bağlantısı doğrulandı.",
+            "groq_fail": "API anahtarı veya yapılandırma hatası.",
+            "deepseek_ok": "DeepSeek bağlantısı başarılı.",
+            "deepseek_fail": "DeepSeek bağlantısı başarısız. API anahtarınızı kontrol edin.",
+            "llmapi_ok": "LLMAPI.ai bağlantısı başarılı.",
+            "llmapi_fail": "LLMAPI.ai bağlantısı başarısız.",
+            "custom_ok": "Özel API bağlantısı doğrulandı.",
+            "custom_fail": "Özel yapılandırma hatası.",
+            "server_unreachable": "Sunucuya ulaşılamıyor.",
+            "gmail_credentials_hint": "Önce Client ID ve Secret'ı kaydedin.",
+            "logo_upload_error": "Logo yükleme hatası.",
+            "generic_error": "Bir hata oluştu.",
+            "generic_success_hint": "{provider} servisine erişim sağlandı.",
+            "generic_fail_hint": "Servis şu anda ulaşılamaz durumda."
+        }
+    },
+    "admin": {
+        "live_support_request": {
+            "title": "Destek Talepleri",
+            "description": "Sistem genelindeki açık ve aktif destek taleplerini yönetin."
+        },
+        "ai_health": {
+            "title": "YZE Sağlığı ve Telemetri",
+            "description": "Yapay zeka modellerinin, token tüketiminin ve RAG performansının gerçek zamanlı izlenmesi."
+        }
     }
-  },
-  "auth": {
-    "title": "Aluplan Destek Sistemi",
-    "subtitle": "Merkezi Bilgi Otomasyonu",
-    "gateway_title": "Operasyonel Destek Geçidi",
-    "system_status": "SİSTEM_DURUMU: AKTİF",
-    "broadcast_title": "SİSTEM_YAYINI // GÜNCEL_BİLDİRİMLER",
-    "maintenance_notice_title": "Bakım Uyarısı",
-    "maintenance_notice_time": "2 SAAT ÖNCE",
-    "maintenance_notice_desc": "CNC Array B için planlanan kalibrasyon 02:00-04:00 UTC saatleri arasında otomatik senkronizasyon hatlarını etkileyecektir.",
-    "docs_notice_title": "Dokümantasyon Güncellemesi",
-    "docs_notice_time": "DÜN",
-    "docs_notice_desc": "T-Serisi ekstrüzyon kılavuzları güncellendi (Rev. 4.1). Mühendislerin Bilgi Bankasındaki tolerans tablolarını incelemesi rica olunur.",
-    "db_nodes_label": "Aktif DB Düğümleri",
-    "uptime_label": "Hizmet Süresi (SLA)",
-    "certified_label": "Sertifikalı Altyapı",
-    "login_title": "ERİŞİM KAPISI",
-    "access_gate_desc": "Telemetri okuma/yazma ve destek modülü erişimi için kimlik doğrulaması gereklidir.",
-    "login_tab": "GİRİŞ YAP",
-    "request_tab": "ERİŞİM_TALEBİ",
-    "email_label": "KİMLİK_BELİRTECİ [E-POSTA]",
-    "email_placeholder": "operator@aluplan.com",
-    "password_label": "DOĞRULAMA_ANAHTARI [ŞİFRE]",
-    "password_placeholder": "••••••••",
-    "recovery_link": "ANAHTAR_KURTAR?",
-    "submit_button": "OTURUMU BAŞLAT",
-    "submitting": "BAĞLANTI_KURULUYOR...",
-    "no_account": "Hesabınız yok mu?",
-    "register_link": "Kayıt Ol",
-    "security_tagline": "Bağlantılar Aluplan Sec-Net üzerinden izlenmektedir",
-    "error_heading": "YETKİ REDDİDİ",
-    "error_default": "AUTH_FAILURE: Kimlik bilgileri güvenlik düğümü tarafından reddedildi",
-    "error_credentials": "Geçersiz e-posta adresi veya şifre."
-  },
-  "admin": {
-    "live_support_request": {
-      "title": "Destek Talepleri",
-      "description": "Sistem genelindeki açık ve aktif destek taleplerini yönetin."
-    }
-  }
 }
