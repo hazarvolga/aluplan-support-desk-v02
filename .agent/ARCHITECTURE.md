@@ -291,19 +291,36 @@ For details, see [scripts/README.md](scripts/README.md)
  ---
  
  ## 🧠 Project Specific Features (v02 Extension)
- 
- ### Hybrid AI Ticket Tagging & RAG
- The support platform utilizes a Hybrid Retrieval-Augmented Generation model for ticket classification.
- 
- #### Core Components:
- - **Vector Engine:** `pgvector` extension in PostgreSQL (via Prisma).
- - **LLM Backend:** Ollama running `llama3.2:3b` (Chat) and `mxbai-embed-large` (Embeddings).
- - **Retrieval Logic:** `EmbeddingService.searchTickets` performs similarity searches against high-rated historical tickets (`satisfactionScore >= 4`).
- - **Categorization Strategy:** Combines static Admin-defined categories (`ProductCategory`) with dynamic RAG context to suggest tags.
- 
- #### Key Service Paths:
- - Backend Logic: `apps/backend/src/ai/` and `tickets/tickets.service.ts`
- - CRUD Management: `apps/backend/src/products/`
- - UI Management: `apps/frontend/src/app/(dashboard)/products/page.tsx`
- - Client Interaction: `apps/frontend/src/app/(dashboard)/tickets/new/page.tsx`
+
+### 1. Hybrid AI Ticket Tagging & RAG
+The support platform utilizes a Hybrid Retrieval-Augmented Generation model for ticket classification.
+
+- **Vector Engine:** `pgvector` extension in PostgreSQL (via Prisma).
+- **LLM Backend:** Ollama running `llama3.2:3b` (Chat) and `mxbai-embed-large` (Embeddings).
+- **Retrieval Logic:** `EmbeddingService.searchTickets` performs similarity searches against high-rated historical tickets (`satisfactionScore >= 4`).
+- **Categorization Strategy:** Combines static Admin-defined categories (`ProductCategory`) with dynamic RAG context to suggest tags.
+
+### 2. Self-Learning FAQ Pipeline
+Automated knowledge extraction from resolved tickets and interaction gaps.
+
+- **Harvesting (Tickets):** `FaqService.extractFromTickets` scans `RESOLVED`/`CLOSED` tickets for Q&A patterns.
+- **Gap Analysis (Interactions):** `FaqService.extractFromInteractions` groups low-confidence AI queries to identify "Knowledge Gaps".
+- **Processing:** `processPatterns` uses a confidence threshold (85%) to auto-publish or queue items for `PENDING_REVIEW`.
+- **Worker Logic:** `kb-summarizer.processor.ts` (BullMQ) handles background summarization tasks for option-C knowledge extraction.
+
+### 3. Technical Service & Hotinfo Entegrasyonu
+Specialized for AEC/CAD support (Allplan, AX3000).
+
+- **Customer Profile:** Unified CRM profile linked to `User`, containing hardware/software specs.
+- **Hotinfo Mapping:** Automates technical context enrichment (CPU, GPU, RAM, OS version, software version) for every ticket.
+- **Product Taxonomy:** 3-tier structure (Product > Category > Keywords) optimized for technical triage.
+
+### 4. Service Paths & Core Logic
+- **AI Core:** `apps/backend/src/ai/` (Ollama, Embeddings, Query)
+- **FAQ Logic:** `apps/backend/src/faq/` (Service, Controller, Worker, Cron)
+- **Ticket Flow:** `apps/backend/src/tickets/` (Lifecycle, Messages, Escalations)
+- **Product UI:** `apps/frontend/src/app/(dashboard)/products/`
+- **Customer UI:** `apps/frontend/src/app/(dashboard)/tickets/new/`
+- **Help Center:** `apps/frontend/src/app/(dashboard)/help/`
+
 

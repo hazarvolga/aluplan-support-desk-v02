@@ -33,4 +33,23 @@ This session focused on implementing a Hybrid AI system for ticket categorizatio
 4. Future Work: Implement specialized "Triage Rules" engine and potentially fine-tune prompts based on `suggestedCategories` feedback loop.
 
 ## Key Logic Node (RAG)
-The background listener in `AiAutoResolverService` watches for tickets with `satisfactionScore >= 4`. It automatically triggers an embedding task to index these tickets as "Golden Examples" for future triage.
+## Knowledge Transfer: Self-Learning FAQ & Technical Service (Session v02-SL)
+Date: 2026-03-13
+
+### Highlights
+- **Self-Learning System:** Implemented `FaqService` for automated Q&A extraction from resolved tickets and AI interaction logs.
+- **Background Summary:** Integrated `kb-summarizer.processor.ts` for AI-driven summarization of knowledge candidates.
+- **Technical Context:** Refined the `Hotinfo` integration within `CustomerProfile` for deep technical CAD/BIM support.
+- **Database Alignment:** Synchronized `Product` and `Category` seeding with the AEC industry requirements (Allplan, AX3000, CDS).
+
+### Current Status
+- [x] FAQ Pipeline fully functional (Manual & Cron triggers).
+- [x] BullMQ worker configured for knowledge summarization.
+- [x] Product taxonomy updated to 2026 standards.
+- [x] AI confidence bands tuned (85%+ for auto-publish).
+
+### Resumption Guide
+1. Review `FaqService.ts` for extraction logic.
+2. Check `docs/FAQ_Self_Learing_mimarisi.MD` for the theoretical foundation.
+3. Test extraction via `POST /faq/pipeline/run` (Admin role required).
+
