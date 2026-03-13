@@ -56,8 +56,10 @@ export class SettingsService {
 
     private async validateAiSetting(key: string, value: string) {
         // 1. If key is a provider switch, check if its models are configured
-        if (key === 'ai.chat_provider' || key === 'ai.embed_provider') {
-            if (value === 'ollama') {
+        if (key === 'ai.chat_provider' || key === 'ai.embed_provider' || key.startsWith('ai.specialized.')) {
+            const providerToValidate = value;
+            
+            if (providerToValidate === 'ollama') {
                 const url = await this.getValue('ai.ollama.url');
                 const chatModel = await this.getValue('ai.ollama.chat_model');
                 const embedModel = await this.getValue('ai.ollama.embed_model');
@@ -65,26 +67,59 @@ export class SettingsService {
                     throw new Error(`Ollama yapılandırması eksik (URL, Chat Model veya Embed Model).`);
                 }
             }
-            if (value === 'openai') {
-                const key = await this.getValue('ai.openai.api_key');
+            if (providerToValidate === 'openai') {
+                const apiKey = await this.getValue('ai.openai.api_key');
                 const chatModel = await this.getValue('ai.openai.chat_model');
                 const embedModel = await this.getValue('ai.openai.embed_model');
-                if (!key || !chatModel || !embedModel) {
+                if (!apiKey || !chatModel || !embedModel) {
                     throw new Error(`OpenAI yapılandırması eksik (API Key, Chat Model veya Embed Model).`);
+                }
+            }
+            if (providerToValidate === 'anthropic') {
+                const apiKey = await this.getValue('ai.anthropic.api_key');
+                const chatModel = await this.getValue('ai.anthropic.chat_model');
+                if (!apiKey || !chatModel) {
+                    throw new Error(`Anthropic yapılandırması eksik (API Key veya Chat Model).`);
+                }
+            }
+            if (providerToValidate === 'gemini') {
+                const apiKey = await this.getValue('ai.gemini.api_key');
+                const chatModel = await this.getValue('ai.gemini.chat_model');
+                if (!apiKey || !chatModel) {
+                    throw new Error(`Gemini yapılandırması eksik (API Key veya Chat Model).`);
                 }
             }
         }
 
-        // 2. If key is a model field being emptied, check if it's the active provider
+        // 2. If key is a model field being emptied, check if it's the active provider or used in specialized mappings
         if (key.endsWith('.chat_model') || key.endsWith('.embed_model') || key.endsWith('.api_key')) {
             if (!value || value.trim() === '') {
                 const parts = key.split('.');
                 const providerName = parts[1]; // e.g. 'openai' from 'ai.openai.chat_model'
+                
                 const currentChat = await this.getValue('ai.chat_provider');
                 const currentEmbed = await this.getValue('ai.embed_provider');
+                
+                // Also check specialized mappings
+                const specializedKeys = [
+                    'ai.specialized.categorization_provider',
+                    'ai.specialized.summarization_provider',
+                    'ai.specialized.reformatting_provider',
+                    'ai.specialized.analyze_sentiment_provider',
+                    'ai.specialized.translate_provider'
+                ];
+                
+                let isUsedInSpecialized = false;
+                for (const sKey of specializedKeys) {
+                    if (await this.getValue(sKey) === providerName) {
+                        isUsedInSpecialized = true;
+                        break;
+                    }
+                }
 
-                if (currentChat === providerName || currentEmbed === providerName) {
-                    throw new Error(`Aktif AI sağlayıcısı (${providerName}) için "${key}" alanı boş bırakılamaz.`);
+                if (currentChat === providerName || currentEmbed === providerName || isUsedInSpecialized) {
+                    const reason = isUsedInSpecialized ? 'bir özel görev eşleşmesinde' : 'aktif sağlayıcı olarak';
+                    throw new Error(`Şu anda ${reason} kullanılan "${providerName}" için "${key}" alanı boş bırakılamaz.`);
                 }
             }
         }

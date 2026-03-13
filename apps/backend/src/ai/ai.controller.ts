@@ -154,12 +154,18 @@ export class AiController {
         return this.embeddingService.reindexAll();
     }
 
-    @Public()
     @Get('status')
     @ApiOperation({ summary: 'Check AI service availability' })
     async status() {
         const available = await this.aiService.isAvailable();
         return { available, provider: 'dynamic' };
+    }
+
+    @Get('health-status')
+    @Roles('ADMIN', 'SUPERUSER')
+    @ApiOperation({ summary: 'Get detailed AI health status for all providers' })
+    async getHealthStatus() {
+        return this.aiService.getHealthStatus();
     }
 
     @Post('test-connection')

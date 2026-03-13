@@ -63,12 +63,14 @@ export default () => {
             port: parseInt(defaultRedisPort, 10),
         },
         storage: {
+            type: process.env.STORAGE_TYPE || (process.env.STORAGE_ACCESS_KEY ? 'S3' : 'LOCAL'),
             endpoint: process.env.STORAGE_ENDPOINT || 'http://localhost:9000',
-            accessKey: process.env.STORAGE_ACCESS_KEY || 'admin',
-            secretKey: process.env.STORAGE_SECRET_KEY || 'changeme',
+            accessKey: process.env.STORAGE_ACCESS_KEY || '',
+            secretKey: process.env.STORAGE_SECRET_KEY || '',
             bucket: process.env.STORAGE_BUCKET || 'aluplan-storage',
             region: process.env.STORAGE_REGION || 'us-east-1',
             usePathStyle: process.env.STORAGE_USE_PATH_STYLE === 'true' || true,
+            localPath: process.env.STORAGE_LOCAL_PATH || './uploads',
         },
     };
 

@@ -139,26 +139,66 @@ export class AiService implements AiProvider {
         });
     }
 
-    async reformat(systemPrompt: string, userQuery: string, kbContent: string): Promise<ChatResult | null> {
-        return this.runSafe(async () => {
-            const provider = await this.getActiveChatProvider();
-            return provider.reformat(systemPrompt, userQuery, kbContent);
-        });
+    async getActiveModelName(): Promise<string> {
+        const providerName = await this.settings.getValue('ai.chat_provider');
+        if (providerName === 'ollama') return (await this.settings.getValue('ai.ollama.chat_model')) || 'llama3';
+        if (providerName === 'openai') return (await this.settings.getValue('ai.openai.chat_model')) || 'gpt-4o-mini';
+        return 'unknown';
     }
 
-    async *streamReformat(systemPrompt: string, userQuery: string, kbContent: string): AsyncGenerator<string, void, unknown> {
+    private async getProvider(name: string): Promise<AiProvider> {
+        return (await this.getProviderByName(name)) || this.getActiveChatProvider();
+    }
+
+    /**
+     * Returns the appropriate provider for a specific task based on specialized settings.
+     * Falls back to the global chat_provider.
+     */
+    private async getProviderForTask(task: string): Promise<string> {
+        const specialized = await this.settings.getValue(`ai.specialized.${task}_provider`);
+        if (specialized && specialized !== 'global') {
+            return specialized;
+        }
+        return (await this.settings.getValue('ai.chat_provider')) || 'ollama';
+    }
+
+    async reformat(systemPrompt: string, userQuery: string, sourceContext: string, task: string = 'reformatting'): Promise<{ response: string; model: string } | null> {
+        if (!await this.isCircuitClosed()) {
+            this.logger.warn('⚠️ AI Operation skipped: Circuit Breaker is OPEN or manually disabled.');
+            return null;
+        }
+
+        try {
+            const providerName = await this.getProviderForTask(task);
+            const provider = await this.getProvider(providerName);
+            const model = await this.settings.getValue(`ai.${providerName}.chat_model`);
+
+            const result = await provider.reformat(systemPrompt, userQuery, sourceContext);
+            this.recordSuccess();
+            if (result?.response) {
+                return { response: result.response, model: model || 'unknown' };
+            }
+            return null;
+        } catch (err) {
+            this.recordFailure();
+            throw err;
+        }
+    }
+
+    async *streamReformat(systemPrompt: string, userQuery: string, sourceContext: string, task: string = 'reformatting'): AsyncGenerator<string, void, unknown> {
         const closed = await this.isCircuitClosed();
         if (!closed) {
             yield 'AI servisi şu anda devre dışı (Circuit Breaker).';
             return;
         }
 
-        const provider = await this.getActiveChatProvider();
+        const providerName = await this.getProviderForTask(task);
+        const provider = await this.getProvider(providerName);
         try {
             if (provider.streamReformat) {
-                yield* provider.streamReformat(systemPrompt, userQuery, kbContent);
+                yield* provider.streamReformat(systemPrompt, userQuery, sourceContext);
             } else {
-                const result = await provider.reformat(systemPrompt, userQuery, kbContent);
+                const result = await provider.reformat(systemPrompt, userQuery, sourceContext);
                 if (result?.response) yield result.response;
             }
             this.recordSuccess();
@@ -170,21 +210,31 @@ export class AiService implements AiProvider {
 
     async suggestCategory(title: string, content: string, categories: string[]): Promise<string | null> {
         return this.runSafe(async () => {
-            const provider = await this.getActiveChatProvider();
+            const providerName = await this.getProviderForTask('categorization');
+            const provider = await this.getProvider(providerName);
             return provider.suggestCategory(title, content, categories);
         });
     }
 
     async summarizeTicket(subject: string, conversation: string): Promise<string | null> {
         return this.runSafe(async () => {
-            const provider = await this.getActiveChatProvider();
+            const providerName = await this.getProviderForTask('summarization');
+            const provider = await this.getProvider(providerName);
             return provider.summarizeTicket(subject, conversation);
         });
     }
 
-    async cleanKnowledgeDocument(rawContent: string): Promise<string> {
-        const result = await this.runSafe(async () => {
-            const provider = await this.getActiveChatProvider();
+    async cleanKnowledgeDocument(content: string): Promise<string | null> {
+        if (!await this.isCircuitClosed()) {
+            this.logger.warn('⚠️ AI Operation skipped: Circuit Breaker is OPEN or manually disabled.');
+            return content;
+        }
+
+        try {
+            const providerName = await this.getProviderForTask('clean_knowledge');
+            const provider = await this.getProvider(providerName);
+            const model = await this.settings.getValue(`ai.${providerName}.chat_model`);
+
             const prompt = `You are an expert technical writer and AI data engineer. 
 I am providing you with a raw, unstructured technical document (could be a PDF extract, a raw log file, or messy notes).
 Your task is to extract the core technical knowledge, errors, solutions, and symptoms, and format them into a clean, structured Markdown format 
@@ -198,31 +248,55 @@ Rules:
 5. Provide ONLY the final markdown text without any conversational wrapper.
 
 RAW DOCUMENT:
-${rawContent}
+${content}
 `;
-            return provider.generate(prompt, 60000); // Allow up to 60s for large docs
-        });
-        return result || rawContent; // fallback to raw content if AI fails
+            const result = await provider.generate(prompt, 60000); // Allow up to 60s for large docs
+            this.recordSuccess();
+            return result;
+        } catch (err) {
+            this.recordFailure();
+            throw err;
+        }
     }
 
     async analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'> {
-        const res = await this.runSafe(async () => {
-            const provider = await this.getActiveChatProvider();
-            return provider.analyzeSentiment(text);
-        });
-        return res || 'NEUTRAL';
+        if (!await this.isCircuitClosed()) {
+            this.logger.warn('⚠️ AI Operation skipped: Circuit Breaker is OPEN or manually disabled.');
+            return 'NEUTRAL';
+        }
+
+        try {
+            const providerName = await this.getProviderForTask('analyze_sentiment');
+            const provider = await this.getProvider(providerName);
+            const model = await this.settings.getValue(`ai.${providerName}.chat_model`);
+
+            const res = await provider.analyzeSentiment(text);
+            this.recordSuccess();
+            return res;
+        } catch (err) {
+            this.recordFailure();
+            throw err;
+        }
     }
 
     async translate(text: string, targetLanguage: string): Promise<string | null> {
-        return this.runSafe(async () => {
-            const provider = await this.getActiveChatProvider();
-            return provider.translate(text, targetLanguage);
-        });
-    }
+        if (!await this.isCircuitClosed()) {
+            this.logger.warn('⚠️ AI Operation skipped: Circuit Breaker is OPEN or manually disabled.');
+            return null;
+        }
 
-    async getActiveModelName(): Promise<string> {
-        const provider = await this.getActiveChatProvider();
-        return provider.getActiveModelName();
+        try {
+            const providerName = await this.getProviderForTask('translate');
+            const provider = await this.getProvider(providerName);
+            const model = await this.settings.getValue(`ai.${providerName}.chat_model`);
+
+            const result = await provider.translate(text, targetLanguage);
+            this.recordSuccess();
+            return result;
+        } catch (err) {
+            this.recordFailure();
+            throw err;
+        }
     }
 
     async isAvailable(): Promise<boolean> {
@@ -282,5 +356,52 @@ ${rawContent}
             default:
                 return [];
         }
+    }
+    async getHealthStatus(): Promise<{
+        status: 'HEALTHY' | 'DEGRADED' | 'DOWN';
+        chatProvider: string;
+        embedProvider: string;
+        circuitBreaker: {
+            open: boolean;
+            openUntil: number | null;
+            failureCount: number;
+        };
+        providers: Record<string, { available: boolean; message: string }>;
+    }> {
+        const chatProvider = await this.getActiveProviderName();
+        const embedProviderName = await this.settings.getValue('ai.embed_provider') || chatProvider;
+        const isClosed = await this.isCircuitClosed();
+
+        const providers = ['ollama', 'openai', 'llmapi', 'xai', 'deepseek', 'groq', 'custom'];
+        const healthResults: Record<string, { available: boolean; message: string }> = {};
+
+        for (const p of providers) {
+            const test = await this.testProvider(p);
+            healthResults[p] = {
+                available: test.success,
+                message: test.message,
+            };
+        }
+
+        const activeProviderHealthy = healthResults[chatProvider]?.available;
+        let status: 'HEALTHY' | 'DEGRADED' | 'DOWN' = 'HEALTHY';
+
+        if (!isClosed) {
+            status = 'DOWN';
+        } else if (!activeProviderHealthy) {
+            status = 'DEGRADED';
+        }
+
+        return {
+            status,
+            chatProvider,
+            embedProvider: embedProviderName,
+            circuitBreaker: {
+                open: !isClosed,
+                openUntil: this.circuitOpenUntil > 0 ? this.circuitOpenUntil : null,
+                failureCount: this.failureCount,
+            },
+            providers: healthResults,
+        };
     }
 }

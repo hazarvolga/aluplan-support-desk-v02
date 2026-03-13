@@ -14,11 +14,12 @@ import { Textarea } from '@/components/ui/textarea';
 import {
     Mail, Shield, Settings as SettingsIcon,
     Zap, Save, Loader2, Key, Server,
-    Globe, Clock, Terminal, Plus, Trash2, Edit, CheckCircle2
+    Globe, Clock, Terminal, Plus, Trash2, Edit, CheckCircle2, Brain
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { EmailTemplates } from './components/EmailTemplates';
+import { AiSettings } from './components/AiSettings';
 
 export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
@@ -105,8 +106,17 @@ export default function SettingsPage() {
     };
 
     if (loading) return (
-        <div className="flex items-center justify-center min-h-[400px]">
-            <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
+        <div className="max-w-6xl mx-auto space-y-8 animate-pulse">
+            <div className="flex items-center justify-between pb-6">
+                <div className="space-y-2">
+                    <div className="h-8 w-48 bg-white/10 rounded" />
+                    <div className="h-4 w-64 bg-white/5 rounded" />
+                </div>
+            </div>
+            <div className="h-12 w-full bg-white/5 rounded-lg" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-white/5 rounded-xl" />)}
+            </div>
         </div>
     );
 
@@ -117,7 +127,7 @@ export default function SettingsPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Sistem Ayarları</h1>
                     <p className="text-muted-foreground mt-1">Platform genelindeki teknik ve operasyonel yapılandırmalar.</p>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-white/5 rounded-full">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-white/5 rounded-full" aria-hidden="true">
                     <Terminal className="h-3.5 w-3.5 text-brand-500" />
                     <span className="text-[11px] font-mono uppercase tracking-widest text-brand-500/80">KONTROL PANELİ v1.0</span>
                 </div>
@@ -125,9 +135,12 @@ export default function SettingsPage() {
 
             <Tabs defaultValue="email" className="space-y-6">
                 <TabsList className="bg-slate-900/50 border border-white/5 p-1 gap-1">
-                    <TabsTrigger value="email" className="data-[state=active]:bg-brand-500/10 data-[state=active]:text-brand-400 gap-2"><Mail className="h-4 w-4" /> E-Posta</TabsTrigger>
-                    <TabsTrigger value="macros" className="data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400 gap-2"><Zap className="h-4 w-4" /> Macrolar</TabsTrigger>
-                    <TabsTrigger value="security" className="data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-400 gap-2"><Shield className="h-4 w-4" /> Güvenlik & API</TabsTrigger>
+                    <TabsTrigger value="email" className="data-[state=active]:bg-brand-500/10 data-[state=active]:text-brand-400 gap-2"><Mail className="h-4 w-4" aria-hidden="true" /> E-Posta</TabsTrigger>
+                    <TabsTrigger value="macros" className="data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400 gap-2"><Zap className="h-4 w-4" aria-hidden="true" /> Macrolar</TabsTrigger>
+                    <TabsTrigger value="ai" className="data-[state=active]:bg-brand-500/10 data-[state=active]:text-brand-400 gap-2">
+                        <Brain className="h-4 w-4" aria-hidden="true" /> Yapay Zeka
+                    </TabsTrigger>
+                    <TabsTrigger value="security" className="data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-400 gap-2"><Shield className="h-4 w-4" aria-hidden="true" /> Güvenlik & API</TabsTrigger>
                 </TabsList>
 
                 {/* EMAIL SETTINGS */}
@@ -141,22 +154,22 @@ export default function SettingsPage() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label>Sunucu (Host)</Label>
-                                    <Input value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className="bg-slate-900/50" />
+                                    <Label htmlFor="smtp-host">Sunucu (Host)</Label>
+                                    <Input id="smtp-host" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className="bg-slate-900/50" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label>Port</Label>
-                                        <Input value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} className="bg-slate-900/50" />
+                                        <Label htmlFor="smtp-port">Port</Label>
+                                        <Input id="smtp-port" value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} className="bg-slate-900/50" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Kullanıcı</Label>
-                                        <Input value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} className="bg-slate-900/50" />
+                                        <Label htmlFor="smtp-user">Kullanıcı</Label>
+                                        <Input id="smtp-user" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} className="bg-slate-900/50" />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Şifre</Label>
-                                    <Input type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} className="bg-slate-900/50" placeholder="••••••••" />
+                                    <Label htmlFor="smtp-pass">Şifre</Label>
+                                    <Input id="smtp-pass" type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} className="bg-slate-900/50" placeholder="••••••••" />
                                 </div>
                             </CardContent>
                             <CardFooter className="bg-white/5 py-3">
@@ -177,16 +190,16 @@ export default function SettingsPage() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label>Sunucu (Host)</Label>
-                                    <Input value={imapHost} onChange={(e) => setImapHost(e.target.value)} className="bg-slate-900/50" />
+                                    <Label htmlFor="imap-host">Sunucu (Host)</Label>
+                                    <Input id="imap-host" value={imapHost} onChange={(e) => setImapHost(e.target.value)} className="bg-slate-900/50" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>E-posta</Label>
-                                    <Input value={imapUser} onChange={(e) => setImapUser(e.target.value)} className="bg-slate-900/50" />
+                                    <Label htmlFor="imap-user">E-posta</Label>
+                                    <Input id="imap-user" value={imapUser} onChange={(e) => setImapUser(e.target.value)} className="bg-slate-900/50" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Şifre</Label>
-                                    <Input type="password" value={imapPass} onChange={(e) => setImapPass(e.target.value)} className="bg-slate-900/50" placeholder="••••••••" />
+                                    <Label htmlFor="imap-pass">Şifre</Label>
+                                    <Input id="imap-pass" type="password" value={imapPass} onChange={(e) => setImapPass(e.target.value)} className="bg-slate-900/50" placeholder="••••••••" />
                                 </div>
                             </CardContent>
                             <CardFooter className="bg-white/5 py-3">
@@ -217,14 +230,14 @@ export default function SettingsPage() {
                             {/* Create New Macro */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/5 p-4 rounded-xl">
                                 <div className="space-y-2">
-                                    <Label>Macro Başlığı</Label>
-                                    <Input value={macroName} onChange={(e) => setMacroName(e.target.value)} className="bg-slate-900/50" placeholder="örn: Hoşgeldiniz" />
+                                    <Label htmlFor="macro-name">Macro Başlığı</Label>
+                                    <Input id="macro-name" value={macroName} onChange={(e) => setMacroName(e.target.value)} className="bg-slate-900/50" placeholder="örn: Hoşgeldiniz" />
                                 </div>
                                 <div className="md:col-span-2 space-y-2 flex flex-col">
-                                    <Label>Yanıt İçeriği</Label>
+                                    <Label htmlFor="macro-content">Yanıt İçeriği</Label>
                                     <div className="flex gap-4 items-end">
-                                        <Textarea value={macroContent} onChange={(e) => setMacroContent(e.target.value)} className="bg-slate-900/50 min-h-[40px] flex-1" placeholder="Müşteriye gönderilecek metin..." />
-                                        <Button onClick={handleCreateMacro} disabled={saving || !macroName || !macroContent} className="bg-amber-600"><Plus className="h-4 w-4 mr-2" /> Ekle</Button>
+                                        <Textarea id="macro-content" value={macroContent} onChange={(e) => setMacroContent(e.target.value)} className="bg-slate-900/50 min-h-[40px] flex-1" placeholder="Müşteriye gönderilecek metin..." />
+                                        <Button onClick={handleCreateMacro} disabled={saving || !macroName || !macroContent} className="bg-amber-600"><Plus className="h-4 w-4 mr-2" aria-hidden="true" /> Ekle</Button>
                                     </div>
                                 </div>
                             </div>
@@ -249,6 +262,11 @@ export default function SettingsPage() {
                             </div>
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                {/* AI SETTINGS */}
+                <TabsContent value="ai" className="space-y-6">
+                    <AiSettings />
                 </TabsContent>
 
                 {/* SECURITY & API (Future placeholder for now, shows encryption status) */}
