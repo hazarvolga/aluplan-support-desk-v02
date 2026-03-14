@@ -40,11 +40,17 @@ export class CustomersService {
                         const tempPassword = `Aluplan${new Date().getFullYear()}!`;
                         const passwordHash = await bcrypt.hash(tempPassword, 10);
 
+                        // Get customer role
+                        const customerRole = await prisma.role.findUnique({
+                            where: { name: 'customer' }
+                        });
+
                         existingUser = await prisma.user.create({
                             data: {
                                 email: record.email,
                                 fullName: record.fullName || `${record.firstName} ${record.lastName}`,
                                 passwordHash,
+                                roleId: customerRole?.id,
                                 status: record.status?.toLowerCase() === 'active' ? 'ACTIVE' : 'INACTIVE'
                             },
                             include: { customerProfile: true },
