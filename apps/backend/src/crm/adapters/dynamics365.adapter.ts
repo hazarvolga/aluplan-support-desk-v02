@@ -22,7 +22,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
         }
     }
 
-    async syncAccounts(config: any): Promise<SyncResult> {
+    async syncAccounts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult> {
         try {
             const token = await this.getAccessToken(config);
             const resourceUrl = `${config.instanceUrl}/api/data/v9.2/accounts?$select=accountid,name,industrycode,websiteurl,address1_composite,accountnumber`;
@@ -67,14 +67,14 @@ export class Dynamics365Adapter implements ICrmAdapter {
                         },
                     });
 
-                    // Store new_ClientID in a way contacts can access it if needed, 
-                    // or just rely on the Account -> Contact relation.
-                    // For now we map it to customerNo during contact sync.
-
                     successCount++;
                 } catch (err) {
                     this.logger.error(`Failed to sync account ${account.name}`, err.stack);
                     errorCount++;
+                } finally {
+                    if (onProgress) {
+                        onProgress({ success: successCount, error: errorCount, total: accounts.length });
+                    }
                 }
             }
 
@@ -97,7 +97,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
         }
     }
 
-    async syncContacts(config: any): Promise<SyncResult> {
+    async syncContacts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult> {
         try {
             const token = await this.getAccessToken(config);
             const resourceUrl = `${config.instanceUrl}/api/data/v9.2/contacts?$select=contactid,firstname,lastname,emailaddress1,jobtitle,telephone1,new_musteridurumu&$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
@@ -120,7 +120,11 @@ export class Dynamics365Adapter implements ICrmAdapter {
             let errorCount = 0;
 
             for (const contact of contacts) {
-                if (!contact.emailaddress1) continue;
+                if (!contact.emailaddress1) {
+                    errorCount++;
+                    if (onProgress) onProgress({ success: successCount, error: errorCount, total: contacts.length });
+                    continue;
+                }
 
                 try {
                     await this.prisma.$transaction(async (tx) => {
@@ -131,15 +135,22 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
                         if (!user) {
                             this.logger.debug(`Creating new user for email: ${contact.emailaddress1}`);
+
+                            // Get customer role
+                            const customerRole = await tx.role.findUnique({
+                                where: { name: 'customer' }
+                            });
+
                             user = await tx.user.create({
                                 data: {
                                     email: contact.emailaddress1,
                                     fullName: `${contact.firstname || ''} ${contact.lastname || ''}`.trim() || 'CRM Contact',
                                     status: 'ACTIVE',
                                     passwordHash: 'CRM_SYNCED',
+                                    roleId: customerRole?.id,
                                 },
                             });
-                            this.logger.debug(`Created user ID: ${user.id}`);
+                            this.logger.debug(`Created user ID: ${user.id} with role: ${customerRole?.name}`);
                         } else {
                             this.logger.debug(`Found existing user ID: ${user.id} for email: ${contact.emailaddress1}`);
                         }
@@ -196,6 +207,10 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 } catch (err) {
                     this.logger.error(`Failed to sync contact ${contact.emailaddress1}`, err.stack);
                     errorCount++;
+                } finally {
+                    if (onProgress) {
+                        onProgress({ success: successCount, error: errorCount, total: contacts.length });
+                    }
                 }
             }
 

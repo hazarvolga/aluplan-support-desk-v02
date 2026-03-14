@@ -36,8 +36,10 @@ import {
     AlertCircle,
     CheckCircle2,
     XCircle,
-    Calendar
+    Calendar,
+    Check
 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -139,6 +141,7 @@ export default function CustomersPage() {
             .getConnections()
             .then((conns) => {
                 setConnections(conns);
+                const isAnySyncing = conns.some((c: any) => c.syncStatus === 'SYNCING');
                 if (conns.length > 0) {
                     loadLogs(conns[0].id);
                 }
@@ -146,6 +149,33 @@ export default function CustomersPage() {
             .catch(console.error)
             .finally(() => setConnectionsLoading(false));
     };
+
+    // Polling logic for sync progress
+    useEffect(() => {
+        const isSyncing = connections.some(c => c.syncStatus === 'SYNCING');
+        let interval: NodeJS.Timeout;
+
+        if (isSyncing) {
+            interval = setInterval(() => {
+                api.crm.getConnections().then(conns => {
+                    setConnections(conns);
+                    if (conns.length > 0) {
+                        loadLogs(conns[0].id);
+                    }
+                    const stillSyncing = conns.some((c: any) => c.syncStatus === 'SYNCING');
+                    if (!stillSyncing) {
+                        clearInterval(interval);
+                        loadCustomers();
+                        loadAccounts();
+                    }
+                });
+            }, 3000);
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [connections]);
 
     const loadLogs = (connectionId: string) => {
         setLogsLoading(true);
@@ -751,7 +781,34 @@ export default function CustomersPage() {
                                                     </div>
                                                     <div>
                                                         <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2">{t('sync.system_status')}</p>
-                                                        <p className="text-sm font-bold text-blue-400 font-mono">{conn.syncStatus || 'IDLE'}</p>
+                                                        <div className="flex items-center gap-3">
+                                                            <p className="text-sm font-bold text-blue-400 font-mono">{conn.syncStatus || 'IDLE'}</p>
+                                                            {conn.syncStatus === 'SYNCING' && logs.length > 0 && (
+                                                                <div className="flex-1 max-w-[200px] flex flex-col gap-1.5">
+                                                                    <div className="flex justify-between text-[8px] font-bold uppercase tracking-widest text-white/40">
+                                                                        <span>{t('sync.progress') || 'TRANSFER_PROGRESS'}</span>
+                                                                        <span>{Math.round(((logs[0].successCount + logs[0].errorCount) / Math.max(1, logs[0].totalRecords)) * 100)}%</span>
+                                                                    </div>
+                                                                    <Progress
+                                                                        value={((logs[0].successCount + logs[0].errorCount) / Math.max(1, logs[0].totalRecords)) * 100}
+                                                                        className="h-1.5 bg-white/5 border-none"
+                                                                    />
+                                                                    <div className="flex justify-between text-[9px] font-medium text-white/60">
+                                                                        <span className="flex items-center gap-1">
+                                                                            <Check className="h-2 w-2 text-emerald-500" />
+                                                                            {logs[0].successCount}
+                                                                        </span>
+                                                                        {logs[0].errorCount > 0 && (
+                                                                            <span className="flex items-center gap-1">
+                                                                                <AlertCircle className="h-2 w-2 text-rose-500" />
+                                                                                {logs[0].errorCount}
+                                                                            </span>
+                                                                        )}
+                                                                        <span className="text-white/30">{logs[0].totalRecords} TOTAL</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col justify-end items-end gap-3">

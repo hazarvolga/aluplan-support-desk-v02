@@ -139,15 +139,57 @@ export class CrmService {
     }
 
     private async executeSyncProcess(connection: any, adapter: ICrmAdapter, logId: string) {
+        let totalAccountRecords = 0;
+        let successAccountRecords = 0;
+        let errorAccountRecords = 0;
+
+        let totalContactRecords = 0;
+        let successContactRecords = 0;
+        let errorContactRecords = 0;
+
         try {
             // 1. Sync Accounts (Companies)
-            const accountResult = await adapter.syncAccounts(connection);
+            const accountResult = await adapter.syncAccounts(connection, (stats) => {
+                totalAccountRecords = stats.total;
+                successAccountRecords = stats.success;
+                errorAccountRecords = stats.error;
+
+                // Update progress every 10 records or at the end
+                if ((stats.success + stats.error) % 10 === 0 || stats.success + stats.error === stats.total) {
+                    this.prisma.crmSyncLog.update({
+                        where: { id: logId },
+                        data: {
+                            totalRecords: stats.total,
+                            successCount: stats.success,
+                            errorCount: stats.error,
+                        }
+                    }).catch(err => this.logger.error(`Failed to update partial account sync log`, err.stack));
+                }
+            });
+
             if (accountResult.status === SyncStatus.ERROR) {
                 throw new Error(`Account Sync Error: ${accountResult.errorMessage}`);
             }
 
             // 2. Sync Contacts (People)
-            const contactResult = await adapter.syncContacts(connection);
+            const contactResult = await adapter.syncContacts(connection, (stats) => {
+                totalContactRecords = stats.total;
+                successContactRecords = stats.success;
+                errorContactRecords = stats.error;
+
+                // Update progress every 20 records or at the end
+                if ((stats.success + stats.error) % 20 === 0 || stats.success + stats.error === stats.total) {
+                    this.prisma.crmSyncLog.update({
+                        where: { id: logId },
+                        data: {
+                            totalRecords: totalAccountRecords + stats.total,
+                            successCount: successAccountRecords + stats.success,
+                            errorCount: errorAccountRecords + stats.error,
+                        }
+                    }).catch(err => this.logger.error(`Failed to update partial contact sync log`, err.stack));
+                }
+            });
+
             if (contactResult.status === SyncStatus.ERROR) {
                 throw new Error(`Contact Sync Error: ${contactResult.errorMessage}`);
             }
@@ -173,12 +215,18 @@ export class CrmService {
             });
 
         } catch (error) {
+            this.logger.error(`CRM sync process failed: ${error.message}`, error.stack);
+
             await this.prisma.crmSyncLog.update({
                 where: { id: logId },
                 data: {
                     status: SyncStatus.ERROR,
                     completedAt: new Date(),
-                    errorMessage: error.message
+                    errorMessage: error.message,
+                    // Keep current counts in the log even on error
+                    totalRecords: totalAccountRecords + totalContactRecords,
+                    successCount: successAccountRecords + successContactRecords,
+                    errorCount: errorAccountRecords + errorContactRecords,
                 }
             });
 
@@ -291,12 +339,18 @@ export class CrmService {
             });
 
             if (!user) {
+                // Get customer role
+                const customerRole = await tx.role.findUnique({
+                    where: { name: 'customer' }
+                });
+
                 user = await tx.user.create({
                     data: {
                         email: data.emailaddress1,
                         fullName: `${data.firstname || ''} ${data.lastname || ''}`.trim() || 'CRM Contact',
                         status: 'ACTIVE',
                         passwordHash: 'CRM_SYNCED',
+                        roleId: customerRole?.id,
                     },
                 });
             }
