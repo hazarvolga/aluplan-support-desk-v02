@@ -120,19 +120,45 @@ export class TicketsService {
         status?: TicketStatus;
         priority?: TicketPriority;
         assignedTo?: string;
+        teamId?: string;
         userId?: string; // Filter by creator
         isSlaBreached?: boolean;
         page?: number;
         limit?: number;
     }) {
-        const { status, priority, assignedTo, userId, isSlaBreached, page = 1, limit = 20 } = params;
+        const { status, priority, assignedTo, teamId, userId, isSlaBreached, page = 1, limit = 20 } = params;
+
+        // If teamId is provided, get all userIds in that team
+        let teamMemberIds: string[] = [];
+        if (teamId) {
+            const members = await this.prisma.teamMember.findMany({
+                where: { teamId },
+                select: { userId: true },
+            });
+            teamMemberIds = members.map((m) => m.userId);
+        }
+
         const where: Prisma.TicketWhereInput = {
             ...(status && { status }),
             ...(priority && { priority }),
-            ...(assignedTo && { assignedTo }),
             ...(userId && { userId }),
             ...(isSlaBreached !== undefined && { isSlaBreached }),
         };
+
+        // Handle assignedTo and teamId logic
+        if (assignedTo && teamId) {
+            // If both are provided, the user must be assigned to the specific agent AND that agent must be in the team
+            if (teamMemberIds.includes(assignedTo)) {
+                where.assignedTo = assignedTo;
+            } else {
+                // If the specified agent is NOT in the specified team, return nothing (or handle as filter mismatch)
+                where.assignedTo = 'none'; // Prisma trick to return zero results for non-existent userId
+            }
+        } else if (assignedTo) {
+            where.assignedTo = assignedTo;
+        } else if (teamId) {
+            where.assignedTo = { in: teamMemberIds };
+        }
 
         const [data, total] = await Promise.all([
             this.prisma.ticket.findMany({

@@ -48,4 +48,10 @@ export class ProductsController {
     deleteCategory(@Param('categoryId') categoryId: string) {
         return this.productsService.deleteCategory(categoryId);
     }
+
+    @Post('internal/restore-faqs')
+    @Public()
+    restoreFaqs() {
+        return this.productsService.restoreAllplanFaqs();
+    }
 }

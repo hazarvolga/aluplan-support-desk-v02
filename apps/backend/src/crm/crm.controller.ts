@@ -20,6 +20,11 @@ export class CrmController {
         return this.crmService.upsertConnection(dto);
     }
 
+    @Post('verify-connection/:id')
+    async verifyConnection(@Param('id') id: string) {
+        return this.crmService.verifyConnectionById(id);
+    }
+
     @Post('sync/:id')
     async triggerSync(@Param('id') id: string) {
         return this.crmService.triggerSync(id);

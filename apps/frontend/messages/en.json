@@ -1,60 +1,60 @@
 {
-  "home": {
-    "title": "Aluplan Support System",
-    "cta_login": "Sign In",
-    "cta_register": "Register",
-    "footer_copy": "© 2025 Aluplan A.Ş. All rights reserved.",
-    "footer_status": "STATUS: ACTIVE",
-    "footer_encryption": "ENCRYPTION: AES-256",
-    "hero": {
-      "badge": "Next-Gen Engineering Support",
-      "ai_badge": "POWERED BY ALLPLAN AI",
-      "title": "Welcome to Aluplan Support Platform",
-      "subtitle": "The hub for technical expertise and resources to help you use Allplan most efficiently in your architectural and engineering projects.",
-      "cta_primary": "Login / Register",
-      "cta_secondary": "Download 14-Day Free Trial"
+    "home": {
+        "title": "Aluplan Support System",
+        "cta_login": "Sign In",
+        "cta_register": "Register",
+        "footer_copy": "© 2025 Aluplan A.Ş. All rights reserved.",
+        "footer_status": "STATUS: ACTIVE",
+        "footer_encryption": "ENCRYPTION: AES-256",
+        "hero": {
+            "badge": "Next-Gen Engineering Support",
+            "ai_badge": "POWERED BY ALLPLAN AI",
+            "title": "Welcome to Aluplan Support Platform",
+            "subtitle": "The hub for technical expertise and resources to help you use Allplan most efficiently in your architectural and engineering projects.",
+            "cta_primary": "Login / Register",
+            "cta_secondary": "Download 14-Day Free Trial"
+        },
+        "training": {
+            "title": "FOR_NEW_USERS",
+            "card1_title": "Aluplan Youtube Channel",
+            "card1_desc": "Get a head start with Allplan training videos on our Youtube channel.",
+            "card1_cta": "Youtube Training Series",
+            "card2_title": "Student Licenses",
+            "card2_desc": "Get your free student and educator license via Allplan Campus immediately.",
+            "card2_cta": "Campus Portal",
+            "card2_link": "https://campus.allplan.com/index.html",
+            "oska_link": "https://aluplan.com.tr/solutions/bimx5",
+            "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi"
+        },
+        "faq": {
+            "title": "POPULAR_SOLUTIONS",
+            "item1_title": "License Registration",
+            "item1_desc": "Step-by-step guide for Softlock and Wibu activation processes.",
+            "item2_title": "License Transfer",
+            "item2_desc": "Transfer procedures before PC replacement or formatting.",
+            "item3_title": "System Requirements",
+            "item3_desc": "Current hardware recommendations for Allplan to run at peak performance."
+        },
+        "integrations": {
+            "title": "LOCAL_INTEGRATIONS",
+            "oska_title": "Oska e-Hakediş Integration",
+            "oska_desc": "Export Allplan quantity takeoff data directly to e-Hakediş via catalog settings.",
+            "plugins_title": "Market-Specific Plugins",
+            "plugins_desc": "Tools for local regulations like TAKS, KAKS, parking calculations, and area schedules."
+        },
+        "stats": {
+            "users": "10,000+",
+            "users_label": "Active Users",
+            "projects": "5,000+",
+            "projects_label": "BIM Models",
+            "support": "24/7",
+            "support_label": "Technical Support"
+        },
+        "social_proof": {
+            "title": "CHOICE_OF_INDUSTRY_LEADERS",
+            "subtitle": "Turkey's leading architecture and engineering firms design the future with Allplan."
+        }
     },
-    "training": {
-      "title": "FOR_NEW_USERS",
-      "card1_title": "Aluplan Youtube Channel",
-      "card1_desc": "Get a head start with Allplan training videos on our Youtube channel.",
-      "card1_cta": "Youtube Training Series",
-      "card2_title": "Student Licenses",
-      "card2_desc": "Get your free student and educator license via Allplan Campus immediately.",
-      "card2_cta": "Campus Portal",
-      "card2_link": "https://campus.allplan.com/index.html",
-      "oska_link": "https://aluplan.com.tr/solutions/bimx5",
-      "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi"
-    },
-    "faq": {
-      "title": "POPULAR_SOLUTIONS",
-      "item1_title": "License Registration",
-      "item1_desc": "Step-by-step guide for Softlock and Wibu activation processes.",
-      "item2_title": "License Transfer",
-      "item2_desc": "Transfer procedures before PC replacement or formatting.",
-      "item3_title": "System Requirements",
-      "item3_desc": "Current hardware recommendations for Allplan to run at peak performance."
-    },
-    "integrations": {
-      "title": "LOCAL_INTEGRATIONS",
-      "oska_title": "Oska e-Hakediş Integration",
-      "oska_desc": "Export Allplan quantity takeoff data directly to e-Hakediş via catalog settings.",
-      "plugins_title": "Market-Specific Plugins",
-      "plugins_desc": "Tools for local regulations like TAKS, KAKS, parking calculations, and area schedules."
-    },
-    "stats": {
-      "users": "10,000+",
-      "users_label": "Active Users",
-      "projects": "5,000+",
-      "projects_label": "BIM Models",
-      "support": "24/7",
-      "support_label": "Technical Support"
-    },
-    "social_proof": {
-      "title": "CHOICE_OF_INDUSTRY_LEADERS",
-      "subtitle": "Turkey's leading architecture and engineering firms design the future with Allplan."
-    }
-  },
     "auth": {
         "title": "Aluplan Support Desk",
         "subtitle": "Central Knowledge Automation",
@@ -196,6 +196,7 @@
         "filters": {
             "all": "All Requests"
         },
+        "new_ticket": "NEW REQUEST",
         "bulk": {
             "selected": "Selected_Requests",
             "start_process": "Start_Process",
@@ -435,6 +436,15 @@
                 "title": "OpenAI (Cloud)",
                 "chat_model": "Chat Model",
                 "embed_model": "Embedding Model"
+            },
+            "validation": {
+                "fields": {
+                    "api_key": "API Key",
+                    "chat_model": "Chat Model",
+                    "embed_model": "Embedding Model",
+                    "url": "Connection URL"
+                },
+                "missing_fields": "Please fill in the following required fields: {fields}"
             },
             "xai": {
                 "title": "xAI (Grok)",

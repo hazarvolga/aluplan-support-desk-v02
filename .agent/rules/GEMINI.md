@@ -8,14 +8,6 @@ trigger: always_on
 
 ---
 
-### 3. The Unbreakable Brain (Continuity Protocol)
-
-> 🔴 **MANDATORY:** You MUST read `.agent/PROJECT_BRAIN.md` at session start AND update it at task end.
-
-1. **Session Start:** Read Project Brain to understand mission, feature status, and "Protected" areas.
-2. **Task End:** Update Project Brain with your progress, "Yarım Kaldı" (Incomplete) features, and next steps.
-3. **Regression Guard:** Never modify "Protected Features" listed in the Brain without running relevant validation scripts (`checklist.py`).
-
 ---
 
 ## 📥 REQUEST CLASSIFIER (STEP 1)

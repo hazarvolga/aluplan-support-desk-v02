@@ -28,6 +28,14 @@ export const mockPrismaService: any = {
         findMany: jest.fn(),
         create: jest.fn(),
     },
+    teamMember: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+    },
     department: {
         findUnique: jest.fn(),
         findMany: jest.fn(),

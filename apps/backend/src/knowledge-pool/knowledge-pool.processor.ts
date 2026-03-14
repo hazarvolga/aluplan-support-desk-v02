@@ -25,29 +25,15 @@ export class KnowledgePoolProcessor extends WorkerHost {
         private readonly aiService: AiService,
     ) {
         super();
-        // Import-Level Safety: Using localized require to bypass top-level property access traps
-        let AnyTurndown: any;
+        
+        let TurndownConstructor: any;
         try {
-             
             // eslint-disable-next-line @typescript-eslint/no-require-imports
-            AnyTurndown = require('turndown');
+            const Turndown = require('turndown');
+            TurndownConstructor = Turndown.default || Turndown;
         } catch (e) {
             this.logger.error(`🚨 Turndown library LOAD FAILURE: ${e.message}`);
-        }
-
-        let TurndownConstructor: any;
-
-        if (!AnyTurndown) {
-            this.logger.error('🚨 Turndown library is UNDEFINED. Using dummy fallback to prevent crash.');
-            TurndownConstructor = class { addRule() { } turndown(h: string) { return h; } };
-        } else if (typeof AnyTurndown === 'function') {
-            TurndownConstructor = AnyTurndown;
-        } else if (AnyTurndown.default && typeof AnyTurndown.default === 'function') {
-            TurndownConstructor = AnyTurndown.default;
-        } else if (AnyTurndown.default?.default && typeof AnyTurndown.default.default === 'function') {
-            TurndownConstructor = AnyTurndown.default.default;
-        } else {
-            this.logger.error('🚨 Turndown constructor NOT FOUND in export. Using dummy fallback.');
+            // Fallback to dummy to prevent complete processor failure
             TurndownConstructor = class { addRule() { } turndown(h: string) { return h; } };
         }
 
@@ -121,9 +107,7 @@ export class KnowledgePoolProcessor extends WorkerHost {
 
         const hierarchies = hierarchicalChunk(content, { title });
 
-        await this.prisma.$executeRawUnsafe(
-            `DELETE FROM knowledge_pool_embeddings WHERE source_id = '${source.id}'::uuid`
-        );
+        await this.prisma.$executeRaw`DELETE FROM knowledge_pool_embeddings WHERE source_id = ${source.id}::uuid`;
 
         let totalChunks = 0;
         for (const h of hierarchies) {
@@ -215,14 +199,12 @@ export class KnowledgePoolProcessor extends WorkerHost {
         // Apply AI Pre-processing if enabled in metadata
         if (source.metadata?.useAiPreprocessing) {
             this.logger.log(`🧠 Applying AI Pre-processing for formatting and noise reduction: ${source.fileName}`);
-            content = await this.aiService.cleanKnowledgeDocument(content);
+            content = (await this.aiService.cleanKnowledgeDocument(content)) ?? content;
         }
 
         const hierarchies = hierarchicalChunk(content, { title: source.name || source.fileName });
 
-        await this.prisma.$executeRawUnsafe(
-            `DELETE FROM knowledge_pool_embeddings WHERE source_id = '${source.id}'::uuid`
-        );
+        await this.prisma.$executeRaw`DELETE FROM knowledge_pool_embeddings WHERE source_id = ${source.id}::uuid`;
 
         let totalChunks = 0;
         for (const h of hierarchies) {

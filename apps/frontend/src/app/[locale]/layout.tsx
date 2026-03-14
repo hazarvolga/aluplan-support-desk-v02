@@ -25,6 +25,27 @@ const condensed = Barlow_Condensed({
 export const metadata: Metadata = {
     title: { default: 'Aluplan Support Desk — Allplan Technical Hub', template: '%s · Aluplan' },
     description: 'Advanced technical support and resource management platform for Allplan engineering and BIM solutions in Turkey and beyond.',
+    keywords: ['Allplan Support', 'BIM Turkey', 'Technical Support Desk', 'Aluplan Engineering', 'Allplan Eğitim', 'BIM Çözümleri'],
+    authors: [{ name: 'Aluplan Engineering' }],
+    metadataBase: new URL('https://destek.aluplan.com.tr'),
+    alternates: {
+        canonical: '/',
+        languages: {
+            'tr-TR': '/tr',
+            'en-US': '/en',
+        },
+    },
+    robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+            index: true,
+            follow: true,
+            'max-video-preview': -1,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+        },
+    },
     openGraph: {
         title: 'Aluplan Support Desk — Professional Allplan Solutions',
         description: 'BIM, Engineering, and Technical Support Hub for Allplan users. Turkey authorized dealer resources.',
@@ -32,16 +53,27 @@ export const metadata: Metadata = {
         siteName: 'Aluplan Support',
         locale: 'tr_TR',
         type: 'website',
+        images: [
+            {
+                url: '/og-image.png',
+                width: 1200,
+                height: 630,
+                alt: 'Aluplan Support Hub',
+            },
+        ],
     },
     twitter: {
         card: 'summary_large_image',
         title: 'Aluplan Support Desk',
         description: 'Advanced technical support for Allplan engineering solutions.',
+        images: ['/og-image.png'],
     },
 };
 
 export const viewport: Viewport = {
     themeColor: '#00FFD1', // Cyan Active
+    initialScale: 1,
+    width: 'device-width',
 };
 
 import { NextIntlClientProvider } from 'next-intl';

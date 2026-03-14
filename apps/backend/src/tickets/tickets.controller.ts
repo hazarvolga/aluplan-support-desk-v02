@@ -41,6 +41,7 @@ export class TicketsController {
     @ApiQuery({ name: 'status', required: false, enum: TicketStatus })
     @ApiQuery({ name: 'priority', required: false, enum: TicketPriority })
     @ApiQuery({ name: 'assignedTo', required: false })
+    @ApiQuery({ name: 'teamId', required: false })
     @ApiQuery({ name: 'isSlaBreached', required: false, type: Boolean })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -52,6 +53,7 @@ export class TicketsController {
             status: query.status,
             priority: query.priority,
             assignedTo: query.assignedTo,
+            teamId: query.teamId,
             userId,
             isSlaBreached: query.isSlaBreached === 'true',
             page: query.page ? parseInt(query.page) : 1,

@@ -242,6 +242,9 @@ model CustomerProfile {
   account           CrmAccount?       @relation(fields: [accountId], references: [id])
   user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([companyName], map: "idx_customer_company")
+  @@index([externalContactId], map: "idx_customer_external_id")
+  @@index([createdAt], map: "idx_customer_created")
   @@map("customer_profiles")
 }
 
@@ -544,6 +547,8 @@ model Ticket {
   @@index([assignedTo], map: "idx_tickets_assigned")
   @@index([priority], map: "idx_tickets_priority")
   @@index([isSlaBreached], map: "idx_tickets_sla")
+  @@index([createdAt], map: "idx_tickets_created_at")
+  @@index([departmentId], map: "idx_tickets_department")
   @@index([hotinfoSnapshot], map: "idx_tickets_hotinfo", type: Gin)
   @@map("tickets")
 }

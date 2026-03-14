@@ -92,6 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } finally {
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
+            // Clear cookie for middleware
+            document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
             setUser(null);
             router.push('/login');
         }

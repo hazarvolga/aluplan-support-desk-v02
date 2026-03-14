@@ -16,7 +16,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
             const token = await this.getAccessToken(config);
             return !!token;
         } catch (error) {
-            this.logger.error('Dynamics 365 connection verification failed', error.stack);
+            const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+            this.logger.error(`Dynamics 365 connection verification failed: ${errorDetails}`);
             return false;
         }
     }

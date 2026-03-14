@@ -78,6 +78,29 @@ export class CrmService {
         });
     }
 
+    async verifyConnectionById(id: string) {
+        const connection = await this.prisma.crmConnection.findUnique({
+            where: { id }
+        });
+
+        if (!connection) throw new NotFoundException('CRM bağlantısı bulunamadı.');
+
+        const adapter = this.getAdapter(connection.provider);
+        const config = {
+            ...connection,
+            clientSecret: connection.clientSecret ? this.crypto.decrypt(connection.clientSecret) : null,
+            webhookSecret: connection.webhookSecret ? this.crypto.decrypt(connection.webhookSecret) : null
+        };
+
+        try {
+            const isValid = await adapter.verifyConnection(config);
+            return { success: isValid, provider: connection.provider };
+        } catch (error) {
+            this.logger.error(`CRM verification failed for ${connection.provider}: ${error.message}`);
+            return { success: false, error: error.message };
+        }
+    }
+
     async triggerSync(id: string) {
         const connection = await this.prisma.crmConnection.findUnique({
             where: { id }
@@ -197,7 +220,7 @@ export class CrmService {
                                 email: true,
                                 fullName: true,
                                 status: true
-                              }
+                            }
                         }
                     }
                 }

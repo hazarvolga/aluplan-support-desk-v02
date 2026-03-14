@@ -150,6 +150,75 @@ describe('TicketsService', () => {
                     })
                 );
             });
+
+            it('should filter tickets by teamId', async () => {
+                // Arrange
+                const teamId = 'team1';
+                const teamMembers = [{ userId: 'agent1' }, { userId: 'agent2' }];
+                prisma.teamMember.findMany.mockResolvedValue(teamMembers);
+                prisma.ticket.findMany.mockResolvedValue([]);
+                prisma.ticket.count.mockResolvedValue(0);
+
+                // Act
+                await service.findAll({ teamId });
+
+                // Assert
+                expect(prisma.teamMember.findMany).toHaveBeenCalledWith({
+                    where: { teamId },
+                    select: { userId: true },
+                });
+                expect(prisma.ticket.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            assignedTo: { in: ['agent1', 'agent2'] },
+                        }),
+                    })
+                );
+            });
+
+            it('should handle combined assignedTo and teamId filtering (valid case)', async () => {
+                // Arrange
+                const teamId = 'team1';
+                const assignedTo = 'agent1';
+                const teamMembers = [{ userId: 'agent1' }, { userId: 'agent2' }];
+                prisma.teamMember.findMany.mockResolvedValue(teamMembers);
+                prisma.ticket.findMany.mockResolvedValue([]);
+                prisma.ticket.count.mockResolvedValue(0);
+
+                // Act
+                await service.findAll({ teamId, assignedTo });
+
+                // Assert
+                expect(prisma.ticket.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            assignedTo: 'agent1',
+                        }),
+                    })
+                );
+            });
+
+            it('should return zero results if assignedTo agent is not in the specified team', async () => {
+                // Arrange
+                const teamId = 'team1';
+                const assignedTo = 'agent3'; // NOT in team1
+                const teamMembers = [{ userId: 'agent1' }, { userId: 'agent2' }];
+                prisma.teamMember.findMany.mockResolvedValue(teamMembers);
+                prisma.ticket.findMany.mockResolvedValue([]);
+                prisma.ticket.count.mockResolvedValue(0);
+
+                // Act
+                await service.findAll({ teamId, assignedTo });
+
+                // Assert
+                expect(prisma.ticket.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            assignedTo: 'none',
+                        }),
+                    })
+                );
+            });
         });
 
         describe('addMessage', () => {

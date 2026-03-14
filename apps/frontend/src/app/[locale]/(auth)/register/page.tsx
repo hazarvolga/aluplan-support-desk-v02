@@ -49,10 +49,12 @@ export default function RegisterPage() {
         email: '',
         password: '',
         confirmPassword: '',
+        isAllplanUser: false,
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+        const { name, value, type, checked } = e.target;
+        setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
     };
 
     const handleLookup = async (e: React.FormEvent) => {
@@ -87,9 +89,7 @@ export default function RegisterPage() {
             return;
         }
 
-        const isAllplanUser = usedProducts.some(p => p.toLowerCase().includes('allplan'));
-
-        if (isAllplanUser) {
+        if (form.isAllplanUser) {
             if (form.customerNo.length < 5 || !form.customerNo.startsWith('C')) {
                 setError('Müşteri No formatı geçersiz. Örnek: C300 XX XX XX');
                 return;
@@ -111,7 +111,7 @@ export default function RegisterPage() {
                     email: form.email,
                     password: form.password,
                     usedProducts: usedProducts,
-                    isAllplanUser: usedProducts.some(p => p.toLowerCase().includes('allplan')),
+                    isAllplanUser: form.isAllplanUser,
                 }),
             });
 
@@ -121,7 +121,6 @@ export default function RegisterPage() {
             }
 
             setSuccess(true);
-            // Wait for user to explicitly click the button to go to login
         } catch (err: any) {
             setError(err.message || 'Bir hata oluştu.');
         } finally {
@@ -326,6 +325,22 @@ export default function RegisterPage() {
                                         </div>
                                     </div>
 
+                                    {/* Telefon Numarası */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                            Telefon Numarası <span className="text-sky-400">*</span>
+                                        </label>
+                                        <Input
+                                            name="phone"
+                                            type="tel"
+                                            value={form.phone}
+                                            onChange={handleChange}
+                                            placeholder="+90 (5xx) xxx xx xx"
+                                            required
+                                            className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50"
+                                        />
+                                    </div>
+
                                     {/* Products Selection */}
                                     {products.length > 0 && (
                                         <div className="pt-2 pb-2">
@@ -354,8 +369,31 @@ export default function RegisterPage() {
                                         </div>
                                     )}
 
+                                    {/* Allplan Checkbox */}
+                                    <div className="pt-2">
+                                        <label className="flex items-start gap-4 p-4 rounded-xl border border-sky-500/20 bg-sky-500/5 cursor-pointer transition-all hover:bg-sky-500/10 active:scale-[0.98]">
+                                            <div className="flex items-center h-5 pt-1">
+                                                <input
+                                                    type="checkbox"
+                                                    name="isAllplanUser"
+                                                    checked={form.isAllplanUser}
+                                                    onChange={handleChange}
+                                                    className="w-5 h-5 rounded-md border-sky-500/30 bg-black/50 text-sky-500 focus:ring-sky-500/50"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <span className="block text-sm font-medium text-sky-400">
+                                                    Allplan / Aluplan kullanıcısıyım
+                                                </span>
+                                                <span className="block text-xs text-slate-400 leading-normal">
+                                                    Aluplan tarafından lisanslanmış bir Allplan kullanıcısıysanız, özel destek alabilmeniz için bunu işaretleyin.
+                                                </span>
+                                            </div>
+                                        </label>
+                                    </div>
+
                                     {/* Firma & Müşteri No */}
-                                    <div className={`grid ${usedProducts.some(p => p.toLowerCase().includes('allplan')) ? 'sm:grid-cols-2' : 'grid-cols-1'} gap-4`}>
+                                    <div className={`grid ${form.isAllplanUser ? 'sm:grid-cols-2' : 'grid-cols-1'} gap-4 transition-all duration-300`}>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">
                                                 Firma <span className="text-sky-400">*</span>
@@ -369,8 +407,8 @@ export default function RegisterPage() {
                                                 className={`bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50 ${lookupResult.action === 'NEW_MATCHED_COMPANY' ? 'border-emerald-500/40 text-emerald-100' : ''}`}
                                             />
                                         </div>
-                                        {usedProducts.some(p => p.toLowerCase().includes('allplan')) && (
-                                            <div>
+                                        {form.isAllplanUser && (
+                                            <div className="animate-in fade-in slide-in-from-left-4 duration-300">
                                                 <label className="block text-sm font-medium text-slate-300 mb-1.5">
                                                     Müşteri No <span className="text-sky-400">*</span>
                                                 </label>

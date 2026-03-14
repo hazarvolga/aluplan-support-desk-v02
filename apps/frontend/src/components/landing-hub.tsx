@@ -315,6 +315,59 @@ const LandingHub = () => {
                 </section>
             </main>
 
+            {/* 5. Platform Stats */}
+            <section id="stats-section" className="mb-40">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {[1, 2, 3].map((i) => (
+                             <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: i * 0.1 }}
+                                className="p-10 bg-gradient-to-br from-white/5 to-transparent border border-white/5 wireframe-corner wireframe-corner-tl wireframe-corner-br"
+                            >
+                                <div className="text-4xl font-black tracking-tighter text-primary mb-2">
+                                    {i === 1 && t('stats.users')}
+                                    {i === 2 && t('stats.projects')}
+                                    {i === 3 && t('stats.support')}
+                                </div>
+                                <div className="text-[10px] font-black tracking-[0.3em] text-white/40 uppercase">
+                                    {i === 1 && t('stats.users_label')}
+                                    {i === 2 && t('stats.projects_label')}
+                                    {i === 3 && t('stats.support_label')}
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* 6. Social Proof / Trusted By */}
+            <section id="social-proof-section" className="mb-40 overflow-hidden">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-12">
+                        <div className="space-y-4 md:w-1/2">
+                            <h2 className="text-2xl font-black tracking-tighter uppercase leading-tight">
+                                {t('social_proof.title')}
+                            </h2>
+                            <p className="text-white/40 text-sm font-medium leading-relaxed">
+                                {t('social_proof.subtitle')}
+                            </p>
+                        </div>
+                        <div className="md:w-1/2 grid grid-cols-3 gap-8 opacity-20 grayscale transition-all hover:opacity-100 hover:grayscale-0">
+                            {/* Symbols instead of real logos for now */}
+                            {[1, 2, 3, 4, 5, 6].map((i) => (
+                                <div key={i} className="flex items-center justify-center p-4 border border-white/5">
+                                    <Cpu className="w-8 h-8" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Footer */}
             <footer className="relative z-10 border-t border-white/5 bg-black/60 shadow-2xl py-12">
                 <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">

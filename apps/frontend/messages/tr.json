@@ -1,60 +1,60 @@
 {
-  "home": {
-    "title": "Aluplan Destek Sistemi",
-    "cta_login": "Giriş Yap",
-    "cta_register": "Kayıt Ol",
-    "footer_copy": "© 2025 Aluplan A.Ş. Tüm hakları saklıdır.",
-    "footer_status": "DURUM: AKTİF",
-    "footer_encryption": "ŞİFRELEME: AES-256",
-    "hero": {
-      "badge": "Yeni Nesil Mühendislik Desteği",
-      "ai_badge": "POWERED BY ALLPLAN AI",
-      "title": "Aluplan Destek Platformuna Hoş Geldiniz",
-      "subtitle": "Mimari ve mühendislik projelerinizde Allplan'ı en verimli şekilde kullanmanız için Türkçe kaynaklar ve teknik uzmanlık merkezi.",
-      "cta_primary": "Giriş Yap / Kayıt Ol",
-      "cta_secondary": "14 Günlük Ücretsiz Deneme Sürümünü İndir"
+    "home": {
+        "title": "Aluplan Destek Sistemi",
+        "cta_login": "Giriş Yap",
+        "cta_register": "Kayıt Ol",
+        "footer_copy": "© 2025 Aluplan A.Ş. Tüm hakları saklıdır.",
+        "footer_status": "DURUM: AKTİF",
+        "footer_encryption": "ŞİFRELEME: AES-256",
+        "hero": {
+            "badge": "Yeni Nesil Mühendislik Desteği",
+            "ai_badge": "POWERED BY ALLPLAN AI",
+            "title": "Aluplan Destek Platformuna Hoş Geldiniz",
+            "subtitle": "Mimari ve mühendislik projelerinizde Allplan'ı en verimli şekilde kullanmanız için Türkçe kaynaklar ve teknik uzmanlık merkezi.",
+            "cta_primary": "Giriş Yap / Kayıt Ol",
+            "cta_secondary": "14 Günlük Ücretsiz Deneme Sürümünü İndir"
+        },
+        "training": {
+            "title": "YENİ_KULLANICILAR_İÇİN",
+            "card1_title": "Aluplan Youtube Kanalı",
+            "card1_desc": "Allplan Türkçe eğitim videoları ile hızlı bir başlangıç yapın.",
+            "card1_cta": "Youtube Eğitim Serisi",
+            "card2_title": "Öğrenci Lisansları",
+            "card2_desc": "Allplan Campus üzerinden ücretsiz öğrenci ve eğitmen lisansınızı hemen alın.",
+            "card2_cta": "Campus Portalı",
+            "card2_link": "https://campus.allplan.com/index.html",
+            "oska_link": "https://aluplan.com.tr/solutions/bimx5",
+            "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi"
+        },
+        "faq": {
+            "title": "POPÜLER_ÇÖZÜMLER",
+            "item1_title": "Lisans Kayıtlandırma",
+            "item1_desc": "Softlock ve Wibu aktivasyon süreçleri için adım adım rehber.",
+            "item2_title": "Lisans Transferi",
+            "item2_desc": "Bilgisayar değişikliği veya format öncesi lisans taşıma işlemleri.",
+            "item3_title": "Sistem Gereksinimleri",
+            "item3_desc": "Allplan'ın en yüksek performansta çalışması için güncel donanım tavsiyeleri."
+        },
+        "integrations": {
+            "title": "TÜRKİYE'YE_ÖZEL_ÇÖZÜMLER",
+            "oska_title": "Oska e-Hakediş Entegrasyonu",
+            "oska_desc": "Allplan metraj verilerini katalog ayarlarıyla doğrudan e-Hakediş'e aktarın.",
+            "plugins_title": "Yerel Yönetmelik Eklentileri",
+            "plugins_desc": "TAKS, KAKS, Otopark hesabı ve m2 cetvelleri gibi Planlı Alanlara özel araçlar."
+        },
+        "stats": {
+            "users": "10.000+",
+            "users_label": "Aktif Kullanıcı",
+            "projects": "5.000+",
+            "projects_label": "BIM Modeli",
+            "support": "7/24",
+            "support_label": "Teknik Destek"
+        },
+        "social_proof": {
+            "title": "SEKTÖR_LİDERLERİNİN_TERCİHİ",
+            "subtitle": "Türkiye'nin önde gelen mimarlık ve mühendislik ofisleri Allplan ile geleceği tasarlıyor."
+        }
     },
-    "training": {
-      "title": "YENİ_KULLANICILAR_İÇİN",
-      "card1_title": "Aluplan Youtube Kanalı",
-      "card1_desc": "Allplan Türkçe eğitim videoları ile hızlı bir başlangıç yapın.",
-      "card1_cta": "Youtube Eğitim Serisi",
-      "card2_title": "Öğrenci Lisansları",
-      "card2_desc": "Allplan Campus üzerinden ücretsiz öğrenci ve eğitmen lisansınızı hemen alın.",
-      "card2_cta": "Campus Portalı",
-      "card2_link": "https://campus.allplan.com/index.html",
-      "oska_link": "https://aluplan.com.tr/solutions/bimx5",
-      "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi"
-    },
-    "faq": {
-      "title": "POPÜLER_ÇÖZÜMLER",
-      "item1_title": "Lisans Kayıtlandırma",
-      "item1_desc": "Softlock ve Wibu aktivasyon süreçleri için adım adım rehber.",
-      "item2_title": "Lisans Transferi",
-      "item2_desc": "Bilgisayar değişikliği veya format öncesi lisans taşıma işlemleri.",
-      "item3_title": "Sistem Gereksinimleri",
-      "item3_desc": "Allplan'ın en yüksek performansta çalışması için güncel donanım tavsiyeleri."
-    },
-    "integrations": {
-      "title": "TÜRKİYE'YE_ÖZEL_ÇÖZÜMLER",
-      "oska_title": "Oska e-Hakediş Entegrasyonu",
-      "oska_desc": "Allplan metraj verilerini katalog ayarlarıyla doğrudan e-Hakediş'e aktarın.",
-      "plugins_title": "Yerel Yönetmelik Eklentileri",
-      "plugins_desc": "TAKS, KAKS, Otopark hesabı ve m2 cetvelleri gibi Planlı Alanlara özel araçlar."
-    },
-    "stats": {
-      "users": "10.000+",
-      "users_label": "Aktif Kullanıcı",
-      "projects": "5.000+",
-      "projects_label": "BIM Modeli",
-      "support": "7/24",
-      "support_label": "Teknik Destek"
-    },
-    "social_proof": {
-      "title": "SEKTÖR_LİDERLERİNİN_TERCİHİ",
-      "subtitle": "Türkiye'nin önde gelen mimarlık ve mühendislik ofisleri Allplan ile geleceği tasarlıyor."
-    }
-  },
     "auth": {
         "title": "Aluplan Destek Sistemi",
         "subtitle": "Merkezi Bilgi Otomasyonu",
@@ -196,6 +196,7 @@
         "filters": {
             "all": "Tüm Talepler"
         },
+        "new_ticket": "YENİ TALEP",
         "bulk": {
             "selected": "Seçilen_Talepler",
             "start_process": "Süreci_Başlat",
@@ -435,6 +436,15 @@
                 "title": "OpenAI (Bulut)",
                 "chat_model": "Sohbet Modeli",
                 "embed_model": "Vektör Modeli"
+            },
+            "validation": {
+                "fields": {
+                    "api_key": "API Anahtarı",
+                    "chat_model": "Sohbet Modeli",
+                    "embed_model": "Vektör Modeli",
+                    "url": "Bağlantı URL'si"
+                },
+                "missing_fields": "Lütfen şu zorunlu alanları doldurun: {fields}"
             },
             "xai": {
                 "title": "xAI (Grok)",
