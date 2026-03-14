@@ -31,12 +31,14 @@ export default function ImportCustomersPage() {
             Papa.parse(csvText, {
                 header: true,
                 skipEmptyLines: true,
+                delimiter: ';', // CSV uses semicolon as delimiter
                 complete: async (results) => {
                     try {
                         const mappedData = results.data
                             .map((row: any) => ({
                                 externalContactId: row['(Do Not Modify) Contact']?.trim() || undefined,
                                 companyName: row['Company Name']?.trim() || 'Bilinmeyen Firma',
+                                customerNo: row['Client ID: ALLPLAN (Company Name) (Account)']?.trim() || undefined,
                                 contractStatus: row['Müşteri Durumu']?.trim() || undefined,
                                 subscriptionModel: row['Abonelik Modeli']?.trim() || undefined,
                                 fullName: row[' Full Name']?.trim() || row['Full Name']?.trim() || '',

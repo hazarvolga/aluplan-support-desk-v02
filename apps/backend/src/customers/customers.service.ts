@@ -70,24 +70,25 @@ export class CustomersService {
                                 contractStatus: record.contractStatus,
                                 subscriptionModel: record.subscriptionModel,
                                 externalContactId: record.externalContactId,
+                                ...(record.customerNo && { customerNo: record.customerNo }),
                             },
                         });
                     } else {
-                        const tempCustomerNo = `IMP-${Math.floor(1000 + Math.random() * 9000)}-${Date.now()}`;
+                        const customerNo = record.customerNo || `IMP-${Math.floor(1000 + Math.random() * 9000)}-${Date.now()}`;
                         await prisma.customerProfile.create({
                             data: {
                                 userId: existingUser.id,
                                 firstName: record.firstName,
                                 lastName: record.lastName,
                                 middleName: record.middleName,
-                                customerNo: tempCustomerNo,
+                                customerNo: customerNo,
                                 companyName: record.companyName,
                                 jobTitle: record.jobTitle,
                                 phoneNumber: record.phone,
                                 contractStatus: record.contractStatus,
                                 subscriptionModel: record.subscriptionModel,
                                 externalContactId: record.externalContactId,
-                                crmVerified: true,
+                                crmVerified: !!record.customerNo,
                             },
                         });
                     }

@@ -6,6 +6,10 @@ export class ImportCustomerRecordDto {
     externalContactId?: string;
 
     @IsString()
+    @IsOptional()
+    customerNo?: string; // Client ID from CRM
+
+    @IsString()
     @IsNotEmpty()
     companyName: string;
 
