@@ -35,7 +35,8 @@ import {
     ShieldCheck,
     AlertCircle,
     CheckCircle2,
-    XCircle
+    XCircle,
+    Calendar
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import Link from 'next/link';
@@ -58,6 +59,7 @@ interface CustomerItem {
         middleName?: string;
         jobTitle?: string;
         contractStatus?: string;
+        subscriptionModel?: string;
         industry?: string;
         phoneNumber: string | null;
         crmVerified: boolean;
@@ -81,7 +83,7 @@ interface AccountItem {
     };
 }
 
-type SortField = 'companyName' | 'fullName' | 'jobTitle' | 'email' | 'status' | 'createdAt' | 'contractStatus' | 'industry' | 'customerNo' | 'phoneNumber';
+type SortField = 'companyName' | 'fullName' | 'jobTitle' | 'email' | 'status' | 'createdAt' | 'contractStatus' | 'subscriptionModel' | 'industry' | 'customerNo' | 'phoneNumber' | 'crmVerified';
 type SortOrder = 'asc' | 'desc';
 
 export default function CustomersPage() {
@@ -280,7 +282,9 @@ export default function CustomersPage() {
                 c.fullName.toLowerCase().includes(lowerTerm) ||
                 c.email.toLowerCase().includes(lowerTerm) ||
                 (c.customerProfile?.companyName || '').toLowerCase().includes(lowerTerm) ||
-                (c.customerProfile?.customerNo || '').toLowerCase().includes(lowerTerm)
+                (c.customerProfile?.customerNo || '').toLowerCase().includes(lowerTerm) ||
+                (c.customerProfile?.contractStatus || '').toLowerCase().includes(lowerTerm) ||
+                (c.customerProfile?.subscriptionModel || '').toLowerCase().includes(lowerTerm)
             );
         }
 
@@ -314,6 +318,10 @@ export default function CustomersPage() {
                     aValue = a.customerProfile?.contractStatus || '';
                     bValue = b.customerProfile?.contractStatus || '';
                     break;
+                case 'subscriptionModel':
+                    aValue = a.customerProfile?.subscriptionModel || '';
+                    bValue = b.customerProfile?.subscriptionModel || '';
+                    break;
                 case 'industry':
                     aValue = a.customerProfile?.industry || '';
                     bValue = b.customerProfile?.industry || '';
@@ -325,6 +333,10 @@ export default function CustomersPage() {
                 case 'phoneNumber':
                     aValue = a.customerProfile?.phoneNumber || '';
                     bValue = b.customerProfile?.phoneNumber || '';
+                    break;
+                case 'crmVerified':
+                    aValue = a.customerProfile?.crmVerified ? 1 : 0;
+                    bValue = b.customerProfile?.crmVerified ? 1 : 0;
                     break;
                 case 'createdAt':
                     aValue = new Date(a.createdAt).getTime();
@@ -458,27 +470,31 @@ export default function CustomersPage() {
                                             className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                         />
                                     </TableHead>
+                                    <SortableHeader field="customerNo">{t('table.headers.customer_no')}</SortableHeader>
                                     <SortableHeader field="fullName">{t('table.headers.name')}</SortableHeader>
+                                    <SortableHeader field="email">{t('table.headers.email')}</SortableHeader>
                                     <SortableHeader field="companyName">{t('table.headers.company')}</SortableHeader>
                                     <SortableHeader field="jobTitle">{t('table.headers.title')}</SortableHeader>
-                                    <SortableHeader field="email">{t('table.headers.email')}</SortableHeader>
+                                    <SortableHeader field="phoneNumber">{t('table.headers.phone')}</SortableHeader>
+                                    <SortableHeader field="contractStatus">{t('table.headers.contractStatus')}</SortableHeader>
+                                    <SortableHeader field="subscriptionModel">{t('table.headers.subscriptionModel')}</SortableHeader>
                                     <SortableHeader field="industry">{t('table.headers.industry')}</SortableHeader>
-                                    <SortableHeader field="contractStatus">{t('table.headers.customer_status')}</SortableHeader>
-                                    <SortableHeader field="status">{t('table.headers.account_status')}</SortableHeader>
+                                    <SortableHeader field="status">{t('table.headers.status')}</SortableHeader>
+                                    <SortableHeader field="createdAt">{t('table.headers.createdAt')}</SortableHeader>
                                     <TableHead className="w-10" />
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {loading ? (
                                     <TableRow className="border-none">
-                                        <TableCell colSpan={8} className="py-20 text-center">
+                                        <TableCell colSpan={13} className="py-20 text-center">
                                             <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto mb-4" />
                                             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('table.loading')}</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : filteredAndSortedCustomers.length === 0 ? (
                                     <TableRow className="border-none">
-                                        <TableCell colSpan={8} className="py-20 text-center opacity-30">
+                                        <TableCell colSpan={13} className="py-20 text-center opacity-30">
                                             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                                             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('table.empty')}</p>
                                         </TableCell>
@@ -494,25 +510,14 @@ export default function CustomersPage() {
                                                     className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                                 />
                                             </TableCell>
+                                            <TableCell className="text-white/40 font-mono text-[10px] whitespace-nowrap">
+                                                {c.customerProfile?.customerNo || 'UNASSIGNED'}
+                                            </TableCell>
                                             <TableCell>
                                                 <Link href={`/customers/${c.id}`} className="font-bold text-white hover:text-blue-400 underline-offset-4 hover:underline transition-colors block">
                                                     {c.fullName}
                                                 </Link>
-                                                <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-tighter mt-1 block">
-                                                    ID: {c.customerProfile?.customerNo || 'UNASSIGNED'}
-                                                </span>
                                             </TableCell>
-                                            <TableCell>
-                                                {c.customerProfile?.account ? (
-                                                    <Badge variant="outline" className="bg-blue-500/5 text-blue-400 border-blue-500/20 text-[9px] font-bold px-2 py-0.5">
-                                                        <Building2 className="h-3 w-3 mr-1" />
-                                                        {c.customerProfile.account.name}
-                                                    </Badge>
-                                                ) : (
-                                                    <span className="text-white/40 italic text-xs">{c.customerProfile?.companyName || '-'}</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-white/60 text-xs font-medium">{c.customerProfile?.jobTitle || '-'}</TableCell>
                                             <TableCell className="text-white/60 font-mono text-[11px]">
                                                 <div className="flex items-center gap-2">
                                                     {c.email}
@@ -530,17 +535,29 @@ export default function CustomersPage() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>
+                                                {c.customerProfile?.account ? (
+                                                    <Badge variant="outline" className="bg-blue-500/5 text-blue-400 border-blue-500/20 text-[9px] font-bold px-2 py-0.5">
+                                                        <Building2 className="h-3 w-3 mr-1" />
+                                                        {c.customerProfile.account.name}
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-white/40 italic text-xs">{c.customerProfile?.companyName || '-'}</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-white/60 text-xs font-medium">{c.customerProfile?.jobTitle || '-'}</TableCell>
+                                            <TableCell className="text-white/60 font-mono text-[11px]">
+                                                {c.customerProfile?.phoneNumber || '-'}
+                                            </TableCell>
+                                            <TableCell className="text-white/60 text-xs font-medium">
+                                                {c.customerProfile?.contractStatus || '-'}
+                                            </TableCell>
+                                            <TableCell className="text-white/60 text-xs font-medium">
+                                                {c.customerProfile?.subscriptionModel || '-'}
+                                            </TableCell>
+                                            <TableCell>
                                                 <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/50 border border-white/5">
                                                     {c.customerProfile?.industry || 'GENEL'}
                                                 </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline" className={`text-[9px] font-black tracking-widest px-2 py-0.5 ${c.customerProfile?.contractStatus === 'ACTIVE'
-                                                    ? 'bg-emerald-500/10 text-emerald-400 border-none'
-                                                    : 'text-slate-500 border-white/10'
-                                                    }`}>
-                                                    {c.customerProfile?.contractStatus || '-'}
-                                                </Badge>
                                             </TableCell>
                                             <TableCell>
                                                 {c.status === 'ACTIVE' ? (
@@ -552,6 +569,12 @@ export default function CustomersPage() {
                                                         {c.status}
                                                     </Badge>
                                                 )}
+                                            </TableCell>
+                                            <TableCell className="text-white/60 font-mono text-[11px]">
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="h-3 w-3 opacity-50" />
+                                                    {new Date(c.createdAt).toLocaleDateString()}
+                                                </div>
                                             </TableCell>
                                             <TableCell className="px-6 text-right">
                                                 <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-blue-500/10 hover:text-blue-500 text-muted-foreground">

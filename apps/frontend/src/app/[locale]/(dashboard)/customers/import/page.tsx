@@ -38,6 +38,7 @@ export default function ImportCustomersPage() {
                                 externalContactId: row['(Do Not Modify) Contact']?.trim() || undefined,
                                 companyName: row['Company Name']?.trim() || 'Bilinmeyen Firma',
                                 contractStatus: row['Müşteri Durumu']?.trim() || undefined,
+                                subscriptionModel: row['Abonelik Modeli']?.trim() || undefined,
                                 fullName: row[' Full Name']?.trim() || row['Full Name']?.trim() || '',
                                 firstName: row['First Name']?.trim() || '',
                                 middleName: row['Middle Name']?.trim() || undefined,

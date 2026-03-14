@@ -35,5 +35,10 @@ export class UpdateCustomerProfileDto {
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
+    subscriptionModel?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
     customerNo?: string;
 }

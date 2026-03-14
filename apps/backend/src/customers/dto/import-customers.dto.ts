@@ -14,6 +14,10 @@ export class ImportCustomerRecordDto {
     contractStatus?: string; // Müşteri Durumu
 
     @IsString()
+    @IsOptional()
+    subscriptionModel?: string; // Abonelik Modeli
+
+    @IsString()
     @IsNotEmpty()
     fullName: string;
 

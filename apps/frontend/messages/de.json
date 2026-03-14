@@ -339,13 +339,17 @@
             "loading": "Daten werden aus der Datenbank abgerufen",
             "empty": "Keine Ergebnisse gefunden",
             "headers": {
+                "customer_no": "Kunden-Nr.",
                 "name": "Vollständiger Name",
+                "email": "E-Mail",
                 "company": "Unternehmen",
                 "title": "Titel",
-                "email": "E-Mail",
+                "phone": "Telefon",
+                "contractStatus": "Vertragsstatus",
+                "subscriptionModel": "Abonnementmodell",
                 "industry": "Branche",
-                "customer_status": "Kundenstatus",
-                "account_status": "Kontostatus",
+                "status": "Status",
+                "createdAt": "Erstellt am",
                 "actions": "Aktion"
             }
         },

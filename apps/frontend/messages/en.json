@@ -41,6 +41,18 @@
       "oska_desc": "Export Allplan quantity takeoff data directly to e-Hakediş via catalog settings.",
       "plugins_title": "Market-Specific Plugins",
       "plugins_desc": "Tools for local regulations like TAKS, KAKS, parking calculations, and area schedules."
+    },
+    "stats": {
+      "users": "10,000+",
+      "users_label": "Active Users",
+      "projects": "5,000+",
+      "projects_label": "BIM Models",
+      "support": "24/7",
+      "support_label": "Technical Support"
+    },
+    "social_proof": {
+      "title": "CHOICE_OF_INDUSTRY_LEADERS",
+      "subtitle": "Turkey's leading architecture and engineering firms design the future with Allplan."
     }
   },
     "auth": {
@@ -340,14 +352,18 @@
             "loading": "Retrieving data from database",
             "empty": "No results found",
             "headers": {
+                "customer_no": "Cust No",
                 "name": "Full Name",
+                "email": "Email",
                 "company": "Company",
                 "title": "Title",
-                "email": "Email",
+                "phone": "Phone",
+                "contractStatus": "Contract Status",
+                "subscriptionModel": "Subscription Model",
                 "industry": "Industry",
-                "customer_status": "Customer Status",
-                "account_status": "Account Status",
-                "actions": "Action"
+                "status": "Status",
+                "createdAt": "Created At",
+                "actions": "Actions"
             }
         },
         "accounts": {

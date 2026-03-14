@@ -41,6 +41,18 @@
       "oska_desc": "Allplan metraj verilerini katalog ayarlarıyla doğrudan e-Hakediş'e aktarın.",
       "plugins_title": "Yerel Yönetmelik Eklentileri",
       "plugins_desc": "TAKS, KAKS, Otopark hesabı ve m2 cetvelleri gibi Planlı Alanlara özel araçlar."
+    },
+    "stats": {
+      "users": "10.000+",
+      "users_label": "Aktif Kullanıcı",
+      "projects": "5.000+",
+      "projects_label": "BIM Modeli",
+      "support": "7/24",
+      "support_label": "Teknik Destek"
+    },
+    "social_proof": {
+      "title": "SEKTÖR_LİDERLERİNİN_TERCİHİ",
+      "subtitle": "Türkiye'nin önde gelen mimarlık ve mühendislik ofisleri Allplan ile geleceği tasarlıyor."
     }
   },
     "auth": {
@@ -340,13 +352,17 @@
             "loading": "Veriler veritabanından çekiliyor",
             "empty": "Sonuç bulunamadı",
             "headers": {
+                "customer_no": "Müşteri No",
                 "name": "Ad Soyad",
-                "company": "Şirket",
-                "title": "Unvan",
                 "email": "E-posta",
+                "company": "Şirket",
+                "title": "Ünvan",
+                "phone": "Telefon",
+                "contractStatus": "Sözleşme Durumu",
+                "subscriptionModel": "Abonelik Modeli",
                 "industry": "Sektör",
-                "customer_status": "Müşteri Durumu",
-                "account_status": "Hesap Durumu",
+                "status": "Durum",
+                "createdAt": "Oluşturulma Tarihi",
                 "actions": "İşlem"
             }
         },

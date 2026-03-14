@@ -62,6 +62,7 @@ export class CustomersService {
                                 jobTitle: record.jobTitle,
                                 phoneNumber: record.phone,
                                 contractStatus: record.contractStatus,
+                                subscriptionModel: record.subscriptionModel,
                                 externalContactId: record.externalContactId,
                             },
                         });
@@ -78,6 +79,7 @@ export class CustomersService {
                                 jobTitle: record.jobTitle,
                                 phoneNumber: record.phone,
                                 contractStatus: record.contractStatus,
+                                subscriptionModel: record.subscriptionModel,
                                 externalContactId: record.externalContactId,
                                 crmVerified: true,
                             },
@@ -264,6 +266,7 @@ export class CustomersService {
         if (dto.jobTitle !== undefined) updatedConfig.jobTitle = dto.jobTitle;
         if (dto.phoneNumber !== undefined) updatedConfig.phoneNumber = dto.phoneNumber;
         if (dto.contractStatus !== undefined) updatedConfig.contractStatus = dto.contractStatus;
+        if (dto.subscriptionModel !== undefined) updatedConfig.subscriptionModel = dto.subscriptionModel;
         if (dto.customerNo !== undefined) updatedConfig.customerNo = dto.customerNo;
 
         const _updatedProfile = await this.prisma.customerProfile.update({
