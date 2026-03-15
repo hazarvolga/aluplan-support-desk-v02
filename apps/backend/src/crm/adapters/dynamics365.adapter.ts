@@ -43,6 +43,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
             this.logger.debug(`Found ${accounts.length} accounts`);
             let successCount = 0;
             let errorCount = 0;
+            const failedRecords: Array<{ externalId: string; entityType: string; errorMessage: string; errorCode?: string }> = [];
 
             for (const account of accounts) {
                 try {
@@ -78,6 +79,11 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     successCount++;
                 } catch (err) {
                     this.logger.error(`Failed to sync account ${account.name}`, err.stack);
+                    failedRecords.push({
+                        externalId: account.accountid,
+                        entityType: 'account',
+                        errorMessage: err.message,
+                    });
                     errorCount++;
                 } finally {
                     if (onProgress) {
@@ -91,6 +97,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 totalRecords: accounts.length,
                 successCount,
                 errorCount,
+                failedRecords,
             };
         } catch (error) {
             const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
@@ -126,10 +133,14 @@ export class Dynamics365Adapter implements ICrmAdapter {
             this.logger.debug(`Found ${contacts.length} contacts`);
             let successCount = 0;
             let errorCount = 0;
+            const skippedRecords: Array<{ externalId: string; reason: string }> = [];
+            const skippedLinks: Array<{ contactExternalId: string; missingAccountExternalId: string }> = [];
+            const failedRecords: Array<{ externalId: string; entityType: string; errorMessage: string; errorCode?: string }> = [];
 
             for (const contact of contacts) {
                 if (!contact.emailaddress1) {
-                    errorCount++;
+                    this.logger.warn(`Skipping contact ${contact.contactid}: missing email`);
+                    skippedRecords.push({ externalId: contact.contactid, reason: 'missing_email' });
                     if (onProgress) onProgress({ success: successCount, error: errorCount, total: contacts.length });
                     continue;
                 }
@@ -172,6 +183,14 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                 where: { externalAccountId: contact.parentcustomerid_account.accountid },
                             });
                             linkedAccountId = accountInfo?.id;
+
+                            if (!linkedAccountId) {
+                                this.logger.warn(`Contact ${contact.contactid}: parent account ${contact.parentcustomerid_account.accountid} not found in DB, saving with accountId=null`);
+                                skippedLinks.push({
+                                    contactExternalId: contact.contactid,
+                                    missingAccountExternalId: contact.parentcustomerid_account.accountid,
+                                });
+                            }
                         }
 
                         const mappings = (config.syncSettings?.contactMapping || {}) as Record<string, string>;
@@ -223,6 +242,11 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     successCount++;
                 } catch (err) {
                     this.logger.error(`Failed to sync contact ${contact.emailaddress1}`, err.stack);
+                    failedRecords.push({
+                        externalId: contact.contactid,
+                        entityType: 'contact',
+                        errorMessage: err.message,
+                    });
                     errorCount++;
                 } finally {
                     if (onProgress) {
@@ -236,6 +260,9 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 totalRecords: contacts.length,
                 successCount,
                 errorCount,
+                skippedRecords,
+                skippedLinks,
+                failedRecords,
             };
         } catch (error) {
             this.logger.error('Dynamics 365 contact sync failed', error.stack);
