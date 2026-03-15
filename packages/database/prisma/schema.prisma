@@ -254,6 +254,7 @@ model CrmAccount {
   industry          String?           @db.VarChar(255)
   website           String?           @db.VarChar(255)
   address           String?
+  customerNo        String?           @map("customer_no") @db.VarChar(50)
   externalAccountId String?           @unique @map("external_account_id") @db.VarChar(255)
   crmVerified       Boolean           @default(false) @map("crm_verified")
   createdAt         DateTime          @default(now()) @map("created_at")
