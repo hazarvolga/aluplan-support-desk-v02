@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Save, CheckCircle2, AlertCircle, History, ExternalLink } from 'lucide-react';
+import { RefreshCw, Save, CheckCircle2, AlertCircle, History, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -18,6 +18,9 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+import { FieldMapping } from './field-mapping';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslations } from 'next-intl';
 
 interface CrmConnection {
     id: string;
@@ -32,6 +35,13 @@ interface CrmConnection {
     lastSyncAt: string | null;
 }
 
+interface SyncDetails {
+    failedRecords: Array<{ externalId: string; entityType: string; errorMessage: string; errorCode?: string }>;
+    skippedRecords: Array<{ externalId: string; reason: string }>;
+    skippedLinks: Array<{ contactExternalId: string; missingAccountExternalId: string }>;
+    summary: { successCount: number; errorCount: number; skippedCount: number };
+}
+
 interface SyncLog {
     id: string;
     status: string;
@@ -41,9 +51,11 @@ interface SyncLog {
     successCount: number;
     errorCount: number;
     errorMessage: string | null;
+    details: SyncDetails | null;
 }
 
 export default function CrmManagementPage() {
+    const t = useTranslations('customers');
     const { toast } = useToast();
     const [config, setConfig] = useState({
         provider: 'DYNAMICS_365',
@@ -52,7 +64,21 @@ export default function CrmManagementPage() {
         clientSecret: '',
         webhookSecret: '',
         instanceUrl: '',
+        syncSettings: {
+            accountMapping: {},
+            contactMapping: {},
+        },
     });
+
+    const [fieldDefinitions, setFieldDefinitions] = useState<{
+        account: any[];
+        contact: any[];
+    } | null>(null);
+
+    const [discoveryData, setDiscoveryData] = useState<{
+        account: any[];
+        contact: any[];
+    } | null>(null);
 
     const [connection, setConnection] = useState<CrmConnection | null>(null);
     const [logs, setLogs] = useState<SyncLog[]>([]);
@@ -74,9 +100,17 @@ export default function CrmManagementPage() {
                     clientSecret: conn.clientSecret || '',
                     webhookSecret: conn.webhookSecret || '',
                     instanceUrl: conn.instanceUrl || '',
+                    syncSettings: (conn as any).syncSettings || {
+                        accountMapping: {},
+                        contactMapping: {},
+                    },
                 });
                 loadLogs(conn.id);
+                loadDiscovery(conn.id);
             }
+            // Load field definitions
+            const definitions = await api.crm.getFieldDefinitions();
+            setFieldDefinitions(definitions);
         } catch (error) {
             console.error('Failed to load CRM data', error);
         } finally {
@@ -90,6 +124,15 @@ export default function CrmManagementPage() {
             setLogs(syncLogs);
         } catch (error) {
             console.error('Failed to load logs', error);
+        }
+    };
+
+    const loadDiscovery = async (id: string) => {
+        try {
+            const data = await api.crm.getDiscoveryData(id);
+            setDiscoveryData(data);
+        } catch (error) {
+            console.error('Failed to load discovery data', error);
         }
     };
 
@@ -125,9 +168,34 @@ export default function CrmManagementPage() {
         }
     };
 
-    if (loading) {
+    if (loading || !fieldDefinitions) {
         return <div className="flex items-center justify-center h-64">Yükleniyor...</div>;
     }
+
+    const handleMappingChange = (entity: 'account' | 'contact', key: string, value: string) => {
+        const mappingKey = entity === 'account' ? 'accountMapping' : 'contactMapping';
+        setConfig((prev: any) => ({
+            ...prev,
+            syncSettings: {
+                ...prev.syncSettings,
+                [mappingKey]: {
+                    ...prev.syncSettings[mappingKey],
+                    [key]: value,
+                },
+            },
+        }));
+    };
+
+    const handleResetMapping = (entity: 'account' | 'contact') => {
+        const mappingKey = entity === 'account' ? 'accountMapping' : 'contactMapping';
+        setConfig((prev: any) => ({
+            ...prev,
+            syncSettings: {
+                ...prev.syncSettings,
+                [mappingKey]: {},
+            },
+        }));
+    };
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 p-4">
@@ -275,6 +343,53 @@ export default function CrmManagementPage() {
                         </CardFooter>
                     </Card>
                 </div>
+
+                <div className="lg:col-span-3">
+                    <Tabs defaultValue="account-mapping" className="space-y-6">
+                        <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                            <TabsList className="bg-transparent h-auto p-0 gap-8">
+                                <TabsTrigger
+                                    value="account-mapping"
+                                    className="bg-transparent border-none p-0 pb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground data-[state=active]:text-white data-[state=active]:shadow-[0_2px_0_0_#3b82f6] rounded-none transition-all"
+                                >
+                                    {t('sync.mapping.account_title')}
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="contact-mapping"
+                                    className="bg-transparent border-none p-0 pb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground data-[state=active]:text-white data-[state=active]:shadow-[0_2px_0_0_#3b82f6] rounded-none transition-all"
+                                >
+                                    {t('sync.mapping.contact_title')}
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
+
+                        <TabsContent value="account-mapping">
+                            <FieldMapping
+                                entityType="account"
+                                definitions={fieldDefinitions.account}
+                                discoveryData={discoveryData?.account || []}
+                                currentMapping={config.syncSettings.accountMapping}
+                                onMappingChange={(key, val) => handleMappingChange('account', key, val)}
+                                onReset={() => handleResetMapping('account')}
+                                onSave={() => handleSave({ preventDefault: () => { } } as any)}
+                                saving={saving}
+                            />
+                        </TabsContent>
+
+                        <TabsContent value="contact-mapping">
+                            <FieldMapping
+                                entityType="contact"
+                                definitions={fieldDefinitions.contact}
+                                discoveryData={discoveryData?.contact || []}
+                                currentMapping={config.syncSettings.contactMapping}
+                                onMappingChange={(key, val) => handleMappingChange('contact', key, val)}
+                                onReset={() => handleResetMapping('contact')}
+                                onSave={() => handleSave({ preventDefault: () => { } } as any)}
+                                saving={saving}
+                            />
+                        </TabsContent>
+                    </Tabs>
+                </div>
             </div>
 
             {/* Sync Logs */}
@@ -295,35 +410,19 @@ export default function CrmManagementPage() {
                                 <TableHead>Başarılı</TableHead>
                                 <TableHead>Hata</TableHead>
                                 <TableHead>Mesaj</TableHead>
+                                <TableHead></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {logs.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                                         İşlem kaydı bulunmuyor.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 logs.map((log) => (
-                                    <TableRow key={log.id}>
-                                        <TableCell className="text-xs">
-                                            {new Date(log.startedAt).toLocaleString('tr-TR')}
-                                        </TableCell>
-                                        <TableCell>
-                                            {log.status === 'SUCCESS' ? (
-                                                <Badge className="bg-emerald-500/10 text-emerald-400 border-none">Başarılı</Badge>
-                                            ) : log.status === 'ERROR' ? (
-                                                <Badge className="bg-red-500/10 text-red-400 border-none">Hata</Badge>
-                                            ) : (
-                                                <Badge variant="outline">Devam Ediyor</Badge>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>{log.totalRecords}</TableCell>
-                                        <TableCell className="text-emerald-500">{log.successCount}</TableCell>
-                                        <TableCell className="text-red-500">{log.errorCount}</TableCell>
-                                        <TableCell className="text-xs truncate max-w-xs">{log.errorMessage || '-'}</TableCell>
-                                    </TableRow>
+                                    <SyncLogRow key={log.id} log={log} />
                                 ))
                             )}
                         </TableBody>
@@ -331,5 +430,74 @@ export default function CrmManagementPage() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+function SyncLogRow({ log }: { log: SyncLog }) {
+    const [expanded, setExpanded] = useState(false);
+    const hasFailedRecords = (log.details?.failedRecords?.length ?? 0) > 0;
+
+    return (
+        <>
+            <TableRow>
+                <TableCell className="text-xs">
+                    {new Date(log.startedAt).toLocaleString('tr-TR')}
+                </TableCell>
+                <TableCell>
+                    {log.status === 'SUCCESS' ? (
+                        <Badge className="bg-emerald-500/10 text-emerald-400 border-none">Başarılı</Badge>
+                    ) : log.status === 'ERROR' ? (
+                        <Badge className="bg-red-500/10 text-red-400 border-none">Hata</Badge>
+                    ) : (
+                        <Badge variant="outline">Devam Ediyor</Badge>
+                    )}
+                </TableCell>
+                <TableCell>{log.totalRecords}</TableCell>
+                <TableCell className="text-emerald-500">{log.successCount}</TableCell>
+                <TableCell className="text-red-500">{log.errorCount}</TableCell>
+                <TableCell className="text-xs truncate max-w-xs">{log.errorMessage || '-'}</TableCell>
+                <TableCell>
+                    {hasFailedRecords && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            data-testid="details-button"
+                            onClick={() => setExpanded((v) => !v)}
+                            className="h-7 px-2 text-xs"
+                        >
+                            {expanded ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+                            Detaylar
+                        </Button>
+                    )}
+                </TableCell>
+            </TableRow>
+            {expanded && hasFailedRecords && (
+                <TableRow>
+                    <TableCell colSpan={7} className="bg-muted/30 p-0">
+                        <div className="p-4">
+                            <p className="text-xs font-semibold text-red-400 mb-2">Başarısız Kayıtlar</p>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="text-xs">External ID</TableHead>
+                                        <TableHead className="text-xs">Tür</TableHead>
+                                        <TableHead className="text-xs">Hata Mesajı</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {log.details!.failedRecords.map((r, i) => (
+                                        <TableRow key={i}>
+                                            <TableCell className="text-xs font-mono">{r.externalId}</TableCell>
+                                            <TableCell className="text-xs">{r.entityType}</TableCell>
+                                            <TableCell className="text-xs text-red-400">{r.errorMessage}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </TableCell>
+                </TableRow>
+            )}
+        </>
     );
 }
