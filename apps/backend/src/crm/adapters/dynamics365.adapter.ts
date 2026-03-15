@@ -409,8 +409,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
             return data[formattedKey];
         }
 
-        // Dot notation desteği
-        if (crmKey.includes('.')) {
+        // Dot notation desteği — OData annotation key'leri (@OData...) hariç
+        if (crmKey.includes('.') && !crmKey.includes('@OData')) {
             const parts = crmKey.split('.');
             let val = data;
             for (const part of parts) {
