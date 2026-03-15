@@ -25,12 +25,12 @@ export class KnowledgePoolProcessor extends WorkerHost {
         private readonly aiService: AiService,
     ) {
         super();
-        
+
         let TurndownConstructor: any;
         try {
             // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const Turndown = require('turndown');
-            TurndownConstructor = Turndown.default || Turndown;
+            const TurndownLib = require('turndown');
+            TurndownConstructor = typeof TurndownLib === 'function' ? TurndownLib : (TurndownLib.default || TurndownLib);
         } catch (e) {
             this.logger.error(`🚨 Turndown library LOAD FAILURE: ${e.message}`);
             // Fallback to dummy to prevent complete processor failure

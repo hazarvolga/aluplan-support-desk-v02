@@ -83,6 +83,8 @@
         "loading": "Laden...",
         "error": "Ein Fehler ist aufgetreten",
         "save": "Speichern",
+        "saving": "Wird gespeichert...",
+        "reset": "Zurücksetzen",
         "cancel": "Abbrechen",
         "unknown": "Unbekannt",
         "individual": "Individuell",
@@ -374,7 +376,36 @@
             "last_transfer_none": "KEINE",
             "system_status": "Systemstatus",
             "trigger_sync": "Übertragung auslösen",
-            "edit_settings": "EINSTELLUNGEN BEARBEITEN"
+            "edit_settings": "EINSTELLUNGEN BEARBEITEN",
+            "mapping": {
+                "account_title": "KONTEN-ZUORDNUNG",
+                "contact_title": "KONTAKT-ZUORDNUNG",
+                "description": "Definieren Sie, welche CRM-Felder welchen Daten in unserem System entsprechen.",
+                "warning": "Eine falsche Zuordnung kann zu Inkonsistenzen bei der Datensynchronisation führen. Überprüfen Sie das CRM-Schema, bevor Sie Änderungen vornehmen.",
+                "fields": {
+                    "account": {
+                        "name": "Firmenname / Titel",
+                        "industry": "Branche",
+                        "website": "Webseite",
+                        "address": "Adresse",
+                        "customerNo": "Kundennummer",
+                        "system_id": "System ID (CRM)",
+                        "email": "Haupt-E-Mail",
+                        "phone": "Haupt-Telefon"
+                    },
+                    "contact": {
+                        "firstName": "Vorname",
+                        "lastName": "Nachname",
+                        "email": "E-Mail",
+                        "phoneNumber": "Telefonnummer",
+                        "jobTitle": "Jobtitel / Position",
+                        "industry": "Branche",
+                        "customerNo": "Kundennummer",
+                        "system_id": "System ID (CRM)",
+                        "contractStatus": "Vertragsstatus"
+                    }
+                }
+            }
         },
         "history": {
             "no_data": "Keine Verlaufsdaten"

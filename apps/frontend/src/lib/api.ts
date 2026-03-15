@@ -464,10 +464,12 @@ export const api = {
             body: JSON.stringify(data)
         }),
         triggerSync: (id: string) => request<any>(`/crm/sync/${id}`, { method: 'POST' }),
+        getDiscoveryData: (id: string) => request<any>(`/crm/discovery/${id}`),
         getLogs: (connectionId: string) => request<any[]>(`/crm/logs/${connectionId}`),
         getAccounts: () => request<any[]>('/crm/accounts'),
         getAccount: (id: string) => request<any>(`/crm/accounts/${id}`),
         bulkDeleteAccounts: (ids: string[]) => request<any>('/crm/accounts/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+        getFieldDefinitions: () => request<{ account: any[]; contact: any[] }>('/crm/fields-definitions'),
     },
     get: (url: string) => request<any>(url),
     post: (url: string, body: any) =>

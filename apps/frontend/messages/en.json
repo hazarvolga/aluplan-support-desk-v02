@@ -96,6 +96,8 @@
         "loading": "Loading...",
         "error": "An error occurred",
         "save": "Save",
+        "saving": "Saving...",
+        "reset": "Reset",
         "cancel": "Cancel",
         "unknown": "Unknown",
         "individual": "Individual",
@@ -387,7 +389,36 @@
             "last_transfer_none": "NONE",
             "system_status": "System Status",
             "trigger_sync": "Trigger Transfer",
-            "edit_settings": "EDIT SETTINGS"
+            "edit_settings": "EDIT SETTINGS",
+            "mapping": {
+                "account_title": "ACCOUNT MAPPING",
+                "contact_title": "CONTACT MAPPING",
+                "description": "Define which CRM fields correspond to which data in our system.",
+                "warning": "Incorrect mapping may lead to data synchronization inconsistencies. Check the CRM schema before making changes.",
+                "fields": {
+                    "account": {
+                        "name": "Company Name / Title",
+                        "industry": "Industry",
+                        "website": "Website",
+                        "address": "Address",
+                        "customerNo": "Customer Number",
+                        "system_id": "System ID (CRM)",
+                        "email": "Main Email",
+                        "phone": "Main Phone"
+                    },
+                    "contact": {
+                        "firstName": "First Name",
+                        "lastName": "Last Name",
+                        "email": "Email",
+                        "phoneNumber": "Phone Number",
+                        "jobTitle": "Job Title / Position",
+                        "industry": "Industry",
+                        "customerNo": "Customer Number",
+                        "system_id": "System ID (CRM)",
+                        "contractStatus": "Contract Status"
+                    }
+                }
+            }
         },
         "history": {
             "no_data": "No history data"

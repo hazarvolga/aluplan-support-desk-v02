@@ -35,6 +35,16 @@ export class CrmController {
         return this.crmService.getSyncLogs(connectionId);
     }
 
+    @Get('fields-definitions')
+    async getFieldsDefinitions() {
+        return this.crmService.getFieldDefinitions();
+    }
+
+    @Get('discovery/:id')
+    async getDiscovery(@Param('id') id: string) {
+        return this.crmService.getDiscoveryData(id);
+    }
+
     @Get('accounts')
     async getAccounts() {
         return this.crmService.getAccounts();

@@ -106,7 +106,7 @@ export default async function RootLayout({
     return (
         <html lang={locale} suppressHydrationWarning className={`${dmSans.variable} ${mono.variable} ${condensed.variable}`}>
             <body suppressHydrationWarning className="antialiased min-h-screen">
-                <NextIntlClientProvider messages={messages}>
+                <NextIntlClientProvider locale={locale} messages={messages}>
                     <AuthProvider>
                         {children}
                         <CommandMenu />

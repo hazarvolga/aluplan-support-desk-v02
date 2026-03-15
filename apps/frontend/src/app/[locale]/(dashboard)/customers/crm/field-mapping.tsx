@@ -1,0 +1,135 @@
+'use client';
+
+import React from 'react';
+import { useTranslations } from 'next-intl';
+import { Card } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { RotateCcw, Save, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { SmartFieldSelector } from './smart-field-selector';
+
+interface FieldDefinition {
+    key: string;
+    label: string;
+    defaultCrmField: string;
+    isRequired?: boolean;
+}
+
+interface FieldMappingProps {
+    entityType: 'account' | 'contact';
+    definitions: FieldDefinition[];
+    discoveryData: any[];
+    currentMapping: Record<string, string>;
+    onMappingChange: (key: string, value: string) => void;
+    onReset: () => void;
+    onSave: () => void;
+    saving?: boolean;
+}
+
+export function FieldMapping({
+    entityType,
+    definitions,
+    discoveryData,
+    currentMapping,
+    onMappingChange,
+    onReset,
+    onSave,
+    saving = false,
+}: FieldMappingProps) {
+    const t = useTranslations('customers');
+    const commonT = useTranslations('common');
+
+    return (
+        <Card className="glass-card border-white/5 overflow-hidden">
+            <div className="p-6 space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-white/90">
+                            {entityType === 'account' ? t('sync.mapping.account_title') : t('sync.mapping.contact_title')}
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                            {t('sync.mapping.description')}
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onReset}
+                            className="h-8 text-[10px] font-bold uppercase tracking-tight text-white/40 hover:text-white"
+                        >
+                            <RotateCcw className="h-3 w-3 mr-2" />
+                            {commonT('reset')}
+                        </Button>
+                        <Button
+                            size="sm"
+                            onClick={onSave}
+                            disabled={saving}
+                            className="h-8 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-tight hover:bg-blue-500/20"
+                        >
+                            {saving ? (
+                                <span className="flex items-center gap-2">
+                                    <div className="h-3 w-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                                    {commonT('saving')}
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2">
+                                    <Save className="h-3 w-3" />
+                                    {commonT('save')}
+                                </span>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    {definitions.map((field) => (
+                        <div key={field.key} className="space-y-2 group">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-[11px] font-bold text-muted-foreground group-hover:text-white transition-colors">
+                                    {t(field.label)}
+                                    {field.isRequired && <span className="text-rose-500 ml-1">*</span>}
+                                </Label>
+                                {currentMapping[field.key] !== field.defaultCrmField && (
+                                    <Badge variant="outline" className="h-4 text-[8px] border-blue-500/30 text-blue-400 bg-blue-500/5 px-1.5">
+                                        MODIFIED
+                                    </Badge>
+                                )}
+                            </div>
+
+                            <div className="relative">
+                                <SmartFieldSelector
+                                    fields={discoveryData}
+                                    value={currentMapping[field.key] || field.defaultCrmField}
+                                    onChange={(val) => onMappingChange(field.key, val)}
+                                    placeholder={field.defaultCrmField}
+                                />
+                            </div>
+                            <p className="text-[9px] text-white/20 italic pl-1">
+                                Default: <span className="font-mono">{field.defaultCrmField}</span>
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="bg-white/[0.02] border-t border-white/5 p-4 flex items-start gap-3">
+                <div className="mt-0.5 p-1 rounded-md bg-amber-500/10 border border-amber-500/20">
+                    <AlertCircle className="h-3 w-3 text-amber-500" />
+                </div>
+                <p className="text-[10px] text-amber-500/70 leading-relaxed">
+                    {t('sync.mapping.warning')}
+                </p>
+            </div>
+        </Card>
+    );
+}

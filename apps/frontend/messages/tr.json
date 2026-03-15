@@ -96,6 +96,8 @@
         "loading": "Yükleniyor...",
         "error": "Bir hata oluştu",
         "save": "Kaydet",
+        "saving": "Kaydediliyor...",
+        "reset": "Sıfırla",
         "cancel": "İptal",
         "unknown": "Bilinmiyor",
         "individual": "Bireysel",
@@ -387,7 +389,36 @@
             "last_transfer_none": "YOK",
             "system_status": "Sistem Durumu",
             "trigger_sync": "Transferi Tetikle",
-            "edit_settings": "AYARLARI DÜZENLE"
+            "edit_settings": "AYARLARI DÜZENLE",
+            "mapping": {
+                "account_title": "HESAP EŞLEŞTİRME",
+                "contact_title": "MÜŞTERİ EŞLEŞTİRME",
+                "description": "CRM üzerindeki hangi alanın sistemimizdeki hangi veriye karşılık geleceğini tanımlayın.",
+                "warning": "Yanlış eşleştirme, veri senkronizasyonunda tutarsızlıklara neden olabilir. Değişiklik yapmadan önce CRM şemasını kontrol edin.",
+                "fields": {
+                    "account": {
+                        "name": "Şirket Adı / Ünvan",
+                        "industry": "Sektör",
+                        "website": "Web Sitesi",
+                        "address": "Adres",
+                        "customerNo": "Müşteri Numarası",
+                        "system_id": "Sistem ID (CRM)",
+                        "email": "Genel E-posta",
+                        "phone": "Genel Telefon"
+                    },
+                    "contact": {
+                        "firstName": "Ad",
+                        "lastName": "Soyad",
+                        "email": "E-posta",
+                        "phoneNumber": "Telefon",
+                        "jobTitle": "Görev / Ünvan",
+                        "industry": "Sektör",
+                        "customerNo": "Müşteri Numarası",
+                        "system_id": "Sistem ID (CRM)",
+                        "contractStatus": "Sözleşme Durumu"
+                    }
+                }
+            }
         },
         "history": {
             "no_data": "Geçmiş verisi yok"
