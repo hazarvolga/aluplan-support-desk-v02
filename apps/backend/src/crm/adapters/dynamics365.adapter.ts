@@ -375,7 +375,14 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
     private resolveField(data: any, systemKey: string, mappings: Record<string, string>, defaultKey: string): any {
         const crmKey = mappings[systemKey] || defaultKey;
-        // Handle dot notation if any (simple implementation)
+
+        // FormattedValue önceliği: option set alanları için okunabilir metin tercih edilir
+        const formattedKey = `${crmKey}@OData.Community.Display.V1.FormattedValue`;
+        if (data[formattedKey] !== undefined && data[formattedKey] !== null && data[formattedKey] !== '') {
+            return data[formattedKey];
+        }
+
+        // Dot notation desteği
         if (crmKey.includes('.')) {
             const parts = crmKey.split('.');
             let val = data;
