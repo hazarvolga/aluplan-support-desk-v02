@@ -1,9 +1,78 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Dynamics365Adapter } from './adapters/dynamics365.adapter';
-import { ICrmAdapter } from './adapters/crm-adapter.interface';
+import { ICrmAdapter, SyncResult } from './adapters/crm-adapter.interface';
 import { CrmProvider, SyncStatus } from '@aluplan/database';
 import { CryptoService } from '../utils/crypto.service';
+
+interface FailedRecord {
+    externalId: string;
+    entityType: 'account' | 'contact';
+    errorMessage: string;
+    errorCode?: string;
+}
+
+interface SkippedRecord {
+    externalId: string;
+    reason: string;
+}
+
+interface SkippedLink {
+    contactExternalId: string;
+    missingAccountExternalId: string;
+}
+
+interface SyncDetails {
+    failedRecords: FailedRecord[];
+    skippedRecords: SkippedRecord[];
+    skippedLinks: SkippedLink[];
+    summary: {
+        successCount: number;
+        errorCount: number;
+        skippedCount: number;
+    };
+}
+
+function buildSyncDetails(
+    accountResult: SyncResult,
+    contactResult: SyncResult,
+): SyncDetails {
+    const failedRecords: FailedRecord[] = [
+        ...(accountResult.failedRecords ?? []).map(r => ({
+            externalId: r.externalId,
+            entityType: 'account' as const,
+            errorMessage: r.errorMessage,
+            errorCode: r.errorCode,
+        })),
+        ...(contactResult.failedRecords ?? []).map(r => ({
+            externalId: r.externalId,
+            entityType: 'contact' as const,
+            errorMessage: r.errorMessage,
+            errorCode: r.errorCode,
+        })),
+    ];
+
+    const skippedRecords: SkippedRecord[] = [
+        ...(accountResult.skippedRecords ?? []),
+        ...(contactResult.skippedRecords ?? []),
+    ];
+
+    const skippedLinks: SkippedLink[] = [
+        ...(accountResult.skippedLinks ?? []),
+        ...(contactResult.skippedLinks ?? []),
+    ];
+
+    return {
+        failedRecords,
+        skippedRecords,
+        skippedLinks,
+        summary: {
+            successCount: accountResult.successCount + contactResult.successCount,
+            errorCount: accountResult.errorCount + contactResult.errorCount,
+            skippedCount: (accountResult.skippedRecords?.length ?? 0) + (contactResult.skippedRecords?.length ?? 0),
+        },
+    };
+}
 
 @Injectable()
 export class CrmService {
@@ -147,9 +216,19 @@ export class CrmService {
         let successContactRecords = 0;
         let errorContactRecords = 0;
 
+        const emptyResult: SyncResult = {
+            status: SyncStatus.SUCCESS,
+            totalRecords: 0,
+            successCount: 0,
+            errorCount: 0,
+        };
+
+        let accountResult: SyncResult = { ...emptyResult };
+        let contactResult: SyncResult = { ...emptyResult };
+
         try {
             // 1. Sync Accounts (Companies)
-            const accountResult = await adapter.syncAccounts(connection, (stats) => {
+            accountResult = await adapter.syncAccounts(connection, (stats) => {
                 totalAccountRecords = stats.total;
                 successAccountRecords = stats.success;
                 errorAccountRecords = stats.error;
@@ -172,7 +251,7 @@ export class CrmService {
             }
 
             // 2. Sync Contacts (People)
-            const contactResult = await adapter.syncContacts(connection, (stats) => {
+            contactResult = await adapter.syncContacts(connection, (stats) => {
                 totalContactRecords = stats.total;
                 successContactRecords = stats.success;
                 errorContactRecords = stats.error;
@@ -194,7 +273,9 @@ export class CrmService {
                 throw new Error(`Contact Sync Error: ${contactResult.errorMessage}`);
             }
 
-            // 3. Finalize Log
+            // 3. Build details and finalize Log
+            const details = buildSyncDetails(accountResult, contactResult);
+
             await this.prisma.crmSyncLog.update({
                 where: { id: logId },
                 data: {
@@ -203,6 +284,7 @@ export class CrmService {
                     totalRecords: accountResult.totalRecords + contactResult.totalRecords,
                     successCount: accountResult.successCount + contactResult.successCount,
                     errorCount: accountResult.errorCount + contactResult.errorCount,
+                    details: details as any,
                 }
             });
 
@@ -217,6 +299,8 @@ export class CrmService {
         } catch (error) {
             this.logger.error(`CRM sync process failed: ${error.message}`, error.stack);
 
+            const details = buildSyncDetails(accountResult, contactResult);
+
             await this.prisma.crmSyncLog.update({
                 where: { id: logId },
                 data: {
@@ -227,6 +311,7 @@ export class CrmService {
                     totalRecords: totalAccountRecords + totalContactRecords,
                     successCount: successAccountRecords + successContactRecords,
                     errorCount: errorAccountRecords + errorContactRecords,
+                    details: details as any,
                 }
             });
 
@@ -237,12 +322,60 @@ export class CrmService {
         }
     }
 
+    async getFieldDefinitions() {
+        return {
+            account: [
+                { key: 'name', label: 'sync.mapping.fields.account.name', defaultCrmField: 'name', isRequired: true },
+                { key: 'industry', label: 'sync.mapping.fields.account.industry', defaultCrmField: 'industrycode@OData.Community.Display.V1.FormattedValue' },
+                { key: 'website', label: 'sync.mapping.fields.account.website', defaultCrmField: 'websiteurl' },
+                { key: 'address', label: 'sync.mapping.fields.account.address', defaultCrmField: 'address1_composite' },
+                { key: 'externalAccountId', label: 'sync.mapping.fields.account.system_id', defaultCrmField: 'accountid' },
+                { key: 'accountnumber', label: 'sync.mapping.fields.account.customerNo', defaultCrmField: 'accountnumber' },
+            ],
+            contact: [
+                { key: 'firstName', label: 'sync.mapping.fields.contact.firstName', defaultCrmField: 'firstname', isRequired: true },
+                { key: 'lastName', label: 'sync.mapping.fields.contact.lastName', defaultCrmField: 'lastname', isRequired: true },
+                { key: 'email', label: 'sync.mapping.fields.contact.email', defaultCrmField: 'emailaddress1', isRequired: true },
+                { key: 'jobTitle', label: 'sync.mapping.fields.contact.jobTitle', defaultCrmField: 'jobtitle' },
+                { key: 'phoneNumber', label: 'sync.mapping.fields.contact.phoneNumber', defaultCrmField: 'telephone1' },
+                { key: 'contractStatus', label: 'sync.mapping.fields.contact.contractStatus', defaultCrmField: 'new_musteridurumu@OData.Community.Display.V1.FormattedValue' },
+                { key: 'industry', label: 'sync.mapping.fields.contact.industry', defaultCrmField: 'industrycode@OData.Community.Display.V1.FormattedValue' },
+                { key: 'customerNo', label: 'sync.mapping.fields.contact.customerNo', defaultCrmField: 'accountnumber' },
+                { key: 'externalContactId', label: 'sync.mapping.fields.contact.system_id', defaultCrmField: 'contactid' },
+            ]
+        };
+    }
+
     async getSyncLogs(connectionId: string) {
         return this.prisma.crmSyncLog.findMany({
             where: { connectionId },
             orderBy: { startedAt: 'desc' },
             take: 20
         });
+    }
+
+    async getDiscoveryData(connectionId: string) {
+        const connection = await this.prisma.crmConnection.findUnique({
+            where: { id: connectionId }
+        });
+
+        if (!connection) {
+            throw new Error('CRM connection not found');
+        }
+
+        const adapter = this.adapters.get(connection.provider);
+        if (!adapter) {
+            throw new Error(`No adapter found for provider ${connection.provider}`);
+        }
+
+        // Decrypt secrets for the adapter
+        const decryptedConnection = {
+            ...connection,
+            clientSecret: connection.clientSecret ? this.crypto.decrypt(connection.clientSecret) : null,
+            webhookSecret: connection.webhookSecret ? this.crypto.decrypt(connection.webhookSecret) : null
+        };
+
+        return adapter.getDiscoveryData(decryptedConnection);
     }
 
     async getAccounts() {

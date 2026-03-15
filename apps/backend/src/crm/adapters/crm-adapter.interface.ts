@@ -25,6 +25,20 @@ export interface SyncResult {
     errorCount: number;
     errorMessage?: string;
     details?: any;
+    skippedRecords?: Array<{ externalId: string; reason: string }>;
+    skippedLinks?: Array<{ contactExternalId: string; missingAccountExternalId: string }>;
+    failedRecords?: Array<{ externalId: string; entityType: string; errorMessage: string; errorCode?: string }>;
+}
+
+export interface CrmFieldMetadata {
+    logicalName: string;
+    displayName: string;
+    sampleValue: any;
+}
+
+export interface DiscoveryData {
+    account: CrmFieldMetadata[];
+    contact: CrmFieldMetadata[];
 }
 
 export interface ICrmAdapter {
@@ -44,4 +58,9 @@ export interface ICrmAdapter {
      * Syncs contacts from CRM to Support Desk
      */
     syncContacts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult>;
+
+    /**
+     * Fetches metadata and sample records for discovery
+     */
+    getDiscoveryData(config: any): Promise<DiscoveryData>;
 }
