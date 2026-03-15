@@ -331,8 +331,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
     }
 
     private async fetchEntityMetadata(instanceUrl: string, token: string, entityName: string) {
-        // Alternative URL for metadata fetching: Global API for Attributes
-        const url = `${instanceUrl}/api/data/v9.2/Attributes?$select=LogicalName,DisplayName&$filter=EntityLogicalName eq '${entityName}' and IsValidForRead eq true and AttributeType ne 'Virtual'`;
+        // EntityDefinitions endpoint for accurate field label discovery
+        const url = `${instanceUrl}/api/data/v9.2/EntityDefinitions(LogicalName='${entityName}')/Attributes?$select=LogicalName,DisplayName&$filter=IsValidForRead eq true and AttributeType ne 'Virtual'`;
         try {
             const response = await axios.get(url, {
                 headers: {
