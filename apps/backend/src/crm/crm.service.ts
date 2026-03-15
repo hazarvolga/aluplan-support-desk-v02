@@ -445,6 +445,7 @@ export class CrmService {
                 website: data.websiteurl,
                 address: data.address1_composite,
                 industry: industryFormatted,
+                customerNo: data.accountnumber ?? null,
                 crmVerified: true,
             },
             create: {
@@ -453,6 +454,7 @@ export class CrmService {
                 website: data.websiteurl,
                 address: data.address1_composite,
                 industry: industryFormatted,
+                customerNo: data.accountnumber ?? null,
                 crmVerified: true,
             },
         });

@@ -40,7 +40,9 @@ const mockPrisma = {
         findMany: jest.fn(),
         findUnique: jest.fn(),
         deleteMany: jest.fn(),
+        upsert: jest.fn(),
     },
+    $transaction: jest.fn(),
 };
 
 const mockAdapter = {
@@ -346,6 +348,339 @@ describe('CrmService', () => {
             expect(mockCrypto.decrypt).toHaveBeenCalledWith('enc:plain-secret');
             expect(mockCrypto.decrypt).toHaveBeenCalledWith('enc:plain-webhook');
             expect(result[0].clientSecret).toBe('plain-secret');
+        });
+    });
+
+    // ── verifyConnectionById ──────────────────────────────────────────────────
+
+    describe('verifyConnectionById', () => {
+        it('should throw NotFoundException when connection not found', async () => {
+            mockPrisma.crmConnection.findUnique.mockResolvedValue(null);
+            await expect(service.verifyConnectionById('non-existent')).rejects.toThrow(NotFoundException);
+        });
+
+        it('should decrypt secrets before passing to adapter', async () => {
+            mockPrisma.crmConnection.findUnique.mockResolvedValue({
+                id: 'conn-1',
+                provider: CrmProvider.DYNAMICS_365,
+                clientSecret: 'enc:plain-secret',
+                webhookSecret: 'enc:plain-webhook',
+            });
+            mockAdapter.verifyConnection.mockResolvedValue(true);
+
+            await service.verifyConnectionById('conn-1');
+
+            expect(mockCrypto.decrypt).toHaveBeenCalledWith('enc:plain-secret');
+            expect(mockCrypto.decrypt).toHaveBeenCalledWith('enc:plain-webhook');
+        });
+
+        it('should return success:true when adapter verifies', async () => {
+            mockPrisma.crmConnection.findUnique.mockResolvedValue({
+                id: 'conn-1',
+                provider: CrmProvider.DYNAMICS_365,
+                clientSecret: 'enc:s',
+                webhookSecret: null,
+            });
+            mockAdapter.verifyConnection.mockResolvedValue(true);
+
+            const result = await service.verifyConnectionById('conn-1');
+            expect(result).toEqual({ success: true, provider: CrmProvider.DYNAMICS_365 });
+        });
+
+        it('should return success:false when adapter rejects', async () => {
+            mockPrisma.crmConnection.findUnique.mockResolvedValue({
+                id: 'conn-1',
+                provider: CrmProvider.DYNAMICS_365,
+                clientSecret: 'enc:s',
+                webhookSecret: null,
+            });
+            mockAdapter.verifyConnection.mockResolvedValue(false);
+
+            const result = await service.verifyConnectionById('conn-1');
+            expect(result.success).toBe(false);
+        });
+
+        it('should return success:false when adapter throws', async () => {
+            mockPrisma.crmConnection.findUnique.mockResolvedValue({
+                id: 'conn-1',
+                provider: CrmProvider.DYNAMICS_365,
+                clientSecret: 'enc:s',
+                webhookSecret: null,
+            });
+            mockAdapter.verifyConnection.mockRejectedValue(new Error('Network timeout'));
+
+            const result = await service.verifyConnectionById('conn-1');
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Network timeout');
+        });
+    });
+
+    // ── getDiscoveryData ──────────────────────────────────────────────────────
+
+    describe('getDiscoveryData', () => {
+        it('should throw when connection not found', async () => {
+            mockPrisma.crmConnection.findUnique.mockResolvedValue(null);
+            await expect(service.getDiscoveryData('non-existent')).rejects.toThrow('CRM connection not found');
+        });
+
+        it('should decrypt secrets before calling adapter', async () => {
+            mockPrisma.crmConnection.findUnique.mockResolvedValue({
+                id: 'conn-1',
+                provider: CrmProvider.DYNAMICS_365,
+                clientSecret: 'enc:plain-secret',
+                webhookSecret: 'enc:plain-webhook',
+            });
+            mockAdapter.getDiscoveryData.mockResolvedValue({ account: [], contact: [] });
+
+            await service.getDiscoveryData('conn-1');
+
+            expect(mockCrypto.decrypt).toHaveBeenCalledWith('enc:plain-secret');
+            expect(mockAdapter.getDiscoveryData).toHaveBeenCalledWith(
+                expect.objectContaining({ clientSecret: 'plain-secret' }),
+            );
+        });
+
+        it('should return adapter discovery result', async () => {
+            mockPrisma.crmConnection.findUnique.mockResolvedValue({
+                id: 'conn-1',
+                provider: CrmProvider.DYNAMICS_365,
+                clientSecret: 'enc:s',
+                webhookSecret: null,
+            });
+            const discoveryData = {
+                account: [{ logicalName: 'name', displayName: 'Name', sampleValue: 'Aluplan' }],
+                contact: [{ logicalName: 'firstname', displayName: 'First Name', sampleValue: 'Ali' }],
+            };
+            mockAdapter.getDiscoveryData.mockResolvedValue(discoveryData);
+
+            const result = await service.getDiscoveryData('conn-1');
+            expect(result).toEqual(discoveryData);
+        });
+    });
+
+    // ── processDynamics365Webhook ─────────────────────────────────────────────
+
+    describe('processDynamics365Webhook', () => {
+        const mockTx = {
+            user: { findUnique: jest.fn(), create: jest.fn() },
+            role: { findUnique: jest.fn() },
+            crmAccount: { findUnique: jest.fn() },
+            customerProfile: { upsert: jest.fn() },
+        };
+
+        beforeEach(() => {
+            mockPrisma.$transaction = jest.fn((cb: any) => cb(mockTx));
+            mockTx.user.findUnique.mockResolvedValue(null);
+            mockTx.role.findUnique.mockResolvedValue({ id: 'role-customer', name: 'customer' });
+            mockTx.user.create.mockResolvedValue({ id: 'user-1', email: 'test@test.com' });
+            mockTx.crmAccount.findUnique.mockResolvedValue({ id: 'db-acc-1', industry: 'Manufacturing', customerNo: 'C300001' });
+            mockTx.customerProfile.upsert.mockResolvedValue({});
+            mockPrisma.crmAccount.upsert.mockResolvedValue({});
+        });
+
+        it('should throw BadRequestException for unsupported entity type', async () => {
+            await expect(
+                service.processDynamics365Webhook({ entity: 'lead', data: {} }),
+            ).rejects.toThrow(BadRequestException);
+        });
+
+        // ── syncSingleAccount (via webhook) ───────────────────────────────────
+
+        describe('account entity', () => {
+            it('should upsert account with customerNo from accountnumber', async () => {
+                const data = {
+                    accountid: 'acc-ext-1',
+                    name: 'Aluplan GmbH',
+                    websiteurl: 'https://aluplan.com',
+                    address1_composite: 'Berlin',
+                    accountnumber: 'C300001',
+                    'industrycode@OData.Community.Display.V1.FormattedValue': 'Manufacturing',
+                };
+
+                await service.processDynamics365Webhook({ entity: 'account', data });
+
+                expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: { externalAccountId: 'acc-ext-1' },
+                        update: expect.objectContaining({
+                            name: 'Aluplan GmbH',
+                            customerNo: 'C300001',
+                            industry: 'Manufacturing',
+                        }),
+                        create: expect.objectContaining({
+                            customerNo: 'C300001',
+                        }),
+                    }),
+                );
+            });
+
+            it('should save customerNo as null when accountnumber is missing', async () => {
+                const data = {
+                    accountid: 'acc-ext-2',
+                    name: 'No Number Corp',
+                    accountnumber: undefined,
+                };
+
+                await service.processDynamics365Webhook({ entity: 'account', data });
+
+                expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        update: expect.objectContaining({ customerNo: null }),
+                    }),
+                );
+            });
+
+            it('should use FormattedValue for industry', async () => {
+                const data = {
+                    accountid: 'acc-ext-3',
+                    name: 'Test Corp',
+                    'industrycode@OData.Community.Display.V1.FormattedValue': 'Technology',
+                    industrycode_display: 'Fallback',
+                };
+
+                await service.processDynamics365Webhook({ entity: 'account', data });
+
+                expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        update: expect.objectContaining({ industry: 'Technology' }),
+                    }),
+                );
+            });
+
+            it('should fall back to industrycode_display when FormattedValue is absent', async () => {
+                const data = {
+                    accountid: 'acc-ext-4',
+                    name: 'Test Corp',
+                    industrycode_display: 'Fallback Industry',
+                };
+
+                await service.processDynamics365Webhook({ entity: 'account', data });
+
+                expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        update: expect.objectContaining({ industry: 'Fallback Industry' }),
+                    }),
+                );
+            });
+        });
+
+        // ── syncSingleContact (via webhook) ───────────────────────────────────
+
+        describe('contact entity', () => {
+            it('should return undefined and not call transaction when email is missing', async () => {
+                const result = await service.processDynamics365Webhook({
+                    entity: 'contact',
+                    data: { contactid: 'con-1', emailaddress1: null },
+                });
+
+                expect(result).toBeUndefined();
+                expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+            });
+
+            it('should upsert customerProfile with linked accountId', async () => {
+                const data = {
+                    contactid: 'con-ext-1',
+                    emailaddress1: 'ali@aluplan.com',
+                    firstname: 'Ali',
+                    lastname: 'Yılmaz',
+                    jobtitle: 'Engineer',
+                    telephone1: '+49123456',
+                    parentcustomerid_account: { accountid: 'acc-ext-1', name: 'Aluplan GmbH' },
+                    'new_musteridurumu@OData.Community.Display.V1.FormattedValue': 'Aktif',
+                };
+
+                await service.processDynamics365Webhook({ entity: 'contact', data });
+
+                expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        update: expect.objectContaining({
+                            accountId: 'db-acc-1',
+                            contractStatus: 'Aktif',
+                            firstName: 'Ali',
+                            lastName: 'Yılmaz',
+                        }),
+                    }),
+                );
+            });
+
+            it('should use accountInfo.customerNo as clientNo when accountnumber is absent', async () => {
+                const data = {
+                    contactid: 'con-ext-2',
+                    emailaddress1: 'test@test.com',
+                    firstname: 'Test',
+                    lastname: 'User',
+                    parentcustomerid_account: { accountid: 'acc-ext-1', name: 'Aluplan GmbH' },
+                };
+
+                await service.processDynamics365Webhook({ entity: 'contact', data });
+
+                expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        update: expect.objectContaining({ customerNo: 'C300001' }),
+                    }),
+                );
+            });
+
+            it('should generate DYN- prefix clientNo when no accountnumber and no accountInfo', async () => {
+                mockTx.crmAccount.findUnique.mockResolvedValue(null);
+                const data = {
+                    contactid: 'con-ext-3',
+                    emailaddress1: 'orphan@test.com',
+                    firstname: 'Orphan',
+                    lastname: 'Contact',
+                    parentcustomerid_account: { accountid: 'missing-acc' },
+                };
+
+                await service.processDynamics365Webhook({ entity: 'contact', data });
+
+                expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        update: expect.objectContaining({
+                            customerNo: expect.stringMatching(/^DYN-/),
+                        }),
+                    }),
+                );
+            });
+
+            it('should create new user when user does not exist', async () => {
+                mockTx.user.findUnique.mockResolvedValue(null);
+                const data = {
+                    contactid: 'con-ext-4',
+                    emailaddress1: 'new@test.com',
+                    firstname: 'New',
+                    lastname: 'User',
+                };
+
+                await service.processDynamics365Webhook({ entity: 'contact', data });
+
+                expect(mockTx.user.create).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        data: expect.objectContaining({
+                            email: 'new@test.com',
+                            passwordHash: 'CRM_SYNCED',
+                        }),
+                    }),
+                );
+            });
+
+            it('should reuse existing user when user already exists', async () => {
+                mockTx.user.findUnique.mockResolvedValue({ id: 'existing-user', email: 'existing@test.com' });
+                const data = {
+                    contactid: 'con-ext-5',
+                    emailaddress1: 'existing@test.com',
+                    firstname: 'Existing',
+                    lastname: 'User',
+                };
+
+                await service.processDynamics365Webhook({ entity: 'contact', data });
+
+                expect(mockTx.user.create).not.toHaveBeenCalled();
+                expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: { userId: 'existing-user' },
+                    }),
+                );
+            });
         });
     });
 });
