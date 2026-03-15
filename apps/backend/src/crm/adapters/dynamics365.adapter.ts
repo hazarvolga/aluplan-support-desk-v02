@@ -25,22 +25,28 @@ export class Dynamics365Adapter implements ICrmAdapter {
     async syncAccounts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult> {
         try {
             const token = await this.getAccessToken(config);
-            const resourceUrl = `${config.instanceUrl}/api/data/v9.2/accounts?$select=accountid,name,industrycode,websiteurl,address1_composite,accountnumber`;
-            this.logger.debug(`Fetching accounts from: ${resourceUrl}`);
+            const baseUrl = `${config.instanceUrl}/api/data/v9.2/accounts?$select=accountid,name,industrycode,websiteurl,address1_composite,accountnumber`;
+            this.logger.debug(`Fetching accounts from: ${baseUrl}`);
 
-            const response = await axios.get(resourceUrl, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'OData-MaxVersion': '4.0',
-                    'OData-Version': '4.0',
-                    Accept: 'application/json',
-                    'Prefer': 'odata.include-annotations="*"'
-                },
-            });
+            const headers = {
+                Authorization: `Bearer ${token}`,
+                'OData-MaxVersion': '4.0',
+                'OData-Version': '4.0',
+                Accept: 'application/json',
+                'Prefer': 'odata.include-annotations="*"',
+            };
 
-            this.logger.debug(`Accounts API response status: ${response.status}`);
-            const accounts = response.data.value;
-            this.logger.debug(`Found ${accounts.length} accounts`);
+            // Pagination: follow @odata.nextLink until exhausted
+            const accounts: any[] = [];
+            let nextUrl: string | null = baseUrl;
+            while (nextUrl) {
+                const response = await axios.get(nextUrl, { headers });
+                this.logger.debug(`Accounts page status: ${response.status}, count: ${response.data.value?.length}`);
+                accounts.push(...(response.data.value ?? []));
+                nextUrl = response.data['@odata.nextLink'] ?? null;
+            }
+
+            this.logger.debug(`Total accounts fetched: ${accounts.length}`);
             let successCount = 0;
             let errorCount = 0;
             const failedRecords: Array<{ externalId: string; entityType: string; errorMessage: string; errorCode?: string }> = [];
@@ -115,22 +121,28 @@ export class Dynamics365Adapter implements ICrmAdapter {
     async syncContacts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult> {
         try {
             const token = await this.getAccessToken(config);
-            const resourceUrl = `${config.instanceUrl}/api/data/v9.2/contacts?$select=contactid,firstname,lastname,emailaddress1,jobtitle,telephone1,new_musteridurumu&$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
-            this.logger.debug(`Fetching contacts from: ${resourceUrl}`);
+            const baseUrl = `${config.instanceUrl}/api/data/v9.2/contacts?$select=contactid,firstname,lastname,emailaddress1,jobtitle,telephone1,new_musteridurumu&$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
+            this.logger.debug(`Fetching contacts from: ${baseUrl}`);
 
-            const response = await axios.get(resourceUrl, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'OData-MaxVersion': '4.0',
-                    'OData-Version': '4.0',
-                    Accept: 'application/json',
-                    'Prefer': 'odata.include-annotations="*"'
-                },
-            });
+            const headers = {
+                Authorization: `Bearer ${token}`,
+                'OData-MaxVersion': '4.0',
+                'OData-Version': '4.0',
+                Accept: 'application/json',
+                'Prefer': 'odata.include-annotations="*"',
+            };
 
-            this.logger.debug(`Contacts API response status: ${response.status}`);
-            const contacts = response.data.value;
-            this.logger.debug(`Found ${contacts.length} contacts`);
+            // Pagination: follow @odata.nextLink until exhausted
+            const contacts: any[] = [];
+            let nextUrl: string | null = baseUrl;
+            while (nextUrl) {
+                const response = await axios.get(nextUrl, { headers });
+                this.logger.debug(`Contacts page status: ${response.status}, count: ${response.data.value?.length}`);
+                contacts.push(...(response.data.value ?? []));
+                nextUrl = response.data['@odata.nextLink'] ?? null;
+            }
+
+            this.logger.debug(`Total contacts fetched: ${contacts.length}`);
             let successCount = 0;
             let errorCount = 0;
             const skippedRecords: Array<{ externalId: string; reason: string }> = [];

@@ -246,6 +246,33 @@ describe('Dynamics365Adapter', () => {
                 expect.objectContaining({ success: 1, error: 0, total: 1 }),
             );
         });
+
+        it('should follow @odata.nextLink for pagination', async () => {
+            const page1 = buildAccount({ accountid: 'acc-p1', name: 'Page1 Corp' });
+            const page2 = buildAccount({ accountid: 'acc-p2', name: 'Page2 Corp' });
+
+            mockedAxios.get = jest.fn()
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [page1],
+                        '@odata.nextLink': 'https://org.crm4.dynamics.com/api/data/v9.2/accounts?$skiptoken=abc',
+                    },
+                    status: 200,
+                })
+                .mockResolvedValueOnce({
+                    data: { value: [page2] }, // no nextLink — last page
+                    status: 200,
+                });
+            mockPrisma.crmAccount.upsert.mockResolvedValue({});
+
+            const result = await adapter.syncAccounts(buildConfig());
+
+            expect(result.totalRecords).toBe(2);
+            expect(result.successCount).toBe(2);
+            expect(mockedAxios.get).toHaveBeenCalledTimes(2);
+            // Second call should use the nextLink URL
+            expect((mockedAxios.get as jest.Mock).mock.calls[1][0]).toContain('$skiptoken=abc');
+        });
     });
 
     // ── syncContacts ──────────────────────────────────────────────────────────
@@ -401,6 +428,31 @@ describe('Dynamics365Adapter', () => {
                     }),
                 }),
             );
+        });
+
+        it('should follow @odata.nextLink for pagination', async () => {
+            const c1 = buildContact({ contactid: 'c-p1', emailaddress1: 'p1@test.com' });
+            const c2 = buildContact({ contactid: 'c-p2', emailaddress1: 'p2@test.com' });
+
+            mockedAxios.get = jest.fn()
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [c1],
+                        '@odata.nextLink': 'https://org.crm4.dynamics.com/api/data/v9.2/contacts?$skiptoken=xyz',
+                    },
+                    status: 200,
+                })
+                .mockResolvedValueOnce({
+                    data: { value: [c2] },
+                    status: 200,
+                });
+
+            const result = await adapter.syncContacts(buildConfig());
+
+            expect(result.totalRecords).toBe(2);
+            expect(result.successCount).toBe(2);
+            expect(mockedAxios.get).toHaveBeenCalledTimes(2);
+            expect((mockedAxios.get as jest.Mock).mock.calls[1][0]).toContain('$skiptoken=xyz');
         });
     });
 
