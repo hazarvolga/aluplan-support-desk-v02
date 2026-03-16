@@ -2,6 +2,8 @@ import { Injectable, Logger, BadRequestException, NotFoundException } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { Dynamics365Adapter } from './adapters/dynamics365.adapter';
 import { ICrmAdapter, SyncResult } from './adapters/crm-adapter.interface';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { CrmProvider, SyncStatus } from '@aluplan/database';
 import { CryptoService } from '../utils/crypto.service';
 
@@ -80,6 +82,7 @@ export class CrmService {
     private adapters: Map<CrmProvider, ICrmAdapter> = new Map();
 
     constructor(
+        @InjectQueue('crm-sync') private crmQueue: Queue,
         private prisma: PrismaService,
         private dynamics365: Dynamics365Adapter,
         private crypto: CryptoService,
@@ -105,11 +108,11 @@ export class CrmService {
             }
         });
 
-        // Decrypt secrets for the UI (Admin only)
+        // Mask secrets for the UI (Security Fix)
         return connections.map(conn => ({
             ...conn,
-            clientSecret: conn.clientSecret ? this.crypto.decrypt(conn.clientSecret) : null,
-            webhookSecret: conn.webhookSecret ? this.crypto.decrypt(conn.webhookSecret) : null
+            clientSecret: conn.clientSecret ? '********' : null,
+            webhookSecret: conn.webhookSecret ? '********' : null
         }));
     }
 
@@ -193,21 +196,26 @@ export class CrmService {
             data: { syncStatus: SyncStatus.SYNCING }
         });
 
-        // Decrypt secret for the adapter
-        const decryptedConnection = {
-            ...connection,
-            clientSecret: connection.clientSecret ? this.crypto.decrypt(connection.clientSecret) : null
-        };
-
-        // Strategy: Run sync in background (fire and forget for this request, but log internally)
-        this.executeSyncProcess(decryptedConnection, adapter, log.id).catch(err => {
-            this.logger.error(`Background sync failed for ${connection.provider}`, err.stack);
+        // Enqueue the sync job instead of fire-and-forget logic
+        const job = await this.crmQueue.add('execute-sync', {
+            connectionId: connection.id,
+            logId: log.id
+        }, {
+            jobId: `crm-sync-${connection.id}-${log.id}`,
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 5000 }
         });
 
-        return { message: 'Senkronizasyon başlatıldı.', logId: log.id };
+        this.logger.log(`✅ CRM Sync job enqueued: ${job.id} for connection ${connection.id}`);
+
+        return { message: 'Senkronizasyon kuyruğa alındı.', logId: log.id, jobId: job.id };
     }
 
-    private async executeSyncProcess(connection: any, adapter: ICrmAdapter, logId: string) {
+    public decryptSecret(encrypted: string): string {
+        return this.crypto.decrypt(encrypted);
+    }
+
+    public async executeSyncProcess(connection: any, adapter: ICrmAdapter, logId: string) {
         let totalAccountRecords = 0;
         let successAccountRecords = 0;
         let errorAccountRecords = 0;
@@ -338,9 +346,9 @@ export class CrmService {
                 { key: 'email', label: 'sync.mapping.fields.contact.email', defaultCrmField: 'emailaddress1', isRequired: true },
                 { key: 'jobTitle', label: 'sync.mapping.fields.contact.jobTitle', defaultCrmField: 'jobtitle' },
                 { key: 'phoneNumber', label: 'sync.mapping.fields.contact.phoneNumber', defaultCrmField: 'telephone1' },
+                { key: 'companyName', label: 'sync.mapping.fields.contact.companyName', defaultCrmField: 'parentcustomerid_account.name' },
                 { key: 'contractStatus', label: 'sync.mapping.fields.contact.contractStatus', defaultCrmField: 'new_musteridurumu@OData.Community.Display.V1.FormattedValue' },
-                { key: 'industry', label: 'sync.mapping.fields.contact.industry', defaultCrmField: 'industrycode@OData.Community.Display.V1.FormattedValue' },
-                { key: 'customerNo', label: 'sync.mapping.fields.contact.customerNo', defaultCrmField: 'accountnumber' },
+                { key: 'subscriptionModel', label: 'sync.mapping.fields.contact.subscriptionModel', defaultCrmField: 'new_AbonelikModeli' },
                 { key: 'externalContactId', label: 'sync.mapping.fields.contact.system_id', defaultCrmField: 'contactid' },
             ]
         };

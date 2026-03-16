@@ -79,9 +79,10 @@ export class AutomationService {
 
         if (payload.recipientEmail) {
             const isWeb = payload.message.channel === 'WEB';
+            const jobId = `email-ntf-msg-${payload.message.id}`; // Define jobId here
             const options = isWeb ? {
                 delay: 60000, // 1 minute buffer for real-time read
-                jobId: `msg-ntf-${payload.message.id}`
+                jobId: jobId, // Use the defined jobId
             } : undefined;
 
             if (isWeb) {

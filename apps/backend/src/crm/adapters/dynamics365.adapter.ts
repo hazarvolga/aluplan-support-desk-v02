@@ -40,7 +40,10 @@ export class Dynamics365Adapter implements ICrmAdapter {
             const accounts: any[] = [];
             let nextUrl: string | null = baseUrl;
             while (nextUrl) {
-                const response: { status: number; data: any } = await axios.get(nextUrl, { headers });
+                const response: { status: number; data: any } = await axios.get(nextUrl, {
+                    headers,
+                    timeout: 30000 // 30s timeout
+                });
                 this.logger.debug(`Accounts page status: ${response.status}, count: ${response.data.value?.length}`);
                 accounts.push(...(response.data.value ?? []));
                 nextUrl = response.data['@odata.nextLink'] ?? null;
@@ -121,7 +124,21 @@ export class Dynamics365Adapter implements ICrmAdapter {
     async syncContacts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult> {
         try {
             const token = await this.getAccessToken(config);
-            const baseUrl = `${config.instanceUrl}/api/data/v9.2/contacts?$select=contactid,firstname,lastname,emailaddress1,jobtitle,telephone1,new_musteridurumu&$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
+            // Build $select dynamically to include any custom mapped fields
+            const contactMappings = (config.syncSettings?.contactMapping || {}) as Record<string, string>;
+            // Use mapping values (preserving original case) for $select
+            const mappingValues = Object.values(contactMappings)
+                .map(v => v.split('@')[0]) // strip @OData annotation if present
+                .filter(v => v);
+            const customFields = mappingValues
+                .map(v => v.toLowerCase())
+                .filter(v => !['contactid', 'firstname', 'lastname', 'emailaddress1', 'jobtitle', 'telephone1', 'new_musteridurumu', 'new_abonelikmodeli'].includes(v));
+            // Merge hardcoded defaults with mapping-provided values (mapping takes precedence for case)
+            const defaultFields = ['contactid', 'firstname', 'lastname', 'emailaddress1', 'jobtitle', 'telephone1', 'new_musteridurumu'];
+            // For new_AbonelikModeli: use mapping value if provided, otherwise use default (preserve original case)
+            const subscriptionField = contactMappings['subscriptionModel']?.split('@')[0] || 'new_AbonelikModeli';
+            const selectFields = [...defaultFields, subscriptionField, ...customFields].join(',');
+            const baseUrl = `${config.instanceUrl}/api/data/v9.2/contacts?$select=${selectFields}&$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
             this.logger.debug(`Fetching contacts from: ${baseUrl}`);
 
             const headers = {
@@ -136,7 +153,10 @@ export class Dynamics365Adapter implements ICrmAdapter {
             const contacts: any[] = [];
             let nextUrl: string | null = baseUrl;
             while (nextUrl) {
-                const response: { status: number; data: any } = await axios.get(nextUrl, { headers });
+                const response: { status: number; data: any } = await axios.get(nextUrl, {
+                    headers,
+                    timeout: 30000 // 30s timeout
+                });
                 this.logger.debug(`Contacts page status: ${response.status}, count: ${response.data.value?.length}`);
                 contacts.push(...(response.data.value ?? []));
                 nextUrl = response.data['@odata.nextLink'] ?? null;
@@ -213,11 +233,24 @@ export class Dynamics365Adapter implements ICrmAdapter {
                         const phoneNumber = this.resolveField(contact, 'phoneNumber', mappings, 'telephone1');
                         const contactId = this.resolveField(contact, 'externalContactId', mappings, 'contactid');
                         const contractStatus = this.resolveField(contact, 'contractStatus', mappings, 'new_musteridurumu@OData.Community.Display.V1.FormattedValue');
-                        const clientNo = contact.parentcustomerid_account?.accountnumber || `DYN-${contactId.substring(0, 8)}`;
+                        const subscriptionModel = this.resolveField(contact, 'subscriptionModel', mappings, 'new_AbonelikModeli');
 
-                        // Special logic for industry which might come from account expand
-                        const industryFromAccount = contact.parentcustomerid_account ?
-                            contact.parentcustomerid_account['industrycode@OData.Community.Display.V1.FormattedValue'] : null;
+                        // companyName: mapping'den veya expand'dan gelen account adı
+                        const companyName = this.resolveField(contact, 'companyName', mappings, 'parentcustomerid_account.name')
+                            || contact.parentcustomerid_account?.name
+                            || accountInfo?.name
+                            || 'Unknown';
+
+                        // customerNo: account'tan gelir (contact'ta bu alan yok)
+                        const clientNo = contact.parentcustomerid_account?.accountnumber
+                            || accountInfo?.customerNo
+                            || `DYN-${contactId.substring(0, 8)}`;
+
+                        // industry: account expand'dan gelir, contact'ta bu veri yok
+                        const industryFromAccount = accountInfo?.industry
+                            || (contact.parentcustomerid_account
+                                ? contact.parentcustomerid_account['industrycode@OData.Community.Display.V1.FormattedValue']
+                                : null);
 
                         // 3. Upsert CustomerProfile
                         await tx.customerProfile.upsert({
@@ -227,12 +260,13 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                 lastName,
                                 jobTitle,
                                 phoneNumber,
-                                companyName: contact.parentcustomerid_account?.name || 'Unknown',
+                                companyName,
                                 accountId: linkedAccountId,
                                 externalContactId: contactId,
                                 customerNo: clientNo,
                                 contractStatus,
-                                industry: industryFromAccount || accountInfo?.industry,
+                                subscriptionModel: subscriptionModel || null,
+                                industry: industryFromAccount || null,
                                 crmVerified: true,
                             },
                             create: {
@@ -242,11 +276,12 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                 customerNo: clientNo,
                                 jobTitle,
                                 phoneNumber,
-                                companyName: contact.parentcustomerid_account?.name || 'Unknown',
+                                companyName,
                                 accountId: linkedAccountId,
                                 externalContactId: contactId,
                                 contractStatus,
-                                industry: industryFromAccount || accountInfo?.industry,
+                                subscriptionModel: subscriptionModel || null,
+                                industry: industryFromAccount || null,
                                 crmVerified: true,
                             },
                         });
@@ -413,16 +448,33 @@ export class Dynamics365Adapter implements ICrmAdapter {
     }
 
     private resolveField(data: any, systemKey: string, mappings: Record<string, string>, defaultKey: string): any {
-        const crmKey = mappings[systemKey] || defaultKey;
+        const rawKey = mappings[systemKey] || defaultKey;
+        // Dynamics 365 OData response keys are always lowercase
+        const crmKey = rawKey.toLowerCase();
 
-        // FormattedValue önceliği: option set alanları için okunabilir metin tercih edilir
-        const formattedKey = `${crmKey}@OData.Community.Display.V1.FormattedValue`;
-        if (data[formattedKey] !== undefined && data[formattedKey] !== null && data[formattedKey] !== '') {
-            return data[formattedKey];
+        // Build a case-insensitive lookup map once per call
+        const dataLower: Record<string, any> = {};
+        for (const k of Object.keys(data)) {
+            dataLower[k.toLowerCase()] = data[k];
         }
 
-        // Dot notation desteği — OData annotation key'leri (@OData...) hariç
-        if (crmKey.includes('.') && !crmKey.includes('@OData')) {
+        // If the key already contains @OData annotation, look it up directly (case-insensitive)
+        if (crmKey.includes('@odata')) {
+            const val = dataLower[crmKey];
+            if (val !== undefined && val !== null && val !== '') return val;
+            // Fallback: strip annotation and return raw value
+            const baseKey = crmKey.split('@')[0];
+            return dataLower[baseKey] ?? null;
+        }
+
+        // FormattedValue önceliği: option set alanları için okunabilir metin tercih edilir
+        const formattedKey = `${crmKey}@odata.community.display.v1.formattedvalue`;
+        if (dataLower[formattedKey] !== undefined && dataLower[formattedKey] !== null && dataLower[formattedKey] !== '') {
+            return dataLower[formattedKey];
+        }
+
+        // Dot notation desteği
+        if (crmKey.includes('.')) {
             const parts = crmKey.split('.');
             let val = data;
             for (const part of parts) {
@@ -430,7 +482,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
             }
             return val;
         }
-        return data[crmKey];
+
+        return dataLower[crmKey] ?? null;
     }
 
     private async getAccessToken(config: any): Promise<string> {

@@ -4,6 +4,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { EmbeddingService } from '../ai/embedding.service';
+import { AiService } from '../ai/ai.service';
 
 const AUTO_PUBLISH_THRESHOLD = 0.85; // Sorular %85+ eşleşme → direkt yayınla
 
@@ -25,6 +26,7 @@ export class FaqService {
         private readonly prisma: PrismaService,
         @InjectQueue('kb-summarizer') private readonly kbQueue: Queue,
         private readonly embeddingService: EmbeddingService,
+        private readonly aiService: AiService,
     ) { }
 
     @OnEvent('ticket.kb_summarize')
@@ -68,9 +70,28 @@ export class FaqService {
         for (const ticket of tickets) {
             if (ticket.messages.length < 2) continue; // Need at least Q + A
 
-            const question = ticket.subject;
             const answerMsg = ticket.messages.find((m: { senderId: string | null }) => m.senderId !== ticket.userId);
             if (!answerMsg) continue;
+
+            // AI Extraction Logic: Ask AI to format a clean Q&A pair from the conversation
+            const conversation = ticket.messages.map(m => `${m.senderId === ticket.userId ? 'Müşteri' : 'Destek'}: ${m.message}`).join('\n');
+            const aiFormatted = await this.aiService.reformat(
+                'Aşağıdaki destek bileti konuşmasından temel Soru ve Cevap çiftini çıkar. Yanıtı SADECE JSON formatında ver: { "question": "...", "answer": "..." }',
+                `Konu: ${ticket.subject}\n\nKonuşma:\n${conversation}`,
+                'FAQ Extraction',
+                'faq_extraction'
+            );
+
+            let question = ticket.subject;
+            let answer = answerMsg.message;
+
+            if (aiFormatted?.response) {
+                try {
+                    const parsed = JSON.parse(aiFormatted.response);
+                    question = parsed.question || question;
+                    answer = parsed.answer || answer;
+                } catch { /* fallback to defaults */ }
+            }
 
             // Simple confidence: based on message length and content
             // (Optimization: Removed per-ticket DB count to avoid N+1)
@@ -78,7 +99,7 @@ export class FaqService {
 
             patterns.push({
                 question,
-                answer: answerMsg.message,
+                answer,
                 confidenceScore,
                 sourceType: 'ticket',
                 sourceId: ticket.id,

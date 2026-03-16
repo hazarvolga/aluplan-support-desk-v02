@@ -161,7 +161,16 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     // ─── EMIT METHODS (called from services) ────────────────
 
     async emitTicketCreated(ticket: any) {
-        // Find users with agent roles (not customer)
+        // Broadcast to relevant roles (Admin, Managers, Team Leads)
+        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').to('role:team-lead').emit('ticket:created', {
+            id: ticket.id,
+            ticketNumber: ticket.ticketNumber,
+            subject: ticket.subject,
+            priority: ticket.priority,
+            status: ticket.status,
+        });
+
+        // Background: Create persistent notifications (keeping it simple for now, but querying non-customers)
         const potentialAgents = await this.prisma.user.findMany({
             where: {
                 role: {
@@ -173,7 +182,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         const userIds = potentialAgents.map(a => a.id);
 
         if (userIds.length > 0) {
-            await this.prisma.notification.createMany({
+            this.prisma.notification.createMany({
                 data: userIds.map(userId => ({
                     userId,
                     title: 'New Ticket',
@@ -181,17 +190,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
                     type: 'TICKET_CREATED',
                     link: `/tickets/${ticket.id}`
                 }))
-            });
+            }).catch(e => this.logger.error('Failed to create persistent notifications', e));
         }
-
-        // Notify admin/manager/team-lead rooms via JWT role names
-        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').emit('ticket:created', {
-            id: ticket.id,
-            ticketNumber: ticket.ticketNumber,
-            subject: ticket.subject,
-            priority: ticket.priority,
-            status: ticket.status,
-        });
     }
 
     async emitTicketUpdated(ticket: any) {

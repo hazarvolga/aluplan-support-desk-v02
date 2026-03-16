@@ -20,11 +20,20 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 };
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    const csrfToken = typeof window !== 'undefined' ? document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1] : null;
+
     const headers: any = {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options?.headers,
     };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    if (csrfToken) {
+        headers['X-XSRF-TOKEN'] = csrfToken;
+    }
 
     if (!(options?.body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';

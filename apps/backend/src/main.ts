@@ -7,6 +7,9 @@ import helmet from 'helmet';
 import * as compression from 'compression';
 import { json, urlencoded } from 'express';
 import * as net from 'net';
+import { Request, Response, NextFunction } from 'express';
+import * as cookieParser from 'cookie-parser';
+import * as csurf from 'csurf';
 import { AppModule } from './app.module';
 
 async function checkConnection(host: string, port: number, timeout = 3000): Promise<boolean> {
@@ -71,6 +74,18 @@ async function bootstrap() {
     const configService = app.get(ConfigService);
     const port = configService.get<number>('PORT', 3001);
     const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+    const nodeEnv = configService.get<string>('NODE_ENV', 'development');
+
+    // Strict Production Validation
+    if (nodeEnv === 'production') {
+        const requiredVars = ['DATABASE_URL', 'REDIS_URL', 'JWT_SECRET', 'ENCRYPTION_KEY', 'FRONTEND_URL'];
+        for (const v of requiredVars) {
+            if (!configService.get(v)) {
+                logger.error(`❌ CRITICAL: Missing required production environment variable: ${v}`);
+                process.exit(1);
+            }
+        }
+    }
 
     // Security Hardening
     app.use(helmet({
@@ -93,9 +108,30 @@ async function bootstrap() {
 
     app.use(compression());
 
+    // CSRF & Security Middlewares
+    app.use(cookieParser());
+
     // Payload Limit increase for massive CSV JSON arrays
     app.use(json({ limit: '50mb' }));
     app.use(urlencoded({ extended: true, limit: '50mb' }));
+
+    // Global CSRF Protection (except for webhooks which should use their own signature validation)
+    // Note: In a real production app, you might want to adjust the exclusion list
+    const csrfMiddleware = csurf({ cookie: { httpOnly: true, secure: nodeEnv === 'production', sameSite: 'lax' } });
+    app.use((req: Request, res: Response, next: NextFunction) => {
+        if (req.path.startsWith('/api/v1/webhooks')) {
+            return next();
+        }
+        csrfMiddleware(req, res, next);
+    });
+
+    // Provide CSRF token to frontend via a cookie or header (simplified for this plan)
+    app.use((req: Request, res: Response, next: NextFunction) => {
+        if (!req.path.startsWith('/api/v1/webhooks')) {
+            res.cookie('XSRF-TOKEN', (req as any).csrfToken());
+        }
+        next();
+    });
 
     const allowedOrigins = [
         'http://localhost:3000',

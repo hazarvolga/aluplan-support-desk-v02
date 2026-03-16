@@ -1,670 +1,680 @@
 {
-    "home": {
-        "title": "Aluplan Support System",
-        "cta_login": "Sign In",
-        "cta_register": "Register",
-        "footer_copy": "© 2025 Aluplan A.Ş. All rights reserved.",
-        "footer_status": "STATUS: ACTIVE",
-        "footer_encryption": "ENCRYPTION: AES-256",
-        "hero": {
-            "badge": "Next-Gen Engineering Support",
-            "ai_badge": "POWERED BY ALLPLAN AI",
-            "title": "Welcome to Aluplan Support Platform",
-            "subtitle": "The hub for technical expertise and resources to help you use Allplan most efficiently in your architectural and engineering projects.",
-            "cta_primary": "Login / Register",
-            "cta_secondary": "Download 14-Day Free Trial"
-        },
-        "training": {
-            "title": "FOR_NEW_USERS",
-            "card1_title": "Aluplan Youtube Channel",
-            "card1_desc": "Get a head start with Allplan training videos on our Youtube channel.",
-            "card1_cta": "Youtube Training Series",
-            "card2_title": "Student Licenses",
-            "card2_desc": "Get your free student and educator license via Allplan Campus immediately.",
-            "card2_cta": "Campus Portal",
-            "card2_link": "https://campus.allplan.com/index.html",
-            "oska_link": "https://aluplan.com.tr/solutions/bimx5",
-            "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi"
-        },
-        "faq": {
-            "title": "POPULAR_SOLUTIONS",
-            "item1_title": "License Registration",
-            "item1_desc": "Step-by-step guide for Softlock and Wibu activation processes.",
-            "item2_title": "License Transfer",
-            "item2_desc": "Transfer procedures before PC replacement or formatting.",
-            "item3_title": "System Requirements",
-            "item3_desc": "Current hardware recommendations for Allplan to run at peak performance."
-        },
-        "integrations": {
-            "title": "LOCAL_INTEGRATIONS",
-            "oska_title": "Oska e-Hakediş Integration",
-            "oska_desc": "Export Allplan quantity takeoff data directly to e-Hakediş via catalog settings.",
-            "plugins_title": "Market-Specific Plugins",
-            "plugins_desc": "Tools for local regulations like TAKS, KAKS, parking calculations, and area schedules."
-        },
-        "stats": {
-            "users": "10,000+",
-            "users_label": "Active Users",
-            "projects": "5,000+",
-            "projects_label": "BIM Models",
-            "support": "24/7",
-            "support_label": "Technical Support"
-        },
-        "social_proof": {
-            "title": "CHOICE_OF_INDUSTRY_LEADERS",
-            "subtitle": "Turkey's leading architecture and engineering firms design the future with Allplan."
-        }
+  "home": {
+    "title": "Aluplan Support System",
+    "cta_login": "Sign In",
+    "cta_register": "Register",
+    "footer_copy": "© 2025 Aluplan A.Ş. All rights reserved.",
+    "footer_status": "STATUS: ACTIVE",
+    "footer_encryption": "ENCRYPTION: AES-256",
+    "hero": {
+      "badge": "Next-Gen Engineering Support",
+      "ai_badge": "POWERED BY ALLPLAN AI",
+      "title": "Welcome to Aluplan Support Platform",
+      "subtitle": "The hub for technical expertise and resources to help you use Allplan most efficiently in your architectural and engineering projects.",
+      "cta_primary": "Login / Register",
+      "cta_secondary": "Download 14-Day Free Trial"
     },
-    "auth": {
-        "title": "Aluplan Support Desk",
-        "subtitle": "Central Knowledge Automation",
-        "gateway_title": "Operational Support Gateway",
-        "system_status": "SYSTEM_STATUS: ACTIVE",
-        "broadcast_title": "SYSTEM_BROADCAST // LATEST_NOTIFICATIONS",
-        "maintenance_notice_title": "Maintenance Notice",
-        "maintenance_notice_time": "2 HOURS AGO",
-        "maintenance_notice_desc": "Planned calibration for CNC-Array B affects auto-sync lines between 02:00-04:00 UTC. Expect telemetry delays in this time window.",
-        "docs_notice_title": "Documentation Update",
-        "docs_notice_time": "YESTERDAY",
-        "docs_notice_desc": "T-Series extrusion manuals updated (Rev. 4.1). Internal engineers are requested to check the latest tolerance tables in the knowledge base.",
-        "db_nodes_label": "Active DB Nodes",
-        "uptime_label": "Uptime (SLA)",
-        "certified_label": "Certified Infrastructure",
-        "login_title": "ACCESS GATEWAY",
-        "access_gate_desc": "Authentication required for telemetry read/write and support module access.",
-        "login_tab": "SIGN IN",
-        "request_tab": "REQUEST_ACCESS",
-        "email_label": "IDENTITY_TOKEN [EMAIL]",
-        "email_placeholder": "operator@aluplan.com",
-        "password_label": "VERIFICATION_KEY [PASSWORD]",
-        "password_placeholder": "••••••••",
-        "recovery_link": "RECOVER_KEY?",
-        "submit_button": "START SESSION",
-        "submitting": "ESTABLISHING_CONNECTION...",
-        "no_account": "Don't have an account?",
-        "register_link": "Register",
-        "security_tagline": "Connections are monitored via Aluplan Sec-Net",
-        "error_heading": "AUTHORIZATION DENIED",
-        "error_default": "AUTH_FAILURE: Credentials rejected by security node",
-        "error_credentials": "Invalid email address or password."
+    "training": {
+      "title": "FOR_NEW_USERS",
+      "card1_title": "Aluplan Youtube Channel",
+      "card1_desc": "Get a head start with Allplan training videos on our Youtube channel.",
+      "card1_cta": "Youtube Training Series",
+      "card2_title": "Student Licenses",
+      "card2_desc": "Get your free student and educator license via Allplan Campus immediately.",
+      "card2_cta": "Campus Portal",
+      "card2_link": "https://campus.allplan.com/index.html",
+      "oska_link": "https://aluplan.com.tr/solutions/bimx5",
+      "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi"
     },
-    "common": {
-        "dashboard": "Dashboard",
-        "tickets": "Tickets",
-        "settings": "Settings",
-        "logout": "Logout",
-        "loading": "Loading...",
-        "error": "An error occurred",
-        "save": "Save",
-        "saving": "Saving...",
-        "reset": "Reset",
-        "cancel": "Cancel",
-        "unknown": "Unknown",
-        "individual": "Individual",
-        "system": "SYSTEM",
-        "anonymous": "ANONYMOUS",
-        "priorities": {
-            "LOW": "Low",
-            "MEDIUM": "Medium",
-            "HIGH": "High",
-            "CRITICAL": "Critical",
-            "URGENT": "Urgent"
-        },
-        "languages": {
-            "tr": "Turkish",
-            "en": "English",
-            "de": "German"
-        }
+    "faq": {
+      "title": "POPULAR_SOLUTIONS",
+      "item1_title": "License Registration",
+      "item1_desc": "Step-by-step guide for Softlock and Wibu activation processes.",
+      "item2_title": "License Transfer",
+      "item2_desc": "Transfer procedures before PC replacement or formatting.",
+      "item3_title": "System Requirements",
+      "item3_desc": "Current hardware recommendations for Allplan to run at peak performance."
     },
-    "dashboard": {
-        "title": "Control Center",
-        "telemetry_version": "Aluplan Enterprise Telemetry — Version 2.4.0",
-        "system_active": "System Active",
-        "user_portal": "USER_PORTAL",
-        "user_identity": "ID: {name} | Access_Level: {level}",
-        "access_level_standard": "Standard",
-        "stats": {
-            "active_tickets": "ACTIVE_REQUESTS",
-            "resolved_tickets": "RESOLVED_REQUESTS",
-            "avg_response": "AVG_RESPONSE_TIME",
-            "sla_violations": "SLA_VIOLATIONS",
-            "daily_resolved": "DAILY_RESOLVED",
-            "ai_confidence": "ANN_CONFIDENCE_AVG",
-            "status_stable": "Stable"
-        },
-        "knowledge_base": {
-            "title": "KNOWLEDGE_BASE_QUERY",
-            "description": "Access recorded solutions and known workflows.",
-            "cta": "REVIEW_RECORDS"
-        },
-        "ai_diagnostic": {
-            "title": "ANN_DIAGNOSTIC",
-            "description": "Start an AI analysis for fast technical routing.",
-            "cta": "START_SESSION"
-        },
-        "actions": {
-            "create_ticket": "CREATE_NEW_REQUEST",
-            "manage_queue": "MANAGE_QUEUE",
-            "neural_analysis": "NEURAL_ANALYSIS"
-        },
-        "sections": {
-            "priority_distribution": "REQUEST_CRITICALITY_DISTRIBUTION",
-            "system_telemetry": "SYSTEM_TELEMETRY",
-            "quick_access": "QUICK_ACCESS"
-        },
-        "priorities": {
-            "LOW": "Low",
-            "MEDIUM": "Medium",
-            "HIGH": "High",
-            "URGENT": "Urgent"
-        }
+    "integrations": {
+      "title": "LOCAL_INTEGRATIONS",
+      "oska_title": "Oska e-Hakediş Integration",
+      "oska_desc": "Export Allplan quantity takeoff data directly to e-Hakediş via catalog settings.",
+      "plugins_title": "Market-Specific Plugins",
+      "plugins_desc": "Tools for local regulations like TAKS, KAKS, parking calculations, and area schedules."
     },
-    "sidebar": {
-        "app_subtitle": "Support Desk",
-        "logout": "Secure Logout",
-        "nav": {
-            "dashboard": "Control Panel",
-            "overview": "Overview",
-            "tickets": "Ticket Queue",
-            "my_tickets": "My Support Requests",
-            "kb_section": "KNOWLEDGE BASE",
-            "articles": "Articles",
-            "ai_approvals": "AI Approvals",
-            "kp_section": "KNOWLEDGE POOL",
-            "data_sources": "Data Sources",
-            "learning_loop": "Learning Loop",
-            "topology": "System Topology",
-            "system_section": "SYSTEM",
-            "ai_config": "AI Configuration",
-            "customers": "Customers",
-            "crm": "CRM Management",
-            "products": "Products & Modules",
-            "teams": "My Support Teams",
-            "announcements": "Announcements",
-            "emails": "Emails",
-            "ai_health": "AI Health & Telemetry",
-            "email_validation": "Email Validation",
-            "users": "User Management",
-            "settings": "Settings",
-            "help": "Help & Support",
-            "profile": "My Profile",
-            "account": "My Account",
-            "ai_assistant": "ANN Assistant"
-        }
+    "stats": {
+      "users": "10,000+",
+      "users_label": "Active Users",
+      "projects": "5,000+",
+      "projects_label": "BIM Models",
+      "support": "24/7",
+      "support_label": "Technical Support"
     },
-    "tickets": {
-        "title": "Requests Management",
-        "subtitle": "Active support requests and SLA performance tracking",
-        "filters": {
-            "all": "All Requests"
-        },
-        "new_ticket": "NEW REQUEST",
-        "bulk": {
-            "selected": "Selected_Requests",
-            "start_process": "Start_Process",
-            "resolve_all": "Resolve_All",
-            "success": "SYSTEM_COMMAND_SUCCESS: {count}_RECORDS_UPDATED",
-            "error": "SYSTEM_COMMAND_ERROR: {message}"
-        },
-        "table": {
-            "loading": "Waiting_for_Data_Logs",
-            "empty": "Queue_Empty",
-            "header": {
-                "system_id": "System_ID",
-                "company": "Company",
-                "customer": "Customer",
-                "subject": "Event Definition",
-                "status": "Status",
-                "priority": "Criticality",
-                "timestamp": "Timestamp"
-            },
-            "badges": {
-                "kb_sync": "KB_SYNC",
-                "sla_vio": "SLA_VIO"
-            }
-        },
-        "status": {
-            "NEW": "NEW",
-            "OPEN": "OPEN",
-            "IN_PROGRESS": "IN_PROGRESS",
-            "PENDING_CUSTOMER": "PENDING",
-            "PENDING_CUSTOMER_REVIEW": "AWAITING_APPROVAL",
-            "RESOLVED": "RESOLVED",
-            "CLOSED": "CLOSED"
-        },
-        "priority": {
-            "LOW": "LOW",
-            "MEDIUM": "MEDIUM",
-            "HIGH": "HIGH",
-            "URGENT": "URGENT"
-        },
-        "detail": {
-            "not_found": "Request not found",
-            "not_found_desc": "The requested item may have been deleted or you lack access permissions.",
-            "ticket_id": "REQUEST_{id}",
-            "started_by": "STARTED_BY: {name}",
-            "timestamp": "TS: {date}",
-            "finish_resolution": "FINISH RESOLUTION",
-            "summarizing": "SUMMARIZING_IN_PROGRESS...",
-            "ai_summary_btn": "ANN_SUMMARY",
-            "drafting": "DRAFT_PREPARATION_IN_PROGRESS...",
-            "ai_draft_btn": "ANN_DRAFT",
-            "start_live_support": "START LIVE SUPPORT",
-            "request_live_chat": "REQUEST LIVE CHAT",
-            "waiting_agent": "WAITING_FOR_AGENT_APPROVAL...",
-            "customer_waiting_live": "CUSTOMER_WAITING_FOR_LIVE_SUPPORT",
-            "start_conversation": "START CONVERSATION",
-            "live_session_active": "LIVE_SESSION_ACTIVE",
-            "review_pending_title": "PENDING_REQUEST_RESOLUTION_APPROVAL",
-            "review_pending_desc": "Please rate the resolution performance to close the channel.",
-            "feedback_placeholder": "ADD_OPERATIONAL_FEEDBACK (OPTIONAL)",
-            "saving": "SAVING...",
-            "save_and_close": "SAVE_FEEDBACK_&_CLOSE",
-            "customer_verification_pending": "PENDING_CUSTOMER_VERIFICATION",
-            "auto_sync_active": "Status: PENDING_REVIEW | Auto-Sync active for +4 score",
-            "debug_reject": "DEBUG:REJECT(2)",
-            "debug_approve": "DEBUG:APPROVE(5)",
-            "ai_summary_record": "ANN_SUMMARY_RECORD",
-            "sending": "TRANSFER_IN_PROGRESS...",
-            "secure_chat": "SECURE_CHAT",
-            "send_placeholder": "SUBMIT_MESSAGE...",
-            "ticket_metadata": "REQUEST_METADATA",
-            "status_label": "STATUS",
-            "channel_label": "CHANNEL",
-            "priority_label": "CRITICALITY",
-            "open_date": "CREATED_DATE",
-            "assignee_label": "ASSIGNED_AGENT",
-            "unassigned": "UNASSIGNED",
-            "hotfix_data": "HOTFIX_DATA",
-            "security_warning": "SECURITY WARNING",
-            "security_warning_desc": "OPERATIONAL_SECURITY_IS_MANDATORY. NEVER_SHARE_ACCESS_CREDENTIALS_OR_SYSTEM_PRIVILEGES. SANITIZE_SENSITIVE_DATA_IN_MESSAGES.",
-            "load_error": "Request could not be loaded",
-            "live_request_success": "Live support request submitted",
-            "live_start_success": "Live chat started",
-            "chat_update_error": "Chat status could not be updated",
-            "live_accept_success": "Live chat accepted",
-            "chat_start_error": "Chat could not be started",
-            "send_error": "Message could not be sent: {error}",
-            "summary_success": "AI Summary generated",
-            "summary_error": "Error generating summary",
-            "draft_success": "AI generated a draft response",
-            "draft_error": "Draft could not be created: {error}",
-            "review_success": "Request sent for approval (Awaiting customer verification)",
-            "status_update_error": "Status could not be changed",
-            "feedback_sent": "Customer rated with {score}/5 points.",
-            "feedback_error": "Test rating could not be sent.",
-            "csat_success": "You rated with {score}/5 points. Ticket closed, thank you!",
-            "csat_error": "Rating could not be sent.",
-            "resolved_comment": "My problem is fully resolved, thank you.",
-            "pending_comment": "There are still missing points."
+    "social_proof": {
+      "title": "CHOICE_OF_INDUSTRY_LEADERS",
+      "subtitle": "Turkey's leading architecture and engineering firms design the future with Allplan."
+    }
+  },
+  "auth": {
+    "title": "Aluplan Support Desk",
+    "subtitle": "Central Knowledge Automation",
+    "gateway_title": "Operational Support Gateway",
+    "system_status": "SYSTEM_STATUS: ACTIVE",
+    "broadcast_title": "SYSTEM_BROADCAST // LATEST_NOTIFICATIONS",
+    "maintenance_notice_title": "Maintenance Notice",
+    "maintenance_notice_time": "2 HOURS AGO",
+    "maintenance_notice_desc": "Planned calibration for CNC-Array B affects auto-sync lines between 02:00-04:00 UTC. Expect telemetry delays in this time window.",
+    "docs_notice_title": "Documentation Update",
+    "docs_notice_time": "YESTERDAY",
+    "docs_notice_desc": "T-Series extrusion manuals updated (Rev. 4.1). Internal engineers are requested to check the latest tolerance tables in the knowledge base.",
+    "db_nodes_label": "Active DB Nodes",
+    "uptime_label": "Uptime (SLA)",
+    "certified_label": "Certified Infrastructure",
+    "login_title": "ACCESS GATEWAY",
+    "access_gate_desc": "Authentication required for telemetry read/write and support module access.",
+    "login_tab": "SIGN IN",
+    "request_tab": "REQUEST_ACCESS",
+    "email_label": "IDENTITY_TOKEN [EMAIL]",
+    "email_placeholder": "operator@aluplan.com",
+    "password_label": "VERIFICATION_KEY [PASSWORD]",
+    "password_placeholder": "••••••••",
+    "recovery_link": "RECOVER_KEY?",
+    "submit_button": "START SESSION",
+    "submitting": "ESTABLISHING_CONNECTION...",
+    "no_account": "Don't have an account?",
+    "register_link": "Register",
+    "security_tagline": "Connections are monitored via Aluplan Sec-Net",
+    "error_heading": "AUTHORIZATION DENIED",
+    "error_default": "AUTH_FAILURE: Credentials rejected by security node",
+    "error_credentials": "Invalid email address or password."
+  },
+  "common": {
+    "dashboard": "Dashboard",
+    "tickets": "Tickets",
+    "settings": "Settings",
+    "logout": "Logout",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "saving": "Saving...",
+    "reset": "Reset",
+    "cancel": "Cancel",
+    "unknown": "Unknown",
+    "individual": "Individual",
+    "system": "SYSTEM",
+    "anonymous": "ANONYMOUS",
+    "priorities": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "CRITICAL": "Critical",
+      "URGENT": "Urgent"
+    },
+    "languages": {
+      "tr": "Turkish",
+      "en": "English",
+      "de": "German"
+    }
+  },
+  "dashboard": {
+    "title": "Control Center",
+    "telemetry_version": "Aluplan Enterprise Telemetry — Version 2.4.0",
+    "system_active": "System Active",
+    "user_portal": "USER_PORTAL",
+    "user_identity": "ID: {name} | Access_Level: {level}",
+    "access_level_standard": "Standard",
+    "stats": {
+      "active_tickets": "ACTIVE_REQUESTS",
+      "resolved_tickets": "RESOLVED_REQUESTS",
+      "avg_response": "AVG_RESPONSE_TIME",
+      "sla_violations": "SLA_VIOLATIONS",
+      "daily_resolved": "DAILY_RESOLVED",
+      "ai_confidence": "ANN_CONFIDENCE_AVG",
+      "status_stable": "Stable"
+    },
+    "knowledge_base": {
+      "title": "KNOWLEDGE_BASE_QUERY",
+      "description": "Access recorded solutions and known workflows.",
+      "cta": "REVIEW_RECORDS"
+    },
+    "ai_diagnostic": {
+      "title": "ANN_DIAGNOSTIC",
+      "description": "Start an AI analysis for fast technical routing.",
+      "cta": "START_SESSION"
+    },
+    "actions": {
+      "create_ticket": "CREATE_NEW_REQUEST",
+      "manage_queue": "MANAGE_QUEUE",
+      "neural_analysis": "NEURAL_ANALYSIS"
+    },
+    "sections": {
+      "priority_distribution": "REQUEST_CRITICALITY_DISTRIBUTION",
+      "system_telemetry": "SYSTEM_TELEMETRY",
+      "quick_access": "QUICK_ACCESS"
+    },
+    "priorities": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "URGENT": "Urgent"
+    }
+  },
+  "sidebar": {
+    "app_subtitle": "Support Desk",
+    "logout": "Secure Logout",
+    "nav": {
+      "dashboard": "Control Panel",
+      "overview": "Overview",
+      "tickets": "Ticket Queue",
+      "my_tickets": "My Support Requests",
+      "kb_section": "KNOWLEDGE BASE",
+      "articles": "Articles",
+      "ai_approvals": "AI Approvals",
+      "kp_section": "KNOWLEDGE POOL",
+      "data_sources": "Data Sources",
+      "learning_loop": "Learning Loop",
+      "topology": "System Topology",
+      "system_section": "SYSTEM",
+      "ai_config": "AI Configuration",
+      "customers": "Customers",
+      "crm": "CRM Management",
+      "products": "Products & Modules",
+      "teams": "My Support Teams",
+      "announcements": "Announcements",
+      "emails": "Emails",
+      "ai_health": "AI Health & Telemetry",
+      "email_validation": "Email Validation",
+      "users": "User Management",
+      "settings": "Settings",
+      "help": "Help & Support",
+      "profile": "My Profile",
+      "account": "My Account",
+      "ai_assistant": "ANN Assistant"
+    }
+  },
+  "tickets": {
+    "title": "Requests Management",
+    "subtitle": "Active support requests and SLA performance tracking",
+    "filters": {
+      "all": "All Requests"
+    },
+    "new_ticket": "NEW REQUEST",
+    "bulk": {
+      "selected": "Selected_Requests",
+      "start_process": "Start_Process",
+      "resolve_all": "Resolve_All",
+      "success": "SYSTEM_COMMAND_SUCCESS: {count}_RECORDS_UPDATED",
+      "error": "SYSTEM_COMMAND_ERROR: {message}"
+    },
+    "table": {
+      "loading": "Waiting_for_Data_Logs",
+      "empty": "Queue_Empty",
+      "header": {
+        "system_id": "System_ID",
+        "company": "Company",
+        "customer": "Customer",
+        "subject": "Event Definition",
+        "status": "Status",
+        "priority": "Criticality",
+        "timestamp": "Timestamp"
+      },
+      "badges": {
+        "kb_sync": "KB_SYNC",
+        "sla_vio": "SLA_VIO"
+      }
+    },
+    "status": {
+      "NEW": "NEW",
+      "OPEN": "OPEN",
+      "IN_PROGRESS": "IN_PROGRESS",
+      "PENDING_CUSTOMER": "PENDING",
+      "PENDING_CUSTOMER_REVIEW": "AWAITING_APPROVAL",
+      "RESOLVED": "RESOLVED",
+      "CLOSED": "CLOSED"
+    },
+    "priority": {
+      "LOW": "LOW",
+      "MEDIUM": "MEDIUM",
+      "HIGH": "HIGH",
+      "URGENT": "URGENT"
+    },
+    "detail": {
+      "not_found": "Request not found",
+      "not_found_desc": "The requested item may have been deleted or you lack access permissions.",
+      "ticket_id": "REQUEST_{id}",
+      "started_by": "STARTED_BY: {name}",
+      "timestamp": "TS: {date}",
+      "finish_resolution": "FINISH RESOLUTION",
+      "summarizing": "SUMMARIZING_IN_PROGRESS...",
+      "ai_summary_btn": "ANN_SUMMARY",
+      "drafting": "DRAFT_PREPARATION_IN_PROGRESS...",
+      "ai_draft_btn": "ANN_DRAFT",
+      "start_live_support": "START LIVE SUPPORT",
+      "request_live_chat": "REQUEST LIVE CHAT",
+      "waiting_agent": "WAITING_FOR_AGENT_APPROVAL...",
+      "customer_waiting_live": "CUSTOMER_WAITING_FOR_LIVE_SUPPORT",
+      "start_conversation": "START CONVERSATION",
+      "live_session_active": "LIVE_SESSION_ACTIVE",
+      "review_pending_title": "PENDING_REQUEST_RESOLUTION_APPROVAL",
+      "review_pending_desc": "Please rate the resolution performance to close the channel.",
+      "feedback_placeholder": "ADD_OPERATIONAL_FEEDBACK (OPTIONAL)",
+      "saving": "SAVING...",
+      "save_and_close": "SAVE_FEEDBACK_&_CLOSE",
+      "customer_verification_pending": "PENDING_CUSTOMER_VERIFICATION",
+      "auto_sync_active": "Status: PENDING_REVIEW | Auto-Sync active for +4 score",
+      "debug_reject": "DEBUG:REJECT(2)",
+      "debug_approve": "DEBUG:APPROVE(5)",
+      "ai_summary_record": "ANN_SUMMARY_RECORD",
+      "sending": "TRANSFER_IN_PROGRESS...",
+      "secure_chat": "SECURE_CHAT",
+      "send_placeholder": "SUBMIT_MESSAGE...",
+      "ticket_metadata": "REQUEST_METADATA",
+      "status_label": "STATUS",
+      "channel_label": "CHANNEL",
+      "priority_label": "CRITICALITY",
+      "open_date": "CREATED_DATE",
+      "assignee_label": "ASSIGNED_AGENT",
+      "unassigned": "UNASSIGNED",
+      "hotfix_data": "HOTFIX_DATA",
+      "security_warning": "SECURITY WARNING",
+      "security_warning_desc": "OPERATIONAL_SECURITY_IS_MANDATORY. NEVER_SHARE_ACCESS_CREDENTIALS_OR_SYSTEM_PRIVILEGES. SANITIZE_SENSITIVE_DATA_IN_MESSAGES.",
+      "load_error": "Request could not be loaded",
+      "live_request_success": "Live support request submitted",
+      "live_start_success": "Live chat started",
+      "chat_update_error": "Chat status could not be updated",
+      "live_accept_success": "Live chat accepted",
+      "chat_start_error": "Chat could not be started",
+      "send_error": "Message could not be sent: {error}",
+      "summary_success": "AI Summary generated",
+      "summary_error": "Error generating summary",
+      "draft_success": "AI generated a draft response",
+      "draft_error": "Draft could not be created: {error}",
+      "review_success": "Request sent for approval (Awaiting customer verification)",
+      "status_update_error": "Status could not be changed",
+      "feedback_sent": "Customer rated with {score}/5 points.",
+      "feedback_error": "Test rating could not be sent.",
+      "csat_success": "You rated with {score}/5 points. Ticket closed, thank you!",
+      "csat_error": "Rating could not be sent.",
+      "resolved_comment": "My problem is fully resolved, thank you.",
+      "pending_comment": "There are still missing points."
+    }
+  },
+  "ai": {
+    "title": "AI Support Navigator",
+    "subtitle": "Semantic Intelligence queries in the unified knowledge pool",
+    "beta_protocol": "BETA-PROTOCOL",
+    "input": {
+      "placeholder": "Address a question to the intelligence pool...",
+      "submit": "QUERY"
+    },
+    "response": {
+      "header": "Artificial Intelligence Response",
+      "confidence_score": "CONFIDENCE-VALUE: {confidence}",
+      "data_gap_title": "DATA GAP",
+      "data_gap_desc": "No matching record for this query was found in the current knowledge pool."
+    },
+    "suggest_ticket": {
+      "text": "Not satisfied with this answer? Contact an expert.",
+      "cta": "CREATE SUPPORT REQUEST"
+    },
+    "sources": {
+      "title": "REFERENCE SOURCES",
+      "match": "%{percent} MATCH"
+    },
+    "feedback": {
+      "title": "ACCURACY ANALYSIS",
+      "success": "PROTOCOL RECORDED. THANK YOU."
+    },
+    "system_info": {
+      "infrastructure": "INFRASTRUCTURE",
+      "node": "Ollama-VEC Compute Node",
+      "latency": "LATENCY",
+      "lookup": "{ms}ms Semantic Search"
+    }
+  },
+  "customers": {
+    "title": "Customer Portal",
+    "subtitle": "Enterprise Customer Portfolio and CRM Integration Center",
+    "actions": {
+      "import": "Import",
+      "verify_emails": "Verify Emails",
+      "verify_selected": "Verify Selected ({count})",
+      "delete_selected": "Delete {count} Selected",
+      "deleting": "Deleting in progress..."
+    },
+    "tabs": {
+      "customers": "Customers",
+      "accounts": "Accounts",
+      "sync": "Sync",
+      "history": "Action History"
+    },
+    "search": {
+      "placeholder": "Search customer or company..."
+    },
+    "table": {
+      "loading": "Retrieving data from database",
+      "empty": "No results found",
+      "headers": {
+        "customer_no": "Cust No",
+        "name": "Full Name",
+        "email": "Email",
+        "company": "Company",
+        "title": "Title",
+        "phone": "Phone",
+        "contractStatus": "Contract Status",
+        "subscriptionModel": "Subscription Model",
+        "industry": "Industry",
+        "status": "Status",
+        "createdAt": "Created At",
+        "actions": "Actions"
+      }
+    },
+    "accounts": {
+      "structure": "Company Structure",
+      "industry_domain": "Industry / Sector",
+      "ecosystem": "Ecosystem",
+      "crm_verification": "CRM Verification",
+      "profiles": "{count} PROFILES",
+      "details": "DETAILS",
+      "manual_entry": "MANUAL_ENTRY",
+      "dynamics_ok": "DYNAMICS_OK",
+      "not_found": "ACCOUNT NOT FOUND"
+    },
+    "sync": {
+      "checking": "CHECKING CRM DATA LOGS...",
+      "no_integration": "No CRM Integration",
+      "no_integration_desc": "Connect your Dynamics 365 database to automatically sync customer and company data.",
+      "configure_btn": "CONFIGURE CONTROL CENTER",
+      "last_transfer": "Last Transfer",
+      "last_transfer_none": "NONE",
+      "system_status": "System Status",
+      "trigger_sync": "Trigger Transfer",
+      "edit_settings": "EDIT SETTINGS",
+      "mapping": {
+        "account_title": "ACCOUNT MAPPING",
+        "contact_title": "CONTACT MAPPING",
+        "description": "Define which CRM fields correspond to which data in our system.",
+        "warning": "Incorrect mapping may lead to data synchronization inconsistencies. Check the CRM schema before making changes.",
+        "custom_fields": "Custom Fields",
+        "add_field": "Add Field",
+        "field_label": "Display Label",
+        "field_key": "System Key",
+        "select_crm_field": "Select CRM field...",
+        "fields": {
+          "account": {
+            "name": "Company Name / Title",
+            "industry": "Industry",
+            "website": "Website",
+            "address": "Address",
+            "customerNo": "Customer Number",
+            "system_id": "System ID (CRM)",
+            "email": "Main Email",
+            "phone": "Main Phone"
+          },
+          "contact": {
+            "firstName": "First Name",
+            "lastName": "Last Name",
+            "email": "Email",
+            "phoneNumber": "Phone Number",
+            "jobTitle": "Job Title / Position",
+            "companyName": "Company Name",
+            "industry": "Industry",
+            "customerNo": "Customer Number",
+            "system_id": "System ID (CRM)",
+            "contractStatus": "Contract Status",
+            "subscriptionModel": "Subscription Model"
+          }
         }
+      }
+    },
+    "history": {
+      "no_data": "No history data"
+    },
+    "toasts": {
+      "delete_success": "Selected {type} deleted.",
+      "sync_started": "Background sync started.",
+      "verify_success": "{count} emails verified.",
+      "bulk_update_success": "SYSTEM_COMMAND_SUCCESS: {count}_RECORDS_UPDATED",
+      "bulk_update_error": "SYSTEM_COMMAND_ERROR: {message}"
+    }
+  },
+  "settings": {
+    "title": "System Settings",
+    "subtitle": "Manage configurations and integrations across the platform.",
+    "tabs": {
+      "general": "General",
+      "ai": "AI",
+      "email": "Email",
+      "sla": "SLA",
+      "branding": "Branding"
+    },
+    "general": {
+      "title": "General Configuration",
+      "description": "Basic platform settings.",
+      "portal_name": "Platform Name",
+      "portal_name_placeholder": "e.g., Aluplan Support",
+      "frontend_url": "Frontend URL",
+      "frontend_url_placeholder": "https://support.aluplan.com"
     },
     "ai": {
-        "title": "AI Support Navigator",
-        "subtitle": "Semantic Intelligence queries in the unified knowledge pool",
-        "beta_protocol": "BETA-PROTOCOL",
-        "input": {
-            "placeholder": "Address a question to the intelligence pool...",
-            "submit": "QUERY"
+      "title": "AI Integration",
+      "description": "Configure Grok (xAI), DeepSeek, OpenAI, or Ollama services.",
+      "chat_provider": "Default Chat Provider",
+      "chat_provider_desc": "Used for ticket responses and assistant functions.",
+      "embed_provider": "Default Embedding Provider",
+      "embed_provider_desc": "Used for knowledge base search and document indexing.",
+      "test_btn": "Test Connection",
+      "save_btn": "Save Changes",
+      "ollama": {
+        "title": "Ollama (Local)",
+        "chat_model": "Chat Model",
+        "embed_model": "Embedding Model"
+      },
+      "openai": {
+        "title": "OpenAI (Cloud)",
+        "chat_model": "Chat Model",
+        "embed_model": "Embedding Model"
+      },
+      "validation": {
+        "fields": {
+          "api_key": "API Key",
+          "chat_model": "Chat Model",
+          "embed_model": "Embedding Model",
+          "url": "Connection URL"
         },
-        "response": {
-            "header": "Artificial Intelligence Response",
-            "confidence_score": "CONFIDENCE-VALUE: {confidence}",
-            "data_gap_title": "DATA GAP",
-            "data_gap_desc": "No matching record for this query was found in the current knowledge pool."
-        },
-        "suggest_ticket": {
-            "text": "Not satisfied with this answer? Contact an expert.",
-            "cta": "CREATE SUPPORT REQUEST"
-        },
-        "sources": {
-            "title": "REFERENCE SOURCES",
-            "match": "%{percent} MATCH"
-        },
-        "feedback": {
-            "title": "ACCURACY ANALYSIS",
-            "success": "PROTOCOL RECORDED. THANK YOU."
-        },
-        "system_info": {
-            "infrastructure": "INFRASTRUCTURE",
-            "node": "Ollama-VEC Compute Node",
-            "latency": "LATENCY",
-            "lookup": "{ms}ms Semantic Search"
-        }
+        "missing_fields": "Please fill in the following required fields: {fields}"
+      },
+      "xai": {
+        "title": "xAI (Grok)",
+        "chat_model": "Chat Model",
+        "not_supported": "Not supported"
+      },
+      "providers": {
+        "ollama": "Ollama (Local)",
+        "openai": "OpenAI (Cloud)",
+        "openai_cloud": "OpenAI (Cloud - Recommended)",
+        "xai": "xAI (Grok)",
+        "groq": "Groq (Fast & Free)",
+        "deepseek": "DeepSeek",
+        "llmapi": "LLMAPI (Recommended)",
+        "custom": "Custom (OpenAI Compatible)",
+        "custom_info": "Custom (If supported)",
+        "other_custom": "Other custom service",
+        "groq_no_embed": "Groq (Embedding not supported)"
+      }
     },
-    "customers": {
-        "title": "Customer Portal",
-        "subtitle": "Enterprise Customer Portfolio and CRM Integration Center",
-        "actions": {
-            "import": "Import",
-            "verify_emails": "Verify Emails",
-            "verify_selected": "Verify Selected ({count})",
-            "delete_selected": "Delete {count} Selected",
-            "deleting": "Deleting in progress..."
-        },
-        "tabs": {
-            "customers": "Customers",
-            "accounts": "Accounts",
-            "sync": "Sync",
-            "history": "Action History"
-        },
-        "search": {
-            "placeholder": "Search customer or company..."
-        },
+    "email": {
+      "title": "Email Service Settings",
+      "description": "Provider configuration for system notifications and customer correspondence.",
+      "active_provider": "Active Provider",
+      "from_address": "From Email Address",
+      "ollama_title": "Ollama (Local) Configuration",
+      "openai_title": "OpenAI Infrastructure Configuration",
+      "azure_title": "Azure OpenAI Configuration",
+      "status_active": "Active",
+      "status_inactive": "Disabled",
+      "resend_title": "Resend Configuration",
+      "smtp_title": "SMTP Configuration",
+      "gmail_title": "Gmail OAuth2 Configuration",
+      "authorized": "Authorized",
+      "not_authorized": "Not Authorized",
+      "from_address_label": "From Email Address",
+      "smtp_user": "Username",
+      "smtp_pass": "Password",
+      "redirect_uri_label": "Authorized Redirect URI (Add in Google Cloud Console)",
+      "save_provider_btn": "Save Email Provider",
+      "test_connection_btn": "Test Connection",
+      "gmail": {
+        "credentials_save": "Save Credentials",
+        "authorize_btn": "Authorize with Google",
+        "auth_hint": "First register your credentials, then click 'Authorize with Google'. You will be redirected back after granting permission."
+      },
+      "tabs": {
+        "config": "Configuration",
+        "templates": "Templates",
+        "logs": "Logs"
+      },
+      "logs": {
+        "title": "Delivery History",
+        "description": "Breakdown of all transactional emails sent by the system.",
         "table": {
-            "loading": "Retrieving data from database",
-            "empty": "No results found",
-            "headers": {
-                "customer_no": "Cust No",
-                "name": "Full Name",
-                "email": "Email",
-                "company": "Company",
-                "title": "Title",
-                "phone": "Phone",
-                "contractStatus": "Contract Status",
-                "subscriptionModel": "Subscription Model",
-                "industry": "Industry",
-                "status": "Status",
-                "createdAt": "Created At",
-                "actions": "Actions"
-            }
+          "recipient": "Recipient",
+          "template": "Template",
+          "status": "Status",
+          "date": "Date",
+          "empty": "No email delivery records found yet."
         },
-        "accounts": {
-            "structure": "Company Structure",
-            "industry_domain": "Industry / Sector",
-            "ecosystem": "Ecosystem",
-            "crm_verification": "CRM Verification",
-            "profiles": "{count} PROFILES",
-            "details": "DETAILS",
-            "manual_entry": "MANUAL_ENTRY",
-            "dynamics_ok": "DYNAMICS_OK",
-            "not_found": "ACCOUNT NOT FOUND"
+        "status": {
+          "sent": "SENT",
+          "delivered": "DELIVERED",
+          "bounced": "BOUNCED",
+          "failed": "FAILED",
+          "pending": "PENDING"
         },
-        "sync": {
-            "checking": "CHECKING CRM DATA LOGS...",
-            "no_integration": "No CRM Integration",
-            "no_integration_desc": "Connect your Dynamics 365 database to automatically sync customer and company data.",
-            "configure_btn": "CONFIGURE CONTROL CENTER",
-            "last_transfer": "Last Transfer",
-            "last_transfer_none": "NONE",
-            "system_status": "System Status",
-            "trigger_sync": "Trigger Transfer",
-            "edit_settings": "EDIT SETTINGS",
-            "mapping": {
-                "account_title": "ACCOUNT MAPPING",
-                "contact_title": "CONTACT MAPPING",
-                "description": "Define which CRM fields correspond to which data in our system.",
-                "warning": "Incorrect mapping may lead to data synchronization inconsistencies. Check the CRM schema before making changes.",
-                "fields": {
-                    "account": {
-                        "name": "Company Name / Title",
-                        "industry": "Industry",
-                        "website": "Website",
-                        "address": "Address",
-                        "customerNo": "Customer Number",
-                        "system_id": "System ID (CRM)",
-                        "email": "Main Email",
-                        "phone": "Main Phone"
-                    },
-                    "contact": {
-                        "firstName": "First Name",
-                        "lastName": "Last Name",
-                        "email": "Email",
-                        "phoneNumber": "Phone Number",
-                        "jobTitle": "Job Title / Position",
-                        "industry": "Industry",
-                        "customerNo": "Customer Number",
-                        "system_id": "System ID (CRM)",
-                        "contractStatus": "Contract Status"
-                    }
-                }
-            }
-        },
-        "history": {
-            "no_data": "No history data"
-        },
-        "toasts": {
-            "delete_success": "Selected {type} deleted.",
-            "sync_started": "Background sync started.",
-            "verify_success": "{count} emails verified.",
-            "bulk_update_success": "SYSTEM_COMMAND_SUCCESS: {count}_RECORDS_UPDATED",
-            "bulk_update_error": "SYSTEM_COMMAND_ERROR: {message}"
+        "pagination": {
+          "prev": "Previous",
+          "next": "Next",
+          "page": "PAGE"
         }
+      },
+      "templates": {
+        "title": "Email Templates",
+        "description": "Manage and customize MJML-based email templates.",
+        "select_placeholder": "Select template...",
+        "new_btn": "New Template",
+        "preview_btn": "Preview",
+        "save_btn": "Save",
+        "create_btn": "Create",
+        "cancel_btn": "Cancel",
+        "editor_title": "MJML Editor",
+        "preview_title": "Email Preview",
+        "subject_label": "Subject",
+        "preview_hint": "Click 'Preview' to see the content.",
+        "preview_flow_hint": "Save → Preview flow is recommended.",
+        "new_placeholder": "example-template-name",
+        "safe_editor_title": "Safe Content Editor",
+        "safe_editor_desc": "Edit your content without damaging the MJML structure.",
+        "editor_placeholder": "Enter MJML content here..."
+      }
     },
-    "settings": {
-        "title": "System Settings",
-        "subtitle": "Manage configurations and integrations across the platform.",
-        "tabs": {
-            "general": "General",
-            "ai": "AI",
-            "email": "Email",
-            "sla": "SLA",
-            "branding": "Branding"
+    "sla": {
+      "title": "SLA Policies",
+      "description": "Manage customer support times and service level goals.",
+      "add_policy": "Add Policy",
+      "table": {
+        "name": "Policy Name",
+        "priority": "Priority",
+        "department": "Department",
+        "response": "First Response",
+        "resolution": "Resolution",
+        "hours": "Business Hours",
+        "actions": "Actions"
+      },
+      "how_it_works": "How it works?",
+      "how_it_works_desc": "When a new ticket is created, the system first looks for a policy that matching this department and priority.",
+      "form": {
+        "edit_title": "Edit Policy",
+        "new_title": "New SLA Policy",
+        "name_label": "Policy Name",
+        "priority_label": "Priority Level",
+        "department_label": "Associated Department",
+        "response_label": "First Response Time (minutes)",
+        "resolve_label": "Resolution Time (minutes)",
+        "business_hours": "Only during business hours",
+        "placeholders": {
+          "name": "e.g.: Standard Support",
+          "department": "Select department"
         },
-        "general": {
-            "title": "General Configuration",
-            "description": "Basic platform settings.",
-            "portal_name": "Platform Name",
-            "portal_name_placeholder": "e.g., Aluplan Support",
-            "frontend_url": "Frontend URL",
-            "frontend_url_placeholder": "https://support.aluplan.com"
-        },
-        "ai": {
-            "title": "AI Integration",
-            "description": "Configure Grok (xAI), DeepSeek, OpenAI, or Ollama services.",
-            "chat_provider": "Default Chat Provider",
-            "chat_provider_desc": "Used for ticket responses and assistant functions.",
-            "embed_provider": "Default Embedding Provider",
-            "embed_provider_desc": "Used for knowledge base search and document indexing.",
-            "test_btn": "Test Connection",
-            "save_btn": "Save Changes",
-            "ollama": {
-                "title": "Ollama (Local)",
-                "chat_model": "Chat Model",
-                "embed_model": "Embedding Model"
-            },
-            "openai": {
-                "title": "OpenAI (Cloud)",
-                "chat_model": "Chat Model",
-                "embed_model": "Embedding Model"
-            },
-            "validation": {
-                "fields": {
-                    "api_key": "API Key",
-                    "chat_model": "Chat Model",
-                    "embed_model": "Embedding Model",
-                    "url": "Connection URL"
-                },
-                "missing_fields": "Please fill in the following required fields: {fields}"
-            },
-            "xai": {
-                "title": "xAI (Grok)",
-                "chat_model": "Chat Model",
-                "not_supported": "Not supported"
-            },
-            "providers": {
-                "ollama": "Ollama (Local)",
-                "openai": "OpenAI (Cloud)",
-                "openai_cloud": "OpenAI (Cloud - Recommended)",
-                "xai": "xAI (Grok)",
-                "groq": "Groq (Fast & Free)",
-                "deepseek": "DeepSeek",
-                "llmapi": "LLMAPI (Recommended)",
-                "custom": "Custom (OpenAI Compatible)",
-                "custom_info": "Custom (If supported)",
-                "other_custom": "Other custom service",
-                "groq_no_embed": "Groq (Embedding not supported)"
-            }
-        },
-        "email": {
-            "title": "Email Service Settings",
-            "description": "Provider configuration for system notifications and customer correspondence.",
-            "active_provider": "Active Provider",
-            "from_address": "From Email Address",
-            "ollama_title": "Ollama (Local) Configuration",
-            "openai_title": "OpenAI Infrastructure Configuration",
-            "azure_title": "Azure OpenAI Configuration",
-            "status_active": "Active",
-            "status_inactive": "Disabled",
-            "resend_title": "Resend Configuration",
-            "smtp_title": "SMTP Configuration",
-            "gmail_title": "Gmail OAuth2 Configuration",
-            "authorized": "Authorized",
-            "not_authorized": "Not Authorized",
-            "from_address_label": "From Email Address",
-            "smtp_user": "Username",
-            "smtp_pass": "Password",
-            "redirect_uri_label": "Authorized Redirect URI (Add in Google Cloud Console)",
-            "save_provider_btn": "Save Email Provider",
-            "test_connection_btn": "Test Connection",
-            "gmail": {
-                "credentials_save": "Save Credentials",
-                "authorize_btn": "Authorize with Google",
-                "auth_hint": "First register your credentials, then click 'Authorize with Google'. You will be redirected back after granting permission."
-            },
-            "tabs": {
-                "config": "Configuration",
-                "templates": "Templates",
-                "logs": "Logs"
-            },
-            "logs": {
-                "title": "Delivery History",
-                "description": "Breakdown of all transactional emails sent by the system.",
-                "table": {
-                    "recipient": "Recipient",
-                    "template": "Template",
-                    "status": "Status",
-                    "date": "Date",
-                    "empty": "No email delivery records found yet."
-                },
-                "status": {
-                    "sent": "SENT",
-                    "delivered": "DELIVERED",
-                    "bounced": "BOUNCED",
-                    "failed": "FAILED",
-                    "pending": "PENDING"
-                },
-                "pagination": {
-                    "prev": "Previous",
-                    "next": "Next",
-                    "page": "PAGE"
-                }
-            },
-            "templates": {
-                "title": "Email Templates",
-                "description": "Manage and customize MJML-based email templates.",
-                "select_placeholder": "Select template...",
-                "new_btn": "New Template",
-                "preview_btn": "Preview",
-                "save_btn": "Save",
-                "create_btn": "Create",
-                "cancel_btn": "Cancel",
-                "editor_title": "MJML Editor",
-                "preview_title": "Email Preview",
-                "subject_label": "Subject",
-                "preview_hint": "Click 'Preview' to see the content.",
-                "preview_flow_hint": "Save → Preview flow is recommended.",
-                "new_placeholder": "example-template-name",
-                "safe_editor_title": "Safe Content Editor",
-                "safe_editor_desc": "Edit your content without damaging the MJML structure.",
-                "editor_placeholder": "Enter MJML content here..."
-            }
-        },
-        "sla": {
-            "title": "SLA Policies",
-            "description": "Manage customer support times and service level goals.",
-            "add_policy": "Add Policy",
-            "table": {
-                "name": "Policy Name",
-                "priority": "Priority",
-                "department": "Department",
-                "response": "First Response",
-                "resolution": "Resolution",
-                "hours": "Business Hours",
-                "actions": "Actions"
-            },
-            "how_it_works": "How it works?",
-            "how_it_works_desc": "When a new ticket is created, the system first looks for a policy that matching this department and priority.",
-            "form": {
-                "edit_title": "Edit Policy",
-                "new_title": "New SLA Policy",
-                "name_label": "Policy Name",
-                "priority_label": "Priority Level",
-                "department_label": "Associated Department",
-                "response_label": "First Response Time (minutes)",
-                "resolve_label": "Resolution Time (minutes)",
-                "business_hours": "Only during business hours",
-                "placeholders": {
-                    "name": "e.g.: Standard Support",
-                    "department": "Select department"
-                },
-                "cancel_btn": "Cancel"
-            }
-        },
-        "branding": {
-            "title": "Branding & Visual Identity",
-            "description": "Corporate identity and contact information. This information is automatically displayed in the email footer.",
-            "company_label": "Company Name",
-            "logo_label": "Company Logo",
-            "email_label": "Company Email",
-            "phone_label": "Company Phone",
-            "address_label": "Contact Address (Footer)",
-            "social_links": "Social Media Links",
-            "upload_btn": "Upload Logo",
-            "uploading": "Uploading...",
-            "logo_hint": "PNG, JPG or SVG (Max 2MB)",
-            "save_btn": "Save Branding Settings",
-            "placeholders": {
-                "company": "e.g.: Aluplan Co.",
-                "email": "support@company.com",
-                "phone": "+49 ...",
-                "address": "e.g.: Example Street 123, 12345 City..."
-            }
-        },
-        "toasts": {
-            "save_success": "Settings saved.",
-            "save_error": "Error saving settings.",
-            "load_error": "Error loading settings.",
-            "gmail_success": "Gmail account connected successfully.",
-            "gmail_error": "Authorization failed.",
-            "logo_success": "Logo saved successfully.",
-            "logo_error": "Error loading logo.",
-            "policy_save_success": "Policy saved.",
-            "policy_delete_success": "Policy deleted.",
-            "policy_confirm_delete": "Are you sure you want to delete this policy?",
-            "connection_success": "Connection successful",
-            "connection_failed": "Connection failed",
-            "connection_error": "Connection error",
-            "ollama_ok": "Communication with Ollama established.",
-            "ollama_fail": "Ollama service could not be reached.",
-            "openai_ok": "OpenAI keys validated.",
-            "openai_fail": "API key invalid or missing.",
-            "xai_ok": "xAI connection successful.",
-            "xai_fail": "xAI connection failed.",
-            "groq_ok": "Groq connection validated.",
-            "groq_fail": "API key or configuration error.",
-            "deepseek_ok": "DeepSeek connection successful.",
-            "deepseek_fail": "DeepSeek connection failed. Check your API key.",
-            "llmapi_ok": "LLMAPI.ai connection successful.",
-            "llmapi_fail": "LLMAPI.ai connection failed.",
-            "custom_ok": "Custom API connection validated.",
-            "custom_fail": "Custom configuration error.",
-            "server_unreachable": "Server unreachable.",
-            "gmail_credentials_hint": "Save Client ID and Secret first.",
-            "logo_upload_error": "Error uploading logo.",
-            "generic_error": "An error occurred.",
-            "generic_success_hint": "Access to {provider} service established.",
-            "generic_fail_hint": "Service is currently unreachable."
-        }
+        "cancel_btn": "Cancel"
+      }
     },
-    "admin": {
-        "live_support_request": {
-            "title": "Support Requests",
-            "description": "Manage system-wide open and active support requests."
-        },
-        "ai_health": {
-            "title": "AI Health & Telemetry",
-            "description": "Real-time monitoring of AI models, token consumption, and RAG performance."
-        }
+    "branding": {
+      "title": "Branding & Visual Identity",
+      "description": "Corporate identity and contact information. This information is automatically displayed in the email footer.",
+      "company_label": "Company Name",
+      "logo_label": "Company Logo",
+      "email_label": "Company Email",
+      "phone_label": "Company Phone",
+      "address_label": "Contact Address (Footer)",
+      "social_links": "Social Media Links",
+      "upload_btn": "Upload Logo",
+      "uploading": "Uploading...",
+      "logo_hint": "PNG, JPG or SVG (Max 2MB)",
+      "save_btn": "Save Branding Settings",
+      "placeholders": {
+        "company": "e.g.: Aluplan Co.",
+        "email": "support@company.com",
+        "phone": "+49 ...",
+        "address": "e.g.: Example Street 123, 12345 City..."
+      },
+      "logo_title": "Logo"
+    },
+    "toasts": {
+      "save_success": "Settings saved.",
+      "save_error": "Error saving settings.",
+      "load_error": "Error loading settings.",
+      "gmail_success": "Gmail account connected successfully.",
+      "gmail_error": "Authorization failed.",
+      "logo_success": "Logo saved successfully.",
+      "logo_error": "Error loading logo.",
+      "policy_save_success": "Policy saved.",
+      "policy_delete_success": "Policy deleted.",
+      "policy_confirm_delete": "Are you sure you want to delete this policy?",
+      "connection_success": "Connection successful",
+      "connection_failed": "Connection failed",
+      "connection_error": "Connection error",
+      "ollama_ok": "Communication with Ollama established.",
+      "ollama_fail": "Ollama service could not be reached.",
+      "openai_ok": "OpenAI keys validated.",
+      "openai_fail": "API key invalid or missing.",
+      "xai_ok": "xAI connection successful.",
+      "xai_fail": "xAI connection failed.",
+      "groq_ok": "Groq connection validated.",
+      "groq_fail": "API key or configuration error.",
+      "deepseek_ok": "DeepSeek connection successful.",
+      "deepseek_fail": "DeepSeek connection failed. Check your API key.",
+      "llmapi_ok": "LLMAPI.ai connection successful.",
+      "llmapi_fail": "LLMAPI.ai connection failed.",
+      "custom_ok": "Custom API connection validated.",
+      "custom_fail": "Custom configuration error.",
+      "server_unreachable": "Server unreachable.",
+      "gmail_credentials_hint": "Save Client ID and Secret first.",
+      "logo_upload_error": "Error uploading logo.",
+      "generic_error": "An error occurred.",
+      "generic_success_hint": "Access to {provider} service established.",
+      "generic_fail_hint": "Service is currently unreachable.",
+      "success": "Success",
+      "error": "Error"
     }
+  },
+  "admin": {
+    "live_support_request": {
+      "title": "Support Requests",
+      "description": "Manage system-wide open and active support requests."
+    },
+    "ai_health": {
+      "title": "AI Health & Telemetry",
+      "description": "Real-time monitoring of AI models, token consumption, and RAG performance."
+    }
+  }
 }
