@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AssignmentStrategy, SystemRole, AgentStatus } from '@aluplan/database';
 
@@ -72,10 +72,17 @@ export class TeamsService {
         assignmentStrategy?: AssignmentStrategy;
         autoAssignmentEnabled?: boolean;
     }) {
+        // Ensure slug uniqueness — append suffix if taken
+        let slug = data.slug;
+        const existing = await this.prisma.team.findUnique({ where: { slug } });
+        if (existing) {
+            slug = `${slug}-${Date.now().toString(36)}`;
+        }
+
         return this.prisma.team.create({
             data: {
                 name: data.name,
-                slug: data.slug,
+                slug,
                 departmentId: data.departmentId,
                 description: data.description,
                 assignmentStrategy: data.assignmentStrategy || AssignmentStrategy.MANUAL,

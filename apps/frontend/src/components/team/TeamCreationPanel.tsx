@@ -24,6 +24,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Building2, ShieldCheck, Zap } from 'lucide-react';
 
+
 interface TeamCreationPanelProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -32,13 +33,11 @@ interface TeamCreationPanelProps {
 
 export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOpenChange, onSuccess }) => {
     const [departments, setDepartments] = useState<any[]>([]);
-    const [customers, setCustomers] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         departmentId: '',
-        customerId: '',
         assignmentStrategy: 'ROUND_ROBIN',
         autoAssignmentEnabled: true
     });
@@ -46,15 +45,11 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
 
     useEffect(() => {
         if (open) {
-            Promise.all([
-                api.teams.departments(),
-                api.customers.list()
-            ]).then(([depts, custs]) => {
-                setDepartments(depts);
-                setCustomers(custs);
-            }).catch(() => {
-                toast({ title: 'Hata', description: 'Veriler yüklenemedi.', variant: 'destructive' });
-            });
+            api.teams.departments()
+                .then(depts => setDepartments(depts))
+                .catch(() => {
+                    toast({ title: 'Hata', description: 'Departmanlar yüklenemedi.', variant: 'destructive' });
+                });
         }
     }, [open, toast]);
 
@@ -66,7 +61,13 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
         }
         setLoading(true);
         try {
-            await api.teams.create(formData);
+            const slug = formData.name
+                .toLowerCase()
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/[^a-z0-9-]/g, '')
+                .substring(0, 100);
+            await api.teams.create({ ...formData, slug });
             toast({ title: 'Başarılı', description: 'Yeni ekip başarıyla oluşturuldu.' });
             onSuccess();
             onOpenChange(false);
@@ -74,7 +75,6 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
                 name: '',
                 description: '',
                 departmentId: '',
-                customerId: '',
                 assignmentStrategy: 'ROUND_ROBIN',
                 autoAssignmentEnabled: true
             });
@@ -127,27 +127,6 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
                                     <SelectItem key={d.id} value={d.id} className="rounded-lg">
                                         <div className="flex items-center gap-2">
                                             <Building2 className="h-3 w-3 opacity-50" /> {d.name}
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="customer" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Müşteri (Opsiyonel)</Label>
-                        <Select
-                            value={formData.customerId}
-                            onValueChange={val => setFormData({ ...formData, customerId: val })}
-                        >
-                            <SelectTrigger className="h-11 rounded-xl bg-muted/30 border-none shadow-none text-sm font-medium">
-                                <SelectValue placeholder="Müşteri seçin" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-border/40 shadow-xl">
-                                {customers.map(c => (
-                                    <SelectItem key={c.id} value={c.id} className="rounded-lg">
-                                        <div className="flex items-center gap-2">
-                                            <ShieldCheck className="h-3 w-3 opacity-50" /> {c.user?.fullName || c.name || 'İsimsiz Müşteri'}
                                         </div>
                                     </SelectItem>
                                 ))}
