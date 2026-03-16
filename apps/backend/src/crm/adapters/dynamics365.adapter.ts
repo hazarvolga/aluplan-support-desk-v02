@@ -40,7 +40,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
             const accounts: any[] = [];
             let nextUrl: string | null = baseUrl;
             while (nextUrl) {
-                const response = await axios.get(nextUrl, { headers });
+                const response: { status: number; data: any } = await axios.get(nextUrl, { headers });
                 this.logger.debug(`Accounts page status: ${response.status}, count: ${response.data.value?.length}`);
                 accounts.push(...(response.data.value ?? []));
                 nextUrl = response.data['@odata.nextLink'] ?? null;
@@ -136,7 +136,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
             const contacts: any[] = [];
             let nextUrl: string | null = baseUrl;
             while (nextUrl) {
-                const response = await axios.get(nextUrl, { headers });
+                const response: { status: number; data: any } = await axios.get(nextUrl, { headers });
                 this.logger.debug(`Contacts page status: ${response.status}, count: ${response.data.value?.length}`);
                 contacts.push(...(response.data.value ?? []));
                 nextUrl = response.data['@odata.nextLink'] ?? null;
