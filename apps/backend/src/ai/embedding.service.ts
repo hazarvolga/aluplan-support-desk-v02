@@ -123,7 +123,7 @@ export class EmbeddingService {
         
         UNION ALL
         
-        -- Knowledge Pool (General chunks - Allow for everyone if not internal)
+        -- Knowledge Pool (Child → Parent retrieval, mirrors article search pattern)
         SELECT 
             ks.id AS article_id, 
             CASE 
@@ -131,18 +131,17 @@ export class EmbeddingService {
                 ELSE 'DOCUMENT'
             END AS source_type, 
             ks.name AS title, 
-            kpe.content, 
+            COALESCE(parent_kpe.content, kpe.content) AS content,
             1 - (kpe.embedding <=> ${vectorStr}::vector) AS similarity,
             ks.trust_score,
             ks.language
         FROM knowledge_pool_embeddings kpe
         JOIN knowledge_sources ks ON kpe.source_id = ks.id
+        LEFT JOIN knowledge_pool_embeddings parent_kpe ON kpe.parent_id = parent_kpe.id
         WHERE ks.status = 'ACTIVE' 
-          -- Allow pool access for everyone, or filter if specific tags exist later
           AND (${productId}::uuid IS NULL OR ks.product_id = ${productId}::uuid) 
           AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.SIMILARITY_THRESHOLD}
-
-          AND kpe.metadata->>'type' = 'parent'
+          AND kpe.parent_id IS NOT NULL
       )
       SELECT * 
       FROM combined_search 
@@ -173,13 +172,42 @@ export class EmbeddingService {
     }
 
     async indexPoolContent(sourceId: string, content: string, metadata: any = {}): Promise<void> {
-        const result = await this.ai.embed(content);
-        if (!result) return;
+        const parentMax = parseInt(process.env.CHUNK_PARENT_MAX_TOKENS || '800', 10);
+        const hierarchies = hierarchicalChunk(content, { maxTokens: parentMax });
 
-        await this.prisma.$executeRaw`
-      INSERT INTO knowledge_pool_embeddings (id, source_id, embedding, content, metadata, model_name)
-      VALUES (gen_random_uuid(), ${sourceId}::uuid, ${JSON.stringify(result.embedding)}::vector, ${content}, ${JSON.stringify(metadata)}::jsonb, ${result.model})
-    `;
+        if (hierarchies.length === 0) return;
+
+        // Delete existing embeddings for this source before re-indexing
+        await this.prisma.$executeRaw`DELETE FROM knowledge_pool_embeddings WHERE source_id = ${sourceId}::uuid`;
+
+        for (const h of hierarchies) {
+            // 1. Index the Parent (for context storage)
+            const parentId = crypto.randomUUID();
+            const parentEmb = await this.ai.embed(h.parent);
+            if (!parentEmb) continue;
+
+            await this.prisma.$executeRaw`
+                INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, model_name)
+                VALUES (${parentId}::uuid, ${sourceId}::uuid, NULL,
+                        ${JSON.stringify(parentEmb.embedding)}::vector, ${h.parent}, ${JSON.stringify(metadata)}::jsonb, ${parentEmb.model})
+            `;
+
+            // 2. Index the Children (for precise retrieval)
+            for (const childContent of h.children) {
+                const childEmb = await this.ai.embed(childContent);
+                if (!childEmb) continue;
+
+                await this.prisma.$executeRaw`
+                    INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, model_name)
+                    VALUES (gen_random_uuid(), ${sourceId}::uuid, ${parentId}::uuid,
+                            ${JSON.stringify(childEmb.embedding)}::vector, ${childContent}, ${JSON.stringify(metadata)}::jsonb, ${childEmb.model})
+                `;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        this.logger.log(`📐 Indexed ${hierarchies.length} hierarchies for pool source ${sourceId}`);
     }
 
     async indexTicket(ticketId: string, content: string): Promise<void> {
@@ -206,6 +234,15 @@ export class EmbeddingService {
     `;
 
         return rows.map((r) => ({ ticketId: r.ticket_id, subject: r.subject, similarity: Number(r.similarity) }));
+    }
+
+    /**
+     * Public method to embed a single text string.
+     * Used by FaqService for semantic deduplication.
+     */
+    async embedText(text: string): Promise<number[] | null> {
+        const result = await this.ai.embed(text);
+        return result ? result.embedding : null;
     }
 
     async reindexAll(): Promise<{ indexed: number; failed: number }> {

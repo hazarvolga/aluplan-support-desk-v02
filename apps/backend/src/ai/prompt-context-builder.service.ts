@@ -12,8 +12,13 @@ export class PromptContextBuilderService {
     constructor(private readonly prisma: PrismaService) { }
 
     async buildContext(options: ContextOptions): Promise<string> {
-        const { userId, userQuery, kbContent: _kbContent } = options;
+        const { userId, userQuery, kbContent } = options;
         let context = '';
+
+        // 0. Approved Knowledge Source (most critical — placed first for LLM attention)
+        if (kbContent && kbContent.trim()) {
+            context += `[APPROVED KNOWLEDGE SOURCE]\n${kbContent}\n\n`;
+        }
 
         // 1. User Profile & Preferences
         if (userId) {

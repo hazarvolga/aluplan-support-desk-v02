@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { EmbeddingService } from '../ai/embedding.service';
 
 const AUTO_PUBLISH_THRESHOLD = 0.85; // Sorular %85+ eşleşme → direkt yayınla
 
@@ -23,10 +24,16 @@ export class FaqService {
     constructor(
         private readonly prisma: PrismaService,
         @InjectQueue('kb-summarizer') private readonly kbQueue: Queue,
+        private readonly embeddingService: EmbeddingService,
     ) { }
 
     @OnEvent('ticket.kb_summarize')
     async handleTicketKbSummarize(ticket: any) {
+        // Idempotency: skip if already processed
+        if (ticket.knowledgeBaseAdded) {
+            this.logger.log(`⏭️ Ticket ${ticket.ticketNumber} already in KB, skipping queue.`);
+            return;
+        }
         this.logger.log(`📥 Received ticket ${ticket.ticketNumber} for KB Summarization...`);
         // Add ticket to the summarizer queue for Option C pipeline
         await this.kbQueue.add('summarize', { ticketId: ticket.id }, {
@@ -147,41 +154,90 @@ export class FaqService {
         let queued = 0;
         let skipped = 0;
 
+        const DEDUP_THRESHOLD = parseFloat(process.env.FAQ_SEMANTIC_DEDUP_THRESHOLD || '0.90');
+
         for (const pattern of patterns) {
             // Skip if empty answer (interaction-sourced without resolution)
             if (!pattern.answer.trim()) { skipped++; continue; }
 
-            // Check for duplicate (Optimized: use exact match or first 30 chars)
-            const existing = await this.prisma.faqEntry.findFirst({
+            // 1. Exact match check (fast path)
+            const exactMatch = await this.prisma.faqEntry.findFirst({
                 where: { question: pattern.question },
                 select: { id: true }
             });
 
-            if (existing) {
-                // Bump frequency
+            if (exactMatch) {
                 await this.prisma.faqEntry.update({
-                    where: { id: existing.id },
+                    where: { id: exactMatch.id },
                     data: { frequency: { increment: 1 } },
                 });
                 skipped++;
                 continue;
             }
 
+            // 2. Semantic deduplication (embedding-based)
+            let semanticDuplicateId: string | null = null;
+            try {
+                const embedding = await this.embeddingService.embedText(pattern.question);
+                if (embedding) {
+                    const vectorStr = JSON.stringify(embedding);
+                    const similar = await this.prisma.$queryRaw<Array<{ id: string; similarity: number }>>`
+                        SELECT id, 1 - (question_embedding <=> ${vectorStr}::vector) AS similarity
+                        FROM faq_entries
+                        WHERE question_embedding IS NOT NULL
+                          AND status IN ('PUBLISHED', 'PENDING_REVIEW')
+                          AND 1 - (question_embedding <=> ${vectorStr}::vector) >= ${DEDUP_THRESHOLD}
+                        ORDER BY similarity DESC
+                        LIMIT 1
+                    `;
+                    if (similar.length > 0) {
+                        semanticDuplicateId = similar[0].id;
+                    }
+                }
+            } catch (err: any) {
+                this.logger.warn(`⚠️ Semantic dedup check failed, falling back: ${err.message}`);
+            }
+
+            if (semanticDuplicateId) {
+                await this.prisma.faqEntry.update({
+                    where: { id: semanticDuplicateId },
+                    data: { frequency: { increment: 1 } },
+                });
+                skipped++;
+                continue;
+            }
+
+            // 3. Create new FAQ entry with embedding
             const status = pattern.confidenceScore >= AUTO_PUBLISH_THRESHOLD ? 'PUBLISHED' : 'PENDING_REVIEW';
 
-            await this.prisma.faqEntry.create({
-                data: {
-                    question: pattern.question,
-                    answer: pattern.answer,
-                    status,
-                    isInternal: true, // Default to internal for all pipeline-sourced Q&A
-                    confidenceScore: pattern.confidenceScore,
-                    sourceTypes: [pattern.sourceType],
-                    tags: pattern.tags,
-                    language: pattern.language,
-                    publishedAt: status === 'PUBLISHED' ? new Date() : null,
-                },
-            });
+            let questionEmbedding: number[] | null = null;
+            try {
+                questionEmbedding = await this.embeddingService.embedText(pattern.question);
+            } catch { /* non-fatal */ }
+
+            if (questionEmbedding) {
+                const vectorStr = JSON.stringify(questionEmbedding);
+                await this.prisma.$executeRaw`
+                    INSERT INTO faq_entries (id, question, answer, status, is_internal, confidence_score, source_types, tags, language, published_at, question_embedding)
+                    VALUES (gen_random_uuid(), ${pattern.question}, ${pattern.answer}, ${status}::"FaqStatus",
+                            true, ${pattern.confidenceScore}, ${pattern.tags}::text[], ${pattern.tags}::text[], ${pattern.language},
+                            ${status === 'PUBLISHED' ? new Date() : null}, ${vectorStr}::vector)
+                `;
+            } else {
+                await this.prisma.faqEntry.create({
+                    data: {
+                        question: pattern.question,
+                        answer: pattern.answer,
+                        status,
+                        isInternal: true,
+                        confidenceScore: pattern.confidenceScore,
+                        sourceTypes: [pattern.sourceType],
+                        tags: pattern.tags,
+                        language: pattern.language,
+                        publishedAt: status === 'PUBLISHED' ? new Date() : null,
+                    },
+                });
+            }
 
             if (status === 'PUBLISHED') autoPublished++;
             else queued++;

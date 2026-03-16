@@ -613,12 +613,13 @@ model FaqEntry {
   isInternal      Boolean   @default(true) @map("is_internal")
   trustScore      Decimal   @default(0.75) @map("trust_score") @db.Decimal(5, 4)
   feedbackWeight  Decimal   @default(1.0) @map("feedback_weight") @db.Decimal(5, 4)
-  sourceTypes     String[]  @default([]) @map("source_types")
-  tags            String[]  @default([])
-  language        String    @default("tr") @db.VarChar(10)
-  publishedAt     DateTime? @map("published_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  sourceTypes       String[]               @default([]) @map("source_types")
+  tags              String[]               @default([])
+  language          String                 @default("tr") @db.VarChar(10)
+  publishedAt       DateTime?              @map("published_at")
+  questionEmbedding Unsupported("vector")? @map("question_embedding")
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
 
   @@index([status], map: "idx_faq_status")
   @@map("faq_entries")
@@ -740,16 +741,20 @@ model KnowledgeSourceSyncLog {
 }
 
 model KnowledgePoolEmbedding {
-  id        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sourceId  String                @map("source_id") @db.Uuid
+  id        String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId  String                   @map("source_id") @db.Uuid
+  parentId  String?                  @map("parent_id") @db.Uuid
   embedding Unsupported("vector")
   content   String
   metadata  Json?
-  modelName String                @map("model_name") @db.VarChar(100)
-  createdAt DateTime              @default(now()) @map("created_at")
-  source    KnowledgeSource       @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  modelName String                   @map("model_name") @db.VarChar(100)
+  createdAt DateTime                 @default(now()) @map("created_at")
+  source    KnowledgeSource          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  parent    KnowledgePoolEmbedding?  @relation("PoolEmbeddingHierarchy", fields: [parentId], references: [id])
+  children  KnowledgePoolEmbedding[] @relation("PoolEmbeddingHierarchy")
 
   @@index([sourceId], map: "idx_kpe_source")
+  @@index([parentId], map: "idx_kpe_parent")
   @@map("knowledge_pool_embeddings")
 }
 

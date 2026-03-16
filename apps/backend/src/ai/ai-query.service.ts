@@ -280,6 +280,36 @@ export class AiQueryService {
         const topResult = results[0] ?? null;
         // ... rest of logic stays same ...
 
+        // CHANGE: LOW_CONFIDENCE_THRESHOLD guard — mirrors query() method
+        const LOW_CONFIDENCE_THRESHOLD = parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.72');
+        if (searchResponse.diagnostics.topScore < LOW_CONFIDENCE_THRESHOLD || results.length === 0) {
+            this.logger.warn(`🚫 streamQuery: No reliable context (topScore=${searchResponse.diagnostics.topScore.toFixed(3)}). Routing to human agent.`);
+
+            const providerName = await this.ai.getActiveProviderName();
+            const modelName = await this.ai.getActiveModelName();
+
+            await this.prisma.aiInteraction.create({
+                data: {
+                    userId,
+                    userQuery,
+                    responseGenerated: 'AI could not find a reliable source. Request routed to human agent.',
+                    confidenceBand: null,
+                    autoAnswered: false,
+                    similarityScore: searchResponse.diagnostics.topScore || undefined,
+                    provider: providerName,
+                    model: modelName,
+                    inputTokens: 0,
+                    outputTokens: 0,
+                    totalTokens: 0,
+                    estimatedCost: 0,
+                }
+            });
+
+            yield { chunk: 'No reliable source found. Please create a support ticket.' };
+            yield { done: true, suggestTicket: true };
+            return;
+        }
+
         let confidence: ConfidenceBand = 'NO_MATCH';
         let fullAnswer = '';
 

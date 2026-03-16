@@ -30,6 +30,22 @@ export class KbSummarizerProcessor extends WorkerHost {
             return;
         }
 
+        // Idempotency: skip if already processed
+        if (ticket.knowledgeBaseAdded) {
+            this.logger.log(`⏭️ Ticket ${ticketId} already in KB, skipping processor.`);
+            return;
+        }
+
+        // Idempotency: check for existing faq_entry with same sourceId
+        const existingFaq = await this.prisma.faqEntry.findFirst({
+            where: { sourceTypes: { has: ticketId } },
+            select: { id: true }
+        });
+        if (existingFaq) {
+            this.logger.log(`⏭️ FAQ entry already exists for ticket ${ticketId}, skipping.`);
+            return;
+        }
+
         // Check if AI is available
         const isAvailable = await this.ai.isAvailable();
         if (!isAvailable) {
