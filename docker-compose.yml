@@ -100,7 +100,7 @@ services:
       STORAGE_BUCKET: aluplan-storage
       STORAGE_USE_PATH_STYLE: "true"
     ports:
-      - "3001:3001"
+      - "4000:4000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -109,7 +109,7 @@ services:
       minio:
         condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -125,7 +125,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${BACKEND_URL:-http://backend:3001/api/v1}
+      NEXT_PUBLIC_API_URL: ${BACKEND_URL:-http://backend:4000/api/v1}
     ports:
       - "3000:3000"
     depends_on:

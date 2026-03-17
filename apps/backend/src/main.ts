@@ -72,7 +72,7 @@ async function bootstrap() {
     app.useLogger(app.get(PinoLogger));
 
     const configService = app.get(ConfigService);
-    const port = configService.get<number>('PORT', 3001);
+    const port = configService.get<number>('PORT', 4000);
     const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
     const nodeEnv = configService.get<string>('NODE_ENV', 'development');
 
