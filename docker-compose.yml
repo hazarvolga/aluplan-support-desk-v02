@@ -14,33 +14,15 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5432:5432" # Exposed for local debugging only
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # ============================================
-  # Ollama — Local AI (CPU/GPU)
-  # ============================================
-  ollama:
-    image: ollama/ollama:latest
-    container_name: aluplan_ollama
-    restart: unless-stopped
-    volumes:
-      - ollama_data:/root/.ollama
-    ports:
-      - "11434:11434"
-    # Uncomment for GPU support:
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
+    networks:
+      - aluplan_net
 
   # ============================================
   # Redis — For Background Jobs (BullMQ)
@@ -49,10 +31,10 @@ services:
     image: redis:7-alpine
     container_name: aluplan_redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - aluplan_net
 
   # ============================================
   # MinIO — Self-Hosted Object Storage
@@ -66,10 +48,11 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-changeme}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9001:9001" # MinIO Console
     volumes:
       - minio_data:/data
+    networks:
+      - aluplan_net
 
   # ============================================
   # NestJS Backend
@@ -113,6 +96,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - aluplan_net
 
   # ============================================
   # Next.js Frontend
@@ -125,28 +110,40 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${BACKEND_URL:-http://backend:4000/api/v1}
+      # Use public domain in production for client-side API calls
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api/v1}
     ports:
       - "3000:3000"
     depends_on:
       - backend
+    networks:
+      - aluplan_net
 
   # ============================================
-  # Loki — Log Aggregation (receives pino-loki logs from backend)
+  # Ollama — Local AI (CPU)
+  # ============================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aluplan_ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - aluplan_net
+
+  # ============================================
+  # Monitoring (Optional - Can be disabled to save RAM)
   # ============================================
   loki:
     image: grafana/loki:2.9.5
     container_name: aluplan_loki
     restart: unless-stopped
-    ports:
-      - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
       - loki_data:/loki
+    networks:
+      - aluplan_net
 
-  # ============================================
-  # Tempo — Distributed Tracing (receives OTLP from NestJS)
-  # ============================================
   tempo:
     image: grafana/tempo:2.4.1
     container_name: aluplan_tempo
@@ -155,13 +152,9 @@ services:
     volumes:
       - ./docker/tempo.yaml:/etc/tempo.yaml:ro
       - tempo_data:/tmp/tempo
-    ports:
-      - "3200:3200"   # Tempo HTTP
-      - "4318:4318"   # OTLP HTTP receiver
+    networks:
+      - aluplan_net
 
-  # ============================================
-  # Grafana — Dashboards (Loki + Tempo datasources)
-  # ============================================
   grafana:
     image: grafana/grafana:10.4.3
     container_name: aluplan_grafana
@@ -179,6 +172,12 @@ services:
     depends_on:
       - loki
       - tempo
+    networks:
+      - aluplan_net
+
+networks:
+  aluplan_net:
+    driver: bridge
 
 volumes:
   postgres_data:
