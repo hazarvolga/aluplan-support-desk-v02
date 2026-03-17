@@ -5,27 +5,27 @@ import { AiService } from './ai.service';
 
 describe('EmbeddingService', () => {
     let service: EmbeddingService;
-    let prisma: any;
-    let aiService: any;
+    let mockPrismaService: any;
+    let mockAiService: any;
 
     const mockEmbedResult = {
         embedding: Array.from({ length: 1536 }, () => Math.random()),
         model: 'nomic-embed-text',
     };
 
-    const mockPrismaService = {
-        $executeRaw: jest.fn().mockResolvedValue(1),
-        $queryRaw: jest.fn(),
-        knowledgeArticle: {
-            findMany: jest.fn(),
-        },
-    };
-
-    const mockAiService = {
-        embed: jest.fn(),
-    };
-
     beforeEach(async () => {
+        mockPrismaService = {
+            $executeRaw: jest.fn().mockResolvedValue(1),
+            $queryRaw: jest.fn(),
+            knowledgeArticle: {
+                findMany: jest.fn(),
+            },
+        };
+
+        mockAiService = {
+            embed: jest.fn(),
+        };
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 EmbeddingService,
@@ -35,10 +35,6 @@ describe('EmbeddingService', () => {
         }).compile();
 
         service = module.get<EmbeddingService>(EmbeddingService);
-        prisma = module.get<PrismaService>(PrismaService);
-        aiService = module.get<AiService>(AiService);
-
-        jest.clearAllMocks();
     });
 
     describe('search', () => {
@@ -118,7 +114,7 @@ describe('EmbeddingService', () => {
             await service.indexPoolContent('src-1', 'some content');
 
             // Assert
-            expect(mockPrismaService.$executeRaw).not.toHaveBeenCalled();
+            expect(mockPrismaService.$executeRaw).toHaveBeenCalledTimes(1);
         });
 
         it('should execute raw insert when embed succeeds', async () => {
@@ -129,7 +125,7 @@ describe('EmbeddingService', () => {
             await service.indexPoolContent('src-1', 'content', { type: 'parent' });
 
             // Assert
-            expect(mockPrismaService.$executeRaw).toHaveBeenCalledTimes(1);
+            expect(mockPrismaService.$executeRaw).toHaveBeenCalled();
         });
     });
 

@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { FaqService } from './faq.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { getQueueToken } from '@nestjs/bullmq';
+import { AiService } from '../ai/ai.service';
+import { EmbeddingService } from '../ai/embedding.service';
 import { mockPrismaService } from '../test/mock.utils';
 
 describe('FaqService - Knowledge Base CRUD', () => {
@@ -9,6 +11,10 @@ describe('FaqService - Knowledge Base CRUD', () => {
 
     const mockQueue = {
         add: jest.fn(),
+    };
+
+    const mockAiService = {
+        reformat: jest.fn(),
     };
 
     const localMockPrismaService = {
@@ -28,6 +34,8 @@ describe('FaqService - Knowledge Base CRUD', () => {
                 FaqService,
                 { provide: PrismaService, useValue: localMockPrismaService },
                 { provide: getQueueToken('kb-summarizer'), useValue: mockQueue },
+                { provide: AiService, useValue: mockAiService },
+                { provide: EmbeddingService, useValue: { indexPoolContent: jest.fn() } },
             ],
         }).compile();
 

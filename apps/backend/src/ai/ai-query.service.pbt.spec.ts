@@ -67,7 +67,7 @@ describe('AiQueryService.streamQuery() — Property-Based Tests', () => {
     it('P5: topScore < LOW_CONFIDENCE_THRESHOLD olduğunda LLM çağrısı yapılmaz ve suggestTicket=true döner', async () => {
         await fc.assert(
             fc.asyncProperty(
-                fc.float({ min: 0, max: LOW_CONFIDENCE_THRESHOLD - 0.001, noNaN: true }),
+                fc.float({ min: 0, max: Math.fround(LOW_CONFIDENCE_THRESHOLD - 0.001), noNaN: true }),
                 async (topScore) => {
                     mockEmbeddingService.search.mockResolvedValue({
                         results: [],
@@ -107,7 +107,7 @@ describe('AiQueryService.streamQuery() — Property-Based Tests', () => {
     it('P5: erken sonlandırmada aiInteraction autoAnswered=false ve confidenceBand=null ile kaydedilir', async () => {
         await fc.assert(
             fc.asyncProperty(
-                fc.float({ min: 0, max: LOW_CONFIDENCE_THRESHOLD - 0.001, noNaN: true }),
+                fc.float({ min: 0, max: Math.fround(LOW_CONFIDENCE_THRESHOLD - 0.001), noNaN: true }),
                 async (topScore) => {
                     mockPrisma.aiInteraction.create.mockClear();
                     mockEmbeddingService.search.mockResolvedValue({

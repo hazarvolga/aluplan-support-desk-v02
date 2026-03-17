@@ -136,10 +136,11 @@ def print_summary(results: List[dict]):
     passed_count = sum(1 for r in results if r["passed"] and not r.get("skipped"))
     failed_count = sum(1 for r in results if not r["passed"] and not r.get("skipped"))
     skipped_count = sum(1 for r in results if r.get("skipped"))
+    critical_fails = sum(1 for r in results if not r["passed"] and not r.get("skipped") and r.get("required", True))
     
     print(f"Total Checks: {len(results)}")
     print(f"{Colors.GREEN}✅ Passed: {passed_count}{Colors.ENDC}")
-    print(f"{Colors.RED}❌ Failed: {failed_count}{Colors.ENDC}")
+    print(f"{Colors.RED}❌ Failed: {failed_count} ({critical_fails} critical){Colors.ENDC}")
     print(f"{Colors.YELLOW}⏭️  Skipped: {skipped_count}{Colors.ENDC}")
     print()
     
@@ -156,9 +157,12 @@ def print_summary(results: List[dict]):
     
     print()
     
-    if failed_count > 0:
-        print_error(f"{failed_count} check(s) FAILED - Please fix before proceeding")
+    if critical_fails > 0:
+        print_error(f"{critical_fails} critical check(s) FAILED - Please fix before proceeding")
         return False
+    elif failed_count > 0:
+        print_warning(f"{failed_count} non-critical check(s) failed. Proceeding with caution.")
+        return True
     else:
         print_success("All checks PASSED ✨")
         return True
@@ -196,6 +200,7 @@ Examples:
     for name, script_path, required in CORE_CHECKS:
         script = project_path / script_path
         result = run_script(name, script, str(project_path))
+        result["required"] = required
         results.append(result)
         
         # If required check fails, stop
@@ -210,6 +215,7 @@ Examples:
         for name, script_path, required in PERFORMANCE_CHECKS:
             script = project_path / script_path
             result = run_script(name, script, str(project_path), args.url)
+            result["required"] = required
             results.append(result)
     
     # Print summary

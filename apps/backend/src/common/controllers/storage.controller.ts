@@ -15,13 +15,13 @@ export class StorageController {
     }
 
     @Public()
-    @Get(':folder/:filename')
+    @Get('*')
     async getFile(
-        @Param('folder') folder: string,
-        @Param('filename') filename: string,
+        @Param() params: any,
         @Res({ passthrough: true }) res: Response,
     ) {
-        const filePath = path.join(process.cwd(), this.localPath, folder, filename);
+        const fullPath = params['0']; // Catch-all value
+        const filePath = path.join(process.cwd(), this.localPath, fullPath);
 
         if (!(await fs.pathExists(filePath))) {
             throw new NotFoundException('File not found');

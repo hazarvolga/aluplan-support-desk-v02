@@ -187,7 +187,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     };
 
     const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
-    const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer') || user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'viewer';
+    const roleName = (typeof user?.role === 'string' ? user.role : user?.role?.name)?.toLowerCase();
+    const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer') || roleName === 'customer' || roleName === 'viewer';
 
     const handleRequestLiveChat = async () => {
         try {
@@ -256,7 +257,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             }));
 
             setFiles([]);
-            load(); // Refresh state to ensure attachments appear correctly
+            await load(); // Refresh state to ensure attachments appear correctly
             // No toast for success in chat, it's expected
         } catch (error: any) {
             toast.error(t('send_error', { error: error.message }));

@@ -2,6 +2,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CrmService } from './crm.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { getQueueToken } from '@nestjs/bullmq';
 import { Dynamics365Adapter } from './adapters/dynamics365.adapter';
 import { CryptoService } from '../utils/crypto.service';
 import { SyncStatus, CrmProvider } from '@aluplan/database';
@@ -53,6 +54,10 @@ const mockAdapter = {
     getDiscoveryData: jest.fn(),
 };
 
+const mockQueue = {
+    add: jest.fn().mockResolvedValue({ id: 'job-1' }),
+};
+
 const mockCrypto = {
     encrypt: jest.fn((v: string) => `enc:${v}`),
     decrypt: jest.fn((v: string) => v.replace('enc:', '')),
@@ -70,6 +75,7 @@ describe('CrmService', () => {
                 { provide: PrismaService, useValue: mockPrisma },
                 { provide: Dynamics365Adapter, useValue: mockAdapter },
                 { provide: CryptoService, useValue: mockCrypto },
+                { provide: getQueueToken('crm-sync'), useValue: mockQueue },
             ],
         }).compile();
 
@@ -140,9 +146,11 @@ describe('CrmService', () => {
             const result = await service.triggerSync('conn-1');
 
             expect(result.logId).toBe('log-1');
+            expect(result.jobId).toBe('job-1');
             expect(mockPrisma.crmSyncLog.create).toHaveBeenCalledWith(
                 expect.objectContaining({ data: expect.objectContaining({ status: SyncStatus.SYNCING }) }),
             );
+            expect(mockQueue.add).toHaveBeenCalled();
         });
     });
 
@@ -167,9 +175,7 @@ describe('CrmService', () => {
                 makeResult({ status: SyncStatus.ERROR, errorMessage: 'API down' }),
             );
 
-            await service.triggerSync('conn-1');
-            // Give background process time to run
-            await new Promise((r) => setTimeout(r, 50));
+            await service.executeSyncProcess(connection, mockAdapter, 'log-1');
 
             expect(mockAdapter.syncContacts).not.toHaveBeenCalled();
         });
@@ -187,8 +193,7 @@ describe('CrmService', () => {
                 }),
             );
 
-            await service.triggerSync('conn-1');
-            await new Promise((r) => setTimeout(r, 50));
+            await service.executeSyncProcess(connection, mockAdapter, 'log-1');
 
             const updateCall = mockPrisma.crmSyncLog.update.mock.calls.find(
                 (call: any) => call[0].data?.status === SyncStatus.SUCCESS,
@@ -206,8 +211,7 @@ describe('CrmService', () => {
                 makeResult({ status: SyncStatus.ERROR, errorMessage: 'fail' }),
             );
 
-            await service.triggerSync('conn-1');
-            await new Promise((r) => setTimeout(r, 50));
+            await service.executeSyncProcess(connection, mockAdapter, 'log-1');
 
             const errorUpdateCall = mockPrisma.crmSyncLog.update.mock.calls.find(
                 (call: any) => call[0].data?.status === SyncStatus.ERROR,
@@ -220,8 +224,7 @@ describe('CrmService', () => {
             mockAdapter.syncAccounts.mockResolvedValue(makeResult());
             mockAdapter.syncContacts.mockResolvedValue(makeResult());
 
-            await service.triggerSync('conn-1');
-            await new Promise((r) => setTimeout(r, 50));
+            await service.executeSyncProcess(connection, mockAdapter, 'log-1');
 
             expect(mockPrisma.crmConnection.update).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -235,8 +238,7 @@ describe('CrmService', () => {
                 makeResult({ status: SyncStatus.ERROR, errorMessage: 'fail' }),
             );
 
-            await service.triggerSync('conn-1');
-            await new Promise((r) => setTimeout(r, 50));
+            await service.executeSyncProcess(connection, mockAdapter, 'log-1');
 
             const errorConnUpdate = mockPrisma.crmConnection.update.mock.calls.find(
                 (call: any) => call[0].data?.syncStatus === SyncStatus.ERROR,
@@ -266,8 +268,7 @@ describe('CrmService', () => {
                 makeResult({ successCount: 7, errorCount: 2, skippedRecords: [{ externalId: 'y', reason: 'r' }] }),
             );
 
-            await service.triggerSync('conn-1');
-            await new Promise((r) => setTimeout(r, 50));
+            await service.executeSyncProcess(connection, mockAdapter, 'log-1');
 
             const successUpdate = mockPrisma.crmSyncLog.update.mock.calls.find(
                 (call: any) => call[0].data?.status === SyncStatus.SUCCESS,
@@ -333,7 +334,7 @@ describe('CrmService', () => {
     // ── getAllConnections — secret decryption ─────────────────────────────────
 
     describe('getAllConnections', () => {
-        it('should decrypt clientSecret and webhookSecret', async () => {
+        it('should mask clientSecret and webhookSecret', async () => {
             mockPrisma.crmConnection.findMany.mockResolvedValue([
                 {
                     id: 'conn-1',
@@ -345,9 +346,9 @@ describe('CrmService', () => {
 
             const result = await service.getAllConnections();
 
-            expect(mockCrypto.decrypt).toHaveBeenCalledWith('enc:plain-secret');
-            expect(mockCrypto.decrypt).toHaveBeenCalledWith('enc:plain-webhook');
-            expect(result[0].clientSecret).toBe('plain-secret');
+            expect(mockCrypto.decrypt).not.toHaveBeenCalled();
+            expect(result[0].clientSecret).toBe('********');
+            expect(result[0].webhookSecret).toBe('********');
         });
     });
 

@@ -229,7 +229,6 @@ model CustomerProfile {
   jobTitle          String?           @map("job_title") @db.VarChar(255)
   phoneNumber       String?           @map("phone_number") @db.VarChar(50)
   contractStatus    String?           @map("contract_status") @db.VarChar(100)
-  subscriptionModel String?           @map("subscription_model") @db.VarChar(100)
   externalContactId String?           @unique @map("external_contact_id") @db.VarChar(255)
   crmVerified       Boolean           @default(false) @map("crm_verified")
   hotinfoData       Json?             @map("hotinfo_data")
@@ -238,6 +237,7 @@ model CustomerProfile {
   tags              String[]          @default([])
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
+  subscriptionModel String?           @map("subscription_model") @db.VarChar(100)
   announcementLogs  AnnouncementLog[]
   account           CrmAccount?       @relation(fields: [accountId], references: [id])
   user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -254,7 +254,6 @@ model CrmAccount {
   industry          String?           @db.VarChar(255)
   website           String?           @db.VarChar(255)
   address           String?
-  customerNo        String?           @map("customer_no") @db.VarChar(50)
   externalAccountId String?           @unique @map("external_account_id") @db.VarChar(255)
   crmVerified       Boolean           @default(false) @map("crm_verified")
   createdAt         DateTime          @default(now()) @map("created_at")
@@ -613,13 +612,12 @@ model FaqEntry {
   isInternal      Boolean   @default(true) @map("is_internal")
   trustScore      Decimal   @default(0.75) @map("trust_score") @db.Decimal(5, 4)
   feedbackWeight  Decimal   @default(1.0) @map("feedback_weight") @db.Decimal(5, 4)
-  sourceTypes       String[]               @default([]) @map("source_types")
-  tags              String[]               @default([])
-  language          String                 @default("tr") @db.VarChar(10)
-  publishedAt       DateTime?              @map("published_at")
-  questionEmbedding Unsupported("vector")? @map("question_embedding")
-  createdAt         DateTime               @default(now()) @map("created_at")
-  updatedAt         DateTime               @updatedAt @map("updated_at")
+  sourceTypes     String[]  @default([]) @map("source_types")
+  tags            String[]  @default([])
+  language        String    @default("tr") @db.VarChar(10)
+  publishedAt     DateTime? @map("published_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   @@index([status], map: "idx_faq_status")
   @@map("faq_entries")
@@ -741,20 +739,16 @@ model KnowledgeSourceSyncLog {
 }
 
 model KnowledgePoolEmbedding {
-  id        String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sourceId  String                   @map("source_id") @db.Uuid
-  parentId  String?                  @map("parent_id") @db.Uuid
+  id        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId  String                @map("source_id") @db.Uuid
   embedding Unsupported("vector")
   content   String
   metadata  Json?
-  modelName String                   @map("model_name") @db.VarChar(100)
-  createdAt DateTime                 @default(now()) @map("created_at")
-  source    KnowledgeSource          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
-  parent    KnowledgePoolEmbedding?  @relation("PoolEmbeddingHierarchy", fields: [parentId], references: [id])
-  children  KnowledgePoolEmbedding[] @relation("PoolEmbeddingHierarchy")
+  modelName String                @map("model_name") @db.VarChar(100)
+  createdAt DateTime              @default(now()) @map("created_at")
+  source    KnowledgeSource       @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
   @@index([sourceId], map: "idx_kpe_source")
-  @@index([parentId], map: "idx_kpe_parent")
   @@map("knowledge_pool_embeddings")
 }
 

@@ -99,8 +99,8 @@ export class StorageService implements OnModuleInit {
             return getSignedUrl(this.s3Client as any, command as any, { expiresIn: 3600 });
         } else {
             // Serve via backend URL
-            const baseUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
-            const apiBase = `${baseUrl.replace(':3000', ':3001')}/api/v1`;
+            const port = this.configService.get('port') || 3001;
+            const apiBase = `http://localhost:${port}/api/v1`;
             return `${apiBase}/storage/${key}`;
         }
     }

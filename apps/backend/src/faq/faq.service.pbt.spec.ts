@@ -12,6 +12,7 @@ import { FaqService, ExtractedPattern } from './faq.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../ai/embedding.service';
 import { getQueueToken } from '@nestjs/bullmq';
+import { AiService } from '../ai/ai.service';
 
 const DEFAULT_THRESHOLD = 0.90;
 
@@ -30,7 +31,7 @@ describe('FaqService — Property-Based Tests', () => {
     let service: FaqService;
     let mockPrisma: any;
     let mockEmbeddingService: any;
-    let mockQueue: any;
+    let mockQueue: any; // This mockQueue variable is now redundant as the queue is mocked inline
 
     beforeEach(async () => {
         mockPrisma = {
@@ -56,7 +57,14 @@ describe('FaqService — Property-Based Tests', () => {
                 FaqService,
                 { provide: PrismaService, useValue: mockPrisma },
                 { provide: EmbeddingService, useValue: mockEmbeddingService },
-                { provide: getQueueToken('kb-summarizer'), useValue: mockQueue },
+                {
+                    provide: getQueueToken('kb-summarizer'),
+                    useValue: mockQueue,
+                },
+                {
+                    provide: AiService,
+                    useValue: { reformat: jest.fn() },
+                },
             ],
         }).compile();
 

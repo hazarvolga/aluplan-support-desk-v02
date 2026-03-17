@@ -29,6 +29,7 @@ export class WhatsAppService {
         const cleanPhone = fromPhone.replace(/\D/g, '');
 
         // 1. Match customer by phone number (using contains or exact match after normalization)
+        this.logger.debug(`🔍 Attempting to match profile for cleanPhone: ${cleanPhone}`);
         const profile = await this.prisma.customerProfile.findFirst({
             where: {
                 phoneNumber: {
@@ -37,6 +38,12 @@ export class WhatsAppService {
             },
             include: { user: true }
         });
+
+        if (!profile) {
+            this.logger.warn(`❌ No customer profile found matching ${cleanPhone}`);
+        } else {
+            this.logger.debug(`✅ Matched profile for user: ${profile.user?.email} (${profile.userId})`);
+        }
 
         // 3. Find active ticket for this user
         const ticket = await this.prisma.ticket.findFirst({

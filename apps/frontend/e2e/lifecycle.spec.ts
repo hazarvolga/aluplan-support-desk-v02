@@ -41,10 +41,10 @@ async function apiPatch(url: string, token: string) {
 }
 
 test.describe('Ticket Lifecycle Orchestration', () => {
-    const customerEmail = 'test_customer@aluplan.com';
-    const customerPassword = 'Test1234!';
+    const customerEmail = 'e2e-customer@aluplan.com';
+    const customerPassword = 'Vol1872017';
     const adminEmail = 'hazarvolga@gmail.com';
-    const adminPassword = 'Vol?*187';
+    const adminPassword = 'Vol1872017';
 
     test('full ticket lifecycle via API setup + UI resolution', async ({ page }) => {
         const subject = `[E2E] Lifecycle - ${Date.now()}`;
@@ -85,7 +85,7 @@ test.describe('Ticket Lifecycle Orchestration', () => {
         }, adminToken);
         console.log('✅ Admin reply posted');
 
-        // State machine: NEW → OPEN (first), then OPEN → PENDING_CUSTOMER_REVIEW
+        // State machine: NEW → OPEN (first)
         await apiPatch(`/tickets/${ticketId}/status/OPEN`, adminToken);
         console.log('✅ Ticket status set to OPEN');
 
@@ -95,13 +95,13 @@ test.describe('Ticket Lifecycle Orchestration', () => {
 
         // ── UI PHASE: Customer logs in and completes CSAT + close ─────────
         console.log('--- [UI] Customer: Login → View Ticket → Rate & Close ---');
-        await page.goto('/');
+        await page.goto('/login');
         await expect(page.getByTestId('login-email')).toBeVisible({ timeout: 30000 });
         await page.getByTestId('login-email').fill(customerEmail);
         await page.getByTestId('login-password').fill(customerPassword);
         await page.getByTestId('login-submit').click();
 
-        await page.waitForURL(/my-tickets/, { timeout: 45000 });
+        await page.waitForURL(/.*\/(my-tickets|dashboard)/, { timeout: 45000 });
         console.log('✅ Customer UI login. URL:', page.url());
 
         // Navigate directly to ticket detail page
@@ -110,8 +110,25 @@ test.describe('Ticket Lifecycle Orchestration', () => {
         await page.waitForURL(new RegExp(`tickets\/${ticketId}`), { timeout: 30000 });
         console.log('✅ On ticket page. URL:', page.url());
 
-        // Verify admin reply is visible
-        await expect(page.getByText('Admin API Reply 12345', { exact: false })).toBeVisible({ timeout: 30000 });
+        // ── UI PHASE: Verify Admin Reply & Complete CSAT ─────────────────
+        // We use a robust retry loop to wait for the admin's reply to appear in the UI
+        let messageFound = false;
+        for (let i = 0; i < 5; i++) {
+            await page.reload();
+            try {
+                // Wait for the specific reply text
+                await expect(page.getByText('Admin API Reply 12345', { exact: false })).toBeVisible({ timeout: 10000 });
+                messageFound = true;
+                break;
+            } catch (e) {
+                console.log(`Retry ${i + 1}: Admin message not visible yet. Waiting...`);
+                await page.waitForTimeout(5000);
+            }
+        }
+
+        if (!messageFound) {
+            throw new Error('Admin API Reply 12345 did not appear in UI after 5 reloads.');
+        }
         console.log('✅ Admin reply confirmed visible');
 
         // CSAT block should be visible (ticket is PENDING_CUSTOMER_REVIEW)

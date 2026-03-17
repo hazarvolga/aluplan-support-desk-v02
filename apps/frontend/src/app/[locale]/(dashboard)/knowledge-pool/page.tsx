@@ -145,7 +145,7 @@ export default function KnowledgePoolPage() {
     const toggleSelect = (id: string) => {
         setSelectedIds(prev => {
             const n = new Set(prev);
-            n.has(id) ? n.delete(id) : n.add(id);
+            if (n.has(id)) { n.delete(id) } else { n.add(id) };
             return n;
         });
     };
@@ -578,7 +578,7 @@ export default function KnowledgePoolPage() {
                                     <div key={a.id} className={`group flex flex-col md:flex-row md:items-center justify-between px-4 py-3 hover:bg-muted/10 gap-4 ${selectedArticleIds.has(a.id) ? 'bg-primary/5' : ''}`}>
                                         <div className="flex items-center gap-4 flex-1 min-w-0">
                                             <input type="checkbox" checked={selectedArticleIds.has(a.id)}
-                                                onChange={() => setSelectedArticleIds(prev => { const n = new Set(prev); n.has(a.id) ? n.delete(a.id) : n.add(a.id); return n; })}
+                                                onChange={() => setSelectedArticleIds(prev => { const n = new Set(prev); if (n.has(a.id)) { n.delete(a.id) } else { n.add(a.id) }; return n; })}
                                                 className="w-4 h-4 cursor-pointer accent-primary shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2.5 mb-1 text-[9px] font-mono uppercase">

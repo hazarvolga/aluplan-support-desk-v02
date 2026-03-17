@@ -9,9 +9,9 @@ import { test, expect, Page } from '@playwright/test';
  * Reusable helper: Login as admin and navigate to dashboard
  */
 async function loginAsAdmin(page: Page) {
-    await page.goto('/');
+    await page.goto('/login');
     await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
-    await page.getByTestId('login-password').fill('Vol?*187');
+    await page.getByTestId('login-password').fill('Vol1872017');
     await page.getByTestId('login-submit').click();
     await page.waitForURL(/.*\/dashboard/, { timeout: 30000 });
 }

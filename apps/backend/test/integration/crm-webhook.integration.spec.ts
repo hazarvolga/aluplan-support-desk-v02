@@ -10,7 +10,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { CrmWebhookController } from '../../src/crm/webhooks/crm-webhook.controller';
 import { CrmWebhookGuard } from '../../src/crm/guards/crm-webhook.guard';
 import { CrmService } from '../../src/crm/crm.service';

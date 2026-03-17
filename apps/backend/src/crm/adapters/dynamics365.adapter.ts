@@ -71,7 +71,6 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             website,
                             address,
                             industry,
-                            customerNo: account.accountnumber ?? null,
                             crmVerified: true,
                         },
                         create: {
@@ -80,7 +79,6 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             website,
                             address,
                             industry,
-                            customerNo: account.accountnumber ?? null,
                             crmVerified: true,
                         },
                     });

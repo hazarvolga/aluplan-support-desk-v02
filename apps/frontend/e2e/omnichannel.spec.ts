@@ -1,100 +1,121 @@
-import { test, expect, request } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 /**
- * OMNI-CHANNEL SMOKE TESTS
- * Verifies that external channels (WhatsApp) correctly trigger system actions.
+ * OMNI-CHANNEL / WHATSAPP INTEGRATION E2E TEST (v5)
+ * Simulates incoming WhatsApp webhook and verifies ticket ingestion.
  */
 
 test.describe('Omni-channel Integration', () => {
+    test.use({ viewport: { width: 1280, height: 800 } });
 
-    test('should create a ticket from an incoming WhatsApp message', async ({ page, playwright }) => {
-        // 1. Login as Admin
-        await page.goto('/tr'); // Explicitly use TR locale
-        await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
-        await page.getByTestId('login-password').fill('Vol?*187');
-        await page.getByTestId('login-submit').click();
-        await page.waitForURL(/.*\/dashboard/, { timeout: 30000 });
+    test('should create a ticket from an incoming WhatsApp message', async ({ page, request }) => {
+        const adminEmail = 'hazarvolga@gmail.com';
+        const adminPassword = 'Vol1872017';
 
-        // 2. Identify a customer to use for the test
-        const apiContext = await playwright.request.newContext({
-            baseURL: 'http://localhost:4000',
-            extraHTTPHeaders: {
-                'Authorization': `Bearer ${await page.evaluate(() => localStorage.getItem('access_token'))}`
-            }
+        // E2E customer phone number (reconciled in DB)
+        const testPhone = '905550009988';
+        const testCustomerEmail = 'e2e-customer@aluplan.com';
+        const uniqueBody = `E2E WhatsApp Simulation ${Date.now()}`;
+
+        console.log(`Testing with phone: ${testPhone} for customer ${testCustomerEmail}`);
+
+        // 1. Authenticate as Admin to verify/cleanup
+        const adminAuth = await request.post('/api/v1/auth/login', {
+            data: { email: adminEmail, password: adminPassword }
         });
+        expect(adminAuth.ok()).toBeTruthy();
+        const { access_token } = await adminAuth.json();
 
-        const customersRes = await apiContext.get('/api/v1/customers');
-        const customers = await customersRes.json();
+        // 2. Fetch customer ID
+        const customerRes = await request.get(`/api/v1/customers`, {
+            headers: { 'Authorization': `Bearer ${access_token}` }
+        });
+        const customers = await customerRes.json();
+        const testCustomer = customers.find((c: any) => c.email === testCustomerEmail);
+        expect(testCustomer).toBeDefined();
 
-        if (!Array.isArray(customers)) {
-            console.error('❌ API Error: /api/v1/customers returned non-array:', customers);
-            return;
+        // 3. CLEANUP: Close any active WHATSAPP tickets for this customer to force a NEW ticket creation
+        // This ensures the test is deterministic.
+        const activeTicketsRes = await request.get(`/api/v1/tickets?userId=${testCustomer.id}&channel=WHATSAPP`, {
+            headers: { 'Authorization': `Bearer ${access_token}` }
+        });
+        const activeTickets = await activeTicketsRes.json();
+        if (activeTickets.data && activeTickets.data.length > 0) {
+            const toClose = activeTickets.data.filter((t: any) => !['RESOLVED', 'CLOSED'].includes(t.status));
+            if (toClose.length > 0) {
+                console.log(`🧹 Closing ${toClose.length} active WHATSAPP tickets...`);
+                for (const t of toClose) {
+                    await request.patch(`/api/v1/tickets/${t.id}/close`, {
+                        headers: { 'Authorization': `Bearer ${access_token}` }
+                    });
+                }
+            }
         }
 
-        const testCustomer = customers.find((c: any) => c.email === 'e2e-customer@aluplan.com');
-
-        if (!testCustomer) {
-            console.log('⚠️ Seeded customer not found in API response. Skipping full verification.');
-            return;
-        }
-
-        const testPhone = testCustomer.customerProfile?.phoneNumber || '905550009988';
-        console.log(`Testing with phone: ${testPhone} for customer ${testCustomer.id}`);
-
-        // 3. Simulate WhatsApp Webhook
-        const uniqueBody = `E2E Omnichannel Test ${Date.now()}`;
+        // 4. Simulate WhatsApp Message via Webhook
+        console.log('--- API: Simulating incoming message ---');
         const webhookPayload = {
-            object: "whatsapp_business_account",
+            object: 'whatsapp_business_account',
             entry: [{
-                id: "WHATSAPP_BUSINESS_ACCOUNT_ID",
+                id: 'WHATSAPP_ID',
                 changes: [{
                     value: {
-                        messaging_product: "whatsapp",
-                        metadata: { display_phone_number: "1234567", phone_number_id: "1234567" },
-                        contacts: [{ profile: { name: "E2E Tester" }, wa_id: testPhone }],
+                        messaging_product: 'whatsapp',
+                        metadata: { display_phone_number: '123456789', phone_number_id: '987654321' },
+                        contacts: [{ profile: { name: 'E2E Tester' }, wa_id: testPhone }],
                         messages: [{
                             from: testPhone,
-                            id: `wamid.HBgL${Date.now()}`,
-                            timestamp: Math.floor(Date.now() / 1000).toString(),
+                            id: `wamid.${Date.now()}`,
+                            timestamp: `${Math.floor(Date.now() / 1000)}`,
                             text: { body: uniqueBody },
-                            type: "text"
+                            type: 'text'
                         }]
                     },
-                    field: "messages"
+                    field: 'messages'
                 }]
             }]
         };
 
-        const webhookRes = await apiContext.post('/api/v1/whatsapp/webhook', {
+        const webhookRes = await request.post('/api/v1/webhooks/whatsapp', {
             data: webhookPayload
         });
         expect(webhookRes.ok()).toBeTruthy();
 
-        // 4. Verify ticket creation via API first (to get the ID)
+        // 5. Verify Ticket Creation via API with Polling
+        console.log('--- API: Polling for ticket creation ---');
         let ticketId = '';
         await expect(async () => {
-            const ticketsRes = await apiContext.get('/api/v1/tickets?limit=10');
-            const result = await ticketsRes.json();
-            const tickets = result.data || [];
-
-            // Check in top 10 tickets for our subject
-            const found = tickets.find((t: any) =>
-                t.subject && t.subject.includes(uniqueBody.substring(0, 15))
+            const res = await request.get('/api/v1/tickets?channel=WHATSAPP', {
+                headers: { 'Authorization': `Bearer ${access_token}` }
+            });
+            const tickets = await res.json();
+            // Search for ticket that has our unique body in subject or description (since simulation might map it)
+            const found = tickets.data.find((t: any) =>
+                t.status === 'NEW' &&
+                (t.description?.includes(uniqueBody) || t.subject?.includes(uniqueBody))
             );
-
             if (found) {
                 ticketId = found.id;
-                console.log(`✅ Found created ticket: ${found.ticketNumber} with ID: ${ticketId}`);
+                console.log(`✅ Found ticket: ${ticketId} (${found.ticketNumber})`);
                 return true;
             }
+
+            // Fallback: If it appended to an existing ticket despite our cleanup (unlikely but safe check)
+            const allWhTickets = tickets.data;
+            if (allWhTickets.length > 0) {
+                console.log('--- DIAGNOSTIC: Available Ticket Subjects ---');
+                allWhTickets.slice(0, 10).forEach((t: any) => console.log(`- ${t.subject} (Channel: ${t.channel})`));
+            }
             throw new Error('Ticket not found yet in API');
-        }).toPass({ timeout: 15000, intervals: [2000] });
+        }).toPass({ timeout: 30000, intervals: [3000] });
 
-        // 5. Verify in UI by direct navigation
+        // 6. Verify in UI by direct navigation
         await page.goto(`/tr/tickets/${ticketId}`);
-        await page.waitForLoadState('networkidle');
-        await expect(page.locator('body')).toContainText(uniqueBody.substring(0, 15), { timeout: 20000 });
+        await page.waitForURL(new RegExp(`tickets\/${ticketId}`));
 
-        console.log('✅ Omni-channel WhatsApp smoke test passed exactly with direct navigation');
+        await expect(page.getByText(uniqueBody)).toBeVisible({ timeout: 15000 });
+        console.log('✅ Message body visible in UI');
+
+        console.log('✅✅ OMNICHANNEL TEST PASSED');
     });
 });

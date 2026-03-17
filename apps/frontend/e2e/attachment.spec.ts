@@ -7,7 +7,7 @@ import fs from 'fs';
  * Verifying backend state directly if UI fails to show link.
  */
 
-const BASE_API = 'http://127.0.0.1:4000/api/v1';
+const BASE_API = 'http://localhost:4000/api/v1';
 
 async function apiGet(url: string, token: string) {
     const res = await fetch(`${BASE_API}${url}`, {
@@ -30,8 +30,8 @@ async function apiPost(url: string, body: any, token?: string) {
 }
 
 test.describe('Attachment Upload Flow', () => {
-    const customerEmail = 'test_customer@aluplan.com';
-    const customerPassword = 'Test1234!';
+    const customerEmail = 'e2e-customer@aluplan.com';
+    const customerPassword = 'Vol1872017';
     const testFileName = 'e2e-test-attachment.txt';
     const testFilePath = path.join('/tmp', testFileName);
 
@@ -56,12 +56,12 @@ test.describe('Attachment Upload Flow', () => {
         const ticketId = ticket.id;
 
         console.log('--- UI: Customer login & navigation ---');
-        await page.goto('/');
+        await page.goto('/login');
         await page.getByTestId('login-email').fill(customerEmail);
         await page.getByTestId('login-password').fill(customerPassword);
         await page.getByTestId('login-submit').click();
 
-        await page.waitForURL(/my-tickets/, { timeout: 30000 });
+        await page.waitForURL(/.*\/(my-tickets|dashboard)/, { timeout: 30000 });
         const locale = new URL(page.url()).pathname.split('/')[1];
         await page.goto(`/${locale}/tickets/${ticketId}`);
         await page.waitForURL(new RegExp(`tickets\/${ticketId}`));
@@ -73,7 +73,7 @@ test.describe('Attachment Upload Flow', () => {
 
         console.log('--- UI: Filling message and clicking SEND ---');
         const textarea = page.locator('textarea[placeholder*="message"]');
-        const messageToType = 'Final verification v8';
+        const messageToType = `Attachment Test Message ${Date.now()}`;
         await textarea.fill(messageToType);
         await page.getByRole('button').filter({ has: page.locator('svg.lucide-send') }).click();
 
@@ -97,21 +97,28 @@ test.describe('Attachment Upload Flow', () => {
 
         // ── UI VERIFICATION ──────────────────────────────────────────────
         console.log('--- UI: Verifying rendering ---');
+        await page.reload(); // Ensure UI reflects the backend state
         await expect(page.getByText(messageToType)).toBeVisible({ timeout: 15000 });
 
-        const attachmentLink = page.locator('a[href*="/attachments/"]').filter({
-            hasText: /e2e-test-attachment/i
+        // Broaden the search for the attachment link
+        const attachmentLink = page.locator('a').filter({
+            hasText: new RegExp(testFileName.split('.')[0], 'i')
         }).last();
 
         try {
-            await expect(attachmentLink).toBeVisible({ timeout: 10000 });
+            await expect(attachmentLink).toBeVisible({ timeout: 15000 });
             console.log('✅ Found attachment link in UI');
         } catch (err) {
             console.error('❌ Attachment link NOT visible in UI despite API confirmation.');
-            await page.screenshot({ path: '/tmp/attachment-v8-ui-fail.png', fullPage: true });
+            // Debug: Log all links
+            const links = await page.evaluate(() => Array.from(document.querySelectorAll('a')).map(a => ({ text: a.innerText, href: a.href })));
+            console.log('--- DIAGNOSTIC: All Links on Page ---');
+            console.log(links);
+            await page.screenshot({ path: '/tmp/attachment-debug-v9.png', fullPage: true });
             throw err;
         }
 
+        await page.screenshot({ path: '/tmp/attachment-success.png' });
         console.log('✅✅ ATTACHMENT TEST PASSED');
     });
 });

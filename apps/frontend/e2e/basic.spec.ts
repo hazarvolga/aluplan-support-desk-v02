@@ -10,7 +10,7 @@ test.describe('Happy Path: Unauthenticated Access', () => {
     });
 
     test('should show login button/form when unauthenticated', async ({ page }) => {
-        await page.goto('/');
+        await page.goto('/login');
 
         // Use testid for localized robustness
         const loginBtn = page.getByTestId('login-submit');

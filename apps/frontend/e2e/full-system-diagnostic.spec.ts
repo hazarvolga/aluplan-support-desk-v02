@@ -21,8 +21,8 @@ test.describe('Full System Diagnostic E2E Test', () => {
         await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
         await expect(page.getByTestId('login-email')).toHaveValue('hazarvolga@gmail.com');
 
-        await page.getByTestId('login-password').fill('Vol?*187');
-        await expect(page.getByTestId('login-password')).toHaveValue('Vol?*187');
+        await page.getByTestId('login-password').fill('Vol1872017');
+        await expect(page.getByTestId('login-password')).toHaveValue('Vol1872017');
 
         // Wait for React hydration
         await page.waitForTimeout(1500);
@@ -74,8 +74,8 @@ test.describe('Full System Diagnostic E2E Test', () => {
         await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
         await expect(page.getByTestId('login-email')).toHaveValue('hazarvolga@gmail.com');
 
-        await page.getByTestId('login-password').fill('Vol?*187');
-        await expect(page.getByTestId('login-password')).toHaveValue('Vol?*187');
+        await page.getByTestId('login-password').fill('Vol1872017');
+        await expect(page.getByTestId('login-password')).toHaveValue('Vol1872017');
 
         await page.waitForTimeout(1000);
         await page.getByTestId('login-submit').click({ force: true });

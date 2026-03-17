@@ -196,14 +196,15 @@ export class TicketsService {
     // =============================================
     // FIND ONE
     // =============================================
-    async findOne(id: string, requester?: { id: string; role: string }) {
+    async findOne(id: string, requester?: any) {
+        console.log(`[DEBUG-TICKET] findOne id=${id} requesterRole=${requester?.role} requesterId=${requester?.id}`);
         const ticket = await this.prisma.ticket.findUnique({
             where: { id },
             include: {
                 creator: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
                 assignee: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
                 messages: {
-                    where: (requester?.role === 'customer' || requester?.role === 'VIEWER') ? { isInternal: false } : {},
+                    where: (requester?.role?.toLowerCase() === 'customer' || requester?.role?.toLowerCase() === 'viewer') ? { isInternal: false } : {},
                     include: {
                         sender: { select: { id: true, fullName: true, avatarUrl: true } },
                         attachments: true,

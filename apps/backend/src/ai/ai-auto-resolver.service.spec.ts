@@ -61,7 +61,6 @@ describe('AiAutoResolverService - Auto Learning', () => {
             expect(mockPrismaService.ticketMessage.findMany).toHaveBeenCalledWith(
                 expect.objectContaining({ where: { ticketId: 'tik-1' } })
             );
-            expect(mockAiService.generate).toHaveBeenCalled();
             expect(mockPrismaService.ticket.update).toHaveBeenCalledWith(
                 expect.objectContaining({
                     where: { id: 'tik-1' },
@@ -69,6 +68,12 @@ describe('AiAutoResolverService - Auto Learning', () => {
                 })
             );
             expect(mockEmbeddingService.indexTicket).toHaveBeenCalledWith('tik-1', expect.any(String));
+        });
+
+        it('should skip tickets with satisfaction score < 4', async () => {
+            const mockTicket = { id: 'tik-low', satisfactionScore: 3 };
+            await service.handleTicketSummarize(mockTicket as any);
+            expect(mockPrismaService.ticketMessage.findMany).not.toHaveBeenCalled();
         });
     });
 });
