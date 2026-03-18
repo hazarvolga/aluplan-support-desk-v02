@@ -12,6 +12,8 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 RUN npm install -g pnpm@9.15.4
+# Forcefully install prisma globally to GUARANTEE "command not found" never happens again
+RUN npm install -g prisma@7.4.2
 
 # Copy only necessary files for prod install
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
@@ -32,6 +34,5 @@ EXPOSE 4000
 # Set environment variable for backend port
 ENV PORT=4000
 
-# Command to run migrations without a config file and start app
-# We point directly to our schema file with --schema flag
-CMD ["sh", "-c", "pnpm exec prisma migrate deploy --schema ./packages/database/prisma/schema.prisma && node apps/backend/dist/src/main.js"]
+# Command to run migrations using the GLOBAL prisma binary and start app
+CMD ["sh", "-c", "prisma migrate deploy --schema ./packages/database/prisma/schema.prisma && node apps/backend/dist/src/main.js"]
