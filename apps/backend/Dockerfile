@@ -27,7 +27,7 @@ RUN pnpm install --prod --frozen-lockfile --filter @aluplan/backend
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/packages/database/client ./node_modules/@aluplan/database/client
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
-COPY --from=builder /app/apps/backend/prisma.config.js ./prisma.config.js
+COPY --from=builder /app/apps/backend/prisma.config.mjs ./prisma.config.mjs
 COPY --from=builder /app/dataset ./dataset/
 
 EXPOSE 4000
