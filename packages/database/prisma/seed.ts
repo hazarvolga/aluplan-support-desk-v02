@@ -171,9 +171,16 @@ async function main() {
     // 3. Seed Default Settings
     const defaultSettings = [
         { key: 'mail_provider', value: 'resend', isSecret: false },
+        { key: 'resend_api_key', value: process.env.RESEND_API_KEY || '', isSecret: true },
+        { key: 'mail_from', value: process.env.MAIL_FROM || 'support@aluplan.com', isSecret: false },
         { key: 'app_name', value: 'Aluplan Support', isSecret: false },
+        { key: 'app_logo', value: '', isSecret: false },
+        { key: 'app_primary_color', value: '#1d4ed8', isSecret: false },
+        { key: 'ai_provider', value: 'openai', isSecret: false },
+        { key: 'ai_model', value: 'text-embedding-3-small', isSecret: false },
         { key: 'ai_confidence_threshold_high', value: '0.90', isSecret: false },
         { key: 'ai_confidence_threshold_medium', value: '0.80', isSecret: false },
+        { key: 'ai_similarity_threshold', value: '0.35', isSecret: false },
     ];
 
     for (const setting of defaultSettings) {
