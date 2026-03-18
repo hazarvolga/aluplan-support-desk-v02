@@ -8,29 +8,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     private readonly logger = new Logger(PrismaService.name);
 
     constructor() {
-        this.logger.log('Initializing Prisma with @prisma/adapter-pg...');
         const pool = new Pool({
             connectionString: process.env.DATABASE_URL,
         });
+        const adapter = new PrismaPg(pool);
 
-        try {
-            const adapter = new PrismaPg(pool);
-            this.logger.log('PG Adapter created successfully.');
+        super({
+            adapter,
+            log: [
+                { emit: 'event', level: 'query' },
+                { emit: 'stdout', level: 'info' },
+                { emit: 'stdout', level: 'warn' },
+                { emit: 'stdout', level: 'error' },
+            ],
+            errorFormat: 'pretty',
+        });
 
-            super({
-                adapter,
-                log: [
-                    { emit: 'event', level: 'query' },
-                    { emit: 'stdout', level: 'info' },
-                    { emit: 'stdout', level: 'warn' },
-                    { emit: 'stdout', level: 'error' },
-                ],
-                errorFormat: 'pretty',
-            });
-        } catch (error: any) {
-            this.logger.error(`Failed to initialize Prisma PG adapter: ${error.message}`);
-            throw error;
-        }
+        this.logger.log('Initializing Prisma with @prisma/adapter-pg...');
+        this.logger.log('PG Adapter created successfully.');
     }
 
 
