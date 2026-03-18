@@ -25,8 +25,9 @@ RUN pnpm install --prod --frozen-lockfile --filter @aluplan/backend
 
 # Copy build artifacts
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
-COPY --from=builder /app/packages/database/client ./packages/database/client
+COPY --from=builder /app/packages/database/client ./node_modules/@aluplan/database/client
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
+COPY --from=builder /app/apps/backend/prisma.config.js ./prisma.config.js
 COPY --from=builder /app/dataset ./dataset/
 
 EXPOSE 4000
@@ -34,5 +35,5 @@ EXPOSE 4000
 # Set environment variable for backend port
 ENV PORT=4000
 
-# Command to run migrations using the GLOBAL prisma binary and start app
-CMD ["sh", "-c", "prisma migrate deploy --schema ./packages/database/prisma/schema.prisma && node apps/backend/dist/src/main.js"]
+# Command to run migrations using the global prisma and the consolidated config
+CMD ["sh", "-c", "prisma migrate deploy && node apps/backend/dist/src/main.js"]
