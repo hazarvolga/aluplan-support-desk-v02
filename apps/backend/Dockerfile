@@ -29,16 +29,18 @@ COPY --from=builder /app/packages/database/client ./node_modules/@aluplan/databa
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 COPY --from=builder /app/dataset ./dataset/
 
-# Create the Prisma config file on-the-fly to ensure zero encoding or syntax ambiguity (Alpine native)
-RUN printf "module.exports = { \
-  datasource: { \
-    url: process.env.DATABASE_URL \
-  }, \
-  schema: { \
-    kind: 'static', \
-    filePath: '/app/packages/database/prisma/schema.prisma' \
-  } \
-};" > /app/prisma.config.js
+# Create the Prisma config file using Here-Doc for maximum reliability
+RUN cat <<EOF > /app/prisma.config.js
+module.exports = {
+  datasource: {
+    url: process.env.DATABASE_URL
+  },
+  schema: {
+    kind: 'static',
+    filePath: '/app/packages/database/prisma/schema.prisma'
+  }
+};
+EOF
 
 EXPOSE 4000
 
