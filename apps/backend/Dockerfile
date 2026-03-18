@@ -19,24 +19,19 @@ COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/packages/database/package.json ./packages/database/
 
 # Install only production dependencies for the workspace
-# This ensures that all modules (@prisma/adapter-pg, etc) are physically present
 RUN pnpm install --prod --frozen-lockfile --filter @aluplan/backend
 
 # Copy build artifacts
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/packages/database/client ./packages/database/client
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
-COPY --from=builder /app/apps/backend/prisma.config.js ./apps/backend/
 COPY --from=builder /app/dataset ./dataset/
-
-# Standardize path for Prisma execution
-# Move config to root app dir for easier discovery by npx prisma
-RUN cp ./apps/backend/prisma.config.js ./prisma.config.js
 
 EXPOSE 4000
 
 # Set environment variable for backend port
 ENV PORT=4000
 
-# Command to migrations and starts app from the backend dir
-CMD ["sh", "-c", "npx prisma migrate deploy && node apps/backend/dist/src/main.js"]
+# Command to run migrations without a config file and start app
+# We point directly to our schema file with --schema flag
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema ./packages/database/prisma/schema.prisma && node apps/backend/dist/src/main.js"]
