@@ -17,12 +17,13 @@ ENV NODE_ENV=production
 # Copy the isolated backend application
 COPY --from=builder /app/deployed-backend ./
 COPY --from=builder /app/dataset ./dataset/
-# Ensure dist is copied correctly
+# Ensure dist is copied correctly from the filter output
 COPY --from=builder /app/apps/backend/dist ./dist
 # Copy the local prisma config for Prisma 7
 COPY --from=builder /app/apps/backend/prisma.config.js ./
-# Critical Fix: Copy the prisma adapter and pg modules explicitly if they are missing after deploy
-COPY --from=builder /app/node_modules/.pnpm/@prisma+adapter-pg@* ./node_modules/.pnpm/
+# Ensure generated Prisma client is copied to the package inside node_modules
+COPY --from=builder /app/packages/database/client ./node_modules/@aluplan/database/client
+# Critical Fix: Force copy the Prisma adapter and pg modules to bypass pnpm pruning
 COPY --from=builder /app/node_modules/@prisma/adapter-pg ./node_modules/@prisma/adapter-pg
 COPY --from=builder /app/node_modules/pg ./node_modules/pg
 
