@@ -21,6 +21,8 @@ COPY --from=builder /app/dataset ./dataset/
 COPY --from=builder /app/apps/backend/dist ./dist
 # Copy the local prisma config for Prisma 7 from builder stage
 COPY --from=builder /app/apps/backend/prisma.config.js ./
+# Ensure generated Prisma client is copied to the package inside node_modules
+COPY --from=builder /app/packages/database/client ./node_modules/@aluplan/database/client
 
 EXPOSE 4000
 

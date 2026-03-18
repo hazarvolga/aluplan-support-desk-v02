@@ -1,4 +1,4 @@
-import { PrismaClient } from '../../../packages/database/node_modules/@prisma/client';
+import { PrismaClient } from '@aluplan/database';
 
 const prisma = new PrismaClient();
 
