@@ -27,13 +27,24 @@ RUN pnpm install --prod --frozen-lockfile --filter @aluplan/backend
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/packages/database/client ./node_modules/@aluplan/database/client
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
-COPY --from=builder /app/apps/backend/prisma.config.mjs ./prisma.config.mjs
 COPY --from=builder /app/dataset ./dataset/
+
+# Create the Prisma config file on-the-fly to ensure zero encoding or syntax ambiguity (Alpine native)
+RUN printf "module.exports = { \
+  datasource: { \
+    url: process.env.DATABASE_URL \
+  }, \
+  schema: { \
+    kind: 'static', \
+    filePath: '/app/packages/database/prisma/schema.prisma' \
+  } \
+};" > /app/prisma.config.js
 
 EXPOSE 4000
 
 # Set environment variable for backend port
 ENV PORT=4000
 
-# Command to run migrations using the global prisma and the consolidated config
-CMD ["sh", "-c", "prisma migrate deploy && node apps/backend/dist/src/main.js"]
+# Command to migrations and starts app
+# Using npx with pinned version and direct schema routing for absolute certainty
+CMD ["sh", "-c", "cat /app/prisma.config.js && npx prisma@7.4.2 migrate deploy && node apps/backend/dist/src/main.js"]
