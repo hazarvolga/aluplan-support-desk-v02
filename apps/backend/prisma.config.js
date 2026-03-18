@@ -1,4 +1,4 @@
 module.exports = {
-    schema: './node_modules/@aluplan/database/prisma/schema.prisma',
+    schema: './packages/database/prisma/schema.prisma',
     url: process.env.DATABASE_URL
 }
