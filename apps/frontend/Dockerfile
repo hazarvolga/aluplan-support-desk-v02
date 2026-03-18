@@ -9,8 +9,12 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 # Generate database client
 RUN pnpm --filter @aluplan/database db:generate
+# Build arguments
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Build frontend with increased memory and no linting to prevent OOM in CI/Prod
-RUN NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/frontend build
+RUN NODE_OPTIONS="--max-old-space-size=4096" NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL pnpm --filter @aluplan/frontend build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
