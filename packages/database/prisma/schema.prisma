@@ -3,6 +3,7 @@ generator client {
   previewFeatures = ["driverAdapters", "postgresqlExtensions"]
   binaryTargets   = ["native"]
   engineType      = "library"
+  output          = "../client"
 }
 
 datasource db {

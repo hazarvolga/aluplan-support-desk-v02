@@ -20,7 +20,7 @@ COPY --from=builder /app/dataset ./dataset/
 # Ensure dist is copied correctly from the filter output
 COPY --from=builder /app/apps/backend/dist ./dist
 # Copy the local prisma config for Prisma 7
-COPY apps/backend/prisma.config.ts ./
+COPY apps/backend/prisma.config.js ./
 
 EXPOSE 4000
 
