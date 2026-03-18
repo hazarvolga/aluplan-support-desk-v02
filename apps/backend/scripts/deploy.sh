@@ -1,28 +1,26 @@
 #!/bin/sh
 set -e
 
-echo "--- Starting Deployment Script ---"
+echo "--- Starting Deployment Script (Cross-Version Stability Mode) ---"
 
 if [ -z "$DATABASE_URL" ]; then
   echo "Error: DATABASE_URL is not set"
   exit 1
 fi
 
-# 1. Forge the temporary shadow schema (The DevOps Ultimate Bypass)
-echo "Injecting DATABASE_URL into temporary schema..."
 SCHEMA_FILE="./packages/database/prisma/schema.prisma"
-TEMP_SCHEMA="/tmp/prod.prisma"
+TEMP_SCHEMA="/tmp/migration.prisma"
 
-# Using sed to append the url property after the provider line
-# This ensures Prisma 7 sees a hardcoded URL string and doesn't look for a config file
-sed "/provider.*=.*\"postgresql\"/a \  url = \"${DATABASE_URL}\"" "$SCHEMA_FILE" > "$TEMP_SCHEMA"
+# 1. Version Bridge: Prepare schema for Prisma 6 Migration
+# Prisma 7 forbids 'url' in schema when using driverAdapters, but Prisma 6 requires it for migrations.
+# We surgically add 'url = env("DATABASE_URL")' to a temp schema for the migration phase.
+echo "Preparing migration-ready schema (v6 compatibility)..."
+sed "/provider.*=.*\"postgresql\"/a \  url = env(\"DATABASE_URL\")" "$SCHEMA_FILE" > "$TEMP_SCHEMA"
 
-echo "Temporary schema created at $TEMP_SCHEMA"
+# 2. Run Prisma migrations using Prisma 6 (The Stability Layer)
+echo "Running Prisma migrations using Prisma 6..."
+npx prisma@6.4.1 migrate deploy --schema "$TEMP_SCHEMA"
 
-# 2. Run Prisma migrations against the forged schema
-echo "Running Prisma migrations..."
-npx prisma@7.4.2 migrate deploy --schema "$TEMP_SCHEMA"
-
-# 3. Start the application
+# 3. Start the application (NestJS using Prisma 7 internaaly)
 echo "Starting application..."
 node apps/backend/dist/src/main.js
