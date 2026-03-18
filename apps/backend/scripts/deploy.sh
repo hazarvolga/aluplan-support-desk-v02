@@ -19,7 +19,8 @@ sed "/provider.*=.*\"postgresql\"/a \  url = env(\"DATABASE_URL\")" "$SCHEMA_FIL
 
 # 2. Run Prisma migrations using Prisma 6 (The Stability Layer)
 echo "Running Prisma migrations using Prisma 6..."
-npx prisma@6.4.1 migrate deploy --schema "$TEMP_SCHEMA"
+# Using --no-install to ensure we use the pre-bundled binary in Docker
+npx --no-install prisma@6.4.1 migrate deploy --schema "$TEMP_SCHEMA"
 
 # 3. Start the application (NestJS using Prisma 7 internaaly)
 echo "Starting application..."
