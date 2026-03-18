@@ -29,24 +29,14 @@ COPY --from=builder /app/packages/database/client ./node_modules/@aluplan/databa
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 COPY --from=builder /app/dataset ./dataset/
 
-# Create the Prisma config file using a placeholder to avoid parsing errors
-RUN cat <<EOF > /app/prisma.config.js
-module.exports = {
-  datasource: {
-    url: "__DB_URL__"
-  },
-  schema: {
-    kind: 'static',
-    filePath: '/app/packages/database/prisma/schema.prisma'
-  }
-};
-EOF
-
 EXPOSE 4000
 
 # Set environment variable for backend port
 ENV PORT=4000
 
-# Command to replace placeholder and run migrations
-# Using sed to inject the runtime DATABASE_URL into the config file physically
-CMD ["sh", "-c", "sed -i \"s|__DB_URL__|${DATABASE_URL}|g\" /app/prisma.config.js && cat /app/prisma.config.js && npx prisma@7.4.2 migrate deploy && node apps/backend/dist/src/main.js"]
+# Command to start the application
+# THE DEVOPS ULTIMATE BYPASS (V2): 
+# 1. Use sed to surgically append 'url = "REAL_URL"' after the provider line.
+# 2. This creates a valid, self-contained schema for Prisma 7 without needing a config file.
+# 3. This bypasses the buggy Prisma 7 config loader entirely.
+CMD ["sh", "-c", "sed \"/provider.*=.*\\\"postgresql\\\"/a \  url = \\\"${DATABASE_URL}\\\"\" ./packages/database/prisma/schema.prisma > /tmp/prod.prisma && npx prisma@7.4.2 migrate deploy --schema /tmp/prod.prisma && node apps/backend/dist/src/main.js"]
