@@ -16,9 +16,12 @@ ENV NODE_ENV=production
 # AI Strategic Upgrade: Add OPENAI_API_KEY / GEMINI_API_KEY to Coolify ENV to auto-upgrade from Ollama.
 # MJML & Template Fix: Ensure dist folder contains compiled assets.
 COPY --from=builder /app/deployed-backend ./
-COPY --from=builder /app/apps/backend/dist ./dist
 COPY --from=builder /app/dataset ./dataset/
+# Ensure dist is copied correctly from the filter output
+COPY --from=builder /app/apps/backend/dist ./dist
 
 EXPOSE 4000
-# Start sequence: Reset (optional) -> Fix Migrations -> Deploy -> Seed Admin -> Seed Knowledge Pool -> Run
-CMD ["sh", "-c", "if [ \"$RESET_DB_ON_START\" = \"true\" ]; then echo 'Wiping DB via DB Execute...'; echo 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' | npx -y prisma@6.3.1 db execute --url \"$DATABASE_URL\" --stdin; fi; echo \"DELETE FROM _prisma_migrations WHERE migration_name = '20260303220000_fix_diverged_schema_sla';\" | npx -y prisma@6.3.1 db execute --url \"$DATABASE_URL\" --stdin || true; npx -y prisma@6.3.1 migrate deploy --schema=./node_modules/@aluplan/database/prisma/schema.prisma && node create-admin.js || true && node seed-kp.js || true && node dist/main"]
+
+# Start sequence: Fix Migrations -> Deploy -> Run
+# Using pnpm start:prod instead of raw node for better task handling if possible, or direct node if fixed.
+CMD ["sh", "-c", "echo 'Running Prisma Migrations...'; npx -y prisma@6.3.1 migrate deploy --schema=./node_modules/@aluplan/database/prisma/schema.prisma && echo 'Seeding Admin...'; node create-admin.js || true; echo 'Seeding KB...'; node seed-kp.js || true; echo 'Starting Application...'; node dist/main.js"]
