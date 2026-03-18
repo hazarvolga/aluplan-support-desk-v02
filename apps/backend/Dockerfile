@@ -34,4 +34,4 @@ ENV PORT=4000
 
 # Command to run migrations without a config file and start app
 # We point directly to our schema file with --schema flag
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema ./packages/database/prisma/schema.prisma && node apps/backend/dist/src/main.js"]
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy --schema ./packages/database/prisma/schema.prisma && node apps/backend/dist/src/main.js"]
