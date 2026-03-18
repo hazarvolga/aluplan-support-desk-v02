@@ -19,9 +19,10 @@ COPY --from=builder /app/deployed-backend ./
 COPY --from=builder /app/dataset ./dataset/
 # Ensure dist is copied correctly from the filter output
 COPY --from=builder /app/apps/backend/dist ./dist
+# Copy the local prisma config for Prisma 7
+COPY apps/backend/prisma.config.ts ./
 
 EXPOSE 4000
 
 # Start sequence: Fix Migrations -> Deploy -> Run
-# Using pnpm start:prod instead of raw node for better task handling if possible, or direct node if fixed.
-CMD ["sh", "-c", "echo 'Running Prisma Migrations...'; npx -y prisma@7.4.2 migrate deploy --schema=./node_modules/@aluplan/database/prisma/schema.prisma && echo 'Seeding Admin...'; node create-admin.js || true; echo 'Seeding KB...'; node seed-kp.js || true; echo 'Starting Application...'; node dist/main.js"]
+CMD ["sh", "-c", "echo 'Running Prisma Migrations...'; npx -y prisma@7.4.2 migrate deploy && echo 'Seeding Admin...'; node create-admin.js || true; echo 'Seeding KB...'; node seed-kp.js || true; echo 'Starting Application...'; node dist/src/main.js"]
