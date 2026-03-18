@@ -29,11 +29,11 @@ COPY --from=builder /app/packages/database/client ./node_modules/@aluplan/databa
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 COPY --from=builder /app/dataset ./dataset/
 
-# Create the Prisma config file using Here-Doc for maximum reliability
+# Create the Prisma config file using a placeholder to avoid parsing errors
 RUN cat <<EOF > /app/prisma.config.js
 module.exports = {
   datasource: {
-    url: process.env.DATABASE_URL
+    url: "__DB_URL__"
   },
   schema: {
     kind: 'static',
@@ -47,6 +47,6 @@ EXPOSE 4000
 # Set environment variable for backend port
 ENV PORT=4000
 
-# Command to migrations and starts app
-# Using npx with pinned version and direct schema routing for absolute certainty
-CMD ["sh", "-c", "cat /app/prisma.config.js && npx prisma@7.4.2 migrate deploy && node apps/backend/dist/src/main.js"]
+# Command to replace placeholder and run migrations
+# Using sed to inject the runtime DATABASE_URL into the config file physically
+CMD ["sh", "-c", "sed -i \"s|__DB_URL__|${DATABASE_URL}|g\" /app/prisma.config.js && cat /app/prisma.config.js && npx prisma@7.4.2 migrate deploy && node apps/backend/dist/src/main.js"]
