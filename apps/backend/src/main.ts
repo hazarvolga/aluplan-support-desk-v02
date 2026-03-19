@@ -115,40 +115,11 @@ async function bootstrap() {
     app.use(json({ limit: '50mb' }));
     app.use(urlencoded({ extended: true, limit: '50mb' }));
 
-    const cookieDomain = nodeEnv === 'production' ? '.allplan.net.tr' : undefined;
-
-    // Global CSRF Protection
-    const csrfMiddleware = csurf({
-        cookie: {
-            httpOnly: true,
-            secure: nodeEnv === 'production',
-            sameSite: nodeEnv === 'production' ? 'none' : 'lax',
-            domain: cookieDomain,
-        }
-    });
-
-    app.use((req: Request, res: Response, next: NextFunction) => {
-        // Skip CSRF for webhooks and if not in production (allows E2E fetch setup)
-        if (req.path.startsWith('/api/v1/webhooks') || process.env.NODE_ENV !== 'production') {
-            return next();
-        }
-        csrfMiddleware(req, res, next);
-    });
-
-    // Provide CSRF token to frontend via a cookie
-    app.use((req: Request, res: Response, next: NextFunction) => {
-        if (!req.path.startsWith('/api/v1/webhooks')) {
-            const castReq = req as any;
-            if (typeof castReq.csrfToken === 'function') {
-                res.cookie('XSRF-TOKEN', castReq.csrfToken(), {
-                    secure: nodeEnv === 'production',
-                    sameSite: nodeEnv === 'production' ? 'none' : 'lax',
-                    domain: cookieDomain,
-                });
-            }
-        }
-        next();
-    });
+    // Note: csurf middleware has been completely removed.
+    // The application uses stateless JWTs passed via the Authorization header
+    // (Bearer tokens) injected from localStorage. Because the browser does not
+    // automatically attach Bearer tokens to cross-site requests, traditional CSRF
+    // vulnerabilities are impossible. Enforcing CSRF only breaks CORS requests unnecessarily.
 
     const allowedOrigins = [
         'http://localhost:3000',
