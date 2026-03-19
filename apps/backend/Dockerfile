@@ -22,15 +22,16 @@ COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.ya
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/packages/database/package.json ./packages/database/
 
-# 2. Copy the minimal internal database package artifacts (Pre-built)
+# 2. Copy pre-built node_modules from builder (ensures all Prisma runtime deps are present)
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
+
+# 3. Copy the database package artifacts (Pre-built)
 COPY --from=builder /app/packages/database/index.js /app/packages/database/index.d.ts ./packages/database/
 COPY --from=builder /app/packages/database/client ./packages/database/client
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 COPY --from=builder /app/packages/database/prisma.config.ts ./packages/database/
 COPY --from=builder /app/packages/database/prisma.config.js ./packages/database/
-
-# 3. Install production dependencies — include database package deps
-RUN pnpm install --prod --no-optional --frozen-lockfile --filter @aluplan/backend --filter @aluplan/database
 
 # 4. Copy backend artifacts
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
