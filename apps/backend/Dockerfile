@@ -24,6 +24,7 @@ COPY --from=builder /app/packages/database/package.json ./packages/database/
 COPY --from=builder /app/packages/database/index.js /app/packages/database/index.d.ts ./packages/database/
 COPY --from=builder /app/packages/database/client ./packages/database/client
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
+COPY --from=builder /app/packages/database/prisma.config.ts ./packages/database/
 
 # 3. Install production dependencies (Resource optimized)
 RUN pnpm install --prod --no-optional --frozen-lockfile --filter @aluplan/backend
