@@ -45,6 +45,7 @@ COPY --from=builder /app/apps/backend/src/email/locales ./apps/backend/src/email
 COPY --from=builder /app/dataset ./dataset/
 COPY --from=builder /app/apps/backend/scripts/deploy.sh ./deploy.sh
 COPY --from=builder /app/apps/backend/scripts/grant-admin.js ./apps/backend/scripts/grant-admin.js
+COPY --from=builder /app/apps/backend/scripts/fix-customer-roles.js ./apps/backend/scripts/fix-customer-roles.js
 
 # Final permissions and port config
 RUN chmod +x ./deploy.sh

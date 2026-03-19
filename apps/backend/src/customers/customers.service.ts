@@ -42,7 +42,7 @@ export class CustomersService {
 
                         // Get customer role
                         const customerRole = await prisma.role.findUnique({
-                            where: { name: 'customer' }
+                            where: { name: 'CUSTOMER' }
                         });
 
                         existingUser = await prisma.user.create({
@@ -146,7 +146,7 @@ export class CustomersService {
 
         // Obtain the default customer role
         const customerRole = await this.prisma.role.findUnique({
-            where: { name: 'customer' }
+            where: { name: 'CUSTOMER' }
         });
 
         // 4. Create User + CustomerProfile in a single transaction
@@ -238,7 +238,7 @@ export class CustomersService {
         return this.prisma.user.findMany({
             where: {
                 role: {
-                    name: 'customer'
+                    name: 'CUSTOMER'
                 },
                 deletedAt: null
             },

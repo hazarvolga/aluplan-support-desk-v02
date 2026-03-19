@@ -482,7 +482,7 @@ export class CrmService {
             if (!user) {
                 // Get customer role
                 const customerRole = await tx.role.findUnique({
-                    where: { name: 'customer' }
+                    where: { name: 'CUSTOMER' }
                 });
 
                 user = await tx.user.create({

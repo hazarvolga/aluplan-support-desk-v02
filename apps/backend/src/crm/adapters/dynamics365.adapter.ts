@@ -187,7 +187,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
                             // Get customer role
                             const customerRole = await tx.role.findUnique({
-                                where: { name: 'customer' }
+                                where: { name: 'CUSTOMER' }
                             });
 
                             user = await tx.user.create({
