@@ -1,4 +1,5 @@
-FROM node:20-bookworm AS base
+FROM node:20-alpine AS base
+RUN apk add --no-cache openssl fontconfig
 RUN npm install -g pnpm@9.15.4
 
 FROM base AS builder
@@ -13,10 +14,11 @@ RUN pnpm install --frozen-lockfile && \
     pnpm --filter @aluplan/database db:generate && \
     pnpm --filter @aluplan/backend build
 
-FROM node:20-bookworm AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-RUN npm install -g pnpm@9.15.4 && \
+RUN apk add --no-cache openssl fontconfig && \
+    npm install -g pnpm@9.15.4 && \
     npm install -g prisma@7.4.2
 
 # 1. Copy entire workspace (metadata + source needed for pnpm install)
