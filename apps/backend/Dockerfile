@@ -17,26 +17,26 @@ ENV NODE_ENV=production
 RUN npm install -g pnpm@9.15.4 && \
     npm install -g prisma@7.4.2
 
-# 1. Copy workspace metadata
+# 1. Copy entire workspace (metadata + source needed for pnpm install)
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/packages/database/package.json ./packages/database/
 
-# 2. Copy pre-built node_modules from builder (ensures all Prisma runtime deps are present)
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
+# 2. Install production deps (this creates correct pnpm symlink structure)
+RUN pnpm install --prod --no-optional --frozen-lockfile
 
-# 3. Copy the database package artifacts (Pre-built)
-COPY --from=builder /app/packages/database/index.js /app/packages/database/index.d.ts ./packages/database/
-COPY --from=builder /app/packages/database/client ./packages/database/client
+# 3. Re-generate Prisma client in runner so it resolves against correct node_modules
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 COPY --from=builder /app/packages/database/prisma.config.ts ./packages/database/
 COPY --from=builder /app/packages/database/prisma.config.js ./packages/database/
+RUN cd packages/database && prisma generate --schema ./prisma/schema.prisma
 
-# 4. Copy backend artifacts
+# 4. Copy remaining database package artifacts
+COPY --from=builder /app/packages/database/index.js /app/packages/database/index.d.ts ./packages/database/
+
+# 5. Copy backend artifacts
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/dataset ./dataset/
-# Copy the deployment script
 COPY --from=builder /app/apps/backend/scripts/deploy.sh ./deploy.sh
 
 # Final permissions and port config
@@ -44,5 +44,4 @@ RUN chmod +x ./deploy.sh
 EXPOSE 4000
 ENV PORT=4000
 
-# Start via specialized script
 CMD ["./deploy.sh"]
