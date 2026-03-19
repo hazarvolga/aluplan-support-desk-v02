@@ -63,7 +63,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: ${PORT:-3001}
+      PORT: ${PORT:-4000}
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
@@ -83,7 +83,7 @@ services:
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
       GENERATIVE_MODEL: ${GENERATIVE_MODEL:-llama-3.3-70b-versatile}
     ports:
-      - "${PORT:-3001}:${PORT:-3001}"
+      - "${PORT:-4000}:${PORT:-4000}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,7 +92,7 @@ services:
       minio:
         condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-3001}/api/v1/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-4000}/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -113,10 +113,31 @@ services:
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://aluplan_backend:4000/api/v1}
     ports:
       - "3000:3000"
     depends_on:
       - backend
+    networks:
+      - aluplan_net
+
+  # ============================================
+  # MinIO Bucket Init (One-shot)
+  # ============================================
+  minio-init:
+    image: minio/mc:latest
+    container_name: aluplan_minio_init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-admin} ${MINIO_ROOT_PASSWORD:-changeme};
+      mc mb --ignore-existing local/${STORAGE_BUCKET:-attachments};
+      mc anonymous set download local/${STORAGE_BUCKET:-attachments};
+      echo 'MinIO bucket ready.';
+      exit 0;
+      "
     networks:
       - aluplan_net
 

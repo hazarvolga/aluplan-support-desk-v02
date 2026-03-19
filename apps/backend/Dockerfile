@@ -13,8 +13,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 RUN npm install -g pnpm@9.15.4 && \
-    # Pre-install both Prisma versions to avoid runtime downloads/spikes
-    npm install -g prisma@7.4.2 prisma@6.4.1
+    npm install -g prisma@7.4.2
 
 # 1. Copy workspace metadata
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./

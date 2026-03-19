@@ -1,13 +1,13 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters", "postgresqlExtensions"]
-  binaryTargets   = ["native"]
-  engineType      = "library"
+  previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
   output          = "../client"
 }
 
 datasource db {
   provider   = "postgresql"
+  url        = env("DATABASE_URL")
   extensions = [uuid_ossp(map: "uuid-ossp", schema: "public"), vector(schema: "public")]
 }
 
