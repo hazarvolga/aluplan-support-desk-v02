@@ -261,17 +261,17 @@ export default function TicketsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {tickets.map((t) => {
-                                    const isSelected = selectedIds.includes(t.id);
+                                {tickets.map((ticket) => {
+                                    const isSelected = selectedIds.includes(ticket.id);
                                     return (
                                         <tr
-                                            key={t.id}
+                                            key={ticket.id}
                                             className={`hover:bg-white/[0.03] transition-all cursor-pointer group h-14 ${isSelected ? 'bg-primary/5' : ''}`}
-                                            onClick={() => window.location.href = `/tickets/${t.id}`}
+                                            onClick={() => window.location.href = `/tickets/${ticket.id}`}
                                         >
                                             <td className="px-6">
                                                 <button
-                                                    onClick={(e) => toggleSelect(e, t.id)}
+                                                    onClick={(e) => toggleSelect(e, ticket.id)}
                                                     className={`transition-colors ${isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
                                                 >
                                                     {isSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4 opacity-10 group-hover:opacity-100" />}
@@ -280,16 +280,16 @@ export default function TicketsPage() {
                                             <td className="px-4 border-r border-white/5">
                                                 <div className="flex items-center gap-2 font-mono text-[11px] font-bold text-white/50 group-hover:text-white transition-colors">
                                                     {(() => {
-                                                        const Icon = CHANNEL_ICONS[t.channel] || Globe;
-                                                        return <Icon className={`h-3.5 w-3.5 ${CHANNEL_COLORS[t.channel] || 'text-muted-foreground'}`} />;
+                                                        const Icon = CHANNEL_ICONS[ticket.channel] || Globe;
+                                                        return <Icon className={`h-3.5 w-3.5 ${CHANNEL_COLORS[ticket.channel] || 'text-muted-foreground'}`} />;
                                                     })()}
-                                                    #{t.ticketNumber}
+                                                    #{ticket.ticketNumber}
                                                 </div>
                                             </td>
                                             <td className="px-4">
                                                 <div className="flex flex-col">
                                                     <span className="text-[12px] font-bold text-slate-300">
-                                                        {t.creator?.customerProfile?.companyName || tc('individual')}
+                                                        {ticket.creator?.customerProfile?.companyName || tc('individual')}
                                                     </span>
                                                 </div>
                                             </td>
@@ -297,11 +297,11 @@ export default function TicketsPage() {
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-[12px] font-medium text-white">
-                                                            {t.creator?.fullName || tc('unknown')}
+                                                            {ticket.creator?.fullName || tc('unknown')}
                                                         </span>
-                                                        {t.creator?.customerProfile?.contractStatus && (
+                                                        {ticket.creator?.customerProfile?.contractStatus && (
                                                             <Badge variant="outline" className="text-[8px] font-bold tracking-widest bg-white/5 text-slate-400 border-white/10 uppercase px-1.5 py-0">
-                                                                {t.creator.customerProfile.contractStatus}
+                                                                {ticket.creator.customerProfile.contractStatus}
                                                             </Badge>
                                                         )}
                                                     </div>
@@ -310,14 +310,14 @@ export default function TicketsPage() {
                                             <td className="px-4">
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-[13px] font-bold text-white group-hover:text-primary transition-colors tracking-tight">
-                                                        {t.subject}
+                                                        {ticket.subject}
                                                     </span>
-                                                    {t.knowledgeBaseAdded && (
+                                                    {ticket.knowledgeBaseAdded && (
                                                         <Badge variant="outline" className="text-[8px] font-bold tracking-widest bg-primary/5 text-primary border-primary/20">
                                                             {t('table.badges.kb_sync')}
                                                         </Badge>
                                                     )}
-                                                    {t.isSlaBreached && (
+                                                    {ticket.isSlaBreached && (
                                                         <Badge variant="destructive" className="text-[8px] font-bold tracking-widest animate-pulse">
                                                             {t('table.badges.sla_vio')}
                                                         </Badge>
@@ -325,19 +325,19 @@ export default function TicketsPage() {
                                                 </div>
                                             </td>
                                             <td className="px-4 text-center">
-                                                <Badge className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest border-none ${STATUS_COLORS[t.status] ?? 'bg-muted text-muted'}`}>
-                                                    {t(`status.${t.status}`)}
+                                                <Badge className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest border-none ${STATUS_COLORS[ticket.status] ?? 'bg-muted text-muted'}`}>
+                                                    {t(`status.${ticket.status}`)}
                                                 </Badge>
                                             </td>
                                             <td className="px-4 text-center">
                                                 <div className="flex items-center justify-center">
-                                                    <span className={`text-[10px] font-black uppercase italic tracking-tighter ${PRIORITY_COLORS[t.priority] ?? ''}`}>
-                                                        {t(`priority.${t.priority}`)}
+                                                    <span className={`text-[10px] font-black uppercase italic tracking-tighter ${PRIORITY_COLORS[ticket.priority] ?? ''}`}>
+                                                        {t(`priority.${ticket.priority}`)}
                                                     </span>
                                                 </div>
                                             </td>
                                             <td className="px-6 text-right font-mono text-[11px] text-muted-foreground group-hover:text-white transition-colors">
-                                                {new Date(t.createdAt).toLocaleDateString(locale)} {new Date(t.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(ticket.createdAt).toLocaleDateString(locale)} {new Date(ticket.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                                             </td>
                                         </tr>
                                     );
