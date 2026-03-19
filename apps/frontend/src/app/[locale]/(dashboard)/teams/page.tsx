@@ -14,7 +14,8 @@ import {
     Search,
     ShieldCheck,
     Clock,
-    Zap
+    Zap,
+    UserPlus
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { AgentStatusBadge } from '@/components/team/AgentStatusBadge';
 import { RoleBadge } from '@/components/team/RoleBadge';
 import { TeamCreationPanel } from '@/components/team/TeamCreationPanel';
+import { UserDialog } from '@/components/users/user-dialog';
 import Link from 'next/link';
 
 export default function TeamsPage() {
@@ -32,6 +34,8 @@ export default function TeamsPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [createPanelOpen, setCreatePanelOpen] = useState(false);
+    const [userDialogOpen, setUserDialogOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState('departments');
     const { toast } = useToast();
 
     const fetchAll = async () => {
@@ -82,9 +86,15 @@ export default function TeamsPage() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <Button className="h-10 px-4 bg-primary hover:bg-primary/90" onClick={() => setCreatePanelOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" /> Yeni Ekip
-                    </Button>
+                    {activeTab === 'agents' ? (
+                        <Button className="h-10 px-4 bg-primary hover:bg-primary/90" onClick={() => setUserDialogOpen(true)}>
+                            <UserPlus className="mr-2 h-4 w-4" /> Yeni Ajan Ekle
+                        </Button>
+                    ) : (
+                        <Button className="h-10 px-4 bg-primary hover:bg-primary/90" onClick={() => setCreatePanelOpen(true)}>
+                            <Plus className="mr-2 h-4 w-4" /> Yeni Ekip
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -94,8 +104,14 @@ export default function TeamsPage() {
                 onSuccess={fetchAll}
             />
 
+            <UserDialog
+                open={userDialogOpen}
+                onOpenChange={setUserDialogOpen}
+                onSuccess={fetchAll}
+            />
+
             {/* Main Tabs */}
-            <Tabs defaultValue="departments" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid grid-cols-3 w-full md:w-[400px] h-12 p-1 bg-muted/50">
                     <TabsTrigger value="departments" className="gap-2 h-10 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                         <Building2 className="h-4 w-4" /> Departmanlar

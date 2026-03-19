@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { AgentStatusBadge } from '@/components/team/AgentStatusBadge';
 import { RoleBadge } from '@/components/team/RoleBadge';
+import { TeamMemberAddDialog } from '@/components/team/TeamMemberAddDialog';
 import Link from 'next/link';
 
 export default function TeamDetailPage() {
@@ -30,6 +31,7 @@ export default function TeamDetailPage() {
     const router = useRouter();
     const [team, setTeam] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -70,6 +72,16 @@ export default function TeamDetailPage() {
             <Button variant="ghost" size="sm" className="w-fit -ml-2 text-muted-foreground hover:text-foreground h-8" onClick={() => router.back()}>
                 <ChevronLeft className="mr-2 h-4 w-4" /> Geri Dön
             </Button>
+
+            <TeamMemberAddDialog
+                open={isAddMemberOpen}
+                onOpenChange={setIsAddMemberOpen}
+                teamId={id as string}
+                existingMembers={team.members || []}
+                onSuccess={() => {
+                    api.teams.get(id as string).then(setTeam).catch(console.error);
+                }}
+            />
 
             {/* Header Dashboard */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -120,7 +132,7 @@ export default function TeamDetailPage() {
                             <Users className="h-5 w-5 text-primary" /> Ekip Üyeleri
                             <span className="text-muted-foreground text-sm font-normal">({team.members?.length || 0})</span>
                         </h2>
-                        <Button className="h-9 px-4 font-bold">
+                        <Button className="h-9 px-4 font-bold" onClick={() => setIsAddMemberOpen(true)}>
                             <UserPlus className="mr-2 h-4 w-4" /> Yeni Üye Ekle
                         </Button>
                     </div>
