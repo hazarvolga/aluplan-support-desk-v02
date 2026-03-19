@@ -1,12 +1,12 @@
-import { defineConfig } from 'prisma/config';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
+const { defineConfig } = require('prisma/config');
+const { PrismaPg } = require('@prisma/adapter-pg');
+const { Pool } = require('pg');
 
-export default defineConfig({
+module.exports = defineConfig({
   earlyAccess: true,
   schema: './prisma/schema.prisma',
   datasource: {
-    url: process.env.DATABASE_URL!,
+    url: process.env.DATABASE_URL,
   },
   client: {
     adapter: () => {
