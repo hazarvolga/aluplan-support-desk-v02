@@ -3,6 +3,8 @@ RUN npm install -g pnpm@9.15.4
 
 FROM base AS builder
 WORKDIR /app
+# Force development mode so devDependencies (nest CLI, typescript, etc.) are installed
+ENV NODE_ENV=development
 COPY . .
 # Perform full build in builder stage
 RUN pnpm install --frozen-lockfile && \

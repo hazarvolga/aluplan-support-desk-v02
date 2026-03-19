@@ -4,6 +4,8 @@ RUN npm install -g pnpm
 FROM base AS builder
 # Set working directory
 WORKDIR /app
+# Force development mode so devDependencies are installed during build
+ENV NODE_ENV=development
 COPY . .
 # Install dependencies
 RUN pnpm install --frozen-lockfile
