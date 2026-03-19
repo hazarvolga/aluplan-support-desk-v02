@@ -23,9 +23,9 @@ async function main() {
     const adminPassword = process.env.ADMIN_PASSWORD ?? 'Vol1872017';
     const hash = await bcrypt.hash(adminPassword, 12);
 
-    let adminRole = await prisma.role.findFirst({ where: { name: 'admin' } });
+    let adminRole = await prisma.role.findFirst({ where: { name: 'ADMIN' } });
     if (!adminRole) { // Fallback if roles aren't seeded yet
-        adminRole = await prisma.role.create({ data: { name: 'admin', isSystem: true } });
+        adminRole = await prisma.role.create({ data: { name: 'ADMIN', isSystem: true } });
     }
 
     const admin = await prisma.user.upsert({
@@ -256,9 +256,9 @@ async function main() {
     console.log('✅ Products and Categories seeded');
 
     // 5. Seed Test Customers
-    let customerRole = await prisma.role.findFirst({ where: { name: 'customer' } });
+    let customerRole = await prisma.role.findFirst({ where: { name: 'CUSTOMER' } });
     if (!customerRole) {
-        customerRole = await prisma.role.create({ data: { name: 'customer', isSystem: true } });
+        customerRole = await prisma.role.create({ data: { name: 'CUSTOMER', isSystem: true } });
     }
 
     const testCustomers = [

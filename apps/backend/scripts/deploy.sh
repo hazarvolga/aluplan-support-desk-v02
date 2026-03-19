@@ -13,5 +13,8 @@ npx prisma migrate deploy \
   --schema ./packages/database/prisma/schema.prisma \
   --config ./packages/database/prisma.config.js
 
+echo "Enforcing Admin Role for Admin User..."
+node ./apps/backend/scripts/grant-admin.js || echo "Failed to run grant-admin script but continuing..."
+
 echo "Starting application..."
 node apps/backend/dist/src/main.js
