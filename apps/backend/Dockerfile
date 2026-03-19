@@ -20,7 +20,7 @@ RUN npm install -g pnpm@9.15.4 && \
     npm install -g prisma@7.4.2
 
 # 1. Copy entire workspace (metadata + source needed for pnpm install)
-COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/packages/database/package.json ./packages/database/
 
