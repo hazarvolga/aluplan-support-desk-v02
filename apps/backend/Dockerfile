@@ -25,14 +25,14 @@ COPY --from=builder /app/packages/database/package.json ./packages/database/
 # 2. Install production deps (this creates correct pnpm symlink structure)
 RUN pnpm install --prod --no-optional --frozen-lockfile
 
-# 3. Re-generate Prisma client in runner so it resolves against correct node_modules
+# 3. Copy database package source files (NOT the generated client)
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 COPY --from=builder /app/packages/database/prisma.config.ts ./packages/database/
 COPY --from=builder /app/packages/database/prisma.config.js ./packages/database/
-RUN cd packages/database && prisma generate --schema ./prisma/schema.prisma
-
-# 4. Copy remaining database package artifacts
 COPY --from=builder /app/packages/database/index.js /app/packages/database/index.d.ts ./packages/database/
+
+# 4. Generate Prisma client in runner (this creates packages/database/client/)
+RUN cd packages/database && prisma generate --schema ./prisma/schema.prisma
 
 # 5. Copy backend artifacts
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
