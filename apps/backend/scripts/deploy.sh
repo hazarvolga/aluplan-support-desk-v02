@@ -9,7 +9,7 @@ if [ -z "$DATABASE_URL" ]; then
 fi
 
 echo "Running Prisma migrations..."
-npx prisma migrate deploy \
+npx prisma db push --accept-data-loss \
   --schema ./packages/database/prisma/schema.prisma \
   --config ./packages/database/prisma.config.js
 
