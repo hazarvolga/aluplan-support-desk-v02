@@ -1,7 +1,6 @@
 'use client';
 
 import * as Sentry from '@sentry/nextjs';
-import Error from 'next/error';
 import { useEffect } from 'react';
 
 export default function GlobalError({
@@ -16,7 +15,10 @@ export default function GlobalError({
     return (
         <html>
             <body>
-                <Error statusCode={500} title="Internal Server Error" />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
+                    <h1 style={{ fontSize: '3rem', fontWeight: 'bold' }}>500</h1>
+                    <h2>Internal Server Error</h2>
+                </div>
             </body>
         </html>
     );
