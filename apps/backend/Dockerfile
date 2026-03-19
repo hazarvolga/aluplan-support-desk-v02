@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS base
+FROM node:20-bookworm AS base
 RUN npm install -g pnpm@9.15.4
 
 FROM base AS builder
@@ -13,7 +13,7 @@ RUN pnpm install --frozen-lockfile && \
     pnpm --filter @aluplan/database db:generate && \
     pnpm --filter @aluplan/backend build
 
-FROM node:20-bookworm-slim AS runner
+FROM node:20-bookworm AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 RUN npm install -g pnpm@9.15.4 && \
