@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('@aluplan/database');
 
 async function grantAdmin() {
     console.log('🚀 Enforcing uppercase ADMIN role for hazarvolga@gmail.com...');
