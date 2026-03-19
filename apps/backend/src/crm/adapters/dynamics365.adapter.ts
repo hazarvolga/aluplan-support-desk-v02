@@ -25,7 +25,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
     async syncAccounts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult> {
         try {
             const token = await this.getAccessToken(config);
-            const baseUrl = `${config.instanceUrl}/api/data/v9.2/accounts?$select=accountid,name,industrycode,websiteurl,address1_composite,accountnumber`;
+            // Removed $select to ensure custom mapped fields are returned and to prevent 400 errors if a field doesn't exist
+            const baseUrl = `${config.instanceUrl}/api/data/v9.2/accounts`;
             this.logger.debug(`Fetching accounts from: ${baseUrl}`);
 
             const headers = {
@@ -122,21 +123,10 @@ export class Dynamics365Adapter implements ICrmAdapter {
     async syncContacts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult> {
         try {
             const token = await this.getAccessToken(config);
-            // Build $select dynamically to include any custom mapped fields
-            const contactMappings = (config.syncSettings?.contactMapping || {}) as Record<string, string>;
-            // Use mapping values (preserving original case) for $select
-            const mappingValues = Object.values(contactMappings)
-                .map(v => v.split('@')[0]) // strip @OData annotation if present
-                .filter(v => v);
-            const customFields = mappingValues
-                .map(v => v.toLowerCase())
-                .filter(v => !['contactid', 'firstname', 'lastname', 'emailaddress1', 'jobtitle', 'telephone1', 'new_musteridurumu', 'new_abonelikmodeli'].includes(v));
-            // Merge hardcoded defaults with mapping-provided values (mapping takes precedence for case)
-            const defaultFields = ['contactid', 'firstname', 'lastname', 'emailaddress1', 'jobtitle', 'telephone1', 'new_musteridurumu'];
-            // For new_AbonelikModeli: use mapping value if provided, otherwise use default (preserve original case)
-            const subscriptionField = contactMappings['subscriptionModel']?.split('@')[0] || 'new_AbonelikModeli';
-            const selectFields = [...defaultFields, subscriptionField, ...customFields].join(',');
-            const baseUrl = `${config.instanceUrl}/api/data/v9.2/contacts?$select=${selectFields}&$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
+
+            // Build URL without $select to ensure all custom mapped fields are returned safely, 
+            // otherwise Dataverse throws a 400 error if a requested field doesn't exist.
+            const baseUrl = `${config.instanceUrl}/api/data/v9.2/contacts?$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
             this.logger.debug(`Fetching contacts from: ${baseUrl}`);
 
             const headers = {
