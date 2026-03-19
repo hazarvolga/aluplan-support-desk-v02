@@ -49,22 +49,32 @@ import { LoggerModule } from 'nestjs-pino';
         LoggerModule.forRootAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
-            useFactory: (config: ConfigService) => ({
-                pinoHttp: {
-                    level: config.get('nodeEnv') !== 'production' ? 'debug' : 'info',
-                    transport: config.get('nodeEnv') !== 'production'
-                        ? { target: 'pino-pretty', options: { colorize: true } }
-                        : {
-                            target: 'pino-loki',
-                            options: {
-                                batching: true,
-                                interval: 5,
-                                host: config.get('LOKI_HOST', 'http://loki:3100'),
-                                labels: { app: 'aluplan-backend' }
-                            }
+            useFactory: (config: ConfigService) => {
+                const isProd = config.get('nodeEnv') === 'production';
+                const lokiHost = config.get('LOKI_HOST');
+
+                let transport;
+                if (!isProd) {
+                    transport = { target: 'pino-pretty', options: { colorize: true } };
+                } else if (lokiHost) {
+                    transport = {
+                        target: 'pino-loki',
+                        options: {
+                            batching: true,
+                            interval: 5,
+                            host: lokiHost,
+                            labels: { app: 'aluplan-backend' }
                         }
-                },
-            }),
+                    };
+                }
+
+                return {
+                    pinoHttp: {
+                        level: isProd ? 'info' : 'debug',
+                        transport,
+                    },
+                };
+            },
         }),
         ConfigModule.forRoot({
             isGlobal: true,
