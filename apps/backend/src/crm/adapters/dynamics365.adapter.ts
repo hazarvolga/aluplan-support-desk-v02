@@ -264,7 +264,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                 jobTitle,
                                 phoneNumber,
                                 companyName,
-                                accountId: linkedAccountId || null,
+                                ...(linkedAccountId ? { account: { connect: { id: linkedAccountId } } } : {}),
                                 externalContactId: contactId,
                                 contractStatus,
                                 subscriptionModel: subscriptionModel || null,
