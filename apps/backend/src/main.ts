@@ -115,9 +115,18 @@ async function bootstrap() {
     app.use(json({ limit: '50mb' }));
     app.use(urlencoded({ extended: true, limit: '50mb' }));
 
-    // Global CSRF Protection (except for webhooks which should use their own signature validation)
-    // Note: In a real production app, you might want to adjust the exclusion list
-    const csrfMiddleware = csurf({ cookie: { httpOnly: true, secure: nodeEnv === 'production', sameSite: 'lax' } });
+    const cookieDomain = nodeEnv === 'production' ? '.allplan.net.tr' : undefined;
+
+    // Global CSRF Protection
+    const csrfMiddleware = csurf({
+        cookie: {
+            httpOnly: true,
+            secure: nodeEnv === 'production',
+            sameSite: nodeEnv === 'production' ? 'none' : 'lax',
+            domain: cookieDomain,
+        }
+    });
+
     app.use((req: Request, res: Response, next: NextFunction) => {
         // Skip CSRF for webhooks and if not in production (allows E2E fetch setup)
         if (req.path.startsWith('/api/v1/webhooks') || process.env.NODE_ENV !== 'production') {
@@ -126,13 +135,16 @@ async function bootstrap() {
         csrfMiddleware(req, res, next);
     });
 
-    // Provide CSRF token to frontend via a cookie or header (simplified for this plan)
+    // Provide CSRF token to frontend via a cookie
     app.use((req: Request, res: Response, next: NextFunction) => {
-        // Only attempt to set the cookie if the CSRF middleware was actually applied
         if (!req.path.startsWith('/api/v1/webhooks')) {
             const castReq = req as any;
             if (typeof castReq.csrfToken === 'function') {
-                res.cookie('XSRF-TOKEN', castReq.csrfToken());
+                res.cookie('XSRF-TOKEN', castReq.csrfToken(), {
+                    secure: nodeEnv === 'production',
+                    sameSite: nodeEnv === 'production' ? 'none' : 'lax',
+                    domain: cookieDomain,
+                });
             }
         }
         next();
@@ -161,7 +173,7 @@ async function bootstrap() {
         },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-CSRF-Token', 'X-XSRF-TOKEN'],
     });
 
     // Global API prefix
