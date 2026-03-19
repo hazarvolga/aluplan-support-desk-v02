@@ -229,10 +229,9 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             || accountInfo?.name
                             || 'Unknown';
 
-                        // customerNo: account'tan gelir (contact'ta bu alan yok)
-                        const clientNo = contact.parentcustomerid_account?.accountnumber
-                            || accountInfo?.customerNo
-                            || `DYN-${contactId.substring(0, 8)}`;
+                        // customerNo: her contact (User) için unique olmalı. (CustomerProfile.customerNo @unique)
+                        // Account number aynı hesaba bağlı birden fazla contact için tekrar edeceği için, contactId'den türetelim.
+                        const clientNo = `DYN-C-${contactId.substring(0, 8)}`;
 
                         // industry: account expand'dan gelir, contact'ta bu veri yok
                         const industryFromAccount = accountInfo?.industry

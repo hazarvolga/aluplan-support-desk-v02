@@ -30,9 +30,16 @@ export class LlmApiService implements AiProvider {
     }
 
     private async getEmbedModel(): Promise<string> {
-        return (await this.settings.getValue('ai.llmapi.embed_model')) ??
+        let model = (await this.settings.getValue('ai.llmapi.embed_model')) ??
             this.config.get<string>('LLMAPI_EMBED_MODEL') ??
             'text-embedding-3-small';
+
+        // Auto-correct common user typo from the admin panel
+        if (model === 'text-embeding-3-small') {
+            model = 'text-embedding-3-small';
+        }
+
+        return model;
     }
 
     getName(): string {

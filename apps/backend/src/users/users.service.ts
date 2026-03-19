@@ -8,12 +8,30 @@ export class UsersService {
     constructor(private prisma: PrismaService) { }
 
     async create(dto: { email: string; password: string; fullName: string; roleName?: string }) {
-        const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+        const existing = await this.prisma.user.findUnique({ where: { email: dto.email }, include: { role: true } });
+        const passwordHash = await bcrypt.hash(dto.password, 10);
+
         if (existing) {
+            // Allow upgrading an existing user (e.g., from CUSTOMER synced via CRM)
+            if (dto.roleName && dto.roleName !== 'CUSTOMER' && existing.role?.name === 'CUSTOMER') {
+                const newRole = await this.prisma.role.findUnique({ where: { name: dto.roleName } });
+                if (newRole) {
+                    const updated = await this.prisma.user.update({
+                        where: { id: existing.id },
+                        data: {
+                            roleId: newRole.id,
+                            fullName: dto.fullName || existing.fullName,
+                            passwordHash: passwordHash // Provide them the newly set password
+                        }
+                    });
+                    const { passwordHash: _passwordHash, ...result } = updated;
+                    return result;
+                }
+            }
             throw new ConflictException('Bu e-posta adresi zaten kayıtlı.');
         }
 
-        const passwordHash = await bcrypt.hash(dto.password, 10);
+        const role = dto.roleName ? await this.prisma.role.findUnique({ where: { name: dto.roleName } }) : null;
 
         const user = await this.prisma.user.create({
             data: {
@@ -21,6 +39,7 @@ export class UsersService {
                 fullName: dto.fullName,
                 passwordHash,
                 status: 'ACTIVE',
+                roleId: role?.id,
             },
         });
 
