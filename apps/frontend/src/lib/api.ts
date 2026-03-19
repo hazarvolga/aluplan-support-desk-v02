@@ -43,10 +43,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         console.log('[DEBUG_API] Preview Request Payload:', options?.body);
     }
 
-    let res = await fetch(`${getApiUrl()}${path}`, {
+    const fetchOptions: RequestInit = {
         ...options,
         headers,
-    });
+        credentials: 'include',
+    };
+
+    let res = await fetch(`${getApiUrl()}${path}`, fetchOptions);
 
     if (res.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
         const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
@@ -60,7 +63,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
                     if (newToken) {
                         headers['Authorization'] = `Bearer ${newToken}`;
-                        res = await fetch(`${getApiUrl()}${path}`, { ...options, headers });
+                        res = await fetch(`${getApiUrl()}${path}`, { ...fetchOptions, headers });
                         if (res.ok) {
                             const text = await res.text();
                             return text ? JSON.parse(text) : {} as T;
@@ -74,6 +77,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
                 try {
                     const refreshRes = await fetch(`${getApiUrl()}/auth/refresh`, {
                         method: 'POST',
+                        credentials: 'include',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${refreshToken}`
@@ -89,7 +93,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
                             processQueue(null, refreshData.access_token);
 
                             headers['Authorization'] = `Bearer ${refreshData.access_token}`;
-                            res = await fetch(`${getApiUrl()}${path}`, { ...options, headers });
+                            res = await fetch(`${getApiUrl()}${path}`, { ...fetchOptions, headers });
                         } else {
                             throw new Error('Invalid refresh response');
                         }
