@@ -27,7 +27,7 @@ COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/packages/database/package.json ./packages/database/
 
 # 2. Install production deps (this creates correct pnpm symlink structure)
-RUN pnpm install --prod --no-optional --frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile
 
 # 3. Copy database package source files (NOT the generated client)
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
