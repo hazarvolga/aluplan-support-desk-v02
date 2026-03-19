@@ -134,6 +134,11 @@ export default function NewTicketPage() {
             // Switch to specialized query endpoint for conversational RAG
             const response = await api.ai.query(`${subject} ${description}`);
 
+            if (!response || !response.answer) {
+                toast.warning('Yapay zeka servisi şu an cevap veremiyor. Talebinizi oluşturmaya devam edebilirsiniz.');
+                return;
+            }
+
             setAiAnswer(response.answer);
             setInteractionId(response.interactionId);
 

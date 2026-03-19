@@ -254,6 +254,7 @@ export const api = {
             }>('/ai/query', {
                 method: 'POST',
                 body: JSON.stringify({ query }),
+                signal: typeof AbortSignal !== 'undefined' ? AbortSignal.timeout(45000) : undefined,
             }),
         search: (query: string, productId?: string | null, limit = 5) =>
             request<{
