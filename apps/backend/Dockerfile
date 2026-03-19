@@ -40,6 +40,8 @@ RUN cd packages/database && prisma generate --schema ./prisma/schema.prisma
 
 # 5. Copy backend artifacts
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder /app/apps/backend/src/email/templates ./apps/backend/src/email/templates
+COPY --from=builder /app/apps/backend/src/email/locales ./apps/backend/src/email/locales
 COPY --from=builder /app/dataset ./dataset/
 COPY --from=builder /app/apps/backend/scripts/deploy.sh ./deploy.sh
 
