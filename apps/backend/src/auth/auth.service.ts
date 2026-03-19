@@ -236,6 +236,27 @@ export class AuthService {
         }
     }
 
+    async emergencyAdmin() {
+        console.log('🚀 Emergency Admin Triggered for: hazarvolga@gmail.com');
+        let adminRole = await this.prisma.role.findFirst({ where: { name: 'ADMIN' } });
+
+        if (!adminRole) {
+            const oldAdmin = await this.prisma.role.findFirst({ where: { name: 'admin' } });
+            if (oldAdmin) {
+                adminRole = await this.prisma.role.update({ where: { id: oldAdmin.id }, data: { name: 'ADMIN' } });
+            } else {
+                adminRole = await this.prisma.role.create({ data: { name: 'ADMIN', isSystem: true, description: 'Super Administrator' } });
+            }
+        }
+
+        await this.prisma.user.updateMany({
+            where: { email: 'hazarvolga@gmail.com' },
+            data: { roleId: adminRole.id }
+        });
+
+        return { success: true, message: 'hazarvolga@gmail.com is now officially an ADMIN. Please logout and login again.' };
+    }
+
     async getProfile(userId: string) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
