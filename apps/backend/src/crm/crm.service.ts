@@ -119,6 +119,18 @@ export class CrmService {
     async upsertConnection(dto: any) {
         const { provider, ...config } = dto;
 
+        // Fetch existing to handle masked secrets
+        const existing = await this.prisma.crmConnection.findUnique({
+            where: { provider: provider as CrmProvider }
+        });
+
+        if (config.clientSecret === '********' && existing?.clientSecret) {
+            config.clientSecret = this.crypto.decrypt(existing.clientSecret);
+        }
+        if (config.webhookSecret === '********' && existing?.webhookSecret) {
+            config.webhookSecret = this.crypto.decrypt(existing.webhookSecret);
+        }
+
         // Verify connection before saving
         const adapter = this.getAdapter(provider);
         const isValid = await adapter.verifyConnection(config);
