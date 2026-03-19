@@ -28,12 +28,25 @@ export class UsersService {
         return result;
     }
 
-    async findAll(_type?: 'agent' | 'customer') {
+    async findAll(type?: 'agent' | 'customer') {
         const where: any = { deletedAt: null };
+
+        if (type === 'agent') {
+            where.role = {
+                name: {
+                    not: 'CUSTOMER'
+                }
+            };
+        } else if (type === 'customer') {
+            where.role = {
+                name: 'CUSTOMER'
+            };
+        }
 
         return this.prisma.user.findMany({
             where,
             include: {
+                role: true,
                 customerProfile: true,
                 teamMembers: { include: { team: true } }
             },
