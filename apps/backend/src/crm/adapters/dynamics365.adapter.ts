@@ -257,7 +257,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                 crmVerified: true,
                             },
                             create: {
-                                userId: user.id,
+                                user: { connect: { id: user.id } },
                                 firstName,
                                 lastName,
                                 customerNo: clientNo,
