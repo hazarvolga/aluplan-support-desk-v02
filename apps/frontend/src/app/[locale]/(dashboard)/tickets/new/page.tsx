@@ -132,7 +132,12 @@ export default function NewTicketPage() {
 
         try {
             // Switch to specialized query endpoint for conversational RAG
-            const response = await api.ai.query(`${subject} ${description}`);
+            const queryPromise = api.ai.query(`${subject} ${description}`);
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('AI_TIMEOUT')), 15000)
+            );
+
+            const response = await Promise.race([queryPromise, timeoutPromise]) as any;
 
             if (!response || !response.answer) {
                 toast.warning('Yapay zeka servisi şu an cevap veremiyor. Talebinizi oluşturmaya devam edebilirsiniz.');
@@ -145,9 +150,13 @@ export default function NewTicketPage() {
             if (response.confidence === 'NO_MATCH') {
                 toast.info('Sorunuzu tam olarak anlayamadım ama aşağıda genel bir rehber hazırladım.');
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Diagnosis failed', err);
-            toast.error('Yapay zeka teşhis servisine şu anda ulaşılamıyor.');
+            if (err.message === 'AI_TIMEOUT') {
+                toast.error('Yapay zeka sunucusu yanıt vermiyor (Timeout). Talebinizi manuel olarak oluşturabilirsiniz.');
+            } else {
+                toast.error('Yapay zeka teşhis servisine şu anda ulaşılamıyor.');
+            }
         } finally {
             setIsDiagnosing(false);
         }
