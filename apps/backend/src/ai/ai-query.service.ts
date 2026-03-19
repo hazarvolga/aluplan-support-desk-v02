@@ -392,7 +392,7 @@ export class AiQueryService {
 
         if (!user || !user.role) return false;
         // Staff are all roles except customer
-        return user.role.name !== 'customer';
+        return user.role.name.toUpperCase() !== 'CUSTOMER';
     }
     @OnEvent('ai.translate_message', { async: true })
     async handleTranslationRequest(payload: { ticketId: string; messageId: string; targetLanguage: string }) {
