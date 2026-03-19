@@ -6,6 +6,8 @@ WORKDIR /app
 # Force development mode so devDependencies (nest CLI, typescript, etc.) are installed
 ENV NODE_ENV=development
 COPY . .
+# Remove any pre-existing generated client to avoid version conflicts
+RUN rm -rf packages/database/client packages/database/generated
 # Perform full build in builder stage
 RUN pnpm install --frozen-lockfile && \
     pnpm --filter @aluplan/database db:generate && \
