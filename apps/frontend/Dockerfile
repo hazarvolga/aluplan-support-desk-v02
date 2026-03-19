@@ -15,6 +15,8 @@ RUN pnpm --filter @aluplan/database db:generate
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
+# Reset to production for the Next.js build
+ENV NODE_ENV=production
 # Build frontend with increased memory and no linting to prevent OOM in CI/Prod
 RUN NODE_OPTIONS="--max-old-space-size=4096" NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL pnpm --filter @aluplan/frontend build
 
