@@ -69,23 +69,23 @@ export function FieldMapping({
 
     const [newFieldKey, setNewFieldKey] = useState('');
     const [newFieldLabel, setNewFieldLabel] = useState('');
+    const [newCrmField, setNewCrmField] = useState('');
     const [showAddForm, setShowAddForm] = useState(false);
 
     // Build the ordered list of items
     const items = useMemo(() => {
-        // 1. Get current keys from definitions and currentMapping
+        // ... (lines 76-104 remain same)
         const standardKeys = definitions.map(d => d.key);
         const mappedKeys = Object.keys(currentMapping);
         const allKeys = Array.from(new Set([...standardKeys, ...mappedKeys]));
 
-        // 2. Map them to objects with visibility and label
         let result: MappingItem[] = allKeys.map(key => {
             const def = definitions.find(d => d.key === key);
             const savedDisplay = displaySettings.find(s => s.key === key);
 
             return {
                 key,
-                label: def ? def.label : key, // Translations used later
+                label: def ? def.label : key,
                 crmField: currentMapping[key] || (def?.defaultCrmField ?? ''),
                 visible: savedDisplay ? savedDisplay.visible : true,
                 isRequired: def?.isRequired,
@@ -93,7 +93,6 @@ export function FieldMapping({
             };
         });
 
-        // 3. Sort by order in displaySettings
         if (displaySettings && displaySettings.length > 0) {
             const orderMap = new Map(displaySettings.map((s, idx) => [s.key, idx]));
             result.sort((a, b) => {
@@ -105,6 +104,17 @@ export function FieldMapping({
 
         return result;
     }, [definitions, currentMapping, displaySettings]);
+
+    const handleCrmFieldSelect = (logicalName: string) => {
+        setNewCrmField(logicalName);
+        const field = discoveryData.find(f => f.logicalName === logicalName);
+        if (field) {
+            // Clean logical name for system key (remove prefixes like new_)
+            const cleanKey = logicalName.replace(/^[a-zA-Z0-9]+_/, '').replace(/\s+/g, '_').toLowerCase();
+            setNewFieldKey(cleanKey);
+            setNewFieldLabel(field.displayName);
+        }
+    };
 
     const handleToggleVisibility = (key: string) => {
         const newSettings = items.map(item =>
@@ -129,8 +139,14 @@ export function FieldMapping({
         if (!newFieldKey.trim() || !newFieldLabel.trim()) return;
         const key = newFieldKey.trim().replace(/\s+/g, '_').toLowerCase();
 
+        // Check for duplicates
+        if (items.some(i => i.key === key)) {
+            // Label or Key already exists
+            return;
+        }
+
         // Add to mapping
-        onMappingChange(key, '');
+        onMappingChange(key, newCrmField);
 
         // Add to display settings at the end
         const newSettings = [...items.map(({ key, visible }) => ({ key, visible })), { key, visible: true }];
@@ -138,6 +154,7 @@ export function FieldMapping({
 
         setNewFieldKey('');
         setNewFieldLabel('');
+        setNewCrmField('');
         setShowAddForm(false);
     };
 
@@ -302,14 +319,34 @@ export function FieldMapping({
                 {/* Add custom field */}
                 <div className="border-t border-white/5 pt-4">
                     {showAddForm ? (
-                        <div className="space-y-3 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Plus className="h-3 w-3 text-blue-400" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Yeni Kolon Ekle</span>
+                        <div className="space-y-4 p-5 rounded-xl bg-blue-500/5 border border-blue-500/10 shadow-2xl">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Plus className="h-3 w-3 text-blue-400" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Yeni Kolon Ekle</span>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => { setShowAddForm(false); setNewFieldKey(''); setNewFieldLabel(''); setNewCrmField(''); }}
+                                    className="h-6 w-6 p-0 text-white/20 hover:text-white"
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </Button>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Görünen İsim</Label>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">1. CRM Alanı Seçin</Label>
+                                    <SmartFieldSelector
+                                        fields={discoveryData}
+                                        value={newCrmField}
+                                        onChange={handleCrmFieldSelect}
+                                        placeholder="CRM'den alan seç..."
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">2. Görünen İsim</Label>
                                     <Input
                                         value={newFieldLabel}
                                         onChange={(e) => setNewFieldLabel(e.target.value)}
@@ -317,8 +354,8 @@ export function FieldMapping({
                                         className="h-9 text-xs bg-white/5 border-white/10 rounded-lg"
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Sistem Anahtarı</Label>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">3. Sistem Anahtarı</Label>
                                     <Input
                                         value={newFieldKey}
                                         onChange={(e) => setNewFieldKey(e.target.value)}
@@ -327,22 +364,15 @@ export function FieldMapping({
                                     />
                                 </div>
                             </div>
+
                             <div className="flex gap-2 justify-end pt-2">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => { setShowAddForm(false); setNewFieldKey(''); setNewFieldLabel(''); }}
-                                    className="h-8 text-[10px] font-bold uppercase text-white/40 hover:text-white"
-                                >
-                                    {commonT('cancel')}
-                                </Button>
                                 <Button
                                     size="sm"
                                     onClick={handleAddCustomField}
                                     disabled={!newFieldKey.trim() || !newFieldLabel.trim()}
-                                    className="h-8 px-4 text-[10px] font-black uppercase tracking-widest bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/20"
+                                    className="h-9 px-6 text-[10px] font-black uppercase tracking-widest bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/20"
                                 >
-                                    Ekle
+                                    Kolonu Listeye Ekle
                                 </Button>
                             </div>
                         </div>
