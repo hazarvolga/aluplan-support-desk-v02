@@ -64,6 +64,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     const website = this.resolveField(account, 'website', mappings, 'websiteurl');
                     const address = this.resolveField(account, 'address', mappings, 'address1_composite');
                     const externalId = this.resolveField(account, 'externalAccountId', mappings, 'accountid');
+                    const accountNumber = this.resolveField(account, 'accountNumber', mappings, 'accountnumber');
 
                     await this.prisma.crmAccount.upsert({
                         where: { externalAccountId: externalId },
@@ -72,6 +73,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             website,
                             address,
                             industry,
+                            accountNumber,
                             crmVerified: true,
                         },
                         create: {
@@ -80,6 +82,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             website,
                             address,
                             industry,
+                            accountNumber,
                             crmVerified: true,
                         },
                     });
@@ -279,9 +282,15 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             || accountInfo?.name
                             || 'Unknown';
 
-                        // customerNo: Mapping'den gelen değeri kullanalım (new_customerid gibi)
-                        const clientNo = this.resolveField(contact, 'customerNo', mappings, 'new_customerid')
+                        // customerNo: 
+                        // 1. Önce hesap numarasını (Account Number) deneyelim (User'ın tercihi bu yönde)
+                        // 2. Eğer o yoksa CRM Mapping'den gelen değeri kullanalım (new_customerid gibi)
+                        // 3. O da yoksa contactId'den türetelim.
+                        const clientNo = accountInfo?.accountNumber
+                            || this.resolveField(contact, 'customerNo', mappings, 'new_customerid')
                             || `DYN-C-${contactId.substring(0, 8)}`;
+
+                        this.logger.debug(`Mapped customerNo: ${clientNo} for contact: ${email}`);
 
                         // 3. Upsert CustomerProfile
                         await tx.customerProfile.upsert({

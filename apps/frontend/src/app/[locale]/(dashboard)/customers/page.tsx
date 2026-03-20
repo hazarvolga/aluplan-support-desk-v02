@@ -510,7 +510,6 @@ export default function CustomersPage() {
                                     <SortableHeader field="subscriptionModel">{t('table.headers.subscriptionModel')}</SortableHeader>
                                     <SortableHeader field="industry">{t('table.headers.industry')}</SortableHeader>
                                     <SortableHeader field="status">{t('table.headers.status')}</SortableHeader>
-                                    <SortableHeader field="createdAt">{t('table.headers.createdAt')}</SortableHeader>
                                     <TableHead className="w-10" />
                                 </TableRow>
                             </TableHeader>
@@ -599,12 +598,6 @@ export default function CustomersPage() {
                                                         {c.status}
                                                     </Badge>
                                                 )}
-                                            </TableCell>
-                                            <TableCell className="text-white/60 font-mono text-[11px]">
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="h-3 w-3 opacity-50" />
-                                                    {new Date(c.createdAt).toLocaleDateString()}
-                                                </div>
                                             </TableCell>
                                             <TableCell className="px-6 text-right">
                                                 <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-blue-500/10 hover:text-blue-500 text-muted-foreground">
