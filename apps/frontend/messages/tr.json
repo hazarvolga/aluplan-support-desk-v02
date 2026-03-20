@@ -409,6 +409,7 @@
             "website": "Web Sitesi",
             "address": "Adres",
             "customerNo": "Müşteri Numarası",
+            "crm_verification": "CRM Doğrulaması",
             "system_id": "Sistem ID (CRM)",
             "email": "Genel E-posta",
             "phone": "Genel Telefon"
@@ -422,6 +423,8 @@
             "companyName": "Şirket Adı",
             "industry": "Sektör",
             "customerNo": "Müşteri Numarası",
+            "fullName": "Ad Soyad",
+            "status": "Durum",
             "system_id": "Sistem ID (CRM)",
             "contractStatus": "Sözleşme Durumu",
             "subscriptionModel": "Abonelik Modeli"

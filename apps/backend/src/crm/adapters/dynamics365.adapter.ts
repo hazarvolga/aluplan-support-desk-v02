@@ -262,7 +262,9 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
                         const mappings = (config.syncSettings?.contactMapping || {}) as Record<string, string>;
 
-                        const firstName = this.resolveField(contact, 'firstName', mappings, 'firstname') || '-';
+                        // Resolving names: if fullName is mapped specifically, use it. 
+                        // Otherwise try to find firstname/lastname maps OR use defaults.
+                        const firstName = this.resolveField(contact, 'fullName', mappings, 'firstname') || '-';
                         const lastName = this.resolveField(contact, 'lastName', mappings, 'lastname') || '-';
                         const jobTitle = this.resolveField(contact, 'jobTitle', mappings, 'jobtitle');
                         const phoneNumber = this.resolveField(contact, 'phoneNumber', mappings, 'telephone1');

@@ -396,6 +396,7 @@
             "website": "Webseite",
             "address": "Adresse",
             "customerNo": "Kundennummer",
+            "crm_verification": "CRM-Verifizierung",
             "system_id": "System ID (CRM)",
             "email": "Haupt-E-Mail",
             "phone": "Haupt-Telefon"
@@ -409,6 +410,8 @@
             "companyName": "Firmenname",
             "industry": "Branche",
             "customerNo": "Kundennummer",
+            "fullName": "Vollständiger Name",
+            "status": "Status",
             "system_id": "System ID (CRM)",
             "contractStatus": "Vertragsstatus",
             "subscriptionModel": "Abonnementmodell"

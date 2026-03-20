@@ -118,7 +118,7 @@ export default function CustomersPage() {
 
     // Dynamic Table Configuration
     const displaySettings = useMemo(() => {
-        const conn = connections[0];
+        const conn = connections.find(c => (c as any).isActive !== false) || connections[0];
         if (!conn?.syncSettings || typeof conn.syncSettings !== 'object') return null;
         const settings = conn.syncSettings as any;
         return settings.displaySettings || null;

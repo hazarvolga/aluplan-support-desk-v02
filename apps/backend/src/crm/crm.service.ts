@@ -345,22 +345,25 @@ export class CrmService {
     async getFieldDefinitions() {
         return {
             account: [
+                { key: 'accountNumber', label: 'sync.mapping.fields.account.customerNo', defaultCrmField: 'accountnumber' },
                 { key: 'name', label: 'sync.mapping.fields.account.name', defaultCrmField: 'name', isRequired: true },
                 { key: 'industry', label: 'sync.mapping.fields.account.industry', defaultCrmField: 'industrycode@OData.Community.Display.V1.FormattedValue' },
                 { key: 'website', label: 'sync.mapping.fields.account.website', defaultCrmField: 'websiteurl' },
                 { key: 'address', label: 'sync.mapping.fields.account.address', defaultCrmField: 'address1_composite' },
+                { key: 'crmVerified', label: 'sync.mapping.fields.account.crm_verification', defaultCrmField: '' },
                 { key: 'externalAccountId', label: 'sync.mapping.fields.account.system_id', defaultCrmField: 'accountid' },
-                { key: 'accountnumber', label: 'sync.mapping.fields.account.customerNo', defaultCrmField: 'accountnumber' },
             ],
             contact: [
-                { key: 'firstName', label: 'sync.mapping.fields.contact.firstName', defaultCrmField: 'firstname', isRequired: true },
-                { key: 'lastName', label: 'sync.mapping.fields.contact.lastName', defaultCrmField: 'lastname', isRequired: true },
+                { key: 'customerNo', label: 'sync.mapping.fields.contact.customerNo', defaultCrmField: 'new_customerid' },
+                { key: 'fullName', label: 'sync.mapping.fields.contact.fullName', defaultCrmField: 'fullname', isRequired: true },
                 { key: 'email', label: 'sync.mapping.fields.contact.email', defaultCrmField: 'emailaddress1', isRequired: true },
                 { key: 'jobTitle', label: 'sync.mapping.fields.contact.jobTitle', defaultCrmField: 'jobtitle' },
-                { key: 'phoneNumber', label: 'sync.mapping.fields.contact.phoneNumber', defaultCrmField: 'telephone1' },
                 { key: 'companyName', label: 'sync.mapping.fields.contact.companyName', defaultCrmField: 'parentcustomerid_account.name' },
+                { key: 'phoneNumber', label: 'sync.mapping.fields.contact.phoneNumber', defaultCrmField: 'telephone1' },
                 { key: 'contractStatus', label: 'sync.mapping.fields.contact.contractStatus', defaultCrmField: 'new_musteridurumu@OData.Community.Display.V1.FormattedValue' },
                 { key: 'subscriptionModel', label: 'sync.mapping.fields.contact.subscriptionModel', defaultCrmField: 'new_AbonelikModeli' },
+                { key: 'industry', label: 'sync.mapping.fields.contact.industry', defaultCrmField: 'parentcustomerid_account.industrycode@OData.Community.Display.V1.FormattedValue' },
+                { key: 'status', label: 'sync.mapping.fields.contact.status', defaultCrmField: '' },
                 { key: 'externalContactId', label: 'sync.mapping.fields.contact.system_id', defaultCrmField: 'contactid' },
             ]
         };

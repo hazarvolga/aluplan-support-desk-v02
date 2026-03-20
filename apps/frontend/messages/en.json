@@ -409,6 +409,7 @@
             "website": "Website",
             "address": "Address",
             "customerNo": "Customer Number",
+            "crm_verification": "CRM Verification",
             "system_id": "System ID (CRM)",
             "email": "Main Email",
             "phone": "Main Phone"
@@ -422,6 +423,8 @@
             "companyName": "Company Name",
             "industry": "Industry",
             "customerNo": "Customer Number",
+            "fullName": "Full Name",
+            "status": "Status",
             "system_id": "System ID (CRM)",
             "contractStatus": "Contract Status",
             "subscriptionModel": "Subscription Model"
