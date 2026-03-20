@@ -361,22 +361,40 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 console.warn(`${connIdStr} [PHASE:CONTACT_SAMPLE] Failed, no samples: ${sampErr.message}`);
             }
 
-            // 3. Map Samples to Metadata
+            // 3. Map Samples to Metadata with fallback for missing metadata
             const mapSampleToFields = (fields: any[], sample: any) => {
-                // If we have no fields but have a sample, at least return keys of the sample
-                if (fields.length === 0 && sample) {
-                    return Object.keys(sample).filter(k => !k.startsWith('_')).map(k => ({
-                        logicalName: k,
-                        displayName: k,
-                        sampleValue: sample[k]
-                    }));
+                const results: any[] = [];
+                const seenLogicalNames = new Set<string>();
+
+                // 1. Process metadata fields
+                fields.forEach(f => {
+                    const logicalName = f.LogicalName;
+                    results.push({
+                        logicalName,
+                        displayName: f.DisplayName?.UserLocalizedLabel?.Label || logicalName,
+                        sampleValue: sample ? sample[logicalName] : null
+                    });
+                    seenLogicalNames.add(logicalName.toLowerCase());
+                });
+
+                // 2. Add extra fields from sample that weren't in metadata
+                if (sample) {
+                    Object.keys(sample).forEach(key => {
+                        // Skip internal OData fields starting with _ or @
+                        if (key.startsWith('_') || key.startsWith('@')) return;
+
+                        if (!seenLogicalNames.has(key.toLowerCase())) {
+                            results.push({
+                                logicalName: key,
+                                displayName: key, // fallback to logical name
+                                sampleValue: sample[key]
+                            });
+                            seenLogicalNames.add(key.toLowerCase());
+                        }
+                    });
                 }
 
-                return fields.map(f => ({
-                    logicalName: f.LogicalName,
-                    displayName: f.DisplayName?.UserLocalizedLabel?.Label || f.LogicalName,
-                    sampleValue: sample ? sample[f.LogicalName] : null
-                })).filter(f => !f.logicalName.startsWith('_'));
+                return results;
             };
 
             console.log(`${connIdStr} Discovery complete ✅ (Fields: A:${accountFields.length}, C:${contactFields.length})`);
