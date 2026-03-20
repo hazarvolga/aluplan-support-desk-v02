@@ -171,28 +171,31 @@ export class Dynamics365Adapter implements ICrmAdapter {
             this.logger.debug(`Using CUSTOMER role ID: ${customerRole.id}`);
 
             for (const contact of contacts) {
-                if (!contact.emailaddress1) {
-                    this.logger.warn(`Skipping contact ${contact.contactid}: missing email`);
-                    skippedRecords.push({ externalId: contact.contactid, reason: 'missing_email' });
-                    if (onProgress) onProgress({ success: successCount, error: errorCount, total: contacts.length });
-                    continue;
+                let email = contact.emailaddress1;
+                let isPlaceholderEmail = false;
+
+                if (!email) {
+                    // Placeholder Strategy: generate a deterministic internal email for visibility
+                    email = `no-email-${contact.contactid}@internal.aluplan`;
+                    isPlaceholderEmail = true;
+                    this.logger.debug(`Contact ${contact.contactid} missing email, using placeholder: ${email}`);
                 }
 
                 try {
                     await this.prisma.$transaction(async (tx) => {
                         // 1. Find or create User
                         let user = await tx.user.findUnique({
-                            where: { email: contact.emailaddress1 },
+                            where: { email: email },
                         });
 
                         if (!user) {
-                            this.logger.debug(`Creating new user for email: ${contact.emailaddress1}`);
+                            this.logger.debug(`Creating new user for email: ${email}`);
 
                             user = await tx.user.create({
                                 data: {
-                                    email: contact.emailaddress1,
+                                    email: email,
                                     fullName: `${contact.firstname || ''} ${contact.lastname || ''}`.trim() || 'CRM Contact',
-                                    status: 'ACTIVE',
+                                    status: isPlaceholderEmail ? 'INACTIVE' : 'ACTIVE',
                                     passwordHash: 'CRM_SYNCED',
                                     roleId: customerRole?.id,
                                 },
@@ -201,8 +204,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             this.logger.debug(`Created user ID: ${user.id} with role: ${customerRole?.name}`);
                         } else {
                             // PROTECTION: If email is the main admin email, ALWAYS ensure it has ADMIN role
-                            // This is a safety measure to prevent lockout.
-                            if (contact.emailaddress1 === 'hazarvolga@gmail.com') {
+                            if (email === 'hazarvolga@gmail.com') {
                                 const adminRole = await tx.role.findFirst({ where: { name: 'ADMIN' } });
                                 if (adminRole && user.roleId !== adminRole.id) {
                                     user = await tx.user.update({
@@ -211,14 +213,16 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                         include: { role: true }
                                     });
                                     this.logger.warn(`REPAIRED: Restored ADMIN role for hazarvolga@gmail.com`);
-                                    return; // Don't process as customer profile
+                                    return;
                                 }
                             }
 
-                            // General Protection: Don't demote existing ADMINs to CUSTOMER during sync
-                            const existingRole = await tx.role.findUnique({ where: { id: user.roleId || '' } });
-                            if (existingRole?.name === 'ADMIN') {
-                                this.logger.debug(`Skipping role update for ADMIN user: ${user.email}`);
+                            // BROADEN PROTECTION: Don't demote any user who is NOT currently a CUSTOMER
+                            const currentRole = await tx.role.findUnique({ where: { id: user.roleId || '' } });
+                            const isAlreadyCustomer = currentRole?.name.toUpperCase() === 'CUSTOMER';
+
+                            if (!isAlreadyCustomer && currentRole) {
+                                this.logger.debug(`Preserving protected role "${currentRole.name}" for user: ${user.email}`);
                             } else if (customerRole && user.roleId !== customerRole.id) {
                                 user = await tx.user.update({
                                     where: { id: user.id },
@@ -226,6 +230,11 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                     include: { role: true }
                                 });
                                 this.logger.debug(`Updated existing user ID: ${user.id} to CUSTOMER role`);
+                            }
+
+                            // Update status if it was placeholder but now has email (unlikely but safe)
+                            if (!isPlaceholderEmail && user.status === 'INACTIVE' && user.passwordHash === 'CRM_SYNCED') {
+                                await tx.user.update({ where: { id: user.id }, data: { status: 'ACTIVE' } });
                             }
                         }
 
