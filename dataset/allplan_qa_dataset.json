@@ -283,6 +283,12 @@
             "category": "Yeni Veri / Allplan",
             "short_answer": "Allplan Share Proje Yedekleme (Backup) ve Geri Yükleme (Restore)",
             "long_answer_markdown_ref": "support_articles/allplan_share_proje_yedekleme_backup_ve_geri_yukleme_restore.md"
+        },
+        {
+            "id": "QA_048",
+            "category": "Otomasyon / PythonParts",
+            "short_answer": "PythonParts ve Visual Scripting ile otomasyon yapmak için Allplan Python API veya görsel sürükle-bırak arayüzü kullanılır. Karmaşık geometri için Python API, hızlı prototipleme için Visual Scripting önerilir.",
+            "long_answer_markdown_ref": "support_articles/pythonpart_visual_scripting_otomasyon_rehberi.md"
         }
     ]
 }
