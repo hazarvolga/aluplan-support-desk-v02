@@ -37,7 +37,8 @@ import {
     CheckCircle2,
     XCircle,
     Calendar,
-    Check
+    Check,
+    ArrowRight
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
@@ -79,13 +80,14 @@ interface AccountItem {
     industry?: string;
     website?: string;
     address?: string;
+    accountNumber?: string;
     crmVerified: boolean;
     _count: {
         customers: number;
     };
 }
 
-type SortField = 'companyName' | 'fullName' | 'jobTitle' | 'email' | 'status' | 'createdAt' | 'contractStatus' | 'subscriptionModel' | 'industry' | 'customerNo' | 'phoneNumber' | 'crmVerified';
+type SortField = 'companyName' | 'fullName' | 'jobTitle' | 'email' | 'status' | 'createdAt' | 'contractStatus' | 'subscriptionModel' | 'industry' | 'customerNo' | 'phoneNumber' | 'crmVerified' | 'name' | 'website' | 'address' | 'accountNumber';
 type SortOrder = 'asc' | 'desc';
 
 export default function CustomersPage() {
@@ -113,6 +115,61 @@ export default function CustomersPage() {
     const [validating, setValidating] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [validationResults, setValidationResults] = useState<Record<string, any>>({});
+
+    // Dynamic Table Configuration
+    const displaySettings = useMemo(() => {
+        const conn = connections[0];
+        if (!conn?.syncSettings || typeof conn.syncSettings !== 'object') return null;
+        const settings = conn.syncSettings as any;
+        return settings.displaySettings || null;
+    }, [connections]);
+
+    const contactColumns = useMemo(() => {
+        const defaultCols = [
+            { key: 'customerNo', label: 'table.headers.customer_no', visible: true },
+            { key: 'fullName', label: 'table.headers.name', visible: true },
+            { key: 'email', label: 'table.headers.email', visible: true },
+            { key: 'companyName', label: 'table.headers.company', visible: true },
+            { key: 'jobTitle', label: 'table.headers.title', visible: true },
+            { key: 'phoneNumber', label: 'table.headers.phone', visible: true },
+            { key: 'contractStatus', label: 'table.headers.contractStatus', visible: true },
+            { key: 'subscriptionModel', label: 'table.headers.subscriptionModel', visible: true },
+            { key: 'industry', label: 'table.headers.industry', visible: true },
+            { key: 'status', label: 'table.headers.status', visible: true },
+        ];
+
+        if (!displaySettings?.contact || displaySettings.contact.length === 0) return defaultCols;
+
+        // Merge with current definitions to ensure labels are present
+        const settings = displaySettings.contact as any[];
+        return settings
+            .filter(s => s.visible !== false)
+            .map(s => ({
+                ...s,
+                label: defaultCols.find(d => d.key === s.key)?.label || s.key
+            }));
+    }, [displaySettings]);
+
+    const accountColumns = useMemo(() => {
+        const defaultCols = [
+            { key: 'accountNumber', label: 'table.headers.customer_no', visible: true },
+            { key: 'name', label: 'accounts.structure', visible: true },
+            { key: 'industry', label: 'accounts.industry_domain', visible: true },
+            { key: 'website', label: 'accounts.website', visible: true },
+            { key: 'address', label: 'accounts.address', visible: true },
+            { key: 'crmVerified', label: 'accounts.crm_verification', visible: true },
+        ];
+
+        if (!displaySettings?.account || displaySettings.account.length === 0) return defaultCols;
+
+        const settings = displaySettings.account as any[];
+        return settings
+            .filter(s => s.visible !== false)
+            .map(s => ({
+                ...s,
+                label: defaultCols.find(d => d.key === s.key)?.label || s.key
+            }));
+    }, [displaySettings]);
 
     const loadCustomers = () => {
         setLoading(true);
@@ -383,13 +440,59 @@ export default function CustomersPage() {
     }, [customers, searchTerm, sortField, sortOrder]);
 
     const filteredAccounts = useMemo(() => {
-        if (!searchTerm) return accounts;
-        const lowerTerm = searchTerm.toLowerCase();
-        return accounts.filter(a =>
-            a.name.toLowerCase().includes(lowerTerm) ||
-            (a.industry || '').toLowerCase().includes(lowerTerm)
-        );
-    }, [accounts, searchTerm]);
+        let result = [...accounts];
+
+        // Filter
+        if (searchTerm) {
+            const lowerTerm = searchTerm.toLowerCase();
+            result = result.filter(a =>
+                a.name.toLowerCase().includes(lowerTerm) ||
+                (a.industry || '').toLowerCase().includes(lowerTerm) ||
+                (a.website || '').toLowerCase().includes(lowerTerm) ||
+                (a.address || '').toLowerCase().includes(lowerTerm) ||
+                (a.accountNumber || '').toLowerCase().includes(lowerTerm)
+            );
+        }
+
+        // Sort
+        result.sort((a, b) => {
+            let aValue: any = '';
+            let bValue: any = '';
+
+            switch (sortField) {
+                case 'accountNumber':
+                    aValue = a.accountNumber || '';
+                    bValue = b.accountNumber || '';
+                    break;
+                case 'name':
+                    aValue = a.name || '';
+                    bValue = b.name || '';
+                    break;
+                case 'industry':
+                    aValue = a.industry || '';
+                    bValue = b.industry || '';
+                    break;
+                case 'website':
+                    aValue = a.website || '';
+                    bValue = b.website || '';
+                    break;
+                case 'address':
+                    aValue = a.address || '';
+                    bValue = b.address || '';
+                    break;
+                case 'crmVerified':
+                    aValue = a.crmVerified ? 1 : 0;
+                    bValue = b.crmVerified ? 1 : 0;
+                    break;
+            }
+
+            if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return result;
+    }, [accounts, searchTerm, sortField, sortOrder]);
 
     const isAllSelected = filteredAndSortedCustomers.length > 0 && selectedIds.length === filteredAndSortedCustomers.length;
     const isAllAccountsSelected = filteredAccounts.length > 0 && selectedAccountIds.length === filteredAccounts.length;
@@ -500,30 +603,25 @@ export default function CustomersPage() {
                                             className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                         />
                                     </TableHead>
-                                    <SortableHeader field="customerNo">{t('table.headers.customer_no')}</SortableHeader>
-                                    <SortableHeader field="fullName">{t('table.headers.name')}</SortableHeader>
-                                    <SortableHeader field="email">{t('table.headers.email')}</SortableHeader>
-                                    <SortableHeader field="companyName">{t('table.headers.company')}</SortableHeader>
-                                    <SortableHeader field="jobTitle">{t('table.headers.title')}</SortableHeader>
-                                    <SortableHeader field="phoneNumber">{t('table.headers.phone')}</SortableHeader>
-                                    <SortableHeader field="contractStatus">{t('table.headers.contractStatus')}</SortableHeader>
-                                    <SortableHeader field="subscriptionModel">{t('table.headers.subscriptionModel')}</SortableHeader>
-                                    <SortableHeader field="industry">{t('table.headers.industry')}</SortableHeader>
-                                    <SortableHeader field="status">{t('table.headers.status')}</SortableHeader>
+                                    {contactColumns.map(col => (
+                                        <SortableHeader key={col.key} field={col.key as SortField}>
+                                            {t(col.label)}
+                                        </SortableHeader>
+                                    ))}
                                     <TableHead className="w-10" />
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {loading ? (
                                     <TableRow className="border-none">
-                                        <TableCell colSpan={13} className="py-20 text-center">
+                                        <TableCell colSpan={contactColumns.length + 2} className="py-20 text-center">
                                             <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto mb-4" />
                                             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('table.loading')}</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : filteredAndSortedCustomers.length === 0 ? (
                                     <TableRow className="border-none">
-                                        <TableCell colSpan={13} className="py-20 text-center opacity-30">
+                                        <TableCell colSpan={contactColumns.length + 2} className="py-20 text-center opacity-30">
                                             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                                             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('table.empty')}</p>
                                         </TableCell>
@@ -539,66 +637,90 @@ export default function CustomersPage() {
                                                     className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                                 />
                                             </TableCell>
-                                            <TableCell className="text-white/40 font-mono text-[10px] whitespace-nowrap">
-                                                {c.customerProfile?.customerNo || 'UNASSIGNED'}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Link href={`/customers/${c.id}`} className="font-bold text-white hover:text-blue-400 underline-offset-4 hover:underline transition-colors block">
-                                                    {c.fullName}
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell className="text-white/60 font-mono text-[11px]">
-                                                <div className="flex items-center gap-2">
-                                                    {c.email}
-                                                    {validationResults[c.email] && (
-                                                        <div title={`Skor: ${validationResults[c.email].score}`}>
-                                                            {validationResults[c.email].status === 'VALID' ? (
-                                                                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                                                            ) : validationResults[c.email].status === 'RISKY' ? (
-                                                                <AlertCircle className="h-3 w-3 text-amber-500" />
-                                                            ) : (
-                                                                <XCircle className="h-3 w-3 text-rose-500" />
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                {c.customerProfile?.account ? (
-                                                    <Badge variant="outline" className="bg-blue-500/5 text-blue-400 border-blue-500/20 text-[9px] font-bold px-2 py-0.5">
-                                                        <Building2 className="h-3 w-3 mr-1" />
-                                                        {c.customerProfile.account.name}
-                                                    </Badge>
-                                                ) : (
-                                                    <span className="text-white/40 italic text-xs">{c.customerProfile?.companyName || '-'}</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-white/60 text-xs font-medium">{c.customerProfile?.jobTitle || '-'}</TableCell>
-                                            <TableCell className="text-white/60 font-mono text-[11px]">
-                                                {c.customerProfile?.phoneNumber || '-'}
-                                            </TableCell>
-                                            <TableCell className="text-white/60 text-xs font-medium">
-                                                {c.customerProfile?.contractStatus || '-'}
-                                            </TableCell>
-                                            <TableCell className="text-white/60 text-xs font-medium">
-                                                {c.customerProfile?.subscriptionModel || '-'}
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/50 border border-white/5">
-                                                    {c.customerProfile?.industry || 'GENEL'}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                {c.status === 'ACTIVE' ? (
-                                                    <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[9px] font-black tracking-widest px-2 py-0.5">
-                                                        AKTİF
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="text-slate-500 border-white/10 text-[9px] font-black tracking-widest px-2 py-0.5">
-                                                        {c.status}
-                                                    </Badge>
-                                                )}
-                                            </TableCell>
+
+                                            {contactColumns.map(col => {
+                                                switch (col.key) {
+                                                    case 'customerNo':
+                                                        return (
+                                                            <TableCell key={col.key} className="text-white/40 font-mono text-[10px] whitespace-nowrap">
+                                                                {c.customerProfile?.customerNo || 'UNASSIGNED'}
+                                                            </TableCell>
+                                                        );
+                                                    case 'fullName':
+                                                        return (
+                                                            <TableCell key={col.key}>
+                                                                <Link href={`/customers/${c.id}`} className="font-bold text-white hover:text-blue-400 underline-offset-4 hover:underline transition-colors block">
+                                                                    {c.fullName}
+                                                                </Link>
+                                                            </TableCell>
+                                                        );
+                                                    case 'email':
+                                                        return (
+                                                            <TableCell key={col.key} className="text-white/60 font-mono text-[11px]">
+                                                                <div className="flex items-center gap-2">
+                                                                    {c.email}
+                                                                    {validationResults[c.email] && (
+                                                                        <div title={`Skor: ${validationResults[c.email].score}`}>
+                                                                            {validationResults[c.email].status === 'VALID' ? (
+                                                                                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                                                            ) : validationResults[c.email].status === 'RISKY' ? (
+                                                                                <AlertCircle className="h-3 w-3 text-amber-500" />
+                                                                            ) : (
+                                                                                <XCircle className="h-3 w-3 text-rose-500" />
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </TableCell>
+                                                        );
+                                                    case 'companyName':
+                                                        return (
+                                                            <TableCell key={col.key}>
+                                                                {c.customerProfile?.account ? (
+                                                                    <Badge variant="outline" className="bg-blue-500/5 text-blue-400 border-blue-500/20 text-[9px] font-bold px-2 py-0.5">
+                                                                        <Building2 className="h-3 w-3 mr-1" />
+                                                                        {c.customerProfile.account.name}
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <span className="text-white/40 italic text-xs">{c.customerProfile?.companyName || '-'}</span>
+                                                                )}
+                                                            </TableCell>
+                                                        );
+                                                    case 'jobTitle':
+                                                        return <TableCell key={col.key} className="text-white/60 text-xs font-medium">{c.customerProfile?.jobTitle || '-'}</TableCell>;
+                                                    case 'phoneNumber':
+                                                        return <TableCell key={col.key} className="text-white/60 font-mono text-[11px]">{c.customerProfile?.phoneNumber || '-'}</TableCell>;
+                                                    case 'contractStatus':
+                                                        return <TableCell key={col.key} className="text-white/60 text-xs font-medium">{c.customerProfile?.contractStatus || '-'}</TableCell>;
+                                                    case 'subscriptionModel':
+                                                        return <TableCell key={col.key} className="text-white/60 text-xs font-medium">{c.customerProfile?.subscriptionModel || '-'}</TableCell>;
+                                                    case 'industry':
+                                                        return (
+                                                            <TableCell key={col.key}>
+                                                                <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/50 border border-white/5">
+                                                                    {c.customerProfile?.industry || 'GENEL'}
+                                                                </span>
+                                                            </TableCell>
+                                                        );
+                                                    case 'status':
+                                                        return (
+                                                            <TableCell key={col.key}>
+                                                                {c.status === 'ACTIVE' ? (
+                                                                    <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[9px] font-black tracking-widest px-2 py-0.5">
+                                                                        AKTİF
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <Badge variant="outline" className="text-slate-500 border-white/10 text-[9px] font-black tracking-widest px-2 py-0.5">
+                                                                        {c.status}
+                                                                    </Badge>
+                                                                )}
+                                                            </TableCell>
+                                                        );
+                                                    default:
+                                                        return <TableCell key={col.key} className="text-white/40 text-xs">-</TableCell>;
+                                                }
+                                            })}
+
                                             <TableCell className="px-6 text-right">
                                                 <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-blue-500/10 hover:text-blue-500 text-muted-foreground">
                                                     <Link href={`/customers/${c.id}`}><ChevronRight className="h-4 w-4" /></Link>
@@ -625,23 +747,24 @@ export default function CustomersPage() {
                                             className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                         />
                                     </TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">{t('accounts.structure')}</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">{t('accounts.industry_domain')}</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">{t('accounts.ecosystem')}</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">{t('accounts.crm_verification')}</TableHead>
+                                    {accountColumns.map(col => (
+                                        <SortableHeader key={col.key} field={col.key as SortField}>
+                                            {t(col.label)}
+                                        </SortableHeader>
+                                    ))}
                                     <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 text-right pr-6">{t('table.headers.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {accountsLoading ? (
                                     <TableRow className="border-none">
-                                        <TableCell colSpan={6} className="py-20 text-center">
+                                        <TableCell colSpan={accountColumns.length + 2} className="py-20 text-center">
                                             <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto mb-4" />
                                         </TableCell>
                                     </TableRow>
                                 ) : filteredAccounts.length === 0 ? (
                                     <TableRow className="border-none">
-                                        <TableCell colSpan={6} className="py-20 text-center opacity-30">
+                                        <TableCell colSpan={accountColumns.length + 2} className="py-20 text-center opacity-30">
                                             <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                                             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('accounts.not_found')}</p>
                                         </TableCell>
@@ -657,50 +780,70 @@ export default function CustomersPage() {
                                                     className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                                 />
                                             </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col">
-                                                    <Link href={`/customers/accounts/${a.id}`} className="font-bold text-white hover:text-blue-400 transition-colors">
-                                                        {a.name}
-                                                    </Link>
-                                                    <div className="flex items-center gap-3 mt-1">
-                                                        {a.website && (
-                                                            <a href={a.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 font-mono uppercase">
-                                                                <Globe className="h-2.5 w-2.5" /> DOMAIN
-                                                            </a>
-                                                        )}
-                                                        <span className="text-[10px] text-muted-foreground/40 font-mono truncate max-w-[200px]">{a.address}</span>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline" className="bg-white/5 border-white/10 text-white/60 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5">
-                                                    {a.industry || 'DEFINED'}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col">
-                                                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-white/80">
-                                                        <Users className="h-3 w-3 text-blue-500" />
-                                                        {t('accounts.profiles', { count: a._count.customers })}
-                                                    </div>
-                                                    <div className="w-24 h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
-                                                        <div className="h-full bg-blue-500 w-[65%]" />
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                {a.crmVerified ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">DYNAMICS_OK</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center gap-2 grayscale brightness-50">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-                                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">MANUAL_ENTRY</span>
-                                                    </div>
-                                                )}
-                                            </TableCell>
+
+                                            {accountColumns.map(col => {
+                                                switch (col.key) {
+                                                    case 'accountNumber':
+                                                        return <TableCell key={col.key} className="text-white font-mono text-[10px] pr-4">{a.accountNumber || '-'}</TableCell>;
+                                                    case 'name':
+                                                        return (
+                                                            <TableCell key={col.key}>
+                                                                <div className="flex flex-col">
+                                                                    <Link href={`/customers/accounts/${a.id}`} className="font-bold text-white hover:text-blue-400 transition-colors">
+                                                                        {a.name}
+                                                                    </Link>
+                                                                    <div className="flex items-center gap-3 mt-1">
+                                                                        {a.website && (
+                                                                            <a href={a.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 font-mono uppercase">
+                                                                                <Globe className="h-2.5 w-2.5" /> DOMAIN
+                                                                            </a>
+                                                                        )}
+                                                                        <span className="text-[10px] text-muted-foreground/40 font-mono truncate max-w-[200px]">{a.address}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </TableCell>
+                                                        );
+                                                    case 'industry':
+                                                        return (
+                                                            <TableCell key={col.key}>
+                                                                <Badge variant="outline" className="bg-white/5 border-white/10 text-white/60 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5">
+                                                                    {a.industry || 'DEFINED'}
+                                                                </Badge>
+                                                            </TableCell>
+                                                        );
+                                                    case 'website':
+                                                        return (
+                                                            <TableCell key={col.key} className="text-blue-400 text-xs font-mono">
+                                                                {a.website ? (
+                                                                    <a href={a.website} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
+                                                                        <Globe className="h-3 w-3" /> {a.website.replace(/^https?:\/\//, '')}
+                                                                    </a>
+                                                                ) : '-'}
+                                                            </TableCell>
+                                                        );
+                                                    case 'address':
+                                                        return <TableCell key={col.key} className="text-white/40 text-[10px] max-w-[200px] truncate">{a.address || '-'}</TableCell>;
+                                                    case 'crmVerified':
+                                                        return (
+                                                            <TableCell key={col.key}>
+                                                                {a.crmVerified ? (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">DYNAMICS_OK</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex items-center gap-2 grayscale brightness-50">
+                                                                        <div className="h-1.5 w-1.5 rounded-full bg-slate-500" />
+                                                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">MANUAL_ENTRY</span>
+                                                                    </div>
+                                                                )}
+                                                            </TableCell>
+                                                        );
+                                                    default:
+                                                        return <TableCell key={col.key} className="text-white/40 text-xs">-</TableCell>;
+                                                }
+                                            })}
+
                                             <TableCell className="pr-6 text-right">
                                                 <Button asChild variant="outline" size="sm" className="h-8 border-white/10 text-[9px] font-bold px-3 hover:bg-blue-500/10 hover:text-blue-400">
                                                     <Link href={`/customers/accounts/${a.id}`}>{t('accounts.details')}</Link>
@@ -906,4 +1049,4 @@ export default function CustomersPage() {
     );
 }
 
-import { ArrowRight } from 'lucide-react';
+

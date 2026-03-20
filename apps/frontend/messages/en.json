@@ -374,6 +374,8 @@
       "industry_domain": "Industry / Sector",
       "ecosystem": "Ecosystem",
       "crm_verification": "CRM Verification",
+      "website": "Website",
+      "address": "Address",
       "profiles": "{count} PROFILES",
       "details": "DETAILS",
       "manual_entry": "MANUAL_ENTRY",

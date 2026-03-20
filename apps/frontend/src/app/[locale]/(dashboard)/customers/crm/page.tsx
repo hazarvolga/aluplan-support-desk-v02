@@ -67,6 +67,10 @@ export default function CrmManagementPage() {
         syncSettings: {
             accountMapping: {},
             contactMapping: {},
+            displaySettings: {
+                account: [] as any[],
+                contact: [] as any[],
+            }
         },
     });
 
@@ -103,6 +107,7 @@ export default function CrmManagementPage() {
                     syncSettings: (conn as any).syncSettings || {
                         accountMapping: {},
                         contactMapping: {},
+                        displaySettings: { account: [], contact: [] },
                     },
                 });
                 loadLogs(conn.id);
@@ -174,13 +179,31 @@ export default function CrmManagementPage() {
 
     const handleMappingChange = (entity: 'account' | 'contact', key: string, value: string) => {
         const mappingKey = entity === 'account' ? 'accountMapping' : 'contactMapping';
+        setConfig((prev: any) => {
+            const newMapping = { ...prev.syncSettings[mappingKey] };
+            if (value === '') {
+                delete newMapping[key];
+            } else {
+                newMapping[key] = value;
+            }
+            return {
+                ...prev,
+                syncSettings: {
+                    ...prev.syncSettings,
+                    [mappingKey]: newMapping,
+                },
+            };
+        });
+    };
+
+    const handleDisplaySettingsChange = (entity: 'account' | 'contact', settings: any[]) => {
         setConfig((prev: any) => ({
             ...prev,
             syncSettings: {
                 ...prev.syncSettings,
-                [mappingKey]: {
-                    ...prev.syncSettings[mappingKey],
-                    [key]: value,
+                displaySettings: {
+                    ...prev.syncSettings.displaySettings,
+                    [entity]: settings,
                 },
             },
         }));
@@ -369,7 +392,9 @@ export default function CrmManagementPage() {
                                 definitions={fieldDefinitions.account}
                                 discoveryData={discoveryData?.account || []}
                                 currentMapping={config.syncSettings.accountMapping}
+                                displaySettings={config.syncSettings.displaySettings?.account || []}
                                 onMappingChange={(key, val) => handleMappingChange('account', key, val)}
+                                onDisplayChange={(settings) => handleDisplaySettingsChange('account', settings)}
                                 onReset={() => handleResetMapping('account')}
                                 onSave={() => handleSave({ preventDefault: () => { } } as any)}
                                 saving={saving}
@@ -382,7 +407,9 @@ export default function CrmManagementPage() {
                                 definitions={fieldDefinitions.contact}
                                 discoveryData={discoveryData?.contact || []}
                                 currentMapping={config.syncSettings.contactMapping}
+                                displaySettings={config.syncSettings.displaySettings?.contact || []}
                                 onMappingChange={(key, val) => handleMappingChange('contact', key, val)}
+                                onDisplayChange={(settings) => handleDisplaySettingsChange('contact', settings)}
                                 onReset={() => handleResetMapping('contact')}
                                 onSave={() => handleSave({ preventDefault: () => { } } as any)}
                                 saving={saving}
