@@ -74,10 +74,11 @@ def ask_notebooklm(question: str, notebook_url: str, headless: bool = True) -> s
         # Navigate to notebook
         page = context.new_page()
         print("  🌐 Opening notebook...")
-        page.goto(notebook_url, wait_until="domcontentloaded")
+        # Increase navigation timeout
+        page.goto(notebook_url, wait_until="load", timeout=120000)
 
         # Wait for NotebookLM
-        page.wait_for_url(re.compile(r"^https://notebooklm\.google\.com/"), timeout=10000)
+        page.wait_for_url(re.compile(r"^https://notebooklm\.google\.com/"), timeout=30000)
 
         # Wait for query input (MCP approach)
         print("  ⏳ Waiting for query input...")
@@ -87,7 +88,7 @@ def ask_notebooklm(question: str, notebook_url: str, headless: bool = True) -> s
             try:
                 query_element = page.wait_for_selector(
                     selector,
-                    timeout=10000,
+                    timeout=30000,
                     state="visible"  # Only check visibility, not disabled!
                 )
                 if query_element:
@@ -100,6 +101,9 @@ def ask_notebooklm(question: str, notebook_url: str, headless: bool = True) -> s
             print("  ❌ Could not find query input")
             return None
 
+        # Give dynamic elements a moment to stabilize
+        time.sleep(2)
+
         # Type question (human-like, fast)
         print("  ⏳ Typing question...")
         
@@ -111,28 +115,39 @@ def ask_notebooklm(question: str, notebook_url: str, headless: bool = True) -> s
         print("  📤 Submitting...")
         page.keyboard.press("Enter")
 
-        # Small pause
-        StealthUtils.random_delay(500, 1500)
+        # Small pause for request to fire
+        StealthUtils.random_delay(1500, 3000)
 
         # Wait for response (MCP approach: poll for stable text)
-        print("  ⏳ Waiting for answer...")
+        print("  ⏳ Waiting for answer (this may take a while on slow connections)...")
 
         answer = None
         stable_count = 0
         last_text = None
-        deadline = time.time() + 120  # 2 minutes timeout
+        # Increase deadline for answer extraction
+        deadline = time.time() + 300  # 5 minutes timeout
 
         while time.time() < deadline:
             # Check if NotebookLM is still thinking (most reliable indicator)
             try:
-                thinking_element = page.query_selector('div.thinking-message')
-                if thinking_element and thinking_element.is_visible():
-                    time.sleep(1)
+                # Add more thinking selectors if found
+                thinking_selectors = ['div.thinking-message', '.thinking', '[aria-busy="true"]']
+                is_thinking = False
+                for t_sel in thinking_selectors:
+                    thinking_element = page.query_selector(t_sel)
+                    if thinking_element and thinking_element.is_visible():
+                        is_thinking = True
+                        break
+                
+                if is_thinking:
+                    stable_count = 0 # Reset stability
+                    time.sleep(2)
                     continue
             except:
                 pass
 
             # Try to find response with MCP selectors
+            found_any = False
             for selector in RESPONSE_SELECTORS:
                 try:
                     elements = page.query_selector_all(selector)
@@ -141,10 +156,12 @@ def ask_notebooklm(question: str, notebook_url: str, headless: bool = True) -> s
                         latest = elements[-1]
                         text = latest.inner_text().strip()
 
-                        if text:
+                        if text and len(text) > 10: # Min length to avoid partials
+                            found_any = True
                             if text == last_text:
                                 stable_count += 1
-                                if stable_count >= 3:  # Stable for 3 polls
+                                # Wait for more samples on slow connections
+                                if stable_count >= 5:  
                                     answer = text
                                     break
                             else:
@@ -155,8 +172,11 @@ def ask_notebooklm(question: str, notebook_url: str, headless: bool = True) -> s
 
             if answer:
                 break
+            
+            if not found_any:
+                stable_count = 0
 
-            time.sleep(1)
+            time.sleep(2)
 
         if not answer:
             print("  ❌ Timeout waiting for answer")

@@ -1,6 +1,6 @@
 {
     "project": "Allplan World-Class Support Intelligence",
-    "version": "Enterprise_v3.6_Structural_Intelligence_Edition",
+    "version": "v4.0_NLM_Enriched_20260320",
     "qa_pairs": [
         {
             "id": "QA_001",
@@ -286,9 +286,285 @@
         },
         {
             "id": "QA_048",
-            "category": "Otomasyon / PythonParts",
-            "short_answer": "PythonParts ve Visual Scripting ile otomasyon yapmak için Allplan Python API veya görsel sürükle-bırak arayüzü kullanılır. Karmaşık geometri için Python API, hızlı prototipleme için Visual Scripting önerilir.",
-            "long_answer_markdown_ref": "support_articles/pythonpart_visual_scripting_otomasyon_rehberi.md"
+            "category": "NotebookLM / Yeni Veri",
+            "short_answer": "Yapılandırılmış Destek Makalesi: Oska e-Hakediş CAD Export Konfigürasyonu\nSorun Tanımı: Allplan modelinden elde edilen metraj ve maliyet verilerinin, Türkiye standartlarındaki Oska e-Hakediş yazılımın...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_1ed4cdf5_oska_e-hakediş_cad_export_konfigürasyonu.md"
+        },
+        {
+            "id": "QA_049",
+            "category": "NotebookLM / Yeni Veri",
+            "short_answer": "Yapılandırılmış Destek Makalesi: Allplan Pafta Düzenlemeden X-Ref ile DWG Dönüşümü\nSorun Tanımı: AutoCAD yazılımı, Allplan'ın aksine çoklu çizim dosyası mantığına değil, sadece tek bir konstrüksiyon (...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_7075b5c1_allplan_pafta_düzenlemeden_x-ref_ile_dwg.md"
+        },
+        {
+            "id": "QA_050",
+            "category": "NotebookLM / Yeni Veri",
+            "short_answer": "Yapılandırılmış Destek Makalesi: BAMTEC Donatı Sistemi ve Allplan Entegrasyonu\nSorun Tanımı: Geniş döşeme ve temel alanlarında tekil çubuk donatıların şantiyede manuel olarak tek tek bağlanması; ciddi...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_c5667fd9_bamtec_donatı_sistemi_ve_allplan_entegra.md"
+        },
+        {
+            "id": "QA_051",
+            "category": "NotebookLM / Yeni Veri",
+            "short_answer": "Yapılandırılmış Destek Makalesi: Oska e-Hakediş CAD Export Konfigürasyonu\nSorun Tanımı: Allplan modelinden elde edilen metraj ve maliyet verilerinin, Türkiye standartlarındaki Oska e-Hakediş yazılımın...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_1ed4cdf5_oska_e-hakediş_cad_export_konfigürasyonu.md"
+        },
+        {
+            "id": "QA_052",
+            "category": "NotebookLM / Yeni Veri",
+            "short_answer": "Yapılandırılmış Destek Makalesi: Allplan Pafta Düzenlemeden X-Ref ile DWG Dönüşümü\nSorun Tanımı: AutoCAD yazılımı, Allplan'ın aksine çoklu çizim dosyası mantığına değil, sadece tek bir konstrüksiyon (...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_7075b5c1_allplan_pafta_düzenlemeden_x-ref_ile_dwg.md"
+        },
+        {
+            "id": "QA_053",
+            "category": "NotebookLM / Yeni Veri",
+            "short_answer": "Yapılandırılmış Destek Makalesi: BAMTEC Donatı Sistemi ve Allplan Entegrasyonu\nSorun Tanımı: Geniş döşeme ve temel alanlarında tekil çubuk donatıların şantiyede manuel olarak tek tek bağlanması; ciddi...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_c5667fd9_bamtec_donatı_sistemi_ve_allplan_entegra.md"
+        },
+        {
+            "id": "QA_054",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Kaynaklarda doğrudan \"more_horiz\" adlı spesifik bir araç geçmese de bu terim arayüz tasarımında standart olarak \"Daha Fazla İşlev\" (üç yatay nokta) menüsünü temsil eder. Allplan'da bu mantık, Actionba...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_055",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Allplan Lisans Modelleri ve Bulut (Bimplus) Erişim Hakları\nSorun Tanımı: Kullanıcıların ofis ihtiyaçlarına ve bütçelerine uygun lisans modelini (Abonelik veya Kalıcı) belirlerken zorl...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_4d5d1b97_lisans_modelleri_abonelik_subscription.md"
+        },
+        {
+            "id": "QA_056",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (more_horiz) Yönetimi\nSorun Tanımı: Kullanıcıların Actionbar'daki (Aksiyon Çubuğu) mevcut rollerde aradıkları bazı spesifik komutları bulamaması ve arayüz...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_057",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Allplan Sistem Gereksinimleri ve Kurulum Süreci\nSorun Tanımı: Yetersiz donanım nedeniyle 3B modelleme ve render işlemlerinde performans kayıpları yaşanması; standart kurulum adımların...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_bed65976_kurulum_süreci_sistem_gereksinimleri_c.md"
+        },
+        {
+            "id": "QA_058",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (more_horiz) Yönetimi\nSorun Tanımı: Kullanıcıların Actionbar'da (Aksiyon Çubuğu) aradıkları spesifik komutları varsayılan görev sekmelerinde bulamaması ve...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_059",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Allplan Lisans Aktivasyonu (Çevrimiçi/Çevrimdışı), Lisans İadesi ve CodeMeter Yönetimi\nSorun Tanımı: Kullanıcıların yeni nesil CodeMeter altyapısında lisanslarını aktifleştirirken vey...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_f230c967_lisans_aktivasyonu_product_key_ile_çevr.md"
+        },
+        {
+            "id": "QA_060",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Aksiyon Çubuğu'ndaki (Actionbar) gizli araçlara erişimi sağlayan \"Daha fazla işlev\" menüsü için güncel destek makalesi aşağıdadır:\nDestek Makalesi: Actionbar \"Daha Fazla İşlev\" (More Functions) Yöneti...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_061",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: \"Lisans Bulunamadı\" Hataları, Güvenlik Duvarı/Antivirüs Engelleri ve Lisans Kiralama\nSorun Tanımı: Allplan başlatılırken \"Allplan kullanımı için uygun lisans bulunamadı\" (Cannot find ...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_9f90e219_hata_çözümleri_lisans_bulunamadı_hata.md"
+        },
+        {
+            "id": "QA_062",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (More Functions) Yönetimi\nSorun Tanımı: Kullanıcıların Actionbar (Aksiyon Çubuğu) üzerindeki standart rollerde bazı komutları (örneğin Allplan Durum Sayfa...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_063",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: OpenBIM, IFC Veri Yönetimi ve Nitelik Eşleme\nSorun Tanımı: Farklı yazılımlar kullanan disiplinler (mimari, statik, MEP) arasında model paylaşılırken veri kaybı yaşanması, IFC dosyalar...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_d51514bf_2._openbim_ifc_ve_veri_yönetimi.md"
+        },
+        {
+            "id": "QA_064",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: IFC (2x3, 4, 4.3) ile Veri Kayıpsız İçe ve Dışa Aktarım\nSorun Tanımı: Farklı disiplinler (mimari, statik, MEP) arasında model paylaşılırken veri kaybı veya uyumsuzluk yaşanması, IFC d...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_bebaac9c_ifc_aktarımı_ifc_2x3_ifc_4_ifc_4.3_a.md"
+        },
+        {
+            "id": "QA_065",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (more_horiz) Yönetimi\nSorun Tanımı: Kullanıcıların Allplan Actionbar'daki (Aksiyon Çubuğu) mevcut görev sekmelerinde aradıkları spesifik komutları bulamam...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_066",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: IFC Dışa Aktarımında Nitelik Eşleme (Attribute Mapping) ve Özel Pset Tanımları\nSorun Tanımı Farklı disiplinler ve BIM yazılımları (örneğin Allplan'dan maliyetlendirme veya tesis yönet...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_f94433eb_nitelik_eşleme_attribute_mapping_allp.md"
+        },
+        {
+            "id": "QA_067",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (More Functions) Yönetimi\nSorun Tanımı: Kullanıcıların \"Allplan Durum Sayfası\" (Status Page) gibi sistemsel araçları veya görev sekmelerine atanmamış özel...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_068",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: IDS ve MVD ile BIM Veri Kalitesi ve Standart Yönetimi\nSorun Tanımı: BIM projelerinde farklı disiplinler arasında model paylaşılırken eksik, hatalı veya standart dışı bilgi girilmesi; ...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_ce600175_kalite_kontrol_ve_standartlar_ids_info.md"
+        },
+        {
+            "id": "QA_069",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (more_horiz) Yönetimi\nSorun Tanımı: Kullanıcıların \"Allplan Durum Sayfası\" gibi sistemsel araçları veya standart Actionbar (Aksiyon Çubuğu) görev sekmeler...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_070",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: IFC Dışa Aktarımında Geometri Optimizasyonu (B-rep yerine SweptSolid Kullanımı)\nSorun Tanımı: BIM modellerini IFC olarak dışa aktarırken varsayılan B-rep (Boundary Representation - Sı...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6ccfc632_geometri_optimizasyonu_büyük_dosyalarda.md"
+        },
+        {
+            "id": "QA_071",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (more_horiz) Yönetimi\nSorun Tanımı: Kullanıcıların standart Aksiyon Çubuğu (Actionbar) sekmelerinde \"Allplan Durum Sayfası\" gibi sistemsel araçları veya b...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_072",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Bulut İşbirliği - Allplan Share ve Bimplus\nSorun Tanımı: Farklı lokasyonlardaki proje ekiplerinin aynı model üzerinde çalışırken veri kayıpları ve versiyon çakışmaları yaşaması; VPN b...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_8506b09d_3._bulut_işbirliği_allplan_share_ve_bim.md"
+        },
+        {
+            "id": "QA_073",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Bimplus ve BCF ile Gelişmiş Çakışma Yönetimi\nSorun Tanımı: Farklı disiplinlere (Mimari, Statik, MEP) ait uzmanlık modellerinin birleştirilmesi sırasında ortaya çıkan fiziksel kesişiml...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_8a404139_çakışma_yönetimi_clash_detection_bimp.md"
+        },
+        {
+            "id": "QA_074",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" ve Arama Yönetimi\nSorun Tanımı: Kullanıcıların standart Aksiyon Çubuğu (Actionbar) görev sekmelerinde \"Allplan Durum Sayfası\" gibi sistemsel araçları bula...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_075",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Allplan Share ile Bulut Üzerinden Eşzamanlı Çalışma ve Optimizasyon\nSorun Tanımı: Farklı lokasyonlardaki proje ekiplerinin bulut (Allplan Share) üzerinden aynı projede çalışırken yava...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c4ea639_eşzamanlı_çalışma_allplan_share_ile_bul.md"
+        },
+        {
+            "id": "QA_076",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" Menüsü Yönetimi\nSorun Tanımı: Kullanıcıların standart Aksiyon Çubuğu (Actionbar) rollerinde yer almayan komutlara (örneğin Allplan Durum Sayfası) veya ara...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_077",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Allplan Share Senkronizasyon Kilitleri ve Performans Optimizasyonu\nSorun Tanımı: Bulut üzerinden (Allplan Share) ortak çalışırken internet kesintileri veya programın düzgün kapatılmam...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_4761d297_hata_çözümleri_asılı_kalan_senkronizasy.md"
+        },
+        {
+            "id": "QA_078",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (More Functions) Yönetimi\nSorun Tanımı: Kullanıcıların standart Aksiyon Çubuğu (Actionbar) rollerine dahil edilmemiş olan \"Allplan Durum Sayfası\" gibi sis...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_079",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Allplan Share Proje Yedekleme, Geri Yükleme ve Bimplus Revizyon Yönetimi\nSorun Tanımı: Bulut tabanlı (Bimplus/Allplan Share) çalışmalarda sistemin projeleri otomatik olarak tam yedekl...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_b17d04ab_yedekleme_ve_revizyon_bimplus_üzerinde_.md"
+        },
+        {
+            "id": "QA_080",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (more_horiz) Yönetimi\nSorun Tanımı: Kullanıcıların standart Aksiyon Çubuğu (Actionbar) rollerine atanmamış komutları (örneğin Allplan Durum Sayfası) veya ...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_081",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Mimari Modelleme ve İleri Seviye Görselleştirme (AI Visualizer & Redshift)\nSorun Tanımı: Geleneksel 2B çizim yöntemleriyle çalışmanın tasarım ve revizyon süreçlerini uzatması; tasarım...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_a1b5d6be_4._mimari_modelleme_ve_görselleştirme.md"
+        },
+        {
+            "id": "QA_082",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Akıllı Mimari Elemanlar ve Çok Katmanlı Yapı Bileşenleri\nSorun Tanımı: Geleneksel 2B çizim yöntemlerinde mimari elemanların (duvar, kapı, pencere vb.) birbirinden bağımsız olması, tas...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_973cb970_akıllı_mimari_elemanlar_parametrik_duva.md"
+        },
+        {
+            "id": "QA_083",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (more_horiz) Yönetimi\nSorun Tanımı: Kullanıcıların standart Actionbar (Aksiyon Çubuğu) rollerine atanmamış olan \"Allplan Durum Sayfası\" gibi sistem araçla...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_084",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Oda ve Alan Yönetimi ile Otomatik Metraj ve Etiketleme\nSorun Tanımı: Mimari projelerde mahallerin (odaların) alan, hacim ve çevre hesaplamalarının manuel yapılması; tasarım revizyonla...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_8b919363_oda_ve_alan_yönetimi_metraj_ve_etiketle.md"
+        },
+        {
+            "id": "QA_085",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Gelişmiş Görselleştirme Teknolojileri (AI Visualizer, Redshift ve LiveSync)\nSorun Tanımı: Klasik render alma işlemlerinin bilgisayarı saatlerce meşgul etmesi, tasarımda yapılan en ufa...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_e7f26fd9_görselleştirme_teknolojileri_ai_visuali.md"
+        },
+        {
+            "id": "QA_086",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" ve Arama (Find) Yönetimi\nSorun Tanımı: Allplan'da kullanıcıların standart Aksiyon Çubuğu (Actionbar) rollerine atanmamış olan, \"Allplan Durum Sayfası\" vey...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_087",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Mühendislik, Donatı ve Çelik Yapılar\nSorun Tanımı: Karmaşık betonarme ve çelik projelerinde donatı veya birleşim detaylarının manuel olarak 2B çözülmesinin hata riskini artırması, şan...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_7fe5c8ef_5._mühendislik_donatı_ve_çelik_yapılar.md"
+        },
+        {
+            "id": "QA_088",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: 3B Donatı Modelleme (Çubuk, Hasır, Manşon ve BAMTEC)\nSorun Tanımı: Karmaşık betonarme projelerinde donatıların yalnızca 2B (iki boyutlu) planlar üzerinden çözülmesi; çubukların birleş...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_5bcfd514_3b_donatı_modelleme_çubuk_donatı_hasır.md"
+        },
+        {
+            "id": "QA_089",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (more_horiz) Yönetimi\nSorun Tanımı: Standart Aksiyon Çubuğu (Actionbar) rollerinde doğrudan görünmeyen \"Allplan Durum Sayfası\" gibi sistem araçlarına veya...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_090",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Otomatik Donatılandırma ve Raporlama Yönetimi\nSorun Tanımı: Betonarme projelerde kolon ve kiriş donatılarının manuel olarak tek tek yerleştirilmesi ciddi zaman kaybına ve yüksek hata ...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_b137ca71_otomasyon_ve_raporlama_otomatik_kolonk.md"
+        },
+        {
+            "id": "QA_091",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (more_horiz) Yönetimi\nSorun Tanımı: Kullanıcıların standart Aksiyon Çubuğu (Actionbar) rollerinde doğrudan yer almayan \"Allplan Durum Sayfası\" gibi sistem...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_092",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: SDS2 Entegrasyonu ile Çelik Detaylandırma ve MRP/ERP Süreçleri\nSorun Tanımı: Karmaşık çelik yapılarında bağlantı noktalarının (kolon-kiriş birleşimleri vb.) manuel olarak tasarlanması...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_3a9e58d5_çelik_detaylandırma_sds2_entegrasyonu_i.md"
+        },
+        {
+            "id": "QA_093",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: Actionbar \"Daha Fazla İşlev\" (more_horiz) ve Gelişmiş Arama Yönetimi\nSorun Tanımı: Allplan arayüzünde, standart rollere (Mimari, Mühendislik vb.) sığmayan, nadir kullanılan veya siste...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_6c6c0671_more_horiz.md"
+        },
+        {
+            "id": "QA_094",
+            "category": "NotebookLM / Genişletilmiş Veri",
+            "short_answer": "Destek Makalesi: SAF ve AutoConverter ile Çift Yönlü Yapısal Analiz Entegrasyonu\nSorun Tanımı: Mimari veya yapısal 3B modelin, statik analiz programlarına (SCIA, FRILO vb.) manuel olarak sıfırdan tekr...",
+            "long_answer_markdown_ref": "support_articles/nlm_nlm_b07dba1b_yapısal_analiz_saf_bimplus_autoconver.md"
         }
     ]
 }
