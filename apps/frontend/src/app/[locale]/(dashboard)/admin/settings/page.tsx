@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
     Loader2, Bot, Globe, Mail, ShieldCheck, Palette, CheckCircle2,
     XCircle, ExternalLink, Plus, Trash2, Edit2, AlertCircle, Clock,
-    Upload, Trash
+    Upload, Trash, MessageSquare, Phone
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -192,6 +192,8 @@ export default function AdminSettingsPage() {
                 'email.smtp.pass',
                 'email.gmail.client_secret',
                 'email.gmail.refresh_token',
+                'whatsapp.access_token',
+                'whatsapp.verify_token',
             ];
 
             const promises = keys
@@ -302,7 +304,7 @@ export default function AdminSettingsPage() {
             </div>
 
             <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-5 lg:w-[600px]">
+                <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 lg:w-[720px]">
                     <TabsTrigger value="general" className="flex items-center gap-2">
                         <Globe className="h-4 w-4" /> {t('tabs.general')}
                     </TabsTrigger>
@@ -311,6 +313,9 @@ export default function AdminSettingsPage() {
                     </TabsTrigger>
                     <TabsTrigger value="email" className="flex items-center gap-2">
                         <Mail className="h-4 w-4" /> {t('tabs.email')}
+                    </TabsTrigger>
+                    <TabsTrigger value="whatsapp" className="flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4" /> {t('tabs.whatsapp')}
                     </TabsTrigger>
                     <TabsTrigger value="sla" className="flex items-center gap-2">
                         <ShieldCheck className="h-4 w-4" /> {t('tabs.sla')}
@@ -1094,103 +1099,94 @@ export default function AdminSettingsPage() {
                                 <CardDescription>{t('branding.description')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label>{t('branding.company_label')}</Label>
-                                            <Input
-                                                value={getSetting('branding.company_name')}
-                                                onChange={e => updateValue('branding.company_name', e.target.value)}
-                                                placeholder={t('branding.placeholders.company')}
-                                            />
+                                <div className="space-y-4">
+                                    <Label>{t('branding.logo_label')}</Label>
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-20 w-40 rounded border bg-muted/20 flex items-center justify-center overflow-hidden">
+                                            {getSetting('branding.logo_url') ? (
+                                                <img
+                                                    src={getSetting('branding.logo_url')}
+                                                    alt="Logo"
+                                                    className="max-h-full max-w-full object-contain"
+                                                />
+                                            ) : (
+                                                <Palette className="h-8 w-8 text-muted-foreground/40" />
+                                            )}
                                         </div>
-                                        <div className="space-y-4">
-                                            <Label>{t('branding.logo_label')}</Label>
-                                            <div className="flex items-center gap-4">
-                                                <div className="h-16 w-16 rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
-                                                    {getSetting('branding.logo_url') ? (
-                                                        <img
-                                                            src={getSetting('branding.logo_url').startsWith('http')
-                                                                ? getSetting('branding.logo_url')
-                                                                : `${api.getBaseUrl().replace('/api/v1', '')}${getSetting('branding.logo_url')}`}
-                                                            alt="Logo"
-                                                            className="h-full w-full object-contain"
-                                                        />
-                                                    ) : (
-                                                        <Palette className="h-8 w-8 text-muted-foreground/40" />
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col gap-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="relative lg:w-[150px]"
-                                                            disabled={uploadingLogo}
-                                                        >
-                                                            {uploadingLogo ? (
-                                                                <>
-                                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                                    {t('branding.uploading')}
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Upload className="mr-2 h-4 w-4" />
-                                                                    {t('branding.upload_btn')}
-                                                                </>
-                                                            )}
-                                                            <input
-                                                                type="file"
-                                                                className="absolute inset-0 opacity-0 cursor-pointer"
-                                                                accept="image/*"
-                                                                onChange={handleLogoSelect}
-                                                            />
-                                                        </Button>
-                                                        {getSetting('branding.logo_url') && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => updateValue('branding.logo_url', '')}
-                                                            >
-                                                                <Trash className="h-4 w-4 text-destructive" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-[10px] text-muted-foreground">
-                                                        {t('branding.logo_hint')}
-                                                    </p>
-                                                </div>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={() => document.getElementById('logo-upload')?.click()}
+                                                    disabled={uploadingLogo}
+                                                >
+                                                    {uploadingLogo ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                                                    {t('branding.upload_btn')}
+                                                </Button>
+                                                {getSetting('branding.logo_url') && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-destructive"
+                                                        onClick={() => updateValue('branding.logo_url', '')}
+                                                    >
+                                                        <Trash className="h-4 w-4 mr-2" />
+                                                        {t('common.reset')}
+                                                    </Button>
+                                                )}
                                             </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>{t('branding.email_label')}</Label>
-                                            <Input
-                                                value={getSetting('branding.email')}
-                                                onChange={e => updateValue('branding.email', e.target.value)}
-                                                placeholder={t('branding.placeholders.email')}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>{t('branding.phone_label')}</Label>
-                                            <Input
-                                                value={getSetting('branding.phone')}
-                                                onChange={e => updateValue('branding.phone', e.target.value)}
-                                                placeholder={t('branding.placeholders.phone')}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>{t('branding.address_label')}</Label>
-                                            <textarea
-                                                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                                value={getSetting('branding.address')}
-                                                onChange={e => updateValue('branding.address', e.target.value)}
-                                                placeholder={t('branding.placeholders.address')}
+                                            <p className="text-xs text-muted-foreground">{t('branding.logo_hint')}</p>
+                                            <input
+                                                type="file"
+                                                id="logo-upload"
+                                                className="hidden"
+                                                accept="image/png,image/jpeg,image/svg+xml"
+                                                onChange={handleLogoSelect}
                                             />
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div className="space-y-4">
-                                        <h3 className="text-sm font-medium border-b pb-2">{t('branding.social_links')}</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
+                                    <div className="space-y-2">
+                                        <Label>{t('branding.company_label')}</Label>
+                                        <Input
+                                            value={getSetting('branding.company_name')}
+                                            onChange={e => updateValue('branding.company_name', e.target.value)}
+                                            placeholder={t('branding.placeholders.company')}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>{t('branding.email_label')}</Label>
+                                        <Input
+                                            value={getSetting('branding.email')}
+                                            onChange={e => updateValue('branding.email', e.target.value)}
+                                            placeholder={t('branding.placeholders.email')}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>{t('branding.phone_label')}</Label>
+                                        <Input
+                                            value={getSetting('branding.phone')}
+                                            onChange={e => updateValue('branding.phone', e.target.value)}
+                                            placeholder={t('branding.placeholders.phone')}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>{t('branding.address_label')}</Label>
+                                        <textarea
+                                            className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            value={getSetting('branding.address')}
+                                            onChange={e => updateValue('branding.address', e.target.value)}
+                                            placeholder={t('branding.placeholders.address')}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 pt-4 border-t">
+                                    <h3 className="text-sm font-medium border-b pb-2">{t('branding.social_links')}</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label>LinkedIn</Label>
                                             <Input
@@ -1234,25 +1230,113 @@ export default function AdminSettingsPage() {
                                     </div>
                                 </div>
 
-                                <Button
-                                    className="w-full sm:w-auto"
-                                    onClick={() => handleSave([
-                                        'branding.company_name',
-                                        'branding.logo_url',
-                                        'branding.email',
-                                        'branding.phone',
-                                        'branding.address',
-                                        'branding.social_linkedin',
-                                        'branding.social_twitter',
-                                        'branding.social_facebook',
-                                        'branding.social_instagram',
-                                        'branding.social_pinterest'
-                                    ])}
-                                    disabled={saving}
-                                >
-                                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {t('branding.save_btn')}
-                                </Button>
+                                <div className="flex justify-end pt-4">
+                                    <Button
+                                        onClick={() => handleSave([
+                                            'branding.company_name',
+                                            'branding.logo_url',
+                                            'branding.email',
+                                            'branding.phone',
+                                            'branding.address',
+                                            'branding.social_linkedin',
+                                            'branding.social_twitter',
+                                            'branding.social_facebook',
+                                            'branding.social_instagram',
+                                            'branding.social_pinterest'
+                                        ])}
+                                        disabled={saving}
+                                    >
+                                        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        {t('branding.save_btn')}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* ─── WHATSAPP AYARLARI ─────────────────────────────────────── */}
+                    <TabsContent value="whatsapp">
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>{t('whatsapp.title')}</CardTitle>
+                                        <CardDescription>{t('whatsapp.description')}</CardDescription>
+                                    </div>
+                                    <Badge variant={getSetting('whatsapp.access_token') && getSetting('whatsapp.phone_number_id') ? "default" : "secondary"}>
+                                        {getSetting('whatsapp.access_token') && getSetting('whatsapp.phone_number_id') ? t('whatsapp.status_configured') : t('whatsapp.status_missing')}
+                                    </Badge>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>{t('whatsapp.verify_token')}</Label>
+                                        <Input
+                                            value={getSetting('whatsapp.verify_token')}
+                                            onChange={e => updateValue('whatsapp.verify_token', e.target.value)}
+                                            placeholder="my_secure_token_123"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>{t('whatsapp.phone_number_id')}</Label>
+                                        <Input
+                                            value={getSetting('whatsapp.phone_number_id')}
+                                            onChange={e => updateValue('whatsapp.phone_number_id', e.target.value)}
+                                            placeholder="123456789012345"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>{t('whatsapp.access_token')}</Label>
+                                    <Input
+                                        type="password"
+                                        value={getSetting('whatsapp.access_token')}
+                                        onChange={e => updateValue('whatsapp.access_token', e.target.value)}
+                                        placeholder="EAAB..."
+                                    />
+                                </div>
+
+                                <div className="p-4 rounded-lg bg-muted/40 border space-y-3">
+                                    <div className="flex items-center gap-2 text-sm font-medium">
+                                        <AlertCircle className="h-4 w-4 text-primary" />
+                                        {t('whatsapp.webhook_url')}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            readOnly
+                                            className="font-mono text-xs bg-background"
+                                            value={`${typeof window !== 'undefined' ? (window.location.origin.includes('localhost') ? 'http://localhost:4000' : window.location.origin.replace('//dashboard.', '//api.')) : ''}/api/v1/whatsapp/webhook`}
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                const origin = window.location.origin;
+                                                const url = origin.includes('localhost')
+                                                    ? 'http://localhost:4000/api/v1/whatsapp/webhook'
+                                                    : `${origin.replace('//dashboard.', '//api.')}/api/v1/whatsapp/webhook`;
+                                                navigator.clipboard.writeText(url);
+                                                toast({ title: t('toasts.success'), description: "URL kopyalandı." });
+                                            }}
+                                        >
+                                            Kopyala
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('whatsapp.webhook_hint')}
+                                    </p>
+                                </div>
+
+                                <div className="flex justify-end pt-4">
+                                    <Button
+                                        onClick={() => handleSave(['whatsapp.verify_token', 'whatsapp.access_token', 'whatsapp.phone_number_id'])}
+                                        disabled={saving}
+                                    >
+                                        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        {t('whatsapp.save_btn')}
+                                    </Button>
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>

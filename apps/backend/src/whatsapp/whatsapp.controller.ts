@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, Logger } from
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { WhatsAppService } from './whatsapp.service';
 import { ConfigService } from '@nestjs/config';
+import { SettingsService } from '../settings/settings.service';
 
 @ApiTags('WhatsApp')
 @Controller('whatsapp')
@@ -11,6 +12,7 @@ export class WhatsAppController {
     constructor(
         private readonly whatsappService: WhatsAppService,
         private readonly configService: ConfigService,
+        private readonly settingsService: SettingsService,
     ) { }
 
     @Get('webhook')
@@ -18,12 +20,13 @@ export class WhatsAppController {
     @ApiQuery({ name: 'hub.mode', required: true })
     @ApiQuery({ name: 'hub.verify_token', required: true })
     @ApiQuery({ name: 'hub.challenge', required: true })
-    verifyWebhook(
+    async verifyWebhook(
         @Query('hub.mode') mode: string,
         @Query('hub.verify_token') token: string,
         @Query('hub.challenge') challenge: string,
     ) {
-        const verifyToken = this.configService.get<string>('WHATSAPP_VERIFY_TOKEN');
+        const verifyToken = (await this.settingsService.getValue('whatsapp.verify_token'))
+            || this.configService.get<string>('WHATSAPP_VERIFY_TOKEN');
 
         if (mode === 'subscribe' && token === verifyToken) {
             this.logger.log('✅ WhatsApp Webhook Verified');

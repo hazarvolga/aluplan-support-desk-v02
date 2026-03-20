@@ -433,7 +433,8 @@
       "ai": "KI",
       "email": "E-Mail",
       "sla": "SLA",
-      "branding": "Branding"
+      "branding": "Branding",
+      "whatsapp": "WhatsApp"
     },
     "general": {
       "title": "Allgemeine Konfiguration",
@@ -615,6 +616,18 @@
         "address": "z.B.: Musterstraße 123, 12345 Stadt..."
       },
       "logo_title": "Logo"
+    },
+    "whatsapp": {
+      "title": "WhatsApp Integration",
+      "description": "Konfigurieren Sie Meta WhatsApp Business API-Dienste und verfolgen Sie eingehende Anfragen.",
+      "verify_token": "Verifizierungsschlüssel (Verify Token)",
+      "access_token": "Zugriffsschlüssel (Access Token)",
+      "phone_number_id": "Telefonnummer ID",
+      "webhook_url": "Webhook-URL",
+      "webhook_hint": "Kopieren Sie diese URL in die Webhook-Konfiguration im Meta Developer Portal.",
+      "status_configured": "Konfiguriert",
+      "status_missing": "Konfiguration fehlt",
+      "save_btn": "WhatsApp-Einstellungen speichern"
     },
     "toasts": {
       "save_success": "Einstellungen gespeichert.",

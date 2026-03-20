@@ -446,7 +446,8 @@
       "ai": "YZE",
       "email": "E-posta",
       "sla": "SLA",
-      "branding": "Markalama"
+      "branding": "Markalama",
+      "whatsapp": "WhatsApp"
     },
     "general": {
       "title": "Genel Yapılandırma",
@@ -628,6 +629,18 @@
         "address": "örn: Örnek Mah. Örnek Cad. No:123..."
       },
       "logo_title": "Logo"
+    },
+    "whatsapp": {
+      "title": "WhatsApp Entegrasyonu",
+      "description": "Meta WhatsApp Business API servislerini yapılandırın ve gelen talepleri takip edin.",
+      "verify_token": "Doğrulama Anahtarı (Verify Token)",
+      "access_token": "Erişim Anahtarı (Access Token)",
+      "phone_number_id": "Telefon Numarası ID",
+      "webhook_url": "Webhook URL",
+      "webhook_hint": "Bu URL'yi Meta Developer portalındaki Webhook yapılandırmasına kopyalayın.",
+      "status_configured": "Yapılandırıldı",
+      "status_missing": "Yapılandırma Eksik",
+      "save_btn": "WhatsApp Ayarlarını Kaydet"
     },
     "toasts": {
       "save_success": "Ayarlar kaydedildi.",

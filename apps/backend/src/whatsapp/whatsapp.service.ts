@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TicketsService } from '../tickets/tickets.service';
 import { ConfigService } from '@nestjs/config';
 import { OnEvent } from '@nestjs/event-emitter';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class WhatsAppService {
@@ -12,6 +13,7 @@ export class WhatsAppService {
         private readonly prisma: PrismaService,
         private readonly ticketsService: TicketsService,
         private readonly configService: ConfigService,
+        private readonly settingsService: SettingsService,
     ) { }
 
     async handleIncoming(payload: any) {
@@ -87,8 +89,11 @@ export class WhatsAppService {
     }
 
     async sendOutgoing(to: string, message: string) {
-        const accessToken = this.configService.get<string>('WHATSAPP_ACCESS_TOKEN');
-        const phoneId = this.configService.get<string>('WHATSAPP_PHONE_NUMBER_ID');
+        const accessToken = (await this.settingsService.getValue('whatsapp.access_token'))
+            || this.configService.get<string>('WHATSAPP_ACCESS_TOKEN');
+
+        const phoneId = (await this.settingsService.getValue('whatsapp.phone_number_id'))
+            || this.configService.get<string>('WHATSAPP_PHONE_NUMBER_ID');
 
         if (!accessToken || !phoneId) {
             this.logger.warn('⚠️ WhatsApp credentials missing, cloud message not sent');
