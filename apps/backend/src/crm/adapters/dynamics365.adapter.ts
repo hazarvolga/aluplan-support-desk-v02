@@ -157,6 +157,19 @@ export class Dynamics365Adapter implements ICrmAdapter {
             const skippedLinks: Array<{ contactExternalId: string; missingAccountExternalId: string }> = [];
             const failedRecords: Array<{ externalId: string; entityType: string; errorMessage: string; errorCode?: string }> = [];
 
+            // Pre-fetch or create CUSTOMER role
+            let customerRole = await this.prisma.role.findFirst({
+                where: { name: { equals: 'CUSTOMER', mode: 'insensitive' } }
+            });
+
+            if (!customerRole) {
+                this.logger.warn("CUSTOMER role not found, creating it systemwide");
+                customerRole = await this.prisma.role.create({
+                    data: { name: 'CUSTOMER', isSystem: true, description: 'Default role for CRM-synced customers' }
+                });
+            }
+            this.logger.debug(`Using CUSTOMER role ID: ${customerRole.id}`);
+
             for (const contact of contacts) {
                 if (!contact.emailaddress1) {
                     this.logger.warn(`Skipping contact ${contact.contactid}: missing email`);
@@ -175,11 +188,6 @@ export class Dynamics365Adapter implements ICrmAdapter {
                         if (!user) {
                             this.logger.debug(`Creating new user for email: ${contact.emailaddress1}`);
 
-                            // Get customer role
-                            const customerRole = await tx.role.findUnique({
-                                where: { name: 'CUSTOMER' }
-                            });
-
                             user = await tx.user.create({
                                 data: {
                                     email: contact.emailaddress1,
@@ -192,11 +200,6 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             this.logger.debug(`Created user ID: ${user.id} with role: ${customerRole?.name}`);
                         } else {
                             this.logger.debug(`Ensuring existing user ID: ${user.id} has CUSTOMER role`);
-
-                            // Ensure existing user has CUSTOMER role if they don't or have a placeholder/wrong role
-                            const customerRole = await tx.role.findUnique({
-                                where: { name: 'CUSTOMER' }
-                            });
 
                             if (customerRole && user.roleId !== customerRole.id) {
                                 user = await tx.user.update({
@@ -228,13 +231,19 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
                         const mappings = (config.syncSettings?.contactMapping || {}) as Record<string, string>;
 
-                        const firstName = this.resolveField(contact, 'firstName', mappings, 'firstname');
-                        const lastName = this.resolveField(contact, 'lastName', mappings, 'lastname');
+                        const firstName = this.resolveField(contact, 'firstName', mappings, 'firstname') || '-';
+                        const lastName = this.resolveField(contact, 'lastName', mappings, 'lastname') || '-';
                         const jobTitle = this.resolveField(contact, 'jobTitle', mappings, 'jobtitle');
                         const phoneNumber = this.resolveField(contact, 'phoneNumber', mappings, 'telephone1');
                         const contactId = this.resolveField(contact, 'externalContactId', mappings, 'contactid');
                         const contractStatus = this.resolveField(contact, 'contractStatus', mappings, 'new_musteridurumu@OData.Community.Display.V1.FormattedValue');
                         const subscriptionModel = this.resolveField(contact, 'subscriptionModel', mappings, 'new_AbonelikModeli');
+
+                        // industry: account expand'dan gelir, contact'ta bu veri yok
+                        const industryFromAccount = accountInfo?.industry
+                            || (contact.parentcustomerid_account
+                                ? contact.parentcustomerid_account['industrycode@OData.Community.Display.V1.FormattedValue']
+                                : null);
 
                         // companyName: mapping'den veya expand'dan gelen account adı
                         const companyName = this.resolveField(contact, 'companyName', mappings, 'parentcustomerid_account.name')
@@ -245,12 +254,6 @@ export class Dynamics365Adapter implements ICrmAdapter {
                         // customerNo: her contact (User) için unique olmalı. (CustomerProfile.customerNo @unique)
                         // Account number aynı hesaba bağlı birden fazla contact için tekrar edeceği için, contactId'den türetelim.
                         const clientNo = `DYN-C-${contactId.substring(0, 8)}`;
-
-                        // industry: account expand'dan gelir, contact'ta bu veri yok
-                        const industryFromAccount = accountInfo?.industry
-                            || (contact.parentcustomerid_account
-                                ? contact.parentcustomerid_account['industrycode@OData.Community.Display.V1.FormattedValue']
-                                : null);
 
                         // 3. Upsert CustomerProfile
                         await tx.customerProfile.upsert({

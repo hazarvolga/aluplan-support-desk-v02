@@ -235,35 +235,39 @@ export class CustomersService {
     }
 
     async getAllCustomers() {
+        // Ensure CUSTOMER role exists as a safety net
+        let customerRole = await this.prisma.role.findFirst({
+            where: { name: { equals: 'CUSTOMER', mode: 'insensitive' } }
+        });
+
+        if (!customerRole) {
+            console.warn('[DIAGNOSTIC] CUSTOMER role NOT found during query, creating it.');
+            customerRole = await this.prisma.role.create({
+                data: { name: 'CUSTOMER', isSystem: true, description: 'Default customer role' }
+            });
+        }
+
         const allUsersCount = await this.prisma.user.count();
-        const customerRole = await this.prisma.role.findFirst({ where: { name: { equals: 'CUSTOMER', mode: 'insensitive' } } });
-        const usersWithRole = customerRole ? await this.prisma.user.count({ where: { roleId: customerRole.id } }) : 0;
+        const usersWithRole = await this.prisma.user.count({ where: { roleId: customerRole.id } });
+        const usersWithProfile = await this.prisma.customerProfile.count();
 
         console.log(`[DIAGNOSTIC] Total Users: ${allUsersCount}`);
-        console.log(`[DIAGNOSTIC] CUSTOMER Role Found: ${!!customerRole} (Name: ${customerRole?.name}, ID: ${customerRole?.id})`);
+        console.log(`[DIAGNOSTIC] CUSTOMER Role ID: ${customerRole.id}`);
         console.log(`[DIAGNOSTIC] Users with this Role: ${usersWithRole}`);
+        console.log(`[DIAGNOSTIC] Total Customer Profiles: ${usersWithProfile}`);
 
+        // Return users who have the CUSTOMER role
+        // Fallback: If for some reason the role assignment is lagging, but profiles exist, 
+        // we might want to see them. But for now, let's stick to role-based for strictness.
         return this.prisma.user.findMany({
             where: {
-                role: {
-                    name: { equals: 'CUSTOMER', mode: 'insensitive' }
-                },
+                roleId: customerRole.id,
                 deletedAt: null
             },
-            select: {
-                id: true,
-                email: true,
-                fullName: true,
-                status: true,
-                createdAt: true,
+            include: {
+                role: true,
                 customerProfile: {
                     include: {
-                        account: {
-                            select: {
-                                id: true,
-                                name: true
-                            }
-                        }
                     }
                 },
             },
