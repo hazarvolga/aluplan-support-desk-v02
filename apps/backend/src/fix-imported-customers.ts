@@ -7,7 +7,7 @@ async function fixImportedCustomers() {
 
   // Get customer role
   const customerRole = await prisma.role.findUnique({
-    where: { name: 'customer' }
+    where: { name: 'CUSTOMER' }
   });
 
   if (!customerRole) {

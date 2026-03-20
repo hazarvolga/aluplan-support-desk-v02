@@ -191,7 +191,20 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             });
                             this.logger.debug(`Created user ID: ${user.id} with role: ${customerRole?.name}`);
                         } else {
-                            this.logger.debug(`Found existing user ID: ${user.id} for email: ${contact.emailaddress1}`);
+                            this.logger.debug(`Ensuring existing user ID: ${user.id} has CUSTOMER role`);
+
+                            // Ensure existing user has CUSTOMER role if they don't or have a placeholder/wrong role
+                            const customerRole = await tx.role.findUnique({
+                                where: { name: 'CUSTOMER' }
+                            });
+
+                            if (customerRole && user.roleId !== customerRole.id) {
+                                user = await tx.user.update({
+                                    where: { id: user.id },
+                                    data: { roleId: customerRole.id }
+                                });
+                                this.logger.debug(`Updated existing user ID: ${user.id} to CUSTOMER role`);
+                            }
                         }
 
                         // 2. Find Linked Account if any
