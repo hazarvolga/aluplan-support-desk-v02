@@ -235,10 +235,18 @@ export class CustomersService {
     }
 
     async getAllCustomers() {
+        const allUsersCount = await this.prisma.user.count();
+        const customerRole = await this.prisma.role.findFirst({ where: { name: { equals: 'CUSTOMER', mode: 'insensitive' } } });
+        const usersWithRole = customerRole ? await this.prisma.user.count({ where: { roleId: customerRole.id } }) : 0;
+
+        console.log(`[DIAGNOSTIC] Total Users: ${allUsersCount}`);
+        console.log(`[DIAGNOSTIC] CUSTOMER Role Found: ${!!customerRole} (Name: ${customerRole?.name}, ID: ${customerRole?.id})`);
+        console.log(`[DIAGNOSTIC] Users with this Role: ${usersWithRole}`);
+
         return this.prisma.user.findMany({
             where: {
                 role: {
-                    name: 'CUSTOMER'
+                    name: { equals: 'CUSTOMER', mode: 'insensitive' }
                 },
                 deletedAt: null
             },
@@ -248,7 +256,16 @@ export class CustomersService {
                 fullName: true,
                 status: true,
                 createdAt: true,
-                customerProfile: true,
+                customerProfile: {
+                    include: {
+                        account: {
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        }
+                    }
+                },
             },
             orderBy: { createdAt: 'desc' },
         });
