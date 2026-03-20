@@ -27,6 +27,7 @@ export class StorageService implements OnModuleInit {
         this.localPath = storageConfig.localPath || './uploads';
 
         if (this.storageType === 'S3') {
+            this.logger.log(`Initializing S3 Storage with endpoint: ${storageConfig.endpoint}`);
             this.s3Client = new S3Client({
                 endpoint: storageConfig.endpoint,
                 region: storageConfig.region,
