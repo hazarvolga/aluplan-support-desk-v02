@@ -196,15 +196,34 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                     passwordHash: 'CRM_SYNCED',
                                     roleId: customerRole?.id,
                                 },
+                                include: { role: true }
                             });
                             this.logger.debug(`Created user ID: ${user.id} with role: ${customerRole?.name}`);
                         } else {
-                            this.logger.debug(`Ensuring existing user ID: ${user.id} has CUSTOMER role`);
+                            // PROTECTION: If email is the main admin email, ALWAYS ensure it has ADMIN role
+                            // This is a safety measure to prevent lockout.
+                            if (contact.emailaddress1 === 'hazarvolga@gmail.com') {
+                                const adminRole = await tx.role.findFirst({ where: { name: 'ADMIN' } });
+                                if (adminRole && user.roleId !== adminRole.id) {
+                                    user = await tx.user.update({
+                                        where: { id: user.id },
+                                        data: { roleId: adminRole.id },
+                                        include: { role: true }
+                                    });
+                                    this.logger.warn(`REPAIRED: Restored ADMIN role for hazarvolga@gmail.com`);
+                                    return; // Don't process as customer profile
+                                }
+                            }
 
-                            if (customerRole && user.roleId !== customerRole.id) {
+                            // General Protection: Don't demote existing ADMINs to CUSTOMER during sync
+                            const existingRole = await tx.role.findUnique({ where: { id: user.roleId || '' } });
+                            if (existingRole?.name === 'ADMIN') {
+                                this.logger.debug(`Skipping role update for ADMIN user: ${user.email}`);
+                            } else if (customerRole && user.roleId !== customerRole.id) {
                                 user = await tx.user.update({
                                     where: { id: user.id },
-                                    data: { roleId: customerRole.id }
+                                    data: { roleId: customerRole.id },
+                                    include: { role: true }
                                 });
                                 this.logger.debug(`Updated existing user ID: ${user.id} to CUSTOMER role`);
                             }
@@ -251,9 +270,9 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             || accountInfo?.name
                             || 'Unknown';
 
-                        // customerNo: her contact (User) için unique olmalı. (CustomerProfile.customerNo @unique)
-                        // Account number aynı hesaba bağlı birden fazla contact için tekrar edeceği için, contactId'den türetelim.
-                        const clientNo = `DYN-C-${contactId.substring(0, 8)}`;
+                        // customerNo: Mapping'den gelen değeri kullanalım (new_customerid gibi)
+                        const clientNo = this.resolveField(contact, 'customerNo', mappings, 'new_customerid')
+                            || `DYN-C-${contactId.substring(0, 8)}`;
 
                         // 3. Upsert CustomerProfile
                         await tx.customerProfile.upsert({
