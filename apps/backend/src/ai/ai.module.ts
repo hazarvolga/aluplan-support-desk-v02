@@ -15,9 +15,11 @@ import { PromptsService } from './prompts.service';
 import { LangfuseService } from './langfuse.service';
 import { TrustScoreCalculator } from './utils/trust-score.calculator';
 import { TicketClusteringService } from './ticket-clustering.service';
+import { AiReportingService } from './ai-reporting.service';
+import { EmailModule } from '../email/email.module';
 
 @Module({
-    imports: [SettingsModule],
+    imports: [SettingsModule, EmailModule],
     controllers: [AiController],
     providers: [
         AiService,
@@ -33,8 +35,9 @@ import { TicketClusteringService } from './ticket-clustering.service';
         LangfuseService,
         LlmApiService,
         TrustScoreCalculator,
-        TicketClusteringService
+        TicketClusteringService,
+        AiReportingService
     ],
-    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService, PromptsService, LangfuseService, LlmApiService, TrustScoreCalculator, TicketClusteringService],
+    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService, PromptsService, LangfuseService, LlmApiService, TrustScoreCalculator, TicketClusteringService, AiReportingService],
 })
 export class AiModule { }

@@ -308,6 +308,16 @@ export const api = {
             aiAccuracy: number;
             confidenceDistribution: Array<{ band: string; count: number }>;
         }>('/ai/health-metrics'),
+        getHealthTrends: (days = 7) => request<Array<{
+            date: string;
+            total: number;
+            accuracy: number;
+            deflection: number;
+        }>>(`/ai/health-trends?days=${days}`),
+        getKnowledgeGaps: (limit = 5) => request<Array<{
+            query: string;
+            frequency: number;
+        }>>(`/ai/knowledge-gaps?limit=${limit}`),
         getSourcesStats: () => request<{
             pillars: {
                 DOCUMENTS: number;

@@ -11,6 +11,7 @@ import { EmbeddingService } from './embedding.service';
 import { OllamaService } from './ollama.service';
 import { AiService } from './ai.service';
 import { AiCopilotService } from './ai-copilot.service';
+import { AiReportingService } from './ai-reporting.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 import { Public } from '../auth/decorators/public.decorator';
@@ -55,6 +56,7 @@ export class AiController {
         private readonly aiService: AiService,
         private readonly aiCopilotService: AiCopilotService,
         private readonly _ollama: OllamaService,
+        private readonly aiReportingService: AiReportingService,
     ) { }
 
     @Post('query')
@@ -73,9 +75,30 @@ export class AiController {
 
     @Get('health-metrics')
     @Roles('ADMIN', 'SUPERUSER')
-    @ApiOperation({ summary: 'Get detailed AI health & deflection metrics (Option C)' })
+    @ApiOperation({ summary: 'Get detailed AI health & deflection metrics' })
     async getHealth() {
         return this.aiQueryService.getHealthMetrics();
+    }
+
+    @Get('health-trends')
+    @Roles('ADMIN', 'SUPERUSER')
+    @ApiOperation({ summary: 'Get AI health time-series trends (deflection and accuracy over time)' })
+    async getHealthTrends(@Query('days') days?: string) {
+        return this.aiQueryService.getHealthTrends(days ? parseInt(days, 10) : 7);
+    }
+
+    @Get('knowledge-gaps')
+    @Roles('ADMIN', 'SUPERUSER')
+    @ApiOperation({ summary: 'Identify top knowledge gaps (most frequent unanswered queries)' })
+    async getKnowledgeGaps(@Query('limit') limit?: string) {
+        return this.aiQueryService.getKnowledgeGaps(limit ? parseInt(limit, 10) : 5);
+    }
+
+    @Post('trigger-report')
+    @Roles('ADMIN', 'SUPERUSER')
+    @ApiOperation({ summary: 'Manually trigger the weekly AI health report email' })
+    async triggerReport() {
+        return this.aiReportingService.triggerNow();
     }
 
     @Get('sources-stats')

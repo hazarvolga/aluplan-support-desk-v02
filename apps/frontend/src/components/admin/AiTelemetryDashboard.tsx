@@ -2,12 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Coins, Server, Zap, LineChart, MessageCircle, Globe, Mail } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Coins, Server, Zap, LineChart, MessageCircle, Globe, Mail, AlertTriangle, Send } from 'lucide-react';
 import { api } from '@/lib/api';
+import { HealthTrendChart } from './HealthTrendChart';
+import { toast } from 'sonner';
 
 export function AiTelemetryDashboard() {
     const [loading, setLoading] = useState(true);
     const [metrics, setMetrics] = useState<any>(null);
+    const [trends, setTrends] = useState<any[]>([]);
+    const [gaps, setGaps] = useState<any[]>([]);
+    const [sendingReport, setSendingReport] = useState(false);
 
     useEffect(() => {
         loadMetrics();
@@ -16,21 +22,43 @@ export function AiTelemetryDashboard() {
     const loadMetrics = async () => {
         try {
             setLoading(true);
-            const [data, health] = await Promise.allSettled([
+            const [data, health, trendData, gapData] = await Promise.allSettled([
                 api.ai.getMetrics(),
-                api.ai.getHealthMetrics?.() ?? Promise.resolve(null),
+                api.ai.getHealthMetrics(),
+                api.ai.getHealthTrends(7),
+                api.ai.getKnowledgeGaps(5)
             ]);
+
             const metricsData = data.status === 'fulfilled' ? data.value : null;
             const healthData = health.status === 'fulfilled' ? health.value : null;
+
             setMetrics({
                 ...metricsData,
                 deflectionRate: healthData?.deflectionRate ?? 0,
                 globalAccuracy: healthData?.aiAccuracy ?? 0,
             });
+
+            if (trendData.status === 'fulfilled') setTrends(trendData.value);
+            if (gapData.status === 'fulfilled') setGaps(gapData.value);
+
         } catch (error) {
             console.error('Failed to load AI telemetry metrics', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const triggerWeeklyReport = async () => {
+        try {
+            setSendingReport(true);
+            // We use the generic post if we don't have a specific api method yet, 
+            // but I should add it to api.ts or just use this:
+            await api.post('/ai/trigger-report', {});
+            toast.success('Haftalık rapor sıraya alındı ve yetkililere gönderiliyor.');
+        } catch (error: any) {
+            toast.error('Rapor gönderimi başarısız: ' + error.message);
+        } finally {
+            setSendingReport(false);
         }
     };
 
@@ -51,16 +79,27 @@ export function AiTelemetryDashboard() {
     const { global, providers } = metrics;
     const globalSum = global._sum || {};
 
-    // Sort providers by total tokens to establish the "top" providers
     const sortedProviders = [...(providers || [])].sort((a, b) =>
         (b.metrics?.totalTokens || 0) - (a.metrics?.totalTokens || 0)
     );
 
     return (
         <div className="space-y-6 mb-8 mt-2">
-            <h3 className="text-xl font-bold flex items-center gap-2">
-                <LineChart className="h-5 w-5 text-primary" /> AI Kullanım İstatistikleri
-            </h3>
+            <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                    <LineChart className="h-5 w-5 text-primary" /> AI Sağlık & Performans Paneli
+                </h3>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={triggerWeeklyReport}
+                    disabled={sendingReport}
+                >
+                    {sendingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    Haftalık Raporu Şimdi Gönder
+                </Button>
+            </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card className="bg-card">
@@ -104,8 +143,53 @@ export function AiTelemetryDashboard() {
                             <BotIcon className="h-4 w-4 text-primary" />
                         </div>
                         <div className="text-xl font-bold text-primary truncate">
-                            {sortedProviders.length > 0 ? sortedProviders.map(p => p.model).filter((v, i, a) => a.indexOf(v) === i).join(', ') : 'Bilinmiyor'}
+                            {sortedProviders.length > 0 ? sortedProviders.map((p: any) => p.model).filter((v: any, i: number, a: any[]) => a.indexOf(v) === i).join(', ') : 'Bilinmiyor'}
                         </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                            <LineChart className="h-4 w-4 text-primary" /> Performans Trendleri (Son 7 Gün)
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                            AI doğruluğu ve savuşturma oranlarının zaman içindeki değişimi.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                        <HealthTrendChart data={trends} />
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-bold flex items-center gap-2 text-amber-600">
+                            <AlertTriangle className="h-4 w-4" /> Bilgi Havuzu Boşlukları
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                            Cevaplanamayan en popüler kullanıcı soruları.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {gaps.length > 0 ? (
+                            <div className="divide-y text-sm">
+                                {gaps.map((gap, idx) => (
+                                    <div key={idx} className="p-3 hover:bg-muted/30 transition-colors">
+                                        <div className="font-medium line-clamp-2">"{gap.query}"</div>
+                                        <div className="text-[10px] text-muted-foreground mt-1 font-bold">
+                                            {gap.frequency} kez cevapsız kaldı
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="p-8 text-center text-muted-foreground text-xs italic">
+                                Belirgin bir bilgi boşluğu tespit edilmedi. ✨
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -138,8 +222,8 @@ export function AiTelemetryDashboard() {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-sm font-mono">${c.cost.toFixed(4)}</div>
-                                            <div className="text-[10px] text-muted-foreground">{c.tokens.toLocaleString('tr-TR')} Token</div>
+                                            <div className="text-sm font-mono">${Number(c.cost || 0).toFixed(4)}</div>
+                                            <div className="text-[10px] text-muted-foreground">{Number(c.tokens || 0).toLocaleString('tr-TR')} Token</div>
                                         </div>
                                     </div>
                                 ))}
@@ -149,7 +233,7 @@ export function AiTelemetryDashboard() {
 
                     <Card>
                         <CardHeader className="pb-3 border-b">
-                            <CardTitle className="text-sm">Performans Özeti</CardTitle>
+                            <CardTitle className="text-sm">Verimlilik Özeti (30 Günlük)</CardTitle>
                             <CardDescription className="text-xs">
                                 AI yanıt kalitesi ve sistem sağlığı.
                             </CardDescription>
@@ -183,55 +267,10 @@ export function AiTelemetryDashboard() {
                     </Card>
                 </div>
             )}
-
-            {sortedProviders.length > 0 && (
-                <Card>
-                    <CardHeader className="pb-3 border-b">
-                        <CardTitle className="text-sm">Sağlayıcı Analizi</CardTitle>
-                        <CardDescription className="text-xs">
-                            Hangi AI sağlayıcısının ne kadar kaynak tükettiğini inceleyin.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="divide-y">
-                            {sortedProviders.map((p, idx) => (
-                                <div key={idx} className="flex flex-col sm:flex-row items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                                    <div className="flex flex-col w-full sm:w-1/3 mb-2 sm:mb-0">
-                                        <span className="font-semibold uppercase tracking-wider text-xs">
-                                            {p.provider === 'custom' ? 'ÖZEL / GROK' : p.provider.toUpperCase()}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground font-mono">{p.model}</span>
-                                    </div>
-
-                                    <div className="flex flex-1 justify-between items-center sm:pl-8 text-sm">
-                                        <div className="text-center">
-                                            <div className="text-xs text-muted-foreground">İstekler</div>
-                                            <div className="font-semibold">{p.metrics.requests}</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-xs text-muted-foreground">Input Token</div>
-                                            <div>{(p.metrics.inputTokens || 0).toLocaleString('tr-TR')}</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-xs text-muted-foreground">Output Token</div>
-                                            <div>{(p.metrics.outputTokens || 0).toLocaleString('tr-TR')}</div>
-                                        </div>
-                                        <div className="text-center text-emerald-500 font-bold">
-                                            <div className="text-xs text-muted-foreground font-normal">Maliyet</div>
-                                            ${Number(p.metrics.estimatedCost || 0).toFixed(4)}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
         </div>
     );
 }
 
-// Simple bot icon mapping
 function BotIcon(props: any) {
     return (
         <svg

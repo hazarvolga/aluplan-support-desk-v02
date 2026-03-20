@@ -1,0 +1,67 @@
+<!-- Header & Intro -->
+<mj-section background-color="#FFFFFF" padding="25px 20px">
+  <mj-column>
+    <mj-text font-size="22px" font-weight="700" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}" align="center">
+      🤖 Haftalık AI Sağlık Raporu
+    </mj-text>
+    <mj-text font-size="16px" color="#555555" align="center">
+      {{startDate}} - {{endDate}} dönemi AI performans özeti.
+    </mj-text>
+  </mj-column>
+</mj-section>
+
+<!-- Stats Grid -->
+<mj-section background-color="#F8FAFC" padding="10px 0">
+  <mj-column width="45%">
+    <mj-text align="center" font-size="28px" font-weight="800" color="#10B981">{{accuracy}}%</mj-text>
+    <mj-text align="center" font-size="12px" color="#64748B" font-weight="600">ORTALAMA DOĞRULUK</mj-text>
+  </mj-column>
+  <mj-column width="45%">
+    <mj-text align="center" font-size="28px" font-weight="800" color="#3B82F6">{{deflection}}%</mj-text>
+    <mj-text align="center" font-size="12px" color="#64748B" font-weight="600">SAVUŞTURMA ORANI</mj-text>
+  </mj-column>
+</mj-section>
+
+<!-- Content Gap Analysis -->
+<mj-section background-color="#FFFFFF" padding="20px 20px">
+  <mj-column>
+    <mj-text font-size="18px" font-weight="700" color="#1E293B">
+      ⚠️ Bilgi Havuzu Boşlukları (Top 5)
+    </mj-text>
+    <mj-text font-size="14px" color="#64748B">
+      Aşağıdaki sorular kullanıcılar tarafından sıkça sorulmuş ancak AI yeterli bilgi bulamadığı için bilete yönlendirilmiştir:
+    </mj-text>
+    <mj-table>
+      <tr style="border-bottom:1px solid #E2E8F0;text-align:left;padding:10px 0;">
+        <th style="padding: 10px 0;">Soru</th>
+        <th style="padding: 10px 0; text-align: right;">Frekans</th>
+      </tr>
+      {{#each gaps}}
+      <tr style="border-bottom:1px solid #F1F5F9;">
+        <td style="padding: 10px 0; font-style: italic;">"{{this.query}}"</td>
+        <td style="padding: 10px 0; text-align: right; color: #EF4444; font-weight: 700;">{{this.frequency}}</td>
+      </tr>
+      {{/each}}
+    </mj-table>
+  </mj-column>
+</mj-section>
+
+<!-- Usage Summary -->
+<mj-section background-color="#FFFFFF" padding="10px 20px">
+  <mj-column>
+    <mj-text font-size="14px" color="#555555">
+      <b>Toplam Etkileşim:</b> {{totalInteractions}}<br/>
+      <b>Toplam Maliyet:</b> ${{cost}}<br/>
+      <b>En Çok Kullanılan Model:</b> {{topModel}}
+    </mj-text>
+  </mj-column>
+</mj-section>
+
+<!-- Action Buttons -->
+<mj-section background-color="#FFFFFF" padding="20px 20px">
+  <mj-column width="100%">
+    <mj-button href="{{dashboardUrl}}" background-color="#0EA5E9" border-radius="8px">
+      DETAYLI ANALİZİ GÖRÜNTÜLE
+    </mj-button>
+  </mj-column>
+</mj-section>
