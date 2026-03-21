@@ -413,6 +413,7 @@ export const api = {
     },
     settings: {
         list: (decrypt = false) => request<any[]>(`/settings${decrypt ? '?decrypt=true' : ''}`),
+        get: (key: string) => request<any>(`/settings/${key}`),
         upsert: (body: any) => request<any>('/settings', { method: 'POST', body: JSON.stringify(body) }),
         delete: (key: string) => request<any>(`/settings/${key}`, { method: 'DELETE' }),
     },

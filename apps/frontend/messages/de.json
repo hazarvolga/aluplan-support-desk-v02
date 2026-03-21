@@ -85,11 +85,18 @@
     "save": "Speichern",
     "saving": "Wird gespeichert...",
     "reset": "Zurücksetzen",
+    "confirm": "Bestätigen",
     "cancel": "Abbrechen",
     "unknown": "Unbekannt",
     "individual": "Individuell",
-    "system": "SYSTEM",
+    "system": "System",
+    "not_available": "N/V",
+    "success_title": "Erfolgreich",
+    "error_title": "Fehler",
+    "unassigned": "Nicht zugewiesen",
+    "next_step": "Nächster Schritt",
     "anonymous": "ANONYM",
+    "ai_bot": "KI",
     "priorities": {
       "LOW": "Niedrig",
       "MEDIUM": "Mittel",
@@ -117,7 +124,9 @@
       "sla_violations": "SLA_VERLETZUNGEN",
       "daily_resolved": "TÄGLICH_GELÖST",
       "ai_confidence": "ANN_KONFIDENZ_DURCHSCHN.",
-      "status_stable": "Stabil"
+      "status_stable": "Stabil",
+      "status_online": "ONLINE",
+      "status_offline": "OFFLINE"
     },
     "knowledge_base": {
       "title": "ABFRAGE_WISSENSDATENBANK",
@@ -194,8 +203,8 @@
       "error": "SYSTEM_BEFEHL_FEHLER: {message}"
     },
     "table": {
-      "loading": "Warten_auf_Datenprotokoll",
-      "empty": "Warteschlange_Leer",
+      "loading": "Warten auf Datenprotokoll",
+      "empty": "Warteschlange leer",
       "header": {
         "system_id": "System_ID",
         "company": "Unternehmen",
@@ -236,54 +245,172 @@
       "ai_summary_btn": "ANN_ZUSAMMENFASSUNG",
       "drafting": "ENTWURF_WIRD_VORBEREITET...",
       "ai_draft_btn": "ANN_ENTWURF",
-      "start_live_support": "LIVE-SUPPORT_STARTEN",
-      "request_live_chat": "LIVE-CHAT_ANFORDERN",
-      "waiting_agent": "WARTE_AUF_AGENTEN_GENEHMIGUNG...",
-      "customer_waiting_live": "KUNDE_WARTET_AUF_LIVE-SUPPORT",
-      "start_conversation": "KONVERSATION_STARTEN",
-      "live_session_active": "LIVE-SITZUNG_AKTIV",
-      "review_pending_title": "AUSSTEHENDE_ANFRAGE_LÖSUNGS_GENEHMIGUNG",
-      "review_pending_desc": "Bitte bewerten Sie die Lösungsleistung, um den Kanal zu schließen.",
-      "feedback_placeholder": "OPERATIVES_FEEDBACK_HINZUFÜGEN (OPTIONAL)",
-      "saving": "SPEICHERN...",
-      "save_and_close": "FEEDBACK_SPEICHERN_&_SCHLIESSEN",
-      "customer_verification_pending": "AUSSTEHENDE_KUNDENVERIFIZIERUNG",
-      "auto_sync_active": "Status: PENDING_REVIEW | Auto-Sync aktiv für +4 Score",
-      "debug_reject": "DEBUG:REJECT(2)",
-      "debug_approve": "DEBUG:APPROVE(5)",
-      "ai_summary_record": "ANN_ZUSAMMENFASSUNGS_AUFZEICHNUNG",
-      "sending": "ÜBERTRAGUNG_LÄUFT...",
-      "secure_chat": "SICHERER_CHAT",
-      "send_placeholder": "NACHRICHT_ÜBERMITTELN...",
-      "ticket_metadata": "ANFRAGE_METADATEN",
-      "status_label": "STATUS",
-      "channel_label": "KANAL",
-      "priority_label": "KRITIKALITÄT",
-      "open_date": "ERSTELLUNGSDATUM",
-      "assignee_label": "ZUGEWIESENER_AGENT",
-      "unassigned": "NICHT_ZUGEWIESEN",
-      "hotfix_data": "HOTFIX_DATA",
-      "security_warning": "SICHERHEITSWARNUNG",
-      "security_warning_desc": "OPERATIVE_SICHERHEIT_IST_ZWINGEND_ERFORDERLICH. GEBEN_SIE_NIEMALS_ZUGANGSDATEN_ODER_SYSTEMPRIVILEGIEN_WEITER. BEREINIGEN_SIE_SENSIBLE_DATEN_IN_NACHRICHTEN.",
-      "load_error": "Anfrage konnte nicht geladen werden",
-      "live_request_success": "Live-Support-Anfrage übermittelt",
-      "live_start_success": "Live-Chat gestartet",
+      "load_error": "Fehler beim Laden der Anfragedaten",
+      "live_request_success": "Live-Support-Anfrage gesendet",
+      "live_start_success": "Live-Support-Sitzung gestartet",
       "chat_update_error": "Chat-Status konnte nicht aktualisiert werden",
-      "live_accept_success": "Live-Chat akzeptiert",
+      "live_accept_success": "Live-Support-Anfrage akzeptiert",
       "chat_start_error": "Chat konnte nicht gestartet werden",
       "send_error": "Nachricht konnte nicht gesendet werden: {error}",
       "summary_success": "KI-Zusammenfassung erstellt",
       "summary_error": "Fehler beim Erstellen der Zusammenfassung",
-      "draft_success": "KI hat Antwortentwurf erstellt",
+      "draft_success": "KI-Antwortentwurf erstellt",
       "draft_error": "Entwurf konnte nicht erstellt werden: {error}",
-      "review_success": "Anfrage zur Genehmigung gesendet (Wartet auf Kundenverifizierung)",
-      "status_update_error": "Status konnte nicht geändert werden",
-      "feedback_sent": "Kunde hat mit {score}/5 Punkten bewertet.",
-      "feedback_error": "Testbewertung konnte nicht gesendet werden.",
-      "csat_success": "Sie haben mit {score}/5 Punkten bewertet. Ticket geschlossen, danke!",
-      "csat_error": "Bewertung konnte nicht gesendet werden.",
-      "resolved_comment": "Mein Problem ist vollständig gelöst, danke.",
-      "pending_comment": "Es gibt immer noch fehlende Punkte."
+      "review_success": "Anfrage in die Prüfungsphase verschoben",
+      "status_update_error": "Status konnte nicht aktualisiert werden",
+      "resolved_comment": "Anfrage gelöst und bestätigt.",
+      "pending_comment": "Lösung ist unzureichend, Details erwartet.",
+      "feedback_sent": "Feedback gesendet (Bewertung: {score})",
+      "feedback_error": "Feedback konnte nicht gesendet werden",
+      "csat_success": "Vielen Dank für Ihr Feedback (Bewertung: {score})",
+      "csat_error": "Bewertung konnte nicht gespeichert werden",
+      "start_live_support": "LIVE-SUPPORT STARTEN",
+      "request_live_chat": "LIVE-CHAT ANFORDERN",
+      "waiting_agent": "WARTE AUF AGENT...",
+      "customer_waiting_live": "KUNDE WARTET AUF LIVE-SUPPORT",
+      "start_conversation": "KONVERSATION STARTEN",
+      "live_session_active": "LIVE-SUPPORT-SITZUNG AKTIV",
+      "review_pending_title": "WARTE AUF LÖSUNGSGENEHMIGUNG",
+      "review_pending_desc": "BITTE BEWERTEN SIE DIE BEREITGESTELLTE LÖSUNG",
+      "feedback_placeholder": "Ihr Feedback (optional)...",
+      "saving": "SPEICHERN...",
+      "save_and_close": "SPEICHERN UND SCHLIESSEN",
+      "customer_verification_pending": "WARTE AUF KUNDENVERIFIZIERUNG",
+      "auto_sync_active": "AUTO-SYNC AKTIV",
+      "debug_reject": "FEHLER_ABLEHNEN",
+      "debug_approve": "FEHLER_BESTÄTIGEN",
+      "ai_summary_record": "ANN_ZUSAMMENFASSUNGS_AUFZEICHNUNG",
+      "sending": "SENDEN...",
+      "secure_chat": "ENDE-ZU-ENDE SICHERE KOMMUNIKATION",
+      "message_placeholder": "Nachricht hier eingeben... (Enter zum Senden)",
+      "ticket_metadata": "ANFRAGE_METADATEN",
+      "status_label": "STATUS_CODE",
+      "channel_label": "ZUGANGSKANAL",
+      "priority_label": "KRITIKALITÄTSSTUFE",
+      "open_date": "ERSTELLUNGSDATUM",
+      "assignee_label": "ZUGEWIESENER_EXPERTE",
+      "hotfix_data": "HOTFIX_TELEMETRIE_DATEN",
+      "security_warning": "SICHERHEITSWARNUNG",
+      "security_warning_desc": "Alle Korrespondenz und geteilten Daten werden gemäß den Aluplan-Qualitätsstandards aufgezeichnet."
+    },
+    "new": {
+      "title": "Neue Support-Anfrage",
+      "subtitle": "Beschreiben Sie Ihr Problem, unser smarter Assistent wird Sie Schritt für Schritt begleiten.",
+      "sections": {
+        "basic_info": "Basisinformationen",
+        "basic_info_desc": "Geben Sie Informationen zu Ihrer Anfrage an. Durch Auswahl eines Produkts erhalten Sie gezieltere Unterstützung.",
+        "system_info": "Systeminformationen (Erforderlich)",
+        "hotinfo_needed": "Für Allplan-Fehler wird eine Hotinfo-Datei benötigt.",
+        "confirm_hotinfo": "Systeminformationen bestätigen",
+        "hotinfo_check": "Sind diese Informationen aktuell? Bestätigen Sie oder laden Sie eine neue Datei hoch.",
+        "hotinfo_added": "Systeminformationen (Hotinfo) hinzugefügt",
+        "hotinfo_added_desc": "Diese Informationen werden automatisch an das technische Team weitergeleitet."
+      },
+      "fields": {
+        "product": "Zugehöriges Produkt",
+        "product_placeholder": "Produkt wählen (optional)",
+        "product_general": "Allgemeine Frage / Sonstiges",
+        "product_hint": "Wenn es sich nicht um ein bestimmtes Produkt handelt, kann \"Allgemeine Frage / Sonstiges\" ausgewählt bleiben.",
+        "os": "Betriebssystem",
+        "gpu_driver": "GPU-Treiberversion",
+        "cpu": "Prozessor (CPU)",
+        "opengl": "OpenGL-Version",
+        "gpu": "Grafikkarte (GPU)",
+        "disk": "Festplatteninformationen",
+        "license": "Lizenztyp",
+        "network": "Netzwerkinformationen",
+        "modules": "Installierte Module",
+        "priority": "Priorität",
+        "priority_placeholder": "Priorität wählen",
+        "subject": "Thema / Zusammenfassung",
+        "subject_placeholder": "z.B. Ich erhalte einen Lizenzfehler bei der Installation"
+      },
+      "buttons": {
+        "hotinfo_upload": "Hotinfo hochladen (.hxl)",
+        "upload_new": "Neu hochladen",
+        "view_change": "Ansehen / Ändern",
+        "create": "Anfrage erstellen"
+      },
+      "ai": {
+        "title": "Smarte Diagnose",
+        "loading": "Wir bereiten maßgeschneiderte Lösungen für Sie vor...",
+        "detail_label": "Problem detaillieren",
+        "detail_placeholder": "Fehlermeldung, Abfolge der Vorgänge, etc...",
+        "search_btn": "Lösung suchen (KI)",
+        "result_title": "KI-Diagnoseergebnis",
+        "feedback_question": "\"Hat diese von unserem KI-Assistenten angebotene Lösung geholfen, Ihr Problem zu lösen?\"",
+        "yes_resolved": "Ja, gelöst",
+        "no_create_ticket": "Nein, Anfrage erstellen"
+      },
+      "summary": {
+        "title": "Letzte Prüfung & Anhänge",
+        "attachments": "Zusätzliche Dateien / Screenshots",
+        "drag_drop": "Dateien hierher ziehen oder auswählen",
+        "select_file": "Datei auswählen",
+        "report": "Zusammenfassungsbericht",
+        "subject_label": "Thema:",
+        "product_label": "Produkt:",
+        "desc_label": "Beschreibung:"
+      },
+      "errors": {
+        "subject_min": "Thema muss mindestens 5 Zeichen lang sein",
+        "description_min": "Beschreibung muss mindestens 10 Zeichen lang sein"
+      },
+      "toasts": {
+        "products_load_error": "Fehler beim Laden der Produkte",
+        "hotinfo_loaded": "Systeminformationen aus Ihrem Profil geladen. Bitte bestätigen Sie die Aktualität.",
+        "invalid_hxl": "Bitte laden Sie eine gültige .hxl-Datei hoch",
+        "hotinfo_success": "Systeminformationen erfolgreich aktualisiert",
+        "upload_error": "Fehler beim Hochladen der Datei",
+        "ai_unavailable": "KI-Dienst kann derzeit nicht antworten. Sie können mit der Erstellung Ihrer Anfrage fortfahren.",
+        "ai_no_match": "Ich konnte Ihre Frage nicht ganz verstehen, habe aber unten einen allgemeinen Leitfaden vorbereitet.",
+        "ai_timeout": "KI-Server antwortet nicht (Timeout). Sie können Ihre Anfrage manuell erstellen.",
+        "ai_error": "KI-Diagnosedienst zurzeit nicht erreichbar.",
+        "success": "Ihre Anfrage wurde erfolgreich erstellt",
+        "hotinfo_confirmed": "Systeminformationen bestätigt",
+        "ai_happy": "Großartig! Wir freuen uns, dass Sie eine Lösung gefunden haben. 🎉"
+      }
+    }
+  },
+  "my_tickets": {
+    "title": "Meine Support-Anfragen",
+    "subtitle": "Hier können Sie alle von Ihnen eröffneten Support-Anfragen verfolgen.",
+    "new_ticket": "Neue Anfrage erstellen",
+    "empty": {
+      "title": "Sie haben noch keine Anfragen",
+      "desc": "Wenn Sie Hilfe bei etwas benötigen, starten Sie eine neue Anfrage.",
+      "button": "Jetzt starten"
+    }
+  },
+  "kb_approvals": {
+    "title": "KI-Wissensverifizierungszentrum",
+    "subtitle": "Überprüfen und autorisieren Sie Wissenseinheiten, die automatisch aus verarbeiteten Ereignisprotokollen synthetisiert wurden.",
+    "refresh_queue": "WARTESCHLANGE_AKTUALISIEREN",
+    "run_pipeline": "WORKFLOW_STARTEN",
+    "queue_title": "WISSENSWARTESCHLANGE_WARTET_AUF_GENEHMIGUNG",
+    "units_loaded": "{count} EINHEITEN_GELADEN",
+    "empty": {
+      "title": "Alle Artikel geprüft!",
+      "desc": "Derzeit liegen keine neuen KI-Entwürfe zur Genehmigung vor."
+    },
+    "table": {
+      "query": "EXTRAHIERTE_ABFRAGE",
+      "answer": "SYNTHETISIERTE_ANTWORT",
+      "confidence": "KONFIDENZWERT",
+      "source": "QUELLFALL",
+      "actions": "AUTORISIERUNG",
+      "reliable": "{percent}%_ZUVERLÄSSIG",
+      "loading": "LADEN...",
+      "empty": "KEINE DATENSÄTZE GEFUNDEN"
+    },
+    "buttons": {
+      "fetch_error": "Fehler beim Abrufen der Entwürfe.",
+      "approve_success": "Artikel in der Wissensdatenbank veröffentlicht! 🚀",
+      "approve_error": "Genehmigungsprozess fehlgeschlagen.",
+      "dismiss_success": "Artikelentwurf abgelehnt.",
+      "dismiss_error": "Ablehnungsprozess fehlgeschlagen.",
+      "pipeline_started": "Pipeline gestartet, dieser Prozess wird im Hintergrund ausgeführt...",
+      "pipeline_error": "Pipeline konnte nicht gestartet werden: {error}"
     }
   },
   "ai": {
@@ -321,7 +448,7 @@
   },
   "customers": {
     "title": "Kundenportal",
-    "subtitle": "Unternehmenskunden-Portfolio und CRM-Integrationszentrum",
+    "subtitle": "Unternehmenskunden-Portfolio und CRM-Integrationen",
     "actions": {
       "import": "Importieren",
       "verify_emails": "E-Mails verifizieren",
@@ -439,7 +566,38 @@
       "email": "E-Mail",
       "sla": "SLA",
       "branding": "Branding",
-      "whatsapp": "WhatsApp"
+      "whatsapp": "WhatsApp",
+      "requirements": "Systemanforderungen",
+      "macros": "Makros",
+      "security": "Sicherheit & API"
+    },
+    "macros": {
+      "title": "Gespeicherte Antworten (Makros)",
+      "description": "Häufig verwendete Antworten verwalten.",
+      "header_label": "Makrotitel",
+      "content_label": "Antwortinhalt",
+      "content_placeholder": "An den Kunden zu sendender Text...",
+      "add": "Hinzufügen",
+      "create_success": "Makro erstellt",
+      "delete_success": "Makro gelöscht",
+      "delete_error": "Fehler beim Löschen: {message}"
+    },
+    "email_forms": {
+      "smtp_title": "Postausgangsserver (SMTP)",
+      "smtp_desc": "SMTP-Konfiguration für Systembenachrichtigungen.",
+      "imap_title": "Posteingangsserver (IMAP)",
+      "imap_desc": "IMAP-Einstellungen für die Mail-to-Ticket-Integration.",
+      "host": "Host-Server",
+      "user": "Benutzer",
+      "pass": "Passwort",
+      "port": "Port",
+      "save": "Speichern"
+    },
+    "security": {
+      "title": "Sicherheit & Verschlüsselung",
+      "desc": "Systemsicherheitszertifikate und API-Schlüssel.",
+      "active_text": "AES-256-GCM Aktiv",
+      "encryption_desc": "Alle sensiblen Daten werden at-rest verschlüsselt."
     },
     "general": {
       "title": "Allgemeine Konfiguration",
@@ -447,40 +605,46 @@
       "portal_name": "Plattformname",
       "portal_name_placeholder": "z.B. Aluplan Support",
       "frontend_url": "Frontend-URL",
-      "frontend_url_placeholder": "https://support.aluplan.com"
+      "frontend_url_placeholder": "https://support.aluplan.com",
+      "portal_version": "KONTROLLZENTRUM v1.0"
     },
     "ai": {
       "title": "KI-Integration",
       "description": "Konfigurieren Sie Grok (xAI), DeepSeek, OpenAI oder Ollama-Dienste.",
-      "chat_provider": "Standard-Chat-Anbieter",
-      "chat_provider_desc": "Wird für Ticket-Antworten und Assistentenfunktionen verwendet.",
-      "embed_provider": "Standard-Embedding-Anbieter",
-      "embed_provider_desc": "Wird für die Suche in der Wissensdatenbank und die Dokumentenindexierung verwendet.",
-      "test_btn": "Verbindung testen",
-      "save_btn": "Änderungen speichern",
+      "center_title": "KI-Intelligenzzentrum",
+      "center_desc": "Verwalten Sie mehrere KI-Anbieter, konfigurieren Sie hybride Modellübergänge und überwachen Sie den Zustand der Engine.",
+      "motor_desc": "{name}-Engine für Intelligenz.",
+      "primary_engine": "Primäre Engine",
+      "specialized_title": "Spezialisierte Aufgaben-Mappings",
+      "specialized_desc": "Legen Sie fest, welche KI-Engine für welche Aufgabe verwendet wird.",
+      "task_categorization": "Ticket-Kategorisierung",
+      "task_summarization": "Ticket-Zusammenfassung",
+      "task_reformatting": "RAG & Neuformatierung",
+      "task_sentiment": "Sentiment-Analyse",
+      "task_translation": "Automatische Übersetzung",
+      "save_mappings": "Mappings speichern",
+      "rag_title": "Semantische Suche & RAG-Konfiguration",
+      "rag_desc": "Grundeinstellungen, die Ihren Wissenspool vektorisieren und die Suchqualität bestimmen.",
+      "advanced_params": "Erweiterte Parameter",
+      "global_default": "Globaler Standard",
+      "ollama_local": "Ollama (Lokal)",
+      "toasts": {
+        "load_error": "KI-Einstellungen konnten nicht geladen werden: {message}",
+        "test_success": "{provider}-Verbindung erfolgreich!",
+        "test_error": "{provider}-Verbindungsfehler: {message}",
+        "test_failed": "Verbindungstest fehlgeschlagen: {message}",
+        "save_success": "{provider}-Einstellungen gespeichert.",
+        "save_error": "Fehler beim Speichern: {message}"
+      },
       "ollama": {
         "title": "Ollama (Lokal)",
         "chat_model": "Chat-Modell",
-        "embed_model": "Embedding-Modell"
+        "embed_model": "Vektor-Modell"
       },
       "openai": {
         "title": "OpenAI (Cloud)",
         "chat_model": "Chat-Modell",
-        "embed_model": "Embedding-Modell"
-      },
-      "validation": {
-        "fields": {
-          "api_key": "API-Schlüssel",
-          "chat_model": "Chat-Modell",
-          "embed_model": "Embedding-Modell",
-          "url": "Verbindungs-URL"
-        },
-        "missing_fields": "Bitte füllen Sie die folgenden Pflichtfelder aus: {fields}"
-      },
-      "xai": {
-        "title": "xAI (Grok)",
-        "chat_model": "Chat-Modell",
-        "not_supported": "Nicht unterstützt"
+        "embed_model": "Vektor-Modell"
       },
       "providers": {
         "ollama": "Ollama (Lokal)",
@@ -493,7 +657,7 @@
         "custom": "Benutzerdefiniert (OpenAI-kompatibel)",
         "custom_info": "Benutzerdefiniert (Falls unterstützt)",
         "other_custom": "Anderer benutzerdefinierter Dienst",
-        "groq_no_embed": "Groq (Embedding nicht unterstützt)"
+        "groq_no_embed": "Groq (Vektorisierung nicht unterstützt)"
       }
     },
     "email": {
@@ -553,21 +717,16 @@
       "templates": {
         "title": "E-Mail-Vorlagen",
         "description": "Verwalten und passen Sie MJML-basierte E-Mail-Vorlagen an.",
+        "preview_module": "Vorlagen-Vorschau-Modul",
+        "preview_desc": "Testen Sie aktive MJML-Vorlagen mit Mock-Daten.",
         "select_placeholder": "Vorlage auswählen...",
-        "new_btn": "Neue Vorlage",
         "preview_btn": "Vorschau",
-        "save_btn": "Speichern",
-        "create_btn": "Erstellen",
-        "cancel_btn": "Abbrechen",
-        "editor_title": "MJML-Editor",
-        "preview_title": "E-Mail-Vorschau",
         "subject_label": "Betreff",
-        "preview_hint": "Klicken Sie auf 'Vorschau', um den Inhalt zu sehen.",
-        "preview_flow_hint": "Speichern → Vorschau Flow wird empfohlen.",
-        "new_placeholder": "beispiel-vorlagen-name",
-        "safe_editor_title": "Sicherer Inhalts-Editor",
-        "safe_editor_desc": "Bearbeiten Sie Ihren Inhalt, ohne die MJML-Struktur zu beschädigen.",
-        "editor_placeholder": "MJML-Inhalt hier eingeben..."
+        "toasts": {
+          "load_error": "Vorlagen konnten nicht geladen werden",
+          "compile_error": "Kompilierungsfehler",
+          "preview_failed": "Vorschau konnte nicht geladen werden: {message}"
+        }
       }
     },
     "sla": {
@@ -635,9 +794,9 @@
       "save_btn": "WhatsApp-Einstellungen speichern"
     },
     "toasts": {
-      "save_success": "Einstellungen gespeichert.",
-      "save_error": "Fehler beim Speichern der Einstellungen.",
-      "load_error": "Fehler beim Laden der Einstellungen.",
+      "save_success": "{key} erfolgreich aktualisiert.",
+      "save_error": "Fehler: {message}",
+      "load_error": "Daten konnten nicht geladen werden: {message}",
       "gmail_success": "Gmail-Konto erfolgreich verbunden.",
       "gmail_error": "Autorisierung fehlgeschlagen.",
       "logo_success": "Logo erfolgreich gespeichert.",
@@ -667,19 +826,198 @@
       "logo_upload_error": "Fehler beim Hochladen des Logos.",
       "generic_error": "Ein Fehler ist aufgetreten.",
       "generic_success_hint": "Zugriff auf {provider}-Dienst hergestellt.",
-      "generic_fail_hint": "Dienst ist derzeit nicht erreichbar.",
-      "success": "Erfolgreich",
-      "error": "Fehler"
-    }
-  },
-  "admin": {
-    "live_support_request": {
-      "title": "Support-Anfragen",
-      "description": "Systemweite offene und aktive Support-Anfragen verwalten."
+      "generic_fail_hint": "Dienst momentan nicht verfügbar."
     },
-    "ai_health": {
-      "title": "KI-Gesundheit & Telemetrie",
-      "description": "Echtzeit-Überwachung von KI-Modellen, Token-Verbrauch und RAG-Leistung."
+    "admin": {
+      "live_support_request": {
+        "title": "Support-Anfragen",
+        "description": "Systemweite offene und aktive Support-Anfragen verwalten."
+      },
+      "ai_health": {
+        "title": "KI-Gesundheit & Telemetrie",
+        "description": "Echtzeit-Überwachung von KI-Modellen, Token-Verbrauch und RAG-Leistung."
+      }
+    },
+    "profile": {
+      "title": "Mein Profil",
+      "subtitle": "Verwalten Sie Ihre persönlichen Informationen und Sicherheitseinstellungen",
+      "hotfix_warning_title": "ACHTUNG: Hotfix-Verifizierung erforderlich",
+      "hotfix_warning_desc": "Allplan-Nutzung erkannt. Für Systemstabilität und ununterbrochenen Support laden Sie bitte Ihre aktuelle <b>Hotinfo (.hxl)</b> Datei unten auf der Seite hoch.",
+      "crm_verified": "CRM VERIFIZIERT",
+      "personal_info": "Persönliche Informationen",
+      "roles_info": "Kontoinformationen ({roles})",
+      "roles": {
+        "admin": "Administrator",
+        "agent": "Agent",
+        "customer": "Kunde"
+      },
+      "labels": {
+        "email_static": "E-Mail (Unveränderlich)",
+        "full_name": "Vollständiger Name",
+        "phone": "Telefonnummer",
+        "customer_no_static": "Kundennummer (Unveränderlich)",
+        "company_name": "Firmenname",
+        "industry": "Branche",
+        "job_title": "Jobtitel",
+        "subscription": "Abonnement",
+        "status": "Status"
+      },
+      "placeholders": {
+        "phone": "+90 555 444 33 22",
+        "no_crm": "Kein CRM-Eintrag",
+        "company_name": "Ihr Firmenname",
+        "industry": "Branche, in der Sie tätig sind",
+        "job_title": "Ihr Jobtitel (z. B. Einkaufsleiter)",
+        "new_password": "Geben Sie Ihr neues Passwort ein",
+        "confirm_password": "Geben Sie Ihr neues Passwort erneut ein"
+      },
+      "contract_status": {
+        "ACTIVE": "Aktiv",
+        "EXPIRED": "Abgelaufen"
+      },
+      "account_status": {
+        "ACTIVE": "Aktiv",
+        "INACTIVE": "Inaktiv",
+        "SUSPENDED": "Suspendiert"
+      },
+      "password_change": {
+        "title": "Passwort ändern",
+        "description": "Lassen Sie dieses Feld leer, wenn Sie Ihr Passwort nicht ändern möchten.",
+        "new_password": "Neues Passwort",
+        "confirm_password": "Passwort verifizieren"
+      },
+      "save_button": "Änderungen speichern",
+      "saving_button": "Wird gespeichert...",
+      "mfa": {
+        "title": "Zwei-Faktor-Authentisierung (MFA)",
+        "description": "Verwenden Sie TOTP-basierte Authentifizierung (Google Authenticator, Authy usw.), um Ihre Kontosicherheit zu erhöhen.",
+        "status_label": "MFA-Status",
+        "active": "AKTİV",
+        "inactive": "INAKTIV",
+        "disable_btn": "Deaktivieren",
+        "setup_btn": "Einrichtung starten",
+        "dialog_title": "MFA-Einrichtung",
+        "dialog_desc": "Scannen Sie den Code mit einer beliebigen Authentifizierungs-App (Google Authenticator, Microsoft Authenticator, Authy).",
+        "key_creating": "Schlüssel wird generiert...",
+        "manual_key_label": "Manueller Eingabeschlüssel",
+        "token_label": "Verifizierungscode",
+        "token_placeholder": "000000",
+        "token_hint": "Aktivieren Sie die Funktion durch Eingabe des 6-stelligen Codes in Ihrer App",
+        "cancel": "Abbrechen",
+        "verify_enable": "Verifizieren und Aktivieren",
+        "verifying": "Wird verifiziert...",
+        "confirm_disable": "Sind Sie sicher, dass Sie die Zwei-Faktor-Authentisierung deaktivieren möchten? Ihre Sicherheit wird verringert."
+      },
+      "notifications": {
+        "title": "E-Mail-Benachrichtigungseinstellungen",
+        "description": "Legen Sie fest, in welchen Kategorien Sie E-Mails erhalten möchten",
+        "types": {
+          "ANNOUNCEMENTS": "Ankündigungen und Neuigkeiten",
+          "TICKETS": "Ticket-Aktualisierungen",
+          "SYSTEM": "System- und Sicherheitswarnungen"
+        },
+        "descriptions": {
+          "ANNOUNCEMENTS": "Kampagnen, Nachrichten und Produkt-Updates",
+          "TICKETS": "Alle Nachrichten im Zusammenhang mit Ihren Support-Anfragen",
+          "SYSTEM": "Passwort-Zurücksetzung, Kontobewegungen und kritische Warnungen"
+        }
+      },
+      "hotinfo": {
+        "title": "Systeminformationen (Hotinfo)",
+        "description": "Für Ihre Allplan-Supportanfragen erforderliche Systemkonfiguration",
+        "last_update": "Letzte Aktualisierung",
+        "status_up_to_date": "Ihre Systeminformationen sind auf dem neuesten Stand. Diese Informationen werden automatisch in Ihren Support-Anfragen verwendet.",
+        "update_btn": "Informationen aktualisieren (.hxl hochladen)",
+        "missing_title": "Systeminformationen fehlen",
+        "missing_desc": "Es wird empfohlen, Ihre Allplan-Hotinfo-Datei hochzuladen, damit unser Support-Team Ihnen schneller helfen kann.",
+        "upload_btn": "HXL-Datei hochladen",
+        "uploading": "Wird hochgeladen..."
+      },
+      "toasts": {
+        "pref_updated": "Einstellung aktualisiert",
+        "pref_failed": "Aktualisierung fehlgeschlagen",
+        "password_mismatch": "Passwörter stimmen nicht überein!",
+        "profile_updated": "Profil erfolgreich aktualisiert.",
+        "update_failed": "Aktualisierung fehlgeschlagen",
+        "hxl_invalid": "Bitte laden Sie eine gültige .hxl-Datei hoch",
+        "mfa_disabled": "Die Zwei-Faktor-Authentifizierung wurde deaktiviert.",
+        "mfa_disable_failed": "Vorgang fehlgeschlagen"
+      }
+    },
+    "help": {
+      "badge": "SYSTEM-LEITFADEN",
+      "title": "Bedienungsanleitung & Workflows",
+      "description": "Erfahren Sie Schritt für Schritt, wie Sie tägliche Abläufe, alle Funktionen der Aluplan Support-Plattform und KI-Module ausführen.",
+      "tabs": {
+        "customer": "Kunden",
+        "admin": "Support-Team & Administratoren"
+      },
+      "customer": {
+        "section1": {
+          "title": "Anmeldung und Übersicht",
+          "desc": "Der erste Bildschirm, den Sie sehen, wenn Sie sich im System anmelden, ist die <b>Übersicht (Dashboard)</b>. Auf diesem Bildschirm:",
+          "item1": "Sie können Ihre laufenden und auf eine Antwort wartenden aktiven Support-Anfragen sehen.",
+          "item2": "Sie können schnell auf die zuletzt erstellten Artikel zugreifen.",
+          "item3": "Sie können die für Sie freigegebenen Systemankündigungen auf der \"Ankündigungen\"-Tafel lesen."
+        },
+        "section2": {
+          "title": "Verwendung des KI-Assistenten",
+          "desc": "Bevor Sie ein Ticket eröffnen, empfehlen wir Ihnen, das Menü <b>KI-Assistent</b> (/ai) zu verwenden, um Ihr Problem schnell zu lösen.",
+          "item1": "Klicken Sie im linken Menü auf die Registerkarte KI-Assistent.",
+          "item2": "Schreiben Sie den Fehler, den Sie erhalten, oder das Thema, das Sie erfahren möchten, in das Nachrichtenfeld (z. B. <i>\"Programm stürzt beim Zeichnen von Wänden ab\"</i>).",
+          "item3": "Die KI durchsucht die gesamte Wissensdatenbank und präsentiert Ihnen direkt die Lösungsschritte. Wenn keine Lösung gefunden wird, schlägt sie vor, eine Support-Anfrage zu erstellen.",
+          "tip_label": "Tipp:",
+          "tip_desc": "Da die KI RAG (Lernalgorithmus) verwendet, erhalten Sie genauere Antworten, wenn Sie Fragen stellen, indem Sie den Namen der Software modules angeben (z. B. AX3000)."
+        },
+        "section3": {
+          "title": "Eröffnung und Verfolgung einer Support-Anfrage (Ticket)",
+          "desc": "Um das Problem an die Agenten weiterzuleiten, können Sie auf der Seite <b>Meine Support-Anfragen</b> einen neuen Datensatz erstellen.",
+          "step1_title": "Schritt 1: Produktauswahl",
+          "step1_desc": "Nachdem Sie auf die Schaltfläche Neue Anfrage geklickt haben, wählen Sie die Produktfamilie aus, bei der das Problem auftritt (z. B. ALLPLAN, AX3000). Auf diese Weise wird Ihre Anfrage direkt an das zuständige Expertenteam weitergeleitet.",
+          "step2_title": "Schritt 2: Betreff und Details",
+          "step2_desc": "Geben Sie einen klaren Titel und Details ein, die das aufgetretene Problem erläutern. Wählen Sie die Dringlichkeitsstufe (wird durch SLA bestimmt).",
+          "step3_title": "Schritt 3: Dateianhänge",
+          "step3_desc": "Sie können Screenshots, PDFs oder Projektdateien (Max. 10 MB) direkt per Drag & Drop hochladen."
+        }
+      },
+      "admin": {
+        "section1": {
+          "title": "Ticket-Warteschlange (Ticket-Management)",
+          "card1_title": "Operativer Pool",
+          "card1_desc": "Auf der Seite Ticket-Warteschlange werden Anfragen von allen Kunden gesammelt.",
+          "card1_item1_label": "Status ändern:",
+          "card1_item1_desc": "Sie können das Ticket aufrufen und den Status über das Dropdown-Menü im rechten Bereich ändern (Offen, Beantwortet, Geschlossen).",
+          "card1_item2_label": "Interne Notizen:",
+          "card1_item2_desc": "Verwenden Sie die Registerkarte <code>Interne Notiz (nur intern)</code>, um nur teaminterne Notizen zu machen, die der Kunde nicht sehen kann.",
+          "card1_item3_label": "Zuweisung:",
+          "card1_item3_desc": "Sie können das Ticket an einen bestimmten Experten übertragen, indem Sie die Schaltfläche \"Zuweisen\" verwenden.",
+          "card2_title": "KI-Co-Pilot (KI-gestützte Antwort)",
+          "card2_item1": "Klicken Sie oben rechts auf die Schaltfläche <b>\"KI-Antwortentwurf erstellen\"</b>, wenn Sie das Ticket aufrufen.",
+          "card2_item2": "Das System durchsucht die Nachricht des Kunden und den Wissenspool Ihres Unternehmens. Durch den Abgleich von Vektordaten bereitet es innerhalb von 5-10 Sekunden einen professionellen Entwurf vor, der sich auf die relevanten Dokumente bezieht. Sie können dem Kunden sofort antworten, indem Sie den Entwurf genehmigen und ihn nach Ihrem eigenen Stil bearbeiten."
+        },
+        "section2": {
+          "title": "Wissenspool & Lernschleife",
+          "item1_title": "Wissenspool-Management",
+          "item1_desc": "Damit die KI antworten kann, müssen Sie der Infrastruktur ständig neue Daten zur Verfügung stellen. Hierfür gibt es 3 Möglichkeiten:",
+          "item1_way1_label": "PDF / Datei-Upload:",
+          "item1_way1_desc": "Fügen Sie technische Spezifikationen direkt als PDFs zur Datenbank hinzu. Das System unterteilt diese in <u>Embedding (Vektor)</u> Teile.",
+          "item1_way2_label": "Web Scraper:",
+          "item1_way2_desc": "Wenn Sie dem System die aktuellen \"How to\"-URLs auf Ihrer Website übermitteln, liest die KI Ihre Website und speichert sie in ihrem Gedächtnis.",
+          "item1_way3_label": "Rohtext:",
+          "item1_way3_desc": "Sie können eine \"Anweisung\" für die KI erstellen, indem Sie häufig gestellte Fragen manuell eingeben.",
+          "item2_title": "Lernschleife und KI-Genehmigungen",
+          "item2_desc": "Wenn Kunden für geschlossene Tickets mit <b>5 Sternen</b> stimmen, geht das System davon aus, dass die Lösung perfekt ist. Um jedoch zu verhindern, dass diese Lösung direkt in die Hauptdatenbank geschrieben wird, landet sie auf der Registerkarte <b>KI-Genehmigungen</b>. Als Administrator können Sie auf dieser Registerkarte wählen, ob die Lösung von der KI gelernt (Genehmigen) oder übersprungen (Ablehnen) werden soll."
+        },
+        "section3": {
+          "title": "CRM & Produkt (Taxonomie) Konfiguration",
+          "card1_title": "Produkte und Modules",
+          "card1_desc1": "Hier verwalten Sie die Produktkarten, die der Kunde beim Eröffnen eines Tickets sieht. Der wichtigste Teil sind <b>Kategorien und Schlüsselwörter.</b>",
+          "card1_rule_label": "Taxonomie-Regel:",
+          "card1_rule_desc": "Schreiben Sie nicht nur Produktmerkmale (Wand, Balken), sondern auch Kundensymptome (Ruckeln, schwarzer Bildschirm, Schließen) in Kategorien (z. B. Modellabsturz). Die KI liest diese Schlüsselwörter und leitet das Ticket an das richtige Team (Triage) weiter.",
+          "card2_title": "Kunden- und Teamverwaltung",
+          "card2_desc": "Unter dem Menü <b>SYSTEM</b> im linken Bereich können Sie Kunden genehmigen und Support-Teams (Abteilungen) erstellen. Vergessen Sie nicht, die SLA-Regeln (Nach wie vielen Stunden soll geantwortet werden, soll es außerhalb der Arbeitszeit anhalten?) auf der Registerkarte Teamverwaltung festzulegen, damit Tickets automatisch zugewiesen werden können."
+        }
+      }
     }
   }
 }

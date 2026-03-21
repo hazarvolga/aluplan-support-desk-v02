@@ -79,7 +79,7 @@ export function FieldMapping({
         const mappedKeys = Object.keys(currentMapping);
         const allKeys = Array.from(new Set([...standardKeys, ...mappedKeys]));
 
-        let result: MappingItem[] = allKeys.map(key => {
+        const result: MappingItem[] = allKeys.map(key => {
             const def = definitions.find(d => d.key === key);
             const savedDisplay = displaySettings.find(s => s.key === key);
 

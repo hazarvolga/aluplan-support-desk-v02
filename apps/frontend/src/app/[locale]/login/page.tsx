@@ -7,13 +7,16 @@ import { useRouter } from '@/i18n/routing';
 import { api } from '@/lib/api';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Terminal, ShieldAlert, Lock, AlertTriangle, CircleDot, FileText, CheckCircle2 } from 'lucide-react';
+import { Terminal, ShieldAlert, Lock, CircleDot, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useParams } from 'next/navigation';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useAuth } from '@/components/auth/role-guard';
+import RequirementAccordion from '@/components/auth/requirement-accordion';
 
 export default function LoginPage() {
     const t = useTranslations('auth');
+    const { locale } = useParams() as { locale: string };
     const { login } = useAuth();
     const router = useRouter();
     const [email, setEmail] = useState('');
@@ -88,33 +91,11 @@ export default function LoginPage() {
 
                 {/* Broadcast Center */}
                 <div className="relative z-10 mb-auto w-full max-w-2xl">
-                    <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40 mb-3 ml-1">{t('broadcast_title')}</h2>
+                    <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40 mb-5 ml-1">
+                        {t('broadcast_title')}
+                    </h2>
 
-                    <div className="space-y-4">
-                        {/* Critical Notice */}
-                        <div className="border border-amber-500/30 bg-amber-500/5 p-4 md:p-6 backdrop-blur-sm">
-                            <div className="flex items-center gap-2 mb-2 text-amber-500">
-                                <AlertTriangle className="h-4 w-4" />
-                                <span className="text-[11px] font-bold tracking-widest uppercase">{t('maintenance_notice_title')}</span>
-                                <span className="ml-auto text-[9px] text-amber-500/50">{t('maintenance_notice_time')}</span>
-                            </div>
-                            <p className="text-[13px] leading-relaxed text-amber-500/90 font-medium">
-                                {t('maintenance_notice_desc')}
-                            </p>
-                        </div>
-
-                        {/* Standard Notice */}
-                        <div className="border border-white/10 bg-black/40 p-4 md:p-6 backdrop-blur-sm">
-                            <div className="flex items-center gap-2 mb-2 text-primary">
-                                <FileText className="h-4 w-4" />
-                                <span className="text-[11px] font-bold tracking-widest uppercase">{t('docs_notice_title')}</span>
-                                <span className="ml-auto text-[9px] text-muted-foreground/50">{t('docs_notice_time')}</span>
-                            </div>
-                            <p className="text-[13px] leading-relaxed text-slate-400">
-                                {t('docs_notice_desc')}
-                            </p>
-                        </div>
-                    </div>
+                    <RequirementAccordion locale={locale || 'tr'} />
                 </div>
 
                 {/* Footer Metrics & Partner Badge */}

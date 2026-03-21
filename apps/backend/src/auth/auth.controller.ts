@@ -90,4 +90,11 @@ export class AuthController {
     async testEmailConfig() {
         return this.authService.testEmailConfig();
     }
+
+    @Public()
+    @Get('system-requirements')
+    @ApiOperation({ summary: 'Get localized system requirements for login page' })
+    async getSystemRequirements(@Query('locale') locale: string = 'en') {
+        return this.authService.getSystemRequirements(locale);
+    }
 }

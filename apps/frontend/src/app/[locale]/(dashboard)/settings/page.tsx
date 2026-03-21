@@ -16,12 +16,15 @@ import {
     Zap, Save, Loader2, Key, Server,
     Globe, Clock, Terminal, Plus, Trash2, Edit, CheckCircle2, Brain
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { EmailTemplates } from './components/EmailTemplates';
 import { AiSettings } from './components/AiSettings';
 
 export default function SettingsPage() {
+    const t = useTranslations('settings');
+    const tc = useTranslations('common');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [settings, setSettings] = useState<any[]>([]);
@@ -59,7 +62,7 @@ export default function SettingsPage() {
                 setImapHost(settingsData.find(s => s.key === 'email.imap.host')?.value || '');
                 setImapUser(settingsData.find(s => s.key === 'email.imap.user')?.value || '');
             } catch (error: any) {
-                toast.error('Veriler yüklenemedi: ' + error.message);
+                toast.error(t('toasts.load_error', { message: error.message }));
             } finally {
                 setLoading(false);
             }
@@ -71,9 +74,9 @@ export default function SettingsPage() {
         setSaving(true);
         try {
             await api.settings.upsert({ key, value, isSecret });
-            toast.success(`${key} başarıyla güncellendi`);
+            toast.success(t('toasts.save_success', { key }));
         } catch (error: any) {
-            toast.error('Hata: ' + error.message);
+            toast.error(t('toasts.save_error', { message: error.message }));
         } finally {
             setSaving(false);
         }
@@ -87,9 +90,9 @@ export default function SettingsPage() {
             setMacros([...macros, newMacro]);
             setMacroName('');
             setMacroContent('');
-            toast.success('Macro oluşturuldu');
+            toast.success(t('macros.create_success'));
         } catch (error: any) {
-            toast.error('Hata: ' + error.message);
+            toast.error(t('toasts.save_error', { message: error.message }));
         } finally {
             setSaving(false);
         }
@@ -99,9 +102,9 @@ export default function SettingsPage() {
         try {
             await api.macros.delete(id);
             setMacros(macros.filter(m => m.id !== id));
-            toast.success('Macro silindi');
+            toast.success(t('macros.delete_success'));
         } catch (error: any) {
-            toast.error('Silme hatası: ' + error.message);
+            toast.error(t('macros.delete_error', { message: error.message }));
         }
     };
 
@@ -124,23 +127,23 @@ export default function SettingsPage() {
         <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between border-b border-white/5 pb-6">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Sistem Ayarları</h1>
-                    <p className="text-muted-foreground mt-1">Platform genelindeki teknik ve operasyonel yapılandırmalar.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+                    <p className="text-muted-foreground mt-1">{t('subtitle')}</p>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-white/5 rounded-full" aria-hidden="true">
                     <Terminal className="h-3.5 w-3.5 text-brand-500" />
-                    <span className="text-[11px] font-mono uppercase tracking-widest text-brand-500/80">KONTROL PANELİ v1.0</span>
+                    <span className="text-[11px] font-mono uppercase tracking-widest text-brand-500/80">{t('general.portal_version')}</span>
                 </div>
             </div>
 
             <Tabs defaultValue="email" className="space-y-6">
                 <TabsList className="bg-slate-900/50 border border-white/5 p-1 gap-1">
-                    <TabsTrigger value="email" className="data-[state=active]:bg-brand-500/10 data-[state=active]:text-brand-400 gap-2"><Mail className="h-4 w-4" aria-hidden="true" /> E-Posta</TabsTrigger>
-                    <TabsTrigger value="macros" className="data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400 gap-2"><Zap className="h-4 w-4" aria-hidden="true" /> Macrolar</TabsTrigger>
+                    <TabsTrigger value="email" className="data-[state=active]:bg-brand-500/10 data-[state=active]:text-brand-400 gap-2"><Mail className="h-4 w-4" aria-hidden="true" /> {t('tabs.email')}</TabsTrigger>
+                    <TabsTrigger value="macros" className="data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400 gap-2"><Zap className="h-4 w-4" aria-hidden="true" /> {t('tabs.macros')}</TabsTrigger>
                     <TabsTrigger value="ai" className="data-[state=active]:bg-brand-500/10 data-[state=active]:text-brand-400 gap-2">
-                        <Brain className="h-4 w-4" aria-hidden="true" /> Yapay Zeka
+                        <Brain className="h-4 w-4" aria-hidden="true" /> {t('tabs.ai')}
                     </TabsTrigger>
-                    <TabsTrigger value="security" className="data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-400 gap-2"><Shield className="h-4 w-4" aria-hidden="true" /> Güvenlik & API</TabsTrigger>
+                    <TabsTrigger value="security" className="data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-400 gap-2"><Shield className="h-4 w-4" aria-hidden="true" /> {t('tabs.security')}</TabsTrigger>
                 </TabsList>
 
                 {/* EMAIL SETTINGS */}
@@ -149,26 +152,26 @@ export default function SettingsPage() {
                         {/* SMTP */}
                         <Card className="bg-card/20 backdrop-blur-xl border-white/5">
                             <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2"><Mail className="h-4 w-4 text-brand-500" /> Giden Sunucu (SMTP)</CardTitle>
-                                <CardDescription>Sistem bildirimleri için SMTP yapılandırması.</CardDescription>
+                                <CardTitle className="text-lg flex items-center gap-2"><Mail className="h-4 w-4 text-brand-500" /> {t('email_forms.smtp_title')}</CardTitle>
+                                <CardDescription>{t('email_forms.smtp_desc')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="smtp-host">Sunucu (Host)</Label>
+                                    <Label htmlFor="smtp-host">{t('email_forms.host')}</Label>
                                     <Input id="smtp-host" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className="bg-slate-900/50" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="smtp-port">Port</Label>
+                                        <Label htmlFor="smtp-port">{t('email_forms.port')}</Label>
                                         <Input id="smtp-port" value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} className="bg-slate-900/50" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="smtp-user">Kullanıcı</Label>
+                                        <Label htmlFor="smtp-user">{t('email_forms.user')}</Label>
                                         <Input id="smtp-user" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} className="bg-slate-900/50" />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="smtp-pass">Şifre</Label>
+                                    <Label htmlFor="smtp-pass">{t('email_forms.pass')}</Label>
                                     <Input id="smtp-pass" type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} className="bg-slate-900/50" placeholder="••••••••" />
                                 </div>
                             </CardContent>
@@ -178,27 +181,27 @@ export default function SettingsPage() {
                                     saveSetting('email.smtp.port', smtpPort);
                                     saveSetting('email.smtp.user', smtpUser);
                                     if (smtpPass) saveSetting('email.smtp.pass', smtpPass, true);
-                                }} disabled={saving} className="bg-brand-600 ml-auto">Kaydet</Button>
+                                }} disabled={saving} className="bg-brand-600 ml-auto">{t('email_forms.save')}</Button>
                             </CardFooter>
                         </Card>
 
                         {/* IMAP */}
                         <Card className="bg-card/20 backdrop-blur-xl border-white/5">
                             <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2"><Server className="h-4 w-4 text-amber-500" /> Gelen Sunucu (IMAP)</CardTitle>
-                                <CardDescription>Mail-to-Ticket entegrasyonu için IMAP ayarları.</CardDescription>
+                                <CardTitle className="text-lg flex items-center gap-2"><Server className="h-4 w-4 text-amber-500" /> {t('email_forms.imap_title')}</CardTitle>
+                                <CardDescription>{t('email_forms.imap_desc')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="imap-host">Sunucu (Host)</Label>
+                                    <Label htmlFor="imap-host">{t('email_forms.host')}</Label>
                                     <Input id="imap-host" value={imapHost} onChange={(e) => setImapHost(e.target.value)} className="bg-slate-900/50" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="imap-user">E-posta</Label>
+                                    <Label htmlFor="imap-user">{t('email_forms.user')}</Label>
                                     <Input id="imap-user" value={imapUser} onChange={(e) => setImapUser(e.target.value)} className="bg-slate-900/50" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="imap-pass">Şifre</Label>
+                                    <Label htmlFor="imap-pass">{t('email_forms.pass')}</Label>
                                     <Input id="imap-pass" type="password" value={imapPass} onChange={(e) => setImapPass(e.target.value)} className="bg-slate-900/50" placeholder="••••••••" />
                                 </div>
                             </CardContent>
@@ -207,7 +210,7 @@ export default function SettingsPage() {
                                     saveSetting('email.imap.host', imapHost);
                                     saveSetting('email.imap.user', imapUser);
                                     if (imapPass) saveSetting('email.imap.pass', imapPass, true);
-                                }} disabled={saving} className="bg-brand-600 ml-auto">Kaydet</Button>
+                                }} disabled={saving} className="bg-brand-600 ml-auto">{t('email_forms.save')}</Button>
                             </CardFooter>
                         </Card>
                     </div>
@@ -223,21 +226,21 @@ export default function SettingsPage() {
                 <TabsContent value="macros" className="space-y-6">
                     <Card className="bg-card/20 border-white/5">
                         <CardHeader>
-                            <CardTitle>Canned Responses (Macrolar)</CardTitle>
-                            <CardDescription>Sık kullanılan yanıtları yönetin.</CardDescription>
+                            <CardTitle>{t('macros.title')}</CardTitle>
+                            <CardDescription>{t('macros.description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             {/* Create New Macro */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/5 p-4 rounded-xl">
                                 <div className="space-y-2">
-                                    <Label htmlFor="macro-name">Macro Başlığı</Label>
+                                    <Label htmlFor="macro-name">{t('macros.header_label')}</Label>
                                     <Input id="macro-name" value={macroName} onChange={(e) => setMacroName(e.target.value)} className="bg-slate-900/50" placeholder="örn: Hoşgeldiniz" />
                                 </div>
                                 <div className="md:col-span-2 space-y-2 flex flex-col">
-                                    <Label htmlFor="macro-content">Yanıt İçeriği</Label>
+                                    <Label htmlFor="macro-content">{t('macros.content_label')}</Label>
                                     <div className="flex gap-4 items-end">
-                                        <Textarea id="macro-content" value={macroContent} onChange={(e) => setMacroContent(e.target.value)} className="bg-slate-900/50 min-h-[40px] flex-1" placeholder="Müşteriye gönderilecek metin..." />
-                                        <Button onClick={handleCreateMacro} disabled={saving || !macroName || !macroContent} className="bg-amber-600"><Plus className="h-4 w-4 mr-2" aria-hidden="true" /> Ekle</Button>
+                                        <Textarea id="macro-content" value={macroContent} onChange={(e) => setMacroContent(e.target.value)} className="bg-slate-900/50 min-h-[40px] flex-1" placeholder={t('macros.content_placeholder')} />
+                                        <Button onClick={handleCreateMacro} disabled={saving || !macroName || !macroContent} className="bg-amber-600"><Plus className="h-4 w-4 mr-2" aria-hidden="true" /> {t('macros.add')}</Button>
                                     </div>
                                 </div>
                             </div>
@@ -273,16 +276,16 @@ export default function SettingsPage() {
                 <TabsContent value="security" className="space-y-6">
                     <Card className="bg-card/20 border-white/5">
                         <CardHeader>
-                            <CardTitle>Güvenlik & Şifreleme</CardTitle>
-                            <CardDescription>Sistem güvenlik sertifikaları ve API anahtarları.</CardDescription>
+                            <CardTitle>{t('security.title')}</CardTitle>
+                            <CardDescription>{t('security.desc')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center justify-between p-4 bg-slate-900/50 border border-green-500/20 rounded-xl">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-green-500/10 rounded-lg"><Shield className="h-4 w-4 text-green-500" /></div>
                                     <div>
-                                        <h4 className="font-bold text-sm">AES-256-GCM Aktif</h4>
-                                        <p className="text-xs text-muted-foreground">Tüm hassas veriler at-rest şifrelenmektedir.</p>
+                                        <h4 className="font-bold text-sm">{t('security.active_text')}</h4>
+                                        <p className="text-xs text-muted-foreground">{t('security.encryption_desc')}</p>
                                     </div>
                                 </div>
                                 <CheckCircle2 className="h-5 w-5 text-green-500" />

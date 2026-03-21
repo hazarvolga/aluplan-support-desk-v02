@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
     Loader2, Bot, Globe, Mail, ShieldCheck, Palette, CheckCircle2,
     XCircle, ExternalLink, Plus, Trash2, Edit2, AlertCircle, Clock,
-    Upload, Trash, MessageSquare, Phone
+    Upload, Trash, MessageSquare, Phone, Monitor
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table';
 import { AiTelemetryDashboard } from '@/components/admin/AiTelemetryDashboard';
 import { useTranslations } from 'next-intl';
+import { SystemRequirementsForm } from '@/components/admin/settings/SystemRequirementsForm';
 
 enum TicketPriority {
     LOW = 'LOW',
@@ -304,7 +305,7 @@ export default function AdminSettingsPage() {
             </div>
 
             <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 lg:w-[720px]">
+                <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 lg:w-[840px]">
                     <TabsTrigger value="general" className="flex items-center gap-2">
                         <Globe className="h-4 w-4" /> {t('tabs.general')}
                     </TabsTrigger>
@@ -322,6 +323,9 @@ export default function AdminSettingsPage() {
                     </TabsTrigger>
                     <TabsTrigger value="branding" className="flex items-center gap-2">
                         <Palette className="h-4 w-4" /> {t('tabs.branding')}
+                    </TabsTrigger>
+                    <TabsTrigger value="requirements" className="flex items-center gap-2">
+                        <Monitor className="h-4 w-4" /> {t('tabs.requirements')}
                     </TabsTrigger>
                 </TabsList>
 
@@ -1339,6 +1343,10 @@ export default function AdminSettingsPage() {
                                 </div>
                             </CardContent>
                         </Card>
+                    </TabsContent>
+
+                    <TabsContent value="requirements">
+                        <SystemRequirementsForm />
                     </TabsContent>
                 </div>
             </Tabs>

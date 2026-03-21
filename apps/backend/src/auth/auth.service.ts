@@ -369,4 +369,18 @@ export class AuthService {
             timestamp: new Date().toISOString()
         };
     }
+
+    async getSystemRequirements(locale: string = 'en') {
+        const rawJson = await this.settings.getValue('SYSTEM_REQUIREMENTS');
+        if (!rawJson) return [];
+
+        try {
+            const allReqs = JSON.parse(rawJson);
+            // Return requirements for requested locale or fallback to 'en'
+            return allReqs[locale] || allReqs['en'] || [];
+        } catch (e) {
+            console.error('Failed to parse SYSTEM_REQUIREMENTS setting', e);
+            return [];
+        }
+    }
 }

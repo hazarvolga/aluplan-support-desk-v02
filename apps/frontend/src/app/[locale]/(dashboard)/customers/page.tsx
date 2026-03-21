@@ -92,6 +92,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function CustomersPage() {
     const t = useTranslations('customers');
+    const tc = useTranslations('common');
     const { toast } = useToast();
     const [customers, setCustomers] = useState<CustomerItem[]>([]);
     const [accounts, setAccounts] = useState<AccountItem[]>([]);
@@ -301,7 +302,7 @@ export default function CustomersPage() {
             }
         } catch (error: any) {
             console.error(error);
-            toast({ variant: 'destructive', title: '❌ Hata', description: t('toasts.bulk_update_error', { message: error.message || 'Bilinmeyen hata' }) });
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('toasts.bulk_update_error', { message: error.message || tc('unknown') }) });
         } finally {
             setDeleting(false);
         }
@@ -330,7 +331,7 @@ export default function CustomersPage() {
             toast({ title: '🔄 ' + t('sync.trigger_sync'), description: t('toasts.sync_started') });
             loadConnections();
         } catch (error: any) {
-            toast({ variant: 'destructive', title: '❌ Hata', description: error.message });
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message });
         } finally {
             setSyncing(false);
         }
@@ -351,9 +352,9 @@ export default function CustomersPage() {
                 resultMap[r.email] = r;
             });
             setValidationResults(resultMap);
-            toast({ title: '✅ Başarılı', description: t('toasts.verify_success', { count: emailsToVerify.length }) });
+            toast({ title: '✅ ' + tc('success_title'), description: t('toasts.verify_success', { count: emailsToVerify.length }) });
         } catch (error: any) {
-            toast({ variant: 'destructive', title: '❌ Hata', description: error.message });
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message });
         } finally {
             setValidating(false);
         }
@@ -643,7 +644,7 @@ export default function CustomersPage() {
                                                     case 'customerNo':
                                                         return (
                                                             <TableCell key={col.key} className="text-white/40 font-mono text-[10px] whitespace-nowrap">
-                                                                {c.customerProfile?.customerNo || 'UNASSIGNED'}
+                                                                {c.customerProfile?.customerNo || tc('unassigned').toUpperCase()}
                                                             </TableCell>
                                                         );
                                                     case 'fullName':
@@ -660,7 +661,7 @@ export default function CustomersPage() {
                                                                 <div className="flex items-center gap-2">
                                                                     {c.email}
                                                                     {validationResults[c.email] && (
-                                                                        <div title={`Skor: ${validationResults[c.email].score}`}>
+                                                                        <div title={`${t('labels.score')}: ${validationResults[c.email].score}`}>
                                                                             {validationResults[c.email].status === 'VALID' ? (
                                                                                 <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                                                                             ) : validationResults[c.email].status === 'RISKY' ? (
@@ -698,7 +699,7 @@ export default function CustomersPage() {
                                                         return (
                                                             <TableCell key={col.key}>
                                                                 <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/50 border border-white/5">
-                                                                    {c.customerProfile?.industry || 'GENEL'}
+                                                                    {c.customerProfile?.industry || t('labels.general')}
                                                                 </span>
                                                             </TableCell>
                                                         );
@@ -707,7 +708,7 @@ export default function CustomersPage() {
                                                             <TableCell key={col.key}>
                                                                 {c.status === 'ACTIVE' ? (
                                                                     <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[9px] font-black tracking-widest px-2 py-0.5">
-                                                                        AKTİF
+                                                                        {t('labels.active')}
                                                                     </Badge>
                                                                 ) : (
                                                                     <Badge variant="outline" className="text-slate-500 border-white/10 text-[9px] font-black tracking-widest px-2 py-0.5">
@@ -795,7 +796,7 @@ export default function CustomersPage() {
                                                                     <div className="flex items-center gap-3 mt-1">
                                                                         {a.website && (
                                                                             <a href={a.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 font-mono uppercase">
-                                                                                <Globe className="h-2.5 w-2.5" /> DOMAIN
+                                                                                <Globe className="h-2.5 w-2.5" /> {t('labels.domain')}
                                                                             </a>
                                                                         )}
                                                                         <span className="text-[10px] text-muted-foreground/40 font-mono truncate max-w-[200px]">{a.address}</span>

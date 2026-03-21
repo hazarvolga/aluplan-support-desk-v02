@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Shield, KeyRound, Monitor, UploadCloud, AlertCircle, AlertTriangle, ShieldCheck, History, Clock, FileText, Activity, LayoutDashboard, QrCode, Smartphone, SmartphoneNfc, CheckCircle2, UserCircle, Save, Loader2, Trash2, Mail, BellRing, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
+import { useTranslations } from 'next-intl';
 import {
     Dialog,
     DialogContent,
@@ -23,6 +24,8 @@ import {
 } from "@/components/ui/dialog";
 
 export default function ProfilePage() {
+    const t = useTranslations('profile');
+    const tc = useTranslations('common');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -78,9 +81,9 @@ export default function ProfilePage() {
         try {
             await api.preferences.updateEmail(type, !current);
             setEmailPrefs(prev => prev.map(p => p.emailType === type ? { ...p, enabled: !current } : p));
-            toast.success('Tercih güncellendi');
+            toast.success(t('toasts.pref_updated'));
         } catch (error) {
-            toast.error('Güncelleme başarısız');
+            toast.error(t('toasts.pref_failed'));
         }
     };
 
@@ -129,7 +132,7 @@ export default function ProfilePage() {
         e.preventDefault();
 
         if (password && password !== confirmPassword) {
-            toast.error('Şifreler eşleşmiyor!');
+            toast.error(t('toasts.password_mismatch'));
             return;
         }
 
@@ -146,14 +149,13 @@ export default function ProfilePage() {
             if (password) body.password = password;
 
             await api.users.updateProfile(body);
-
-            toast.success('Profil başarıyla güncellendi.');
+            toast.success(t('toasts.profile_updated'));
             setPassword('');
             setConfirmPassword('');
             loadProfile(); // Refresh to see any auto-generated customerNo
         } catch (error: any) {
             console.error(error);
-            toast.error('Güncelleme başarısız: ' + (error.message || 'Bilinmeyen hata'));
+            toast.error(t('toasts.update_failed') + ': ' + (error.message || 'Bilinmeyen hata'));
         } finally {
             setSaving(false);
         }
@@ -164,7 +166,7 @@ export default function ProfilePage() {
         if (!file) return;
 
         if (!file.name.endsWith('.hxl')) {
-            toast.error('Lütfen geçerli bir .hxl dosyası yükleyin');
+            toast.error(t('toasts.hxl_invalid'));
             return;
         }
 
@@ -177,9 +179,9 @@ export default function ProfilePage() {
 
             setHotinfoData(response.hotinfo);
             setHotinfoUpdatedAt(new Date().toISOString());
-            toast.success('Sistem bilgileriniz başarıyla güncellendi');
+            toast.success(t('toasts.hotinfo_updated'));
         } catch (error: any) {
-            toast.error('Dosya yüklenirken hata oluştu');
+            toast.error(t('toasts.hotinfo_failed'));
             console.error(error);
         } finally {
             setUploadingHotinfo(false);
@@ -192,7 +194,7 @@ export default function ProfilePage() {
             const data = await api.auth.mfa.generate();
             setMfaSecret(data);
         } catch (error: any) {
-            toast.error('MFA anahtarı oluşturulamadı');
+            toast.error(t('toasts.mfa_gen_failed'));
         } finally {
             setMfaLoading(false);
         }
@@ -207,23 +209,23 @@ export default function ProfilePage() {
             setMfaDialogOpen(false);
             setMfaSecret(null);
             setMfaToken('');
-            toast.success('İki faktörlü doğrulama aktif edildi.');
+            toast.success(t('toasts.mfa_enabled'));
         } catch (error: any) {
-            toast.error('Doğrulama başarısız: ' + error.message);
+            toast.error(t('toasts.mfa_verify_failed') + ': ' + error.message);
         } finally {
             setMfaLoading(false);
         }
     };
 
     const handleDisableMfa = async () => {
-        if (!confirm('İki faktörlü doğrulamayı devre dışı bırakmak istediğinize emin misiniz? Güvenliğiniz azalacaktır.')) return;
+        if (!confirm(t('mfa.confirm_disable'))) return;
         setMfaLoading(true);
         try {
             await api.auth.mfa.disable();
             setMfaEnabled(false);
-            toast.success('İki faktörlü doğrulama devre dışı bırakıldı.');
+            toast.success(t('toasts.mfa_disabled'));
         } catch (error: any) {
-            toast.error('İşlem başarısız');
+            toast.error(t('toasts.mfa_disable_failed'));
         } finally {
             setMfaLoading(false);
         }
@@ -240,9 +242,9 @@ export default function ProfilePage() {
     return (
         <div className="space-y-6 max-w-2xl mx-auto mt-8">
             <div>
-                <h1 className="text-2xl font-bold tracking-tight">Profilim</h1>
+                <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
                 <p className="text-muted-foreground">
-                    Kişisel bilgilerinizi ve güvenlik ayarlarınızı yönetin
+                    {t('subtitle')}
                 </p>
             </div>
 
@@ -251,10 +253,8 @@ export default function ProfilePage() {
                     <div className="flex items-start gap-3">
                         <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 animate-pulse" />
                         <div>
-                            <h3 className="text-red-500 font-bold text-[13px] tracking-widest uppercase mb-1">DİKKAT: Hotfix Doğrulaması Gerekiyor</h3>
-                            <p className="text-[13px] text-red-400/90 leading-relaxed font-medium">
-                                Allplan kullandığınız tespit edilmiştir. Sistem stabilitesi ve kesintisiz destek için lütfen sayfanın alt kısmından güncel <b>Hotinfo (.hxl)</b> dosyanızı yükleyin.
-                            </p>
+                            <h3 className="text-red-500 font-bold text-[13px] tracking-widest uppercase mb-1">{t('hotfix_warning_title')}</h3>
+                            <p className="text-[13px] text-red-400/90 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: t('hotfix_warning_desc') }} />
                         </div>
                     </div>
                 </div>
@@ -264,26 +264,28 @@ export default function ProfilePage() {
                 {crmVerified && (
                     <div className="absolute top-4 right-4 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        CRM DOĞRULANDI
+                        {t('crm_verified')}
                     </div>
                 )}
                 <CardHeader>
-                    <CardTitle>Kişisel Bilgiler</CardTitle>
+                    <CardTitle>{t('personal_info')}</CardTitle>
                     <CardDescription>
-                        Hesap bilgileriniz ({roles.map(r => {
-                            const rt = r.toLowerCase();
-                            if (rt === 'admin') return 'Yönetici';
-                            if (rt === 'agent') return 'Temsilci';
-                            if (rt === 'customer' || rt === 'viewer') return 'Müşteri';
-                            return r;
-                        }).join(', ')})
+                        {t('roles_info', {
+                            roles: roles.map(r => {
+                                const rt = r.toLowerCase();
+                                if (rt === 'admin') return t('roles.admin');
+                                if (rt === 'agent') return t('roles.agent');
+                                if (rt === 'customer' || rt === 'viewer') return t('roles.customer');
+                                return r;
+                            }).join(', ')
+                        })}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSave} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="email">E-posta (Değiştirilemez)</Label>
+                                <Label htmlFor="email">{t('labels.email_static')}</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -293,7 +295,7 @@ export default function ProfilePage() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="fullName">Ad Soyad</Label>
+                                <Label htmlFor="fullName">{t('labels.full_name')}</Label>
                                 <Input
                                     id="fullName"
                                     value={fullName}
@@ -305,21 +307,21 @@ export default function ProfilePage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="phone">Telefon Numarası</Label>
+                                <Label htmlFor="phone">{t('labels.phone')}</Label>
                                 <Input
                                     id="phone"
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
-                                    placeholder="+90 555 444 33 22"
+                                    placeholder={t('placeholders.phone')}
                                     disabled={crmVerified}
                                     className={crmVerified ? 'bg-muted/50 cursor-not-allowed' : ''}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="customerNo">Müşteri No (Değiştirilemez)</Label>
+                                <Label htmlFor="customerNo">{t('labels.customer_no_static')}</Label>
                                 <Input
                                     id="customerNo"
-                                    value={customerNo || 'CRM kaydı yok'}
+                                    value={customerNo || t('placeholders.no_crm')}
                                     disabled
                                     className="bg-muted cursor-not-allowed font-mono text-xs opacity-70"
                                 />
@@ -328,23 +330,23 @@ export default function ProfilePage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="companyName">Şirket Adı</Label>
+                                <Label htmlFor="companyName">{t('labels.company_name')}</Label>
                                 <Input
                                     id="companyName"
                                     value={companyName}
                                     onChange={(e) => setCompanyName(e.target.value)}
-                                    placeholder="Şirketinizin adı"
+                                    placeholder={t('placeholders.company_name')}
                                     disabled={crmVerified}
                                     className={crmVerified ? 'bg-muted/50 cursor-not-allowed' : ''}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="industry">Sektör</Label>
+                                <Label htmlFor="industry">{t('labels.industry')}</Label>
                                 <Input
                                     id="industry"
                                     value={industry}
                                     onChange={(e) => setIndustry(e.target.value)}
-                                    placeholder="Faaliyet gösterdiğiniz sektör"
+                                    placeholder={t('placeholders.industry')}
                                     disabled={crmVerified}
                                     className={crmVerified ? 'bg-muted/50 cursor-not-allowed' : ''}
                                 />
@@ -353,12 +355,12 @@ export default function ProfilePage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="jobTitle">Ünvan</Label>
+                                <Label htmlFor="jobTitle">{t('labels.job_title')}</Label>
                                 <Input
                                     id="jobTitle"
                                     value={jobTitle}
                                     onChange={(e) => setJobTitle(e.target.value)}
-                                    placeholder="Ünvanınız (örn: Satın Alma Müdürü)"
+                                    placeholder={t('placeholders.job_title')}
                                     disabled={crmVerified}
                                     className={crmVerified ? 'bg-muted/50 cursor-not-allowed' : ''}
                                 />
@@ -366,15 +368,15 @@ export default function ProfilePage() {
                             <div className="space-y-2 flex flex-col justify-end">
                                 <div className="grid grid-cols-2 gap-2">
                                     <div className="space-y-1">
-                                        <Label className="text-[10px] uppercase text-muted-foreground">Abonelik</Label>
+                                        <Label className="text-[10px] uppercase text-muted-foreground">{t('labels.subscription')}</Label>
                                         <div className="text-xs font-semibold bg-sky-500/10 text-sky-600 py-1 px-2 rounded border border-sky-500/20 text-center">
-                                            {contractStatus === 'ACTIVE' ? 'Aktif' : contractStatus === 'EXPIRED' ? 'Süresi Dolmuş' : contractStatus}
+                                            {t(`contract_status.${contractStatus}`) || contractStatus}
                                         </div>
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="text-[10px] uppercase text-muted-foreground">Durum</Label>
+                                        <Label className="text-[10px] uppercase text-muted-foreground">{t('labels.status')}</Label>
                                         <div className="text-xs font-semibold bg-amber-500/10 text-amber-600 py-1 px-2 rounded border border-amber-500/20 text-center">
-                                            {accountStatus === 'ACTIVE' ? 'Aktif' : accountStatus === 'INACTIVE' ? 'Pasif' : accountStatus === 'SUSPENDED' ? 'Askıya Alındı' : accountStatus}
+                                            {t(`account_status.${accountStatus}`) || accountStatus}
                                         </div>
                                     </div>
                                 </div>
@@ -382,30 +384,30 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="pt-4 border-t mt-6">
-                            <h3 className="text-lg font-medium mb-4">Şifre Değiştir</h3>
+                            <h3 className="text-lg font-medium mb-4">{t('password_change.title')}</h3>
                             <p className="text-sm text-muted-foreground mb-4">
-                                Şifrenizi değiştirmek istemiyorsanız boş bırakın.
+                                {t('password_change.description')}
                             </p>
 
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="password">Yeni Şifre</Label>
+                                    <Label htmlFor="password">{t('password_change.new_password')}</Label>
                                     <Input
                                         id="password"
                                         type="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Yeni şifrenizi girin"
+                                        placeholder={t('placeholders.new_password')}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="confirmPassword">Şifreyi Doğrula</Label>
+                                    <Label htmlFor="confirmPassword">{t('password_change.confirm_password')}</Label>
                                     <Input
                                         id="confirmPassword"
                                         type="password"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
-                                        placeholder="Yeni şifrenizi tekrar girin"
+                                        placeholder={t('placeholders.confirm_password')}
                                     />
                                 </div>
                             </div>
@@ -413,7 +415,7 @@ export default function ProfilePage() {
 
                         <div className="pt-6">
                             <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-                                {saving ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+                                {saving ? t('saving_button') : t('save_button')}
                             </Button>
                         </div>
                     </form>
@@ -424,26 +426,26 @@ export default function ProfilePage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <ShieldCheck className="w-5 h-5 text-primary" />
-                        İki Faktörlü Doğrulama (MFA)
+                        {t('mfa.title')}
                     </CardTitle>
                     <CardDescription>
-                        Hesabınızın güvenliğini artırmak için TOTP tabanlı (Google Authenticator, Authy vb.) doğrulama kullanın.
+                        {t('mfa.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-slate-200 dark:border-slate-800">
                         <div className="space-y-1">
-                            <p className="text-sm font-medium">MFA Durumu</p>
+                            <p className="text-sm font-medium">{t('mfa.status_label')}</p>
                             <div className="flex items-center gap-1.5">
                                 {mfaEnabled ? (
                                     <>
                                         <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">AKTİF</span>
+                                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">{t('mfa.active')}</span>
                                     </>
                                 ) : (
                                     <>
                                         <div className="w-2 h-2 rounded-full bg-slate-400" />
-                                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">PASİF</span>
+                                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">{t('mfa.inactive')}</span>
                                     </>
                                 )}
                             </div>
@@ -453,7 +455,7 @@ export default function ProfilePage() {
                             {mfaEnabled ? (
                                 <Button variant="destructive" size="sm" onClick={handleDisableMfa} disabled={mfaLoading}>
                                     {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                                    Devre Dışı Bırak
+                                    {t('mfa.disable_btn')}
                                 </Button>
                             ) : (
                                 <Dialog open={mfaDialogOpen} onOpenChange={(open) => {
@@ -463,21 +465,21 @@ export default function ProfilePage() {
                                     <DialogTrigger asChild>
                                         <Button size="sm" className="bg-primary hover:bg-primary/90">
                                             <QrCode className="w-4 h-4 mr-2" />
-                                            Kurulumu Başlat
+                                            {t('mfa.setup_btn')}
                                         </Button>
                                     </DialogTrigger>
                                     <DialogContent className="sm:max-w-md">
                                         <DialogHeader>
-                                            <DialogTitle>MFA Kurulumu</DialogTitle>
+                                            <DialogTitle>{t('mfa.dialog_title')}</DialogTitle>
                                             <DialogDescription>
-                                                Kodu herhangi bir kimlik doğrulama uygulamasıyla (Google Authenticator, Microsoft Authenticator, Authy) tarayın.
+                                                {t('mfa.dialog_desc')}
                                             </DialogDescription>
                                         </DialogHeader>
                                         <div className="flex flex-col items-center justify-center p-6 space-y-6">
                                             {mfaLoading && !mfaSecret ? (
                                                 <div className="flex flex-col items-center gap-3 py-8">
                                                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                                    <span className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Anahtar Oluşturuluyor...</span>
+                                                    <span className="text-xs text-muted-foreground uppercase font-bold tracking-widest">{t('mfa.key_creating')}</span>
                                                 </div>
                                             ) : mfaSecret ? (
                                                 <>
@@ -486,21 +488,21 @@ export default function ProfilePage() {
                                                     </div>
                                                     <div className="w-full space-y-4">
                                                         <div className="p-3 bg-muted/50 rounded-lg border border-white/5 text-center">
-                                                            <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Manuel Giriş Anahtarı</p>
+                                                            <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">{t('mfa.manual_key_label')}</p>
                                                             <code className="text-sm font-mono text-primary select-all tracking-wider">{mfaSecret.secret}</code>
                                                         </div>
                                                         <div className="space-y-2">
-                                                            <Label htmlFor="mfaToken">Doğrulama Kodu</Label>
+                                                            <Label htmlFor="mfaToken">{t('mfa.token_label')}</Label>
                                                             <Input
                                                                 id="mfaToken"
-                                                                placeholder="000000"
+                                                                placeholder={t('mfa.token_placeholder')}
                                                                 maxLength={6}
                                                                 className="text-center text-xl tracking-[0.5em] font-mono"
                                                                 value={mfaToken}
                                                                 onChange={(e) => setMfaToken(e.target.value.replace(/\D/g, ''))}
                                                             />
                                                             <p className="text-[10px] text-muted-foreground text-center uppercase tracking-widest transition-all">
-                                                                Uygulamanızdaki 6 haneli kodu girerek aktifleştirin
+                                                                {t('mfa.token_hint')}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -508,13 +510,13 @@ export default function ProfilePage() {
                                             ) : null}
                                         </div>
                                         <DialogFooter className="flex sm:justify-between items-center w-full">
-                                            <Button variant="ghost" onClick={() => setMfaDialogOpen(false)}>İptal</Button>
+                                            <Button variant="ghost" onClick={() => setMfaDialogOpen(false)}>{t('mfa.cancel')}</Button>
                                             <Button
                                                 onClick={handleEnableMfa}
                                                 disabled={mfaLoading || mfaToken.length !== 6}
                                                 className="bg-emerald-500 hover:bg-emerald-600 text-white min-w-[140px]"
                                             >
-                                                {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Doğrula ve Etkinleştir"}
+                                                {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t('mfa.verify_enable')}
                                             </Button>
                                         </DialogFooter>
                                     </DialogContent>
@@ -529,10 +531,10 @@ export default function ProfilePage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Mail className="w-5 h-5 text-blue-500" />
-                        E-posta Bildirim Tercihleri
+                        {t('notifications.title')}
                     </CardTitle>
                     <CardDescription>
-                        Hangi kategorilerde e-posta almak istediğinizi belirleyin
+                        {t('notifications.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -551,14 +553,10 @@ export default function ProfilePage() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-slate-200">
-                                            {pref.emailType === 'ANNOUNCEMENTS' && 'Duyurular ve Yenilikler'}
-                                            {pref.emailType === 'TICKETS' && 'Bilet Güncellemeleri'}
-                                            {pref.emailType === 'SYSTEM' && 'Sistem ve Güvenlik Uyarıları'}
+                                            {t(`notifications.types.${pref.emailType}`)}
                                         </p>
                                         <p className="text-[11px] text-slate-400">
-                                            {pref.emailType === 'ANNOUNCEMENTS' && 'Kampanyalar, haberler ve ürün güncellemeleri'}
-                                            {pref.emailType === 'TICKETS' && 'Destek taleplerinizle ilgili tüm mesajlar'}
-                                            {pref.emailType === 'SYSTEM' && 'Şifre sıfırlama, hesap hareketleri ve kritik uyarılar'}
+                                            {t(`notifications.descriptions.${pref.emailType}`)}
                                         </p>
                                     </div>
                                 </div>
@@ -582,16 +580,16 @@ export default function ProfilePage() {
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                 <Monitor className="w-5 h-5 text-brand-500" />
-                                Sistem Bilgileri (Hotinfo)
+                                {t('hotinfo.title')}
                             </CardTitle>
                             <CardDescription>
-                                Allplan destek talepleriniz için gerekli sistem konfigürasyonu
+                                {t('hotinfo.description')}
                             </CardDescription>
                         </div>
                         {hotinfoData && (
                             <div className="flex flex-col items-end">
-                                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Son Güncelleme</div>
-                                <div className="text-xs text-slate-400">{hotinfoUpdatedAt ? new Date(hotinfoUpdatedAt).toLocaleDateString('tr-TR') : '-'}</div>
+                                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{t('hotinfo.last_update')}</div>
+                                <div className="text-xs text-slate-400">{hotinfoUpdatedAt ? new Date(hotinfoUpdatedAt).toLocaleDateString(tc('languages.tr') === 'Türkçe' ? 'tr-TR' : 'en-US') : '-'}</div>
                             </div>
                         )}
                     </div>
@@ -603,7 +601,7 @@ export default function ProfilePage() {
 
                             <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-emerald-400 text-xs">
                                 <CheckCircle2 className="w-4 h-4" />
-                                Sistem bilgileriniz güncel. Destek taleplerinizde bu bilgiler otomatik kullanılacaktır.
+                                {t('hotinfo.status_up_to_date')}
                             </div>
 
                             <div className="pt-2">
@@ -617,7 +615,7 @@ export default function ProfilePage() {
                                     />
                                     <Button variant="outline" className="w-full border-slate-700 hover:bg-slate-800" disabled={uploadingHotinfo}>
                                         {uploadingHotinfo ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Monitor className="w-4 h-4 mr-2" />}
-                                        Bilgileri Güncelle (.hxl Yükle)
+                                        {t('hotinfo.update_btn')}
                                     </Button>
                                 </div>
                             </div>
@@ -628,9 +626,9 @@ export default function ProfilePage() {
                                 <AlertTriangle className="w-6 h-6 text-orange-500" />
                             </div>
                             <div className="space-y-1">
-                                <h3 className="font-semibold text-slate-200">Sistem Bilgisi Eksik</h3>
+                                <h3 className="font-semibold text-slate-200">{t('hotinfo.missing_title')}</h3>
                                 <p className="text-xs text-slate-400 max-w-[280px]">
-                                    Destek ekibimizin size daha hızlı yardımcı olabilmesi için Allplan Hotinfo dosyanızı yüklemeniz önerilir.
+                                    {t('hotinfo.missing_desc')}
                                 </p>
                             </div>
                             <div className="relative w-full max-w-[200px]">
@@ -643,7 +641,7 @@ export default function ProfilePage() {
                                 />
                                 <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white" disabled={uploadingHotinfo}>
                                     {uploadingHotinfo ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Monitor className="w-4 h-4 mr-2" />}
-                                    HXL Dosyası Yükle
+                                    {t('hotinfo.upload_btn')}
                                 </Button>
                             </div>
                         </div>

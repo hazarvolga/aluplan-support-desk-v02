@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
-import { tr as dateTr } from 'date-fns/locale';
+import { tr as trLocale, enUS as enLocale, de as deLocale } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { MacroPicker } from '@/components/macros/macro-picker';
 import { useTranslations, useLocale } from 'next-intl';
@@ -85,6 +85,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const [someoneTyping, setSomeoneTyping] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+
+    const getDateLocale = () => {
+        if (locale === 'tr') return trLocale;
+        if (locale === 'de') return deLocale;
+        return enLocale;
+    };
+    const dateLocale = getDateLocale();
 
     const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
         if (scrollRef.current) {
@@ -332,7 +339,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 comment: csatComment
             });
             toast.success(t('csat_success', { score: csatScore }));
-            router.push('/my-tickets'); // Redirect out or they stay on a closed ticket view.
+            router.push(`/${locale}/my-tickets`); // Redirect out or they stay on a closed ticket view.
         } catch (error) {
             toast.error(t('csat_error'));
         } finally {
@@ -559,7 +566,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     <div className="flex-1 space-y-1 max-w-[85%]">
                                         <div className="flex items-baseline justify-between gap-4">
                                             <span className="text-[11px] font-mono font-bold uppercase tracking-tight truncate">{ticket.creator?.fullName || 'EXTERNAL_AGENT'}</span>
-                                            <span className="text-[9px] text-muted-foreground uppercase font-mono shrink-0">{formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true, locale: dateTr })}</span>
+                                            <span className="text-[9px] text-muted-foreground uppercase font-mono shrink-0">{formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true, locale: dateLocale })}</span>
                                         </div>
                                         <div className="bg-muted/30 border border-border/50 p-3 text-[12px] leading-relaxed tracking-tight text-foreground font-medium shadow-sm">
                                             {ticket.description}
@@ -589,7 +596,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                                 {!isSystem && (
                                                     <div className="flex items-baseline gap-2">
                                                         <span className="text-[11px] font-mono font-bold uppercase tracking-tight">{msg.sender?.fullName || tc('anonymous')}</span>
-                                                        <span className="text-[9px] text-muted-foreground uppercase font-mono">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true, locale: dateTr })}</span>
+                                                        <span className="text-[9px] text-muted-foreground uppercase font-mono">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true, locale: dateLocale })}</span>
                                                     </div>
                                                 )}
 
@@ -630,7 +637,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                 {/* Typing Indicator */}
                                 {someoneTyping && (
                                     <div className="flex gap-3">
-                                        <div className="h-8 w-8 bg-muted border border-border flex items-center justify-center text-[10px] animate-bounce shrink-0">AI</div>
+                                        <div className="h-8 w-8 bg-muted border border-border flex items-center justify-center text-[10px] animate-bounce shrink-0">{tc('ai_bot')}</div>
                                         <div className="flex-1 space-y-1">
                                             <div className="p-3 w-16 bg-card border border-border/60 rounded-tr-lg rounded-br-lg rounded-bl-none">
                                                 <span className="flex gap-1 justify-center items-center h-4">

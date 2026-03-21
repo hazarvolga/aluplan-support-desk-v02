@@ -98,11 +98,18 @@
     "save": "Save",
     "saving": "Saving...",
     "reset": "Reset",
+    "confirm": "Confirm",
     "cancel": "Cancel",
     "unknown": "Unknown",
     "individual": "Individual",
-    "system": "SYSTEM",
+    "system": "System",
+    "not_available": "N/A",
+    "success_title": "Success",
+    "error_title": "Error",
+    "unassigned": "Unassigned",
+    "next_step": "Next Step",
     "anonymous": "ANONYMOUS",
+    "ai_bot": "AI",
     "priorities": {
       "LOW": "Low",
       "MEDIUM": "Medium",
@@ -130,7 +137,9 @@
       "sla_violations": "SLA_VIOLATIONS",
       "daily_resolved": "DAILY_RESOLVED",
       "ai_confidence": "ANN_CONFIDENCE_AVG",
-      "status_stable": "Stable"
+      "status_stable": "Stable",
+      "status_online": "ONLINE",
+      "status_offline": "OFFLINE"
     },
     "knowledge_base": {
       "title": "KNOWLEDGE_BASE_QUERY",
@@ -248,55 +257,174 @@
       "summarizing": "SUMMARIZING_IN_PROGRESS...",
       "ai_summary_btn": "ANN_SUMMARY",
       "drafting": "DRAFT_PREPARATION_IN_PROGRESS...",
-      "ai_draft_btn": "ANN_DRAFT",
-      "start_live_support": "START LIVE SUPPORT",
-      "request_live_chat": "REQUEST LIVE CHAT",
-      "waiting_agent": "WAITING_FOR_AGENT_APPROVAL...",
-      "customer_waiting_live": "CUSTOMER_WAITING_FOR_LIVE_SUPPORT",
-      "start_conversation": "START CONVERSATION",
-      "live_session_active": "LIVE_SESSION_ACTIVE",
-      "review_pending_title": "PENDING_REQUEST_RESOLUTION_APPROVAL",
-      "review_pending_desc": "Please rate the resolution performance to close the channel.",
-      "feedback_placeholder": "ADD_OPERATIONAL_FEEDBACK (OPTIONAL)",
-      "saving": "SAVING...",
-      "save_and_close": "SAVE_FEEDBACK_&_CLOSE",
-      "customer_verification_pending": "PENDING_CUSTOMER_VERIFICATION",
-      "auto_sync_active": "Status: PENDING_REVIEW | Auto-Sync active for +4 score",
-      "debug_reject": "DEBUG:REJECT(2)",
-      "debug_approve": "DEBUG:APPROVE(5)",
-      "ai_summary_record": "ANN_SUMMARY_RECORD",
-      "sending": "TRANSFER_IN_PROGRESS...",
-      "secure_chat": "SECURE_CHAT",
-      "send_placeholder": "SUBMIT_MESSAGE...",
-      "ticket_metadata": "REQUEST_METADATA",
-      "status_label": "STATUS",
-      "channel_label": "CHANNEL",
-      "priority_label": "CRITICALITY",
-      "open_date": "CREATED_DATE",
-      "assignee_label": "ASSIGNED_AGENT",
-      "unassigned": "UNASSIGNED",
-      "hotfix_data": "HOTFIX_DATA",
-      "security_warning": "SECURITY WARNING",
-      "security_warning_desc": "OPERATIONAL_SECURITY_IS_MANDATORY. NEVER_SHARE_ACCESS_CREDENTIALS_OR_SYSTEM_PRIVILEGES. SANITIZE_SENSITIVE_DATA_IN_MESSAGES.",
-      "load_error": "Request could not be loaded",
-      "live_request_success": "Live support request submitted",
-      "live_start_success": "Live chat started",
+      "ai_draft_btn": "ANN_DRAFTS",
+      "load_error": "An error occurred while loading request data",
+      "live_request_success": "Live support request sent",
+      "live_start_success": "Live support session started",
       "chat_update_error": "Chat status could not be updated",
-      "live_accept_success": "Live chat accepted",
+      "live_accept_success": "Live support request accepted",
       "chat_start_error": "Chat could not be started",
       "send_error": "Message could not be sent: {error}",
-      "summary_success": "AI Summary generated",
-      "summary_error": "Error generating summary",
-      "draft_success": "AI generated a draft response",
-      "draft_error": "Draft could not be created: {error}",
-      "review_success": "Request sent for approval (Awaiting customer verification)",
-      "status_update_error": "Status could not be changed",
-      "feedback_sent": "Customer rated with {score}/5 points.",
-      "feedback_error": "Test rating could not be sent.",
-      "csat_success": "You rated with {score}/5 points. Ticket closed, thank you!",
-      "csat_error": "Rating could not be sent.",
-      "resolved_comment": "My problem is fully resolved, thank you.",
-      "pending_comment": "There are still missing points."
+      "summary_success": "AI summary generated",
+      "summary_error": "Error occurred while generating summary",
+      "draft_success": "AI draft response prepared",
+      "draft_error": "Draft cannot be generated: {error}",
+      "review_success": "Request moved to review stage",
+      "status_update_error": "Status could not be updated",
+      "resolved_comment": "Request resolved and confirmed.",
+      "pending_comment": "Solution is insufficient, details expected.",
+      "feedback_sent": "Feedback sent (Score: {score})",
+      "feedback_error": "Feedback could not be sent",
+      "csat_success": "Thanks for your feedback (Score: {score})",
+      "csat_error": "Rating could not be saved",
+      "start_live_support": "START LIVE SUPPORT",
+      "request_live_chat": "LIVE CHAT REQUEST",
+      "waiting_agent": "WAITING FOR AGENT...",
+      "customer_waiting_live": "CUSTOMER WAITING FOR LIVE SUPPORT",
+      "start_conversation": "START CONVERSATION",
+      "live_session_active": "LIVE SUPPORT SESSION ACTIVE",
+      "review_pending_title": "AWAITING RESOLUTION APPROVAL",
+      "review_pending_desc": "PLEASE RATE THE PROVIDED SOLUTION",
+      "feedback_placeholder": "Your feedback (optional)...",
+      "saving": "SAVING...",
+      "save_and_close": "SAVE AND CLOSE",
+      "customer_verification_pending": "AWAITING CUSTOMER VERIFICATION",
+      "auto_sync_active": "AUTO-SYNC ACTIVE",
+      "debug_reject": "DEBUG_REJECT",
+      "debug_approve": "DEBUG_APPROVE",
+      "ai_summary_record": "ANN_SUMMARY_RECORD",
+      "sending": "SENDING...",
+      "secure_chat": "END-TO-END SECURE COMMUNICATION",
+      "message_placeholder": "Type your message here... (Enter to send)",
+      "send_placeholder": "SUBMIT_MESSAGE...",
+      "ticket_metadata": "REQUEST_METADATA",
+      "status_label": "STATUS_CODE",
+      "channel_label": "ACCESS_CHANNEL",
+      "priority_label": "CRITICALITY_LEVEL",
+      "open_date": "OPEN_DATE",
+      "assignee_label": "ASSIGNED_EXPERT",
+      "hotfix_data": "HOTFIX_TELEMETRY_DATA",
+      "security_warning": "SECURITY_WARNING",
+      "security_warning_desc": "All correspondence and shared data are recorded for Aluplan quality standards."
+    },
+    "new": {
+      "title": "New Support Request",
+      "subtitle": "Describe your issue, our smart assistant will guide you step by step.",
+      "sections": {
+        "basic_info": "Basic Information",
+        "basic_info_desc": "Provide information about your request. You can get more targeted support by selecting a product.",
+        "system_info": "System Information (Required)",
+        "hotinfo_needed": "Hotinfo file is required for Allplan errors.",
+        "confirm_hotinfo": "Confirm System Information",
+        "hotinfo_check": "Is this information up to date? Confirm or upload a new file.",
+        "hotinfo_added": "System Information (Hotinfo) Added",
+        "hotinfo_added_desc": "This information will be automatically sent to the technical team."
+      },
+      "fields": {
+        "product": "Related Product",
+        "product_placeholder": "Select product (optional)",
+        "product_general": "General Question / Other",
+        "product_hint": "If it's not about a specific product, \"General Question / Other\" can remain selected.",
+        "os": "Operating System",
+        "gpu_driver": "GPU Driver Version",
+        "cpu": "Processor (CPU)",
+        "opengl": "OpenGL Version",
+        "gpu": "Graphics Card (GPU)",
+        "disk": "Disk Information",
+        "license": "License Type",
+        "network": "Network Information",
+        "modules": "Installed Modules",
+        "priority": "Priority",
+        "priority_placeholder": "Select priority",
+        "subject": "Subject / Summary",
+        "subject_placeholder": "e.g., I'm getting a license error during installation"
+      },
+      "buttons": {
+        "hotinfo_upload": "Upload Hotinfo (.hxl)",
+        "upload_new": "Upload New",
+        "view_change": "View / Change",
+        "create": "Create Request"
+      },
+      "ai": {
+        "title": "Smart Diagnosis",
+        "loading": "Preparing custom solutions for you...",
+        "detail_label": "Detail your issue",
+        "detail_placeholder": "Error message, sequence of operations, etc...",
+        "search_btn": "Search Solution (AI)",
+        "result_title": "AI Diagnosis Result",
+        "feedback_question": "\"Did this solution provided by our AI assistant help resolve your issue?\"",
+        "yes_resolved": "Yes, Resolved",
+        "no_create_ticket": "No, Create Request"
+      },
+      "summary": {
+        "title": "Final Check & Attachments",
+        "attachments": "Attachments / Screenshots",
+        "drag_drop": "Drag and drop files here or select",
+        "select_file": "Select File",
+        "report": "Summary Report",
+        "subject_label": "Subject:",
+        "product_label": "Product:",
+        "desc_label": "Description:"
+      },
+      "errors": {
+        "subject_min": "Subject must be at least 5 characters",
+        "description_min": "Description must be at least 10 characters"
+      },
+      "toasts": {
+        "products_load_error": "Error loading products",
+        "hotinfo_loaded": "System information from your profile loaded. Please confirm it's up to date.",
+        "invalid_hxl": "Please upload a valid .hxl file",
+        "hotinfo_success": "System information updated successfully",
+        "upload_error": "Error occurred while uploading file",
+        "ai_unavailable": "AI service is currently unable to respond. You can continue creating your request.",
+        "ai_no_match": "I couldn't fully understand your question, but I've prepared a general guide below.",
+        "ai_timeout": "AI server is not responding (Timeout). You can create your request manually.",
+        "ai_error": "AI diagnosis service is currently unreachable.",
+        "success": "Your request has been successfully created",
+        "hotinfo_confirmed": "System information confirmed",
+        "ai_happy": "Great! We're glad you found a solution. 🎉"
+      }
+    }
+  },
+  "my_tickets": {
+    "title": "My Support Requests",
+    "subtitle": "You can follow all the support requests you have opened here.",
+    "new_ticket": "Create New Request",
+    "empty": {
+      "title": "You don't have any requests yet",
+      "desc": "If you need help with anything, start a new request.",
+      "button": "Start Now"
+    }
+  },
+  "kb_approvals": {
+    "title": "AI Knowledge Verification Center",
+    "subtitle": "Review and authorize knowledge units automatically synthesized from processed event logs.",
+    "refresh_queue": "REFRESH_QUEUE",
+    "run_pipeline": "START_WORKFLOW",
+    "queue_title": "KNOWLEDGE_QUEUE_AWAITING_APPROVAL",
+    "units_loaded": "{count} UNITS_LOADED",
+    "empty": {
+      "title": "All articles reviewed!",
+      "desc": "There are currently no new AI drafts awaiting approval."
+    },
+    "table": {
+      "query": "EXTRACTED_QUERY",
+      "answer": "SYNTHESIZED_RESPONSE",
+      "confidence": "CONFIDENCE_SCORE",
+      "source": "SOURCE_CASE",
+      "actions": "AUTHORIZATION",
+      "reliable": "{percent}%_RELIABLE",
+      "loading": "LOADING...",
+      "empty": "NO RECORDS FOUND"
+    },
+    "buttons": {
+      "fetch_error": "Error occurred while retrieving drafts.",
+      "approve_success": "Article published in Knowledge Base! 🚀",
+      "approve_error": "Approval process failed.",
+      "dismiss_success": "Article draft rejected.",
+      "dismiss_error": "Rejection process failed.",
+      "pipeline_started": "Pipeline started, this process will run in the background...",
+      "pipeline_error": "Pipeline could not be started: {error}"
     }
   },
   "ai": {
@@ -452,25 +580,76 @@
       "email": "Email",
       "sla": "SLA",
       "branding": "Branding",
-      "whatsapp": "WhatsApp"
+      "whatsapp": "WhatsApp",
+      "requirements": "System Requirements",
+      "macros": "Macros",
+      "security": "Security & API"
+    },
+    "macros": {
+      "title": "Canned Responses (Macros)",
+      "description": "Manage frequently used responses.",
+      "header_label": "Macro Title",
+      "content_label": "Response Content",
+      "content_placeholder": "Text to be sent to the customer...",
+      "add": "Add",
+      "create_success": "Macro created",
+      "delete_success": "Macro deleted",
+      "delete_error": "Delete error: {message}"
+    },
+    "email_forms": {
+      "smtp_title": "Outgoing Server (SMTP)",
+      "smtp_desc": "SMTP configuration for system notifications.",
+      "imap_title": "Incoming Server (IMAP)",
+      "imap_desc": "IMAP settings for Mail-to-Ticket integration.",
+      "host": "Host Server",
+      "user": "User",
+      "pass": "Password",
+      "port": "Port",
+      "save": "Save"
+    },
+    "security": {
+      "title": "Security & Encryption",
+      "desc": "System security certificates and API keys.",
+      "active_text": "AES-256-GCM Active",
+      "encryption_desc": "All sensitive data is encrypted at-rest."
     },
     "general": {
       "title": "General Configuration",
       "description": "Basic platform settings.",
       "portal_name": "Platform Name",
-      "portal_name_placeholder": "e.g., Aluplan Support",
+      "portal_name_placeholder": "e.g. Aluplan Support",
       "frontend_url": "Frontend URL",
-      "frontend_url_placeholder": "https://support.aluplan.com"
+      "frontend_url_placeholder": "https://support.aluplan.com",
+      "portal_version": "CONTROL PANEL v1.0"
     },
     "ai": {
       "title": "AI Integration",
       "description": "Configure Grok (xAI), DeepSeek, OpenAI, or Ollama services.",
-      "chat_provider": "Default Chat Provider",
-      "chat_provider_desc": "Used for ticket responses and assistant functions.",
-      "embed_provider": "Default Embedding Provider",
-      "embed_provider_desc": "Used for knowledge base search and document indexing.",
-      "test_btn": "Test Connection",
-      "save_btn": "Save Changes",
+      "center_title": "AI Intelligence Center",
+      "center_desc": "Manage multiple AI providers, configure hybrid model transitions, and monitor engine health.",
+      "motor_desc": "{name} engine powering intelligence.",
+      "primary_engine": "Primary Engine",
+      "specialized_title": "Specialized Task Mappings",
+      "specialized_desc": "Determine which AI engine will be used for which task.",
+      "task_categorization": "Ticket Categorization",
+      "task_summarization": "Ticket Summarization",
+      "task_reformatting": "RAG & Reformatting",
+      "task_sentiment": "Sentiment Analysis",
+      "task_translation": "Auto Translation",
+      "save_mappings": "Save Mappings",
+      "rag_title": "Semantic Search & RAG Configuration",
+      "rag_desc": "Core settings that vectorize your knowledge pool and determine search quality.",
+      "advanced_params": "Advanced Parameters",
+      "global_default": "Global Default",
+      "ollama_local": "Ollama (Local)",
+      "toasts": {
+        "load_error": "Failed to load AI settings: {message}",
+        "test_success": "{provider} connection successful!",
+        "test_error": "{provider} connection error: {message}",
+        "test_failed": "Connection test failed: {message}",
+        "save_success": "{provider} settings saved.",
+        "save_error": "Save error: {message}"
+      },
       "ollama": {
         "title": "Ollama (Local)",
         "chat_model": "Chat Model",
@@ -480,20 +659,6 @@
         "title": "OpenAI (Cloud)",
         "chat_model": "Chat Model",
         "embed_model": "Embedding Model"
-      },
-      "validation": {
-        "fields": {
-          "api_key": "API Key",
-          "chat_model": "Chat Model",
-          "embed_model": "Embedding Model",
-          "url": "Connection URL"
-        },
-        "missing_fields": "Please fill in the following required fields: {fields}"
-      },
-      "xai": {
-        "title": "xAI (Grok)",
-        "chat_model": "Chat Model",
-        "not_supported": "Not supported"
       },
       "providers": {
         "ollama": "Ollama (Local)",
@@ -566,21 +731,16 @@
       "templates": {
         "title": "Email Templates",
         "description": "Manage and customize MJML-based email templates.",
+        "preview_module": "Template Preview Module",
+        "preview_desc": "Test active MJML templates with mock data.",
         "select_placeholder": "Select template...",
-        "new_btn": "New Template",
         "preview_btn": "Preview",
-        "save_btn": "Save",
-        "create_btn": "Create",
-        "cancel_btn": "Cancel",
-        "editor_title": "MJML Editor",
-        "preview_title": "Email Preview",
         "subject_label": "Subject",
-        "preview_hint": "Click 'Preview' to see the content.",
-        "preview_flow_hint": "Save → Preview flow is recommended.",
-        "new_placeholder": "example-template-name",
-        "safe_editor_title": "Safe Content Editor",
-        "safe_editor_desc": "Edit your content without damaging the MJML structure.",
-        "editor_placeholder": "Enter MJML content here..."
+        "toasts": {
+          "load_error": "Failed to load templates",
+          "compile_error": "Compilation error",
+          "preview_failed": "Failed to load preview: {message}"
+        }
       }
     },
     "sla": {
@@ -648,9 +808,9 @@
       "save_btn": "Save WhatsApp Settings"
     },
     "toasts": {
-      "save_success": "Settings saved.",
-      "save_error": "Error saving settings.",
-      "load_error": "Error loading settings.",
+      "save_success": "{key} successfully updated.",
+      "save_error": "Error: {message}",
+      "load_error": "Data could not be loaded: {message}",
       "gmail_success": "Gmail account connected successfully.",
       "gmail_error": "Authorization failed.",
       "logo_success": "Logo saved successfully.",
@@ -680,19 +840,201 @@
       "logo_upload_error": "Error uploading logo.",
       "generic_error": "An error occurred.",
       "generic_success_hint": "Access to {provider} service established.",
-      "generic_fail_hint": "Service is currently unreachable.",
-      "success": "Success",
-      "error": "Error"
-    }
-  },
-  "admin": {
-    "live_support_request": {
-      "title": "Support Requests",
-      "description": "Manage system-wide open and active support requests."
+      "generic_fail_hint": "Service currently unavailable."
     },
-    "ai_health": {
-      "title": "AI Health & Telemetry",
-      "description": "Real-time monitoring of AI models, token consumption, and RAG performance."
+    "admin": {
+      "live_support_request": {
+        "title": "Support Requests",
+        "description": "Manage system-wide open and active support requests."
+      },
+      "ai_health": {
+        "title": "AI Health & Telemetry",
+        "description": "Real-time monitoring of AI models, token consumption, and RAG performance."
+      }
+    },
+    "profile": {
+      "title": "My Profile",
+      "subtitle": "Manage your personal information and security settings",
+      "hotfix_warning_title": "ATTENTION: Hotfix Verification Required",
+      "hotfix_warning_desc": "Allplan usage detected. For system stability and uninterrupted support, please upload your current <b>Hotinfo (.hxl)</b> file from the bottom of the page.",
+      "crm_verified": "CRM VERIFIED",
+      "personal_info": "Personal Information",
+      "roles_info": "Account information ({roles})",
+      "roles": {
+        "admin": "Administrator",
+        "agent": "Agent",
+        "customer": "Customer"
+      },
+      "labels": {
+        "email_static": "Email (Immutable)",
+        "full_name": "Full Name",
+        "phone": "Phone Number",
+        "customer_no_static": "Customer No (Immutable)",
+        "company_name": "Company Name",
+        "industry": "Industry",
+        "job_title": "Job Title",
+        "subscription": "Subscription",
+        "status": "Status"
+      },
+      "placeholders": {
+        "phone": "+90 555 444 33 22",
+        "no_crm": "No CRM record",
+        "company_name": "Your company name",
+        "industry": "Industry you operate in",
+        "job_title": "Your job title (e.g. Purchasing Manager)",
+        "new_password": "Enter your new password",
+        "confirm_password": "Re-enter your new password"
+      },
+      "contract_status": {
+        "ACTIVE": "Active",
+        "EXPIRED": "Expired"
+      },
+      "account_status": {
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive",
+        "SUSPENDED": "Suspended"
+      },
+      "password_change": {
+        "title": "Change Password",
+        "description": "Leave blank if you do not want to change your password.",
+        "new_password": "New Password",
+        "confirm_password": "Verify Password"
+      },
+      "save_button": "Save Changes",
+      "saving_button": "Saving...",
+      "mfa": {
+        "title": "Two-Factor Authentication (MFA)",
+        "description": "Use TOTP-based authentication (Google Authenticator, Authy, etc.) to increase your account security.",
+        "status_label": "MFA Status",
+        "active": "ACTIVE",
+        "inactive": "INACTIVE",
+        "disable_btn": "Disable",
+        "setup_btn": "Start Setup",
+        "dialog_title": "MFA Setup",
+        "dialog_desc": "Scan the code with any authentication app (Google Authenticator, Microsoft Authenticator, Authy).",
+        "key_creating": "Generating Key...",
+        "manual_key_label": "Manual Entry Key",
+        "token_label": "Verification Code",
+        "token_placeholder": "000000",
+        "token_hint": "Enable by entering the 6-digit code in your app",
+        "cancel": "Cancel",
+        "verify_enable": "Verify and Enable",
+        "verifying": "Verifying...",
+        "confirm_disable": "Are you sure you want to disable two-factor authentication? Your security will be reduced."
+      },
+      "notifications": {
+        "title": "Email Notification Preferences",
+        "description": "Determine which categories you want to receive emails in",
+        "types": {
+          "ANNOUNCEMENTS": "Announcements and News",
+          "TICKETS": "Ticket Updates",
+          "SYSTEM": "System and Security Alerts"
+        },
+        "descriptions": {
+          "ANNOUNCEMENTS": "Campaigns, news and product updates",
+          "TICKETS": "All messages related to your support requests",
+          "SYSTEM": "Password reset, account movements and critical alerts"
+        }
+      },
+      "hotinfo": {
+        "title": "System Information (Hotinfo)",
+        "description": "System configuration required for your Allplan support requests",
+        "last_update": "Last Update",
+        "status_up_to_date": "Your system information is up to date. This information will be used automatically in your support requests.",
+        "update_btn": "Update Information (Upload .hxl)",
+        "missing_title": "System Information Missing",
+        "missing_desc": "It is recommended to upload your Allplan Hotinfo file so that our support team can help you faster.",
+        "upload_btn": "Upload HXL File",
+        "uploading": "Uploading..."
+      },
+      "toasts": {
+        "pref_updated": "Preference updated",
+        "pref_failed": "Update failed",
+        "password_mismatch": "Passwords do not match!",
+        "profile_updated": "Profile successfully updated.",
+        "update_failed": "Update failed",
+        "hxl_invalid": "Please upload a valid .hxl file",
+        "mfa_gen_failed": "Failed to generate MFA key",
+        "mfa_enabled": "Two-factor authentication enabled.",
+        "mfa_verify_failed": "Verification failed",
+        "mfa_disabled": "Two-factor authentication has been disabled.",
+        "mfa_disable_failed": "Operation failed"
+      }
+    },
+    "help": {
+      "badge": "SYSTEM GUIDE",
+      "title": "User Manual & Workflows",
+      "description": "Learn step-by-step how to carry out daily operations, all features of the Aluplan Support platform, and AI modules.",
+      "tabs": {
+        "customer": "Customers",
+        "admin": "Support Team & Admins"
+      },
+      "customer": {
+        "section1": {
+          "title": "Login and Overview",
+          "desc": "The first screen you see when you log in to the system is the <b>Overview (Dashboard)</b> screen. On this screen:",
+          "item1": "You can see your active support requests that are ongoing and waiting for a response.",
+          "item2": "You can quickly access the latest created articles.",
+          "item3": "You can read the system announcements shared for you from the \"Announcements\" board."
+        },
+        "section2": {
+          "title": "Using the AI Assistant",
+          "desc": "Before opening a ticket, we recommend using the <b>AI Assistant</b> (/ai) menu to solve your problem quickly.",
+          "item1": "Click on the AI Assistant tab from the left menu.",
+          "item2": "Write the error you receive or the topic you want to learn in the message box (e.g., <i>\"Program crashes while drawing walls\"</i>).",
+          "item3": "AI will scan the entire knowledge base and present the solution steps directly to you. If no solution is found, it will suggest creating a support request.",
+          "tip_label": "Tip:",
+          "tip_desc": "Since AI uses RAG (Learning Algorithm), you will get more accurate answers if you ask questions by specifying the name of the software modules (e.g., AX3000)."
+        },
+        "section3": {
+          "title": "Opening and Following a Support Request (Ticket)",
+          "desc": "To forward the issue to the agents, you can create a new record from the <b>My Support Requests</b> page.",
+          "step1_title": "Step 1: Product Selection",
+          "step1_desc": "After clicking the New Request button, select the product family you are experiencing the problem with (e.g., ALLPLAN, AX3000). In this way, your request is directly directed to the relevant expert team.",
+          "step2_title": "Step 2: Subject and Details",
+          "step2_desc": "Enter a clear title and details explaining the problem you encountered. Select the urgency level (determined by SLA).",
+          "step3_title": "Step 3: File Attachments",
+          "step3_desc": "You can upload screenshots, PDFs, or project files (Max 10MB) directly by dragging and dropping."
+        }
+      },
+      "admin": {
+        "section1": {
+          "title": "Ticket Management",
+          "card1_title": "Operational Pool",
+          "card1_desc": "Requests from all customers are collected on the Ticket Queue page.",
+          "card1_item1_label": "Changing Status:",
+          "card1_item1_desc": "You can enter the ticket and change the status from the dropdown in the right panel (Open, Answered, Closed).",
+          "card1_item2_label": "Internal Notes:",
+          "card1_item2_desc": "Use the <code>Internal Note (Internal Only)</code> tab to take only team internal notes that the customer cannot see.",
+          "card1_item3_label": "Assignment:",
+          "card1_item3_desc": "You can transfer the ticket to a specific expert representative by using the \"Assign\" button.",
+          "card2_title": "AI Co-Pilot (AI Assisted Response)",
+          "card2_item1": "Press the <b>\"Create AI Response Draft\"</b> button at the top right when you enter the ticket.",
+          "card2_item2": "The system scans the customer's message and your company's Knowledge Pool. By making a vector data match, it prepares a professional draft referring to the relevant documents within 5-10 seconds. You can respond to the customer immediately by approving the draft and editing it according to your own style."
+        },
+        "section2": {
+          "title": "Knowledge Pool & Learning Loop",
+          "item1_title": "Knowledge Pool Management",
+          "item1_desc": "In order for AI to respond, you need to constantly provide new data to the infrastructure. There are 3 ways to do this:",
+          "item1_way1_label": "PDF / File Upload:",
+          "item1_way1_desc": "Directly add technical specifications to the database as PDFs. The system divides them into <u>Embedding (Vector)</u> parts.",
+          "item1_way2_label": "Web Scraper:",
+          "item1_way2_desc": "When you give the current \"How to\" URL addresses on your site to the system, AI reads your website and saves it to its memory.",
+          "item1_way3_label": "Raw Text:",
+          "item1_way3_desc": "You can create an \"Instruction\" for AI by manually entering frequently asked questions.",
+          "item2_title": "Learning Loop and AI Approvals",
+          "item2_desc": "When customers vote for closed tickets with <b>5 stars</b>, the system thinks that the solution is perfect. However, to prevent this solution from being written directly to the main database, it falls into the <b>AI Approvals</b> tab. As an administrator, you can choose to have the solution learned by AI (Approve) or skipped (Reject) in this tab."
+        },
+        "section3": {
+          "title": "CRM & Product (Taxonomy) Configuration",
+          "card1_title": "Products and Modules",
+          "card1_desc1": "You manage the Product cards that the customer sees when opening a ticket from here. The most important part is <b>Categories and Keywords.</b>",
+          "card1_rule_label": "Taxonomy Rule:",
+          "card1_rule_desc": "Write not only product features (Wall, Beam) but also customer symptoms (stuttering, black screen, closing) in categories (e.g., Model Crash). AI reads these keywords and directs the ticket to the correct team (Triage).",
+          "card2_title": "Customer and Team Management",
+          "card2_desc": "You can approve Customers and create Support Teams (Departments) from under the <b>SYSTEM</b> menu of the left panel. Do not forget to set the SLA rules (How many hours to respond, should it stop outside working hours?) from the Team Management tab so that tickets can be assigned automatically."
+        }
+      }
     }
   }
 }

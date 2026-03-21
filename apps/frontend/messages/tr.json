@@ -98,11 +98,18 @@
     "save": "Kaydet",
     "saving": "Kaydediliyor...",
     "reset": "Sıfırla",
+    "confirm": "Onayla",
     "cancel": "İptal",
-    "unknown": "Bilinmiyor",
+    "unknown": "Bilinmeyen",
     "individual": "Bireysel",
-    "system": "SİSTEM",
+    "system": "Sistem",
+    "not_available": "YOK",
+    "success_title": "Başarılı",
+    "error_title": "Hata",
+    "unassigned": "Atanmamış",
+    "next_step": "Sonraki Adım",
     "anonymous": "ANONİM",
+    "ai_bot": "AI",
     "priorities": {
       "LOW": "Düşük",
       "MEDIUM": "Orta",
@@ -129,8 +136,10 @@
       "avg_response": "ORT_YANIT_SÜRESİ",
       "sla_violations": "SLA_İHLALLERİ",
       "daily_resolved": "GÜNLÜK_ÇÖZÜLEN",
-      "ai_confidence": "ANN_GÜVEN_ORT",
-      "status_stable": "Stabil"
+      "ai_confidence": "ANN_GÜVEN_DÜZEYİ",
+      "status_stable": "Stabil",
+      "status_online": "ÇEVRİMİÇİ",
+      "status_offline": "ÇEVRİMDIŞI"
     },
     "knowledge_base": {
       "title": "BİLGİ_BANKASI_SORGUSU",
@@ -249,54 +258,176 @@
       "ai_summary_btn": "ANN_ÖZET",
       "drafting": "TASLAK_HAZIRLANIYOR...",
       "ai_draft_btn": "ANN_TASLAK",
-      "start_live_support": "CANLI DESTEĞİ BAŞLAT",
-      "request_live_chat": "CANLI SOHBET TALEP ET",
-      "waiting_agent": "TEMSİLCİ ONAYI BEKLENİYOR...",
-      "customer_waiting_live": "MÜŞTERİ_CANLI_DESTEK_BEKLİYOR",
-      "start_conversation": "SOHBETİ BAŞLAT",
-      "live_session_active": "CANLI_OTURUM_AKTİF",
-      "review_pending_title": "BEKLEYEN_TALEP_ÇÖZÜM_ONAYI",
-      "review_pending_desc": "Kanalı kapatmak için lütfen çözüm performansını oylayın.",
-      "feedback_placeholder": "OPERASYONEL_GERİ_BİLDİRİM_EKLE (OPSİYONEL)",
-      "saving": "KAYDEDİLİYOR...",
-      "save_and_close": "GERİ_BİLDİRİMİ_KAYDET_VE_KAPAT",
-      "customer_verification_pending": "MÜŞTERİ_DOĞRULAMASI_BEKLENİYOR",
-      "auto_sync_active": "Durum: İNCELEME_BEKLENİYOR | +4 puan için Otomatik Senkronizasyon aktif",
-      "debug_reject": "HATA_AYIKLAMA:REDDET(2)",
-      "debug_approve": "HATA_AYIKLAMA:ONAYLA(5)",
-      "ai_summary_record": "ANN_ÖZET_KAYDI",
-      "sending": "TRANSFER_DEVAM_EDİYOR...",
-      "secure_chat": "GÜVENLİ_SOHBET",
-      "send_placeholder": "MESAJI_GÖNDER...",
-      "ticket_metadata": "TALEP_METAVERİSİ",
-      "status_label": "DURUM",
-      "channel_label": "KANAL",
-      "priority_label": "KRİTİKLİK",
-      "open_date": "OLUŞTURMA_TARİHİ",
-      "assignee_label": "ATANAN_TEMSİLCİ",
-      "unassigned": "ATANMAMIŞ",
-      "hotfix_data": "HOTFIX_VERİSİ",
-      "security_warning": "GÜVENLİK UYARISI",
-      "security_warning_desc": "OPERASYONEL_GÜVENLİK_ZORUNLUDUR. ERİŞİM_BİLGİLERİNİ_VEYA_SİSTEM_YETKİLERİNİ_ASLA_PAYLAŞMAYIN. MESAJLARDAKİ_HASSAS_VERİLERİ_TEMİZLEYİN.",
-      "load_error": "Talep yüklenemedi",
-      "live_request_success": "Canlı destek talebi iletildi",
-      "live_start_success": "Canlı sohbet başlatıldı",
+      "load_error": "Talep verileri yüklenirken hata oluştu",
+      "live_request_success": "Canlı destek talebi gönderildi",
+      "live_start_success": "Canlı destek oturumu başlatıldı",
       "chat_update_error": "Sohbet durumu güncellenemedi",
-      "live_accept_success": "Canlı sohbet kabul edildi",
+      "live_accept_success": "Canlı destek talebi kabul edildi",
       "chat_start_error": "Sohbet başlatılamadı",
       "send_error": "Mesaj gönderilemedi: {error}",
-      "summary_success": "Yapay Zeka Özeti oluşturuldu",
-      "summary_error": "Özet oluşturulurken hata",
-      "draft_success": "Yapay Zeka taslak yanıt oluşturdu",
-      "draft_error": "Taslak oluşturulamadı: {error}",
-      "review_success": "Talep onaya gönderildi (Müşteri doğrulaması bekleniyor)",
-      "status_update_error": "Durum değiştirilemedi",
-      "feedback_sent": "Müşteri {score}/5 puan ile oyladı.",
-      "feedback_error": "Test oylaması gönderilemedi.",
-      "csat_success": "{score}/5 puan ile oyladınız. Talep kapandı, teşekkür ederiz!",
-      "csat_error": "Oylama gönderilemedi.",
-      "resolved_comment": "Sorunum tamamen çözüldü, teşekkürler.",
-      "pending_comment": "Hala eksik noktalar var."
+      "summary_success": "Yapay zeka özeti oluşturuldu",
+      "summary_error": "Özet oluşturulurken hata oluştu",
+      "draft_success": "Yapay zeka taslağı hazırlandı",
+      "draft_error": "Taslak oluşturulamaz: {error}",
+      "review_success": "Talep inceleme aşamasına alındı",
+      "status_update_error": "Durum güncellenemedi",
+      "resolved_comment": "Talep çözüldü ve onaylandı.",
+      "pending_comment": "Çözüm yeterli değil, detay bekleniyor.",
+      "feedback_sent": "Geri bildirim gönderildi (Puan: {score})",
+      "feedback_error": "Geri bildirim gönderilemedi",
+      "csat_success": "Geri bildiriminiz için teşekkürler (Puan: {score})",
+      "csat_error": "Değerlendirme kaydedilemedi",
+      "start_live_support": "CANLI DESTEK BAŞLAT",
+      "request_live_chat": "CANLI SOHBET TALEBİ",
+      "waiting_agent": "TEMSİLCİ BEKLENİYOR...",
+      "customer_waiting_live": "MÜŞTERİ CANLI DESTEK BEKLİYOR",
+      "start_conversation": "SOHBETİ BAŞLAT",
+      "live_session_active": "CANLI DESTEK OTURUMU AKTİF",
+      "review_pending_title": "ÇÖZÜM ONAYI BEKLENİYOR",
+      "review_pending_desc": "SUNULAN ÇÖZÜMÜ LÜTFEN DEĞERLENDİRİN",
+      "feedback_placeholder": "Geri bildiriminiz (opsiyonel)...",
+      "saving": "KAYDEDİLİYOR...",
+      "save_and_close": "KAYDET VE KAPAT",
+      "customer_verification_pending": "MÜŞTERİ DOĞRULAMASI BEKLENİYOR",
+      "auto_sync_active": "OTOMATİK SENKRONİZASYON AKTİF",
+      "debug_reject": "HATA_REDDET",
+      "debug_approve": "HATA_ONAYLA",
+      "ai_summary_record": "ANN_ÖZET_KAYDI",
+      "sending": "GÖNDERİLİYOR...",
+      "secure_chat": "UÇTAN_UCA_GÜVENLİ_İLETİŞİM",
+      "message_placeholder": "Mesajınızı buraya yazın... (Enter ile gönder)",
+      "ticket_metadata": "TALEP_METADATASI",
+      "status_label": "DURUM_KODU",
+      "channel_label": "ERİŞİM_KANALI",
+      "priority_label": "KRİTİKLİK_SEVİYESİ",
+      "open_date": "AÇILIŞ_TARİHİ",
+      "assignee_label": "ATANAN_UZMAN",
+      "hotfix_data": "HOTFIX_TELEMETRİ_VERİSİ",
+      "security_warning": "GÜVENLİK_UYARISI",
+      "security_warning_desc": "Tüm yazışmalar ve paylaşılan veriler Aluplan kalite standartları gereği kayıt altına alınmaktadır."
+    },
+    "new": {
+      "title": "Yeni Destek Talebi",
+      "subtitle": "Sorununuzu tanımlayın, akıllı asistanımız size adım adım rehberlik edecek.",
+      "sections": {
+        "basic_info": "Temel Bilgiler",
+        "basic_info_desc": "Talebiniz hakkında bilgi verin. Ürün seçerek daha hedefli destek alabilirsiniz.",
+        "system_info": "Sistem Bilgileri (Zorunlu)",
+        "hotinfo_needed": "Allplan hataları için Hotinfo dosyası gereklidir.",
+        "confirm_hotinfo": "Sistem Bilgilerini Onaylayın",
+        "hotinfo_check": "Bu bilgiler güncel mi? Onaylayın veya yeni dosya yükleyin.",
+        "hotinfo_added": "Sistem Bilgileri (Hotinfo) Eklendi",
+        "hotinfo_added_desc": "Bu bilgiler teknik ekibe otomatik olarak iletilecek."
+      },
+      "fields": {
+        "product": "İlgili Ürün",
+        "product_placeholder": "Ürün seçin (opsiyonel)",
+        "product_general": "Genel Soru / Diğer",
+        "product_hint": "Belirli bir ürünle ilgili değilse \"Genel Soru / Diğer\" seçili kalabilir.",
+        "os": "İşletim Sistemi",
+        "gpu_driver": "GPU Driver Sürümü",
+        "cpu": "İşlemci (CPU)",
+        "opengl": "OpenGL Sürümü",
+        "gpu": "Ekran Kartı (GPU)",
+        "disk": "Disk Bilgisi",
+        "license": "Lisans Tipi",
+        "network": "Ağ Bilgisi",
+        "modules": "Yüklü Modüller",
+        "priority": "Öncelik",
+        "priority_placeholder": "Öncelik seçin",
+        "subject": "Konu / Özet",
+        "subject_placeholder": "Örn: Kurulum sırasında lisans hatası alıyorum"
+      },
+      "buttons": {
+        "hotinfo_upload": "Hotinfo Yükle (.hxl)",
+        "upload_new": "Yenisini Yükle",
+        "view_change": "Görüntüle / Değiştir",
+        "create": "Talebi Oluştur"
+      },
+      "ai": {
+        "title": "Akıllı Teşhis",
+        "loading": "Size özel çözümleri hazırlıyoruz...",
+        "detail_label": "Sorununuzu detaylandırın",
+        "detail_placeholder": "Hata mesajı, gerçekleşen işlem sırası vb...",
+        "search_btn": "Çözüm Ara (AI)",
+        "result_title": "Yapay Zeka Teşhis Sonucu",
+        "feedback_question": "\"Yapay zeka asistanımızın sunduğu bu çözüm sorununuzu gidermeye yardımcı oldu mu?\"",
+        "yes_resolved": "Evet, Çözüldü",
+        "no_create_ticket": "Hayır, Talebi Oluştur"
+      },
+      "summary": {
+        "title": "Son Kontrol & Ekler",
+        "attachments": "Ek Dosyalar / Ekran Görüntüleri",
+        "drag_drop": "Dosyaları buraya sürükleyin veya seçin",
+        "select_file": "Dosya Seç",
+        "report": "Özet Rapor",
+        "subject_label": "Konu:",
+        "product_label": "Ürün:",
+        "desc_label": "Açıklama:"
+      },
+      "errors": {
+        "subject_min": "Konu en az 5 karakter olmalıdır",
+        "description_min": "Açıklama en az 10 karakter olmalıdır"
+      },
+      "toasts": {
+        "products_load_error": "Ürünler yüklenirken hata oluştu",
+        "hotinfo_loaded": "Profilinizdeki sistem bilgileri yüklendi. Lütfen güncel olduğunu onaylayın.",
+        "invalid_hxl": "Lütfen geçerli bir .hxl dosyası yükleyin",
+        "hotinfo_success": "Sistem bilgileriniz başarıyla güncellendi",
+        "upload_error": "Dosya yüklenirken hata oluştu",
+        "ai_unavailable": "Yapay zeka servisi şu an cevap veremiyor. Talebinizi oluşturmaya devam edebilirsiniz.",
+        "ai_no_match": "Sorunuzu tam olarak anlayamadım ama aşağıda genel bir rehber hazırladım.",
+        "ai_timeout": "Yapay zeka sunucusu yanıt vermiyor (Timeout). Talebinizi manuel olarak oluşturabilirsiniz.",
+        "ai_error": "Yapay zeka teşhis servisine şu anda ulaşılamıyor.",
+        "success": "Talebiniz başarıyla oluşturuldu",
+        "hotinfo_confirmed": "Sistem bilgileri onaylandı",
+        "ai_happy": "Harika! Çözüm bulmanıza sevindik. 🎉"
+      }
+    }
+  },
+  "my_tickets": {
+    "title": "Destek Taleplerim",
+    "subtitle": "Açtığınız tüm destek taleplerini buradan takip edebilirsiniz.",
+    "new_ticket": "Yeni Talep Oluştur",
+    "empty": {
+      "title": "Henüz bir talebiniz yok",
+      "desc": "Herhangi bir konuda yardıma ihtiyacınız olursa yeni bir talep başlatın.",
+      "button": "Hemen Başlat"
+    }
+  },
+  "kb_approvals": {
+    "title": "Yapay Zeka Bilgi Doğrulama Merkezi",
+    "subtitle": "İşlenen olay kayıtlarından otomatik olarak sentezlenen bilgi birimlerini inceleyin ve yetkilendirin.",
+    "refresh_queue": "KUYRUĞU_YENİLE",
+    "run_pipeline": "İŞ_AKIŞINI_BAŞLAT",
+    "queue_title": "ONAY_BEKLEYEN_BİLGİ_KUYRUĞU",
+    "units_loaded": "{count} BİRİM_YÜKLENDİ",
+    "empty": {
+      "title": "Tüm makaleler incelendi!",
+      "desc": "Şu an onay bekleyen yeni bir AI taslağı bulunmuyor."
+    },
+    "table": {
+      "query": "ÇIKARILAN_SORGU",
+      "answer": "SENTEZLENEN_YANIT",
+      "confidence": "GÜVEN_SKORU",
+      "source": "KAYNAK_VAKA",
+      "actions": "YETKİLENDİRME",
+      "reliable": "%{percent}_GÜVENİLİR",
+      "loading": "YÜKLENİYOR...",
+      "empty": "KAYIT BULUNAMADI"
+    },
+    "buttons": {
+      "approve": "DOĞRULA",
+      "delete": "SİL"
+    },
+    "toasts": {
+      "fetch_error": "Taslaklar alınırken hata oluştu.",
+      "approve_success": "Makale Bilgi Bankasında yayınlandı! 🚀",
+      "approve_error": "Onaylama işlemi başarısız.",
+      "dismiss_success": "Makale taslağı reddedildi.",
+      "dismiss_error": "Reddetme işlemi başarısız.",
+      "pipeline_started": "Boru hattı başlatıldı, bu işlem arkaplanda çalışacaktır...",
+      "pipeline_error": "Pipeline başlatılamadı: {error}"
     }
   },
   "ai": {
@@ -452,7 +583,38 @@
       "email": "E-posta",
       "sla": "SLA",
       "branding": "Markalama",
-      "whatsapp": "WhatsApp"
+      "whatsapp": "WhatsApp",
+      "requirements": "Sistem Gereksinimleri",
+      "macros": "Macrolar",
+      "security": "Güvenlik & API"
+    },
+    "macros": {
+      "title": "Canned Responses (Macrolar)",
+      "description": "Sık kullanılan yanıtları yönetin.",
+      "header_label": "Macro Başlığı",
+      "content_label": "Yanıt İçeriği",
+      "content_placeholder": "Müşteriye gönderilecek metin...",
+      "add": "Ekle",
+      "create_success": "Macro oluşturuldu",
+      "delete_success": "Macro silindi",
+      "delete_error": "Silme hatası: {message}"
+    },
+    "email_forms": {
+      "smtp_title": "Giden Sunucu (SMTP)",
+      "smtp_desc": "Sistem bildirimleri için SMTP yapılandırması.",
+      "imap_title": "Gelen Sunucu (IMAP)",
+      "imap_desc": "Mail-to-Ticket entegrasyonu için IMAP ayarları.",
+      "host": "Sunucu (Host)",
+      "user": "Kullanıcı",
+      "pass": "Şifre",
+      "port": "Port",
+      "save": "Kaydet"
+    },
+    "security": {
+      "title": "Güvenlik & Şifreleme",
+      "desc": "Sistem güvenlik sertifikaları ve API anahtarları.",
+      "active_text": "AES-256-GCM Aktif",
+      "encryption_desc": "Tüm hassas veriler at-rest şifrelenmektedir."
     },
     "general": {
       "title": "Genel Yapılandırma",
@@ -460,7 +622,8 @@
       "portal_name": "Platform Adı",
       "portal_name_placeholder": "örn: Aluplan Destek",
       "frontend_url": "Frontend URL",
-      "frontend_url_placeholder": "https://destek.aluplan.com"
+      "frontend_url_placeholder": "https://destek.aluplan.com",
+      "portal_version": "KONTROL PANELİ v1.0"
     },
     "ai": {
       "title": "Yapay Zeka Entegrasyonu",
@@ -471,6 +634,31 @@
       "embed_provider_desc": "Bilgi bankası araması ve doküman indeksleme için kullanılır.",
       "test_btn": "Bağlantıyı Test Et",
       "save_btn": "Değişiklikleri Kaydet",
+      "center_title": "AI Zeka Merkezi",
+      "center_desc": "Çoklu yapay zeka sağlayıcılarını yönetin, hibrit model geçişlerini yapılandırın ve motor sağlığını izleyin.",
+      "motor_desc": "Zekayı güçlendiren {name} motoru.",
+      "primary_engine": "Birincil Motor",
+      "specialized_title": "Özel Görev Eşleşmeleri",
+      "specialized_desc": "Hangi görev için hangi AI motorunun kullanılacağını belirleyin.",
+      "task_categorization": "Bilet Kategorizasyonu",
+      "task_summarization": "Bilet Özetleme",
+      "task_reformatting": "RAG & Yeniden Biçimlendirme",
+      "task_sentiment": "Duygu Analizi (Sentiment)",
+      "task_translation": "Otomatik Çeviri",
+      "save_mappings": "Eşleşmeleri Kaydet",
+      "rag_title": "Semantik Arama & RAG Yapılandırması",
+      "rag_desc": "Bilgi havuzunuzu vektörleştiren ve arama kalitesini belirleyen temel ayarlar.",
+      "advanced_params": "Gelişmiş Parametreler",
+      "global_default": "Global Varsayılan",
+      "ollama_local": "Ollama (Lokal)",
+      "toasts": {
+        "load_error": "AI ayarları yüklenemedi: {message}",
+        "test_success": "{provider} bağlantısı başarılı!",
+        "test_error": "{provider} bağlantı hatası: {message}",
+        "test_failed": "Bağlantı testi başarısız: {message}",
+        "save_success": "{provider} ayarları kaydedildi.",
+        "save_error": "Kaydetme hatası: {message}"
+      },
       "ollama": {
         "title": "Ollama (Yerel)",
         "chat_model": "Sohbet Modeli",
@@ -480,20 +668,6 @@
         "title": "OpenAI (Bulut)",
         "chat_model": "Sohbet Modeli",
         "embed_model": "Vektör Modeli"
-      },
-      "validation": {
-        "fields": {
-          "api_key": "API Anahtarı",
-          "chat_model": "Sohbet Modeli",
-          "embed_model": "Vektör Modeli",
-          "url": "Bağlantı URL'si"
-        },
-        "missing_fields": "Lütfen şu zorunlu alanları doldurun: {fields}"
-      },
-      "xai": {
-        "title": "xAI (Grok)",
-        "chat_model": "Sohbet Modeli",
-        "not_supported": "Desteklenmiyor"
       },
       "providers": {
         "ollama": "Ollama (Yerel)",
@@ -566,21 +740,16 @@
       "templates": {
         "title": "E-posta Şablonları",
         "description": "MJML tabanlı e-posta şablonlarını yönetin ve özelleştirin.",
+        "preview_module": "Şablon Önizleme Modülü",
+        "preview_desc": "Aktif MJML şablonlarını mock verilerle test edin.",
         "select_placeholder": "Şablon seçin...",
-        "new_btn": "Yeni Şablon",
         "preview_btn": "Önizleme",
-        "save_btn": "Kaydet",
-        "create_btn": "Oluştur",
-        "cancel_btn": "İptal",
-        "editor_title": "MJML Düzenleyici",
-        "preview_title": "E-posta Önizlemesi",
         "subject_label": "Konu",
-        "preview_hint": "İçeriği görmek için 'Önizleme'ye tıklayın.",
-        "preview_flow_hint": "Kaydet → Önizle akışı önerilir.",
-        "new_placeholder": "ornek-sablon-adi",
-        "safe_editor_title": "Güvenli İçerik Düzenleyici",
-        "safe_editor_desc": "MJML yapısına zarar vermeden içeriklerinizi düzenleyin.",
-        "editor_placeholder": "MJML içeriğini buraya girin..."
+        "toasts": {
+          "load_error": "Şablonlar yüklenemedi",
+          "compile_error": "Derleme hatası",
+          "preview_failed": "Önizleme yüklenemedi: {message}"
+        }
       }
     },
     "sla": {
@@ -648,9 +817,9 @@
       "save_btn": "WhatsApp Ayarlarını Kaydet"
     },
     "toasts": {
-      "save_success": "Ayarlar kaydedildi.",
-      "save_error": "Ayarlar kaydedilirken hata oluştu.",
-      "load_error": "Ayarlar yüklenirken hata oluştu.",
+      "save_success": "{key} başarıyla güncellendi.",
+      "save_error": "Hata: {message}",
+      "load_error": "Veriler yüklenemedi: {message}",
       "gmail_success": "Gmail hesabı başarıyla bağlandı.",
       "gmail_error": "Yetkilendirme başarısız oldu.",
       "logo_success": "Logo başarıyla kaydedildi.",
@@ -680,9 +849,7 @@
       "logo_upload_error": "Logo yükleme hatası.",
       "generic_error": "Bir hata oluştu.",
       "generic_success_hint": "{provider} servisine erişim sağlandı.",
-      "generic_fail_hint": "Servis şu anda ulaşılamaz durumda.",
-      "success": "Başarılı",
-      "error": "Hata"
+      "generic_fail_hint": "Servis şu anda ulaşılamaz durumda."
     }
   },
   "admin": {
@@ -693,6 +860,192 @@
     "ai_health": {
       "title": "YZE Sağlığı ve Telemetri",
       "description": "Yapay zeka modellerinin, token tüketiminin ve RAG performansının gerçek zamanlı izlenmesi."
+    }
+  },
+  "profile": {
+    "title": "Profilim",
+    "subtitle": "Kişisel bilgilerinizi ve güvenlik ayarlarınızı yönetin",
+    "hotfix_warning_title": "DİKKAT: Hotfix Doğrulaması Gerekiyor",
+    "hotfix_warning_desc": "Allplan kullandığınız tespit edilmiştir. Sistem stabilitesi ve kesintisiz destek için lütfen sayfanın alt kısmından güncel <b>Hotinfo (.hxl)</b> dosyanızı yükleyin.",
+    "crm_verified": "CRM DOĞRULANDI",
+    "personal_info": "Kişisel Bilgiler",
+    "roles_info": "Hesap bilgileriniz ({roles})",
+    "roles": {
+      "admin": "Yönetici",
+      "agent": "Temsilci",
+      "customer": "Müşteri"
+    },
+    "labels": {
+      "email_static": "E-posta (Değiştirilemez)",
+      "full_name": "Ad Soyad",
+      "phone": "Telefon Numarası",
+      "customer_no_static": "Müşteri No (Değiştirilemez)",
+      "company_name": "Şirket Adı",
+      "industry": "Sektör",
+      "job_title": "Ünvan",
+      "subscription": "Abonelik",
+      "status": "Durum"
+    },
+    "placeholders": {
+      "phone": "+90 555 444 33 22",
+      "no_crm": "CRM kaydı yok",
+      "company_name": "Şirketinizin adı",
+      "industry": "Faaliyet gösterdiğiniz sektör",
+      "job_title": "Ünvanınız (örn: Satın Alma Müdürü)",
+      "new_password": "Yeni şifrenizi girin",
+      "confirm_password": "Yeni şifrenizi tekrar girin"
+    },
+    "contract_status": {
+      "ACTIVE": "Aktif",
+      "EXPIRED": "Süresi Dolmuş"
+    },
+    "account_status": {
+      "ACTIVE": "Aktif",
+      "INACTIVE": "Pasif",
+      "SUSPENDED": "Askıya Alındı"
+    },
+    "password_change": {
+      "title": "Şifre Değiştir",
+      "description": "Şifrenizi değiştirmek istemiyorsanız boş bırakın.",
+      "new_password": "Yeni Şifre",
+      "confirm_password": "Şifreyi Doğrula"
+    },
+    "save_button": "Değişiklikleri Kaydet",
+    "saving_button": "Kaydediliyor...",
+    "mfa": {
+      "title": "İki Faktörlü Doğrulama (MFA)",
+      "description": "Hesabınızın güvenliğini artırmak için TOTP tabanlı (Google Authenticator, Authy vb.) doğrulama kullanın.",
+      "status_label": "MFA Durumu",
+      "active": "AKTİF",
+      "inactive": "PASİF",
+      "disable_btn": "Devre Dışı Bırak",
+      "setup_btn": "Kurulumu Başlat",
+      "dialog_title": "MFA Kurulumu",
+      "dialog_desc": "Kodu herhangi bir kimlik doğrulama uygulamasıyla (Google Authenticator, Microsoft Authenticator, Authy) tarayın.",
+      "key_creating": "Anahtar Oluşturuluyor...",
+      "manual_key_label": "Manuel Giriş Anahtarı",
+      "token_label": "Doğrulama Kodu",
+      "token_placeholder": "000000",
+      "token_hint": "Uygulamanızdaki 6 haneli kodu girerek aktifleştirin",
+      "cancel": "İptal",
+      "verify_enable": "Doğrula ve Etkinleştir",
+      "verifying": "Doğrulanıyor...",
+      "confirm_disable": "İki faktörlü doğrulamayı devre dışı bırakmak istediğinize emin misiniz? Güvenliğiniz azalacaktır."
+    },
+    "notifications": {
+      "title": "E-posta Bildirim Tercihleri",
+      "description": "Hangi kategorilerde e-posta almak istediğinizi belirleyin",
+      "types": {
+        "ANNOUNCEMENTS": "Duyurular ve Yenilikler",
+        "TICKETS": "Bilet Güncellemeleri",
+        "SYSTEM": "Sistem ve Güvenlik Uyarıları"
+      },
+      "descriptions": {
+        "ANNOUNCEMENTS": "Kampanyalar, haberler ve ürün güncellemeleri",
+        "TICKETS": "Destek taleplerinizle ilgili tüm mesajlar",
+        "SYSTEM": "Şifre sıfırlama, hesap hareketleri ve kritik uyarılar"
+      }
+    },
+    "hotinfo": {
+      "title": "Sistem Bilgileri (Hotinfo)",
+      "description": "Allplan destek talepleriniz için gerekli sistem konfigürasyonu",
+      "last_update": "Son Güncelleme",
+      "status_up_to_date": "Sistem bilgileriniz güncel. Destek taleplerinizde bu bilgiler otomatik kullanılacaktır.",
+      "update_btn": "Bilgileri Güncelle (.hxl Yükle)",
+      "missing_title": "Sistem Bilgisi Eksik",
+      "missing_desc": "Destek ekibimizin size daha hızlı yardımcı olabilmesi için Allplan Hotinfo dosyanızı yüklemeniz önerilir.",
+      "upload_btn": "HXL Dosyası Yükle",
+      "uploading": "Yükleniyor..."
+    },
+    "toasts": {
+      "pref_updated": "Tercih güncellendi",
+      "pref_failed": "Güncelleme başarısız",
+      "password_mismatch": "Şifreler eşleşmiyor!",
+      "profile_updated": "Profil başarıyla güncellendi.",
+      "update_failed": "Güncelleme başarısız",
+      "hxl_invalid": "Lütfen geçerli bir .hxl dosyası yükleyin",
+      "hotinfo_updated": "Sistem bilgileriniz başarıyla güncellendi",
+      "hotinfo_failed": "Dosya yüklenirken hata oluştu",
+      "mfa_gen_failed": "MFA anahtarı oluşturulamadı",
+      "mfa_enabled": "İki faktörlü doğrulama aktif edildi.",
+      "mfa_verify_failed": "Doğrulama başarısız",
+      "mfa_disabled": "İki faktörlü doğrulama devre dışı bırakıldı.",
+      "mfa_disable_failed": "İşlem başarısız"
+    }
+  },
+  "help": {
+    "badge": "SİSTEM REHBERİ",
+    "title": "Kullanım Kılavuzu & İş Akışları",
+    "description": "Aluplan Destek platformunun tüm özelliklerini, yapay zeka modüllerini ve günlük operasyonları nasıl yürüteceğinizi adım adım öğrenin.",
+    "tabs": {
+      "customer": "Müşteriler",
+      "admin": "Destek Ekibi & Yöneticiler"
+    },
+    "customer": {
+      "section1": {
+        "title": "Sisteme Giriş ve Genel Bakış",
+        "desc": "Sisteme giriş yaptığınızda karşınıza çıkan ilk ekran <b>Genel Bakış (Dashboard)</b> ekranıdır. Bu ekranda:",
+        "item1": "Devam eden ve cevap bekleyen aktif destek taleplerinizi görebilirsiniz.",
+        "item2": "Son oluşturulan makalelere hızlıca erişebilirsiniz.",
+        "item3": "Sizin için paylaşılan sistem duyurularını \"Duyurular\" panosundan okuyabilirsiniz."
+      },
+      "section2": {
+        "title": "Yapay Zeka Asistanı Kullanımı",
+        "desc": "Bilet açmadan önce sorununuzu hızlıca çözmek için <b>Yapay Zeka Asistanı</b> (/ai) menüsünü kullanmanızı öneririz.",
+        "item1": "Sol menüden Yapay Zeka Asistanı sekmesine tıklayın.",
+        "item2": "Mesaj kutusuna almak istediğiniz hatayı veya öğrenmek istediğiniz konuyu yazın (Örn: <i>\"Duvar çizerken program çöküyor\"</i>).",
+        "item3": "Yapay zeka, tüm bilgi bankasını tarayarak size çözüm adımlarını doğrudan sunacaktır. Çözüm bulunamazsa size bir destek talebi oluşturmanızı önerecektir.",
+        "tip_label": "İpucu:",
+        "tip_desc": "Yapay zeka RAG (Öğrenen Algoritma) kullandığı için, yazılım modüllerinin adını (Örn: AX3000) belirterek soru sorarsanız daha isabetli cevaplar alırsınız."
+      },
+      "section3": {
+        "title": "Destek Talebi (Bilet) Açma ve Takip",
+        "desc": "Konuyu temsilcilere iletmek için <b>Destek Taleplerim</b> sayfasından yeni bir kayıt oluşturabilirsiniz.",
+        "step1_title": "Adım 1: Ürün Seçimi",
+        "step1_desc": "Yeni Talep butonuna tıkladıktan sonra, sorunu yaşadığınız ürün ailesini (Örn: ALLPLAN, AX3000) seçin. Bu sayede talebiniz direkt ilgili uzman ekibe yönlendirilir.",
+        "step2_title": "Adım 2: Konu ve Detaylar",
+        "step2_desc": "Karşılaştığınız sorunu anlatan açık bir başlık ve detayları girin. Zorunluluk derecesini (SLA belirler) seçin.",
+        "step3_title": "Adım 3: Dosya Ekleri",
+        "step3_desc": "Ekran görüntüsü, PDF veya proje dosyalarını (Maks 10MB) doğrudan sürükleyip bırakarak yükleyebilirsiniz."
+      }
+    },
+    "admin": {
+      "section1": {
+        "title": "Bilet Kuyruğu (Ticket Management)",
+        "card1_title": "Operasyonel Havuz",
+        "card1_desc": "Bilet Kuyruğu sayfasında tüm müşterilerden gelen talepler toplanır.",
+        "card1_item1_label": "Durum Değiştirme:",
+        "card1_item1_desc": "Bilet içerisine girip sağ paneldeki dropdown'dan durumu değiştirebilirsiniz (Açık, Cevaplandı, Kapalı).",
+        "card1_item2_label": "İç Notlar:",
+        "card1_item2_desc": "Müşterinin göremeyeceği sadece ekip içi notlar almak için <code>İç Not (Internal Only)</code> sekmesini kullanın.",
+        "card1_item3_label": "Atama:",
+        "card1_item3_desc": "\"Ata\" butonunu kullanarak bileti spesifik bir uzman temsilciye devredebilirsiniz.",
+        "card2_title": "AI Co-Pilot (Yapay Zeka Destekli Yanıt)",
+        "card2_item1": "Biletin içine girdiğinizde sağ üstte yer alan <b>\"AI Yanıt Taslağı Oluştur\"</b> butonuna basın.",
+        "card2_item2": "Sistem, müşterinin mesajını ve firmanızın Bilgi Havuzunu tarar. Vektörel veri eşleşmesi yaparak 5-10 saniye içerisinde ilgili dokümanlara atıfta bulunan profesyonel bir taslak hazırlar. Taslağı onaylayıp kendi tarzınıza göre düzenleyerek müşteriye anında yanıt dönebilirsiniz."
+      },
+      "section2": {
+        "title": "Bilgi Havuzu & Öğrenme Döngüsü",
+        "item1_title": "Bilgi Havuzu (Knowledge Pool) Yönetimi",
+        "item1_desc": "Yapay zekanın cevap verebilmesi için altyapıya sürekli yeni veri sağlamanız gerekir. Bunun 3 yolu vardır:",
+        "item1_way1_label": "PDF / Dosya Yükleme:",
+        "item1_way1_desc": "Doğrudan teknik şartnameleri PDF olarak veritabanına ekleyin. Sistem bunları <u>Embedding (Vektör)</u> parçalarına ayırır.",
+        "item1_way2_label": "Web Scraper:",
+        "item1_way2_desc": "Sitenizdeki güncel \"Nasıl Yapılır\" URL adreslerini sisteme verdiğinizde yapay zeka web sitenizi okuyup hafızasına kaydeder.",
+        "item1_way3_label": "Özel Metin (Raw Text):",
+        "item1_way3_desc": "Sıkça sorulan soruları el ile girerek AI için \"Instruction\" yaratabilirsiniz.",
+        "item2_title": "Öğrenme Döngüsü ve AI Onayları",
+        "item2_desc": "Müşteriler kapalı biletleri <b>5 yıldız</b> ile oyladığında, sistem o çözümün mükemmel olduğunu düşünür. Ancak bu çözümün direkt ana veritabanına yazılmasını önlemek için <b>AI Onayları</b> sekmesine düşer. Yönetici olarak bu sekmede çözümün yapay zeka tarafından öğrenilmesini (Onay) veya atlanmasını (Red) seçebilirsiniz."
+      },
+      "section3": {
+        "title": "CRM & Ürün (Taksonomi) Yapılandırması",
+        "card1_title": "Ürünler ve Modüller",
+        "card1_desc1": "Müşteri bilet açtığında gördüğü Ürün kartlarını buradan yönetirsiniz. En önemli kısım <b>Kategoriler ve Anahtar Kelimelerdir.</b>",
+        "card1_rule_label": "Taksonomi Kuralı:",
+        "card1_rule_desc": "Kategorilere (Örn: Model Çökmesi) sadece ürün özellikleri (Duvar, Kiriş) değil, müşteri semptomlarını da (kasıyor, siyah ekran, kapanıyor) yazın. AI bu anahtar kelimeleri okuyarak bileti doğru takıma (Triage) yönlendirir.",
+        "card2_title": "Müşteri ve Ekip Yönetimi",
+        "card2_desc": "Sol panonun <b>SİSTEM</b> menüsü altından Müşterileri onaylayabilir ve Destek Ekiplerini (Departmanları) oluşturabilirsiniz. Biletlerin otomatik atanabilmesi için SLA kurallarını (Kaç saatte yanıt verilecek, mesai saati dışında dursun mu?) Ekip Yönetimi sekmesinden ayarlamayı unutmayın."
+      }
     }
   }
 }

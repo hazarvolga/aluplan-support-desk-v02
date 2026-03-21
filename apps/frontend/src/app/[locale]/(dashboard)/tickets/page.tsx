@@ -138,12 +138,12 @@ export default function TicketsPage() {
 
                 <div className="flex items-center gap-3">
                     <Button
-                        onClick={() => window.location.href = `/tickets/new`}
+                        onClick={() => window.location.href = `/${locale}/tickets/new`}
                         data-testid="create-ticket-button"
                         className="h-9 px-4 bg-primary hover:bg-primary/90 text-white text-[10px] font-bold uppercase tracking-widest transition-all"
                     >
                         <Ticket className="w-3.5 h-3.5 mr-2" />
-                        {t('new_ticket') || 'YENİ TALEP'}
+                        {t('new_ticket')}
                     </Button>
 
                     <div className="relative group">
@@ -267,7 +267,7 @@ export default function TicketsPage() {
                                         <tr
                                             key={ticket.id}
                                             className={`hover:bg-white/[0.03] transition-all cursor-pointer group h-14 ${isSelected ? 'bg-primary/5' : ''}`}
-                                            onClick={() => window.location.href = `/tickets/${ticket.id}`}
+                                            onClick={() => window.location.href = `/${locale}/tickets/${ticket.id}`}
                                         >
                                             <td className="px-6">
                                                 <button

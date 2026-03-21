@@ -17,17 +17,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Paperclip, X, Loader2, ArrowLeft, CheckCircle2, AlertTriangle, Monitor, Sparkles, Box } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useTranslations, useLocale } from 'next-intl';
 
-const ticketSchema = z.object({
-    subject: z.string().min(5, 'Konu en az 5 karakter olmalıdır'),
-    description: z.string().min(10, 'Açıklama en az 10 karakter olmalıdır'),
+const getTicketSchema = (t: any) => z.object({
+    subject: z.string().min(5, t('errors.subject_min')),
+    description: z.string().min(10, t('errors.description_min')),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
 });
 
-type TicketFormValues = z.infer<typeof ticketSchema>;
+type TicketFormValues = z.infer<ReturnType<typeof getTicketSchema>>;
 
 export default function NewTicketPage() {
+    const t = useTranslations('tickets.new');
+    const ct = useTranslations('common');
+    const tt = useTranslations('tickets');
     const router = useRouter();
+    const locale = useLocale();
     const [currentStep, setCurrentStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [loadingProducts, setLoadingProducts] = useState(true);
@@ -43,7 +48,7 @@ export default function NewTicketPage() {
     const [interactionId, setInteractionId] = useState<string | null>(null);
 
     const form = useForm<TicketFormValues>({
-        resolver: zodResolver(ticketSchema) as any,
+        resolver: zodResolver(getTicketSchema(t)) as any,
         defaultValues: {
             subject: '',
             description: '',
@@ -59,7 +64,7 @@ export default function NewTicketPage() {
             })
             .catch(err => {
                 console.error(err);
-                toast.error('Ürünler yüklenirken hata oluştu');
+                toast.error(t('toasts.products_load_error'));
                 setLoadingProducts(false);
             });
     }, []);
@@ -78,7 +83,7 @@ export default function NewTicketPage() {
                 if (user?.customerProfile?.hotinfoData) {
                     setHotinfoData(user.customerProfile.hotinfoData);
                     setIsHotinfoConfirmed(false); // User must explicitly confirm
-                    toast.info('Profilinizdeki sistem bilgileri yüklendi. Lütfen güncel olduğunu onaylayın.');
+                    toast.info(t('toasts.hotinfo_loaded'));
                 }
             } catch (error) {
                 console.error("Failed to fetch profile", error);
@@ -102,7 +107,7 @@ export default function NewTicketPage() {
         if (!file) return;
 
         if (!file.name.endsWith('.hxl')) {
-            toast.error('Lütfen geçerli bir .hxl dosyası yükleyin');
+            toast.error(t('toasts.invalid_hxl'));
             return;
         }
 
@@ -115,9 +120,9 @@ export default function NewTicketPage() {
 
             setHotinfoData(response.hotinfo);
             setIsHotinfoConfirmed(true);
-            toast.success('Sistem bilgileriniz başarıyla güncellendi');
+            toast.success(t('toasts.hotinfo_success'));
         } catch (error: any) {
-            toast.error('Dosya yüklenirken hata oluştu');
+            toast.error(t('toasts.upload_error'));
             console.error(error);
         }
     };
@@ -140,7 +145,7 @@ export default function NewTicketPage() {
             const response = await Promise.race([queryPromise, timeoutPromise]) as any;
 
             if (!response || !response.answer) {
-                toast.warning('Yapay zeka servisi şu an cevap veremiyor. Talebinizi oluşturmaya devam edebilirsiniz.');
+                toast.warning(t('toasts.ai_unavailable'));
                 return;
             }
 
@@ -148,14 +153,14 @@ export default function NewTicketPage() {
             setInteractionId(response.interactionId);
 
             if (response.confidence === 'NO_MATCH') {
-                toast.info('Sorunuzu tam olarak anlayamadım ama aşağıda genel bir rehber hazırladım.');
+                toast.info(t('toasts.ai_no_match'));
             }
         } catch (err: any) {
             console.error('Diagnosis failed', err);
             if (err.message === 'AI_TIMEOUT') {
-                toast.error('Yapay zeka sunucusu yanıt vermiyor (Timeout). Talebinizi manuel olarak oluşturabilirsiniz.');
+                toast.error(t('toasts.ai_timeout'));
             } else {
-                toast.error('Yapay zeka teşhis servisine şu anda ulaşılamıyor.');
+                toast.error(t('toasts.ai_error'));
             }
         } finally {
             setIsDiagnosing(false);
@@ -183,10 +188,10 @@ export default function NewTicketPage() {
                 }
             }
 
-            toast.success('Talebiniz başarıyla oluşturuldu');
-            router.push(`/tickets/${ticket.id}`);
+            toast.success(t('toasts.success'));
+            router.push(`/${locale}/tickets/${ticket.id}`);
         } catch (error: any) {
-            toast.error(error.message || 'Hata oluştu');
+            toast.error(error.message || ct('error'));
         } finally {
             setLoading(false);
         }
@@ -207,16 +212,16 @@ export default function NewTicketPage() {
     const renderStep1 = () => (
         <div className="max-w-3xl mx-auto space-y-6 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="space-y-3 text-center">
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent">Yeni Destek Talebi</h1>
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent">{t('title')}</h1>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                    Sorununuzu tanımlayın, akıllı asistanımız size adım adım rehberlik edecek.
+                    {t('subtitle')}
                 </p>
             </div>
 
             <Card className="bg-card/60 backdrop-blur-xl border-white/5 shadow-2xl">
                 <CardHeader>
-                    <CardTitle>Temel Bilgiler</CardTitle>
-                    <CardDescription>Talebiniz hakkında bilgi verin. Ürün seçerek daha hedefli destek alabilirsiniz.</CardDescription>
+                    <CardTitle>{t('sections.basic_info')}</CardTitle>
+                    <CardDescription>{t('sections.basic_info_desc')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <Form {...form}>
@@ -225,14 +230,14 @@ export default function NewTicketPage() {
                             <div className="space-y-2">
                                 <Label className="text-sm font-medium flex items-center gap-2">
                                     <Box className="h-4 w-4 text-brand-400" />
-                                    İlgili Ürün
+                                    {t('fields.product')}
                                 </Label>
                                 <Select value={selectedProductId} onValueChange={handleProductChange}>
                                     <SelectTrigger className="bg-slate-950/50 border-white/10">
-                                        <SelectValue placeholder="Ürün seçin (opsiyonel)" />
+                                        <SelectValue placeholder={t('fields.product_placeholder')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="general">Genel Soru / Diğer</SelectItem>
+                                        <SelectItem value="general">{t('fields.product_general')}</SelectItem>
                                         {products.map(product => (
                                             <SelectItem key={product.id} value={product.id}>
                                                 {product.name}
@@ -240,7 +245,7 @@ export default function NewTicketPage() {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <p className="text-[11px] text-muted-foreground/60">Belirli bir ürünle ilgili değilse &quot;Genel Soru / Diğer&quot; seçili kalabilir.</p>
+                                <p className="text-[11px] text-muted-foreground/60">{t('fields.product_hint')}</p>
                             </div>
 
                             {/* Allplan Hotinfo Section */}
@@ -248,15 +253,15 @@ export default function NewTicketPage() {
                                 <div className="space-y-4 pt-2">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Monitor className="h-5 w-5 text-brand-400" />
-                                        <h3 className="font-semibold text-lg">Sistem Bilgileri (Zorunlu)</h3>
+                                        <h3 className="font-semibold text-lg">{t('sections.system_info')}</h3>
                                     </div>
                                     {!hotinfoData ? (
                                         <div className="flex flex-col items-center justify-center p-8 rounded-xl bg-orange-500/5 border border-orange-500/20 space-y-4 text-center">
                                             <AlertTriangle className="h-8 w-8 text-orange-400" />
-                                            <p className="text-sm text-muted-foreground">Allplan hataları için Hotinfo dosyası gereklidir.</p>
+                                            <p className="text-sm text-muted-foreground">{t('sections.hotinfo_needed')}</p>
                                             <div className="relative">
                                                 <input type="file" accept=".hxl" onChange={handleHotinfoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                                                <Button type="button" className="bg-orange-600">Hotinfo Yükle (.hxl)</Button>
+                                                <Button type="button" className="bg-orange-600">{t('buttons.hotinfo_upload')}</Button>
                                             </div>
                                         </div>
                                     ) : (
@@ -268,7 +273,7 @@ export default function NewTicketPage() {
                                                         <div className="flex items-center gap-2">
                                                             <AlertTriangle className="h-4 w-4 text-amber-500" />
                                                             <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                                                                Sistem Bilgilerini Onaylayın
+                                                                {t('sections.confirm_hotinfo')}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -293,23 +298,23 @@ export default function NewTicketPage() {
                                                                     {hotinfoData.allplanHotfix && <div className="text-[10px] text-brand-400 mt-0.5">Hotfix: {hotinfoData.allplanHotfix}</div>}
                                                                 </div>
                                                                 <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">İşletim Sistemi</div>
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.os')}</div>
                                                                     <div className="text-sm font-semibold text-white">{hotinfoData.osVersion || '-'}</div>
                                                                 </div>
                                                                 <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">GPU Driver Sürümü</div>
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.gpu_driver')}</div>
                                                                     <div className="text-sm font-semibold text-white">{sr(hotinfoData.gpuDriverVersion) || '-'}</div>
                                                                 </div>
                                                                 <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">İşlemci (CPU)</div>
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.cpu')}</div>
                                                                     <div className="text-sm font-semibold text-white truncate">{hotinfoData.cpu || '-'}</div>
                                                                 </div>
                                                                 <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">OpenGL Sürümü</div>
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.opengl')}</div>
                                                                     <div className="text-sm font-semibold text-white">{sr(hotinfoData.openglVersion) || '-'}</div>
                                                                 </div>
                                                                 <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Ekran Kartı (GPU)</div>
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.gpu')}</div>
                                                                     <div className="text-sm font-semibold text-white truncate">{sr(hotinfoData.gpu) || '-'}</div>
                                                                 </div>
                                                                 <div className="p-3 bg-slate-900/80">
@@ -321,15 +326,15 @@ export default function NewTicketPage() {
                                                                     <div className="text-sm font-semibold text-white">{hotinfoData.ram || '-'}</div>
                                                                 </div>
                                                                 <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Ekran Çözünürlüğü</div>
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.screen_res')}</div>
                                                                     <div className="text-sm font-semibold text-white">{sr(hotinfoData.screenResolution) || '-'}</div>
                                                                 </div>
                                                                 <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Disk Bilgisi</div>
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.disk')}</div>
                                                                     <div className="text-sm font-semibold text-white truncate">{sr(hotinfoData.diskInfo) || '-'}</div>
                                                                 </div>
                                                                 <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Lisans Tipi</div>
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.license')}</div>
                                                                     <div className="text-sm font-semibold text-white">{sr(hotinfoData.licenseType) || '-'}</div>
                                                                 </div>
                                                                 <div className="p-3 bg-slate-900/80">
@@ -337,16 +342,16 @@ export default function NewTicketPage() {
                                                                     <div className="text-sm font-semibold text-white">{sr(hotinfoData.dotnetVersion) || '-'}</div>
                                                                 </div>
                                                                 <div className="p-3 bg-slate-900/80 col-span-2">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Ağ Bilgisi</div>
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.network')}</div>
                                                                     <div className="text-sm font-semibold text-white truncate">{sr(hotinfoData.networkInfo) || '-'}</div>
                                                                 </div>
                                                                 <div className="p-3 bg-slate-900/80 col-span-2">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Yüklü Modüller (max 10)</div>
+                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.modules')}</div>
                                                                     <div className="flex flex-wrap gap-1.5 mt-1">
                                                                         {hotinfoData.installedModules?.length > 0 ? hotinfoData.installedModules.slice(0, 10).map((mod: string, i: number) => (
                                                                             <span key={i} className="text-[10px] bg-white/5 border border-white/10 px-2 py-0.5 rounded text-slate-300">{sr(mod)}</span>
                                                                         )) : <span className="text-sm font-semibold text-white">-</span>}
-                                                                        {hotinfoData.installedModules?.length > 10 && <span className="text-[10px] text-muted-foreground">... +{hotinfoData.installedModules.length - 10} daha</span>}
+                                                                        {hotinfoData.installedModules?.length > 10 && <span className="text-[10px] text-muted-foreground">... +{hotinfoData.installedModules.length - 10} {ct('more')}</span>}
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -355,21 +360,21 @@ export default function NewTicketPage() {
 
                                                     {/* Confirmation Actions */}
                                                     <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between gap-3 bg-slate-900/80">
-                                                        <p className="text-[11px] text-amber-400/80">Bu bilgiler güncel mi? Onaylayın veya yeni dosya yükleyin.</p>
+                                                        <p className="text-[11px] text-amber-400/80">{t('sections.hotinfo_check')}</p>
                                                         <div className="flex items-center gap-2 shrink-0">
                                                             <div className="relative">
                                                                 <input type="file" accept=".hxl" onChange={handleHotinfoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                                                                 <Button type="button" variant="outline" size="sm" className="border-white/10 text-xs text-white bg-slate-800 hover:bg-slate-700">
-                                                                    Yenisini Yükle
+                                                                    {t('buttons.upload_new')}
                                                                 </Button>
                                                             </div>
                                                             <Button
                                                                 type="button"
                                                                 size="sm"
                                                                 className="bg-emerald-600 hover:bg-emerald-500 text-xs text-white"
-                                                                onClick={() => { setIsHotinfoConfirmed(true); toast.success('Sistem bilgileri onaylandı'); }}
+                                                                onClick={() => { setIsHotinfoConfirmed(true); toast.success(t('toasts.hotinfo_confirmed')); }}
                                                             >
-                                                                <CheckCircle2 className="h-3 w-3 mr-1" /> Onayla
+                                                                <CheckCircle2 className="h-3 w-3 mr-1" /> {ct('confirm')}
                                                             </Button>
                                                         </div>
                                                     </div>
@@ -381,8 +386,8 @@ export default function NewTicketPage() {
                                                             <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                                                         </div>
                                                         <div className="space-y-0.5">
-                                                            <p className="text-sm font-semibold text-emerald-400">Sistem Bilgileri (Hotinfo) Eklendi</p>
-                                                            <p className="text-[11px] text-emerald-500/70">Bu bilgiler teknik ekibe otomatik olarak iletilecek.</p>
+                                                            <p className="text-sm font-semibold text-emerald-400">{t('sections.hotinfo_added')}</p>
+                                                            <p className="text-[11px] text-emerald-500/70">{t('sections.hotinfo_added_desc')}</p>
                                                         </div>
                                                     </div>
                                                     <Button
@@ -392,7 +397,7 @@ export default function NewTicketPage() {
                                                         className="text-xs text-muted-foreground hover:text-white"
                                                         onClick={() => { setIsHotinfoConfirmed(false); }}
                                                     >
-                                                        Görüntüle / Değiştir
+                                                        {t('buttons.view_change')}
                                                     </Button>
                                                 </div>
                                             )}
@@ -409,18 +414,18 @@ export default function NewTicketPage() {
                                         name="priority"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Öncelik</FormLabel>
+                                                <FormLabel>{t('fields.priority')}</FormLabel>
                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger className="bg-slate-950/50 border-white/10">
-                                                            <SelectValue placeholder="Öncelik seçin" />
+                                                            <SelectValue placeholder={t('fields.priority_placeholder')} />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        <SelectItem value="LOW">Düşük</SelectItem>
-                                                        <SelectItem value="MEDIUM">Orta</SelectItem>
-                                                        <SelectItem value="HIGH">Yüksek</SelectItem>
-                                                        <SelectItem value="URGENT">Acil</SelectItem>
+                                                        <SelectItem value="LOW">{tt('priority.LOW')}</SelectItem>
+                                                        <SelectItem value="MEDIUM">{tt('priority.MEDIUM')}</SelectItem>
+                                                        <SelectItem value="HIGH">{tt('priority.HIGH')}</SelectItem>
+                                                        <SelectItem value="URGENT">{tt('priority.URGENT')}</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
@@ -438,9 +443,9 @@ export default function NewTicketPage() {
                                         name="subject"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Konu / Özet</FormLabel>
+                                                <FormLabel>{t('fields.subject')}</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Örn: Kurulum sırasında lisans hatası alıyorum" {...field} className="bg-slate-950/50 border-white/10" />
+                                                    <Input placeholder={t('fields.subject_placeholder')} {...field} className="bg-slate-950/50 border-white/10" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -459,7 +464,7 @@ export default function NewTicketPage() {
                             onClick={() => setCurrentStep(2)}
                             className="bg-brand-600 hover:bg-brand-500 text-industrial-dark font-bold"
                         >
-                            Sonraki Adım <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
+                            {ct('next_step')} <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
                         </Button>
                     </CardFooter>
                 )}
@@ -475,16 +480,16 @@ export default function NewTicketPage() {
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-bold tracking-tight">Akıllı Teşhis</h1>
-                    <p className="text-brand-400 font-medium">Size özel çözümleri hazırlıyoruz...</p>
+                    <h1 className="text-3xl font-bold tracking-tight">{t('ai.title')}</h1>
+                    <p className="text-brand-400 font-medium">{t('ai.loading')}</p>
                 </div>
             </div>
 
             <div className="space-y-6">
                 <div className="space-y-2">
-                    <Label className="text-lg">Sorununuzu detaylandırın</Label>
+                    <Label className="text-lg">{t('ai.detail_label')}</Label>
                     <Textarea
-                        placeholder="Hata mesajı, gerçekleşen işlem sırası vb..."
+                        placeholder={t('ai.detail_placeholder')}
                         className="min-h-[120px] bg-slate-950/50 border-white/10 text-lg p-4"
                         value={form.watch('description')}
                         onChange={(e) => form.setValue('description', e.target.value)}
@@ -495,7 +500,7 @@ export default function NewTicketPage() {
                         onClick={runDiagnosis}
                     >
                         {isDiagnosing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-                        Çözüm Ara (AI)
+                        {t('ai.search_btn')}
                     </Button>
                 </div>
 
@@ -503,7 +508,7 @@ export default function NewTicketPage() {
                     <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
                         <div className="flex items-center gap-2 text-brand-400">
                             <Sparkles className="h-5 w-5" />
-                            <h3 className="font-bold uppercase tracking-widest text-xs">Yapay Zeka Teşhis Sonucu</h3>
+                            <h3 className="font-bold uppercase tracking-widest text-xs">{t('ai.result_title')}</h3>
                         </div>
                         <Card className="bg-brand-500/5 border-brand-500/20 shadow-lg shadow-brand-500/10">
                             <CardContent className="p-6 prose prose-invert max-w-none">
@@ -517,7 +522,7 @@ export default function NewTicketPage() {
                     <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500 mt-8">
                         <div className="p-6 rounded-2xl bg-slate-900/80 border border-white/5 text-center space-y-4 backdrop-blur-xl">
                             <p className="text-muted-foreground italic text-sm">
-                                &quot;Yapay zeka asistanımızın sunduğu bu çözüm sorununuzu gidermeye yardımcı oldu mu?&quot;
+                                &quot;{t('ai.feedback_question')}&quot;
                             </p>
                             <div className="flex gap-3 justify-center">
                                 <Button
@@ -525,11 +530,11 @@ export default function NewTicketPage() {
                                     variant="outline"
                                     className="text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10 px-8"
                                     onClick={() => {
-                                        toast.success('Harika! Çözüm bulmanıza sevindik. 🎉');
-                                        router.push('/dashboard');
+                                        toast.success(t('toasts.ai_happy'));
+                                        router.push(`/${locale}/dashboard`);
                                     }}
                                 >
-                                    Evet, Çözüldü
+                                    {t('ai.yes_resolved')}
                                 </Button>
                                 <Button
                                     size="lg"
@@ -537,7 +542,7 @@ export default function NewTicketPage() {
                                     className="bg-white/5 hover:bg-white/10 px-8"
                                     onClick={() => setCurrentStep(3)}
                                 >
-                                    Hayır, Talebi Oluştur
+                                    {t('ai.no_create_ticket')}
                                 </Button>
                             </div>
                         </div>
@@ -554,13 +559,13 @@ export default function NewTicketPage() {
                 <Button variant="ghost" size="icon" onClick={() => setCurrentStep(2)} className="rounded-full hover:bg-white/10">
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <h1 className="text-3xl font-bold tracking-tight">Son Kontrol & Ekler</h1>
+                <h1 className="text-3xl font-bold tracking-tight">{t('summary.title')}</h1>
             </div>
 
             <Card className="bg-card/60 backdrop-blur-xl border-white/5">
                 <CardContent className="space-y-8 pt-6">
                     <div className="space-y-4">
-                        <Label>Ek Dosyalar / Ekran Görüntüleri</Label>
+                        <Label>{t('summary.attachments')}</Label>
                         <div className="flex flex-wrap gap-2 min-h-12 p-4 rounded-lg bg-slate-950/50 border border-white/5 border-dashed items-center relative">
                             {files.map((file, i) => (
                                 <div key={i} className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full text-xs animate-in zoom-in-95">
@@ -569,33 +574,33 @@ export default function NewTicketPage() {
                                     <button onClick={() => removeFile(i)} className="text-red-400"><X className="h-3 w-3" /></button>
                                 </div>
                             ))}
-                            {files.length === 0 && <p className="text-sm text-muted-foreground w-full text-center">Dosyaları buraya sürükleyin veya seçin</p>}
+                            {files.length === 0 && <p className="text-sm text-muted-foreground w-full text-center">{t('summary.drag_drop')}</p>}
                         </div>
                         <Input type="file" multiple onChange={handleFileChange} className="hidden" id="file-upload" />
                         <Button variant="outline" className="w-full border-white/10" asChild>
                             <label htmlFor="file-upload" className="cursor-pointer">
-                                <Paperclip className="h-4 w-4 mr-2" /> Dosya Seç
+                                <Paperclip className="h-4 w-4 mr-2" /> {t('summary.select_file')}
                             </label>
                         </Button>
                     </div>
 
                     <div className="p-4 rounded-xl bg-brand-500/5 border border-brand-500/20 space-y-2">
-                        <Label className="text-brand-400 text-[10px] uppercase font-bold">Özet Rapor</Label>
+                        <Label className="text-brand-400 text-[10px] uppercase font-bold">{t('summary.report')}</Label>
                         <p className="text-sm leading-relaxed text-white/80">
-                            <strong>Konu:</strong> {form.getValues('subject')}<br />
-                            <strong>Ürün:</strong> {selectedProductDetails?.name || 'Genel'}<br />
-                            <strong>Açıklama:</strong> {form.getValues('description').slice(0, 100)}...
+                            <strong>{t('summary.subject_label')}</strong> {form.getValues('subject')}<br />
+                            <strong>{t('summary.product_label')}</strong> {selectedProductDetails?.name || t('fields.product_general')}<br />
+                            <strong>{t('summary.desc_label')}</strong> {form.getValues('description').slice(0, 100)}...
                         </p>
                     </div>
                 </CardContent>
                 <CardFooter className="justify-between border-t border-white/5 pt-6 mt-6">
-                    <Button variant="ghost" onClick={() => router.back()}>İptal</Button>
+                    <Button variant="ghost" onClick={() => router.back()}>{ct('cancel')}</Button>
                     <Button
                         disabled={loading}
                         onClick={form.handleSubmit(onSubmit)}
                         className="bg-brand-600 min-w-40 shadow-lg shadow-brand-500/20 h-12 text-lg text-industrial-dark font-bold"
                     >
-                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Talebi Oluştur'}
+                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : t('buttons.create')}
                     </Button>
                 </CardFooter>
             </Card>

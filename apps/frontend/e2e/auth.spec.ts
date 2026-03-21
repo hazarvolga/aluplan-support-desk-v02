@@ -60,4 +60,17 @@ test.describe('Authentication Flow', () => {
         await page.waitForURL(/.*\/(dashboard|profile)/, { timeout: 120000 });
         expect(page.url()).toMatch(/.*\/(dashboard|profile)/);
     });
+
+    test('should display system requirements accordion', async ({ page }) => {
+        // Arrange
+        await page.goto('/login');
+
+        // Assert - Requirement accordion elements should be visible
+        const accordion = page.getByTestId('requirement-accordion');
+        await expect(accordion).toBeVisible({ timeout: 120000 });
+
+        // Check for specific software titles from seed (e.g., ALLPLAN 2026)
+        // We use a regex for flexibility across locales if needed, but since seed has it:
+        await expect(page.getByText(/ALLPLAN 2026/i)).toBeVisible();
+    });
 });

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Loader2, Eye, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function EmailTemplates() {
+    const t = useTranslations('settings.email.templates');
     const [templates, setTemplates] = useState<string[]>([]);
     const [selected, setSelected] = useState('');
     const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ export function EmailTemplates() {
                 }
             } catch (error) {
                 console.error(error);
-                toast.error('Şablonlar yüklenemedi');
+                toast.error(t('toasts.load_error'));
             } finally {
                 setLoading(false);
             }
@@ -41,10 +43,10 @@ export function EmailTemplates() {
                 setPreviewHtml(result.html);
                 setPreviewSubject(result.subject);
             } else {
-                toast.error(result.error || 'Derleme hatası');
+                toast.error(result.error || t('toasts.compile_error'));
             }
         } catch (error: any) {
-            toast.error('Önizleme yüklenemedi: ' + error.message);
+            toast.error(t('toasts.preview_failed', { message: error.message }));
             setPreviewHtml(null);
         } finally {
             setRendering(false);
@@ -54,8 +56,8 @@ export function EmailTemplates() {
     return (
         <Card className="bg-card/20 border-white/5">
             <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">Şablon Önizleme Modülü</CardTitle>
-                <CardDescription>Aktif MJML şablonlarını mock verilerle test edin.</CardDescription>
+                <CardTitle className="text-lg flex items-center gap-2">{t('preview_module')}</CardTitle>
+                <CardDescription>{t('preview_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {loading ? (
@@ -64,7 +66,7 @@ export function EmailTemplates() {
                     <div className="flex gap-4 items-center">
                         <Select value={selected} onValueChange={setSelected}>
                             <SelectTrigger className="w-[250px] bg-slate-900/50">
-                                <SelectValue placeholder="Şablon seçin..." />
+                                <SelectValue placeholder={t('select_placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {templates.map(t => (
@@ -74,7 +76,7 @@ export function EmailTemplates() {
                         </Select>
                         <Button onClick={handlePreview} disabled={rendering || !selected} className="bg-brand-600">
                             {rendering ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Eye className="h-4 w-4 mr-2" />}
-                            Önizle
+                            {t('preview_btn')}
                         </Button>
                     </div>
                 )}
@@ -82,7 +84,7 @@ export function EmailTemplates() {
                 {previewHtml && (
                     <div className="mt-6 border border-white/10 rounded-xl overflow-hidden bg-white/5">
                         <div className="bg-slate-900 p-3 border-b border-white/10 text-sm">
-                            <span className="text-muted-foreground mr-2">Konu:</span>
+                            <span className="text-muted-foreground mr-2">{t('subject_label')}:</span>
                             <span className="font-medium text-white">{previewSubject}</span>
                         </div>
                         <div className="w-full bg-white h-[600px] overflow-auto">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,14 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-    Brain, 
-    Bot, 
-    Cpu, 
-    Zap, 
-    CheckCircle2, 
-    AlertCircle, 
-    RefreshCcw, 
+import {
+    Brain,
+    Bot,
+    Cpu,
+    Zap,
+    CheckCircle2,
+    AlertCircle,
+    RefreshCcw,
     Settings2,
     Lock,
     Eye,
@@ -34,6 +35,7 @@ interface ProviderStatus {
 }
 
 export function AiSettings() {
+    const t = useTranslations('settings.ai');
     const [status, setStatus] = useState<ProviderStatus[]>([]);
     const [loading, setLoading] = useState(true);
     const [testing, setTesting] = useState<string | null>(null);
@@ -64,12 +66,12 @@ export function AiSettings() {
                 api.get('/ai/health-status'),
                 api.settings.list(true)
             ]);
-            
+
             setStatus(healthData.providers || []);
 
             // Map settings
             const findValue = (key: string) => settingsData.find((s: any) => s.key === key)?.value || '';
-            
+
             setOpenaiKey(findValue('ai.openai.key'));
             setOpenaiModel(findValue('ai.openai.model') || 'gpt-4');
             setAnthropicKey(findValue('ai.anthropic.key'));
@@ -87,7 +89,7 @@ export function AiSettings() {
             setSpecializedTranslation(findValue('ai.specialized.translate_provider') || 'global');
 
         } catch (error: any) {
-            toast.error('AI ayarları yüklenemedi: ' + error.message);
+            toast.error(t('toasts.load_error', { message: error.message }));
         } finally {
             setLoading(false);
         }
@@ -102,13 +104,13 @@ export function AiSettings() {
         try {
             const result = await api.post('/ai/test-connection', { provider });
             if (result.success) {
-                toast.success(`${provider} bağlantısı başarılı!`);
+                toast.success(t('toasts.test_success', { provider }));
                 loadData(); // Refresh health status
             } else {
-                toast.error(`${provider} bağlantı hatası: ${result.message}`);
+                toast.error(t('toasts.test_error', { provider, message: result.message }));
             }
         } catch (error: any) {
-            toast.error('Bağlantı testi başarısız: ' + error.message);
+            toast.error(t('toasts.test_failed', { message: error.message }));
         } finally {
             setTesting(null);
         }
@@ -137,23 +139,23 @@ export function AiSettings() {
                 updates.push(api.settings.upsert({ key: 'ai.specialized.analyze_sentiment_provider', value: specializedSentiment }));
                 updates.push(api.settings.upsert({ key: 'ai.specialized.translate_provider', value: specializedTranslation }));
             }
-            
+
             await Promise.all(updates);
-            toast.success(`${provider} ayarları kaydedildi.`);
+            toast.success(t('toasts.save_success', { provider }));
             loadData();
         } catch (error: any) {
-            toast.error('Kaydetme hatası: ' + error.message);
+            toast.error(t('toasts.save_error', { message: error.message }));
         } finally {
             setSaving(false);
         }
     };
 
-    const ProviderCard = ({ 
-        name, 
-        icon: Icon, 
-        color, 
-        keyLabel = 'API Key', 
-        keyValue, 
+    const ProviderCard = ({
+        name,
+        icon: Icon,
+        color,
+        keyLabel = 'API Key',
+        keyValue,
         setKeyValue,
         modelValue,
         setModelValue,
@@ -173,20 +175,20 @@ export function AiSettings() {
                             </div>
                             <div>
                                 <CardTitle className="text-lg font-bold">{name}</CardTitle>
-                                <CardDescription className="text-xs">Zekayı güçlendiren {name} motoru.</CardDescription>
+                                <CardDescription className="text-xs">{t('motor_desc', { name })}</CardDescription>
                             </div>
                         </div>
                         <div className="flex flex-col items-end gap-1">
                             {isAvailable ? (
                                 <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 gap-1.5 py-0.5">
-                                    <CheckCircle2 className="h-3 w-3" /> Aktif
+                                    <CheckCircle2 className="h-3 w-3" /> {t('providers.status_active', { defaultValue: 'Aktif' })}
                                 </Badge>
                             ) : (
                                 <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20 gap-1.5 py-0.5">
-                                    <AlertCircle className="h-3 w-3" /> Pasif
+                                    <AlertCircle className="h-3 w-3" /> {t('providers.status_inactive', { defaultValue: 'Pasif' })}
                                 </Badge>
                             )}
-                            {isActive && <span className="text-[10px] text-brand-400 font-medium uppercase tracking-tighter">Birincil Motor</span>}
+                            {isActive && <span className="text-[10px] text-brand-400 font-medium uppercase tracking-tighter">{t('primary_engine')}</span>}
                         </div>
                     </div>
                 </CardHeader>
@@ -195,7 +197,7 @@ export function AiSettings() {
                         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                             {keyLabel}
                             {secret && (
-                                <button 
+                                <button
                                     type="button"
                                     onClick={() => setShowKey(showKey === name ? null : name)}
                                     className="hover:text-white transition-colors p-1"
@@ -206,10 +208,10 @@ export function AiSettings() {
                             )}
                         </Label>
                         <div className="relative">
-                            <Input 
+                            <Input
                                 type={secret && showKey !== name ? 'password' : 'text'}
-                                value={keyValue} 
-                                onChange={(e) => setKeyValue(e.target.value)} 
+                                value={keyValue}
+                                onChange={(e) => setKeyValue(e.target.value)}
                                 className="bg-slate-950/80 border-white/10 focus:border-brand-500/50 pr-10 h-11 transition-all text-white placeholder:text-white/20 select-none shadow-inner"
                                 placeholder={secret ? '••••••••••••••••' : 'http://...'}
                             />
@@ -219,34 +221,34 @@ export function AiSettings() {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Model</Label>
-                        <Input 
-                            value={modelValue} 
-                            onChange={(e) => setModelValue(e.target.value)} 
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('ollama.chat_model')}</Label>
+                        <Input
+                            value={modelValue}
+                            onChange={(e) => setModelValue(e.target.value)}
                             className="bg-slate-950/80 border-white/10 focus:border-brand-500/50 h-11 transition-all text-white placeholder:text-white/20 shadow-inner"
                             placeholder="örn: gpt-4, claude-3-opus..."
                         />
                     </div>
                 </CardContent>
                 <CardFooter className="bg-white/5 p-3 flex gap-3">
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         className="flex-1 hover:bg-white/5 gap-2 text-xs"
                         onClick={() => handleTest(name)}
                         disabled={testing === name || (!keyValue && secret)}
                     >
                         {testing === name ? <RefreshCcw className="h-3 w-3 animate-spin" aria-hidden="true" /> : <Terminal className="h-3 w-3" aria-hidden="true" />}
-                        Test Et
+                        {t('test_btn')}
                     </Button>
-                    <Button 
-                        size="sm" 
+                    <Button
+                        size="sm"
                         className="flex-1 bg-brand-600 hover:bg-brand-500 gap-2 text-xs shadow-lg shadow-brand-900/20"
                         onClick={() => handleSave(name)}
                         disabled={saving}
                     >
                         {saving ? <RefreshCcw className="h-3 w-3 animate-spin" aria-hidden="true" /> : <Zap className="h-3 w-3 fill-current" aria-hidden="true" />}
-                        Kaydet
+                        {t('save_btn')}
                     </Button>
                 </CardFooter>
             </Card>
@@ -278,10 +280,10 @@ export function AiSettings() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold flex items-center gap-2">
-                        <Brain className="h-6 w-6 text-brand-500" aria-hidden="true" /> AI Zeka Merkezi
+                        <Brain className="h-6 w-6 text-brand-500" aria-hidden="true" /> {t('center_title')}
                     </h2>
                     <p className="text-muted-foreground text-sm max-w-xl">
-                        Çoklu yapay zeka sağlayıcılarını yönetin, hibrit model geçişlerini yapılandırın ve motor sağlığını izleyin.
+                        {t('center_desc')}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -292,39 +294,39 @@ export function AiSettings() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <ProviderCard 
-                    name="OpenAI" 
-                    icon={Bot} 
-                    color="green" 
-                    keyValue={openaiKey} 
+                <ProviderCard
+                    name="OpenAI"
+                    icon={Bot}
+                    color="green"
+                    keyValue={openaiKey}
                     setKeyValue={setOpenaiKey}
                     modelValue={openaiModel}
                     setModelValue={setOpenaiModel}
                 />
-                <ProviderCard 
-                    name="Anthropic" 
-                    icon={Zap} 
-                    color="orange" 
-                    keyValue={anthropicKey} 
+                <ProviderCard
+                    name="Anthropic"
+                    icon={Zap}
+                    color="orange"
+                    keyValue={anthropicKey}
                     setKeyValue={setAnthropicKey}
                     modelValue={anthropicModel}
                     setModelValue={setAnthropicModel}
                 />
-                <ProviderCard 
-                    name="Gemini" 
-                    icon={Brain} 
-                    color="blue" 
-                    keyValue={geminiKey} 
+                <ProviderCard
+                    name="Gemini"
+                    icon={Brain}
+                    color="blue"
+                    keyValue={geminiKey}
                     setKeyValue={setGeminiKey}
                     modelValue={geminiModel}
                     setModelValue={setGeminiModel}
                 />
-                <ProviderCard 
-                    name="Ollama" 
-                    icon={Cpu} 
-                    color="purple" 
-                    keyLabel="Server URL" 
-                    keyValue={ollamaUrl} 
+                <ProviderCard
+                    name="Ollama"
+                    icon={Cpu}
+                    color="purple"
+                    keyLabel="Server URL"
+                    keyValue={ollamaUrl}
                     setKeyValue={setOllamaUrl}
                     modelValue={ollamaModel}
                     setModelValue={setOllamaModel}
@@ -339,93 +341,93 @@ export function AiSettings() {
                             <Settings2 className="h-5 w-5" />
                         </div>
                         <div>
-                            <CardTitle className="text-lg font-bold">Özel Görev Eşleşmeleri</CardTitle>
-                            <CardDescription className="text-xs">Hangi görev için hangi AI motorunun kullanılacağını belirleyin.</CardDescription>
+                            <CardTitle className="text-lg font-bold">{t('specialized_title')}</CardTitle>
+                            <CardDescription className="text-xs">{t('specialized_desc')}</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 pt-0">
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bilet Kategorizasyonu</Label>
-                            <select 
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('task_categorization')}</Label>
+                            <select
                                 value={specializedCategorization}
                                 onChange={(e) => setSpecializedCategorization(e.target.value)}
                                 className="w-full bg-slate-900/50 border border-white/10 rounded-md p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                             >
-                                <option value="global">Global Varsayılan</option>
+                                <option value="global">{t('global_default')}</option>
                                 <option value="openai">OpenAI</option>
                                 <option value="anthropic">Anthropic</option>
                                 <option value="gemini">Gemini</option>
-                                <option value="ollama">Ollama (Lokal)</option>
+                                <option value="ollama">{t('ollama_local')}</option>
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bilet Özetleme</Label>
-                            <select 
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('task_summarization')}</Label>
+                            <select
                                 value={specializedSummarization}
                                 onChange={(e) => setSpecializedSummarization(e.target.value)}
                                 className="w-full bg-slate-900/50 border border-white/10 rounded-md p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                             >
-                                <option value="global">Global Varsayılan</option>
+                                <option value="global">{t('global_default')}</option>
                                 <option value="openai">OpenAI</option>
                                 <option value="anthropic">Anthropic</option>
                                 <option value="gemini">Gemini</option>
-                                <option value="ollama">Ollama (Lokal)</option>
+                                <option value="ollama">{t('ollama_local')}</option>
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">RAG & Yeniden Biçimlendirme</Label>
-                            <select 
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('task_reformatting')}</Label>
+                            <select
                                 value={specializedReformatting}
                                 onChange={(e) => setSpecializedReformatting(e.target.value)}
                                 className="w-full bg-slate-900/50 border border-white/10 rounded-md p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                             >
-                                <option value="global">Global Varsayılan</option>
+                                <option value="global">{t('global_default')}</option>
                                 <option value="openai">OpenAI</option>
                                 <option value="anthropic">Anthropic</option>
                                 <option value="gemini">Gemini</option>
-                                <option value="ollama">Ollama (Lokal)</option>
+                                <option value="ollama">{t('ollama_local')}</option>
                             </select>
                         </div>
                     </div>
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Duygu Analizi (Sentiment)</Label>
-                            <select 
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('task_sentiment')}</Label>
+                            <select
                                 value={specializedSentiment}
                                 onChange={(e) => setSpecializedSentiment(e.target.value)}
                                 className="w-full bg-slate-900/50 border border-white/10 rounded-md p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                             >
-                                <option value="global">Global Varsayılan</option>
+                                <option value="global">{t('global_default')}</option>
                                 <option value="openai">OpenAI</option>
                                 <option value="anthropic">Anthropic</option>
                                 <option value="gemini">Gemini</option>
-                                <option value="ollama">Ollama (Lokal)</option>
+                                <option value="ollama">{t('ollama_local')}</option>
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Otomatik Çeviri</Label>
-                            <select 
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('task_translation')}</Label>
+                            <select
                                 value={specializedTranslation}
                                 onChange={(e) => setSpecializedTranslation(e.target.value)}
                                 className="w-full bg-slate-900/50 border border-white/10 rounded-md p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                             >
-                                <option value="global">Global Varsayılan</option>
+                                <option value="global">{t('global_default')}</option>
                                 <option value="openai">OpenAI</option>
                                 <option value="anthropic">Anthropic</option>
                                 <option value="gemini">Gemini</option>
-                                <option value="ollama">Ollama (Lokal)</option>
+                                <option value="ollama">{t('ollama_local')}</option>
                             </select>
                         </div>
                         <div className="pt-4 flex justify-end">
-                            <Button 
+                            <Button
                                 onClick={() => handleSave('Specialized')}
                                 disabled={saving}
                                 className="bg-brand-600 hover:bg-brand-500"
                             >
                                 {saving ? <RefreshCcw className="h-4 w-4 animate-spin mr-2" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4 mr-2" aria-hidden="true" />}
-                                Eşleşmeleri Kaydet
+                                {t('save_mappings')}
                             </Button>
                         </div>
                     </div>
@@ -442,15 +444,15 @@ export function AiSettings() {
                         </div>
                         <div className="space-y-1">
                             <h3 className="font-bold flex items-center gap-2">
-                                <Search className="h-4 w-4 text-brand-400" /> Semantik Arama & RAG Yapılandırması
+                                <Search className="h-4 w-4 text-brand-400" /> {t('rag_title')}
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                                Bilgi havuzunuzu vektörleştiren ve arama kalitesini belirleyen temel ayarlar.
+                                {t('rag_desc')}
                             </p>
                         </div>
                     </div>
                     <Button variant="outline" className="border-white/10 hover:bg-white/5 gap-2 backdrop-blur-md">
-                        <Settings2 className="h-4 w-4" /> Gelişmiş Parametreler
+                        <Settings2 className="h-4 w-4" /> {t('advanced_params')}
                     </Button>
                 </div>
             </Card>
