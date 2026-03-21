@@ -79,7 +79,11 @@ export class KnowledgePoolService {
     }
 
     async syncLocalDataset() {
-        const datasetDir = path.resolve(process.cwd(), '../../dataset');
+        // Find dataset directory: try local root, then container root
+        let datasetDir = path.resolve(process.cwd(), 'dataset');
+        if (!fs.existsSync(datasetDir)) {
+            datasetDir = path.resolve(process.cwd(), '../../dataset');
+        }
 
         if (!fs.existsSync(datasetDir)) {
             this.logger.error(`Dataset directory not found at ${datasetDir}`);
