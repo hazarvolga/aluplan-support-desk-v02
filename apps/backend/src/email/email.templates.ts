@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 // Robust MJML import to handle ESM/CJS interop crashes
- 
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const mjmlModule = require('mjml');
 const mjml2html = typeof mjmlModule === 'function' ? mjmlModule : (mjmlModule.default || mjmlModule);
@@ -24,6 +24,15 @@ export class TemplateService {
   private static mjmlBaseDir: string = '';
   private static localesDir: string = '';
   private static readonly cache = new Map<string, Handlebars.TemplateDelegate>();
+
+  public static getMjmlBaseDir(): string {
+    this.ensurePaths();
+    return this.mjmlBaseDir;
+  }
+
+  public static getScreensDir(): string {
+    return path.join(this.getMjmlBaseDir(), 'screens');
+  }
 
   private static ensurePaths() {
     const cwd = process.cwd();

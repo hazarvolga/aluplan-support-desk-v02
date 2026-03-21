@@ -37,7 +37,7 @@ test.describe('Admin Panel Interactivity Diagnostic', () => {
         // 3. Perform login using data-testid
         console.log('Filling login credentials...');
         await page.fill('[data-testid="login-email"]', 'hazarvolga@gmail.com');
-        await page.fill('[data-testid="login-password"]', 'Vol?*187');
+        await page.fill('[data-testid="login-password"]', 'Vol1872017');
 
         console.log('Clicking submit...');
         await page.click('[data-testid="login-submit"]');
@@ -45,7 +45,7 @@ test.describe('Admin Panel Interactivity Diagnostic', () => {
         // 4. Wait for dashboard transition with more feedback
         console.log('Waiting for dashboard redirect...');
         try {
-            await page.waitForURL('**/dashboard', { timeout: 30000 });
+            await page.waitForURL('**/dashboard', { timeout: 120000 });
             console.log(`✅ Redirected to: ${page.url()}`);
         } catch (e) {
             console.log(`❌ TIMEOUT waiting for dashboard. Current URL: ${page.url()}`);

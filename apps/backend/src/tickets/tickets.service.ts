@@ -4,6 +4,8 @@ import {
     BadRequestException,
     ForbiddenException,
     Logger,
+    Inject,
+    forwardRef,
 } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -38,6 +40,7 @@ export class TicketsService {
         private readonly slaService: SlaService,
         private readonly piiMaskingService: PiiMaskingService,
         private readonly eventEmitter: EventEmitter2,
+        @Inject(forwardRef(() => AiQueryService))
         private readonly aiQueryService: AiQueryService,
         private readonly redis: RedisService,
     ) { }

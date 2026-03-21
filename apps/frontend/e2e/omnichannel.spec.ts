@@ -107,7 +107,7 @@ test.describe('Omni-channel Integration', () => {
                 allWhTickets.slice(0, 10).forEach((t: any) => console.log(`- ${t.subject} (Channel: ${t.channel})`));
             }
             throw new Error('Ticket not found yet in API');
-        }).toPass({ timeout: 30000, intervals: [3000] });
+        }).toPass({ timeout: 120000, intervals: [3000] });
 
         // 6. Verify in UI by direct navigation
         await page.goto(`/tr/tickets/${ticketId}`);

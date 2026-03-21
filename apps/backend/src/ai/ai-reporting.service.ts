@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AiQueryService } from './ai-query.service';
 import { EmailService } from '../email/email.service';
@@ -11,6 +11,7 @@ export class AiReportingService {
 
     constructor(
         private readonly aiQueryService: AiQueryService,
+        @Inject(forwardRef(() => EmailService))
         private readonly emailService: EmailService,
         private readonly prisma: PrismaService,
         private readonly config: ConfigService,

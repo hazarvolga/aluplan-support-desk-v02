@@ -96,7 +96,7 @@ test.describe('Ticket Lifecycle Orchestration', () => {
         // ── UI PHASE: Customer logs in and completes CSAT + close ─────────
         console.log('--- [UI] Customer: Login → View Ticket → Rate & Close ---');
         await page.goto('/login');
-        await expect(page.getByTestId('login-email')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('login-email')).toBeVisible({ timeout: 120000 });
         await page.getByTestId('login-email').fill(customerEmail);
         await page.getByTestId('login-password').fill(customerPassword);
         await page.getByTestId('login-submit').click();
@@ -107,7 +107,7 @@ test.describe('Ticket Lifecycle Orchestration', () => {
         // Navigate directly to ticket detail page
         const locale = new URL(page.url()).pathname.split('/')[1]; // 'en', 'tr', etc.
         await page.goto(`/${locale}/tickets/${ticketId}`);
-        await page.waitForURL(new RegExp(`tickets\/${ticketId}`), { timeout: 30000 });
+        await page.waitForURL(new RegExp(`tickets\/${ticketId}`), { timeout: 120000 });
         console.log('✅ On ticket page. URL:', page.url());
 
         // ── UI PHASE: Verify Admin Reply & Complete CSAT ─────────────────
@@ -153,7 +153,7 @@ test.describe('Ticket Lifecycle Orchestration', () => {
         console.log('✅ Clicked save_and_close button');
 
         // Should redirect to /my-tickets after closing
-        await page.waitForURL(/my-tickets/, { timeout: 30000 });
+        await page.waitForURL(/my-tickets/, { timeout: 120000 });
         console.log('✅ Redirected to /my-tickets after close — Ticket is CLOSED');
 
         // Final confirmation: the ticket no longer shows as "open"

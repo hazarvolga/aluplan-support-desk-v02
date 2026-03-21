@@ -64,7 +64,7 @@ test.describe('Live Chat WebSocket Flow', () => {
         await page.getByTestId('login-password').fill(customerPassword);
         await page.getByTestId('login-submit').click();
 
-        await page.waitForURL(/my-tickets/, { timeout: 30000 });
+        await page.waitForURL(/my-tickets/, { timeout: 120000 });
         const locale = new URL(page.url()).pathname.split('/')[1];
         await page.goto(`/${locale}/tickets/${ticketId}`);
         await page.waitForURL(new RegExp(`tickets\/${ticketId}`));

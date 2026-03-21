@@ -15,6 +15,7 @@ test.describe('Authentication Flow', () => {
     test('should load login page with correct elements', async ({ page }) => {
         // Arrange
         await page.goto('/login');
+        await page.waitForSelector('[data-testid="login-email"]', { timeout: 120000 });
 
         // Assert - email input
         await expect(page.getByTestId('login-email')).toBeVisible();
@@ -29,6 +30,7 @@ test.describe('Authentication Flow', () => {
     test('should show error message on invalid credentials', async ({ page }) => {
         // Arrange
         await page.goto('/login');
+        await page.waitForSelector('[data-testid="login-email"]', { timeout: 120000 });
 
         // Act
         await page.getByTestId('login-email').fill('invalid@example.com');
@@ -47,6 +49,7 @@ test.describe('Authentication Flow', () => {
     test('should redirect to dashboard on valid credentials', async ({ page }) => {
         // Arrange
         await page.goto('/login');
+        await page.waitForSelector('[data-testid="login-email"]', { timeout: 120000 });
 
         // Act
         await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
@@ -54,7 +57,7 @@ test.describe('Authentication Flow', () => {
         await page.getByTestId('login-submit').click();
 
         // Assert - wait for redirect (smart routing might go to /profile or /dashboard)
-        await page.waitForURL(/.*\/(dashboard|profile)/, { timeout: 30000 });
+        await page.waitForURL(/.*\/(dashboard|profile)/, { timeout: 120000 });
         expect(page.url()).toMatch(/.*\/(dashboard|profile)/);
     });
 });

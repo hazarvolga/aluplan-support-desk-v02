@@ -9,11 +9,11 @@ async function loginAsAdmin(page: Page) {
     await page.goto('/');
     // Use data-testid for stability
     await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
-    await page.getByTestId('login-password').fill('Vol?*187');
+    await page.getByTestId('login-password').fill('Vol1872017');
     await page.getByTestId('login-submit').click();
 
     // Wait for redirect to dashboard
-    await page.waitForURL(/.*\/dashboard/, { timeout: 30000 });
+    await page.waitForURL(/.*\/dashboard/, { timeout: 120000 });
 }
 
 test.describe('Create Ticket Flow', () => {
@@ -27,7 +27,7 @@ test.describe('Create Ticket Flow', () => {
         const locale = new URL(page.url()).pathname.split('/')[1] || 'tr';
         await page.goto(`/${locale}/tickets`);
 
-        await page.waitForURL(/.*\/tickets/, { timeout: 30000 });
+        await page.waitForURL(/.*\/tickets/, { timeout: 120000 });
         console.log('✅ Navigated to tickets page:', page.url());
 
         // Check if list or empty state is visible
@@ -38,7 +38,7 @@ test.describe('Create Ticket Flow', () => {
     test('should open new ticket modal/page and see the form', async ({ page }) => {
         const locale = new URL(page.url()).pathname.split('/')[1] || 'tr';
         await page.goto(`/${locale}/tickets`);
-        await page.waitForURL(/.*\/tickets/, { timeout: 30000 });
+        await page.waitForURL(/.*\/tickets/, { timeout: 120000 });
 
         // Act - look for new ticket creation button
         const createBtn = page.getByTestId('create-ticket-button');

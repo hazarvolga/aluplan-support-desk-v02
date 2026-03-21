@@ -12,13 +12,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 
-// MJML files live in src/ not dist/. Resolve reliably from __dirname.
-const MJML_BASE_DIR = path.join(__dirname, '..', '..', 'src', 'email', 'templates', 'mjml');
-const MJML_SCREENS_DIR = path.join(MJML_BASE_DIR, 'screens');
-
 @Controller('email')
 export class EmailController {
   private readonly logger = new Logger(EmailController.name);
+
+  private get screensDir() {
+    return TemplateService.getScreensDir();
+  }
 
   constructor(
     private readonly prisma: PrismaService,
@@ -37,7 +37,7 @@ export class EmailController {
           occurredAt: new Date(),
         }
       });
-        } catch (_e) {
+    } catch (_e) {
       // Silently fail if log ID doesn't align or event fails to insert. Tracking pixel shouldn't crash.
     }
 
@@ -176,9 +176,9 @@ export class EmailController {
   @RequirePermissions('settings:read')
   @Get('admin/templates')
   async getTemplates() {
-    if (!fs.existsSync(MJML_SCREENS_DIR)) return { templates: [] };
+    if (!fs.existsSync(this.screensDir)) return { templates: [] };
 
-    const files = fs.readdirSync(MJML_SCREENS_DIR)
+    const files = fs.readdirSync(this.screensDir)
       .filter(f => f.endsWith('.mjml'))
       .map(f => f.replace('.mjml', ''));
 
@@ -189,7 +189,7 @@ export class EmailController {
   @RequirePermissions('settings:read')
   @Get('admin/templates/:name/source')
   async getTemplateSource(@Param('name') name: string) {
-    const mjmlPath = path.join(MJML_SCREENS_DIR, `${name}.mjml`);
+    const mjmlPath = path.join(this.screensDir, `${name}.mjml`);
     if (!fs.existsSync(mjmlPath)) throw new NotFoundException('Template not found');
 
     const content = fs.readFileSync(mjmlPath, 'utf8');
@@ -200,10 +200,10 @@ export class EmailController {
   @RequirePermissions('settings:write')
   @Post('admin/templates/:name/save')
   async saveTemplate(@Param('name') name: string, @Body() body: { content: string }) {
-    const mjmlPath = path.join(MJML_SCREENS_DIR, `${name}.mjml`);
+    const mjmlPath = path.join(this.screensDir, `${name}.mjml`);
 
     // Ensure dir exists
-    if (!fs.existsSync(MJML_SCREENS_DIR)) fs.mkdirSync(MJML_SCREENS_DIR, { recursive: true });
+    if (!fs.existsSync(this.screensDir)) fs.mkdirSync(this.screensDir, { recursive: true });
 
     fs.writeFileSync(mjmlPath, body.content, 'utf8');
     TemplateService.resetCache(name);
@@ -269,7 +269,7 @@ export class EmailController {
     } catch (error: any) {
       this.logger.error(`Preview compilation failed for "${name}": ${error.message}`, error.stack);
       // Temporarily include the actual error message to diagnose the 400 Bad Request
-      throw new BadRequestException(`Compilation Error: ${error.message}. Name: ${name}. Internal Path: ${MJML_SCREENS_DIR}`);
+      throw new BadRequestException(`Compilation Error: ${error.message}. Name: ${name}. Internal Path: ${this.screensDir}`);
     }
   }
 

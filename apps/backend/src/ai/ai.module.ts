@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
@@ -19,7 +19,7 @@ import { AiReportingService } from './ai-reporting.service';
 import { EmailModule } from '../email/email.module';
 
 @Module({
-    imports: [SettingsModule, EmailModule],
+    imports: [SettingsModule, forwardRef(() => EmailModule)],
     controllers: [AiController],
     providers: [
         AiService,

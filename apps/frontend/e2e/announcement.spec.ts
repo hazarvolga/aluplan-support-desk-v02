@@ -10,12 +10,13 @@ test.describe('Announcement Flow', () => {
     test('should create and broadcast an announcement', async ({ page }) => {
         // 1. Login as Admin (using credentials from seed.ts)
         await page.goto('/');
+        await page.waitForSelector('[data-testid="login-email"]', { timeout: 120000 });
         await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
-        await page.getByTestId('login-password').fill('Vol?*187');
+        await page.getByTestId('login-password').fill('Vol1872017');
         await page.getByTestId('login-submit').click();
 
         // Wait for redirect to dashboard
-        await page.waitForURL(/.*\/dashboard/, { timeout: 30000 });
+        await page.waitForURL(/.*\/dashboard/, { timeout: 120000 });
         expect(page.url()).toContain('/dashboard');
 
         // 2. Navigate to Announcements

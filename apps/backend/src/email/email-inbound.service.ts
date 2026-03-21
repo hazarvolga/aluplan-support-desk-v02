@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
@@ -15,6 +15,7 @@ export class EmailInboundService implements OnModuleInit {
     constructor(
         private prisma: PrismaService,
         private settings: SettingsService,
+        @Inject(forwardRef(() => TicketsService))
         private ticketsService: TicketsService,
     ) { }
 

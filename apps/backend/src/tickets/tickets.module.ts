@@ -11,7 +11,7 @@ import { AiModule } from '../ai/ai.module';
 import { SlaController } from './sla.controller';
 
 @Module({
-    imports: [AiModule, forwardRef(() => NotificationsModule)],
+    imports: [forwardRef(() => AiModule), forwardRef(() => NotificationsModule)],
     controllers: [TicketsController, SlaController],
     providers: [TicketsService, SlaService, PiiMaskingService, RuleEngineService, AutoAssignmentService, BusinessHoursService],
     exports: [TicketsService, SlaService],

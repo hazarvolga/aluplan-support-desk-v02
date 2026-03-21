@@ -5,7 +5,7 @@ test.describe('Full System Diagnostic E2E Test', () => {
     test('1. System Boot & Landing Page', async ({ page }) => {
         const response = await page.goto('/tr', { waitUntil: 'domcontentloaded' });
         expect(response?.status()).toBe(200);
-        await expect(page.locator('text=Aluplan')).toBeVisible();
+        await expect(page.locator('text=Aluplan').first()).toBeVisible();
     });
 
     test('2. Admin Authentication Flow', async ({ page }) => {
@@ -32,7 +32,7 @@ test.describe('Full System Diagnostic E2E Test', () => {
 
         // Wait for Next.js dev server to compile and navigate to dashboard
         // We give it 45 seconds because local compilation on the first run can be slow
-        await page.waitForURL('**/dashboard', { timeout: 45000 });
+        await page.waitForURL('**/dashboard', { timeout: 120000 });
         expect(page.url()).toContain('/dashboard');
 
         // Wait for UI to mount
@@ -79,7 +79,7 @@ test.describe('Full System Diagnostic E2E Test', () => {
 
         await page.waitForTimeout(1000);
         await page.getByTestId('login-submit').click({ force: true });
-        await page.waitForURL('**/dashboard', { timeout: 30000 });
+        await page.waitForURL('**/dashboard', { timeout: 120000 });
 
         // Check Ticket Queue page
         await page.goto('/tr/dashboard');

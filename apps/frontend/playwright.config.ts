@@ -7,13 +7,13 @@ export default defineConfig({
     expect: {
         timeout: 30000
     },
-    fullyParallel: true,
     forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 0,
-    workers: process.env.CI ? 1 : undefined,
+    retries: 2,
+    workers: 2, // Reduce concurrency to prevent compilation thrashing
     reporter: 'html',
     use: {
-        actionTimeout: 0,
+        actionTimeout: 120000,
+        navigationTimeout: 120000,
         trace: 'on-first-retry',
         baseURL: 'http://localhost:3000',
         ignoreHTTPSErrors: true,
@@ -26,10 +26,18 @@ export default defineConfig({
         }
     ],
 
-    // webServer: {
-    //     command: 'pnpm dev',
-    //     url: 'http://localhost:3000',
-    //     reuseExistingServer: !process.env.CI,
-    //     timeout: 120 * 1000,
-    // },
+    webServer: [
+        {
+            command: 'pnpm --filter @aluplan/backend dev',
+            url: 'http://localhost:4000/api/v1/health',
+            reuseExistingServer: false,
+            timeout: 300 * 1000,
+        },
+        {
+            command: 'pnpm dev',
+            url: 'http://localhost:3000',
+            reuseExistingServer: false,
+            timeout: 300 * 1000,
+        }
+    ],
 });

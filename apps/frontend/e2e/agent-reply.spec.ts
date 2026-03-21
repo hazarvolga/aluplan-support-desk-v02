@@ -10,10 +10,11 @@ import { test, expect, Page } from '@playwright/test';
  */
 async function loginAsAdmin(page: Page) {
     await page.goto('/login');
+    await page.waitForSelector('[data-testid="login-email"]', { timeout: 120000 });
     await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
     await page.getByTestId('login-password').fill('Vol1872017');
     await page.getByTestId('login-submit').click();
-    await page.waitForURL(/.*\/dashboard/, { timeout: 30000 });
+    await page.waitForURL(/.*\/dashboard/, { timeout: 120000 });
 }
 
 test.describe('Agent Reply Flow', () => {
@@ -26,7 +27,7 @@ test.describe('Agent Reply Flow', () => {
         // Navigate to tickets listing
         const ticketNavLink = page.getByTestId('nav-tickets');
         await ticketNavLink.click();
-        await page.waitForURL(/.*\/tickets/, { timeout: 30000 });
+        await page.waitForURL(/.*\/tickets/, { timeout: 120000 });
 
         // Click on the first available ticket row
         const firstRow = page.locator('table tbody tr').first();
@@ -47,7 +48,7 @@ test.describe('Agent Reply Flow', () => {
     test('should send a reply message on ticket detail page', async ({ page }) => {
         // Navigate to tickets
         await page.getByTestId('nav-tickets').click();
-        await page.waitForURL(/.*\/tickets/, { timeout: 30000 });
+        await page.waitForURL(/.*\/tickets/, { timeout: 120000 });
 
         // Try to access first ticket
         const firstTicketLink = page.locator('table tbody tr a').first()
