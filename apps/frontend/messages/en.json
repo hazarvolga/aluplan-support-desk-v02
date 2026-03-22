@@ -375,6 +375,7 @@
       "started_by": "STARTED_BY: {name}",
       "timestamp": "TS: {date}",
       "finish_resolution": "FINISH RESOLUTION",
+      "close_ticket": "CLOSE TICKET",
       "summarizing": "SUMMARIZING_IN_PROGRESS...",
       "ai_summary_btn": "ANN_SUMMARY",
       "drafting": "DRAFT_PREPARATION_IN_PROGRESS...",

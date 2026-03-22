@@ -406,6 +406,17 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                         {t('finish_resolution')}
                                     </Button>
                                 )}
+                                {isCustomer && ticket.status !== 'CLOSED' && ticket.status !== 'RESOLVED' && ticket.status !== 'PENDING_CUSTOMER_REVIEW' && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleTransitionToReview}
+                                        className="h-7 border-emerald-500/30 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
+                                    >
+                                        <CheckCircle2 className="h-3 w-3" />
+                                        {t('close_ticket')}
+                                    </Button>
+                                )}
                                 {!isCustomer && (
                                     <Button
                                         variant="outline"
