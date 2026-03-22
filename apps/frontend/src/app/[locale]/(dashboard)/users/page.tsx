@@ -18,8 +18,11 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useTranslations } from 'next-intl';
 
 export default function UsersPage() {
+    const t = useTranslations('users');
+    const tc = useTranslations('common');
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -32,7 +35,7 @@ export default function UsersPage() {
             const res = await api.users.list('agent');
             setUsers(res);
         } catch (error) {
-            toast({ title: 'Error fetching users', description: String(error), variant: 'destructive' });
+            toast({ title: t('fetch_error'), description: String(error), variant: 'destructive' });
         } finally {
             setLoading(false);
         }
@@ -43,13 +46,13 @@ export default function UsersPage() {
     }, []);
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`${name} kullanıcısını silmek istediğinize emin misiniz?`)) return;
+        if (!confirm(t('delete_confirm', { name }))) return;
         try {
             await api.users.delete(id);
-            toast({ title: 'Kullanıcı silindi' });
+            toast({ title: t('deleted_success') });
             fetchUsers();
         } catch (error) {
-            toast({ title: 'Hata', description: String(error), variant: 'destructive' });
+            toast({ title: tc('error_title'), description: String(error), variant: 'destructive' });
         }
     };
 
@@ -67,11 +70,11 @@ export default function UsersPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Ekip Yönetimi</h1>
-                    <p className="text-muted-foreground">Destek temsilcilerini, yöneticileri ve adminleri yönetin.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+                    <p className="text-muted-foreground">{t('desc')}</p>
                 </div>
                 <Button onClick={handleCreate}>
-                    <Plus className="mr-2 h-4 w-4" /> Kullanıcı Ekle
+                    <Plus className="mr-2 h-4 w-4" /> {t('add_user')}
                 </Button>
             </div>
 
@@ -79,15 +82,15 @@ export default function UsersPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Kullanıcı</TableHead>
-                            <TableHead>Rol</TableHead>
-                            <TableHead>E-posta</TableHead>
-                            <TableHead className="text-right">İşlemler</TableHead>
+                            <TableHead>{t('table.user')}</TableHead>
+                            <TableHead>{t('table.role')}</TableHead>
+                            <TableHead>{t('table.email')}</TableHead>
+                            <TableHead className="text-right">{t('table.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {loading && <TableRow><TableCell colSpan={4} className="text-center py-4">Yükleniyor...</TableCell></TableRow>}
-                        {!loading && users.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-4">Kullanıcı bulunamadı</TableCell></TableRow>}
+                        {loading && <TableRow><TableCell colSpan={4} className="text-center py-4">{tc('loading')}</TableCell></TableRow>}
+                        {!loading && users.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-4">{t('empty')}</TableCell></TableRow>}
 
                         {users.map((user) => (
                             <TableRow key={user.id}>

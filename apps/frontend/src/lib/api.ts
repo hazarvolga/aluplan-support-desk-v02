@@ -374,6 +374,7 @@ export const api = {
         getDepartment: (id: string) => request<any>(`/teams/departments/${id}`),
         list: () => request<any[]>('/teams'),
         get: (id: string) => request<any>(`/teams/${id}`),
+        getStats: (id: string) => request<any>(`/teams/${id}/stats`),
         create: (body: any) => request<any>('/teams', { method: 'POST', body: JSON.stringify(body) }),
         addMember: (teamId: string, body: any) => request<any>(`/teams/${teamId}/members`, { method: 'POST', body: JSON.stringify(body) }),
         removeMember: (teamId: string, userId: string) => request<any>(`/teams/${teamId}/members/${userId}`, { method: 'DELETE' }),

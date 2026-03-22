@@ -27,8 +27,11 @@ import { RoleBadge } from '@/components/team/RoleBadge';
 import { TeamCreationPanel } from '@/components/team/TeamCreationPanel';
 import { UserDialog } from '@/components/users/user-dialog';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export default function TeamsPage() {
+    const t = useTranslations('teams');
+    const tc = useTranslations('common');
     const [teams, setTeams] = useState<any[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -48,7 +51,7 @@ export default function TeamsPage() {
             setTeams(teamsRes);
             setDepartments(deptsRes);
         } catch (error) {
-            toast({ title: 'Hata', description: 'Veriler yüklenirken bir sorun oluştu.', variant: 'destructive' });
+            toast({ title: tc('error_title'), description: t('fetch_error'), variant: 'destructive' });
         } finally {
             setLoading(false);
         }
@@ -69,18 +72,18 @@ export default function TeamsPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                        Ekip Komuta Merkezi
+                        {t('labels.command_center')}
                     </h1>
                     <p className="text-muted-foreground text-sm flex items-center gap-2">
                         <Building2 className="h-4 w-4" />
-                        Tek Organizasyon: Aluplan Destek Sistemi
+                        {t('labels.organization')}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="relative w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Ekip veya departman ara..."
+                            placeholder={t('search_placeholder')}
                             className="pl-9 h-10"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -88,11 +91,11 @@ export default function TeamsPage() {
                     </div>
                     {activeTab === 'agents' ? (
                         <Button className="h-10 px-4 bg-primary hover:bg-primary/90" onClick={() => setUserDialogOpen(true)}>
-                            <UserPlus className="mr-2 h-4 w-4" /> Yeni Ajan Ekle
+                            <UserPlus className="mr-2 h-4 w-4" /> {t('actions.add_agent')}
                         </Button>
                     ) : (
                         <Button className="h-10 px-4 bg-primary hover:bg-primary/90" onClick={() => setCreatePanelOpen(true)}>
-                            <Plus className="mr-2 h-4 w-4" /> Yeni Ekip
+                            <Plus className="mr-2 h-4 w-4" /> {t('actions.add_team')}
                         </Button>
                     )}
                 </div>
@@ -114,13 +117,13 @@ export default function TeamsPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid grid-cols-3 w-full md:w-[400px] h-12 p-1 bg-muted/50">
                     <TabsTrigger value="departments" className="gap-2 h-10 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                        <Building2 className="h-4 w-4" /> Departmanlar
+                        <Building2 className="h-4 w-4" /> {t('tabs.departments')}
                     </TabsTrigger>
                     <TabsTrigger value="teams" className="gap-2 h-10 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                        <Users className="h-4 w-4" /> Ekipler
+                        <Users className="h-4 w-4" /> {t('tabs.teams')}
                     </TabsTrigger>
                     <TabsTrigger value="agents" className="gap-2 h-10 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                        <UserCircle2 className="h-4 w-4" /> Ajanlar
+                        <UserCircle2 className="h-4 w-4" /> {t('tabs.agents')}
                     </TabsTrigger>
                 </TabsList>
 
@@ -146,33 +149,33 @@ export default function TeamsPage() {
                                         <ChevronRight className="h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                                     </CardTitle>
                                     <CardDescription className="line-clamp-2 min-h-[40px]">
-                                        {dept.description || 'Bu departman için açıklama eklenmemiş.'}
+                                        {dept.description || t('no_description')}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="flex gap-4">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Ekipler</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">{t('tabs.teams')}</span>
                                             <span className="text-xl font-bold">{dept._count?.teams || 0}</span>
                                         </div>
                                         <div className="w-px h-10 bg-border/50" />
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">SLA Politikaları</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">{t('tabs.sla_policies')}</span>
                                             <span className="text-xl font-bold">{dept.slaPolicies?.length || 0}</span>
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap gap-1.5 pt-2">
                                         {dept.slaPolicies?.slice(0, 2).map((sla: any) => (
                                             <Badge key={sla.id} variant="secondary" className="text-[10px] gap-1 px-2 py-0 h-6 bg-amber-500/10 text-amber-600 border-amber-500/20">
-                                                <Clock className="h-3 w-3" /> {sla.priority}: {sla.firstResponseMinutes}dk
+                                                <Clock className="h-3 w-3" /> {sla.priority}: {sla.firstResponseMinutes}{t('min_suffix')}
                                             </Badge>
                                         ))}
                                     </div>
                                 </CardContent>
                                 <CardFooter className="bg-muted/30 py-3 flex justify-between border-t border-border/40">
-                                    <span className="text-xs text-muted-foreground font-medium italic">Son güncelleme bugün</span>
+                                    <span className="text-xs text-muted-foreground font-medium italic">{t('labels.recent_activity')}</span>
                                     <Button variant="ghost" size="sm" className="h-8 text-xs font-bold hover:bg-background shadow-none px-3" asChild>
-                                        <Link href={`/teams/departments/${dept.id}`}>Detaylar</Link>
+                                        <Link href={`/teams/departments/${dept.id}`}>{t('actions.details')}</Link>
                                     </Button>
                                 </CardFooter>
                             </Card>
@@ -192,13 +195,13 @@ export default function TeamsPage() {
                                         </Badge>
                                         {team.autoAssignmentEnabled && (
                                             <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 text-[10px] h-5 px-1.5 animate-pulse">
-                                                <Zap className="h-3 w-3 mr-1 fill-current" /> OTO-ATAMA
+                                                <Zap className="h-3 w-3 mr-1 fill-current" /> {t('labels.auto_assignment')}
                                             </Badge>
                                         )}
                                     </div>
                                     <CardTitle className="text-lg flex justify-between items-center">
                                         {team.name}
-                                        <span className="text-muted-foreground text-sm font-normal">#{team.members?.length || 0} Ajan</span>
+                                        <span className="text-muted-foreground text-sm font-normal">#{team.members?.length || 0} {t('tabs.agents')}</span>
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="pb-4">
@@ -206,7 +209,7 @@ export default function TeamsPage() {
                                         {team.members?.slice(0, 5).map((m: any) => (
                                             <div key={m.user.id} className="inline-block h-8 w-8 rounded-full border-2 border-background bg-muted overflow-hidden ring-1 ring-border/50">
                                                 {m.user.avatarUrl ? (
-                                                    <img src={m.user.avatarUrl} alt={`${m.user.fullName} profil resmi`} />
+                                                    <img src={m.user.avatarUrl} alt={`${m.user.fullName} ${t('profile_pic_alt')}`} />
                                                 ) : (
                                                     <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground uppercase">
                                                         {m.user.fullName.substring(0, 2)}
@@ -222,14 +225,14 @@ export default function TeamsPage() {
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-muted-foreground flex items-center gap-1">
-                                            <ShieldCheck className="h-3.5 w-3.5" /> Strateji:
+                                            <ShieldCheck className="h-3.5 w-3.5" /> {t('labels.strategy')}
                                         </span>
                                         <span className="font-bold text-blue-600">{team.assignmentStrategy}</span>
                                     </div>
                                 </CardContent>
                                 <CardFooter className="bg-blue-50/10 border-t border-border/40 py-3">
                                     <Button variant="ghost" size="sm" className="w-full h-8 text-xs font-bold hover:bg-background" asChild>
-                                        <Link href={`/teams/team-detail/${team.id}`}>Takımı Yönet</Link>
+                                        <Link href={`/teams/team-detail/${team.id}`}>{t('actions.manage_team')}</Link>
                                     </Button>
                                 </CardFooter>
                             </Card>
@@ -243,11 +246,11 @@ export default function TeamsPage() {
                         <table className="w-full text-left text-sm">
                             <thead className="bg-muted/50 border-b border-border/50">
                                 <tr>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Ajan / Temsilci</th>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Durumu</th>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Rol</th>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground text-center">Aktif Yük</th>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">İşlemler</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">{t('labels.agent')}</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">{t('labels.status')}</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">{t('labels.role')}</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground text-center">{t('labels.active_ticket_load')}</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">{t('labels.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border/30">
@@ -257,7 +260,7 @@ export default function TeamsPage() {
                                             <div className="flex items-center gap-3">
                                                 <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/10 to-blue-500/10 flex items-center justify-center border border-border/40 group-hover:scale-110 transition-transform">
                                                     {m.user.avatarUrl ? (
-                                                        <img src={m.user.avatarUrl} className="rounded-xl" alt={`${m.user.fullName} profil resmi`} />
+                                                        <img src={m.user.avatarUrl} className="rounded-xl" alt={`${m.user.fullName} ${t('profile_pic_alt')}`} />
                                                     ) : (
                                                         <UserCircle2 className="h-5 w-5 text-muted-foreground" />
                                                     )}
@@ -277,14 +280,14 @@ export default function TeamsPage() {
                                         <td className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center gap-2">
                                                 <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '40%' }} />
+                                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, ((m.user._count?.ticketsAssigned || 0) / 5) * 100)}%` }} />
                                                 </div>
-                                                <span className="text-[11px] font-bold text-muted-foreground">2 / 5</span>
+                                                <span className="text-[11px] font-bold text-muted-foreground">{m.user._count?.ticketsAssigned || 0} / 5</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <Button variant="outline" size="sm" className="h-8 text-xs font-bold shadow-none hover:bg-primary hover:text-white transition-all border-border/60" asChild>
-                                                <Link href={`/teams/agents/${m.user.id}`}>Profil</Link>
+                                                <Link href={`/teams/agents/${m.user.id}`}>{t('actions.view_profile')}</Link>
                                             </Button>
                                         </td>
                                     </tr>

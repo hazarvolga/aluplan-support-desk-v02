@@ -56,6 +56,13 @@ export class TeamsController {
         return this.teamsService.getTeam(id);
     }
 
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'AGENT')
+    @Get(':id/stats')
+    @ApiOperation({ summary: 'Get team statistics' })
+    getTeamStats(@Param('id') id: string) {
+        return this.teamsService.getTeamStats(id);
+    }
+
     // MEMBERS & AGENTS
     @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD')
     @Post(':id/members')

@@ -20,6 +20,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { useTranslations } from 'next-intl';
 
 interface TeamMemberAddDialogProps {
     open: boolean;
@@ -36,6 +37,7 @@ export function TeamMemberAddDialog({
     existingMembers,
     onSuccess
 }: TeamMemberAddDialogProps) {
+    const t = useTranslations('teams');
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -65,7 +67,7 @@ export function TeamMemberAddDialog({
             const available = response.filter((u: any) => !existingIds.includes(u.id));
             setUsers(available);
         } catch (err: any) {
-            setError(err.message || 'Kullanıcılar yüklenirken bir hata oluştu');
+            setError(err.message || 'Users could not be loaded.');
         } finally {
             setLoading(false);
         }
@@ -73,7 +75,7 @@ export function TeamMemberAddDialog({
 
     const handleSubmit = async () => {
         if (!selectedUserId) {
-            setError('Lütfen bir ajan seçin.');
+            setError(t('member_add.error_select'));
             return;
         }
 
@@ -85,11 +87,11 @@ export function TeamMemberAddDialog({
                 roleOverride: roleOverride
             });
 
-            toast({ title: 'Başarılı', description: 'Ekibe yeni üye başarıyla eklendi.' });
+            toast({ title: 'Başarılı', description: t('member_add.success') });
             onSuccess();
             onOpenChange(false);
         } catch (err: any) {
-            setError(err.message || 'Üye eklenirken bir hata oluştu.');
+            setError(err.message || t('member_add.error_server'));
         } finally {
             setSubmitting(false);
         }
@@ -99,9 +101,9 @@ export function TeamMemberAddDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Yeni Ajan Ata</DialogTitle>
+                    <DialogTitle>{t('member_add.title')}</DialogTitle>
                     <DialogDescription>
-                        Ekibe sistemde kayıtlı olan bir kullanıcıyı ajan olarak atayın.
+                        {t('member_add.description')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -113,14 +115,14 @@ export function TeamMemberAddDialog({
                     )}
 
                     <div className="grid gap-2">
-                        <Label htmlFor="user">Kullanıcı (Ajan)</Label>
+                        <Label htmlFor="user">{t('member_add.select_agent')}</Label>
                         <Select value={selectedUserId} onValueChange={setSelectedUserId} disabled={loading || submitting}>
                             <SelectTrigger id="user">
-                                <SelectValue placeholder={loading ? "Kullanıcılar yükleniyor..." : "Bir kullanıcı seçin"} />
+                                <SelectValue placeholder={loading ? t('member_add.loading_users') : t('member_add.select_agent_placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {users.length === 0 && !loading && (
-                                    <div className="p-2 text-sm text-muted-foreground text-center">Atanabilecek yeni kullanıcı bulunamadı.</div>
+                                    <div className="p-2 text-sm text-muted-foreground text-center">{t('member_add.no_users')}</div>
                                 )}
                                 {users.map(user => (
                                     <SelectItem key={user.id} value={user.id}>
@@ -132,28 +134,28 @@ export function TeamMemberAddDialog({
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="role">Ekip İçi Rolü</Label>
+                        <Label htmlFor="role">{t('member_add.role')}</Label>
                         <Select value={roleOverride} onValueChange={setRoleOverride} disabled={submitting}>
                             <SelectTrigger id="role">
-                                <SelectValue placeholder="Rol seçin" />
+                                <SelectValue placeholder={t('member_add.select_role')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="AGENT">Standart Ajan</SelectItem>
-                                <SelectItem value="SENIOR_AGENT">Kıdemli Ajan</SelectItem>
-                                <SelectItem value="TEAM_LEAD">Takım Lideri</SelectItem>
-                                <SelectItem value="DEPARTMENT_MANAGER">Departman Yöneticisi</SelectItem>
+                                <SelectItem value="AGENT">{t('roles.agent')}</SelectItem>
+                                <SelectItem value="SENIOR_AGENT">{t('roles.senior_agent')}</SelectItem>
+                                <SelectItem value="TEAM_LEAD">{t('roles.team_lead')}</SelectItem>
+                                <SelectItem value="DEPARTMENT_MANAGER">{t('roles.department_manager')}</SelectItem>
                             </SelectContent>
                         </Select>
-                        <p className="text-[11px] text-muted-foreground">Bu rol sadece bu ekip içindeki yetkilerini belirler.</p>
+                        <p className="text-[11px] text-muted-foreground">{t('member_add.role_desc')}</p>
                     </div>
                 </div>
 
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-                        İptal
+                        {t('member_add.cancel')}
                     </Button>
                     <Button onClick={handleSubmit} disabled={submitting || !selectedUserId}>
-                        {submitting ? 'Ekleniyor...' : 'Ekibe Ata'}
+                        {submitting ? t('member_add.submitting') : t('member_add.submit')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

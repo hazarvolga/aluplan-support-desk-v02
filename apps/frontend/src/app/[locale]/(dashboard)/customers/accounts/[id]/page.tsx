@@ -19,7 +19,12 @@ import {
 import { Building2, Globe, MapPin, Users, ArrowLeft, ExternalLink, Calendar, Mail, User } from 'lucide-react';
 import Link from 'next/link';
 
+import { useTranslations, useLocale } from 'next-intl';
+
 export default function AccountDetailPage() {
+    const t = useTranslations('customers');
+    const commonT = useTranslations('common');
+    const locale = useLocale();
     const params = useParams();
     const router = useRouter();
     const [account, setAccount] = useState<any>(null);
@@ -45,8 +50,8 @@ export default function AccountDetailPage() {
     if (!account) {
         return (
             <div className="text-center py-12">
-                <h2 className="text-xl font-semibold">Şirket bulunamadı.</h2>
-                <Button variant="link" onClick={() => router.back()}>Geri Dön</Button>
+                <h2 className="text-xl font-semibold">{t('accounts.not_found')}</h2>
+                <Button variant="link" onClick={() => router.back()}>{commonT('back')}</Button>
             </div>
         );
     }
@@ -64,7 +69,7 @@ export default function AccountDetailPage() {
                             <Badge className="bg-sky-500/10 text-sky-400 border-sky-500/30">CRM</Badge>
                         )}
                     </h1>
-                    <p className="text-muted-foreground text-sm uppercase tracking-wider font-semibold">Şirket Detayları</p>
+                    <p className="text-muted-foreground text-sm uppercase tracking-wider font-semibold">{t('accounts.details_subtitle')}</p>
                 </div>
             </div>
 
@@ -72,13 +77,13 @@ export default function AccountDetailPage() {
                 {/* Info Cards */}
                 <Card className="lg:col-span-1 border-slate-200/60 dark:border-slate-800/60">
                     <CardHeader>
-                        <CardTitle className="text-lg">Genel Bilgiler</CardTitle>
+                        <CardTitle className="text-lg">{commonT('general_info')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-start gap-3">
                             <Globe className="h-4 w-4 text-muted-foreground mt-1" />
                             <div className="space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Web Sitesi</p>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase">{t('accounts.website')}</p>
                                 {account.website ? (
                                     <a href={account.website} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
                                         {account.website} <ExternalLink className="h-3 w-3" />
@@ -90,7 +95,7 @@ export default function AccountDetailPage() {
                         <div className="flex items-start gap-3">
                             <Building2 className="h-4 w-4 text-muted-foreground mt-1" />
                             <div className="space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Sektör</p>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase">{t('accounts.industry')}</p>
                                 <p className="text-sm">{account.industry || '-'}</p>
                             </div>
                         </div>
@@ -98,7 +103,7 @@ export default function AccountDetailPage() {
                         <div className="flex items-start gap-3">
                             <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
                             <div className="space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Adres</p>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase">{t('accounts.address')}</p>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
                                     {account.address || '-'}
                                 </p>
@@ -108,8 +113,8 @@ export default function AccountDetailPage() {
                         <div className="flex items-start gap-3">
                             <Calendar className="h-4 w-4 text-muted-foreground mt-1" />
                             <div className="space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Sisteme Giriş</p>
-                                <p className="text-sm">{new Date(account.createdAt).toLocaleDateString('tr-TR')}</p>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase">{t('accounts.joined_system')}</p>
+                                <p className="text-sm">{new Date(account.createdAt).toLocaleDateString(locale)}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -120,12 +125,12 @@ export default function AccountDetailPage() {
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle className="text-lg">Kayıtlı Kişiler</CardTitle>
-                                <CardDescription>Bu şirkete bağlı tüm müşteri kayıtları</CardDescription>
+                                <CardTitle className="text-lg">{t('accounts.registered_contacts')}</CardTitle>
+                                <CardDescription>{t('accounts.registered_contacts_desc')}</CardDescription>
                             </div>
                             <Badge variant="outline" className="gap-1 px-3 py-1">
                                 <Users className="h-3 w-3" />
-                                {account.customers?.length || 0} Kişi
+                                {t('accounts.people_count', { count: account.customers?.length || 0 })}
                             </Badge>
                         </div>
                     </CardHeader>
@@ -133,17 +138,17 @@ export default function AccountDetailPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Ad Soyad</TableHead>
-                                    <TableHead>Ünvan</TableHead>
-                                    <TableHead>E-posta</TableHead>
-                                    <TableHead>Durum</TableHead>
+                                    <TableHead>{commonT('full_name')}</TableHead>
+                                    <TableHead>{commonT('title')}</TableHead>
+                                    <TableHead>{commonT('email')}</TableHead>
+                                    <TableHead>{commonT('status')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {!account.customers || account.customers.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                                            Bu şirket için kayıtlı kişi bulunamadı.
+                                            {t('accounts.no_contacts_found')}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -163,11 +168,13 @@ export default function AccountDetailPage() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                {c.user?.status === 'ACTIVE' ? (
-                                                    <Badge className="bg-emerald-500/10 text-emerald-400 border-none px-2 py-0 h-5">Aktif</Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="px-2 py-0 h-5">{c.user?.status}</Badge>
-                                                )}
+                                                <Badge variant={c.user?.status === 'ACTIVE' ? 'default' : 'outline'} className={`${c.user?.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400' : 'text-slate-500'} border-none px-2 py-0 h-5`}>
+                                                    {(() => {
+                                                        const status = c.user?.status?.toLowerCase();
+                                                        const labelKey = `labels.${status}`;
+                                                        return commonT.has(labelKey) ? commonT(labelKey) : (t.has(`labels.${status}`) ? t(`labels.${status}`) : c.user?.status);
+                                                    })()}
+                                                </Badge>
                                             </TableCell>
                                         </TableRow>
                                     ))

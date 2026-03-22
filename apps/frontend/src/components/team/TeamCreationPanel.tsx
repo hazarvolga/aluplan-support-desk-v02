@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Building2, ShieldCheck, Zap } from 'lucide-react';
-
+import { useTranslations } from 'next-intl';
 
 interface TeamCreationPanelProps {
     open: boolean;
@@ -32,6 +32,8 @@ interface TeamCreationPanelProps {
 }
 
 export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOpenChange, onSuccess }) => {
+    const t = useTranslations('teams.creation');
+    const tc = useTranslations('common');
     const [departments, setDepartments] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -48,7 +50,7 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
             api.teams.departments()
                 .then(depts => setDepartments(depts))
                 .catch(() => {
-                    toast({ title: 'Hata', description: 'Departmanlar yüklenemedi.', variant: 'destructive' });
+                    toast({ title: tc('error_title'), description: t('error_dept'), variant: 'destructive' });
                 });
         }
     }, [open, toast]);
@@ -56,7 +58,7 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.departmentId) {
-            toast({ title: 'Hata', description: 'Lütfen bir departman seçin.', variant: 'destructive' });
+            toast({ title: tc('error_title'), description: t('error_dept'), variant: 'destructive' });
             return;
         }
         setLoading(true);
@@ -68,7 +70,7 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
                 .replace(/[^a-z0-9-]/g, '')
                 .substring(0, 100);
             await api.teams.create({ ...formData, slug });
-            toast({ title: 'Başarılı', description: 'Yeni ekip başarıyla oluşturuldu.' });
+            toast({ title: tc('success_title'), description: t('success') });
             onSuccess();
             onOpenChange(false);
             setFormData({
@@ -79,7 +81,7 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
                 autoAssignmentEnabled: true
             });
         } catch (error) {
-            toast({ title: 'Hata', description: 'Ekip oluşturulurken bir hata oluştu.', variant: 'destructive' });
+            toast({ title: tc('error_title'), description: t('error_server'), variant: 'destructive' });
         } finally {
             setLoading(false);
         }
@@ -93,19 +95,19 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
                         <ShieldCheck className="h-6 w-6" />
                     </div>
                     <div className="space-y-1 text-center">
-                        <DialogTitle className="text-2xl font-black">Yeni Ekip Oluştur</DialogTitle>
+                        <DialogTitle className="text-2xl font-black">{t('title')}</DialogTitle>
                         <DialogDescription className="text-xs">
-                            Operasyonel süreçleri yönetmek için yeni bir ekip tanımlayın.
+                            {t('description')}
                         </DialogDescription>
                     </div>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-6 mt-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Ekip İsmi</Label>
+                        <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('team_name')}</Label>
                         <Input
                             id="name"
-                            placeholder="Örn: Teknik Destek - Seviye 2"
+                            placeholder={t('team_name_placeholder')}
                             className="h-11 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20 shadow-none text-sm font-medium"
                             value={formData.name}
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
@@ -114,13 +116,13 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="dept" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Departman</Label>
+                        <Label htmlFor="dept" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('department')}</Label>
                         <Select
                             value={formData.departmentId}
                             onValueChange={val => setFormData({ ...formData, departmentId: val })}
                         >
                             <SelectTrigger className="h-11 rounded-xl bg-muted/30 border-none shadow-none text-sm font-medium">
-                                <SelectValue placeholder="Departman seçin" />
+                                <SelectValue placeholder={t('select_department')} />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-border/40 shadow-xl">
                                 {departments.map(d => (
@@ -135,10 +137,10 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="desc" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Açıklama</Label>
+                        <Label htmlFor="desc" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('desc_label')}</Label>
                         <Textarea
                             id="desc"
-                            placeholder="Ekibin görev tanımı..."
+                            placeholder={t('desc_placeholder')}
                             className="min-h-[80px] rounded-xl bg-muted/30 border-none shadow-none resize-none text-sm"
                             value={formData.description}
                             onChange={e => setFormData({ ...formData, description: e.target.value })}
@@ -149,9 +151,9 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                                 <Label className="text-sm font-bold flex items-center gap-2">
-                                    <Zap className="h-4 w-4 text-blue-500" /> Otomatik Atama
+                                    <Zap className="h-4 w-4 text-blue-500" /> {t('auto_assign')}
                                 </Label>
-                                <p className="text-[10px] text-muted-foreground">Yeni ticketlar bu ekibe otomatik atanır.</p>
+                                <p className="text-[10px] text-muted-foreground">{t('auto_assign_desc')}</p>
                             </div>
                             <input
                                 type="checkbox"
@@ -162,7 +164,7 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Atama Stratejisi</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('assign_strategy')}</Label>
                             <Select
                                 value={formData.assignmentStrategy}
                                 onValueChange={val => setFormData({ ...formData, assignmentStrategy: val })}
@@ -171,9 +173,9 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-border/40 shadow-xl">
-                                    <SelectItem value="ROUND_ROBIN" className="rounded-lg">Round Robin (Sıralı)</SelectItem>
-                                    <SelectItem value="LEAST_LOADED" className="rounded-lg">Least Loaded (Yük Bazlı)</SelectItem>
-                                    <SelectItem value="SKILL_BASED" className="rounded-lg">Skill Based (Yetenek Bazlı)</SelectItem>
+                                    <SelectItem value="ROUND_ROBIN" className="rounded-lg">{t('round_robin')}</SelectItem>
+                                    <SelectItem value="LEAST_LOADED" className="rounded-lg">{t('least_loaded')}</SelectItem>
+                                    <SelectItem value="SKILL_BASED" className="rounded-lg">{t('skill_based')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -185,7 +187,7 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
                             className="w-full h-12 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20"
                             disabled={loading}
                         >
-                            {loading ? 'Oluşturuluyor...' : 'Ekibi Başlat'}
+                            {loading ? t('submitting') : t('submit')}
                         </Button>
                     </DialogFooter>
                 </form>

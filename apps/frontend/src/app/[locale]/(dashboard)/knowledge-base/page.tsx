@@ -24,21 +24,26 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/components/auth/role-guard';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations, useLocale } from 'next-intl';
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-    DRAFT: { label: 'TASLAK', color: 'bg-slate-500/10 text-slate-400 border-white/5' },
-    REVIEW: { label: 'İNCELEMEDE', color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
-    PUBLISHED: { label: 'AKTİF', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
-    ARCHIVED: { label: 'ARŞİVLENDİ', color: 'bg-slate-500/5 text-slate-500/50 border-white/5' },
-};
+
 
 export default function KnowledgeBasePage() {
+    const t = useTranslations('admin.knowledge_base');
+    const locale = useLocale();
     const { user } = useAuth();
     const [articles, setArticles] = useState<any[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('PUBLISHED');
+
+    const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+        DRAFT: { label: t('filters.draft'), color: 'bg-slate-500/10 text-slate-400 border-white/5' },
+        REVIEW: { label: t('filters.review'), color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
+        PUBLISHED: { label: t('filters.active'), color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+        ARCHIVED: { label: t('filters.archived'), color: 'bg-slate-500/5 text-slate-500/50 border-white/5' },
+    };
 
     const isStaff = user?.role && ['admin', 'agent', 'senior_agent', 'team_lead', 'department_manager'].includes(user.role.toLowerCase());
 
@@ -75,10 +80,10 @@ export default function KnowledgeBasePage() {
                         <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                             <BookOpen className="h-6 w-6 text-primary" />
                         </div>
-                        Bilgi Bankası
+                        {t('title')}
                     </h2>
                     <p className="text-sm text-muted-foreground mt-1 ml-14 font-medium opacity-70">
-                        Kurumsal hafıza, çözüm makaleleri ve dokümantasyon merkezi
+                        {t('subtitle')}
                     </p>
                 </div>
 
@@ -91,7 +96,7 @@ export default function KnowledgeBasePage() {
                                 className="h-9 border-white/10 bg-white/5 text-[10px] font-bold uppercase tracking-widest hover:bg-white/10"
                             >
                                 <Link href="/knowledge-base/analytics">
-                                    <BarChart3 className="h-4 w-4 text-primary mr-2" /> ANALİTİK
+                                    <BarChart3 className="h-4 w-4 text-primary mr-2" /> {t('buttons.analytics')}
                                 </Link>
                             </Button>
                             <Button
@@ -99,7 +104,7 @@ export default function KnowledgeBasePage() {
                                 className="h-9 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest hover:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
                             >
                                 <Link href="/knowledge-base/new">
-                                    <Plus className="h-4 w-4 mr-2" /> MAKALE OLUŞTUR
+                                    <Plus className="h-4 w-4 mr-2" /> {t('buttons.new_article')}
                                 </Link>
                             </Button>
                         </>
@@ -114,7 +119,7 @@ export default function KnowledgeBasePage() {
                         <FileText className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">Toplam Makale</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">{t('stats.total')}</span>
                         <span className="text-lg font-bold text-white font-mono">{total.toString().padStart(3, '0')}</span>
                     </div>
                 </div>
@@ -123,7 +128,7 @@ export default function KnowledgeBasePage() {
                         <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                     </div>
                     <div>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">Yayınlananlar</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">{t('stats.published')}</span>
                         <span className="text-lg font-bold text-white font-mono">{articles.filter(a => a.status === 'PUBLISHED').length.toString().padStart(3, '0')}</span>
                     </div>
                 </div>
@@ -132,7 +137,7 @@ export default function KnowledgeBasePage() {
                         <TrendingUp className="h-5 w-5 text-amber-500" />
                     </div>
                     <div>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">Görüntülenme</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">{t('stats.views')}</span>
                         <span className="text-lg font-bold text-white font-mono">1.2K</span>
                     </div>
                 </div>
@@ -145,7 +150,7 @@ export default function KnowledgeBasePage() {
                     <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="MAKALE ARA..."
+                        placeholder={t('search.placeholder')}
                         className="w-full pl-10 pr-4 h-10 bg-white/5 border border-white/10 rounded-xl text-[11px] font-bold uppercase tracking-tight text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                     />
                 </form>
@@ -171,12 +176,12 @@ export default function KnowledgeBasePage() {
                 {loading ? (
                     <div className="p-20 text-center flex flex-col items-center justify-center">
                         <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] opacity-40">Veri Katmanları Yükleniyor</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] opacity-40">{t('empty.loading')}</p>
                     </div>
                 ) : articles.length === 0 ? (
                     <div className="p-20 text-center opacity-30">
                         <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">MAKALE BULUNAMADI</h3>
+                        <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{t('empty.no_records')}</h3>
                     </div>
                 ) : (
                     <div className="divide-y divide-white/5">
@@ -217,15 +222,15 @@ export default function KnowledgeBasePage() {
                                                     <div className="h-4 w-4 rounded-full bg-white/5 flex items-center justify-center">
                                                         <Search className="h-2.5 w-2.5" />
                                                     </div>
-                                                    <span>YAZAR: {a.creator?.fullName?.split(' ')[0] || 'SİSTEM'}</span>
+                                                    <span>{t('meta.author')}: {a.creator?.fullName?.split(' ')[0] || t('meta.system')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5">
                                                     <Clock className="h-3 w-3" />
-                                                    <span>GÜNCELLEME: {new Date(a.updatedAt).toLocaleDateString('tr-TR')}</span>
+                                                    <span>{t('meta.update')}: {new Date(a.updatedAt).toLocaleDateString(t('meta.locale'))}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5">
                                                     <Eye className="h-3 w-3" />
-                                                    <span>124 İZLENME</span>
+                                                    <span>124 {t('meta.views')}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -237,14 +242,14 @@ export default function KnowledgeBasePage() {
                                                         onClick={() => handleReview(a.id, true)}
                                                         className="h-8 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20 text-[9px] font-bold"
                                                     >
-                                                        ONAYLA
+                                                        {t('buttons.publish')}
                                                     </Button>
                                                     <Button
                                                         variant="outline"
                                                         onClick={() => handleReview(a.id, false)}
                                                         className="h-8 bg-rose-500/10 border border-rose-500/20 text-rose-500 hover:bg-rose-500/20 text-[9px] font-bold"
                                                     >
-                                                        REDDET
+                                                        {t('buttons.reject')}
                                                     </Button>
                                                 </div>
                                             )}

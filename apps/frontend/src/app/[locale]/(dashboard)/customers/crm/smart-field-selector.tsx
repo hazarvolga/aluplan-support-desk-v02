@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
     Command,
     CommandEmpty,
@@ -35,8 +36,10 @@ export function SmartFieldSelector({
     fields,
     value,
     onChange,
-    placeholder = "Alan seçin...",
+    placeholder,
 }: SmartFieldSelectorProps) {
+    const t = useTranslations('customers');
+    const displayPlaceholder = placeholder || t('sync.mapping.select_crm_field');
     const [open, setOpen] = useState(false);
 
     const selectedField = fields.find((f) => f.logicalName === value);
@@ -57,7 +60,7 @@ export function SmartFieldSelector({
                                 <span className="text-[10px] text-white/40">({selectedField.logicalName})</span>
                             </>
                         ) : (
-                            <span className="text-white/40 font-sans italic">{placeholder}</span>
+                            <span className="text-white/40 font-sans italic">{displayPlaceholder}</span>
                         )}
                     </div>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -65,9 +68,9 @@ export function SmartFieldSelector({
             </PopoverTrigger>
             <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-[#0c0c0c] border-white/10 shadow-2xl">
                 <Command className="bg-transparent">
-                    <CommandInput placeholder="CRM alanlarında ara..." className="h-9 text-[12px]" />
+                    <CommandInput placeholder={t('sync.mapping.search_crm_fields')} className="h-9 text-[12px]" />
                     <CommandList className="max-h-[300px]">
-                        <CommandEmpty>Alan bulunamadı.</CommandEmpty>
+                        <CommandEmpty>{t('sync.mapping.field_not_found')}</CommandEmpty>
                         <CommandGroup>
                             {fields.map((field) => (
                                 <CommandItem
@@ -95,7 +98,7 @@ export function SmartFieldSelector({
 
                                     {field.sampleValue !== undefined && field.sampleValue !== null && (
                                         <div className="mt-1 w-full bg-blue-500/5 rounded p-1.5 border border-blue-500/10">
-                                            <p className="text-[9px] text-blue-400/70 uppercase tracking-tighter font-bold">Örnek Veri:</p>
+                                            <p className="text-[9px] text-blue-400/70 uppercase tracking-tighter font-bold">{t('sync.mapping.sample_data')}</p>
                                             <p className="text-[11px] text-blue-300 italic truncate drop-shadow-sm">
                                                 {typeof field.sampleValue === 'object'
                                                     ? JSON.stringify(field.sampleValue)

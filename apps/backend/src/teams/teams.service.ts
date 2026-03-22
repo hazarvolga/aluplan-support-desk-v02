@@ -54,7 +54,14 @@ export class TeamsService {
                                 email: true,
                                 avatarUrl: true,
                                 role: true,
-                                agentStatus: true
+                                agentStatus: true,
+                                _count: {
+                                    select: {
+                                        ticketsAssigned: {
+                                            where: { status: { notIn: ['RESOLVED', 'CLOSED'] } }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -106,7 +113,14 @@ export class TeamsService {
                                 avatarUrl: true,
                                 role: true,
                                 agentStatus: true,
-                                title: true
+                                title: true,
+                                _count: {
+                                    select: {
+                                        ticketsAssigned: {
+                                            where: { status: { notIn: ['RESOLVED', 'CLOSED'] } }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -115,6 +129,49 @@ export class TeamsService {
         });
         if (!team) throw new NotFoundException('Team not found');
         return team;
+    }
+
+    async getTeamStats(id: string) {
+        const team = await this.prisma.team.findUnique({
+            where: { id },
+            include: {
+                members: {
+                    select: { userId: true, user: { select: { agentStatus: true } } }
+                }
+            }
+        });
+
+        if (!team) throw new NotFoundException('Team not found');
+
+        const memberIds = team.members.map(m => m.userId);
+        const totalMembers = team.members.length;
+        const onlineMembers = team.members.filter(m => m.user.agentStatus === 'ONLINE').length;
+
+        const onlineRate = totalMembers > 0 ? Math.round((onlineMembers / totalMembers) * 100) : 0;
+
+        const waitingQueue = await this.prisma.ticket.count({
+            where: {
+                assignedTo: { in: memberIds },
+                status: { notIn: ['RESOLVED', 'CLOSED'] }
+            }
+        });
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const resolvedToday = await this.prisma.ticket.count({
+            where: {
+                assignedTo: { in: memberIds },
+                status: 'RESOLVED',
+                resolvedAt: { gte: today }
+            }
+        });
+
+        return {
+            onlineRate,
+            waitingQueue,
+            resolvedToday
+        };
     }
 
     // MEMBERS & AGENTS

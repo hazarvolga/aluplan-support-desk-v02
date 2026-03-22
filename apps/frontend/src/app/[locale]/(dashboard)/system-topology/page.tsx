@@ -7,9 +7,11 @@ import { api } from '@/lib/api';
 import { Activity, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslations } from 'next-intl';
 import { SourceArchitectureView } from '@/components/dashboard/source-architecture-view';
 
 export default function SystemTopologyPage() {
+    const t = useTranslations('admin.system_topology');
     const [sourceStats, setSourceStats] = useState({
         pillars: {
             DOCUMENTS: 0,
@@ -29,7 +31,7 @@ export default function SystemTopologyPage() {
             setSourceStats(sourceRes);
         } catch (error) {
             toast({
-                title: 'Data sync error',
+                title: t('sync_error'),
                 description: String(error),
                 variant: 'destructive'
             });
@@ -49,10 +51,10 @@ export default function SystemTopologyPage() {
                 <div>
                     <h1 className="text-[20px] font-bold tracking-tight uppercase flex items-center gap-2">
                         <Activity className="h-5 w-5 text-primary" />
-                        Sistem Kaynak Topolojisi
+                        {t('title')}
                     </h1>
                     <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mt-1">
-                        SİSTEM_KAYNAK_TOPOLOJİSİ: VERİ AKIŞI VE İŞLEME MİMARİSİ
+                        {t('subtitle')}
                     </p>
                 </div>
                 <Button
@@ -62,7 +64,7 @@ export default function SystemTopologyPage() {
                     disabled={loading}
                 >
                     <RefreshCw className={`h-3 w-3 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                    YENİLE
+                    {t('refresh')}
                 </Button>
             </div>
 

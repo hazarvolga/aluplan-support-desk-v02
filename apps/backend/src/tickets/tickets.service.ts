@@ -339,24 +339,37 @@ export class TicketsService {
     // =============================================
     // SLA STATS
     // =============================================
-    async getSlaStats() {
-        const cacheKey = 'sla_stats';
+    async getSlaStats(user?: { sub: string, role: string }) {
+        const isCustomer = user?.role === 'customer' || user?.role === 'VIEWER';
+        const cacheKey = isCustomer && user?.sub ? `sla_stats_${user.sub}` : 'sla_stats_global';
+
         const cached = await this.redis.get(cacheKey);
         if (cached) return JSON.parse(cached);
 
-        const [total, breached, nearing] = await Promise.all([
-            this.prisma.ticket.count({ where: { status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] } } }),
-            this.prisma.ticket.count({ where: { isSlaBreached: true, status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] } } }),
+        const baseWhere = isCustomer && user?.sub ? { userId: user.sub } : {};
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const [total, breached, nearing, resolvedToday, resolvedTotal] = await Promise.all([
+            this.prisma.ticket.count({ where: { ...baseWhere, status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] } } }),
+            this.prisma.ticket.count({ where: { ...baseWhere, isSlaBreached: true, status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] } } }),
             this.prisma.ticket.count({
                 where: {
+                    ...baseWhere,
                     isSlaBreached: false,
                     status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] },
                     slaResponseDue: { lt: new Date(Date.now() + 60 * 60 * 1000) }, // next hour
                 },
             }),
+            this.prisma.ticket.count({
+                where: { ...baseWhere, status: TicketStatus.RESOLVED, resolvedAt: { gte: today } }
+            }),
+            this.prisma.ticket.count({
+                where: { ...baseWhere, status: TicketStatus.RESOLVED }
+            }),
         ]);
 
-        const result = { total, breached, nearing };
+        const result = { total, breached, nearing, resolvedToday, resolvedTotal };
         await this.redis.set(cacheKey, JSON.stringify(result), 60); // 60 seconds TTL
         return result;
     }

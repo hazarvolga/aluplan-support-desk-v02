@@ -38,7 +38,7 @@ enum TicketPriority {
 
 export default function AdminSettingsPage() {
     const t = useTranslations('settings');
-    const tCommon = useTranslations('common.priorities');
+    const tc = useTranslations('common');
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
@@ -86,7 +86,7 @@ export default function AdminSettingsPage() {
             setSettings(data);
         } catch (error: any) {
             toast({
-                title: t('toasts.error'),
+                title: t('toasts.load_error').split(':')[0],
                 description: t('toasts.load_error'),
                 variant: 'destructive',
             });
@@ -120,7 +120,7 @@ export default function AdminSettingsPage() {
             toast({ title: '✅ ' + t('branding.logo_title'), description: t('toasts.logo_success') });
         } catch (error: any) {
             toast({
-                title: t('toasts.error'),
+                title: t('toasts.save_error').split(':')[0],
                 description: t('toasts.logo_error') + ': ' + error.message,
                 variant: 'destructive',
             });
@@ -230,7 +230,7 @@ export default function AdminSettingsPage() {
             setPolicies(policiesData);
             setDepartments(deptsData);
         } catch (err: any) {
-            console.error('SLA verileri yüklenemedi:', err);
+            console.error(t('sla.load_error'), err);
         }
     };
 
@@ -248,7 +248,7 @@ export default function AdminSettingsPage() {
             setEditingPolicy(null);
             loadSlaData();
         } catch (err: any) {
-            toast({ title: 'Hata', description: err.message, variant: 'destructive' });
+            toast({ title: t('toasts.save_error').split(':')[0], description: err.message, variant: 'destructive' });
         } finally {
             setSaving(false);
         }
@@ -261,7 +261,7 @@ export default function AdminSettingsPage() {
             toast({ title: t('toasts.success'), description: t('toasts.policy_delete_success') });
             loadSlaData();
         } catch (err: any) {
-            toast({ title: t('toasts.error'), description: err.message, variant: 'destructive' });
+            toast({ title: t('toasts.save_error').split(':')[0], description: err.message, variant: 'destructive' });
         }
     };
 
@@ -286,7 +286,7 @@ export default function AdminSettingsPage() {
             MEDIUM: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
             LOW: 'bg-green-500/10 text-green-500 border-green-500/20',
         };
-        return <Badge variant="outline" className={styles[priority] || ''}>{tCommon(priority as any)}</Badge>;
+        return <Badge variant="outline" className={styles[priority] || ''}>{tc(`priorities.${priority}`)}</Badge>;
     };
 
     if (loading) {
@@ -434,7 +434,7 @@ export default function AdminSettingsPage() {
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Base URL</Label>
+                                                <Label className="text-xs">{t('ai.base_url')}</Label>
                                                 <Input value={getSetting('ai.ollama.url')} onChange={e => updateValue('ai.ollama.url', e.target.value)} placeholder="http://localhost:11434" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
@@ -467,7 +467,7 @@ export default function AdminSettingsPage() {
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">API Key</Label>
+                                                <Label className="text-xs">{t('ai.api_key')}</Label>
                                                 <Input type="password" value={getSetting('ai.openai.api_key')} onChange={e => updateValue('ai.openai.api_key', e.target.value)} placeholder="sk-..." className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
@@ -504,11 +504,11 @@ export default function AdminSettingsPage() {
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">API Key</Label>
+                                                <Label className="text-xs">{t('ai.api_key')}</Label>
                                                 <Input type="password" value={getSetting('ai.xai.api_key')} onChange={e => updateValue('ai.xai.api_key', e.target.value)} placeholder="xai-..." className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Base URL (Opsiyonel)</Label>
+                                                <Label className="text-xs">{t('ai.base_url_optional')}</Label>
                                                 <Input value={getSetting('ai.xai.url')} onChange={e => updateValue('ai.xai.url', e.target.value)} placeholder="https://api.x.ai/v1" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
@@ -545,21 +545,21 @@ export default function AdminSettingsPage() {
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">API Key</Label>
+                                                <Label className="text-xs">{t('ai.api_key')}</Label>
                                                 <Input type="password" value={getSetting('ai.groq.api_key')} onChange={e => updateValue('ai.groq.api_key', e.target.value)} placeholder="gsk_..." className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Base URL (Opsiyonel)</Label>
+                                                <Label className="text-xs">{t('ai.base_url_optional')}</Label>
                                                 <Input value={getSetting('ai.groq.url')} onChange={e => updateValue('ai.groq.url', e.target.value)} placeholder="https://api.groq.com/openai/v1" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Label className="text-xs">{t('ai.chat_model')}</Label>
                                                     <Input value={getSetting('ai.groq.chat_model')} onChange={e => updateValue('ai.groq.chat_model', e.target.value)} placeholder="llama3-8b-8192" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs text-muted-foreground">Embedding</Label>
-                                                    <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                                    <Label className="text-xs text-muted-foreground">{t('ai.embedding')}</Label>
+                                                    <Input disabled value={t('ai.unsupported')} className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
                                                 </div>
                                             </div>
                                         </div>
@@ -586,21 +586,21 @@ export default function AdminSettingsPage() {
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">API Key</Label>
+                                                <Label className="text-xs">{t('ai.api_key')}</Label>
                                                 <Input type="password" value={getSetting('ai.deepseek.api_key')} onChange={e => updateValue('ai.deepseek.api_key', e.target.value)} placeholder="sk-..." className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Base URL (Opsiyonel)</Label>
+                                                <Label className="text-xs">{t('ai.base_url_optional')}</Label>
                                                 <Input value={getSetting('ai.deepseek.url')} onChange={e => updateValue('ai.deepseek.url', e.target.value)} placeholder="https://api.deepseek.com/v1" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Label className="text-xs">{t('ai.chat_model')}</Label>
                                                     <Input value={getSetting('ai.deepseek.chat_model')} onChange={e => updateValue('ai.deepseek.chat_model', e.target.value)} placeholder="deepseek-chat" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs text-muted-foreground">Embedding</Label>
-                                                    <Input disabled value="Desteklenmiyor" className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
+                                                    <Label className="text-xs text-muted-foreground">{t('ai.embedding')}</Label>
+                                                    <Input disabled value={t('ai.unsupported')} className="bg-black/20 h-8 text-sm text-muted-foreground border-dashed" />
                                                 </div>
                                             </div>
                                         </div>
@@ -627,20 +627,20 @@ export default function AdminSettingsPage() {
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">API Key</Label>
+                                                <Label className="text-xs">{t('ai.api_key')}</Label>
                                                 <Input type="password" value={getSetting('ai.llmapi.api_key')} onChange={e => updateValue('ai.llmapi.api_key', e.target.value)} placeholder="llm-..." className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Base URL (Ops.)</Label>
+                                                <Label className="text-xs">{t('ai.base_url_optional')}</Label>
                                                 <Input value={getSetting('ai.llmapi.base_url')} onChange={e => updateValue('ai.llmapi.base_url', e.target.value)} placeholder="https://api.llmapi.io" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Label className="text-xs">{t('ai.chat_model')}</Label>
                                                     <Input value={getSetting('ai.llmapi.chat_model')} onChange={e => updateValue('ai.llmapi.chat_model', e.target.value)} placeholder="gpt-4o" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Embedding Model</Label>
+                                                    <Label className="text-xs">{t('ai.embed_model')}</Label>
                                                     <Input value={getSetting('ai.llmapi.embed_model')} onChange={e => updateValue('ai.llmapi.embed_model', e.target.value)} placeholder="text-embedding-3-small" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                             </div>
@@ -672,16 +672,16 @@ export default function AdminSettingsPage() {
                                                 <Input value={getSetting('ai.custom.url')} onChange={e => updateValue('ai.custom.url', e.target.value)} placeholder="https://..." className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">API Key</Label>
+                                                <Label className="text-xs">{t('ai.api_key')}</Label>
                                                 <Input type="password" value={getSetting('ai.custom.api_key')} onChange={e => updateValue('ai.custom.api_key', e.target.value)} placeholder="sk-..." className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Label className="text-xs">{t('ai.chat_model')}</Label>
                                                     <Input value={getSetting('ai.custom.chat_model')} onChange={e => updateValue('ai.custom.chat_model', e.target.value)} placeholder="model-name" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Embedding Model</Label>
+                                                    <Label className="text-xs">{t('ai.embed_model')}</Label>
                                                     <Input value={getSetting('ai.custom.embed_model')} onChange={e => updateValue('ai.custom.embed_model', e.target.value)} placeholder="embed-name" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                             </div>
@@ -749,9 +749,9 @@ export default function AdminSettingsPage() {
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="resend">Resend (API)</SelectItem>
-                                                <SelectItem value="smtp">SMTP (Legacy)</SelectItem>
-                                                <SelectItem value="gmail">Gmail (OAuth2)</SelectItem>
+                                                <SelectItem value="resend">{t('email.providers.resend')}</SelectItem>
+                                                <SelectItem value="smtp">{t('email.providers.smtp')}</SelectItem>
+                                                <SelectItem value="gmail">{t('email.providers.gmail')}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -770,7 +770,7 @@ export default function AdminSettingsPage() {
                                         <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
                                             <h3 className="font-medium">{t('email.resend_title')}</h3>
                                             <div className="space-y-2">
-                                                <Label>API Key</Label>
+                                                <Label>{t('email.resend_api_key')}</Label>
                                                 <Input
                                                     type="password"
                                                     value={getSetting('email.resend.api_key')}
@@ -786,7 +786,7 @@ export default function AdminSettingsPage() {
                                             <h3 className="font-medium">{t('email.smtp_title')}</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-2">
-                                                    <Label>Host</Label>
+                                                    <Label>{t('email.smtp_host')}</Label>
                                                     <Input
                                                         value={getSetting('email.smtp.host')}
                                                         onChange={e => updateValue('email.smtp.host', e.target.value)}
@@ -794,7 +794,7 @@ export default function AdminSettingsPage() {
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>Port</Label>
+                                                    <Label>{t('email.smtp_port')}</Label>
                                                     <Input
                                                         value={getSetting('email.smtp.port')}
                                                         onChange={e => updateValue('email.smtp.port', e.target.value)}
@@ -802,14 +802,14 @@ export default function AdminSettingsPage() {
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>User</Label>
+                                                    <Label>{t('email.smtp_user')}</Label>
                                                     <Input
                                                         value={getSetting('email.smtp.user')}
                                                         onChange={e => updateValue('email.smtp.user', e.target.value)}
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>Password</Label>
+                                                    <Label>{t('email.smtp_pass')}</Label>
                                                     <Input
                                                         type="password"
                                                         value={getSetting('email.smtp.pass')}
@@ -846,7 +846,7 @@ export default function AdminSettingsPage() {
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>Client ID</Label>
+                                                    <Label>{t('email.gmail_client_id')}</Label>
                                                     <Input
                                                         value={getSetting('email.gmail.client_id')}
                                                         onChange={e => updateValue('email.gmail.client_id', e.target.value)}
@@ -854,7 +854,7 @@ export default function AdminSettingsPage() {
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>Client Secret</Label>
+                                                    <Label>{t('email.gmail_client_secret')}</Label>
                                                     <Input
                                                         type="password"
                                                         value={getSetting('email.gmail.client_secret')}
@@ -863,7 +863,7 @@ export default function AdminSettingsPage() {
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs text-muted-foreground">Authorized Redirect URI (Google Cloud Console'a ekleyin)</Label>
+                                                    <Label className="text-xs text-muted-foreground">{t('email.redirect_uri_label')}</Label>
                                                     <div className="flex gap-2">
                                                         <Input
                                                             disabled
@@ -936,12 +936,12 @@ export default function AdminSettingsPage() {
                                             try {
                                                 const res = await api.email.verifyProvider();
                                                 if (res.available) {
-                                                    toast({ title: t('toasts.connection_success'), description: t('toasts.generic_success_hint', { provider: res.provider.toUpperCase() }) || `${res.provider.toUpperCase()} servisine erişim sağlandı.` });
+                                                    toast({ title: t('toasts.connection_success'), description: t('toasts.generic_success_hint', { provider: res.provider.toUpperCase() }) });
                                                 } else {
                                                     toast({ title: t('toasts.connection_failed'), description: t('toasts.generic_fail_hint'), variant: 'destructive' });
                                                 }
                                             } catch (err: any) {
-                                                toast({ title: t('toasts.error'), description: err.message || t('toasts.generic_error'), variant: 'destructive' });
+                                                toast({ title: t('toasts.error') || t('toasts.generic_error'), description: err.message || t('toasts.generic_error'), variant: 'destructive' });
                                             }
                                         }}
                                     >
@@ -981,7 +981,7 @@ export default function AdminSettingsPage() {
                                         {policies.length === 0 ? (
                                             <TableRow>
                                                 <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic">
-                                                    Henüz bir SLA politikası tanımlanmamış.
+                                                    {t('sla.empty_state') || 'No SLA policies defined yet.'}
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
@@ -1025,8 +1025,6 @@ export default function AdminSettingsPage() {
                                     <AlertCircle className="h-5 w-5 text-blue-500 shrink-0" />
                                     <div className="text-xs text-blue-700/80 leading-relaxed">
                                         <strong>{t('sla.how_it_works')}</strong> {t('sla.how_it_works_desc')}
-                                        Eğer bulunamazsa, sistem varsayılan (fallback) süreleri kullanır. Politikalar gelecekteki biletleri etkiler,
-                                        mevcut biletlerin SLA süreleri ancak öncelik değişikliğinde yeniden hesaplanır.
                                     </div>
                                 </div>
                             </CardContent>
@@ -1050,10 +1048,10 @@ export default function AdminSettingsPage() {
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="LOW">{tCommon('LOW')}</SelectItem>
-                                                    <SelectItem value="MEDIUM">{tCommon('MEDIUM')}</SelectItem>
-                                                    <SelectItem value="HIGH">{tCommon('HIGH')}</SelectItem>
-                                                    <SelectItem value="URGENT">{tCommon('URGENT')}</SelectItem>
+                                                    <SelectItem value="LOW">{tc('priorities.LOW')}</SelectItem>
+                                                    <SelectItem value="MEDIUM">{tc('priorities.MEDIUM')}</SelectItem>
+                                                    <SelectItem value="HIGH">{tc('priorities.HIGH')}</SelectItem>
+                                                    <SelectItem value="URGENT">{tc('priorities.URGENT')}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -1136,7 +1134,7 @@ export default function AdminSettingsPage() {
                                                         onClick={() => updateValue('branding.logo_url', '')}
                                                     >
                                                         <Trash className="h-4 w-4 mr-2" />
-                                                        {t('common.reset')}
+                                                        {tc('reset')}
                                                     </Button>
                                                 )}
                                             </div>
@@ -1321,10 +1319,10 @@ export default function AdminSettingsPage() {
                                                     ? 'http://localhost:4000/api/v1/whatsapp/webhook'
                                                     : `${origin.replace('//dashboard.', '//api.')}/api/v1/whatsapp/webhook`;
                                                 navigator.clipboard.writeText(url);
-                                                toast({ title: t('toasts.success'), description: "URL kopyalandı." });
+                                                toast({ title: tc('success_title'), description: t('toasts.url_copied') });
                                             }}
                                         >
-                                            Kopyala
+                                            {tc('copy')}
                                         </Button>
                                     </div>
                                     <p className="text-xs text-muted-foreground">

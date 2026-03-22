@@ -11,13 +11,10 @@ export default function AiHealthPage() {
         <div className="space-y-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-end border-b border-border/40 pb-4">
                 <div>
-                    <h1 className="text-[18px] font-bold tracking-tight uppercase flex items-center gap-2">
-                        <Bot className="h-5 w-5 text-primary" />
-                        AI HEALTH & TELEMETRY
-                    </h1>
-                    <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-tight">
-                        Real-time monitoring of AI models, token usage, and RAG performance.
-                    </p>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-[16px] md:text-[18px] font-bold tracking-tight text-foreground uppercase truncate">{t('title')}</h1>
+                        <p className="text-[9px] md:text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest">{t('subtitle')}</p>
+                    </div>
                 </div>
             </div>
 

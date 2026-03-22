@@ -24,7 +24,7 @@ export function EmailLogs() {
             setLogs(res.data);
             setTotal(res.total);
         } catch (error: any) {
-            toast.error(t('toasts.logs_load_error') || 'Logs could not be loaded');
+            toast.error(t('toasts.logs_load_error'));
         } finally {
             setLoading(false);
         }

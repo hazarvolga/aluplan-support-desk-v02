@@ -38,7 +38,8 @@ import {
     XCircle,
     Calendar,
     Check,
-    ArrowRight
+    ArrowRight,
+    Layers
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
@@ -47,6 +48,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from 'next-intl';
+import { DataTableHeader } from './components/DataTableHeader';
 
 interface CustomerItem {
     id: string;
@@ -90,7 +92,8 @@ interface AccountItem {
 type SortField = 'companyName' | 'fullName' | 'jobTitle' | 'email' | 'status' | 'createdAt' | 'contractStatus' | 'subscriptionModel' | 'industry' | 'customerNo' | 'phoneNumber' | 'crmVerified' | 'name' | 'website' | 'address' | 'accountNumber';
 type SortOrder = 'asc' | 'desc';
 
-export default function CustomersPage() {
+export default function CustomersPage({ params }: { params: { locale: string } }) {
+    const { locale } = params;
     const t = useTranslations('customers');
     const tc = useTranslations('common');
     const { toast } = useToast();
@@ -104,6 +107,8 @@ export default function CustomersPage() {
     const [logsLoading, setLogsLoading] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+    const [groupBy, setGroupBy] = useState<string | null>(null);
     const [sortField, setSortField] = useState<SortField>('createdAt');
     const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
@@ -250,11 +255,32 @@ export default function CustomersPage() {
         loadConnections();
     }, []);
 
-    const handleSort = (field: SortField) => {
-        if (sortField === field) {
-            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-        } else {
+    const handleSort = (field: SortField, order?: SortOrder) => {
+        if (order) {
+            setSortOrder(order);
             setSortField(field);
+        } else {
+            if (sortField === field) {
+                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+                setSortField(field);
+                setSortOrder('asc');
+            }
+        }
+    };
+
+    const handleFilterChange = (field: string, value: string) => {
+        setColumnFilters(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleGroupByChange = (field: string | null) => {
+        setGroupBy(field);
+        // When grouping, we usually want to sort by that field first
+        if (field) {
+            setSortField(field as SortField);
             setSortOrder('asc');
         }
     };
@@ -291,12 +317,12 @@ export default function CustomersPage() {
         try {
             if (isAccounts) {
                 await api.crm.bulkDeleteAccounts(ids);
-                toast({ title: '✅ ' + t('toasts.delete_success', { type: '' }), description: t('toasts.delete_success', { type: 'accounts' }) });
+                toast({ title: '✅ ' + t('toasts.delete_success_title'), description: t('toasts.delete_success_desc', { count: ids.length }) });
                 loadAccounts();
                 setSelectedAccountIds([]);
             } else {
                 await api.customers.bulkDelete(ids);
-                toast({ title: '✅ ' + t('toasts.delete_success', { type: '' }), description: t('toasts.delete_success', { type: 'customers' }) });
+                toast({ title: '✅ ' + t('toasts.delete_success_title'), description: t('toasts.delete_success_desc', { count: ids.length }) });
                 loadCustomers();
                 setSelectedIds([]);
             }
@@ -328,7 +354,7 @@ export default function CustomersPage() {
         setSyncing(true);
         try {
             await api.crm.triggerSync(connectionId);
-            toast({ title: '🔄 ' + t('sync.trigger_sync'), description: t('toasts.sync_started') });
+            toast({ title: '🔄 ' + t('crm.sync_btn'), description: t('toasts.sync_started') });
             loadConnections();
         } catch (error: any) {
             toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message });
@@ -363,7 +389,7 @@ export default function CustomersPage() {
     const filteredAndSortedCustomers = useMemo(() => {
         let result = [...customers];
 
-        // Filter
+        // Global search
         if (searchTerm) {
             const lowerTerm = searchTerm.toLowerCase();
             result = result.filter(c =>
@@ -376,60 +402,46 @@ export default function CustomersPage() {
             );
         }
 
+        // Per-column filtering
+        Object.entries(columnFilters).forEach(([key, value]) => {
+            if (!value) return;
+            const lowerValue = value.toLowerCase();
+            result = result.filter(c => {
+                let fieldValue = '';
+                switch (key) {
+                    case 'fullName': fieldValue = c.fullName; break;
+                    case 'email': fieldValue = c.email; break;
+                    case 'companyName': fieldValue = c.customerProfile?.companyName || ''; break;
+                    case 'customerNo': fieldValue = c.customerProfile?.customerNo || ''; break;
+                    case 'jobTitle': fieldValue = c.customerProfile?.jobTitle || ''; break;
+                    case 'contractStatus': fieldValue = c.customerProfile?.contractStatus || ''; break;
+                    case 'subscriptionModel': fieldValue = c.customerProfile?.subscriptionModel || ''; break;
+                    case 'industry': fieldValue = c.customerProfile?.industry || ''; break;
+                    case 'phoneNumber': fieldValue = c.customerProfile?.phoneNumber || ''; break;
+                    case 'status': fieldValue = c.status; break;
+                }
+                return fieldValue.toLowerCase().includes(lowerValue);
+            });
+        });
+
         // Sort
         result.sort((a, b) => {
             let aValue: any = '';
             let bValue: any = '';
 
             switch (sortField) {
-                case 'companyName':
-                    aValue = a.customerProfile?.companyName || '';
-                    bValue = b.customerProfile?.companyName || '';
-                    break;
-                case 'fullName':
-                    aValue = a.fullName || '';
-                    bValue = b.fullName || '';
-                    break;
-                case 'jobTitle':
-                    aValue = a.customerProfile?.jobTitle || '';
-                    bValue = b.customerProfile?.jobTitle || '';
-                    break;
-                case 'email':
-                    aValue = a.email || '';
-                    bValue = b.email || '';
-                    break;
-                case 'status':
-                    aValue = a.status || '';
-                    bValue = b.status || '';
-                    break;
-                case 'contractStatus':
-                    aValue = a.customerProfile?.contractStatus || '';
-                    bValue = b.customerProfile?.contractStatus || '';
-                    break;
-                case 'subscriptionModel':
-                    aValue = a.customerProfile?.subscriptionModel || '';
-                    bValue = b.customerProfile?.subscriptionModel || '';
-                    break;
-                case 'industry':
-                    aValue = a.customerProfile?.industry || '';
-                    bValue = b.customerProfile?.industry || '';
-                    break;
-                case 'customerNo':
-                    aValue = a.customerProfile?.customerNo || '';
-                    bValue = b.customerProfile?.customerNo || '';
-                    break;
-                case 'phoneNumber':
-                    aValue = a.customerProfile?.phoneNumber || '';
-                    bValue = b.customerProfile?.phoneNumber || '';
-                    break;
-                case 'crmVerified':
-                    aValue = a.customerProfile?.crmVerified ? 1 : 0;
-                    bValue = b.customerProfile?.crmVerified ? 1 : 0;
-                    break;
-                case 'createdAt':
-                    aValue = new Date(a.createdAt).getTime();
-                    bValue = new Date(b.createdAt).getTime();
-                    break;
+                case 'companyName': aValue = a.customerProfile?.companyName || ''; bValue = b.customerProfile?.companyName || ''; break;
+                case 'fullName': aValue = a.fullName || ''; bValue = b.fullName || ''; break;
+                case 'jobTitle': aValue = a.customerProfile?.jobTitle || ''; bValue = b.customerProfile?.jobTitle || ''; break;
+                case 'email': aValue = a.email || ''; bValue = b.email || ''; break;
+                case 'status': aValue = a.status || ''; bValue = b.status || ''; break;
+                case 'contractStatus': aValue = a.customerProfile?.contractStatus || ''; bValue = b.customerProfile?.contractStatus || ''; break;
+                case 'subscriptionModel': aValue = a.customerProfile?.subscriptionModel || ''; bValue = b.customerProfile?.subscriptionModel || ''; break;
+                case 'industry': aValue = a.customerProfile?.industry || ''; bValue = b.customerProfile?.industry || ''; break;
+                case 'customerNo': aValue = a.customerProfile?.customerNo || ''; bValue = b.customerProfile?.customerNo || ''; break;
+                case 'phoneNumber': aValue = a.customerProfile?.phoneNumber || ''; bValue = b.customerProfile?.phoneNumber || ''; break;
+                case 'crmVerified': aValue = a.customerProfile?.crmVerified ? 1 : 0; bValue = b.customerProfile?.crmVerified ? 1 : 0; break;
+                case 'createdAt': aValue = new Date(a.createdAt).getTime(); bValue = new Date(b.createdAt).getTime(); break;
             }
 
             if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
@@ -437,13 +449,37 @@ export default function CustomersPage() {
             return 0;
         });
 
+        // Grouping
+        if (groupBy && activeTab === 'list') {
+            const groups: Record<string, CustomerItem[]> = {};
+            result.forEach(item => {
+                let groupValue = '';
+                switch (groupBy) {
+                    case 'status': groupValue = item.status; break;
+                    case 'industry': groupValue = item.customerProfile?.industry || tc('unassigned').toUpperCase(); break;
+                    case 'contractStatus': groupValue = item.customerProfile?.contractStatus || tc('unassigned').toUpperCase(); break;
+                    case 'companyName': groupValue = item.customerProfile?.companyName || tc('unassigned').toUpperCase(); break;
+                    default: groupValue = tc('general').toUpperCase();
+                }
+                if (!groups[groupValue]) groups[groupValue] = [];
+                groups[groupValue].push(item);
+            });
+
+            const groupedResult: any[] = [];
+            Object.entries(groups).forEach(([value, items]) => {
+                groupedResult.push({ isGroupHeader: true, value, count: items.length });
+                groupedResult.push(...items);
+            });
+            return groupedResult;
+        }
+
         return result;
-    }, [customers, searchTerm, sortField, sortOrder]);
+    }, [customers, searchTerm, columnFilters, sortField, sortOrder, groupBy, activeTab]);
 
     const filteredAccounts = useMemo(() => {
         let result = [...accounts];
 
-        // Filter
+        // Global search
         if (searchTerm) {
             const lowerTerm = searchTerm.toLowerCase();
             result = result.filter(a =>
@@ -455,36 +491,35 @@ export default function CustomersPage() {
             );
         }
 
+        // Per-column filtering
+        Object.entries(columnFilters).forEach(([key, value]) => {
+            if (!value) return;
+            const lowerValue = value.toLowerCase();
+            result = result.filter(a => {
+                let fieldValue = '';
+                switch (key) {
+                    case 'name': fieldValue = a.name; break;
+                    case 'industry': fieldValue = a.industry || ''; break;
+                    case 'accountNumber': fieldValue = a.accountNumber || ''; break;
+                    case 'website': fieldValue = a.website || ''; break;
+                    case 'address': fieldValue = a.address || ''; break;
+                }
+                return fieldValue.toLowerCase().includes(lowerValue);
+            });
+        });
+
         // Sort
         result.sort((a, b) => {
             let aValue: any = '';
             let bValue: any = '';
 
             switch (sortField) {
-                case 'accountNumber':
-                    aValue = a.accountNumber || '';
-                    bValue = b.accountNumber || '';
-                    break;
-                case 'name':
-                    aValue = a.name || '';
-                    bValue = b.name || '';
-                    break;
-                case 'industry':
-                    aValue = a.industry || '';
-                    bValue = b.industry || '';
-                    break;
-                case 'website':
-                    aValue = a.website || '';
-                    bValue = b.website || '';
-                    break;
-                case 'address':
-                    aValue = a.address || '';
-                    bValue = b.address || '';
-                    break;
-                case 'crmVerified':
-                    aValue = a.crmVerified ? 1 : 0;
-                    bValue = b.crmVerified ? 1 : 0;
-                    break;
+                case 'accountNumber': aValue = a.accountNumber || ''; bValue = b.accountNumber || ''; break;
+                case 'name': aValue = a.name || ''; bValue = b.name || ''; break;
+                case 'industry': aValue = a.industry || ''; bValue = b.industry || ''; break;
+                case 'website': aValue = a.website || ''; bValue = b.website || ''; break;
+                case 'address': aValue = a.address || ''; bValue = b.address || ''; break;
+                case 'crmVerified': aValue = a.crmVerified ? 1 : 0; bValue = b.crmVerified ? 1 : 0; break;
             }
 
             if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
@@ -492,8 +527,29 @@ export default function CustomersPage() {
             return 0;
         });
 
+        // Grouping
+        if (groupBy && activeTab === 'accounts') {
+            const groups: Record<string, AccountItem[]> = {};
+            result.forEach(item => {
+                let groupValue = '';
+                switch (groupBy) {
+                    case 'industry': groupValue = item.industry || tc('unassigned').toUpperCase(); break;
+                    default: groupValue = tc('general').toUpperCase();
+                }
+                if (!groups[groupValue]) groups[groupValue] = [];
+                groups[groupValue].push(item);
+            });
+
+            const groupedResult: any[] = [];
+            Object.entries(groups).forEach(([value, items]) => {
+                groupedResult.push({ isGroupHeader: true, value, count: items.length });
+                groupedResult.push(...items);
+            });
+            return groupedResult;
+        }
+
         return result;
-    }, [accounts, searchTerm, sortField, sortOrder]);
+    }, [accounts, searchTerm, columnFilters, sortField, sortOrder, groupBy, activeTab]);
 
     const isAllSelected = filteredAndSortedCustomers.length > 0 && selectedIds.length === filteredAndSortedCustomers.length;
     const isAllAccountsSelected = filteredAccounts.length > 0 && selectedAccountIds.length === filteredAccounts.length;
@@ -605,9 +661,18 @@ export default function CustomersPage() {
                                         />
                                     </TableHead>
                                     {contactColumns.map(col => (
-                                        <SortableHeader key={col.key} field={col.key as SortField}>
-                                            {t(col.label)}
-                                        </SortableHeader>
+                                        <DataTableHeader
+                                            key={col.key}
+                                            columnKey={col.key}
+                                            label={t(col.label)}
+                                            currentSortField={sortField}
+                                            currentSortOrder={sortOrder}
+                                            onSort={handleSort as any}
+                                            onGroupBy={handleGroupByChange}
+                                            isGrouped={groupBy === col.key}
+                                            onFilterChange={handleFilterChange}
+                                            currentFilterValue={columnFilters[col.key]}
+                                        />
                                     ))}
                                     <TableHead className="w-10" />
                                 </TableRow>
@@ -628,107 +693,127 @@ export default function CustomersPage() {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    filteredAndSortedCustomers.map((c) => (
-                                        <TableRow key={c.id} className="group border-white/5 hover:bg-white/[0.02] transition-colors h-16">
-                                            <TableCell className="px-6">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedIds.includes(c.id)}
-                                                    onChange={(e) => handleSelectOne(c.id, e.target.checked)}
-                                                    className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
-                                                />
-                                            </TableCell>
+                                    filteredAndSortedCustomers.map((c: any, idx: number) => {
+                                        if (c.isGroupHeader) {
+                                            return (
+                                                <TableRow key={`group-${c.value}-${idx}`} className="bg-blue-500/[0.03] border-white/5 hover:bg-blue-500/[0.05] transition-colors h-12">
+                                                    <TableCell colSpan={contactColumns.length + 2} className="px-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-1 rounded bg-blue-500/10 border border-blue-500/20">
+                                                                <Layers className="h-3 w-3 text-blue-500" />
+                                                            </div>
+                                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">
+                                                                {c.value.toUpperCase()}
+                                                            </span>
+                                                            <Badge className="bg-white/5 text-white/40 border-none text-[8px] font-bold px-1.5 h-4">
+                                                                {c.count} {t('labels.items')}
+                                                            </Badge>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        }
 
-                                            {contactColumns.map(col => {
-                                                switch (col.key) {
-                                                    case 'customerNo':
-                                                        return (
-                                                            <TableCell key={col.key} className="text-white/40 font-mono text-[10px] whitespace-nowrap">
-                                                                {c.customerProfile?.customerNo || tc('unassigned').toUpperCase()}
-                                                            </TableCell>
-                                                        );
-                                                    case 'fullName':
-                                                        return (
-                                                            <TableCell key={col.key}>
-                                                                <Link href={`/customers/${c.id}`} className="font-bold text-white hover:text-blue-400 underline-offset-4 hover:underline transition-colors block">
-                                                                    {c.fullName}
-                                                                </Link>
-                                                            </TableCell>
-                                                        );
-                                                    case 'email':
-                                                        return (
-                                                            <TableCell key={col.key} className="text-white/60 font-mono text-[11px]">
-                                                                <div className="flex items-center gap-2">
-                                                                    {c.email}
-                                                                    {validationResults[c.email] && (
-                                                                        <div title={`${t('labels.score')}: ${validationResults[c.email].score}`}>
-                                                                            {validationResults[c.email].status === 'VALID' ? (
-                                                                                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                                                                            ) : validationResults[c.email].status === 'RISKY' ? (
-                                                                                <AlertCircle className="h-3 w-3 text-amber-500" />
-                                                                            ) : (
-                                                                                <XCircle className="h-3 w-3 text-rose-500" />
-                                                                            )}
-                                                                        </div>
+                                        return (
+                                            <TableRow key={c.id} className="group border-white/5 hover:bg-white/[0.02] transition-colors h-16">
+                                                <TableCell className="px-6">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.includes(c.id)}
+                                                        onChange={(e) => handleSelectOne(c.id, e.target.checked)}
+                                                        className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
+                                                    />
+                                                </TableCell>
+
+                                                {contactColumns.map(col => {
+                                                    switch (col.key) {
+                                                        case 'customerNo':
+                                                            return (
+                                                                <TableCell key={col.key} className="text-white/40 font-mono text-[10px] whitespace-nowrap">
+                                                                    {c.customerProfile?.customerNo || tc('unassigned').toUpperCase()}
+                                                                </TableCell>
+                                                            );
+                                                        case 'fullName':
+                                                            return (
+                                                                <TableCell key={col.key}>
+                                                                    <Link href={`/customers/${c.id}`} className="font-bold text-white hover:text-blue-400 underline-offset-4 hover:underline transition-colors block">
+                                                                        {c.fullName}
+                                                                    </Link>
+                                                                </TableCell>
+                                                            );
+                                                        case 'email':
+                                                            return (
+                                                                <TableCell key={col.key} className="text-white/60 font-mono text-[11px]">
+                                                                    <div className="flex items-center gap-2">
+                                                                        {c.email}
+                                                                        {validationResults[c.email] && (
+                                                                            <div title={`${t('labels.score')}: ${validationResults[c.email].score}`}>
+                                                                                {validationResults[c.email].status === 'VALID' ? (
+                                                                                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                                                                ) : validationResults[c.email].status === 'RISKY' ? (
+                                                                                    <AlertCircle className="h-3 w-3 text-amber-500" />
+                                                                                ) : (
+                                                                                    <XCircle className="h-3 w-3 text-rose-500" />
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </TableCell>
+                                                            );
+                                                        case 'companyName':
+                                                            return (
+                                                                <TableCell key={col.key}>
+                                                                    {c.customerProfile?.account ? (
+                                                                        <Badge variant="outline" className="bg-blue-500/5 text-blue-400 border-blue-500/20 text-[9px] font-bold px-2 py-0.5">
+                                                                            <Building2 className="h-3 w-3 mr-1" />
+                                                                            {c.customerProfile.account.name}
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <span className="text-white/40 italic text-xs">{c.customerProfile?.companyName || '-'}</span>
                                                                     )}
-                                                                </div>
-                                                            </TableCell>
-                                                        );
-                                                    case 'companyName':
-                                                        return (
-                                                            <TableCell key={col.key}>
-                                                                {c.customerProfile?.account ? (
-                                                                    <Badge variant="outline" className="bg-blue-500/5 text-blue-400 border-blue-500/20 text-[9px] font-bold px-2 py-0.5">
-                                                                        <Building2 className="h-3 w-3 mr-1" />
-                                                                        {c.customerProfile.account.name}
+                                                                </TableCell>
+                                                            );
+                                                        case 'jobTitle':
+                                                            return <TableCell key={col.key} className="text-white/60 text-xs font-medium">{c.customerProfile?.jobTitle || '-'}</TableCell>;
+                                                        case 'phoneNumber':
+                                                            return <TableCell key={col.key} className="text-white/60 font-mono text-[11px]">{c.customerProfile?.phoneNumber || '-'}</TableCell>;
+                                                        case 'contractStatus':
+                                                            return <TableCell key={col.key} className="text-white/60 text-xs font-medium">{c.customerProfile?.contractStatus || '-'}</TableCell>;
+                                                        case 'subscriptionModel':
+                                                            return <TableCell key={col.key} className="text-white/60 text-xs font-medium">{c.customerProfile?.subscriptionModel || '-'}</TableCell>;
+                                                        case 'industry':
+                                                            return (
+                                                                <TableCell key={col.key}>
+                                                                    <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/50 border border-white/5">
+                                                                        {c.customerProfile?.industry || t('labels.general')}
+                                                                    </span>
+                                                                </TableCell>
+                                                            );
+                                                        case 'status':
+                                                            return (
+                                                                <TableCell key={col.key}>
+                                                                    <Badge className={`${c.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-slate-400'} border-none text-[9px] font-black tracking-widest px-2 py-0.5`}>
+                                                                        {(() => {
+                                                                            const status = c.status?.toLowerCase();
+                                                                            const labelKey = `labels.${status}`;
+                                                                            return t.has(labelKey) ? t(labelKey) : c.status;
+                                                                        })()}
                                                                     </Badge>
-                                                                ) : (
-                                                                    <span className="text-white/40 italic text-xs">{c.customerProfile?.companyName || '-'}</span>
-                                                                )}
-                                                            </TableCell>
-                                                        );
-                                                    case 'jobTitle':
-                                                        return <TableCell key={col.key} className="text-white/60 text-xs font-medium">{c.customerProfile?.jobTitle || '-'}</TableCell>;
-                                                    case 'phoneNumber':
-                                                        return <TableCell key={col.key} className="text-white/60 font-mono text-[11px]">{c.customerProfile?.phoneNumber || '-'}</TableCell>;
-                                                    case 'contractStatus':
-                                                        return <TableCell key={col.key} className="text-white/60 text-xs font-medium">{c.customerProfile?.contractStatus || '-'}</TableCell>;
-                                                    case 'subscriptionModel':
-                                                        return <TableCell key={col.key} className="text-white/60 text-xs font-medium">{c.customerProfile?.subscriptionModel || '-'}</TableCell>;
-                                                    case 'industry':
-                                                        return (
-                                                            <TableCell key={col.key}>
-                                                                <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/50 border border-white/5">
-                                                                    {c.customerProfile?.industry || t('labels.general')}
-                                                                </span>
-                                                            </TableCell>
-                                                        );
-                                                    case 'status':
-                                                        return (
-                                                            <TableCell key={col.key}>
-                                                                {c.status === 'ACTIVE' ? (
-                                                                    <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[9px] font-black tracking-widest px-2 py-0.5">
-                                                                        {t('labels.active')}
-                                                                    </Badge>
-                                                                ) : (
-                                                                    <Badge variant="outline" className="text-slate-500 border-white/10 text-[9px] font-black tracking-widest px-2 py-0.5">
-                                                                        {c.status}
-                                                                    </Badge>
-                                                                )}
-                                                            </TableCell>
-                                                        );
-                                                    default:
-                                                        return <TableCell key={col.key} className="text-white/40 text-xs">-</TableCell>;
-                                                }
-                                            })}
+                                                                </TableCell>
+                                                            );
+                                                        default:
+                                                            return <TableCell key={col.key} className="text-white/40 text-xs">-</TableCell>;
+                                                    }
+                                                })}
 
-                                            <TableCell className="px-6 text-right">
-                                                <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-blue-500/10 hover:text-blue-500 text-muted-foreground">
-                                                    <Link href={`/customers/${c.id}`}><ChevronRight className="h-4 w-4" /></Link>
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
+                                                <TableCell className="px-6 text-right">
+                                                    <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-blue-500/10 hover:text-blue-500 text-muted-foreground">
+                                                        <Link href={`/customers/${c.id}`}><ChevronRight className="h-4 w-4" /></Link>
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })
                                 )}
                             </TableBody>
                         </Table>
@@ -749,9 +834,18 @@ export default function CustomersPage() {
                                         />
                                     </TableHead>
                                     {accountColumns.map(col => (
-                                        <SortableHeader key={col.key} field={col.key as SortField}>
-                                            {t(col.label)}
-                                        </SortableHeader>
+                                        <DataTableHeader
+                                            key={col.key}
+                                            columnKey={col.key}
+                                            label={t(col.label)}
+                                            currentSortField={sortField}
+                                            currentSortOrder={sortOrder}
+                                            onSort={handleSort as any}
+                                            onGroupBy={handleGroupByChange}
+                                            isGrouped={groupBy === col.key}
+                                            onFilterChange={handleFilterChange}
+                                            currentFilterValue={columnFilters[col.key]}
+                                        />
                                     ))}
                                     <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 text-right pr-6">{t('table.headers.actions')}</TableHead>
                                 </TableRow>
@@ -767,91 +861,96 @@ export default function CustomersPage() {
                                     <TableRow className="border-none">
                                         <TableCell colSpan={accountColumns.length + 2} className="py-20 text-center opacity-30">
                                             <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('accounts.not_found')}</p>
+                                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('table.empty')}</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    filteredAccounts.map((a) => (
-                                        <TableRow key={a.id} className="group border-white/5 hover:bg-white/[0.02] transition-colors h-16">
-                                            <TableCell className="px-6">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedAccountIds.includes(a.id)}
-                                                    onChange={(e) => handleSelectOneAccount(a.id, e.target.checked)}
-                                                    className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
-                                                />
-                                            </TableCell>
+                                    filteredAccounts.map((a: any, idx: number) => {
+                                        if (a.isGroupHeader) {
+                                            return (
+                                                <TableRow key={`group-acc-${a.value}-${idx}`} className="bg-amber-500/[0.03] border-white/5 hover:bg-amber-500/[0.05] transition-colors h-12">
+                                                    <TableCell colSpan={accountColumns.length + 2} className="px-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-1 rounded bg-amber-500/10 border border-amber-500/20">
+                                                                <Layers className="h-3 w-3 text-amber-500" />
+                                                            </div>
+                                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500">
+                                                                {a.value.toUpperCase()}
+                                                            </span>
+                                                            <Badge className="bg-white/5 text-white/40 border-none text-[8px] font-bold px-1.5 h-4">
+                                                                {a.count} {t('labels.items')}
+                                                            </Badge>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        }
 
-                                            {accountColumns.map(col => {
-                                                switch (col.key) {
-                                                    case 'accountNumber':
-                                                        return <TableCell key={col.key} className="text-white font-mono text-[10px] pr-4">{a.accountNumber || '-'}</TableCell>;
-                                                    case 'name':
-                                                        return (
-                                                            <TableCell key={col.key}>
-                                                                <div className="flex flex-col">
-                                                                    <Link href={`/customers/accounts/${a.id}`} className="font-bold text-white hover:text-blue-400 transition-colors">
-                                                                        {a.name}
-                                                                    </Link>
-                                                                    <div className="flex items-center gap-3 mt-1">
-                                                                        {a.website && (
-                                                                            <a href={a.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 font-mono uppercase">
-                                                                                <Globe className="h-2.5 w-2.5" /> {t('labels.domain')}
-                                                                            </a>
-                                                                        )}
-                                                                        <span className="text-[10px] text-muted-foreground/40 font-mono truncate max-w-[200px]">{a.address}</span>
-                                                                    </div>
-                                                                </div>
-                                                            </TableCell>
-                                                        );
-                                                    case 'industry':
-                                                        return (
-                                                            <TableCell key={col.key}>
-                                                                <Badge variant="outline" className="bg-white/5 border-white/10 text-white/60 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5">
-                                                                    {a.industry || 'DEFINED'}
-                                                                </Badge>
-                                                            </TableCell>
-                                                        );
-                                                    case 'website':
-                                                        return (
-                                                            <TableCell key={col.key} className="text-blue-400 text-xs font-mono">
-                                                                {a.website ? (
-                                                                    <a href={a.website} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
-                                                                        <Globe className="h-3 w-3" /> {a.website.replace(/^https?:\/\//, '')}
-                                                                    </a>
-                                                                ) : '-'}
-                                                            </TableCell>
-                                                        );
-                                                    case 'address':
-                                                        return <TableCell key={col.key} className="text-white/40 text-[10px] max-w-[200px] truncate">{a.address || '-'}</TableCell>;
-                                                    case 'crmVerified':
-                                                        return (
-                                                            <TableCell key={col.key}>
-                                                                {a.crmVerified ? (
+                                        return (
+                                            <TableRow key={a.id} className="group border-white/5 hover:bg-white/[0.02] transition-colors h-16">
+                                                <TableCell className="px-6">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedAccountIds.includes(a.id)}
+                                                        onChange={(e) => handleSelectOneAccount(a.id, e.target.checked)}
+                                                        className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
+                                                    />
+                                                </TableCell>
+
+                                                {accountColumns.map(col => {
+                                                    switch (col.key) {
+                                                        case 'accountNumber':
+                                                            return <TableCell key={col.key} className="text-white/40 font-mono text-[10px]">{a.accountNumber || tc('unassigned').toUpperCase()}</TableCell>;
+                                                        case 'name':
+                                                            return (
+                                                                <TableCell key={col.key}>
                                                                     <div className="flex items-center gap-2">
-                                                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                                                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">DYNAMICS_OK</span>
+                                                                        <Link href={`/customers/accounts/${a.id}`} className="font-bold text-white hover:text-blue-400 underline-offset-4 hover:underline transition-colors block">
+                                                                            {a.name}
+                                                                        </Link>
+                                                                        {a.crmVerified && <ShieldCheck className="h-3 w-3 text-blue-500" />}
                                                                     </div>
-                                                                ) : (
-                                                                    <div className="flex items-center gap-2 grayscale brightness-50">
-                                                                        <div className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-                                                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">MANUAL_ENTRY</span>
-                                                                    </div>
-                                                                )}
-                                                            </TableCell>
-                                                        );
-                                                    default:
-                                                        return <TableCell key={col.key} className="text-white/40 text-xs">-</TableCell>;
-                                                }
-                                            })}
+                                                                </TableCell>
+                                                            );
+                                                        case 'industry':
+                                                            return (
+                                                                <TableCell key={col.key}>
+                                                                    <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/50 border border-white/5">
+                                                                        {a.industry || t('labels.general')}
+                                                                    </span>
+                                                                </TableCell>
+                                                            );
+                                                        case 'website':
+                                                            return (
+                                                                <TableCell key={col.key}>
+                                                                    {a.website ? (
+                                                                        <a href={a.website.startsWith('http') ? a.website : `https://${a.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center text-blue-400 hover:text-blue-300 text-[10px] font-medium transition-colors">
+                                                                            <Globe className="h-3 w-3 mr-1.5" />
+                                                                            {a.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                                                                            <ExternalLink className="h-2.5 w-2.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                                        </a>
+                                                                    ) : (
+                                                                        <span className="text-white/20">-</span>
+                                                                    )}
+                                                                </TableCell>
+                                                            );
+                                                        case 'address':
+                                                            return <TableCell key={col.key} className="text-white/40 text-[10px] max-w-[200px] truncate">{a.address || '-'}</TableCell>;
+                                                        case 'crmVerified':
+                                                            return <TableCell key={col.key} className="text-white/60 text-[10px] font-bold">{a._count?.customers || 0} {t('labels.items')}</TableCell>;
+                                                        default:
+                                                            return <TableCell key={col.key} className="text-white/40 text-xs">-</TableCell>;
+                                                    }
+                                                })}
 
-                                            <TableCell className="pr-6 text-right">
-                                                <Button asChild variant="outline" size="sm" className="h-8 border-white/10 text-[9px] font-bold px-3 hover:bg-blue-500/10 hover:text-blue-400">
-                                                    <Link href={`/customers/accounts/${a.id}`}>{t('accounts.details')}</Link>
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
+                                                <TableCell className="px-6 text-right">
+                                                    <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-blue-500/10 hover:text-blue-500 text-muted-foreground">
+                                                        <Link href={`/customers/accounts/${a.id}`}><ChevronRight className="h-4 w-4" /></Link>
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })
                                 )}
                             </TableBody>
                         </Table>
@@ -898,12 +997,12 @@ export default function CustomersPage() {
                                                 </div>
                                                 <div className="flex items-center gap-2 mt-4">
                                                     {conn.isActive ? (
-                                                        <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[8px] font-black tracking-[0.2em] px-2">AKTİF</Badge>
+                                                        <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[8px] font-black tracking-[0.2em] px-2">{t('labels.active')}</Badge>
                                                     ) : (
-                                                        <Badge variant="outline" className="text-slate-500 border-white/10 text-[8px] font-black tracking-[0.2em] px-2">PASİF</Badge>
+                                                        <Badge variant="outline" className="text-slate-500 border-white/10 text-[8px] font-black tracking-[0.2em] px-2">{t('labels.passive')}</Badge>
                                                     )}
                                                     {conn.syncStatus === 'SYNCING' && (
-                                                        <Badge className="bg-blue-500/10 text-blue-400 animate-pulse border-none text-[8px] font-black tracking-[0.2em] px-2">SENKRONİZE_EDİLİYOR</Badge>
+                                                        <Badge className="bg-blue-500/10 text-blue-400 animate-pulse border-none text-[8px] font-black tracking-[0.2em] px-2">{t('labels.syncing')}</Badge>
                                                     )}
                                                 </div>
                                             </div>
@@ -913,7 +1012,7 @@ export default function CustomersPage() {
                                                     <div>
                                                         <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2">{t('sync.last_transfer')}</p>
                                                         <p className="text-sm font-bold text-white">
-                                                            {conn.lastSyncAt ? new Date(conn.lastSyncAt).toLocaleString('tr-TR') : t('sync.last_transfer_none')}
+                                                            {conn.lastSyncAt ? new Date(conn.lastSyncAt).toLocaleString(locale) : t('sync.last_transfer_none')}
                                                         </p>
                                                     </div>
                                                     <div>
@@ -923,7 +1022,7 @@ export default function CustomersPage() {
                                                             {conn.syncStatus === 'SYNCING' && logs.length > 0 && (
                                                                 <div className="flex-1 max-w-[200px] flex flex-col gap-1.5">
                                                                     <div className="flex justify-between text-[8px] font-bold uppercase tracking-widest text-white/40">
-                                                                        <span>{t('sync.progress') || 'TRANSFER_PROGRESS'}</span>
+                                                                        <span>{t('sync.progress')}</span>
                                                                         <span>{Math.round(((logs[0].successCount + logs[0].errorCount) / Math.max(1, logs[0].totalRecords)) * 100)}%</span>
                                                                     </div>
                                                                     <Progress
@@ -941,7 +1040,7 @@ export default function CustomersPage() {
                                                                                 {logs[0].errorCount}
                                                                             </span>
                                                                         )}
-                                                                        <span className="text-white/30">{logs[0].totalRecords} TOTAL</span>
+                                                                        <span className="text-white/30">{logs[0].totalRecords} {t('labels.total')}</span>
                                                                     </div>
                                                                 </div>
                                                             )}
@@ -977,12 +1076,12 @@ export default function CustomersPage() {
                         <Table>
                             <TableHeader className="bg-white/[0.03]">
                                 <TableRow className="border-white/5">
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 px-6">Timestamp</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">Status</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">Volume</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-emerald-500/70 uppercase py-4 tracking-widest">Passed</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-rose-500/70 uppercase py-4 tracking-widest">Failed</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 pr-6">Logs / Nodes</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 px-6">{t('labels.created_at')}</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">{t('labels.status')}</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">{t('labels.total')}</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-emerald-500/70 uppercase py-4 tracking-widest">{t('labels.passed')}</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-rose-500/70 uppercase py-4 tracking-widest">{t('labels.failed')}</TableHead>
+                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 pr-6">{t('labels.system_info')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -1003,7 +1102,7 @@ export default function CustomersPage() {
                                     logs.map((log) => (
                                         <TableRow key={log.id} className="border-white/5 hover:bg-white/[0.01]">
                                             <TableCell className="font-mono text-[11px] text-white/50 px-6">
-                                                {new Date(log.startedAt).toLocaleString('tr-TR')}
+                                                {new Date(log.startedAt).toLocaleString(locale)}
                                             </TableCell>
                                             <TableCell>
                                                 {log.status === 'SUCCESS' ? (
@@ -1017,14 +1116,14 @@ export default function CustomersPage() {
                                                         <span className="text-[10px] font-black text-rose-500 tracking-tighter">ERR_500</span>
                                                     </div>
                                                 ) : (
-                                                    <Badge variant="outline" className="animate-pulse border-blue-500/20 text-blue-400 text-[9px]">PENDING</Badge>
+                                                    <Badge variant="outline" className="animate-pulse border-blue-500/20 text-blue-400 text-[9px]">{t('labels.pending')}</Badge>
                                                 )}
                                             </TableCell>
                                             <TableCell className="font-bold text-white/80">{log.totalRecords}</TableCell>
                                             <TableCell className="text-emerald-500 font-mono text-[11px]">{log.successCount}</TableCell>
                                             <TableCell className="text-rose-500 font-mono text-[11px]">{log.errorCount}</TableCell>
                                             <TableCell className="text-[10px] text-white/20 font-mono italic max-w-[200px] truncate pr-6" title={log.errorMessage}>
-                                                {log.errorMessage || 'TRANSFER_LOG_EMPTY'}
+                                                {log.errorMessage || '-'}
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -1039,10 +1138,10 @@ export default function CustomersPage() {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={confirmBulkDelete}
-                title="Sistem Protokolü: Silme Onayı"
-                description={`${activeTab === 'accounts' ? selectedAccountIds.length : selectedIds.length} adet veri nesnesi kalıcı olarak silinecek. Bu işlem geri alınamaz.`}
-                confirmText="SİLME PROTOKOLÜNÜ BAŞLAT"
-                cancelText="İPTAL"
+                title={t('confirm.delete_title')}
+                description={t('confirm.delete_desc', { count: activeTab === 'accounts' ? selectedAccountIds.length : selectedIds.length })}
+                confirmText={t('confirm.delete_confirm')}
+                cancelText={t('confirm.cancel')}
                 variant="danger"
                 loading={deleting}
             />

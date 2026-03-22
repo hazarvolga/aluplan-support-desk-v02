@@ -2,26 +2,29 @@
 
 export const dynamic = "force-dynamic";
 
+import { useTranslations } from 'next-intl';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Mail, History, FileText } from 'lucide-react';
 import { EmailTemplates } from '../settings/components/EmailTemplates';
 import { EmailLogs } from '../settings/components/EmailLogs';
 
 export default function EmailsPage() {
+    const t = useTranslations('admin.emails');
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight text-white">E-Posta Yönetimi</h1>
-                <p className="text-muted-foreground">MJML şablonlarını düzenleyin, yeni şablonlar oluşturun ve gönderim geçmişini takip edin.</p>
+                <h1 className="text-3xl font-bold tracking-tight text-white">{t('title')}</h1>
+                <p className="text-muted-foreground">{t('subtitle')}</p>
             </div>
 
             <Tabs defaultValue="templates" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
                     <TabsTrigger value="templates" className="flex items-center gap-2">
-                        <FileText className="h-4 w-4" /> Şablon Editör
+                        <FileText className="h-4 w-4" /> {t('tabs.templates')}
                     </TabsTrigger>
                     <TabsTrigger value="logs" className="flex items-center gap-2">
-                        <History className="h-4 w-4" /> Gönderim Geçmişi
+                        <History className="h-4 w-4" /> {t('tabs.logs')}
                     </TabsTrigger>
                 </TabsList>
 

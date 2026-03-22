@@ -11,8 +11,11 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslations } from 'next-intl';
 
 export default function ProductsPage() {
+    const t = useTranslations('admin.products');
+    const tc = useTranslations('common');
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -36,7 +39,7 @@ export default function ProductsPage() {
             const data = await api.products.list();
             setProducts(data);
         } catch (error: any) {
-            toast.error(error.message || 'Ürünler yüklenirken hata oluştu');
+            toast.error(error.message || t('toasts.fetch_error'));
         } finally {
             setLoading(false);
         }
@@ -58,33 +61,33 @@ export default function ProductsPage() {
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
                     body: JSON.stringify({ name: productName, description: productDescription })
                 });
-                toast.success('Ürün güncellendi');
+                toast.success(t('toasts.product_updated'));
             } else {
                 await fetch(`${api.getBaseUrl()}/products`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
                     body: JSON.stringify({ name: productName, description: productDescription })
                 });
-                toast.success('Yeni ürün eklendi');
+                toast.success(t('toasts.product_added'));
             }
             setIsProductDialogOpen(false);
             fetchProducts();
         } catch (error: any) {
-            toast.error('Kayıt başarısız');
+            toast.error(t('toasts.save_failed'));
         }
     };
 
     const handleDeleteProduct = async (id: string) => {
-        if (!confirm('Bu ürünü ve altındaki tüm kategorileri silmek istediğinize emin misiniz?')) return;
+        if (!confirm(t('confirms.delete_product'))) return;
         try {
             await fetch(`${api.getBaseUrl()}/products/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
             });
-            toast.success('Ürün silindi');
+            toast.success(t('toasts.product_deleted'));
             fetchProducts();
         } catch (error) {
-            toast.error('Silme başarısız');
+            toast.error(t('toasts.delete_failed'));
         }
     };
 
@@ -98,33 +101,33 @@ export default function ProductsPage() {
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
                     body: JSON.stringify({ name: categoryName, keywords: keywordsArray })
                 });
-                toast.success('Kategori güncellendi');
+                toast.success(t('toasts.category_updated'));
             } else {
                 await fetch(`${api.getBaseUrl()}/products/${activeProductId}/categories`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
                     body: JSON.stringify({ name: categoryName, keywords: keywordsArray })
                 });
-                toast.success('Yeni kategori eklendi');
+                toast.success(t('toasts.category_added'));
             }
             setIsCategoryDialogOpen(false);
             fetchProducts();
         } catch (error) {
-            toast.error('Kayıt başarısız');
+            toast.error(t('toasts.save_failed'));
         }
     };
 
     const handleDeleteCategory = async (id: string) => {
-        if (!confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) return;
+        if (!confirm(t('confirms.delete_category'))) return;
         try {
             await fetch(`${api.getBaseUrl()}/products/categories/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
             });
-            toast.success('Kategori silindi');
+            toast.success(t('toasts.category_deleted'));
             fetchProducts();
         } catch (error) {
-            toast.error('Silme başarısız');
+            toast.error(t('toasts.delete_failed'));
         }
     };
 
@@ -136,8 +139,8 @@ export default function ProductsPage() {
         <div className="max-w-6xl mx-auto space-y-6 py-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Ürünler ve Modüller</h1>
-                    <p className="text-muted-foreground mt-1">Destek departmanlarınız için ana ürünleri ve yapay zeka tarafından sınıflandırılacak alt kategorileri yönetin.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+                    <p className="text-muted-foreground mt-1">{t('subtitle')}</p>
                 </div>
                 <Button onClick={() => {
                     setEditingProduct(null);
@@ -146,7 +149,7 @@ export default function ProductsPage() {
                     setIsProductDialogOpen(true);
                 }} className="bg-brand-600 hover:bg-brand-500">
                     <Plus className="h-4 w-4 mr-2" />
-                    Yeni Ürün Ekle
+                    {t('actions.add_product')}
                 </Button>
             </div>
 
@@ -154,8 +157,8 @@ export default function ProductsPage() {
                 {products.length === 0 ? (
                     <Card className="bg-card/50 border-white/5 p-12 text-center border-dashed">
                         <Box className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
-                        <h3 className="text-xl font-medium mb-2">Henüz Ürün Tanımlanmamış</h3>
-                        <p className="text-muted-foreground mb-6">Müşterilerin talep açabileceği ana ürünleri ve modülleri "Yeni Ürün Ekle" butonunu kullanarak tanımlayabilirsiniz.</p>
+                        <h3 className="text-xl font-medium mb-2">{t('empty.no_products')}</h3>
+                        <p className="text-muted-foreground mb-6">{t('empty.no_products_desc')}</p>
                     </Card>
                 ) : products.map(product => (
                     <Card key={product.id} className="bg-card/40 border-white/5 overflow-hidden">
@@ -185,7 +188,7 @@ export default function ProductsPage() {
                         </CardHeader>
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h4 className="text-sm font-medium text-slate-300">Alt Kategoriler (Yapay Zeka Etiketleri)</h4>
+                                <h4 className="text-sm font-medium text-slate-300">{t('labels.subcategories')}</h4>
                                 <Button variant="outline" size="sm" className="h-8 text-xs bg-transparent border-white/10 hover:bg-white/5" onClick={() => {
                                     setActiveProductId(product.id);
                                     setEditingCategory(null);
@@ -194,13 +197,13 @@ export default function ProductsPage() {
                                     setIsCategoryDialogOpen(true);
                                 }}>
                                     <Plus className="h-3 w-3 mr-1" />
-                                    Kategori Ekle
+                                    {t('actions.add_category')}
                                 </Button>
                             </div>
 
                             {(!product.categories || product.categories.length === 0) ? (
                                 <div className="text-sm text-muted-foreground italic bg-slate-900/30 p-4 rounded-lg flex items-center justify-center border border-white/5 border-dashed">
-                                    Bu ürün için henüz alt kategori/modül tanımlanmamış. AI akıllı etiketlemesi için kategori ekleyin.
+                                    {t('empty.no_categories')}
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -233,7 +236,7 @@ export default function ProductsPage() {
                                                     </span>
                                                 ))}
                                                 {(!cat.keywords || cat.keywords.length === 0) && (
-                                                    <span className="text-[10px] text-muted-foreground italic">Anahtar kelime yok</span>
+                                                    <span className="text-[10px] text-muted-foreground italic">{t('labels.no_keywords')}</span>
                                                 )}
                                             </div>
                                         </div>
@@ -249,25 +252,25 @@ export default function ProductsPage() {
             <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
                 <DialogContent className="bg-slate-950 border-white/10 sm:max-w-[425px]">
                     <DialogHeader>
-                        <DialogTitle>{editingProduct ? 'Ürünü Düzenle' : 'Yeni Ürün Ekle'}</DialogTitle>
+                        <DialogTitle>{editingProduct ? t('dialogs.edit_product') : t('dialogs.add_product')}</DialogTitle>
                         <DialogDescription>
-                            Ana ürün veya hizmetinizi tanımlayın. Müşteriler bilet oluştururken ilk olarak bu ürünleri görecekler.
+                            {t('dialogs.product_desc')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Ürün Adı <span className="text-red-500">*</span></label>
+                            <label className="text-sm font-medium">{t('labels.product_name')} <span className="text-red-500">*</span></label>
                             <Input
-                                placeholder="Örn: Aluplan Pro"
+                                placeholder={t('placeholders.product_name')}
                                 value={productName}
                                 onChange={(e) => setProductName(e.target.value)}
                                 className="bg-slate-900 border-white/10"
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Açıklama</label>
+                            <label className="text-sm font-medium">{t('labels.description')}</label>
                             <Textarea
-                                placeholder="Ürünle ilgili kısa bir açıklama..."
+                                placeholder={t('placeholders.description')}
                                 value={productDescription}
                                 onChange={(e) => setProductDescription(e.target.value)}
                                 className="bg-slate-900 border-white/10 resize-none h-24"
@@ -275,9 +278,9 @@ export default function ProductsPage() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsProductDialogOpen(false)}>İptal</Button>
+                        <Button variant="ghost" onClick={() => setIsProductDialogOpen(false)}>{tc('cancel')}</Button>
                         <Button onClick={handleProductSubmit} disabled={!productName.trim()} className="bg-brand-600 hover:bg-brand-500">
-                            Kaydet
+                            {tc('save')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -287,38 +290,38 @@ export default function ProductsPage() {
             <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
                 <DialogContent className="bg-slate-950 border-white/10 sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>{editingCategory ? 'Kategoriyi Düzenle' : 'Yeni Modül / Kategori Ekle'}</DialogTitle>
+                        <DialogTitle>{editingCategory ? t('dialogs.edit_category') : t('dialogs.add_category')}</DialogTitle>
                         <DialogDescription>
-                            Gelen biletlerin yapay zeka tarafından alt etiketlenmesi için kullanacağı alt kategoriyi ve o kategoriyle bağdaşan anahtar kelimeleri girin.
+                            {t('dialogs.category_desc')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Kategori Adı <span className="text-red-500">*</span></label>
+                            <label className="text-sm font-medium">{t('labels.category_name')} <span className="text-red-500">*</span></label>
                             <Input
-                                placeholder="Örn: Fatura Modülü"
+                                placeholder={t('placeholders.category_name')}
                                 value={categoryName}
                                 onChange={(e) => setCategoryName(e.target.value)}
                                 className="bg-slate-900 border-white/10"
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Anahtar Kelimeler (Virgülle Ayırın)</label>
+                            <label className="text-sm font-medium">{t('labels.keywords')}</label>
                             <Textarea
-                                placeholder="Örn: fatura oluşturma, iptal, kdv, e-fatura"
+                                placeholder={t('placeholders.keywords')}
                                 value={categoryKeywords}
                                 onChange={(e) => setCategoryKeywords(e.target.value)}
                                 className="bg-slate-900 border-white/10 resize-none h-24"
                             />
                             <p className="text-[11px] text-muted-foreground mt-1 text-justify">
-                                Yapay zeka, kullanıcı biletini bu etiketler listesinden birine sınıflandırmaya çalışırken bu kelimeler bağlam oluşturmasına yardımcı olabilir.
+                                {t('labels.keywords_help')}
                             </p>
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsCategoryDialogOpen(false)}>İptal</Button>
+                        <Button variant="ghost" onClick={() => setIsCategoryDialogOpen(false)}>{tc('cancel')}</Button>
                         <Button onClick={handleCategorySubmit} disabled={!categoryName.trim()} className="bg-brand-600 hover:bg-brand-500">
-                            Kaydet
+                            {tc('save')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

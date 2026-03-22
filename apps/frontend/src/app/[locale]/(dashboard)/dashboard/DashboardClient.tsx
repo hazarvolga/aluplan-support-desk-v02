@@ -45,17 +45,20 @@ export default function DashboardClient() {
     const { user } = useAuth();
     const [aiStatus, setAiStatus] = useState<{ available: boolean; model: string } | null>(null);
     const [stats, setStats] = useState<any>(null);
+    const [aiHealth, setAiHealth] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [statusRes, statsRes] = await Promise.all([
-                    api.ai.status(),
-                    (api.tickets as any).getSlaStats()
+                const [statusRes, statsRes, aiHealthRes] = await Promise.all([
+                    api.ai.status().catch(() => null),
+                    (api.tickets as any).getSlaStats().catch(() => null),
+                    api.ai.getHealthMetrics().catch(() => null)
                 ]);
                 setAiStatus(statusRes);
                 setStats(statsRes);
+                setAiHealth(aiHealthRes);
             } catch (err) {
                 console.error('Dashboard load failed', err);
             } finally {
@@ -93,7 +96,7 @@ export default function DashboardClient() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <StatCard icon={Ticket} label={t('stats.active_tickets')} value={stats?.total || 0} indicatorColor="bg-blue-500" />
-                    <StatCard icon={CheckCircle2} label={t('stats.resolved_tickets')} value="0" indicatorColor="bg-emerald-500" />
+                    <StatCard icon={CheckCircle2} label={t('stats.resolved_tickets')} value={stats?.resolvedTotal || 0} indicatorColor="bg-emerald-500" />
                     <StatCard icon={Clock} label={t('stats.avg_response')} value={tc('not_available')} indicatorColor="bg-amber-500" />
                 </div>
 
@@ -174,8 +177,8 @@ export default function DashboardClient() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard icon={Ticket} label={t('stats.active_tickets')} value={stats?.total || 0} indicatorColor="bg-blue-500" />
                 <StatCard icon={AlertCircle} label={t('stats.sla_violations')} value={stats?.breached || 0} indicatorColor="bg-rose-500" />
-                <StatCard icon={CheckCircle2} label={t('stats.daily_resolved')} value="0" indicatorColor="bg-emerald-500" />
-                <StatCard icon={Bot} label={t('stats.ai_confidence')} value="94%" indicatorColor="bg-violet-500" />
+                <StatCard icon={CheckCircle2} label={t('stats.daily_resolved')} value={stats?.resolvedToday || 0} indicatorColor="bg-emerald-500" />
+                <StatCard icon={Bot} label={t('stats.ai_confidence')} value={aiHealth?.aiAccuracy ? `${aiHealth.aiAccuracy}%` : "0%"} indicatorColor="bg-violet-500" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -224,7 +227,7 @@ export default function DashboardClient() {
                                 <div className="flex items-center gap-3">
                                     <div className={`h-2 w-2 rounded-full animate-pulse ${aiStatus?.available ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]'}`}></div>
                                     <span className={`text-[11px] font-bold font-mono tracking-widest ${aiStatus?.available ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                        AI_NODE: {aiStatus?.available ? t('stats.status_online') : t('stats.status_offline')}
+                                        {t('stats.ai_node_prefix')}: {aiStatus?.available ? t('stats.status_online') : t('stats.status_offline')}
                                     </span>
                                 </div>
                                 {aiStatus?.model && (

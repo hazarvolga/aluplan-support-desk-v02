@@ -86,7 +86,81 @@
     "security_tagline": "Connections are monitored via Aluplan Sec-Net",
     "error_heading": "AUTHORIZATION DENIED",
     "error_default": "AUTH_FAILURE: Credentials rejected by security node",
-    "error_credentials": "Invalid email address or password."
+    "error_credentials": "Invalid email address or password.",
+    "register": {
+      "success_title": "Registration Successful!",
+      "success_desc": "Your login details have been sent to your email address.",
+      "success_hint": "Please check your email to log into the system.",
+      "back_to_login": "Back to Login",
+      "title": "Register",
+      "subtitle": "Join the Aluplan Support Ecosystem",
+      "email_label": "Work Email",
+      "email_placeholder": "example@company.com",
+      "continue_btn": "Continue",
+      "reset_sent_title": "Password Sent",
+      "reset_sent_desc": "Your new login password has been sent to your email address for security purposes. Please check your inbox (and spam folder if necessary).",
+      "recognized_title": "We Recognize You!",
+      "recognized_desc": "We already have a profile for you and your company in the Aluplan system. <br /><br />You can log in or directly request a new password to be sent to your email.",
+      "login_btn": "Log In",
+      "reset_btn": "Reset Password",
+      "different_email": "Try a different email",
+      "matched_company_prefix": "We recognized you!",
+      "matched_company_suffix": "complete your registration as part of their team.",
+      "username_label": "Username",
+      "username_placeholder": "system_login_id",
+      "firstname_label": "First Name",
+      "firstname_placeholder": "Your Name",
+      "lastname_label": "Last Name",
+      "lastname_placeholder": "Your Last Name",
+      "phone_label": "Phone Number",
+      "phone_placeholder": "+90 (5xx) xxx xx xx",
+      "products_label": "Which Aluplan products / modules do you use?",
+      "allplan_user_label": "I am an Allplan / Aluplan User",
+      "allplan_user_desc": "If you are an Allplan user licensed by Aluplan, please check this to receive specialized support.",
+      "company_label": "Company",
+      "company_placeholder": "Your Company Name",
+      "customer_no_label": "Customer No",
+      "customer_no_placeholder": "E.g. C300 00 00 00",
+      "password_label": "Password",
+      "password_placeholder": "••••••",
+      "confirm_password_label": "Confirm Password",
+      "back_btn": "Back",
+      "submit_btn": "Complete Registration",
+      "already_have_account": "Already have an account?",
+      "login_link": "Sign In",
+      "error_email_lookup": "An error occurred during email verification.",
+      "error_password_mismatch": "Passwords do not match.",
+      "error_customer_no": "Invalid Customer No format. Example: C300 XX XX XX",
+      "error_register_failed": "An error occurred during registration.",
+      "error_default": "An error occurred.",
+      "error_reset_failed": "An error occurred during password reset."
+    },
+    "reset_password": {
+      "new_password_label": "NEW PASSWORD",
+      "confirm_password_label": "CONFIRM PASSWORD",
+      "submit_btn": "UPDATE PASSWORD",
+      "title": "SET NEW PASSWORD",
+      "subtitle": "Enter a new password for your security",
+      "error_invalid_link": "Invalid or missing reset link.",
+      "error_missing_token": "Missing token.",
+      "error_length": "Your password must be at least 8 characters long.",
+      "error_mismatch": "Passwords do not match.",
+      "error_failed": "An error occurred during password reset.",
+      "success_message": "Your password was successfully updated."
+    },
+    "verify_email": {
+      "loading_title": "Verifying",
+      "default_loading": "Verifying your email address...",
+      "success_header": "Congratulations!",
+      "default_success": "Your email address has been successfully verified!",
+      "login_btn": "Sign In",
+      "error_header": "Error Occurred",
+      "default_error_invalid": "Invalid verification link. Please click the link in your email again.",
+      "default_error_failed": "Verification process failed. The link may have expired.",
+      "support_btn": "Get Support",
+      "home_btn": "Homepage",
+      "brand": "Aluplan Verification"
+    }
   },
   "common": {
     "dashboard": "Dashboard",
@@ -100,6 +174,7 @@
     "reset": "Reset",
     "confirm": "Confirm",
     "cancel": "Cancel",
+    "copy": "Copy",
     "unknown": "Unknown",
     "individual": "Individual",
     "system": "System",
@@ -121,6 +196,37 @@
       "tr": "Turkish",
       "en": "English",
       "de": "German"
+    },
+    "back": "Back",
+    "general_info": "General Information",
+    "full_name": "Full Name",
+    "title": "Title",
+    "email": "Email",
+    "status": "Status",
+    "active": "Active",
+    "type": "Type",
+    "sort": "SORT",
+    "filter": "FILTER",
+    "clear": "Clear",
+    "search_placeholder": "Search...",
+    "hotinfo_labels": {
+      "allplan_version": "Allplan Version",
+      "hotfix": "Hotfix",
+      "os": "Operating System",
+      "cpu": "Processor (CPU)",
+      "ram": "RAM",
+      "gpu": "Graphics Card / GPU",
+      "gpu_driver": "Driver",
+      "opengl": "OpenGL",
+      "vram": "VRAM",
+      "resolution": "Resolution",
+      "disk": "Disk",
+      "license": "License",
+      "dotnet": ".NET Framework",
+      "network": "Network Info",
+      "installed_modules": "Installed Modules",
+      "count_suffix": "items",
+      "not_found": "System data not found."
     }
   },
   "dashboard": {
@@ -139,7 +245,8 @@
       "ai_confidence": "ANN_CONFIDENCE_AVG",
       "status_stable": "Stable",
       "status_online": "ONLINE",
-      "status_offline": "OFFLINE"
+      "status_offline": "OFFLINE",
+      "ai_node_prefix": "AI_NODE"
     },
     "knowledge_base": {
       "title": "KNOWLEDGE_BASE_QUERY",
@@ -199,6 +306,20 @@
       "profile": "My Profile",
       "account": "My Account",
       "ai_assistant": "ANN Assistant"
+    }
+  },
+  "command_menu": {
+    "placeholder": "Type a command or search...",
+    "empty": "No results found.",
+    "sections": {
+      "navigation": "Navigation",
+      "management": "Management",
+      "actions": "Quick Actions"
+    },
+    "items": {
+      "new_ticket": "Create New Request",
+      "logout": "Sign Out",
+      "reports": "Reports"
     }
   },
   "tickets": {
@@ -296,7 +417,6 @@
       "sending": "SENDING...",
       "secure_chat": "END-TO-END SECURE COMMUNICATION",
       "message_placeholder": "Type your message here... (Enter to send)",
-      "send_placeholder": "SUBMIT_MESSAGE...",
       "ticket_metadata": "REQUEST_METADATA",
       "status_label": "STATUS_CODE",
       "channel_label": "ACCESS_CHANNEL",
@@ -318,7 +438,8 @@
         "confirm_hotinfo": "Confirm System Information",
         "hotinfo_check": "Is this information up to date? Confirm or upload a new file.",
         "hotinfo_added": "System Information (Hotinfo) Added",
-        "hotinfo_added_desc": "This information will be automatically sent to the technical team."
+        "hotinfo_added_desc": "This information will be automatically sent to the technical team.",
+        "hotinfo_upload_name": "Hotinfo Upload"
       },
       "fields": {
         "product": "Related Product",
@@ -337,7 +458,11 @@
         "priority": "Priority",
         "priority_placeholder": "Select priority",
         "subject": "Subject / Summary",
-        "subject_placeholder": "e.g., I'm getting a license error during installation"
+        "subject_placeholder": "e.g., I'm getting a license error during installation",
+        "allplan_info": "Allplan Edition & Hotfix",
+        "vram": "Graphics Memory (VRAM)",
+        "ram": "System Memory (RAM)",
+        "dotnet": ".NET Framework"
       },
       "buttons": {
         "hotinfo_upload": "Upload Hotinfo (.hxl)",
@@ -396,36 +521,11 @@
       "button": "Start Now"
     }
   },
-  "kb_approvals": {
-    "title": "AI Knowledge Verification Center",
-    "subtitle": "Review and authorize knowledge units automatically synthesized from processed event logs.",
-    "refresh_queue": "REFRESH_QUEUE",
-    "run_pipeline": "START_WORKFLOW",
-    "queue_title": "KNOWLEDGE_QUEUE_AWAITING_APPROVAL",
-    "units_loaded": "{count} UNITS_LOADED",
-    "empty": {
-      "title": "All articles reviewed!",
-      "desc": "There are currently no new AI drafts awaiting approval."
-    },
-    "table": {
-      "query": "EXTRACTED_QUERY",
-      "answer": "SYNTHESIZED_RESPONSE",
-      "confidence": "CONFIDENCE_SCORE",
-      "source": "SOURCE_CASE",
-      "actions": "AUTHORIZATION",
-      "reliable": "{percent}%_RELIABLE",
-      "loading": "LOADING...",
-      "empty": "NO RECORDS FOUND"
-    },
-    "buttons": {
-      "fetch_error": "Error occurred while retrieving drafts.",
-      "approve_success": "Article published in Knowledge Base! 🚀",
-      "approve_error": "Approval process failed.",
-      "dismiss_success": "Article draft rejected.",
-      "dismiss_error": "Rejection process failed.",
-      "pipeline_started": "Pipeline started, this process will run in the background...",
-      "pipeline_error": "Pipeline could not be started: {error}"
-    }
+  "article": {
+    "no_records": "NO ARTICLES FOUND",
+    "author": "AUTHOR",
+    "update": "UPDATE",
+    "views": "{count} VIEWS"
   },
   "ai": {
     "title": "AI Support Navigator",
@@ -470,6 +570,17 @@
       "delete_selected": "Delete {count} Selected",
       "deleting": "Deleting in progress..."
     },
+    "table_controls": {
+      "sort_az": "Sort A to Z",
+      "sort_za": "Sort Z to A",
+      "group": "GROUP",
+      "group_by": "Group by this field",
+      "ungroup": "Remove Grouping",
+      "sort": "Sort",
+      "filter": "Filter",
+      "clear": "Clear",
+      "search": "Search"
+    },
     "tabs": {
       "customers": "Customers",
       "accounts": "Accounts",
@@ -481,7 +592,7 @@
     },
     "table": {
       "loading": "Retrieving data from database",
-      "empty": "No results found",
+      "empty": "No records found.",
       "headers": {
         "customer_no": "Cust No",
         "name": "Full Name",
@@ -508,7 +619,13 @@
       "details": "DETAILS",
       "manual_entry": "MANUAL_ENTRY",
       "dynamics_ok": "DYNAMICS_OK",
-      "not_found": "ACCOUNT NOT FOUND"
+      "not_found": "ACCOUNT NOT FOUND",
+      "details_subtitle": "Company Details",
+      "joined_system": "Joined System",
+      "registered_contacts": "Registered Contacts",
+      "registered_contacts_desc": "All customer records assigned to this company",
+      "people_count": "{count} People",
+      "no_contacts_found": "No registered contacts found for this company."
     },
     "sync": {
       "checking": "CHECKING CRM DATA LOGS...",
@@ -530,6 +647,23 @@
         "field_label": "Display Label",
         "field_key": "System Key",
         "select_crm_field": "Select CRM field...",
+        "add_new_column": "Add New Column",
+        "step_1_crm": "1. Select CRM Field",
+        "crm_select_placeholder": "Select field from CRM...",
+        "step_2_display_name": "2. Display Name",
+        "display_name_placeholder": "e.g., Segment",
+        "step_3_system_key": "3. System Key",
+        "system_key_placeholder": "e.g., segment",
+        "add_column_btn": "Add Column to List",
+        "add_custom_btn": "Add New Custom Field / Column",
+        "visibility_title": "Visibility and Sorting",
+        "visibility_desc": "The sorting and visibility settings you make here will automatically update the Customers and Accounts tables. You can hide columns you don't want by clicking the eye icon and change the order using the arrows.",
+        "system_key": "System Key",
+        "badge_custom": "CUSTOM",
+        "badge_mapped": "MAPPED",
+        "search_crm_fields": "Search CRM fields...",
+        "field_not_found": "Field not found.",
+        "sample_data": "Sample Data:",
         "fields": {
           "account": {
             "name": "Company Name / Title",
@@ -564,11 +698,146 @@
       "no_data": "No history data"
     },
     "toasts": {
-      "delete_success": "Selected {type} deleted.",
+      "delete_success_title": "Deletion Successful",
+      "delete_success_desc": "{count} records have been removed from the system.",
       "sync_started": "Background sync started.",
       "verify_success": "{count} emails verified.",
       "bulk_update_success": "SYSTEM_COMMAND_SUCCESS: {count}_RECORDS_UPDATED",
       "bulk_update_error": "SYSTEM_COMMAND_ERROR: {message}"
+    },
+    "labels": {
+      "active": "ACTIVE",
+      "suspended": "SUSPENDED",
+      "passive": "PASSIVE",
+      "verified": "VERIFIED",
+      "not_verified": "NOT VERIFIED",
+      "syncing": "SYNCING",
+      "unknown": "UNKNOWN",
+      "items": "Items",
+      "score": "Score",
+      "total": "TOTAL",
+      "passed": "PASSED",
+      "failed": "FAILED",
+      "pending": "PENDING",
+      "system_info": "System Information (Hotinfo)",
+      "personal_info": "Personal Information",
+      "corporate_info": "Corporate Information",
+      "first_name": "First Name",
+      "last_name": "Last Name",
+      "job_title": "Job Title",
+      "phone": "Phone",
+      "company_name": "Company Name",
+      "customer_no": "Customer Number",
+      "contract_status": "Customer Status",
+      "created_at": "Account Created",
+      "save_all": "Save All Changes",
+      "saving": "Saving...",
+      "reset_password": "Reset Password",
+      "reset_password_confirm": "Continue? A new, random password will be assigned to the customer.",
+      "hotinfo_data": "Device configuration and Allplan details",
+      "download_hxl": "Download .HXL",
+      "general": "General",
+      "accounts": "Accounts",
+      "record_count": "{count} Records"
+    },
+    "users": {
+      "title": "Team Management",
+      "desc": "Manage support agents, managers, and admins.",
+      "add_user": "Add User",
+      "edit_user": "Edit User",
+      "delete_confirm": "Are you sure you want to delete user {name}?",
+      "empty": "No users found",
+      "deleted_success": "User successfully deleted",
+      "fetch_error": "Error fetching users",
+      "dialog": {
+        "title_create": "Add New User",
+        "title_edit": "Edit User",
+        "full_name": "Full Name",
+        "name_placeholder": "John Doe",
+        "email": "Email",
+        "email_placeholder": "john@example.com",
+        "password": "Password",
+        "password_placeholder": "******",
+        "new_password_optional": "New Password (Optional)",
+        "role": "Role",
+        "select_role_placeholder": "Select a role",
+        "roles": {
+          "admin": "Admin",
+          "support_manager": "Support Manager",
+          "support_agent": "Support Agent",
+          "viewer": "Viewer"
+        },
+        "btn_create": "Create",
+        "btn_update": "Update"
+      },
+      "validation": {
+        "name_min": "Name must be at least 2 characters",
+        "email_invalid": "Invalid email address",
+        "password_min": "Password must be at least 6 characters",
+        "password_required": "Password required for new user"
+      },
+      "toasts": {
+        "created": "User created successfully",
+        "updated": "User updated successfully"
+      },
+      "table": {
+        "user": "User",
+        "role": "Role",
+        "email": "Email",
+        "actions": "Actions"
+      }
+    },
+    "crm": {
+      "title": "CRM Control Center",
+      "desc": "Manage Microsoft Dynamics 365 and Enterprise CRM integrations.",
+      "connection_settings": "Dynamics 365 Connection Settings",
+      "connection_desc": "Enter the application (App Registration) information you created via the Azure Portal here.",
+      "status_card_title": "Connection Status",
+      "last_sync": "Last Sync",
+      "never_synced": "Never performed",
+      "sync_btn": "Sync Now",
+      "success": "Success",
+      "error": "Error",
+      "in_progress": "In Progress",
+      "ready": "Ready",
+      "log_title": "Sync Log",
+      "log_empty": "No activity records found.",
+      "log_message": "Error Message",
+      "save_and_verify": "Save and Verify Connection",
+      "client_id": "Application (Client) ID",
+      "client_secret": "Client Secret",
+      "webhook_api_key": "Webhook API Key (x-api-key)",
+      "webhook_hint": "You must add this key to the `x-api-key` header in your Power Automate flow.",
+      "tenant_id": "Azure Tenant ID",
+      "instance_url": "Dynamics Instance URL",
+      "external_id": "External ID",
+      "provider_label": "Provider",
+      "instance_label": "Instance"
+    },
+    "import": {
+      "title": "Import Customers",
+      "subtitle": "Sync Dynamics 365 data into the system",
+      "select_file": "Select Your CSV File",
+      "file_hint": "Ensure Client ID and Company information are filled. Missing data will be created with temporary codes.",
+      "select_btn": "Select File (CSV/Semicolon)",
+      "processing": "Processing...",
+      "analysis_complete": "Data Analysis Complete",
+      "missing_client_no": "Missing Customer No",
+      "missing_company": "Missing Company Name",
+      "attention": "ATTENTION:",
+      "attention_desc": "Users with missing 'Client ID' data will be imported without CRM verification. Missing company info will be marked as 'Unknown Company'.",
+      "cancel": "Cancel",
+      "start_import": "Import Now",
+      "writing_data": "Writing Data...",
+      "summary_title": "Import Summary",
+      "new_upload": "New Upload",
+      "go_to_customers": "Go to Customers"
+    },
+    "confirm": {
+      "delete_title": "System Protocol: Delete Confirmation",
+      "delete_desc": "{count} data objects will be permanently deleted. This action cannot be undone.",
+      "delete_confirm": "START DELETE PROTOCOL",
+      "cancel": "CANCEL"
     }
   },
   "settings": {
@@ -589,6 +858,7 @@
       "title": "Canned Responses (Macros)",
       "description": "Manage frequently used responses.",
       "header_label": "Macro Title",
+      "header_placeholder": "e.g.: Welcome",
       "content_label": "Response Content",
       "content_placeholder": "Text to be sent to the customer...",
       "add": "Add",
@@ -625,6 +895,12 @@
     "ai": {
       "title": "AI Integration",
       "description": "Configure Grok (xAI), DeepSeek, OpenAI, or Ollama services.",
+      "chat_provider": "Default Chat Provider",
+      "chat_provider_desc": "Used for ticket responses and assistant functions.",
+      "embed_provider": "Default Embedding Provider",
+      "embed_provider_desc": "Used for knowledge base search and document indexing.",
+      "test_btn": "Test Connection",
+      "save_btn": "Save Changes",
       "center_title": "AI Intelligence Center",
       "center_desc": "Manage multiple AI providers, configure hybrid model transitions, and monitor engine health.",
       "motor_desc": "{name} engine powering intelligence.",
@@ -642,6 +918,21 @@
       "advanced_params": "Advanced Parameters",
       "global_default": "Global Default",
       "ollama_local": "Ollama (Local)",
+      "status_active": "Active",
+      "status_inactive": "Inactive",
+      "hide_key": "Hide {name} key",
+      "show_key": "Show {name} key",
+      "model_placeholder": "e.g., gpt-4, claude-3-opus...",
+      "total_latency": "Total Latency",
+      "validation": {
+        "missing_fields": "Missing fields: {fields}",
+        "fields": {
+          "api_key": "API Key",
+          "chat_model": "Chat Model",
+          "embed_model": "Vector Model",
+          "url": "Connection URL"
+        }
+      },
       "toasts": {
         "load_error": "Failed to load AI settings: {message}",
         "test_success": "{provider} connection successful!",
@@ -689,16 +980,26 @@
       "gmail_title": "Gmail OAuth2 Configuration",
       "authorized": "Authorized",
       "not_authorized": "Not Authorized",
+      "smtp_host": "Host",
+      "smtp_port": "Port",
       "from_address_label": "From Email Address",
       "smtp_user": "Username",
       "smtp_pass": "Password",
-      "redirect_uri_label": "Authorized Redirect URI (Add in Google Cloud Console)",
+      "resend_api_key": "API Key",
+      "gmail_client_id": "Client ID",
+      "gmail_client_secret": "Client Secret",
+      "redirect_uri_label": "Authorized Redirect URI (add to Google Cloud Console)",
       "save_provider_btn": "Save Email Provider",
       "test_connection_btn": "Test Connection",
       "gmail": {
         "credentials_save": "Save Credentials",
         "authorize_btn": "Authorize with Google",
         "auth_hint": "First register your credentials, then click 'Authorize with Google'. You will be redirected back after granting permission."
+      },
+      "providers": {
+        "resend": "Resend (API)",
+        "smtp": "SMTP (Legacy)",
+        "gmail": "Gmail (OAuth2)"
       },
       "tabs": {
         "config": "Configuration",
@@ -723,9 +1024,12 @@
           "pending": "PENDING"
         },
         "pagination": {
-          "prev": "Previous",
-          "next": "Next",
+          "prev": "Back",
+          "next": "Forward",
           "page": "PAGE"
+        },
+        "toasts": {
+          "logs_load_error": "Could not load logs"
         }
       },
       "templates": {
@@ -734,12 +1038,34 @@
         "preview_module": "Template Preview Module",
         "preview_desc": "Test active MJML templates with mock data.",
         "select_placeholder": "Select template...",
+        "new_btn": "New Template",
         "preview_btn": "Preview",
+        "save_btn": "Save",
+        "new_placeholder": "Template name (e.g., welcome-email)",
+        "create_btn": "Create",
+        "cancel_btn": "Cancel",
+        "editor_title": "MJML EDITOR",
+        "editor_placeholder": "Write your MJML code here...",
+        "preview_title": "PREVIEW",
         "subject_label": "Subject",
+        "preview_hint": "Preview not found",
+        "preview_flow_hint": "Please select a template and click the Preview button.",
+        "safe_editor_title": "Safe Editor",
+        "safe_editor_desc": "Edit MJML template in a safe environment.",
+        "default_mjml": {
+          "text1": "Your new email template has been successfully created.",
+          "text2": "You can use the MJML editor on the left to edit it. You can see the live result in the preview panel on the right.",
+          "button": "Help Center"
+        },
         "toasts": {
-          "load_error": "Failed to load templates",
+          "load_error": "Could not load templates",
           "compile_error": "Compilation error",
-          "preview_failed": "Failed to load preview: {message}"
+          "preview_failed": "Could not load preview: {message}",
+          "save_success": "{name} template saved.",
+          "save_failed": "Save failed: {message}",
+          "create_success": "{name} template created.",
+          "create_failed": "Creation failed: {message}",
+          "name_required": "Template name is required"
         }
       }
     },
@@ -756,6 +1082,7 @@
         "hours": "Business Hours",
         "actions": "Actions"
       },
+      "empty_state": "No SLA policies defined yet.",
       "how_it_works": "How it works?",
       "how_it_works_desc": "When a new ticket is created, the system first looks for a policy that matching this department and priority.",
       "form": {
@@ -807,10 +1134,38 @@
       "status_missing": "Configuration Missing",
       "save_btn": "Save WhatsApp Settings"
     },
+    "requirements": {
+      "title": "System Requirements",
+      "description": "Manage product specifications and technical requirements for the login page.",
+      "save_btn": "Save Changes",
+      "no_products": "No products defined for this language.",
+      "init_list": "Initialize {lang} List",
+      "remove_product": "Remove Product",
+      "product_title_label": "Product Title",
+      "section_header_label": "Section Header",
+      "requirement_items_label": "Requirement Items",
+      "add_item": "Add Item",
+      "add_section": "Add Section",
+      "add_new_spec": "Add New Product Specification",
+      "default_product_title": "New Product",
+      "default_section_name": "Requirements",
+      "default_item_text": "Item 1",
+      "default_new_section": "New Section",
+      "placeholders": {
+        "product": "e.g. ALLPLAN 2026",
+        "section": "e.g. Hardware Requirements",
+        "item": "Use **bold** for emphasis"
+      },
+      "toasts": {
+        "save_success": "System requirements updated successfully.",
+        "save_error": "Error during update: {message}"
+      }
+    },
     "toasts": {
       "save_success": "{key} successfully updated.",
       "save_error": "Error: {message}",
       "load_error": "Data could not be loaded: {message}",
+      "url_copied": "URL copied.",
       "gmail_success": "Gmail account connected successfully.",
       "gmail_error": "Authorization failed.",
       "logo_success": "Logo saved successfully.",
@@ -841,199 +1196,914 @@
       "generic_error": "An error occurred.",
       "generic_success_hint": "Access to {provider} service established.",
       "generic_fail_hint": "Service currently unavailable."
+    }
+  },
+  "admin": {
+    "live_support_request": {
+      "title": "Support Requests",
+      "description": "Manage system-wide open and active support requests."
     },
-    "admin": {
-      "live_support_request": {
-        "title": "Support Requests",
-        "description": "Manage system-wide open and active support requests."
-      },
-      "ai_health": {
-        "title": "AI Health & Telemetry",
-        "description": "Real-time monitoring of AI models, token consumption, and RAG performance."
+    "ai_health": {
+      "title": "AI HEALTH & TELEMETRY",
+      "subtitle": "Real-time monitoring of AI models, token usage, and RAG performance.",
+      "dashboard": {
+        "panel_title": "AI Health & Performance Panel",
+        "send_report": "Send Weekly Report Now",
+        "report_queued": "Report queued. Please check your mailbox.",
+        "report_failed": "Cloud not generate report.",
+        "total_requests": "Total Requests",
+        "total_tokens": "Total Tokens",
+        "approx_cost": "Approx. Cost",
+        "active_models": "Active Models",
+        "unknown": "Unknown",
+        "performance_trends": "Performance Trends (Last 7 Days)",
+        "performance_desc": "Change in AI accuracy and deflection rates over time.",
+        "kb_gaps": "Knowledge Base Gaps",
+        "kb_gaps_desc": "Most popular unanswered user questions.",
+        "times_unanswered": "unanswered {count} times",
+        "no_gaps": "No significant knowledge gaps detected.",
+        "channel_distribution": "Channel Distribution",
+        "channel_desc": "See which channels the requests are coming from.",
+        "requests_count": "{count} Requests",
+        "efficiency_summary": "Efficiency Summary (30 Day)",
+        "efficiency_desc": "AI response quality and system health.",
+        "rag_accuracy": "RAG Accuracy (High Confidence)",
+        "deflection_rate": "Deflection Rate",
+        "token_label": "Tokens"
       }
     },
-    "profile": {
-      "title": "My Profile",
-      "subtitle": "Manage your personal information and security settings",
-      "hotfix_warning_title": "ATTENTION: Hotfix Verification Required",
-      "hotfix_warning_desc": "Allplan usage detected. For system stability and uninterrupted support, please upload your current <b>Hotinfo (.hxl)</b> file from the bottom of the page.",
-      "crm_verified": "CRM VERIFIED",
-      "personal_info": "Personal Information",
-      "roles_info": "Account information ({roles})",
-      "roles": {
-        "admin": "Administrator",
-        "agent": "Agent",
-        "customer": "Customer"
+    "email_validation": {
+      "title": "Email Validation",
+      "subtitle": "Check email validity, DNS records, and SMTP status.",
+      "data_labels": {
+        "valid": "Valid",
+        "invalid": "Invalid",
+        "found": "Found",
+        "missing": "Missing",
+        "ok": "OK",
+        "error": "Error",
+        "enabled": "Enabled"
       },
-      "labels": {
-        "email_static": "Email (Immutable)",
-        "full_name": "Full Name",
-        "phone": "Phone Number",
-        "customer_no_static": "Customer No (Immutable)",
-        "company_name": "Company Name",
-        "industry": "Industry",
-        "job_title": "Job Title",
-        "subscription": "Subscription",
-        "status": "Status"
+      "tabs": {
+        "single": "Quick Check",
+        "bulk": "Customer List"
       },
-      "placeholders": {
-        "phone": "+90 555 444 33 22",
-        "no_crm": "No CRM record",
-        "company_name": "Your company name",
-        "industry": "Industry you operate in",
-        "job_title": "Your job title (e.g. Purchasing Manager)",
-        "new_password": "Enter your new password",
-        "confirm_password": "Re-enter your new password"
+      "single": {
+        "placeholder": "Email address to verify (e.g., user@example.com)",
+        "button": "Analyze",
+        "verifying": "Verifying..."
       },
-      "contract_status": {
-        "ACTIVE": "Active",
-        "EXPIRED": "Expired"
+      "bulk": {
+        "verify_selected": "Verify Selected ({count})",
+        "verify_all": "Verify All"
       },
-      "account_status": {
-        "ACTIVE": "Active",
-        "INACTIVE": "Inactive",
-        "SUSPENDED": "Suspended"
+      "search": {
+        "customer_search": "Search Customer or Company...",
+        "filtered_records": "{count} Filtered Records"
       },
-      "password_change": {
-        "title": "Change Password",
-        "description": "Leave blank if you do not want to change your password.",
-        "new_password": "New Password",
-        "confirm_password": "Verify Password"
+      "score_card": {
+        "score": "Score",
+        "reliable": "Reliable",
+        "risky": "Risky",
+        "invalid": "Invalid",
+        "disposable_hint": "Disposable email service detected.",
+        "role_based_hint": "Corporate role address (support, info, etc.).",
+        "valid_hint": "Suitable for email usage."
       },
-      "save_button": "Save Changes",
-      "saving_button": "Saving...",
-      "mfa": {
-        "title": "Two-Factor Authentication (MFA)",
-        "description": "Use TOTP-based authentication (Google Authenticator, Authy, etc.) to increase your account security.",
-        "status_label": "MFA Status",
-        "active": "ACTIVE",
-        "inactive": "INACTIVE",
-        "disable_btn": "Disable",
-        "setup_btn": "Start Setup",
-        "dialog_title": "MFA Setup",
-        "dialog_desc": "Scan the code with any authentication app (Google Authenticator, Microsoft Authenticator, Authy).",
-        "key_creating": "Generating Key...",
-        "manual_key_label": "Manual Entry Key",
-        "token_label": "Verification Code",
-        "token_placeholder": "000000",
-        "token_hint": "Enable by entering the 6-digit code in your app",
-        "cancel": "Cancel",
-        "verify_enable": "Verify and Enable",
-        "verifying": "Verifying...",
-        "confirm_disable": "Are you sure you want to disable two-factor authentication? Your security will be reduced."
+      "data_points": {
+        "syntax": "Syntax",
+        "syntax_desc": "Email format checked for RFC compliance.",
+        "dns": "DNS / MX",
+        "dns_desc": "Domain email server records ({exchange}) verified.",
+        "smtp": "SMTP",
+        "smtp_desc": "Connected to server at socket level and handshake attempted.",
+        "ai": "Intelligence (AI)",
+        "ai_desc": "Intelligence layer analysis performed."
       },
-      "notifications": {
-        "title": "Email Notification Preferences",
-        "description": "Determine which categories you want to receive emails in",
-        "types": {
-          "ANNOUNCEMENTS": "Announcements and News",
-          "TICKETS": "Ticket Updates",
-          "SYSTEM": "System and Security Alerts"
-        },
-        "descriptions": {
-          "ANNOUNCEMENTS": "Campaigns, news and product updates",
-          "TICKETS": "All messages related to your support requests",
-          "SYSTEM": "Password reset, account movements and critical alerts"
-        }
+      "empty": {
+        "waiting": "Waiting for Email Analysis",
+        "waiting_desc": "Please enter the address you want to check in the field above.",
+        "no_results": "No Results Found",
+        "no_results_desc": "No customers matching your search criteria were found.",
+        "no_data": "No Data Available",
+        "no_data_desc": "This email has not been verified yet. Please start the verification process.",
+        "verify_now": "Verify Now"
       },
-      "hotinfo": {
-        "title": "System Information (Hotinfo)",
-        "description": "System configuration required for your Allplan support requests",
-        "last_update": "Last Update",
-        "status_up_to_date": "Your system information is up to date. This information will be used automatically in your support requests.",
-        "update_btn": "Update Information (Upload .hxl)",
-        "missing_title": "System Information Missing",
-        "missing_desc": "It is recommended to upload your Allplan Hotinfo file so that our support team can help you faster.",
-        "upload_btn": "Upload HXL File",
-        "uploading": "Uploading..."
+      "filters": {
+        "all": "All"
+      },
+      "table": {
+        "customer_company": "Customer / Company",
+        "email": "Email",
+        "syntax": "Syntax",
+        "dns_mx": "DNS / MX",
+        "smtp": "SMTP",
+        "group_score": "Group / Score",
+        "loading": "Loading Customers..."
+      },
+      "detail": {
+        "title": "Detailed Analysis",
+        "trust_score": "Trust Score",
+        "status": "Status",
+        "intelligence": "Intelligence Layer",
+        "server_records": "Server Records",
+        "mx_data": "MX RECORD DATA",
+        "no_mx": "MX Records Not Found.",
+        "smtp_log": "SMTP HANDSHAKE LOG",
+        "yes_risky": "YES / RISKY",
+        "no_clean": "NO / CLEAN",
+        "smtp_success": "Connection established successfully to {server}. EHLO accepted.",
+        "smtp_fail": "Connection failed or timeout during handshake."
       },
       "toasts": {
-        "pref_updated": "Preference updated",
-        "pref_failed": "Update failed",
-        "password_mismatch": "Passwords do not match!",
-        "profile_updated": "Profile successfully updated.",
-        "update_failed": "Update failed",
-        "hxl_invalid": "Please upload a valid .hxl file",
-        "mfa_gen_failed": "Failed to generate MFA key",
-        "mfa_enabled": "Two-factor authentication enabled.",
-        "mfa_verify_failed": "Verification failed",
-        "mfa_disabled": "Two-factor authentication has been disabled.",
-        "mfa_disable_failed": "Operation failed"
+        "verified_count": "{count} emails verified.",
+        "reverified": "{email} re-verified.",
+        "verify_error": "Verification error",
+        "bulk_verify_error": "Bulk verification error"
       }
     },
-    "help": {
-      "badge": "SYSTEM GUIDE",
-      "title": "User Manual & Workflows",
-      "description": "Learn step-by-step how to carry out daily operations, all features of the Aluplan Support platform, and AI modules.",
+    "knowledge_pool": {
+      "title": "KNOWLEDGE_POOL_CONTROL",
+      "subtitle": "Management and indexing of technical resources for AI.",
+      "placeholder": "Technical Documentation",
       "tabs": {
-        "customer": "Customers",
-        "admin": "Support Team & Admins"
+        "raw_sources": "RAW_SOURCES",
+        "seeded_content": "SEEDED_CONTENT"
       },
-      "customer": {
-        "section1": {
-          "title": "Login and Overview",
-          "desc": "The first screen you see when you log in to the system is the <b>Overview (Dashboard)</b> screen. On this screen:",
-          "item1": "You can see your active support requests that are ongoing and waiting for a response.",
-          "item2": "You can quickly access the latest created articles.",
-          "item3": "You can read the system announcements shared for you from the \"Announcements\" board."
-        },
-        "section2": {
-          "title": "Using the AI Assistant",
-          "desc": "Before opening a ticket, we recommend using the <b>AI Assistant</b> (/ai) menu to solve your problem quickly.",
-          "item1": "Click on the AI Assistant tab from the left menu.",
-          "item2": "Write the error you receive or the topic you want to learn in the message box (e.g., <i>\"Program crashes while drawing walls\"</i>).",
-          "item3": "AI will scan the entire knowledge base and present the solution steps directly to you. If no solution is found, it will suggest creating a support request.",
-          "tip_label": "Tip:",
-          "tip_desc": "Since AI uses RAG (Learning Algorithm), you will get more accurate answers if you ask questions by specifying the name of the software modules (e.g., AX3000)."
-        },
-        "section3": {
-          "title": "Opening and Following a Support Request (Ticket)",
-          "desc": "To forward the issue to the agents, you can create a new record from the <b>My Support Requests</b> page.",
-          "step1_title": "Step 1: Product Selection",
-          "step1_desc": "After clicking the New Request button, select the product family you are experiencing the problem with (e.g., ALLPLAN, AX3000). In this way, your request is directly directed to the relevant expert team.",
-          "step2_title": "Step 2: Subject and Details",
-          "step2_desc": "Enter a clear title and details explaining the problem you encountered. Select the urgency level (determined by SLA).",
-          "step3_title": "Step 3: File Attachments",
-          "step3_desc": "You can upload screenshots, PDFs, or project files (Max 10MB) directly by dragging and dropping."
-        }
+      "buttons": {
+        "add_url": "ADD_URL",
+        "upload_file": "UPLOAD_FILE",
+        "scan_dataset": "SCAN_DATASET",
+        "bulk_sync": "BULK-SYNC ({count})",
+        "cancel": "CANCEL",
+        "refresh": "REFRESH",
+        "publish_selected": "PUBLISH SELECTED",
+        "examine": "EXAMINE",
+        "load_more": "LOAD MORE",
+        "loading": "LOADING..."
       },
-      "admin": {
-        "section1": {
-          "title": "Ticket Management",
-          "card1_title": "Operational Pool",
-          "card1_desc": "Requests from all customers are collected on the Ticket Queue page.",
-          "card1_item1_label": "Changing Status:",
-          "card1_item1_desc": "You can enter the ticket and change the status from the dropdown in the right panel (Open, Answered, Closed).",
-          "card1_item2_label": "Internal Notes:",
-          "card1_item2_desc": "Use the <code>Internal Note (Internal Only)</code> tab to take only team internal notes that the customer cannot see.",
-          "card1_item3_label": "Assignment:",
-          "card1_item3_desc": "You can transfer the ticket to a specific expert representative by using the \"Assign\" button.",
-          "card2_title": "AI Co-Pilot (AI Assisted Response)",
-          "card2_item1": "Press the <b>\"Create AI Response Draft\"</b> button at the top right when you enter the ticket.",
-          "card2_item2": "The system scans the customer's message and your company's Knowledge Pool. By making a vector data match, it prepares a professional draft referring to the relevant documents within 5-10 seconds. You can respond to the customer immediately by approving the draft and editing it according to your own style."
-        },
-        "section2": {
-          "title": "Knowledge Pool & Learning Loop",
-          "item1_title": "Knowledge Pool Management",
-          "item1_desc": "In order for AI to respond, you need to constantly provide new data to the infrastructure. There are 3 ways to do this:",
-          "item1_way1_label": "PDF / File Upload:",
-          "item1_way1_desc": "Directly add technical specifications to the database as PDFs. The system divides them into <u>Embedding (Vector)</u> parts.",
-          "item1_way2_label": "Web Scraper:",
-          "item1_way2_desc": "When you give the current \"How to\" URL addresses on your site to the system, AI reads your website and saves it to its memory.",
-          "item1_way3_label": "Raw Text:",
-          "item1_way3_desc": "You can create an \"Instruction\" for AI by manually entering frequently asked questions.",
-          "item2_title": "Learning Loop and AI Approvals",
-          "item2_desc": "When customers vote for closed tickets with <b>5 stars</b>, the system thinks that the solution is perfect. However, to prevent this solution from being written directly to the main database, it falls into the <b>AI Approvals</b> tab. As an administrator, you can choose to have the solution learned by AI (Approve) or skipped (Reject) in this tab."
-        },
-        "section3": {
-          "title": "CRM & Product (Taxonomy) Configuration",
-          "card1_title": "Products and Modules",
-          "card1_desc1": "You manage the Product cards that the customer sees when opening a ticket from here. The most important part is <b>Categories and Keywords.</b>",
-          "card1_rule_label": "Taxonomy Rule:",
-          "card1_rule_desc": "Write not only product features (Wall, Beam) but also customer symptoms (stuttering, black screen, closing) in categories (e.g., Model Crash). AI reads these keywords and directs the ticket to the correct team (Triage).",
-          "card2_title": "Customer and Team Management",
-          "card2_desc": "You can approve Customers and create Support Teams (Departments) from under the <b>SYSTEM</b> menu of the left panel. Do not forget to set the SLA rules (How many hours to respond, should it stop outside working hours?) from the Team Management tab so that tickets can be assigned automatically."
-        }
+      "table": {
+        "source": "SOURCE",
+        "type": "TYPE",
+        "status": "STATUS",
+        "vector": "VECTOR",
+        "last_sync": "LAST_SYNC",
+        "action": "ACTION",
+        "no_records": "No resources found",
+        "select_all": "SELECT_ALL",
+        "showing": "SHOWING"
+      },
+      "filters": {
+        "all": "ALL",
+        "active": "ACTIVE",
+        "syncing": "SYNCED",
+        "failed": "FAILED",
+        "all_types": "ALL_TYPES",
+        "url": "URL",
+        "file": "FILE"
+      },
+      "logs": {
+        "title": "SYNC_LOGS",
+        "no_source": "Select a source",
+        "no_logs": "No logs found.",
+        "success": "SUCCESS",
+        "error": "ERROR",
+        "processing": "PROCESSING",
+        "chunks_processed": "{count} chunks processed."
+      },
+      "articles": {
+        "title": "ARTICLE_POOL",
+        "total": "{count} TOTAL",
+        "search_placeholder": "SEARCH FILE...",
+        "all": "ALL",
+        "review": "IN_REVIEW",
+        "published": "PUBLISHED",
+        "draft": "DRAFT",
+        "select_page": "SELECT {count} {PAGE}",
+        "no_records": "NO_RECORDS_FOUND",
+        "author": "AUTHOR",
+        "under_review": "UNDER_REVIEW"
+      },
+      "meta": {
+        "locale": "en-US",
+        "system": "SYSTEM"
+      },
+      "status_labels": {
+        "draft": "DRAFT",
+        "published": "PUBLISHED",
+        "review": "UNDER_REVIEW",
+        "under_review": "UNDER_REVIEW"
+      },
+      "dialogs": {
+        "new_url": "New URL Source",
+        "name_label": "Source Name",
+        "url_label": "URL Address",
+        "save_sync": "Save and Sync"
+      },
+      "toasts": {
+        "fetch_error": "Could not load resources",
+        "sync_started": "Sync Started",
+        "sync_desc": "Background task in queue",
+        "bulk_sync_started": "Bulk Sync Started",
+        "partial_success": "Partial Success",
+        "bulk_sync_desc": "{count} resources in queue",
+        "bulk_sync_error": "{count} failed",
+        "dataset_scan_started": "Sync Started",
+        "dataset_scan_desc": "Scanning dataset folder...",
+        "dataset_sync_success": "Smart Sync Successful",
+        "url_added": "URL source added",
+        "logs_error": "Could not load logs",
+        "publish_success": "{count} articles published"
+      }
+    },
+    "announcements": {
+      "title": "Announcement Management",
+      "subtitle": "Corporate communication and targeted announcement operations",
+      "enterprise_control": "Enterprise Control",
+      "preview_prepared": "Prepared Content Preview",
+      "close": "Close",
+      "industries": "Industries",
+      "customer_status": "Customer Status",
+      "company_name": "Company Name",
+      "special_tags": "Special Tags",
+      "categories": {
+        "all": "ALL",
+        "general": "General",
+        "product": "Product",
+        "security": "Security",
+        "compliance": "Compliance",
+        "operations": "Operations",
+        "ai_tech": "AI & Technology",
+        "infrastructure": "Infrastructure",
+        "change_management": "Change Management",
+        "education": "Education",
+        "performance_reports": "Performance Reports",
+        "strategic_updates": "Strategic Updates",
+        "community": "Community"
+      },
+      "tabs": {
+        "create": "Create Announcement",
+        "templates": "Template Library",
+        "history": "Broadcast History"
+      },
+      "editor": {
+        "title": "Content Editor",
+        "desc": "Prepare the content of the email that will be sent to customers.",
+        "template_select": "Select Template",
+        "title_label": "Announcement Record Name",
+        "title_placeholder": "e.g., Summer 2024 Hotfix Announcement",
+        "subject_label": "Email Subject Line",
+        "subject_placeholder": "Subject line visible to the customer",
+        "content_label": "Rich Text Content",
+        "default_content": "<p>Hello {{customer.name}}!</p><p>Announcement content goes here...</p>",
+        "preview": "Preview",
+        "save_draft": "Log Draft"
+      },
+      "audience": {
+        "title": "Target Audience",
+        "desc": "Define who will receive the announcement.",
+        "industries": "Industries",
+        "industry_placeholder": "Select Industry",
+        "statuses": "Customer Status",
+        "status_placeholder": "Select Status",
+        "companies": "Company Name",
+        "company_placeholder": "Select Company",
+        "tags": "Custom Tags",
+        "tags_placeholder": "Add tags (Enter)",
+        "target_audience": "Targeted Audience",
+        "persons": "Persons",
+        "select_filter": "Please select at least one filter",
+        "realtime_telemetry": "Real-time telemetry data"
+      },
+      "template_editor": {
+        "title": "Template Editor",
+        "modify_desc": "Modifying {name} record.",
+        "new_desc": "Log a new communication template for the system.",
+        "new_record": "New Record",
+        "name_label": "Template Name",
+        "name_placeholder": "e.g., Welcome Email",
+        "topic_label": "Topic",
+        "topic_placeholder": "e.g., Onboarding",
+        "subject_label": "Default Subject Line",
+        "subject_placeholder": "Subject visible to the customer",
+        "content_label": "Rich Text Content (Template)",
+        "render_test": "Render Test",
+        "update": "Update",
+        "archive": "Archive to Library"
+      },
+      "library": {
+        "title": "Library",
+        "search_placeholder": "Search name or topic...",
+        "category_filter": "Category Filter",
+        "all": "All",
+        "no_records": "No Records Found",
+        "apply": "Apply",
+        "preview": "Preview",
+        "delete": "Delete",
+        "validated": "Validated"
+      },
+      "history": {
+        "title": "Broadcast Archive",
+        "desc": "All announcement records logged and published through the system.",
+        "empty": "Archive Empty",
+        "sent": "SENT",
+        "draft": "DRAFT",
+        "terminal_delivered": "{count} Delivered to Terminal",
+        "broadcast": "Publish"
+      },
+      "toasts": {
+        "template_empty": "This template content is empty.",
+        "template_compile_error": "Template could not be compiled. Check MJML syntax.",
+        "preview_error": "Preview error:",
+        "unknown_error": "Unknown error",
+        "required_fields": "Template name and content are required",
+        "template_updated": "Template updated",
+        "template_added": "Template added to library",
+        "template_applied": "{name} template applied",
+        "title_subject_required": "Title and Subject required",
+        "draft_saved": "Announcement draft saved",
+        "save_failed": "Save failed: {message}",
+        "broadcast_success": "Announcement broadcasted successfully",
+        "broadcast_error": "Broadcast failed",
+        "confirm_broadcast": "Are you sure you want to broadcast this announcement?",
+        "delete_success": "Record deleted",
+        "delete_failed": "Delete failed",
+        "confirm_delete_announcement": "Are you sure you want to delete this announcement?",
+        "confirm_delete_template": "Are you sure you want to delete this template?",
+        "error": "Error"
+      }
+    },
+    "teams": {
+      "fetch_error": "An error occurred while loading data.",
+      "search_placeholder": "Search teams or departments...",
+      "no_description": "No description added for this department.",
+      "min_suffix": "min",
+      "profile_pic_alt": "profile picture",
+      "statuses": {
+        "online": "Online",
+        "away": "Away",
+        "dnd": "Do Not Disturb",
+        "offline": "Offline"
+      },
+      "loading": {
+        "agent": "Analyzing profile data...",
+        "dept": "Loading department data...",
+        "team": "Synchronizing team data..."
+      },
+      "nav": {
+        "back_teams": "Back to Teams",
+        "back": "Go Back"
+      },
+      "actions": {
+        "edit_profile": "Edit Profile",
+        "edit_dept": "Edit Department",
+        "add_skill": "Add New Skill",
+        "add_sla": "Add New SLA Policy",
+        "add_member": "Add New Member",
+        "configure": "Configure",
+        "add_agent": "Add New Agent",
+        "add_team": "New Team",
+        "manage_team": "Manage Team",
+        "details": "Details",
+        "view_profile": "Profile",
+        "view_team": "VIEW TEAM",
+        "edit": "EDIT"
+      },
+      "tabs": {
+        "performance": "Performance",
+        "skills": "Skills",
+        "schedule": "Work Schedule",
+        "overview": "Overview",
+        "sla_policies": "SLA Policies",
+        "departments": "Departments",
+        "teams": "Teams",
+        "agents": "Agents"
+      },
+      "stats": {
+        "tickets": "Ticket Statistics",
+        "last_30_days": "LAST 30 DAYS",
+        "active_load": "Active Workload",
+        "csat": "CSAT Score",
+        "avg_response": "Avg. Response",
+        "monthly_quota": "Monthly Ticket Quota",
+        "first_response_target": "First Response SLA Target",
+        "active_teams": "Active Teams",
+        "total_agents": "Total Agents",
+        "avg_response_dept": "Avg. Response Time",
+        "sla_compliance": "SLA Compliance",
+        "active_ticket_load": "Active Ticket Load",
+        "quick_stats": "Quick Statistics",
+        "online_rate": "Online Rate",
+        "pending_queue": "Pending Queue",
+        "resolved_today": "Resolved Today",
+        "alerts": "Alerts",
+        "overload": "Overload",
+        "sla_stable": "SLA Stable"
+      },
+      "labels": {
+        "badges": "Achievement Badges",
+        "sla_master": "SLA Master",
+        "top_rated": "Top Rated",
+        "quick_resolve": "Quick Resolve",
+        "targets": "Targets",
+        "technical_skills": "Technical Skills",
+        "skills_desc": "Agent's areas of expertise and confidence levels.",
+        "no_skills": "No skills assigned yet.",
+        "leave": "LEAVE",
+        "recent_activity": "Recent Activity",
+        "critical_sla": "Critical SLA Targets",
+        "first_response": "FIRST RESPONSE",
+        "resolution": "RESOLUTION",
+        "first_response_time": "First Response",
+        "resolution_time": "Resolution Time",
+        "sla_config": "SLA Configuration",
+        "sla_config_desc": "Service level targets across the department.",
+        "automation_status": "AUTOMATION STATUS",
+        "active": "ACTIVE",
+        "passive": "PASSIVE",
+        "round_robin": "Round Robin",
+        "rr_desc": "Sequential assignment strategy is applied.",
+        "team_members": "Team Members",
+        "command_center": "Team Command Center",
+        "organization": "Single Organization: Aluplan Support System",
+        "auto_assignment": "AUTO-ASSIGNMENT",
+        "strategy": "Strategy:",
+        "agent": "Agent / Rep",
+        "status": "Status",
+        "role": "Role",
+        "actions": "Actions"
+      },
+      "creation": {
+        "title": "Create New Team",
+        "description": "Define a new team to manage operational processes.",
+        "team_name": "Team Name",
+        "team_name_placeholder": "Ex: Technical Support - Level 2",
+        "department": "Department",
+        "select_department": "Select a department",
+        "desc_label": "Description",
+        "desc_placeholder": "Team's job description...",
+        "auto_assign": "Auto Assignment",
+        "auto_assign_desc": "New tickets are automatically assigned to this team.",
+        "assign_strategy": "Assignment Strategy",
+        "round_robin": "Round Robin (Sequential)",
+        "least_loaded": "Least Loaded (Load Based)",
+        "skill_based": "Skill Based (Ability Based)",
+        "submit": "Launch Team",
+        "submitting": "Creating...",
+        "success": "New team created successfully.",
+        "error_dept": "Please select a department.",
+        "error_server": "An error occurred while creating the team."
+      },
+      "member_add": {
+        "title": "Assign New Agent",
+        "description": "Assign a registered user to the team as an agent.",
+        "select_agent": "User (Agent)",
+        "select_agent_placeholder": "Select a user",
+        "loading_users": "Loading users...",
+        "no_users": "No new users available to assign.",
+        "role": "In-Team Role",
+        "select_role": "Select role",
+        "role_desc": "This role only determines their permissions within this team.",
+        "cancel": "Cancel",
+        "submit": "Assign to Team",
+        "submitting": "Adding...",
+        "success": "New member successfully added to the team.",
+        "error_select": "Please select an agent.",
+        "error_server": "An error occurred while adding the member."
+      }
+    },
+    "kb_approvals": {
+      "title": "AI Approval Pool",
+      "subtitle": "Review and authorize knowledge units automatically synthesized from processed tickets.",
+      "refresh_queue": "REFRESH QUEUE",
+      "run_pipeline": "RUN PIPELINE",
+      "queue_title": "PENDING APPROVAL UNITS",
+      "units_loaded": "{count} UNITS LOADED",
+      "empty": {
+        "title": "Great Work!",
+        "desc": "All pending approval content has been reviewed and processed."
+      },
+      "table": {
+        "query": "QUERY / PROBLEM",
+        "answer": "AI SUGGESTED SOLUTION",
+        "confidence": "CONFIDENCE",
+        "source": "SOURCE",
+        "actions": "ACTIONS",
+        "reliable": "{percent}% RELIABLE",
+        "loading": "LOADING...",
+        "empty": "NO RECORDS FOUND"
+      },
+      "buttons": {
+        "approve": "APPROVE",
+        "delete": "DELETE"
+      },
+      "toasts": {
+        "fetch_error": "Could not load drafts.",
+        "approve_success": "Content added to knowledge base.",
+        "approve_error": "Error during approval.",
+        "dismiss_success": "Content dismissed.",
+        "dismiss_error": "Error during dismissal.",
+        "pipeline_started": "Pipeline triggered.",
+        "pipeline_error": "Pipeline error: {error}"
+      }
+    },
+    "knowledge_base": {
+      "title": "Knowledge Base",
+      "subtitle": "Corporate memory, solution articles and documentation center",
+      "buttons": {
+        "analytics": "ANALYTICS",
+        "new_article": "NEW ARTICLE",
+        "refresh": "REFRESH",
+        "publish": "PUBLISH",
+        "reject": "REJECT",
+        "detail": "DETAIL"
+      },
+      "search": {
+        "placeholder": "SEARCH..."
+      },
+      "filters": {
+        "all": "ALL",
+        "draft": "DRAFT",
+        "review": "IN REVIEW",
+        "active": "ACTIVE",
+        "archived": "ARCHIVED"
+      },
+      "stats": {
+        "total_articles": "Total {count} articles",
+        "total": "Total Articles",
+        "published": "Published",
+        "views": "Views"
+      },
+      "meta": {
+        "author": "AUTHOR",
+        "update": "UPDATE",
+        "views": "VIEWS"
+      },
+      "empty": {
+        "no_records": "No articles found yet",
+        "loading": "Loading Data Layers"
+      }
+    },
+    "meta": {
+      "locale": "en-US",
+      "system": "SYSTEM"
+    },
+    "table": {
+      "select_all": "Select all",
+      "showing": "Showing"
+    },
+    "system_topology": {
+      "title": "System Source Topology",
+      "subtitle": "SYSTEM_SOURCE_TOPOLOGY: DATA FLOW AND PROCESSING ARCHITECTURE",
+      "refresh": "REFRESH",
+      "sync_error": "Data sync error",
+      "total_entropy": "TOTAL ENTROPY",
+      "units": "UNITS",
+      "status_running": "RUNNING",
+      "pillars": {
+        "documents": "PDF/DOCX/XLS/TXT/MD",
+        "articles": "ADMIN ARTICLES",
+        "urls": "URL / WEB",
+        "tickets": "TICKET LEARNING"
+      },
+      "layers": {
+        "doc_parser": "DOC PARSER",
+        "rich_editor": "RICH EDITOR",
+        "crawl_engine": "CRAWL ENGINE",
+        "cluster_engine": "CLUSTER ENGINE"
+      },
+      "strategies": {
+        "parent_child": "PARENT-CHILD",
+        "direct_embed": "DIRECT EMBED",
+        "content_clean": "CONTENT CLEAN",
+        "faq_generator": "FAQ GENERATOR"
+      },
+      "vector": {
+        "unified_index": "UNIFIED VECTOR INDEX",
+        "re_ranking": "RE-RANKING ACTIVE",
+        "trust_priority": "TRUST SCORE PRIORITY"
+      },
+      "engine": {
+        "query_preproc": "QUERY PREPROC",
+        "hybrid_retrieval": "HYBRID RETRIEVAL ENGINE"
+      }
+    },
+    "products": {
+      "title": "Products and Modules",
+      "subtitle": "Manage the main products and subcategories for classification by artificial intelligence for your support departments.",
+      "actions": {
+        "add_product": "Add New Product",
+        "add_category": "Add Category"
+      },
+      "empty": {
+        "no_products": "No Products Defined Yet",
+        "no_products_desc": "You can define the main products and modules that customers can open tickets for using the 'Add New Product' button.",
+        "no_categories": "No subcategory/module defined for this product yet. Add a category for AI smart labeling."
+      },
+      "labels": {
+        "subcategories": "Subcategories (AI Labels)",
+        "no_keywords": "No keywords",
+        "product_name": "Product Name",
+        "description": "Description",
+        "category_name": "Category Name",
+        "keywords": "Keywords (Separate with Commas)",
+        "keywords_help": "AI can help create context when trying to classify the user ticket from this list of labels."
+      },
+      "placeholders": {
+        "product_name": "e.g., Aluplan Pro",
+        "description": "A short description of the product...",
+        "category_name": "e.g., Invoice Module",
+        "keywords": "e.g., invoice creation, cancellation, vat, e-invoice"
+      },
+      "dialogs": {
+        "edit_product": "Edit Product",
+        "add_product": "Add New Product",
+        "edit_category": "Edit Category",
+        "add_category": "Add New Module / Category",
+        "product_desc": "Define your main product or service. Customers will see these products first when creating a ticket.",
+        "category_desc": "Enter the subcategory and keywords associated with that category that AI will use to sub-label incoming tickets."
+      },
+      "toasts": {
+        "fetch_error": "Error loading products",
+        "product_updated": "Product updated",
+        "product_added": "New product added",
+        "category_updated": "Category updated",
+        "category_added": "New category added",
+        "product_deleted": "Product deleted",
+        "category_deleted": "Category deleted",
+        "save_failed": "Registration failed",
+        "delete_failed": "Deletion failed"
+      },
+      "confirms": {
+        "delete_product": "Are you sure you want to delete this product and all categories under it?",
+        "delete_category": "Are you sure you want to delete this category?"
+      }
+    },
+    "faq": {
+      "title": "FAQ_MANAGEMENT_UNIT",
+      "subtitle": "Review and synchronize automatically extracted operational knowledge samples.",
+      "refresh_cache": "REFRESH_CACHE",
+      "start_extraction": "START_EXTRACTION",
+      "filters": {
+        "all": "ALL",
+        "pending_review": "PENDING_REVIEW",
+        "published": "PUBLISHED",
+        "draft": "DRAFT"
+      },
+      "not_found": "No FAQ found",
+      "not_found_desc": "Try changing the filter or start the extraction process to create new FAQs.",
+      "frequency": "FREQUENCY",
+      "confidence_score": "CONFIDENCE_SCORE",
+      "approve": "APPROVE",
+      "dismiss": "DISMISS",
+      "source_ticket": "Source Ticket",
+      "toasts": {
+        "extraction_started": "Pipeline Started",
+        "extraction_started_desc": "FAQ extraction process is running in the background.",
+        "fetch_error": "Error fetching FAQs",
+        "approved": "FAQ Approved",
+        "approved_desc": "Sample has been published.",
+        "dismissed": "FAQ Dismissed",
+        "dismissed_desc": "Sample moved to draft/deleted.",
+        "op_failed": "Operation failed",
+        "pipeline_failed": "Failed to run pipeline"
+      }
+    },
+    "faq_learning": {
+      "title": "FAQ Auto Learning Pool",
+      "subtitle": "NEURAL SYNC: TRANSFORMING OPERATIONAL DATA INTO STRUCTURED KNOWLEDGE",
+      "trigger_loop": "TRIGGER LEARNING LOOP",
+      "health_analysis": "KB_HEALTH_ANALYSIS",
+      "realtime_telemetry_label": "REAL-TIME TELEMETRY",
+      "resolution_rate": "RESOLUTION_RATE",
+      "prevented_tickets": "PREVENTED_TICKETS",
+      "writing_accuracy": "WRITING_ACCURACY",
+      "highest_confidence": "HIGHEST_CONFIDENCE",
+      "total_interactions": "TOTAL_INTERACTIONS",
+      "last_30_days": "LAST_30_DAYS_QUERIES",
+      "confidence_distribution": "CONFIDENCE_DISTRIBUTION",
+      "bands": {
+        "high": "HIGH",
+        "medium": "MEDIUM",
+        "low": "LOW",
+        "no_match": "NO_MATCH"
+      },
+      "flow_status": "FLOW_STATUS",
+      "ingestion_engine": "DATA_INGESTION_ENGINE",
+      "ingestion_engine_desc": "Status: ACTIVE | Monitoring Closed Ticket Events",
+      "abstraction_layer": "ABSTRACTION_LAYER",
+      "abstraction_layer_desc": "Current: IDLE | Nomic-Embed Strategy",
+      "validation_queue": "VALIDATION_QUEUE",
+      "validation_queue_desc": "{count} CANDIDATES_AWAITING_VALIDATION",
+      "last_sync": "LAST_SYNC",
+      "candidates_title": "LEARNING_CANDIDATES",
+      "waiting_validation": "AWAITING_VALIDATION",
+      "all_synced": "ALL_PATTERNS_SYNCED",
+      "all_synced_desc": "Run the extraction loop manually to find new knowledge samples.",
+      "add_to_kb": "ADD TO KB",
+      "refresh": "REFRESH",
+      "toasts": {
+        "pipeline_started": "AI Pipeline Started",
+        "pipeline_desc": "In-depth analysis of resolved tickets is in progress.",
+        "knowledge_committed": "Knowledge Committed",
+        "knowledge_committed_desc": "The model has been successfully integrated into the general knowledge pool.",
+        "sync_error": "Data sync error",
+        "pipeline_exception": "Pipeline Exception",
+        "commit_error": "Commit Error"
+      }
+    },
+    "emails": {
+      "title": "Email Management",
+      "subtitle": "Edit MJML templates, create new templates, and track delivery history.",
+      "tabs": {
+        "templates": "Template Editor",
+        "logs": "Delivery History"
+      }
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your personal information and security settings",
+    "hotfix_warning_title": "ATTENTION: Hotfix Verification Required",
+    "hotfix_warning_desc": "Allplan usage detected. For system stability and uninterrupted support, please upload your current <b>Hotinfo (.hxl)</b> file from the bottom of the page.",
+    "crm_verified": "CRM VERIFIED",
+    "personal_info": "Personal Information",
+    "roles_info": "Account information ({roles})",
+    "roles": {
+      "admin": "Administrator",
+      "agent": "Agent",
+      "customer": "Customer"
+    },
+    "labels": {
+      "email_static": "Email (Immutable)",
+      "full_name": "Full Name",
+      "phone": "Phone Number",
+      "customer_no_static": "Customer No (Immutable)",
+      "company_name": "Company Name",
+      "industry": "Industry",
+      "job_title": "Job Title",
+      "subscription": "Subscription",
+      "status": "Status"
+    },
+    "placeholders": {
+      "phone": "+90 555 444 33 22",
+      "no_crm": "No CRM record",
+      "company_name": "Your company name",
+      "industry": "Industry you operate in",
+      "job_title": "Your job title (e.g. Purchasing Manager)",
+      "new_password": "Enter your new password",
+      "confirm_password": "Re-enter your new password"
+    },
+    "contract_status": {
+      "ACTIVE": "Active",
+      "EXPIRED": "Expired"
+    },
+    "account_status": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "SUSPENDED": "Suspended"
+    },
+    "password_change": {
+      "title": "Change Password",
+      "description": "Leave blank if you do not want to change your password.",
+      "new_password": "New Password",
+      "confirm_password": "Verify Password"
+    },
+    "save_button": "Save Changes",
+    "saving_button": "Saving...",
+    "mfa": {
+      "title": "Two-Factor Authentication (MFA)",
+      "description": "Use TOTP-based authentication (Google Authenticator, Authy, etc.) to increase your account security.",
+      "status_label": "MFA Status",
+      "active": "ACTIVE",
+      "inactive": "INACTIVE",
+      "disable_btn": "Disable",
+      "setup_btn": "Start Setup",
+      "dialog_title": "MFA Setup",
+      "dialog_desc": "Scan the code with any authentication app (Google Authenticator, Microsoft Authenticator, Authy).",
+      "key_creating": "Generating Key...",
+      "manual_key_label": "Manual Entry Key",
+      "token_label": "Verification Code",
+      "token_placeholder": "000000",
+      "token_hint": "Enable by entering the 6-digit code in your app",
+      "cancel": "Cancel",
+      "verify_enable": "Verify and Enable",
+      "verifying": "Verifying...",
+      "confirm_disable": "Are you sure you want to disable two-factor authentication? Your security will be reduced."
+    },
+    "notifications": {
+      "title": "Email Notification Preferences",
+      "description": "Determine which categories you want to receive emails in",
+      "types": {
+        "ANNOUNCEMENTS": "Announcements and News",
+        "TICKETS": "Ticket Updates",
+        "SYSTEM": "System and Security Alerts"
+      },
+      "descriptions": {
+        "ANNOUNCEMENTS": "Campaigns, news and product updates",
+        "TICKETS": "All messages related to your support requests",
+        "SYSTEM": "Password reset, account movements and critical alerts"
+      }
+    },
+    "hotinfo": {
+      "title": "System Information (Hotinfo)",
+      "description": "System configuration required for your Allplan support requests",
+      "last_update": "Last Update",
+      "status_up_to_date": "Your system information is up to date. This information will be used automatically in your support requests.",
+      "update_btn": "Update Information (Upload .hxl)",
+      "missing_title": "System Information Missing",
+      "missing_desc": "It is recommended to upload your Allplan Hotinfo file so that our support team can help you faster.",
+      "upload_btn": "Upload HXL File",
+      "uploading": "Uploading..."
+    },
+    "toasts": {
+      "pref_updated": "Preference updated",
+      "pref_failed": "Update failed",
+      "password_mismatch": "Passwords do not match!",
+      "profile_updated": "Profile successfully updated.",
+      "update_failed": "Update failed",
+      "hxl_invalid": "Please upload a valid .hxl file",
+      "hotinfo_updated": "[TR] Sistem bilgileriniz başarıyla güncellendi",
+      "hotinfo_failed": "[TR] Dosya yüklenirken hata oluştu",
+      "mfa_gen_failed": "Failed to generate MFA key",
+      "mfa_enabled": "Two-factor authentication enabled.",
+      "mfa_verify_failed": "Verification failed",
+      "mfa_disabled": "Two-factor authentication has been disabled.",
+      "mfa_disable_failed": "Operation failed"
+    }
+  },
+  "help": {
+    "badge": "SYSTEM GUIDE",
+    "title": "User Manual & Workflows",
+    "description": "Learn step-by-step how to carry out daily operations, all features of the Aluplan Support platform, and AI modules.",
+    "tabs": {
+      "customer": "Customers",
+      "admin": "Support Team & Admins"
+    },
+    "customer": {
+      "section1": {
+        "title": "Login and Overview",
+        "desc": "The first screen you see when you log in to the system is the <b>Overview (Dashboard)</b> screen. On this screen:",
+        "item1": "You can see your active support requests that are ongoing and waiting for a response.",
+        "item2": "You can quickly access the latest created articles.",
+        "item3": "You can read the system announcements shared for you from the \"Announcements\" board."
+      },
+      "section2": {
+        "title": "Using the AI Assistant",
+        "desc": "Before opening a ticket, we recommend using the <b>AI Assistant</b> (/ai) menu to solve your problem quickly.",
+        "item1": "Click on the AI Assistant tab from the left menu.",
+        "item2": "Write the error you receive or the topic you want to learn in the message box (e.g., <i>\"Program crashes while drawing walls\"</i>).",
+        "item3": "AI will scan the entire knowledge base and present the solution steps directly to you. If no solution is found, it will suggest creating a support request.",
+        "tip_label": "Tip:",
+        "tip_desc": "Since AI uses RAG (Learning Algorithm), you will get more accurate answers if you ask questions by specifying the name of the software modules (e.g., AX3000)."
+      },
+      "section3": {
+        "title": "Opening and Following a Support Request (Ticket)",
+        "desc": "To forward the issue to the agents, you can create a new record from the <b>My Support Requests</b> page.",
+        "step1_title": "Step 1: Product Selection",
+        "step1_desc": "After clicking the New Request button, select the product family you are experiencing the problem with (e.g., ALLPLAN, AX3000). In this way, your request is directly directed to the relevant expert team.",
+        "step2_title": "Step 2: Subject and Details",
+        "step2_desc": "Enter a clear title and details explaining the problem you encountered. Select the urgency level (determined by SLA).",
+        "step3_title": "Step 3: File Attachments",
+        "step3_desc": "You can upload screenshots, PDFs, or project files (Max 10MB) directly by dragging and dropping."
+      }
+    },
+    "admin": {
+      "section1": {
+        "title": "Ticket Management",
+        "card1_title": "Operational Pool",
+        "card1_desc": "Requests from all customers are collected on the Ticket Queue page.",
+        "card1_item1_label": "Changing Status:",
+        "card1_item1_desc": "You can enter the ticket and change the status from the dropdown in the right panel (Open, Answered, Closed).",
+        "card1_item2_label": "Internal Notes:",
+        "card1_item2_desc": "Use the <code>Internal Note (Internal Only)</code> tab to take only team internal notes that the customer cannot see.",
+        "card1_item3_label": "Assignment:",
+        "card1_item3_desc": "You can transfer the ticket to a specific expert representative by using the \"Assign\" button.",
+        "card2_title": "AI Co-Pilot (AI Assisted Response)",
+        "card2_item1": "Press the <b>\"Create AI Response Draft\"</b> button at the top right when you enter the ticket.",
+        "card2_item2": "The system scans the customer's message and your company's Knowledge Pool. By making a vector data match, it prepares a professional draft referring to the relevant documents within 5-10 seconds. You can respond to the customer immediately by approving the draft and editing it according to your own style."
+      },
+      "section2": {
+        "title": "Knowledge Pool & Learning Loop",
+        "item1_title": "Knowledge Pool Management",
+        "item1_desc": "In order for AI to respond, you need to constantly provide new data to the infrastructure. There are 3 ways to do this:",
+        "item1_way1_label": "PDF / File Upload:",
+        "item1_way1_desc": "Directly add technical specifications to the database as PDFs. The system divides them into <u>Embedding (Vector)</u> parts.",
+        "item1_way2_label": "Web Scraper:",
+        "item1_way2_desc": "When you give the current \"How to\" URL addresses on your site to the system, AI reads your website and saves it to its memory.",
+        "item1_way3_label": "Raw Text:",
+        "item1_way3_desc": "You can create an \"Instruction\" for AI by manually entering frequently asked questions.",
+        "item2_title": "Learning Loop and AI Approvals",
+        "item2_desc": "When customers vote for closed tickets with <b>5 stars</b>, the system thinks that the solution is perfect. However, to prevent this solution from being written directly to the main database, it falls into the <b>AI Approvals</b> tab. As an administrator, you can choose to have the solution learned by AI (Approve) or skipped (Reject) in this tab."
+      },
+      "section3": {
+        "title": "CRM & Product (Taxonomy) Configuration",
+        "card1_title": "Products and Modules",
+        "card1_desc1": "You manage the Product cards that the customer sees when opening a ticket from here. The most important part is <b>Categories and Keywords.</b>",
+        "card1_rule_label": "Taxonomy Rule:",
+        "card1_rule_desc": "Write not only product features (Wall, Beam) but also customer symptoms (stuttering, black screen, closing) in categories (e.g., Model Crash). AI reads these keywords and directs the ticket to the correct team (Triage).",
+        "card2_title": "Customer and Team Management",
+        "card2_desc": "You can approve Customers and create Support Teams (Departments) from under the <b>SYSTEM</b> menu of the left panel. Do not forget to set the SLA rules (How many hours to respond, should it stop outside working hours?) from the Team Management tab so that tickets can be assigned automatically."
       }
     }
   }

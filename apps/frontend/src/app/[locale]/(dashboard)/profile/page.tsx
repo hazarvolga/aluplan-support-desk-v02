@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Shield, KeyRound, Monitor, UploadCloud, AlertCircle, AlertTriangle, ShieldCheck, History, Clock, FileText, Activity, LayoutDashboard, QrCode, Smartphone, SmartphoneNfc, CheckCircle2, UserCircle, Save, Loader2, Trash2, Mail, BellRing, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import {
     Dialog,
     DialogContent,
@@ -26,6 +26,7 @@ import {
 export default function ProfilePage() {
     const t = useTranslations('profile');
     const tc = useTranslations('common');
+    const locale = useLocale();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -155,7 +156,7 @@ export default function ProfilePage() {
             loadProfile(); // Refresh to see any auto-generated customerNo
         } catch (error: any) {
             console.error(error);
-            toast.error(t('toasts.update_failed') + ': ' + (error.message || 'Bilinmeyen hata'));
+            toast.error(t('toasts.update_failed') + ': ' + (error.message || t('toasts.unknown_error')));
         } finally {
             setSaving(false);
         }
@@ -272,11 +273,8 @@ export default function ProfilePage() {
                     <CardDescription>
                         {t('roles_info', {
                             roles: roles.map(r => {
-                                const rt = r.toLowerCase();
-                                if (rt === 'admin') return t('roles.admin');
-                                if (rt === 'agent') return t('roles.agent');
-                                if (rt === 'customer' || rt === 'viewer') return t('roles.customer');
-                                return r;
+                                const roleKey = r.toLowerCase();
+                                return t.has(`roles.${roleKey}`) ? t(`roles.${roleKey}`) : r;
                             }).join(', ')
                         })}
                     </CardDescription>
@@ -370,13 +368,13 @@ export default function ProfilePage() {
                                     <div className="space-y-1">
                                         <Label className="text-[10px] uppercase text-muted-foreground">{t('labels.subscription')}</Label>
                                         <div className="text-xs font-semibold bg-sky-500/10 text-sky-600 py-1 px-2 rounded border border-sky-500/20 text-center">
-                                            {t(`contract_status.${contractStatus}`) || contractStatus}
+                                            {t.has(`contract_status.${contractStatus}`) ? t(`contract_status.${contractStatus}`) : contractStatus}
                                         </div>
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-[10px] uppercase text-muted-foreground">{t('labels.status')}</Label>
                                         <div className="text-xs font-semibold bg-amber-500/10 text-amber-600 py-1 px-2 rounded border border-amber-500/20 text-center">
-                                            {t(`account_status.${accountStatus}`) || accountStatus}
+                                            {t.has(`account_status.${accountStatus}`) ? t(`account_status.${accountStatus}`) : accountStatus}
                                         </div>
                                     </div>
                                 </div>
@@ -589,7 +587,7 @@ export default function ProfilePage() {
                         {hotinfoData && (
                             <div className="flex flex-col items-end">
                                 <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{t('hotinfo.last_update')}</div>
-                                <div className="text-xs text-slate-400">{hotinfoUpdatedAt ? new Date(hotinfoUpdatedAt).toLocaleDateString(tc('languages.tr') === 'Türkçe' ? 'tr-TR' : 'en-US') : '-'}</div>
+                                <div className="text-xs text-slate-400">{hotinfoUpdatedAt ? new Date(hotinfoUpdatedAt).toLocaleDateString(locale) : '-'}</div>
                             </div>
                         )}
                     </div>

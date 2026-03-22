@@ -25,11 +25,14 @@ import { AgentStatusBadge } from '@/components/team/AgentStatusBadge';
 import { RoleBadge } from '@/components/team/RoleBadge';
 import { TeamMemberAddDialog } from '@/components/team/TeamMemberAddDialog';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export default function TeamDetailPage() {
+    const t = useTranslations('teams');
     const { id } = useParams();
     const router = useRouter();
     const [team, setTeam] = useState<any>(null);
+    const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
     const { toast } = useToast();
@@ -37,8 +40,12 @@ export default function TeamDetailPage() {
     useEffect(() => {
         const fetchTeam = async () => {
             try {
-                const res = await api.teams.get(id as string);
-                setTeam(res);
+                const [teamRes, statsRes] = await Promise.all([
+                    api.teams.get(id as string),
+                    api.teams.getStats(id as string)
+                ]);
+                setTeam(teamRes);
+                setStats(statsRes);
             } catch (error) {
                 toast({ title: 'Hata', description: 'Ekip bilgileri alınamadı.', variant: 'destructive' });
                 router.push('/teams');
@@ -63,14 +70,14 @@ export default function TeamDetailPage() {
         }
     };
 
-    if (loading) return <div className="p-8 animate-pulse text-muted-foreground font-mono text-center">Ekip verileri senkronize ediliyor...</div>;
+    if (loading) return <div className="p-8 animate-pulse text-muted-foreground font-mono text-center">{t('loading.team')}</div>;
     if (!team) return null;
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500 max-w-[1400px] mx-auto">
             {/* Nav */}
             <Button variant="ghost" size="sm" className="w-fit -ml-2 text-muted-foreground hover:text-foreground h-8" onClick={() => router.back()}>
-                <ChevronLeft className="mr-2 h-4 w-4" /> Geri Dön
+                <ChevronLeft className="mr-2 h-4 w-4" /> {t('nav.back')}
             </Button>
 
             <TeamMemberAddDialog
@@ -105,21 +112,21 @@ export default function TeamDetailPage() {
 
                 <div className="bg-muted/30 rounded-3xl p-6 border border-border/40 flex flex-col justify-between">
                     <div className="flex justify-between items-start">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">OTOMASYON DURUMU</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('labels.automation_status')}</span>
                         {team.autoAssignmentEnabled ? (
                             <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 font-bold animate-pulse">
-                                <Zap className="h-3 w-3 fill-current" /> AKTİF
+                                <Zap className="h-3 w-3 fill-current" /> {t('labels.active')}
                             </Badge>
                         ) : (
-                            <Badge variant="outline" className="text-rose-500 border-rose-500/20 font-bold">PASİF</Badge>
+                            <Badge variant="outline" className="text-rose-500 border-rose-500/20 font-bold">{t('labels.passive')}</Badge>
                         )}
                     </div>
                     <div className="mt-4">
-                        <div className="text-4xl font-black text-foreground">Round Robin</div>
-                        <div className="text-xs text-muted-foreground mt-1">Sıralı atama stratejisi uygulanıyor.</div>
+                        <div className="text-4xl font-black text-foreground">{t('labels.round_robin')}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{t('labels.rr_desc')}</div>
                     </div>
                     <Button variant="outline" className="w-full mt-6 h-10 font-bold border-border/60 hover:bg-background">
-                        Yapılandır
+                        {t('actions.configure')}
                     </Button>
                 </div>
             </div>
@@ -129,11 +136,11 @@ export default function TeamDetailPage() {
                 <div className="lg:col-span-3 space-y-6">
                     <div className="flex justify-between items-center">
                         <h2 className="text-xl font-extrabold flex items-center gap-2">
-                            <Users className="h-5 w-5 text-primary" /> Ekip Üyeleri
+                            <Users className="h-5 w-5 text-primary" /> {t('labels.team_members')}
                             <span className="text-muted-foreground text-sm font-normal">({team.members?.length || 0})</span>
                         </h2>
                         <Button className="h-9 px-4 font-bold" onClick={() => setIsAddMemberOpen(true)}>
-                            <UserPlus className="mr-2 h-4 w-4" /> Yeni Üye Ekle
+                            <UserPlus className="mr-2 h-4 w-4" /> {t('actions.add_member')}
                         </Button>
                     </div>
 
@@ -158,16 +165,16 @@ export default function TeamDetailPage() {
                                 </CardHeader>
                                 <CardContent className="pb-4">
                                     <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase">
-                                        <span>Aktif Ticket Yükü</span>
-                                        <span className="text-foreground">2 / 5</span>
+                                        <span>{t('stats.active_ticket_load')}</span>
+                                        <span className="text-foreground">{m.user._count?.ticketsAssigned || 0} / 5</span>
                                     </div>
                                     <div className="w-full h-1.5 bg-muted rounded-full mt-1.5 overflow-hidden">
-                                        <div className="h-full bg-blue-500 rounded-full" style={{ width: '40%' }} />
+                                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, ((m.user._count?.ticketsAssigned || 0) / 5) * 100)}%` }} />
                                     </div>
                                 </CardContent>
                                 <CardFooter className="pt-0 flex justify-end gap-2 pr-4 pb-4">
                                     <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase tracking-wider h-8" asChild>
-                                        <Link href={`/teams/agents/${m.user.id}`}>PROFİL</Link>
+                                        <Link href={`/teams/agents/${m.user.id}`}>{t('actions.view_profile')}</Link>
                                     </Button>
                                     <Button
                                         variant="ghost"
@@ -190,27 +197,27 @@ export default function TeamDetailPage() {
                 <div className="space-y-6">
                     <Card className="bg-primary/5 border-primary/20 shadow-none rounded-3xl overflow-hidden">
                         <CardHeader>
-                            <CardTitle className="text-sm font-black uppercase tracking-tighter">Hızlı İstatistikler</CardTitle>
+                            <CardTitle className="text-sm font-black uppercase tracking-tighter">{t('stats.quick_stats')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex justify-between items-end border-b border-primary/10 pb-3">
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] text-primary/60 font-bold uppercase">Online Oranı</span>
-                                    <span className="text-2xl font-black">%40</span>
+                                    <span className="text-[10px] text-primary/60 font-bold uppercase">{t('stats.online_rate')}</span>
+                                    <span className="text-2xl font-black">%{stats?.onlineRate || 0}</span>
                                 </div>
                                 <div className="text-primary"><Zap className="h-5 w-5" /></div>
                             </div>
                             <div className="flex justify-between items-end border-b border-primary/10 pb-3">
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] text-primary/60 font-bold uppercase">Bekleyen Kuyruk</span>
-                                    <span className="text-2xl font-black">12</span>
+                                    <span className="text-[10px] text-primary/60 font-bold uppercase">{t('stats.pending_queue')}</span>
+                                    <span className="text-2xl font-black">{stats?.waitingQueue || 0}</span>
                                 </div>
                                 <div className="text-primary"><Clock className="h-5 w-5" /></div>
                             </div>
                             <div className="flex justify-between items-end">
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] text-primary/60 font-bold uppercase">Bugün Çözülen</span>
-                                    <span className="text-2xl font-black">148</span>
+                                    <span className="text-[10px] text-primary/60 font-bold uppercase">{t('stats.resolved_today')}</span>
+                                    <span className="text-2xl font-black">{stats?.resolvedToday || 0}</span>
                                 </div>
                                 <div className="text-primary"><BarChart3 className="h-5 w-5" /></div>
                             </div>
@@ -220,16 +227,16 @@ export default function TeamDetailPage() {
                     <Card className="bg-card shadow-sm border-border/40 rounded-3xl">
                         <CardHeader>
                             <CardTitle className="text-sm font-black uppercase tracking-tighter flex items-center gap-2">
-                                <ShieldAlert className="h-4 w-4 text-rose-500" /> Uyarılar
+                                <ShieldAlert className="h-4 w-4 text-rose-500" /> {t('stats.alerts')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="text-xs text-muted-foreground space-y-3">
                             <div className="p-3 bg-amber-500/5 rounded-2xl border border-amber-500/10">
-                                <p className="font-bold text-amber-700">Fazla Yüklenme</p>
+                                <p className="font-bold text-amber-700">{t('stats.overload')}</p>
                                 <p className="mt-1 opacity-80">2 ajan maksimum (5) ticket limitine ulaştı.</p>
                             </div>
                             <div className="p-3 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
-                                <p className="font-bold text-emerald-700">SLA Stabil</p>
+                                <p className="font-bold text-emerald-700">{t('stats.sla_stable')}</p>
                                 <p className="mt-1 opacity-80">Ekip %100 SLA uyumu ile çalışıyor.</p>
                             </div>
                         </CardContent>

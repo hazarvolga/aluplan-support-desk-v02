@@ -13,6 +13,7 @@ import { ArrowLeft, User, Building, Edit, Save, Key, Monitor, Download } from 'l
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslations } from 'next-intl';
 import { HotinfoGrid } from '@/components/ui/hotinfo-grid';
 
 export default function CustomerProfilePage() {
@@ -48,7 +49,7 @@ export default function CustomerProfilePage() {
             })
             .catch(err => {
                 console.error(err);
-                toast({ variant: 'destructive', title: '❌ Hata', description: 'Müşteri bulunamadı.' });
+                toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('accounts.not_found') });
                 router.push('/customers');
             })
             .finally(() => setLoading(false));
@@ -63,24 +64,24 @@ export default function CustomerProfilePage() {
         setSaving(true);
         try {
             await api.customers.update(id, formData);
-            toast({ title: '✅ Başarılı', description: 'Müşteri başarıyla güncellendi.' });
+            toast({ title: '✅ ' + tc('success_title'), description: t('toasts.update_success') });
             window.location.reload(); // Quick refresh to catch top layout items
         } catch (error: any) {
             console.error(error);
-            toast({ variant: 'destructive', title: '❌ Hata', description: error.message || 'Güncelleme başarısız.' });
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message || t('toasts.update_error') });
         } finally {
             setSaving(false);
         }
     };
 
     const handleResetPassword = async () => {
-        if (!confirm('Devam edilsin mi? Müşteriye yeni, rastgele bir şifre atanacaktır.')) return;
+        if (!confirm(t('labels.reset_password_confirm'))) return;
         try {
             const result = await api.customers.resetPassword(id);
-            toast({ title: '🔑 Şifre Sıfırlandı', description: `Yeni Şifre: ${result.newPassword} — E-posta: ${result.email}` });
+            toast({ title: '🔑 ' + t('labels.reset_password'), description: `${tc('success_title')}: ${result.email}` });
         } catch (error: any) {
             console.error(error);
-            toast({ variant: 'destructive', title: '❌ Hata', description: error.message || 'Şifre sıfırlama başarısız.' });
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message || t('toasts.password_reset_error') });
         }
     };
 
@@ -116,12 +117,16 @@ export default function CustomerProfilePage() {
             a.remove();
         } catch (error: any) {
             console.error(error);
-            toast({ variant: 'destructive', title: '❌ Hata', description: 'Dosya indirilemedi.' });
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('toasts.download_error') });
         }
     };
 
+    const t = useTranslations('customers');
+    const tc = useTranslations('common');
+    const { locale } = params as any;
+
     if (loading) {
-        return <div className="p-8 text-center animate-pulse">Yükleniyor...</div>;
+        return <div className="p-8 text-center animate-pulse">{tc('loading')}</div>;
     }
 
     if (!customer) return null;
@@ -139,7 +144,7 @@ export default function CustomerProfilePage() {
                         <div className="flex items-center space-x-2">
                             <h1 className="text-2xl font-bold tracking-tight">{customer.fullName}</h1>
                             <Badge variant={customer.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                                {customer.status === 'ACTIVE' ? 'Aktif' : 'İnaktif'}
+                                {customer.status === 'ACTIVE' ? t('labels.active') : t('labels.passive')}
                             </Badge>
                         </div>
                         <p className="text-muted-foreground">{customer.email}</p>
@@ -148,7 +153,7 @@ export default function CustomerProfilePage() {
                 <div>
                     <Button variant="outline" onClick={handleResetPassword}>
                         <Key className="mr-2 h-4 w-4" />
-                        Şifreyi Sıfırla
+                        {t('labels.reset_password')}
                     </Button>
                 </div>
             </div>
@@ -159,35 +164,35 @@ export default function CustomerProfilePage() {
                         <CardHeader className="pb-4">
                             <div className="flex items-center space-x-2 text-primary">
                                 <User className="h-5 w-5" />
-                                <CardTitle>Kişisel Bilgiler</CardTitle>
+                                <CardTitle>{t('labels.personal_info')}</CardTitle>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label>Ad</Label>
+                                    <Label>{t('labels.first_name')}</Label>
                                     <Input value={formData.firstName} onChange={e => handleChange('firstName', e.target.value)} required />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Soyad</Label>
+                                    <Label>{t('labels.last_name')}</Label>
                                     <Input value={formData.lastName} onChange={e => handleChange('lastName', e.target.value)} required />
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Görev / Unvan</Label>
+                                <Label>{t('labels.job_title')}</Label>
                                 <Input value={formData.jobTitle} onChange={e => handleChange('jobTitle', e.target.value)} />
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Telefon</Label>
+                                <Label>{t('labels.phone')}</Label>
                                 <Input value={formData.phoneNumber} onChange={e => handleChange('phoneNumber', e.target.value)} />
                             </div>
 
                             <div className="space-y-2 pt-4">
-                                <Label className="text-muted-foreground text-xs">Hesap Oluşturulma</Label>
+                                <Label className="text-muted-foreground text-xs">{t('labels.created_at')}</Label>
                                 <p className="text-sm border p-2 rounded bg-muted/30">
-                                    {new Date(customer.createdAt).toLocaleString('tr-TR')}
+                                    {new Date(customer.createdAt).toLocaleString(locale)}
                                 </p>
                             </div>
                         </CardContent>
@@ -197,31 +202,31 @@ export default function CustomerProfilePage() {
                         <CardHeader className="pb-4">
                             <div className="flex items-center space-x-2 text-sky-500">
                                 <Building className="h-5 w-5" />
-                                <CardTitle>Kurumsal Bilgiler</CardTitle>
+                                <CardTitle>{t('labels.corporate_info')}</CardTitle>
                             </div>
-                            <CardDescription>CRM detayları ve proje kilitleri</CardDescription>
+                            <CardDescription>{t('crm.desc')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <Label>Firma Adı</Label>
+                                <Label>{t('labels.company_name')}</Label>
                                 <Input value={formData.companyName} onChange={e => handleChange('companyName', e.target.value)} required />
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Müşteri Numarası</Label>
+                                <Label>{t('labels.customer_no')}</Label>
                                 <div className="flex">
                                     <Input value={formData.customerNo} onChange={e => handleChange('customerNo', e.target.value)} className="font-mono bg-muted/10" />
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Müşteri Durumu</Label>
-                                <Input value={formData.contractStatus} onChange={e => handleChange('contractStatus', e.target.value)} placeholder="Örn: Aktif, Askıda..." />
+                                <Label>{t('labels.contract_status')}</Label>
+                                <Input value={formData.contractStatus} onChange={e => handleChange('contractStatus', e.target.value)} />
                             </div>
 
                             <div className="pt-8">
                                 <Button type="submit" disabled={saving} className="w-full">
-                                    {saving ? 'Kaydediliyor...' : 'Tüm Değişiklikleri Kaydet'}
+                                    {saving ? t('labels.saving') : t('labels.save_all')}
                                     <Save className="ml-2 h-4 w-4" />
                                 </Button>
                             </div>
@@ -238,15 +243,15 @@ export default function CustomerProfilePage() {
                             <div>
                                 <CardTitle className="flex items-center gap-2">
                                     <Monitor className="w-5 h-5 text-brand-500" />
-                                    Sistem Bilgileri (Hotinfo)
+                                    {t('labels.system_info')}
                                 </CardTitle>
                                 <CardDescription>
-                                    Cihaz konfigürasyonu ve Allplan detayları
+                                    {t('labels.hotinfo_data')}
                                 </CardDescription>
                             </div>
                             <Button variant="outline" size="sm" onClick={handleDownloadHotinfo} className="border-slate-700 hover:bg-slate-800">
                                 <Download className="w-4 h-4 mr-2" />
-                                .HXL İndir
+                                {t('labels.download_hxl')}
                             </Button>
                         </div>
                     </CardHeader>

@@ -181,11 +181,11 @@ export function AiSettings() {
                         <div className="flex flex-col items-end gap-1">
                             {isAvailable ? (
                                 <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 gap-1.5 py-0.5">
-                                    <CheckCircle2 className="h-3 w-3" /> {t('providers.status_active', { defaultValue: 'Aktif' })}
+                                    <CheckCircle2 className="h-3 w-3" /> {t('status_active')}
                                 </Badge>
                             ) : (
                                 <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20 gap-1.5 py-0.5">
-                                    <AlertCircle className="h-3 w-3" /> {t('providers.status_inactive', { defaultValue: 'Pasif' })}
+                                    <AlertCircle className="h-3 w-3" /> {t('status_inactive')}
                                 </Badge>
                             )}
                             {isActive && <span className="text-[10px] text-brand-400 font-medium uppercase tracking-tighter">{t('primary_engine')}</span>}
@@ -201,7 +201,7 @@ export function AiSettings() {
                                     type="button"
                                     onClick={() => setShowKey(showKey === name ? null : name)}
                                     className="hover:text-white transition-colors p-1"
-                                    aria-label={showKey === name ? `${name} anahtarını gizle` : `${name} anahtarını göster`}
+                                    aria-label={showKey === name ? t('hide_key', { name }) : t('show_key', { name })}
                                 >
                                     {showKey === name ? <EyeOff className="h-3 w-3" aria-hidden="true" /> : <Eye className="h-3 w-3" aria-hidden="true" />}
                                 </button>
@@ -226,7 +226,7 @@ export function AiSettings() {
                             value={modelValue}
                             onChange={(e) => setModelValue(e.target.value)}
                             className="bg-slate-950/80 border-white/10 focus:border-brand-500/50 h-11 transition-all text-white placeholder:text-white/20 shadow-inner"
-                            placeholder="örn: gpt-4, claude-3-opus..."
+                            placeholder={t('model_placeholder')}
                         />
                     </div>
                 </CardContent>
@@ -288,7 +288,7 @@ export function AiSettings() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Badge variant="outline" className="bg-slate-900 border-white/10 py-1 px-3">
-                        Total Latency: <span className="text-brand-400 font-mono ml-1.5">~1.2s</span>
+                        {t('total_latency')}: <span className="text-brand-400 font-mono ml-1.5">~1.2s</span>
                     </Badge>
                 </div>
             </div>

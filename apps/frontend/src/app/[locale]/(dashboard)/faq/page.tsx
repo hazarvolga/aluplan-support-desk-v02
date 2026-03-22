@@ -9,8 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslations } from 'next-intl';
 
 export default function FaqPage() {
+    const t = useTranslations('admin.faq');
     const [faqs, setFaqs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'ALL' | 'PUBLISHED' | 'PENDING_REVIEW' | 'DRAFT'>('ALL');
@@ -24,7 +26,7 @@ export default function FaqPage() {
             // Let's handle both based on previous findings about FaqService
             setFaqs(Array.isArray(res) ? res : res.data || []);
         } catch (error) {
-            toast({ title: 'Error fetching FAQs', description: String(error), variant: 'destructive' });
+            toast({ title: t('toasts.fetch_error'), description: String(error), variant: 'destructive' });
         } finally {
             setLoading(false);
         }
@@ -37,29 +39,29 @@ export default function FaqPage() {
     const handleApprove = async (id: string) => {
         try {
             await api.faq.approve(id);
-            toast({ title: 'FAQ Approved', description: 'Sample has been published.' });
+            toast({ title: t('toasts.approved'), description: t('toasts.approved_desc') });
             fetchFaqs();
         } catch (error) {
-            toast({ title: 'Operation failed', description: String(error), variant: 'destructive' });
+            toast({ title: t('toasts.op_failed'), description: String(error), variant: 'destructive' });
         }
     };
 
     const handleDismiss = async (id: string) => {
         try {
             await api.faq.dismiss(id);
-            toast({ title: 'FAQ Dismissed', description: 'Sample moved to draft/deleted.' });
+            toast({ title: t('toasts.dismissed'), description: t('toasts.dismissed_desc') });
             fetchFaqs();
         } catch (error) {
-            toast({ title: 'Operation failed', description: String(error), variant: 'destructive' });
+            toast({ title: t('toasts.op_failed'), description: String(error), variant: 'destructive' });
         }
     };
 
     const runPipeline = async () => {
         try {
-            toast({ title: 'Pipeline Started', description: 'FAQ extraction pipeline is running in background.' });
+            toast({ title: t('toasts.extraction_started'), description: t('toasts.extraction_started_desc') });
             await api.faq.runPipeline();
         } catch (error) {
-            toast({ title: 'Failed to run pipeline', description: String(error), variant: 'destructive' });
+            toast({ title: t('toasts.pipeline_failed'), description: String(error), variant: 'destructive' });
         }
     };
 
@@ -67,17 +69,17 @@ export default function FaqPage() {
         <div className="space-y-4">
             <div className="flex justify-between items-start border-b border-border/40 pb-4">
                 <div>
-                    <h1 className="text-[18px] font-bold tracking-tight uppercase">SSS_YÖNETİM_BİRİMİ</h1>
-                    <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mt-1">Otomatik olarak ayıklanan operasyonel bilgi örneklerini inceleyin ve senkronize edin.</p>
+                    <h1 className="text-[18px] font-bold tracking-tight uppercase">{t('title')}</h1>
+                    <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mt-1">{t('subtitle')}</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={fetchFaqs} disabled={loading} className="h-7 text-[10px] uppercase font-bold tracking-widest bg-muted/20">
                         <RefreshCw className={`mr-2 h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-                        ÖNBELLEĞİ_YENİLE
+                        {t('refresh_cache')}
                     </Button>
                     <Button size="sm" onClick={runPipeline} className="h-7 text-[10px] uppercase font-bold tracking-widest">
                         <ArrowRight className="mr-2 h-3 w-3" />
-                        AYIKLAMAYI_BAŞLAT
+                        {t('start_extraction')}
                     </Button>
                 </div>
             </div>
@@ -91,7 +93,10 @@ export default function FaqPage() {
                         size="sm"
                         className="h-6 px-3 text-[9px] uppercase font-bold tracking-widest rounded-none border-border/60"
                     >
-                        {status === 'ALL' ? 'HEPSİ' : status === 'PENDING_REVIEW' ? 'ONAY_BEKLİYOR' : status === 'PUBLISHED' ? 'YAYINDA' : status === 'DRAFT' ? 'TASLAK' : status.replace('_', ' ')}
+                        {status === 'ALL' ? t('filters.all') :
+                            status === 'PENDING_REVIEW' ? t('filters.pending_review') :
+                                status === 'PUBLISHED' ? t('filters.published') :
+                                    status === 'DRAFT' ? t('filters.draft') : status.replace('_', ' ')}
                     </Button>
                 ))}
             </div>
@@ -100,8 +105,8 @@ export default function FaqPage() {
                 {faqs.length === 0 && !loading && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>SSS bulunamadı</CardTitle>
-                            <CardDescription>Filtreyi değiştirmeyi deneyin veya yeni SSS'ler oluşturmak için ayıklama işlemini başlatın.</CardDescription>
+                            <CardTitle>{t('not_found')}</CardTitle>
+                            <CardDescription>{t('not_found_desc')}</CardDescription>
                         </CardHeader>
                     </Card>
                 )}
@@ -115,10 +120,12 @@ export default function FaqPage() {
                                         <Badge className={`text-[9px] h-4 tracking-tighter ${faq.status === 'PUBLISHED' ? 'border-emerald-900/50 text-emerald-400 bg-emerald-400/5' :
                                             faq.status === 'PENDING_REVIEW' ? 'border-orange-900/50 text-orange-400 bg-orange-400/5' : 'border-border text-muted-foreground bg-muted/5'
                                             }`}>
-                                            {faq.status === 'PUBLISHED' ? 'YAYINDA' : faq.status === 'PENDING_REVIEW' ? 'ONAY_BEKLİYOR' : faq.status === 'DRAFT' ? 'TASLAK' : faq.status}
+                                            {faq.status === 'PUBLISHED' ? t('filters.published') :
+                                                faq.status === 'PENDING_REVIEW' ? t('filters.pending_review') :
+                                                    faq.status === 'DRAFT' ? t('filters.draft') : faq.status}
                                         </Badge>
-                                        <span className="text-[9px] font-mono text-muted-foreground uppercase opacity-60">SIKLIK: {faq.frequency}</span>
-                                        <span className="text-[9px] font-mono text-muted-foreground uppercase opacity-60">GÜVEN_SKORU: {Math.round(faq.confidenceScore * 100)}%</span>
+                                        <span className="text-[9px] font-mono text-muted-foreground uppercase opacity-60">{t('frequency')}: {faq.frequency}</span>
+                                        <span className="text-[9px] font-mono text-muted-foreground uppercase opacity-60">{t('confidence_score')}: {Math.round(faq.confidenceScore * 100)}%</span>
                                     </div>
                                     <CardTitle className="text-[13px] tracking-tight">{faq.question}</CardTitle>
                                 </div>
@@ -126,10 +133,10 @@ export default function FaqPage() {
                                     {faq.status === 'PENDING_REVIEW' && (
                                         <>
                                             <Button size="sm" variant="outline" className="h-6 text-[9px] uppercase font-bold tracking-wider border-emerald-900/50 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10" onClick={() => handleApprove(faq.id)}>
-                                                ONAYLA
+                                                {t('approve')}
                                             </Button>
                                             <Button size="sm" variant="outline" className="h-6 text-[9px] uppercase font-bold tracking-wider border-orange-900/50 text-orange-500 bg-orange-500/5 hover:bg-orange-500/10" onClick={() => handleDismiss(faq.id)}>
-                                                YOK_SAY
+                                                {t('dismiss')}
                                             </Button>
                                         </>
                                     )}
@@ -145,7 +152,7 @@ export default function FaqPage() {
                             </div>
                             {faq.sourceTicketId && (
                                 <div className="mt-4 text-xs text-muted-foreground">
-                                    Kaynak Talep: #{faq.sourceTicketId}
+                                    {t('source_ticket')}: #{faq.sourceTicketId}
                                 </div>
                             )}
                         </CardContent>

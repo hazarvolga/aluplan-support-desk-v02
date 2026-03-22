@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export default function RegisterPage() {
     const router = useRouter();
+    const t = useTranslations('auth.register');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
@@ -74,7 +76,7 @@ export default function RegisterPage() {
             setStep(2);
             setResetSent(false);
         } catch (err: any) {
-            setError(err.message || 'E-posta kontrolü sırasında bir hata oluştu.');
+            setError(err.message || t('error_email_lookup'));
         } finally {
             setLoading(false);
         }
@@ -85,13 +87,13 @@ export default function RegisterPage() {
         setError('');
 
         if (form.password !== form.confirmPassword) {
-            setError('Şifreler eşleşmiyor.');
+            setError(t('error_password_mismatch'));
             return;
         }
 
         if (form.isAllplanUser) {
             if (form.customerNo.length < 5 || !form.customerNo.startsWith('C')) {
-                setError('Müşteri No formatı geçersiz. Örnek: C300 XX XX XX');
+                setError(t('error_customer_no'));
                 return;
             }
         }
@@ -117,12 +119,12 @@ export default function RegisterPage() {
 
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.message || 'Kayıt sırasında bir hata oluştu.');
+                throw new Error(data.message || t('error_register_failed'));
             }
 
             setSuccess(true);
         } catch (err: any) {
-            setError(err.message || 'Bir hata oluştu.');
+            setError(err.message || t('error_default'));
         } finally {
             setLoading(false);
         }
@@ -135,7 +137,7 @@ export default function RegisterPage() {
             await api.auth.forgotPassword(form.email);
             setResetSent(true);
         } catch (err: any) {
-            setError(err.message || 'Şifre sıfırlama sırasında bir hata oluştu.');
+            setError(err.message || t('error_reset_failed'));
         } finally {
             setLoading(false);
         }
@@ -148,12 +150,12 @@ export default function RegisterPage() {
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
                         <CheckCircle2 className="w-8 h-8 text-emerald-400" />
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-2">Kayıt Başarılı!</h2>
-                    <p className="text-slate-400">Giriş detaylarınız e-posta adresinize gönderildi.</p>
-                    <p className="text-sm mt-3 text-emerald-500 font-medium">Lütfen e-postanızı kontrol edin ve sisteme giriş yapın.</p>
+                    <h2 className="text-2xl font-bold text-white mb-2">{t('success_title')}</h2>
+                    <p className="text-slate-400">{t('success_desc')}</p>
+                    <p className="text-sm mt-3 text-emerald-500 font-medium">{t('success_hint')}</p>
                     <div className="mt-8">
                         <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-500 text-white">
-                            <Link href="/login">Giriş Ekranına Dön</Link>
+                            <Link href="/login">{t('back_to_login')}</Link>
                         </Button>
                     </div>
                 </div>
@@ -168,8 +170,8 @@ export default function RegisterPage() {
                     <div className="h-12 w-12 mx-auto mb-4 bg-sky-500/10 rounded-xl border border-sky-500/20 flex items-center justify-center shadow-[0_0_15px_rgba(14,165,233,0.3)]">
                         <div className="h-5 w-5 bg-sky-500 rounded-md" />
                     </div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">Kayıt Ol</h1>
-                    <p className="text-slate-400 mt-2 text-sm">Aluplan Destek Ekosistemine Katılın</p>
+                    <h1 className="text-3xl font-bold text-white tracking-tight">{t('title')}</h1>
+                    <p className="text-slate-400 mt-2 text-sm">{t('subtitle')}</p>
                 </div>
 
                 <div className="bg-white/5 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl relative">
@@ -190,7 +192,7 @@ export default function RegisterPage() {
                             {/* EMAIL STEP (Always visible, locked in step 2) */}
                             <div className={`transition-all duration-300 ${step === 2 ? 'opacity-50 pointer-events-none' : ''}`}>
                                 <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                    İş E-postanız <span className="text-sky-400">*</span>
+                                    {t('email_label')} <span className="text-sky-400">*</span>
                                 </label>
                                 <Input
                                     name="email"
@@ -198,7 +200,7 @@ export default function RegisterPage() {
                                     value={form.email}
                                     onChange={handleChange}
                                     disabled={step === 2}
-                                    placeholder="ornek@firma.com"
+                                    placeholder={t('email_placeholder')}
                                     required
                                     className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 focus-visible:ring-sky-500/50 h-11"
                                 />
@@ -214,7 +216,7 @@ export default function RegisterPage() {
                                     {loading ? (
                                         <Loader2 className="h-5 w-5 animate-spin" />
                                     ) : (
-                                        <>Devam Et <ArrowRight className="ml-2 h-4 w-4" /></>
+                                        <>{t('continue_btn')} <ArrowRight className="ml-2 h-4 w-4" /></>
                                     )}
                                 </Button>
                             )}
@@ -225,26 +227,23 @@ export default function RegisterPage() {
                                     {resetSent ? (
                                         <div className="p-5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center shadow-inner">
                                             <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto mb-3 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                            <h3 className="text-lg font-medium text-white mb-2">Şifreniz Gönderildi</h3>
+                                            <h3 className="text-lg font-medium text-white mb-2">{t('reset_sent_title')}</h3>
                                             <p className="text-sm text-slate-300 leading-relaxed">
-                                                Yeni giriş şifreniz güvenlik amacıyla e-posta adresinize gönderildi. Lütfen gelen kutunuzu (ve gerekiyorsa spam klasörünü) kontrol edin.
+                                                {t('reset_sent_desc')}
                                             </p>
                                         </div>
                                     ) : (
                                         <div className="p-5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-center shadow-inner">
                                             <CheckCircle2 className="h-10 w-10 text-sky-400 mx-auto mb-3 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]" />
-                                            <h3 className="text-lg font-medium text-white mb-2">Sizi Tanıyoruz!</h3>
-                                            <p className="text-sm text-slate-300 leading-relaxed">
-                                                Aluplan sisteminde firmanız ve size ait bir profil zaten bulunuyor. <br /><br />
-                                                Giriş yapabilir veya doğrudan yeni bir şifre talep edip e-posta ile alabilirsiniz.
-                                            </p>
+                                            <h3 className="text-lg font-medium text-white mb-2">{t('recognized_title')}</h3>
+                                            <p className="text-sm text-slate-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: t('recognized_desc') }} />
                                         </div>
                                     )}
 
                                     {!resetSent ? (
                                         <div className="grid grid-cols-2 gap-3">
                                             <Button asChild className="w-full bg-white text-black hover:bg-slate-200 h-11 font-medium transition-colors">
-                                                <Link href="/login">Giriş Yap</Link>
+                                                <Link href="/login">{t('login_btn')}</Link>
                                             </Button>
                                             <Button
                                                 type="button"
@@ -252,17 +251,17 @@ export default function RegisterPage() {
                                                 disabled={loading}
                                                 className="w-full bg-slate-800 text-white border border-slate-700 hover:bg-slate-700 h-11 transition-all"
                                             >
-                                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Şifremi Sıfırla'}
+                                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('reset_btn')}
                                             </Button>
                                         </div>
                                     ) : (
                                         <Button asChild className="w-full bg-white text-black hover:bg-slate-200 h-11 font-medium transition-colors">
-                                            <Link href="/login">Giriş Ekranına Git</Link>
+                                            <Link href="/login">{t('back_to_login')}</Link>
                                         </Button>
                                     )}
 
                                     <Button type="button" variant="ghost" className="w-full text-slate-400 hover:text-white h-11" onClick={() => { setStep(1); setLookupResult(null); setResetSent(false); }}>
-                                        Farklı bir e-posta dene
+                                        {t('different_email')}
                                     </Button>
                                 </div>
                             )}
@@ -275,7 +274,7 @@ export default function RegisterPage() {
                                         <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-sm flex items-start gap-2">
                                             <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
                                             <span>
-                                                Sizi tanıdık! <b>{lookupResult.companyName}</b> ekibinin bir parçası olarak kaydınızı tamamlayın.
+                                                {t('matched_company_prefix')} <b>{lookupResult.companyName}</b> {t('matched_company_suffix')}
                                             </span>
                                         </div>
                                     )}
@@ -283,13 +282,13 @@ export default function RegisterPage() {
                                     {/* Kullanıcı Adı */}
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                            Kullanıcı Adı <span className="text-sky-400">*</span>
+                                            {t('username_label')} <span className="text-sky-400">*</span>
                                         </label>
                                         <Input
                                             name="username"
                                             value={form.username}
                                             onChange={handleChange}
-                                            placeholder="sisteme_giris_adi"
+                                            placeholder={t('username_placeholder')}
                                             required
                                             className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50"
                                         />
@@ -299,26 +298,26 @@ export default function RegisterPage() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                                Ad <span className="text-sky-400">*</span>
+                                                {t('firstname_label')} <span className="text-sky-400">*</span>
                                             </label>
                                             <Input
                                                 name="firstName"
                                                 value={form.firstName}
                                                 onChange={handleChange}
-                                                placeholder="Adınız"
+                                                placeholder={t('firstname_placeholder')}
                                                 required
                                                 className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50"
                                             />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                                Soyad <span className="text-sky-400">*</span>
+                                                {t('lastname_label')} <span className="text-sky-400">*</span>
                                             </label>
                                             <Input
                                                 name="lastName"
                                                 value={form.lastName}
                                                 onChange={handleChange}
-                                                placeholder="Soyadınız"
+                                                placeholder={t('lastname_placeholder')}
                                                 required
                                                 className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50"
                                             />
@@ -328,14 +327,14 @@ export default function RegisterPage() {
                                     {/* Telefon Numarası */}
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                            Telefon Numarası <span className="text-sky-400">*</span>
+                                            {t('phone_label')} <span className="text-sky-400">*</span>
                                         </label>
                                         <Input
                                             name="phone"
                                             type="tel"
                                             value={form.phone}
                                             onChange={handleChange}
-                                            placeholder="+90 (5xx) xxx xx xx"
+                                            placeholder={t('phone_placeholder')}
                                             required
                                             className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50"
                                         />
@@ -345,7 +344,7 @@ export default function RegisterPage() {
                                     {products.length > 0 && (
                                         <div className="pt-2 pb-2">
                                             <label className="block text-sm font-medium text-slate-300 mb-2">
-                                                Hangi Aluplan ürünlerini / modüllerini kullanıyorsunuz?
+                                                {t('products_label')}
                                             </label>
                                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                                                 {products.map((p) => (
@@ -383,10 +382,10 @@ export default function RegisterPage() {
                                             </div>
                                             <div className="space-y-1">
                                                 <span className="block text-sm font-medium text-sky-400">
-                                                    Allplan / Aluplan kullanıcısıyım
+                                                    {t('allplan_user_label')}
                                                 </span>
                                                 <span className="block text-xs text-slate-400 leading-normal">
-                                                    Aluplan tarafından lisanslanmış bir Allplan kullanıcısıysanız, özel destek alabilmeniz için bunu işaretleyin.
+                                                    {t('allplan_user_desc')}
                                                 </span>
                                             </div>
                                         </label>
@@ -396,13 +395,13 @@ export default function RegisterPage() {
                                     <div className={`grid ${form.isAllplanUser ? 'sm:grid-cols-2' : 'grid-cols-1'} gap-4 transition-all duration-300`}>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                                Firma <span className="text-sky-400">*</span>
+                                                {t('company_label')} <span className="text-sky-400">*</span>
                                             </label>
                                             <Input
                                                 name="company"
                                                 value={form.company}
                                                 onChange={handleChange}
-                                                placeholder="Firma adınız"
+                                                placeholder={t('company_placeholder')}
                                                 required
                                                 className={`bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50 ${lookupResult.action === 'NEW_MATCHED_COMPANY' ? 'border-emerald-500/40 text-emerald-100' : ''}`}
                                             />
@@ -410,13 +409,13 @@ export default function RegisterPage() {
                                         {form.isAllplanUser && (
                                             <div className="animate-in fade-in slide-in-from-left-4 duration-300">
                                                 <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                                    Müşteri No <span className="text-sky-400">*</span>
+                                                    {t('customer_no_label')} <span className="text-sky-400">*</span>
                                                 </label>
                                                 <Input
                                                     name="customerNo"
                                                     value={form.customerNo}
                                                     onChange={handleChange}
-                                                    placeholder="Örn: C300 00 00 00"
+                                                    placeholder={t('customer_no_placeholder')}
                                                     required
                                                     className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50"
                                                 />
@@ -428,14 +427,14 @@ export default function RegisterPage() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                                Şifre <span className="text-sky-400">*</span>
+                                                {t('password_label')} <span className="text-sky-400">*</span>
                                             </label>
                                             <Input
                                                 name="password"
                                                 type="password"
                                                 value={form.password}
                                                 onChange={handleChange}
-                                                placeholder="••••••"
+                                                placeholder={t('password_placeholder')}
                                                 required
                                                 minLength={6}
                                                 className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50"
@@ -443,14 +442,14 @@ export default function RegisterPage() {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                                Şifreyi Doğrula
+                                                {t('confirm_password_label')}
                                             </label>
                                             <Input
                                                 name="confirmPassword"
                                                 type="password"
                                                 value={form.confirmPassword}
                                                 onChange={handleChange}
-                                                placeholder="••••••"
+                                                placeholder={t('password_placeholder')}
                                                 required
                                                 minLength={6}
                                                 className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 h-11 focus-visible:ring-sky-500/50"
@@ -466,14 +465,14 @@ export default function RegisterPage() {
                                             className="text-slate-400 hover:text-white hover:bg-white/5 h-11 px-4 transition-colors"
                                             disabled={loading}
                                         >
-                                            Geri
+                                            {t('back_btn')}
                                         </Button>
                                         <Button
                                             type="submit"
                                             disabled={loading}
                                             className="flex-1 bg-sky-600 hover:bg-sky-500 text-white h-11 transition-colors"
                                         >
-                                            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Kaydı Tamamla'}
+                                            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t('submit_btn')}
                                         </Button>
                                     </div>
                                 </div>
@@ -485,9 +484,9 @@ export default function RegisterPage() {
 
                 <div className="mt-8 text-center">
                     <p className="text-sm text-slate-500">
-                        Zaten hesabınız var mı?{' '}
+                        {t('already_have_account')}{' '}
                         <Link href="/login" className="text-sky-400 hover:text-sky-300 hover:underline font-medium transition-colors">
-                            Giriş Yapın
+                            {t('login_link')}
                         </Link>
                     </p>
                 </div>

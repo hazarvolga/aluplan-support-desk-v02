@@ -27,8 +27,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { AgentStatusBadge } from '@/components/team/AgentStatusBadge';
 import { RoleBadge } from '@/components/team/RoleBadge';
+import { useTranslations } from 'next-intl';
 
 export default function AgentProfilePage() {
+    const t = useTranslations('teams');
     const { id } = useParams();
     const router = useRouter();
     const [agent, setAgent] = useState<any>(null);
@@ -50,7 +52,7 @@ export default function AgentProfilePage() {
         fetchAgent();
     }, [id]);
 
-    if (loading) return <div className="p-8 animate-pulse text-muted-foreground font-mono text-center">Profil verileri analiz ediliyor...</div>;
+    if (loading) return <div className="p-8 animate-pulse text-muted-foreground font-mono text-center">{t('loading.agent')}</div>;
     if (!agent) return null;
 
     return (
@@ -58,7 +60,7 @@ export default function AgentProfilePage() {
             {/* Header / Cover Area */}
             <div className="relative group">
                 <Button variant="ghost" size="sm" className="mb-4 text-muted-foreground hover:text-foreground h-8" onClick={() => router.back()}>
-                    <ChevronLeft className="mr-2 h-4 w-4" /> Ekiplere Dön
+                    <ChevronLeft className="mr-2 h-4 w-4" /> {t('nav.back_teams')}
                 </Button>
 
                 <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center">
@@ -95,7 +97,7 @@ export default function AgentProfilePage() {
                     </div>
 
                     <div className="flex gap-3">
-                        <Button className="font-bold shadow-lg shadow-primary/20 bg-primary h-12 px-6 rounded-2xl">Profili Düzenle</Button>
+                        <Button className="font-bold shadow-lg shadow-primary/20 bg-primary h-12 px-6 rounded-2xl">{t('actions.edit_profile')}</Button>
                         <Button variant="outline" size="icon" className="h-12 w-12 rounded-2xl border-border/60"><Settings className="h-5 w-5" /></Button>
                     </div>
                 </div>
@@ -105,16 +107,16 @@ export default function AgentProfilePage() {
             <Tabs defaultValue="performance" className="w-full">
                 <TabsList className="h-14 bg-muted/20 border border-border/40 w-full lg:w-fit p-1 rounded-2xl gap-1">
                     <TabsTrigger value="performance" className="px-6 rounded-xl data-[state=active]:bg-background font-bold gap-2">
-                        <BarChart3 className="h-4 w-4" /> Performans
+                        <BarChart3 className="h-4 w-4" /> {t('tabs.performance')}
                     </TabsTrigger>
                     <TabsTrigger value="teams" className="px-6 rounded-xl data-[state=active]:bg-background font-bold gap-2 text-muted-foreground data-[state=active]:text-foreground">
-                        <Users className="h-4 w-4" /> Ekipler ({agent.teamMembers?.length || 0})
+                        <Users className="h-4 w-4" /> {t('tabs.teams')} ({agent.teamMembers?.length || 0})
                     </TabsTrigger>
                     <TabsTrigger value="skills" className="px-6 rounded-xl data-[state=active]:bg-background font-bold gap-2 text-muted-foreground data-[state=active]:text-foreground">
-                        <Award className="h-4 w-4" /> Yetkinlikler
+                        <Award className="h-4 w-4" /> {t('tabs.skills')}
                     </TabsTrigger>
                     <TabsTrigger value="schedule" className="px-6 rounded-xl data-[state=active]:bg-background font-bold gap-2 text-muted-foreground data-[state=active]:text-foreground">
-                        <Calendar className="h-4 w-4" /> Çalışma Takvimi
+                        <Calendar className="h-4 w-4" /> {t('tabs.schedule')}
                     </TabsTrigger>
                 </TabsList>
 
@@ -123,8 +125,8 @@ export default function AgentProfilePage() {
                     <Card className="lg:col-span-2 bg-card/40 border-border/40 rounded-3xl shadow-none">
                         <CardHeader>
                             <CardTitle className="flex justify-between items-center">
-                                <span>Ticket İstatistikleri</span>
-                                <Badge variant="secondary" className="font-bold">SON 30 GÜN</Badge>
+                                <span>{t('stats.tickets')}</span>
+                                <Badge variant="secondary" className="font-bold">{t('stats.last_30_days')}</Badge>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="h-64 flex items-center justify-center border-t border-border/30">
@@ -133,62 +135,15 @@ export default function AgentProfilePage() {
                                 <p className="text-muted-foreground italic text-sm">Performans grafikleri hazırlanıyor.</p>
                             </div>
                         </CardContent>
-                        <CardFooter className="grid grid-cols-3 divide-x border-t border-border/30 p-0">
+                        <CardFooter className="flex justify-center border-t border-border/30 p-0">
                             <div className="p-6 text-center">
                                 <div className="text-3xl font-black">{agent._count?.ticketsAssigned || 0}</div>
-                                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mt-1">Aktif İş Yükü</div>
-                            </div>
-                            <div className="p-6 text-center">
-                                <div className="text-3xl font-black">4.9/5</div>
-                                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mt-1">CSAT Skoru</div>
-                            </div>
-                            <div className="p-6 text-center">
-                                <div className="text-3xl font-black">8dk</div>
-                                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mt-1">Ort. Yanıt</div>
+                                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mt-1">{t('stats.active_load')}</div>
                             </div>
                         </CardFooter>
                     </Card>
 
                     <div className="space-y-6">
-                        <Card className="bg-emerald-500/5 border-emerald-500/20 rounded-3xl shadow-none">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-black uppercase text-emerald-700 flex items-center gap-2">
-                                    <Zap className="h-4 w-4" /> Başarı Rozetleri
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex flex-wrap gap-2">
-                                <Badge className="bg-emerald-500 text-white border-none h-8 px-3">SLA Master</Badge>
-                                <Badge className="bg-amber-500 text-white border-none h-8 px-3">Top Rated</Badge>
-                                <Badge className="bg-blue-500 text-white border-none h-8 px-3">Hızlı Çözüm</Badge>
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-card shadow-sm border-border/40 rounded-3xl">
-                            <CardHeader>
-                                <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
-                                    <Target className="h-4 w-4" /> Hedefler
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div>
-                                    <div className="flex justify-between text-xs font-bold mb-1.5 uppercase">
-                                        <span>Aylık Ticket Kotası</span>
-                                        <span>%85</span>
-                                    </div>
-                                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                        <div className="h-full bg-primary" style={{ width: '85%' }} />
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="flex justify-between text-xs font-bold mb-1.5 uppercase">
-                                        <span>İlk Yanıt SLA Hedefi</span>
-                                        <span>%92</span>
-                                    </div>
-                                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                        <div className="h-full bg-blue-500" style={{ width: '92%' }} />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
                     </div>
                 </TabsContent>
 
@@ -206,7 +161,7 @@ export default function AgentProfilePage() {
                                 </CardHeader>
                                 <CardContent className="pt-4 flex justify-between items-center">
                                     <span className="text-xs text-muted-foreground font-medium">Katılım: {new Date(tm.joinedAt).toLocaleDateString('tr-TR')}</span>
-                                    <Button variant="ghost" size="sm" className="font-bold text-xs h-8 text-primary shadow-none">TAKIMI GÖR</Button>
+                                    <Button variant="ghost" size="sm" className="font-bold text-xs h-8 text-primary shadow-none">{t('actions.view_team')}</Button>
                                 </CardContent>
                             </Card>
                         ))}
@@ -217,8 +172,8 @@ export default function AgentProfilePage() {
                 <TabsContent value="skills" className="pt-6">
                     <Card className="rounded-3xl border-border/40 shadow-none bg-card/30">
                         <CardHeader>
-                            <CardTitle>Teknik Yetkinlikler</CardTitle>
-                            <CardDescription>Ajanın uzmanlık alanları ve güven seviyeleri.</CardDescription>
+                            <CardTitle>{t('labels.technical_skills')}</CardTitle>
+                            <CardDescription>{t('labels.skills_desc')}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
@@ -233,11 +188,11 @@ export default function AgentProfilePage() {
                                         </div>
                                     </div>
                                 ))}
-                                {agent.agentSkills?.length === 0 && <p className="text-muted-foreground col-span-2 py-8 italic text-center border border-dashed rounded-3xl">Henüz yetkinlik atanmamış.</p>}
+                                {agent.agentSkills?.length === 0 && <p className="text-muted-foreground col-span-2 py-8 italic text-center border border-dashed rounded-3xl">{t('labels.no_skills')}</p>}
                             </div>
                         </CardContent>
                         <CardFooter className="pt-4 border-t border-border/30">
-                            <Button variant="outline" className="w-full h-12 rounded-2xl border-dashed font-bold hover:bg-background">Yeni Yetkinlik Ekle</Button>
+                            <Button variant="outline" className="w-full h-12 rounded-2xl border-dashed font-bold hover:bg-background">{t('actions.add_skill')}</Button>
                         </CardFooter>
                     </Card>
                 </TabsContent>
@@ -260,7 +215,7 @@ export default function AgentProfilePage() {
                                                 <div className="text-sm font-black">{shift.endTime}</div>
                                             </div>
                                         ) : (
-                                            <span className="text-[10px] font-bold text-muted-foreground">İZİN</span>
+                                            <span className="text-[10px] font-bold text-muted-foreground">{t('labels.leave')}</span>
                                         )}
                                     </CardContent>
                                 </Card>

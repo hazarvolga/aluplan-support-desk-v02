@@ -29,7 +29,11 @@ import {
     CommandShortcut,
 } from "@/components/ui/command"
 
+import { useTranslations } from "next-intl"
+
 export function CommandMenu() {
+    const t = useTranslations("command_menu")
+    const navT = useTranslations("sidebar.nav")
     const [open, setOpen] = React.useState(false)
     const router = useRouter()
 
@@ -52,55 +56,55 @@ export function CommandMenu() {
 
     return (
         <CommandDialog open={open} onOpenChange={setOpen}>
-            <CommandInput placeholder="Bir komut yazın veya arayın..." />
+            <CommandInput placeholder={t("placeholder")} />
             <CommandList>
-                <CommandEmpty>Sonuç bulunamadı.</CommandEmpty>
-                <CommandGroup heading="Navigasyon">
+                <CommandEmpty>{t("empty")}</CommandEmpty>
+                <CommandGroup heading={t("sections.navigation")}>
                     <CommandItem onSelect={() => runCommand(() => router.push("/"))}>
                         <Home className="mr-2 h-4 w-4" />
-                        <span>Dashboard</span>
+                        <span>{navT("dashboard")}</span>
                     </CommandItem>
                     <CommandItem onSelect={() => runCommand(() => router.push("/tickets"))}>
                         <Ticket className="mr-2 h-4 w-4" />
-                        <span>Destek Talepleri</span>
+                        <span>{navT("tickets")}</span>
                     </CommandItem>
                     <CommandItem onSelect={() => runCommand(() => router.push("/knowledge-pool"))}>
                         <Database className="mr-2 h-4 w-4" />
-                        <span>Bilgi Havuzu</span>
+                        <span>{navT("data_sources")}</span>
                     </CommandItem>
                     <CommandItem onSelect={() => runCommand(() => router.push("/ai"))}>
                         <Zap className="mr-2 h-4 w-4" />
-                        <span>AI Asistan</span>
+                        <span>{navT("ai_assistant")}</span>
                     </CommandItem>
                 </CommandGroup>
                 <CommandSeparator />
-                <CommandGroup heading="Yönetim">
+                <CommandGroup heading={t("sections.management")}>
                     <CommandItem onSelect={() => runCommand(() => router.push("/settings"))}>
                         <Settings className="mr-2 h-4 w-4" />
-                        <span>Ayarlar</span>
+                        <span>{navT("settings")}</span>
                         <CommandShortcut>⌘S</CommandShortcut>
                     </CommandItem>
                     <CommandItem onSelect={() => runCommand(() => router.push("/reports"))}>
                         <BarChart3 className="mr-2 h-4 w-4" />
-                        <span>Raporlar</span>
+                        <span>{t("items.reports")}</span>
                     </CommandItem>
                     <CommandItem onSelect={() => runCommand(() => router.push("/customers"))}>
                         <User className="mr-2 h-4 w-4" />
-                        <span>Müşteriler</span>
+                        <span>{navT("customers")}</span>
                     </CommandItem>
                 </CommandGroup>
                 <CommandSeparator />
-                <CommandGroup heading="Hızlı İşlemler">
+                <CommandGroup heading={t("sections.actions")}>
                     <CommandItem onSelect={() => runCommand(() => router.push("/tickets/new"))}>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        <span>Yeni Talep Oluştur</span>
+                        <span>{t("items.new_ticket")}</span>
                     </CommandItem>
                     <CommandItem onSelect={() => runCommand(() => {
                         localStorage.removeItem("token");
                         router.push("/auth/login");
                     })}>
                         <LogOut className="mr-2 h-4 w-4" />
-                        <span>Çıkış Yap</span>
+                        <span>{t("items.logout")}</span>
                     </CommandItem>
                 </CommandGroup>
             </CommandList>

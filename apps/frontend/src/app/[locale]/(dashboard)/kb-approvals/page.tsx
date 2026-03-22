@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 
 export default function KbApprovalsPage() {
-    const t = useTranslations('kb_approvals');
+    const t = useTranslations('admin.kb_approvals');
     const tc = useTranslations('common');
     const locale = useLocale();
     const [drafts, setDrafts] = useState<any[]>([]);

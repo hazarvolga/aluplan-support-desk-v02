@@ -279,13 +279,13 @@ export function FieldMapping({
                                             {item.isCustom ? item.label : t(item.label)}
                                             {item.isRequired && <span className="text-rose-500 ml-1">*</span>}
                                         </Label>
-                                        {item.isCustom && <Badge className="h-4 text-[8px] bg-amber-500/10 text-amber-500 border-amber-500/20 px-1.5">CUSTOM</Badge>}
+                                        {item.isCustom && <Badge className="h-4 text-[8px] bg-amber-500/10 text-amber-500 border-amber-500/20 px-1.5">{t('sync.mapping.badge_custom')}</Badge>}
                                         {currentMapping[item.key] && currentMapping[item.key] !== def?.defaultCrmField && (
-                                            <Badge className="h-4 text-[8px] bg-blue-500/10 text-blue-400 border-blue-500/20 px-1.5">MAPPED</Badge>
+                                            <Badge className="h-4 text-[8px] bg-blue-500/10 text-blue-400 border-blue-500/20 px-1.5">{t('sync.mapping.badge_mapped')}</Badge>
                                         )}
                                     </div>
                                     <p className="text-[10px] font-mono text-white/20 uppercase tracking-tighter">
-                                        System Key: <span className="text-white/40">{item.key}</span>
+                                        {t('sync.mapping.system_key')}: <span className="text-white/40">{item.key}</span>
                                     </p>
                                 </div>
 
@@ -323,7 +323,7 @@ export function FieldMapping({
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Plus className="h-3 w-3 text-blue-400" />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Yeni Kolon Ekle</span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">{t('sync.mapping.add_new_column')}</span>
                                 </div>
                                 <Button
                                     variant="ghost"
@@ -337,29 +337,29 @@ export function FieldMapping({
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-1.5">
-                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">1. CRM Alanı Seçin</Label>
+                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">{t('sync.mapping.step_1_crm')}</Label>
                                     <SmartFieldSelector
                                         fields={discoveryData}
                                         value={newCrmField}
                                         onChange={handleCrmFieldSelect}
-                                        placeholder="CRM'den alan seç..."
+                                        placeholder={t('sync.mapping.crm_select_placeholder')}
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">2. Görünen İsim</Label>
+                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">{t('sync.mapping.step_2_display_name')}</Label>
                                     <Input
                                         value={newFieldLabel}
                                         onChange={(e) => setNewFieldLabel(e.target.value)}
-                                        placeholder="Örn: Segment"
+                                        placeholder={t('sync.mapping.display_name_placeholder')}
                                         className="h-9 text-xs bg-white/5 border-white/10 rounded-lg"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">3. Sistem Anahtarı</Label>
+                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">{t('sync.mapping.step_3_system_key')}</Label>
                                     <Input
                                         value={newFieldKey}
                                         onChange={(e) => setNewFieldKey(e.target.value)}
-                                        placeholder="Örn: segment"
+                                        placeholder={t('sync.mapping.system_key_placeholder')}
                                         className="h-9 text-xs bg-white/5 border-white/10 rounded-lg font-mono"
                                     />
                                 </div>
@@ -372,7 +372,7 @@ export function FieldMapping({
                                     disabled={!newFieldKey.trim() || !newFieldLabel.trim()}
                                     className="h-9 px-6 text-[10px] font-black uppercase tracking-widest bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/20"
                                 >
-                                    Kolonu Listeye Ekle
+                                    {t('sync.mapping.add_column_btn')}
                                 </Button>
                             </div>
                         </div>
@@ -384,7 +384,7 @@ export function FieldMapping({
                             className="h-10 text-[10px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-blue-400 hover:bg-blue-500/5 border border-dashed border-white/10 hover:border-blue-500/20 w-full rounded-xl transition-all"
                         >
                             <Plus className="h-4 w-4 mr-2" />
-                            Yeni Özel Alan / Kolon Ekle
+                            {t('sync.mapping.add_custom_btn')}
                         </Button>
                     )}
                 </div>
@@ -395,10 +395,9 @@ export function FieldMapping({
                     <Info className="h-3 w-3 text-amber-500" />
                 </div>
                 <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-amber-500/90 uppercase tracking-widest">Görünürlük ve Sıralama</p>
+                    <p className="text-[10px] font-bold text-amber-500/90 uppercase tracking-widest">{t('sync.mapping.visibility_title')}</p>
                     <p className="text-[10px] text-amber-500/60 leading-relaxed max-w-2xl">
-                        Burada yaptığınız sıralama ve görünürlük ayarları, Müşteriler ve Hesaplar tablolarını otomatik olarak güncelleyecektir.
-                        Göz ikonuna tıklayarak istemediğiniz kolonları gizleyebilir, okları kullanarak sıralamayı değiştirebilirsiniz.
+                        {t('sync.mapping.visibility_desc')}
                     </p>
                 </div>
             </div>

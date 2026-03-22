@@ -392,7 +392,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     <span className="flex items-center gap-1">
                                         {t('started_by', { name: ticket.creator?.fullName || tc('system') })}
                                     </span>
-                                    <span className="flex items-center gap-1">{t('timestamp', { date: new Date(ticket.createdAt).toISOString().replace(/T/, ' ').replace(/\..+/, '') })}</span>
+                                    <span className="flex items-center gap-1">{t('timestamp', { date: `${new Date(ticket.createdAt).toLocaleDateString(locale)} ${new Date(ticket.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}` })}</span>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -745,7 +745,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         </div>
                         <div className="space-y-0.5">
                             <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('open_date')}</label>
-                            <p className="text-[9px] font-mono font-medium text-foreground truncate">{new Date(ticket.createdAt).toISOString().replace(/T/, ' ').substring(0, 16)}</p>
+                            <p className="text-[9px] font-mono font-medium text-foreground truncate">{new Date(ticket.createdAt).toLocaleDateString(locale)} {new Date(ticket.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
                         {ticket.assignee && (
                             <div className="space-y-0.5 col-span-2 pt-2 border-t border-border/20">

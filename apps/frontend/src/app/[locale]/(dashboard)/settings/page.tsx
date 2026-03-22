@@ -234,7 +234,7 @@ export default function SettingsPage() {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/5 p-4 rounded-xl">
                                 <div className="space-y-2">
                                     <Label htmlFor="macro-name">{t('macros.header_label')}</Label>
-                                    <Input id="macro-name" value={macroName} onChange={(e) => setMacroName(e.target.value)} className="bg-slate-900/50" placeholder="örn: Hoşgeldiniz" />
+                                    <Input id="macro-name" value={macroName} onChange={(e) => setMacroName(e.target.value)} className="bg-slate-900/50" placeholder={t('macros.header_placeholder')} />
                                 </div>
                                 <div className="md:col-span-2 space-y-2 flex flex-col">
                                     <Label htmlFor="macro-content">{t('macros.content_label')}</Label>

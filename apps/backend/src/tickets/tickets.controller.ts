@@ -65,8 +65,8 @@ export class TicketsController {
     @Get('sla/stats')
     @RequirePermissions('ticket:read')
     @ApiOperation({ summary: 'Get SLA statistics for dashboard' })
-    getSlaStats() {
-        return this.ticketsService.getSlaStats();
+    getSlaStats(@Request() req: any) {
+        return this.ticketsService.getSlaStats(req.user);
     }
 
     // ─── GET ONE ────────────────────────────────

@@ -64,6 +64,7 @@ const CHANNEL_COLORS: Record<string, string> = {
 export default function TicketsPage() {
     const t = useTranslations('tickets');
     const tc = useTranslations('common');
+    const pt = useTranslations('profile');
     const locale = useLocale();
     const [tickets, setTickets] = useState<any[]>([]);
     const [total, setTotal] = useState(0);
@@ -301,7 +302,10 @@ export default function TicketsPage() {
                                                         </span>
                                                         {ticket.creator?.customerProfile?.contractStatus && (
                                                             <Badge variant="outline" className="text-[8px] font-bold tracking-widest bg-white/5 text-slate-400 border-white/10 uppercase px-1.5 py-0">
-                                                                {ticket.creator.customerProfile.contractStatus}
+                                                                {(() => {
+                                                                    const status = ticket.creator.customerProfile.contractStatus;
+                                                                    return pt.has(`contract_status.${status}`) ? pt(`contract_status.${status}`) : status;
+                                                                })()}
                                                             </Badge>
                                                         )}
                                                     </div>

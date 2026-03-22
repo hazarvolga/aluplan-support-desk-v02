@@ -22,6 +22,7 @@
       "card2_title": "Studentenlizenzen",
       "card2_desc": "Holen Sie sich sofort Ihre kostenlose Studenten- und Dozentenlizenz über Allplan Campus.",
       "card2_cta": "Campus-Portal",
+      "card2_link": "[TR] https://campus.allplan.com/index.html",
       "oska_link": "https://aluplan.com.tr/solutions/bimx5",
       "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi"
     },
@@ -40,6 +41,18 @@
       "oska_desc": "Exportieren Sie Allplan-Mengenermittlungsdaten über Katalogeinstellungen direkt nach e-Hakediş.",
       "plugins_title": "Marktspezifische Plugins",
       "plugins_desc": "Werkzeuge für lokale Vorschriften wie TAKS, KAKS, Parkplatzberechnungen und Flächenpläne."
+    },
+    "stats": {
+      "users": "[TR] 10.000+",
+      "users_label": "[TR] Aktif Kullanıcı",
+      "projects": "[TR] 5.000+",
+      "projects_label": "[TR] BIM Modeli",
+      "support": "[TR] 7/24",
+      "support_label": "[TR] Teknik Destek"
+    },
+    "social_proof": {
+      "title": "[TR] SEKTÖR_LİDERLERİNİN_TERCİHİ",
+      "subtitle": "[TR] Türkiye'nin önde gelen mimarlık ve mühendislik ofisleri Allplan ile geleceği tasarlıyor."
     }
   },
   "auth": {
@@ -73,7 +86,81 @@
     "security_tagline": "Verbindungen werden über das Aluplan Sec-Net überwacht",
     "error_heading": "AUTORISIERUNG VERWEIGERT",
     "error_default": "AUTH_FAILURE: Anmeldedaten vom Sicherheitsknoten abgelehnt",
-    "error_credentials": "Ungültige E-Mail-Adresse oder Passwort."
+    "error_credentials": "Ungültige E-Mail-Adresse oder Passwort.",
+    "register": {
+      "success_title": "Registrierung erfolgreich!",
+      "success_desc": "Ihre Anmeldedaten wurden an Ihre E-Mail-Adresse gesendet.",
+      "success_hint": "Bitte überprüfen Sie Ihre E-Mail, um sich in das System einzuloggen.",
+      "back_to_login": "Zurück zur Anmeldung",
+      "title": "Registrieren",
+      "subtitle": "Treten Sie dem Aluplan Support-Ökosystem bei",
+      "email_label": "Geschäftliche E-Mail",
+      "email_placeholder": "beispiel@firma.com",
+      "continue_btn": "Weiter",
+      "reset_sent_title": "Passwort gesendet",
+      "reset_sent_desc": "Ihr neues Anmeldepasswort wurde aus Sicherheitsgründen an Ihre E-Mail-Adresse gesendet. Bitte überprüfen Sie Ihren Posteingang (und falls nötig, den Spam-Ordner).",
+      "recognized_title": "Wir kennen Sie bereits!",
+      "recognized_desc": "Wir haben bereits ein Profil für Sie und Ihr Unternehmen im Aluplan-System. <br /><br />Sie können sich anmelden oder direkt ein neues Passwort anfordern, das per E-Mail verschickt wird.",
+      "login_btn": "Anmelden",
+      "reset_btn": "Passwort zurücksetzen",
+      "different_email": "Eine andere E-Mail ausprobieren",
+      "matched_company_prefix": "Wir haben Sie erkannt!",
+      "matched_company_suffix": "schließen Sie Ihre Registrierung als Teil ihres Teams ab.",
+      "username_label": "Benutzername",
+      "username_placeholder": "system_login_id",
+      "firstname_label": "Vorname",
+      "firstname_placeholder": "Ihr Name",
+      "lastname_label": "Nachname",
+      "lastname_placeholder": "Ihr Nachname",
+      "phone_label": "Telefonnummer",
+      "phone_placeholder": "+90 (5xx) xxx xx xx",
+      "products_label": "Welche Aluplan Produkte / Module verwenden Sie?",
+      "allplan_user_label": "Ich bin Allplan / Aluplan-Nutzer",
+      "allplan_user_desc": "Wenn Sie ein von Aluplan lizenzierter Allplan-Nutzer sind, haken Sie dieses Kästchen ab, um spezialisierten Support zu erhalten.",
+      "company_label": "Unternehmen",
+      "company_placeholder": "Ihr Unternehmensname",
+      "customer_no_label": "Kundennummer",
+      "customer_no_placeholder": "z.B. C300 00 00 00",
+      "password_label": "Passwort",
+      "password_placeholder": "••••••",
+      "confirm_password_label": "Passwort bestätigen",
+      "back_btn": "Zurück",
+      "submit_btn": "Registrierung abschließen",
+      "already_have_account": "Haben Sie bereits ein Konto?",
+      "login_link": "Anmelden",
+      "error_email_lookup": "Bei der E-Mail-Überprüfung ist ein Fehler aufgetreten.",
+      "error_password_mismatch": "Passwörter stimmen nicht überein.",
+      "error_customer_no": "Ungültiges Kundennummernformat. Beispiel: C300 XX XX XX",
+      "error_register_failed": "Bei der Registrierung ist ein Fehler aufgetreten.",
+      "error_default": "Ein Fehler ist aufgetreten.",
+      "error_reset_failed": "Beim Zurücksetzen des Passworts ist ein Fehler aufgetreten."
+    },
+    "reset_password": {
+      "new_password_label": "NEUES PASSWORT",
+      "confirm_password_label": "PASSWORT BESTÄTIGEN",
+      "submit_btn": "PASSWORT AKTUALISIEREN",
+      "title": "NEUES PASSWORT FESTLEGEN",
+      "subtitle": "Legen Sie zu Ihrer Sicherheit ein neues Passwort fest",
+      "error_invalid_link": "Ungültiger oder fehlender Link zum Zurücksetzen.",
+      "error_missing_token": "Fehlendes Token.",
+      "error_length": "Ihr Passwort muss mindestens 8 Zeichen lang sein.",
+      "error_mismatch": "Passwörter stimmen nicht überein.",
+      "error_failed": "Beim Zurücksetzen des Passworts ist ein Fehler aufgetreten.",
+      "success_message": "Ihr Passwort wurde erfolgreich aktualisiert."
+    },
+    "verify_email": {
+      "loading_title": "Wird überprüft",
+      "default_loading": "Ihre E-Mail-Adresse wird überprüft...",
+      "success_header": "Herzlichen Glückwunsch!",
+      "default_success": "Ihre E-Mail-Adresse wurde erfolgreich verifiziert!",
+      "login_btn": "Anmelden",
+      "error_header": "Fehler aufgetreten",
+      "default_error_invalid": "Ungültiger Verifizierungslink. Bitte klicken Sie erneut auf den Link in Ihrer E-Mail.",
+      "default_error_failed": "Überprüfung fehlgeschlagen. Der Link ist möglicherweise abgelaufen.",
+      "support_btn": "Unterstützung erhalten",
+      "home_btn": "Startseite",
+      "brand": "Aluplan Verification"
+    }
   },
   "common": {
     "dashboard": "Dashboard",
@@ -87,6 +174,7 @@
     "reset": "Zurücksetzen",
     "confirm": "Bestätigen",
     "cancel": "Abbrechen",
+    "copy": "Kopieren",
     "unknown": "Unbekannt",
     "individual": "Individuell",
     "system": "System",
@@ -108,6 +196,37 @@
       "tr": "Türkisch",
       "en": "Englisch",
       "de": "Deutsch"
+    },
+    "back": "Zurück",
+    "general_info": "General Information",
+    "full_name": "Vollständiger Name",
+    "title": "Titel",
+    "email": "E-Mail",
+    "status": "Status",
+    "active": "Aktiv",
+    "type": "Typ",
+    "sort": "SORTIEREN",
+    "filter": "FILTERN",
+    "clear": "Löschen",
+    "search_placeholder": "Suchen...",
+    "hotinfo_labels": {
+      "allplan_version": "Allplan Version",
+      "hotfix": "Hotfix",
+      "os": "Betriebssystem",
+      "cpu": "Prozessor (CPU)",
+      "ram": "RAM",
+      "gpu": "Grafikkarte / GPU",
+      "gpu_driver": "Treiber",
+      "opengl": "OpenGL",
+      "vram": "VRAM",
+      "resolution": "Auflösung",
+      "disk": "Festplatte",
+      "license": "Lizenz",
+      "dotnet": ".NET Framework",
+      "network": "Netzwerkinformationen",
+      "installed_modules": "Installierte Module",
+      "count_suffix": "elemente",
+      "not_found": "Systemdaten nicht gefunden."
     }
   },
   "dashboard": {
@@ -186,6 +305,20 @@
       "profile": "Mein Profil",
       "account": "Mein Konto",
       "ai_assistant": "ANN-Assistent"
+    }
+  },
+  "command_menu": {
+    "placeholder": "Geben Sie einen Befehl ein oder suchen Sie...",
+    "empty": "Keine Ergebnisse gefunden.",
+    "sections": {
+      "navigation": "Navigation",
+      "management": "Verwaltung",
+      "actions": "Schnellaktionen"
+    },
+    "items": {
+      "new_ticket": "Neue Anfrage erstellen",
+      "logout": "Abmelden",
+      "reports": "Berichte"
     }
   },
   "tickets": {
@@ -304,7 +437,8 @@
         "confirm_hotinfo": "Systeminformationen bestätigen",
         "hotinfo_check": "Sind diese Informationen aktuell? Bestätigen Sie oder laden Sie eine neue Datei hoch.",
         "hotinfo_added": "Systeminformationen (Hotinfo) hinzugefügt",
-        "hotinfo_added_desc": "Diese Informationen werden automatisch an das technische Team weitergeleitet."
+        "hotinfo_added_desc": "Diese Informationen werden automatisch an das technische Team weitergeleitet.",
+        "hotinfo_upload_name": "Hotinfo Hochladen"
       },
       "fields": {
         "product": "Zugehöriges Produkt",
@@ -323,7 +457,11 @@
         "priority": "Priorität",
         "priority_placeholder": "Priorität wählen",
         "subject": "Thema / Zusammenfassung",
-        "subject_placeholder": "z.B. Ich erhalte einen Lizenzfehler bei der Installation"
+        "subject_placeholder": "z.B. Ich erhalte einen Lizenzfehler bei der Installation",
+        "allplan_info": "Allplan Edition & Hotfix",
+        "vram": "Grafikspeicher (VRAM)",
+        "ram": "Arbeitsspeicher (RAM)",
+        "dotnet": ".NET Framework"
       },
       "buttons": {
         "hotinfo_upload": "Hotinfo hochladen (.hxl)",
@@ -382,37 +520,6 @@
       "button": "Jetzt starten"
     }
   },
-  "kb_approvals": {
-    "title": "KI-Wissensverifizierungszentrum",
-    "subtitle": "Überprüfen und autorisieren Sie Wissenseinheiten, die automatisch aus verarbeiteten Ereignisprotokollen synthetisiert wurden.",
-    "refresh_queue": "WARTESCHLANGE_AKTUALISIEREN",
-    "run_pipeline": "WORKFLOW_STARTEN",
-    "queue_title": "WISSENSWARTESCHLANGE_WARTET_AUF_GENEHMIGUNG",
-    "units_loaded": "{count} EINHEITEN_GELADEN",
-    "empty": {
-      "title": "Alle Artikel geprüft!",
-      "desc": "Derzeit liegen keine neuen KI-Entwürfe zur Genehmigung vor."
-    },
-    "table": {
-      "query": "EXTRAHIERTE_ABFRAGE",
-      "answer": "SYNTHETISIERTE_ANTWORT",
-      "confidence": "KONFIDENZWERT",
-      "source": "QUELLFALL",
-      "actions": "AUTORISIERUNG",
-      "reliable": "{percent}%_ZUVERLÄSSIG",
-      "loading": "LADEN...",
-      "empty": "KEINE DATENSÄTZE GEFUNDEN"
-    },
-    "buttons": {
-      "fetch_error": "Fehler beim Abrufen der Entwürfe.",
-      "approve_success": "Artikel in der Wissensdatenbank veröffentlicht! 🚀",
-      "approve_error": "Genehmigungsprozess fehlgeschlagen.",
-      "dismiss_success": "Artikelentwurf abgelehnt.",
-      "dismiss_error": "Ablehnungsprozess fehlgeschlagen.",
-      "pipeline_started": "Pipeline gestartet, dieser Prozess wird im Hintergrund ausgeführt...",
-      "pipeline_error": "Pipeline konnte nicht gestartet werden: {error}"
-    }
-  },
   "ai": {
     "title": "KI-Support-Navigator",
     "subtitle": "Semantische Intelligenzabfragen im einheitlichen Wissenspool",
@@ -456,6 +563,13 @@
       "delete_selected": "{count} Ausgewählte löschen",
       "deleting": "Löschen läuft..."
     },
+    "table_controls": {
+      "sort_az": "Von A bis Z sortieren",
+      "sort_za": "Von Z bis A sortieren",
+      "group": "GRUPPIEREN",
+      "group_by": "Nach diesem Feld gruppieren",
+      "ungroup": "Gruppierung aufheben"
+    },
     "tabs": {
       "customers": "Kunden",
       "accounts": "Konten",
@@ -467,7 +581,7 @@
     },
     "table": {
       "loading": "Daten werden aus der Datenbank abgerufen",
-      "empty": "Keine Ergebnisse gefunden",
+      "empty": "Keine Datensätze gefunden.",
       "headers": {
         "customer_no": "Kunden-Nr.",
         "name": "Vollständiger Name",
@@ -494,7 +608,13 @@
       "details": "DETAILS",
       "manual_entry": "MANUELLER_EINTRAG",
       "dynamics_ok": "DYNAMICS_OK",
-      "not_found": "KONTO NICHT GEFUNDEN"
+      "not_found": "KONTO NICHT GEFUNDEN",
+      "details_subtitle": "Unternehmensdetails",
+      "joined_system": "Systembeitritt",
+      "registered_contacts": "Registrierte Kontakte",
+      "registered_contacts_desc": "Alle diesem Unternehmen zugewiesenen Kundendatensätze",
+      "people_count": "{count} Personen",
+      "no_contacts_found": "Keine registrierten Kontakte für dieses Unternehmen gefunden."
     },
     "sync": {
       "checking": "CRM-DATENPROTOKOLLE WERDEN ÜBERPRÜFT...",
@@ -516,6 +636,23 @@
         "field_label": "Anzeigebezeichnung",
         "field_key": "Systemschlüssel",
         "select_crm_field": "CRM-Feld auswählen...",
+        "add_new_column": "Neue Spalte hinzufügen",
+        "step_1_crm": "1. CRM-Feld auswählen",
+        "crm_select_placeholder": "Feld aus CRM auswählen...",
+        "step_2_display_name": "2. Anzeigename",
+        "display_name_placeholder": "z.B. Segment",
+        "step_3_system_key": "3. Systemschlüssel",
+        "system_key_placeholder": "z.B. segment",
+        "add_column_btn": "Spalte zur Liste hinzufügen",
+        "add_custom_btn": "Neues benutzerdefiniertes Feld/Spalte hinzufügen",
+        "visibility_title": "Sichtbarkeit und Sortierung",
+        "visibility_desc": "Die hier vorgenommenen Sortier- und Sichtbarkeitseinstellungen aktualisieren automatisch die Kunden- und Kontentabellen. Sie können Spalten, die Sie nicht möchten, durch Klicken auf das Augensymbol ausblenden und die Reihenfolge mit den Pfeilen ändern.",
+        "system_key": "Systemschlüssel",
+        "badge_custom": "BENUTZERDEFINIERT",
+        "badge_mapped": "ZUGEORDNET",
+        "search_crm_fields": "In CRM-Feldern suchen...",
+        "field_not_found": "Feld nicht gefunden.",
+        "sample_data": "Beispieldaten:",
         "fields": {
           "account": {
             "name": "Firmenname / Titel",
@@ -550,11 +687,146 @@
       "no_data": "Keine Verlaufsdaten"
     },
     "toasts": {
-      "delete_success": "Ausgewählte {type} gelöscht.",
+      "delete_success_title": "Löschen erfolgreich",
+      "delete_success_desc": "{count} Datensätze wurden aus dem System entfernt.",
       "sync_started": "Synchronisierung im Hintergrund gestartet.",
       "verify_success": "{count} E-Mails verifiziert.",
       "bulk_update_success": "SYSTEM_BEFEHL_ERFOLGREICH: {count}_DATENSÄTZE_AKTUALISIERT",
       "bulk_update_error": "SYSTEM_BEFEHL_FEHLER: {message}"
+    },
+    "labels": {
+      "active": "AKTIV",
+      "suspended": "SUSPENDIERT",
+      "passive": "PASSIV",
+      "verified": "VERIFIZIERT",
+      "not_verified": "NICHT VERIFIZIERT",
+      "syncing": "SYNCHRONISIERUNG",
+      "unknown": "UNBEKANNT",
+      "items": "Elemente",
+      "score": "Score",
+      "total": "GESAMT",
+      "passed": "ERFOLGREICH",
+      "failed": "FEHLGESCHLAGEN",
+      "pending": "AUSSTEHEND",
+      "system_info": "Systeminformationen (Hotinfo)",
+      "personal_info": "Persönliche Informationen",
+      "corporate_info": "Unternehmensinformationen",
+      "first_name": "Vorname",
+      "last_name": "Nachname",
+      "job_title": "Jobtitel",
+      "phone": "Telefon",
+      "company_name": "Firmenname",
+      "customer_no": "Kundennummer",
+      "contract_status": "Kundenstatus",
+      "created_at": "Konto erstellt",
+      "save_all": "Alle Änderungen speichern",
+      "saving": "Speichern...",
+      "reset_password": "Passwort zurücksetzen",
+      "reset_password_confirm": "Fortfahren? Dem Kunden wird ein neues, zufälliges Passwort zugewiesen.",
+      "hotinfo_data": "Gerätekonfiguration und Allplan-Details",
+      "download_hxl": ".HXL herunterladen",
+      "general": "Allgemein",
+      "accounts": "Konten",
+      "record_count": "{count} Datensätze"
+    },
+    "users": {
+      "title": "Teamverwaltung",
+      "desc": "Verwalten Sie Support-Agenten, Manager und Administratoren.",
+      "add_user": "Benutzer hinzufügen",
+      "edit_user": "Benutzer bearbeiten",
+      "delete_confirm": "Sind Sie sicher, dass Sie den Benutzer {name} löschen möchten?",
+      "empty": "Keine Benutzer gefunden",
+      "deleted_success": "Benutzer erfolgreich gelöscht",
+      "fetch_error": "Fehler beim Laden der Benutzer",
+      "dialog": {
+        "title_create": "Neuen Benutzer hinzufügen",
+        "title_edit": "Benutzer bearbeiten",
+        "full_name": "Vollständiger Name",
+        "name_placeholder": "John Doe",
+        "email": "E-Mail",
+        "email_placeholder": "john@example.com",
+        "password": "Passwort",
+        "password_placeholder": "******",
+        "new_password_optional": "Neues Passwort (optional)",
+        "role": "Rolle",
+        "select_role_placeholder": "Wählen Sie eine Rolle",
+        "roles": {
+          "admin": "Administrator",
+          "support_manager": "Support-Manager",
+          "support_agent": "Support-Mitarbeiter",
+          "viewer": "Betrachter"
+        },
+        "btn_create": "Erstellen",
+        "btn_update": "Aktualisieren"
+      },
+      "validation": {
+        "name_min": "Der Name muss mindestens 2 Zeichen lang sein",
+        "email_invalid": "Ungültige E-Mail-Adresse",
+        "password_min": "Das Passwort muss mindestens 6 Zeichen lang sein",
+        "password_required": "Passwort ist für neue Benutzer erforderlich"
+      },
+      "toasts": {
+        "created": "Benutzer erfolgreich erstellt",
+        "updated": "Benutzer erfolgreich aktualisiert"
+      },
+      "table": {
+        "user": "Benutzer",
+        "role": "Rolle",
+        "email": "E-Mail",
+        "actions": "Aktionen"
+      }
+    },
+    "crm": {
+      "title": "CRM-Kontrollzentrum",
+      "desc": "Verwalten Sie Microsoft Dynamics 365- und Unternehmens-CRM-Integrationen.",
+      "connection_settings": "Dynamics 365 Verbindungseinstellungen",
+      "connection_desc": "Geben Sie hier die Anwendungsinformationen (App Registration) ein, die Sie über das Azure-Portal erstellt haben.",
+      "status_card_title": "Verbindungsstatus",
+      "last_sync": "Letzte Synchronisierung",
+      "never_synced": "Nie durchgeführt",
+      "sync_btn": "Jetzt synchronisieren",
+      "success": "Erfolgreich",
+      "error": "Fehler",
+      "in_progress": "In Bearbeitung",
+      "ready": "Bereit",
+      "log_title": "Synchronisierungsprotokoll",
+      "log_empty": "Keine Aktivitätsaufzeichnungen gefunden.",
+      "log_message": "Fehlermeldung",
+      "save_and_verify": "Verbindung speichern und überprüfen",
+      "client_id": "Anwendungs-ID (Client)",
+      "client_secret": "Client-Geheimnis (Client Secret)",
+      "webhook_api_key": "Webhook-API-Schlüssel (x-api-key)",
+      "webhook_hint": "Sie müssen diesen Schlüssel dem `x-api-key`-Header in Ihrem Power Automate-Flow hinzufügen.",
+      "tenant_id": "Mandanten-ID (Tenant)",
+      "instance_url": "Instanz-URL",
+      "external_id": "Externe ID",
+      "provider_label": "Anbieter",
+      "instance_label": "Instanz"
+    },
+    "import": {
+      "title": "Kunden importieren",
+      "subtitle": "Synchronisieren Sie Dynamics 365-Daten mit dem System",
+      "select_file": "Wählen Sie Ihre CSV-Datei aus",
+      "file_hint": "Stellen Sie sicher, dass Kundennummer und Firmeninformationen ausgefüllt sind. Fehlende Daten werden mit temporären Codes erstellt.",
+      "select_btn": "Datei auswählen (CSV/Semikolon)",
+      "processing": "Verarbeitung...",
+      "analysis_complete": "Datenanalyse abgeschlossen",
+      "missing_client_no": "Kundennummer fehlt",
+      "missing_company": "Firmenname fehlt",
+      "attention": "ACHTUNG:",
+      "attention_desc": "Benutzer mit fehlenden 'Client ID'-Daten werden ohne CRM-Verifizierung importiert. Fehlende Firmeninfos werden als 'Unbekannte Firma' markiert.",
+      "cancel": "Abbrechen",
+      "start_import": "Jetzt importieren",
+      "writing_data": "Daten werden geschrieben...",
+      "summary_title": "Import-Zusammenfassung",
+      "new_upload": "Neuer Upload",
+      "go_to_customers": "Gehe zu Kunden"
+    },
+    "confirm": {
+      "delete_title": "Systemprotokoll: Löschbestätigung",
+      "delete_desc": "{count} Datenobjekte werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "delete_confirm": "LÖSCHPROTOKOLL STARTEN",
+      "cancel": "ABBRECHEN"
     }
   },
   "settings": {
@@ -575,6 +847,7 @@
       "title": "Gespeicherte Antworten (Makros)",
       "description": "Häufig verwendete Antworten verwalten.",
       "header_label": "Makrotitel",
+      "header_placeholder": "z.B.: Willkommen",
       "content_label": "Antwortinhalt",
       "content_placeholder": "An den Kunden zu sendender Text...",
       "add": "Hinzufügen",
@@ -611,6 +884,12 @@
     "ai": {
       "title": "KI-Integration",
       "description": "Konfigurieren Sie Grok (xAI), DeepSeek, OpenAI oder Ollama-Dienste.",
+      "chat_provider": "Standard-Chat-Anbieter",
+      "chat_provider_desc": "Wird für Ticket-Antworten und Assistentenfunktionen verwendet.",
+      "embed_provider": "Standard-Einbettungsanbieter",
+      "embed_provider_desc": "Wird für die Suche in der Wissensdatenbank und die Dokumentenindexierung verwendet.",
+      "test_btn": "Verbindung testen",
+      "save_btn": "Änderungen speichern",
       "center_title": "KI-Intelligenzzentrum",
       "center_desc": "Verwalten Sie mehrere KI-Anbieter, konfigurieren Sie hybride Modellübergänge und überwachen Sie den Zustand der Engine.",
       "motor_desc": "{name}-Engine für Intelligenz.",
@@ -628,6 +907,21 @@
       "advanced_params": "Erweiterte Parameter",
       "global_default": "Globaler Standard",
       "ollama_local": "Ollama (Lokal)",
+      "status_active": "Aktiv",
+      "status_inactive": "Inaktiv",
+      "hide_key": "{name} Schlüssel verbergen",
+      "show_key": "{name} Schlüssel anzeigen",
+      "model_placeholder": "z.B.: gpt-4, claude-3-opus...",
+      "total_latency": "Gesamtlatenz",
+      "validation": {
+        "missing_fields": "Fehlende Felder: {fields}",
+        "fields": {
+          "api_key": "API-Schlüssel",
+          "chat_model": "Chat-Modell",
+          "embed_model": "Vektor-Modell",
+          "url": "Verbindungs-URL"
+        }
+      },
       "toasts": {
         "load_error": "KI-Einstellungen konnten nicht geladen werden: {message}",
         "test_success": "{provider}-Verbindung erfolgreich!",
@@ -675,16 +969,26 @@
       "gmail_title": "Gmail OAuth2 Konfiguration",
       "authorized": "Autorisiert",
       "not_authorized": "Nicht autorisiert",
+      "smtp_host": "Host",
+      "smtp_port": "Port",
       "from_address_label": "Absender-E-Mail-Adresse",
       "smtp_user": "Benutzername",
       "smtp_pass": "Passwort",
-      "redirect_uri_label": "Autorisierte Weiterleitungs-URI (In Google Cloud Console hinzufügen)",
+      "resend_api_key": "API-Schlüssel",
+      "gmail_client_id": "Client ID",
+      "gmail_client_secret": "Client Secret",
+      "redirect_uri_label": "Autorisierte Weiterleitungs-URI (zur Google Cloud Console hinzufügen)",
       "save_provider_btn": "E-Mail-Anbieter speichern",
       "test_connection_btn": "Verbindung testen",
       "gmail": {
         "credentials_save": "Anmeldedaten speichern",
         "authorize_btn": "Mit Google autorisieren",
         "auth_hint": "Registrieren Sie zuerst Ihre Anmeldedaten und klicken Sie dann auf \"Mit Google autorisieren\". Nach Erteilung der Erlaubnis werden Sie zurückgeleitet."
+      },
+      "providers": {
+        "resend": "Resend (API)",
+        "smtp": "SMTP (Veraltet)",
+        "gmail": "Gmail (OAuth2)"
       },
       "tabs": {
         "config": "Konfiguration",
@@ -693,7 +997,7 @@
       },
       "logs": {
         "title": "Zustellungsverlauf",
-        "description": "Aufschlüsselung aller vom System gesendeten transaktionalen E-Mails.",
+        "description": "Aufschlüsselung aller vom System gesendeten Transaktions-E-Mails.",
         "table": {
           "recipient": "Empfänger",
           "template": "Vorlage",
@@ -709,23 +1013,48 @@
           "pending": "AUSSTEHEND"
         },
         "pagination": {
-          "prev": "Vorherige",
-          "next": "Nächste",
+          "prev": "Zurück",
+          "next": "Weiter",
           "page": "SEITE"
+        },
+        "toasts": {
+          "logs_load_error": "Protokolle konnten nicht geladen werden"
         }
       },
       "templates": {
         "title": "E-Mail-Vorlagen",
-        "description": "Verwalten und passen Sie MJML-basierte E-Mail-Vorlagen an.",
+        "description": "MJML-basierte E-Mail-Vorlagen verwalten und anpassen.",
         "preview_module": "Vorlagen-Vorschau-Modul",
-        "preview_desc": "Testen Sie aktive MJML-Vorlagen mit Mock-Daten.",
+        "preview_desc": "Aktive MJML-Vorlagen mit Mock-Daten testen.",
         "select_placeholder": "Vorlage auswählen...",
+        "new_btn": "Neue Vorlage",
         "preview_btn": "Vorschau",
+        "save_btn": "Speichern",
+        "new_placeholder": "Vorlagenname (z. B. welcome-email)",
+        "create_btn": "Erstellen",
+        "cancel_btn": "Abbrechen",
+        "editor_title": "MJML-EDITOR",
+        "editor_placeholder": "Schreiben Sie hier Ihren MJML-Code...",
+        "preview_title": "VORSCHAU",
         "subject_label": "Betreff",
+        "preview_hint": "Vorschau nicht gefunden",
+        "preview_flow_hint": "Bitte wählen Sie eine Vorlage aus und klicken Sie auf die Schaltfläche Vorschau.",
+        "safe_editor_title": "Sicherer Editor",
+        "safe_editor_desc": "MJML-Vorlage in einer sicheren Umgebung bearbeiten.",
+        "default_mjml": {
+          "text1": "Ihre neue E-Mail-Vorlage wurde erfolgreich erstellt.",
+          "text2": "Sie können den MJML-Editor auf der linken Seite verwenden, um sie zu bearbeiten. Das Live-Ergebnis sehen Sie im Vorschaufenster auf der rechten Seite.",
+          "button": "Hilfezentrum"
+        },
         "toasts": {
           "load_error": "Vorlagen konnten nicht geladen werden",
           "compile_error": "Kompilierungsfehler",
-          "preview_failed": "Vorschau konnte nicht geladen werden: {message}"
+          "preview_failed": "Vorschau konnte nicht geladen werden: {message}",
+          "save_success": "{name} Vorlage gespeichert.",
+          "save_failed": "Speichern fehlgeschlagen: {message}",
+          "create_success": "{name} Vorlage erstellt.",
+          "create_failed": "Erstellung fehlgeschlagen: {message}",
+          "name_required": "Vorlagenname ist erforderlich"
         }
       }
     },
@@ -742,6 +1071,7 @@
         "hours": "Geschäftszeiten",
         "actions": "Aktionen"
       },
+      "empty_state": "Noch keine SLA-Richtlinie definiert.",
       "how_it_works": "Wie es funktioniert?",
       "how_it_works_desc": "Wenn ein neues Ticket erstellt wird, sucht das System zuerst nach einer Richtlinie, die zu dieser Abteilung und Priorität passt.",
       "form": {
@@ -793,10 +1123,38 @@
       "status_missing": "Konfiguration fehlt",
       "save_btn": "WhatsApp-Einstellungen speichern"
     },
+    "requirements": {
+      "title": "Systemanforderungen",
+      "description": "Verwalten Sie Produktspezifikationen und technische Anforderungen für die Anmeldeseite.",
+      "save_btn": "Änderungen speichern",
+      "no_products": "Für diese Sprache sind keine Produkte definiert.",
+      "init_list": "{lang}-Liste initialisieren",
+      "remove_product": "Produkt entfernen",
+      "product_title_label": "Produkttitel",
+      "section_header_label": "Abschnittsüberschrift",
+      "requirement_items_label": "Anforderungspunkte",
+      "add_item": "Punkt hinzufügen",
+      "add_section": "Abschnitt hinzufügen",
+      "add_new_spec": "Neue Produktspezifikation hinzufügen",
+      "default_product_title": "Neues Produkt",
+      "default_section_name": "Anforderungen",
+      "default_item_text": "Eintrag 1",
+      "default_new_section": "Neuer Abschnitt",
+      "placeholders": {
+        "product": "z.B. ALLPLAN 2026",
+        "section": "z.B. Hardwareanforderungen",
+        "item": "Verwenden Sie **fett** zur Hervorhebung"
+      },
+      "toasts": {
+        "save_success": "Systemanforderungen erfolgreich aktualisiert.",
+        "save_error": "Fehler beim Aktualisieren: {message}"
+      }
+    },
     "toasts": {
       "save_success": "{key} erfolgreich aktualisiert.",
       "save_error": "Fehler: {message}",
       "load_error": "Daten konnten nicht geladen werden: {message}",
+      "url_copied": "URL kopiert.",
       "gmail_success": "Gmail-Konto erfolgreich verbunden.",
       "gmail_error": "Autorisierung fehlgeschlagen.",
       "logo_success": "Logo erfolgreich gespeichert.",
@@ -827,196 +1185,905 @@
       "generic_error": "Ein Fehler ist aufgetreten.",
       "generic_success_hint": "Zugriff auf {provider}-Dienst hergestellt.",
       "generic_fail_hint": "Dienst momentan nicht verfügbar."
+    }
+  },
+  "admin": {
+    "live_support_request": {
+      "title": "Support-Anfragen",
+      "description": "Systemweite offene und aktive Support-Anfragen verwalten."
     },
-    "admin": {
-      "live_support_request": {
-        "title": "Support-Anfragen",
-        "description": "Systemweite offene und aktive Support-Anfragen verwalten."
-      },
-      "ai_health": {
-        "title": "KI-Gesundheit & Telemetrie",
-        "description": "Echtzeit-Überwachung von KI-Modellen, Token-Verbrauch und RAG-Leistung."
+    "ai_health": {
+      "title": "KI-GESUNDHEIT & TELEMETRIE",
+      "subtitle": "Echtzeitüberwachung von KI-Modellen, Token-Verbrauch und RAG-Leistung.",
+      "dashboard": {
+        "panel_title": "KI-Zustand & Performance-Panel",
+        "send_report": "Wöchentlichen Bericht jetzt senden",
+        "report_queued": "Bericht in Warteschlange. Bitte prüfen Sie Ihr Postfach.",
+        "report_failed": "Bericht konnte nicht erstellt werden.",
+        "total_requests": "Gesamtanzahl Anfragen",
+        "total_tokens": "Gesamt-Token",
+        "approx_cost": "Ungefähre Kosten",
+        "active_models": "Aktive Modelle",
+        "unknown": "Unbekannt",
+        "performance_trends": "Performance-Trends (Letzte 7 Tage)",
+        "performance_desc": "Änderung der AI-Genauigkeit und Savuşturma-Raten im Laufe der Zeit.",
+        "kb_gaps": "Wissensdatenbank-Lücken",
+        "kb_gaps_desc": "Beliebteste unbeantwortete User-Fragen.",
+        "times_unanswered": "{count} Mal unbeantwortet geblieben",
+        "no_gaps": "Keine nennenswerten Wissenslücken festgestellt.",
+        "channel_distribution": "Kanalverteilung",
+        "channel_desc": "Sehen Sie, aus welchen Kanälen die Anfragen kommen.",
+        "requests_count": "{count} Anfragen",
+        "efficiency_summary": "Effizienzzusammenfassung (30 Tage)",
+        "efficiency_desc": "AI-Antwortqualität und Systemstabilität.",
+        "rag_accuracy": "RAG-Genauigkeit (Hohes Vertrauen)",
+        "deflection_rate": "Savuşturma-Rate (Deflection)",
+        "token_label": "Token"
       }
     },
-    "profile": {
-      "title": "Mein Profil",
-      "subtitle": "Verwalten Sie Ihre persönlichen Informationen und Sicherheitseinstellungen",
-      "hotfix_warning_title": "ACHTUNG: Hotfix-Verifizierung erforderlich",
-      "hotfix_warning_desc": "Allplan-Nutzung erkannt. Für Systemstabilität und ununterbrochenen Support laden Sie bitte Ihre aktuelle <b>Hotinfo (.hxl)</b> Datei unten auf der Seite hoch.",
-      "crm_verified": "CRM VERIFIZIERT",
-      "personal_info": "Persönliche Informationen",
-      "roles_info": "Kontoinformationen ({roles})",
-      "roles": {
-        "admin": "Administrator",
-        "agent": "Agent",
-        "customer": "Kunde"
+    "email_validation": {
+      "title": "E-Mail-Validierung",
+      "subtitle": "Überprüfen Sie E-Mail-Gültigkeit, DNS-Einträge und SMTP-Status.",
+      "data_labels": {
+        "valid": "Gültig",
+        "invalid": "Ungültig",
+        "found": "Gefunden",
+        "missing": "Fehlt",
+        "ok": "OK",
+        "error": "Fehler",
+        "enabled": "Aktiviert"
       },
-      "labels": {
-        "email_static": "E-Mail (Unveränderlich)",
-        "full_name": "Vollständiger Name",
-        "phone": "Telefonnummer",
-        "customer_no_static": "Kundennummer (Unveränderlich)",
-        "company_name": "Firmenname",
-        "industry": "Branche",
-        "job_title": "Jobtitel",
-        "subscription": "Abonnement",
-        "status": "Status"
+      "tabs": {
+        "single": "Schnellcheck",
+        "bulk": "Kundenliste"
       },
-      "placeholders": {
-        "phone": "+90 555 444 33 22",
-        "no_crm": "Kein CRM-Eintrag",
-        "company_name": "Ihr Firmenname",
-        "industry": "Branche, in der Sie tätig sind",
-        "job_title": "Ihr Jobtitel (z. B. Einkaufsleiter)",
-        "new_password": "Geben Sie Ihr neues Passwort ein",
-        "confirm_password": "Geben Sie Ihr neues Passwort erneut ein"
+      "single": {
+        "placeholder": "Zu verifizierende E-Mail-Adresse (z.B. user@example.com)",
+        "button": "Analysieren",
+        "verifying": "Verifizierung..."
       },
-      "contract_status": {
-        "ACTIVE": "Aktiv",
-        "EXPIRED": "Abgelaufen"
+      "bulk": {
+        "verify_selected": "Ausgewählte Verifizieren ({count})",
+        "verify_all": "Alle Verifizieren"
       },
-      "account_status": {
-        "ACTIVE": "Aktiv",
-        "INACTIVE": "Inaktiv",
-        "SUSPENDED": "Suspendiert"
+      "search": {
+        "customer_search": "Kunde oder Unternehmen Suchen...",
+        "filtered_records": "{count} Gefilterte Datensätze"
       },
-      "password_change": {
-        "title": "Passwort ändern",
-        "description": "Lassen Sie dieses Feld leer, wenn Sie Ihr Passwort nicht ändern möchten.",
-        "new_password": "Neues Passwort",
-        "confirm_password": "Passwort verifizieren"
+      "score_card": {
+        "score": "Score",
+        "reliable": "Zuverlässig",
+        "risky": "Riskant",
+        "invalid": "Ungültig",
+        "disposable_hint": "Temporärer E-Mail-Dienst erkannt.",
+        "role_based_hint": "Unternehmensrollenadresse (Support, Info usw.).",
+        "valid_hint": "E-Mail-Adresse scheint für die Verwendung geeignet zu sein."
       },
-      "save_button": "Änderungen speichern",
-      "saving_button": "Wird gespeichert...",
-      "mfa": {
-        "title": "Zwei-Faktor-Authentisierung (MFA)",
-        "description": "Verwenden Sie TOTP-basierte Authentifizierung (Google Authenticator, Authy usw.), um Ihre Kontosicherheit zu erhöhen.",
-        "status_label": "MFA-Status",
-        "active": "AKTİV",
-        "inactive": "INAKTIV",
-        "disable_btn": "Deaktivieren",
-        "setup_btn": "Einrichtung starten",
-        "dialog_title": "MFA-Einrichtung",
-        "dialog_desc": "Scannen Sie den Code mit einer beliebigen Authentifizierungs-App (Google Authenticator, Microsoft Authenticator, Authy).",
-        "key_creating": "Schlüssel wird generiert...",
-        "manual_key_label": "Manueller Eingabeschlüssel",
-        "token_label": "Verifizierungscode",
-        "token_placeholder": "000000",
-        "token_hint": "Aktivieren Sie die Funktion durch Eingabe des 6-stelligen Codes in Ihrer App",
-        "cancel": "Abbrechen",
-        "verify_enable": "Verifizieren und Aktivieren",
-        "verifying": "Wird verifiziert...",
-        "confirm_disable": "Sind Sie sicher, dass Sie die Zwei-Faktor-Authentisierung deaktivieren möchten? Ihre Sicherheit wird verringert."
+      "data_points": {
+        "syntax": "Syntax",
+        "syntax_desc": "E-Mail-Format auf Übereinstimmung mit RFC-Standards geprüft.",
+        "dns": "DNS / MX",
+        "dns_desc": "E-Mail-Servereinträge ({exchange}) der Domain verifiziert.",
+        "smtp": "SMTP",
+        "smtp_desc": "Server auf Socket-Ebene erreicht und Handshake versucht.",
+        "ai": "Intelligenz (KI)",
+        "ai_desc": "Intelligenzschicht-Analyse durchgeführt."
       },
-      "notifications": {
-        "title": "E-Mail-Benachrichtigungseinstellungen",
-        "description": "Legen Sie fest, in welchen Kategorien Sie E-Mails erhalten möchten",
-        "types": {
-          "ANNOUNCEMENTS": "Ankündigungen und Neuigkeiten",
-          "TICKETS": "Ticket-Aktualisierungen",
-          "SYSTEM": "System- und Sicherheitswarnungen"
-        },
-        "descriptions": {
-          "ANNOUNCEMENTS": "Kampagnen, Nachrichten und Produkt-Updates",
-          "TICKETS": "Alle Nachrichten im Zusammenhang mit Ihren Support-Anfragen",
-          "SYSTEM": "Passwort-Zurücksetzung, Kontobewegungen und kritische Warnungen"
-        }
+      "empty": {
+        "waiting": "Warten auf E-Mail-Analyse",
+        "waiting_desc": "Bitte geben Sie die Adresse ein, die Sie überprüfen möchten.",
+        "no_results": "Keine Ergebnisse Gefunden",
+        "no_results_desc": "Es wurden keine Kunden gefunden, die Ihren Suchkriterien entsprechen.",
+        "no_data": "Keine Daten Verfügbar",
+        "no_data_desc": "Diese E-Mail wurde noch nicht verifiziert. Bitte starten Sie den Verifizierungsprozess.",
+        "verify_now": "Jetzt Verifizieren"
       },
-      "hotinfo": {
-        "title": "Systeminformationen (Hotinfo)",
-        "description": "Für Ihre Allplan-Supportanfragen erforderliche Systemkonfiguration",
-        "last_update": "Letzte Aktualisierung",
-        "status_up_to_date": "Ihre Systeminformationen sind auf dem neuesten Stand. Diese Informationen werden automatisch in Ihren Support-Anfragen verwendet.",
-        "update_btn": "Informationen aktualisieren (.hxl hochladen)",
-        "missing_title": "Systeminformationen fehlen",
-        "missing_desc": "Es wird empfohlen, Ihre Allplan-Hotinfo-Datei hochzuladen, damit unser Support-Team Ihnen schneller helfen kann.",
-        "upload_btn": "HXL-Datei hochladen",
-        "uploading": "Wird hochgeladen..."
+      "filters": {
+        "all": "Alle"
+      },
+      "table": {
+        "customer_company": "Kunde / Unternehmen",
+        "email": "E-Mail",
+        "syntax": "Syntax",
+        "dns_mx": "DNS / MX",
+        "smtp": "SMTP",
+        "group_score": "Gruppe / Score",
+        "loading": "Kunden werden geladen..."
+      },
+      "detail": {
+        "title": "Detailanalyse",
+        "trust_score": "Vertrauenswert",
+        "status": "Status",
+        "intelligence": "Intelligenzschicht",
+        "server_records": "Servereinträge",
+        "mx_data": "MX RECORD DATA",
+        "no_mx": "Keine MX-Einträge Gefunden.",
+        "smtp_log": "SMTP HANDSHAKE LOG",
+        "yes_risky": "JA / RISIKOREICH",
+        "no_clean": "NEIN / SAUBER",
+        "smtp_success": "Verbindung zum Server {server} erfolgreich hergestellt. EHLO akzeptiert.",
+        "smtp_fail": "Verbindung fehlgeschlagen oder Zeitüberschreitung beim Handshake."
       },
       "toasts": {
-        "pref_updated": "Einstellung aktualisiert",
-        "pref_failed": "Aktualisierung fehlgeschlagen",
-        "password_mismatch": "Passwörter stimmen nicht überein!",
-        "profile_updated": "Profil erfolgreich aktualisiert.",
-        "update_failed": "Aktualisierung fehlgeschlagen",
-        "hxl_invalid": "Bitte laden Sie eine gültige .hxl-Datei hoch",
-        "mfa_disabled": "Die Zwei-Faktor-Authentifizierung wurde deaktiviert.",
-        "mfa_disable_failed": "Vorgang fehlgeschlagen"
+        "verified_count": "{count} E-Mails verifiziert.",
+        "reverified": "{email} erneut verifiziert.",
+        "verify_error": "Verifizierungsfehler",
+        "bulk_verify_error": "Massenverifizierungsfehler"
       }
     },
-    "help": {
-      "badge": "SYSTEM-LEITFADEN",
-      "title": "Bedienungsanleitung & Workflows",
-      "description": "Erfahren Sie Schritt für Schritt, wie Sie tägliche Abläufe, alle Funktionen der Aluplan Support-Plattform und KI-Module ausführen.",
+    "knowledge_pool": {
+      "title": "WISSENSPOOL_KONTROLLE",
+      "subtitle": "Verwaltung und Indizierung technischer Ressourcen für KI.",
+      "placeholder": "Technische Dokumentation",
       "tabs": {
-        "customer": "Kunden",
-        "admin": "Support-Team & Administratoren"
+        "raw_sources": "ROHQUELLEN",
+        "seeded_content": "GESÄTE_INHALTE"
       },
-      "customer": {
-        "section1": {
-          "title": "Anmeldung und Übersicht",
-          "desc": "Der erste Bildschirm, den Sie sehen, wenn Sie sich im System anmelden, ist die <b>Übersicht (Dashboard)</b>. Auf diesem Bildschirm:",
-          "item1": "Sie können Ihre laufenden und auf eine Antwort wartenden aktiven Support-Anfragen sehen.",
-          "item2": "Sie können schnell auf die zuletzt erstellten Artikel zugreifen.",
-          "item3": "Sie können die für Sie freigegebenen Systemankündigungen auf der \"Ankündigungen\"-Tafel lesen."
-        },
-        "section2": {
-          "title": "Verwendung des KI-Assistenten",
-          "desc": "Bevor Sie ein Ticket eröffnen, empfehlen wir Ihnen, das Menü <b>KI-Assistent</b> (/ai) zu verwenden, um Ihr Problem schnell zu lösen.",
-          "item1": "Klicken Sie im linken Menü auf die Registerkarte KI-Assistent.",
-          "item2": "Schreiben Sie den Fehler, den Sie erhalten, oder das Thema, das Sie erfahren möchten, in das Nachrichtenfeld (z. B. <i>\"Programm stürzt beim Zeichnen von Wänden ab\"</i>).",
-          "item3": "Die KI durchsucht die gesamte Wissensdatenbank und präsentiert Ihnen direkt die Lösungsschritte. Wenn keine Lösung gefunden wird, schlägt sie vor, eine Support-Anfrage zu erstellen.",
-          "tip_label": "Tipp:",
-          "tip_desc": "Da die KI RAG (Lernalgorithmus) verwendet, erhalten Sie genauere Antworten, wenn Sie Fragen stellen, indem Sie den Namen der Software modules angeben (z. B. AX3000)."
-        },
-        "section3": {
-          "title": "Eröffnung und Verfolgung einer Support-Anfrage (Ticket)",
-          "desc": "Um das Problem an die Agenten weiterzuleiten, können Sie auf der Seite <b>Meine Support-Anfragen</b> einen neuen Datensatz erstellen.",
-          "step1_title": "Schritt 1: Produktauswahl",
-          "step1_desc": "Nachdem Sie auf die Schaltfläche Neue Anfrage geklickt haben, wählen Sie die Produktfamilie aus, bei der das Problem auftritt (z. B. ALLPLAN, AX3000). Auf diese Weise wird Ihre Anfrage direkt an das zuständige Expertenteam weitergeleitet.",
-          "step2_title": "Schritt 2: Betreff und Details",
-          "step2_desc": "Geben Sie einen klaren Titel und Details ein, die das aufgetretene Problem erläutern. Wählen Sie die Dringlichkeitsstufe (wird durch SLA bestimmt).",
-          "step3_title": "Schritt 3: Dateianhänge",
-          "step3_desc": "Sie können Screenshots, PDFs oder Projektdateien (Max. 10 MB) direkt per Drag & Drop hochladen."
-        }
+      "buttons": {
+        "add_url": "URL_HINZUFÜGEN",
+        "upload_file": "DATEI_HOCHLADEN",
+        "scan_dataset": "DATENSATZ_SCANNEN",
+        "bulk_sync": "BULK-SYNC ({count})",
+        "cancel": "ABBRECHEN",
+        "refresh": "AKTUALISIEREN",
+        "publish_selected": "AUSGEWÄHLTE_VERÖFFENTLICHEN",
+        "examine": "UNTERSUCHEN",
+        "load_more": "MEHR_LADEN",
+        "loading": "LADEN..."
       },
-      "admin": {
-        "section1": {
-          "title": "Ticket-Warteschlange (Ticket-Management)",
-          "card1_title": "Operativer Pool",
-          "card1_desc": "Auf der Seite Ticket-Warteschlange werden Anfragen von allen Kunden gesammelt.",
-          "card1_item1_label": "Status ändern:",
-          "card1_item1_desc": "Sie können das Ticket aufrufen und den Status über das Dropdown-Menü im rechten Bereich ändern (Offen, Beantwortet, Geschlossen).",
-          "card1_item2_label": "Interne Notizen:",
-          "card1_item2_desc": "Verwenden Sie die Registerkarte <code>Interne Notiz (nur intern)</code>, um nur teaminterne Notizen zu machen, die der Kunde nicht sehen kann.",
-          "card1_item3_label": "Zuweisung:",
-          "card1_item3_desc": "Sie können das Ticket an einen bestimmten Experten übertragen, indem Sie die Schaltfläche \"Zuweisen\" verwenden.",
-          "card2_title": "KI-Co-Pilot (KI-gestützte Antwort)",
-          "card2_item1": "Klicken Sie oben rechts auf die Schaltfläche <b>\"KI-Antwortentwurf erstellen\"</b>, wenn Sie das Ticket aufrufen.",
-          "card2_item2": "Das System durchsucht die Nachricht des Kunden und den Wissenspool Ihres Unternehmens. Durch den Abgleich von Vektordaten bereitet es innerhalb von 5-10 Sekunden einen professionellen Entwurf vor, der sich auf die relevanten Dokumente bezieht. Sie können dem Kunden sofort antworten, indem Sie den Entwurf genehmigen und ihn nach Ihrem eigenen Stil bearbeiten."
-        },
-        "section2": {
-          "title": "Wissenspool & Lernschleife",
-          "item1_title": "Wissenspool-Management",
-          "item1_desc": "Damit die KI antworten kann, müssen Sie der Infrastruktur ständig neue Daten zur Verfügung stellen. Hierfür gibt es 3 Möglichkeiten:",
-          "item1_way1_label": "PDF / Datei-Upload:",
-          "item1_way1_desc": "Fügen Sie technische Spezifikationen direkt als PDFs zur Datenbank hinzu. Das System unterteilt diese in <u>Embedding (Vektor)</u> Teile.",
-          "item1_way2_label": "Web Scraper:",
-          "item1_way2_desc": "Wenn Sie dem System die aktuellen \"How to\"-URLs auf Ihrer Website übermitteln, liest die KI Ihre Website und speichert sie in ihrem Gedächtnis.",
-          "item1_way3_label": "Rohtext:",
-          "item1_way3_desc": "Sie können eine \"Anweisung\" für die KI erstellen, indem Sie häufig gestellte Fragen manuell eingeben.",
-          "item2_title": "Lernschleife und KI-Genehmigungen",
-          "item2_desc": "Wenn Kunden für geschlossene Tickets mit <b>5 Sternen</b> stimmen, geht das System davon aus, dass die Lösung perfekt ist. Um jedoch zu verhindern, dass diese Lösung direkt in die Hauptdatenbank geschrieben wird, landet sie auf der Registerkarte <b>KI-Genehmigungen</b>. Als Administrator können Sie auf dieser Registerkarte wählen, ob die Lösung von der KI gelernt (Genehmigen) oder übersprungen (Ablehnen) werden soll."
-        },
-        "section3": {
-          "title": "CRM & Produkt (Taxonomie) Konfiguration",
-          "card1_title": "Produkte und Modules",
-          "card1_desc1": "Hier verwalten Sie die Produktkarten, die der Kunde beim Eröffnen eines Tickets sieht. Der wichtigste Teil sind <b>Kategorien und Schlüsselwörter.</b>",
-          "card1_rule_label": "Taxonomie-Regel:",
-          "card1_rule_desc": "Schreiben Sie nicht nur Produktmerkmale (Wand, Balken), sondern auch Kundensymptome (Ruckeln, schwarzer Bildschirm, Schließen) in Kategorien (z. B. Modellabsturz). Die KI liest diese Schlüsselwörter und leitet das Ticket an das richtige Team (Triage) weiter.",
-          "card2_title": "Kunden- und Teamverwaltung",
-          "card2_desc": "Unter dem Menü <b>SYSTEM</b> im linken Bereich können Sie Kunden genehmigen und Support-Teams (Abteilungen) erstellen. Vergessen Sie nicht, die SLA-Regeln (Nach wie vielen Stunden soll geantwortet werden, soll es außerhalb der Arbeitszeit anhalten?) auf der Registerkarte Teamverwaltung festzulegen, damit Tickets automatisch zugewiesen werden können."
-        }
+      "table": {
+        "source": "QUELLE",
+        "type": "TYP",
+        "status": "STATUS",
+        "vector": "VEKTOR",
+        "last_sync": "LETZTER_SYNC",
+        "action": "AKTION",
+        "no_records": "Keine Ressourcen gefunden",
+        "select_all": "ALLE_AUSWÄHLEN",
+        "showing": "ANZEIGEN"
+      },
+      "filters": {
+        "all": "ALLE",
+        "active": "AKTIV",
+        "syncing": "SYNCHRONISIERT",
+        "failed": "FEHLGESCHLAGEN",
+        "all_types": "ALLE_TYPEN",
+        "url": "URL",
+        "file": "DATEI"
+      },
+      "logs": {
+        "title": "SYNC_LOGS",
+        "no_source": "Wählen Sie eine Quelle aus",
+        "no_logs": "Keine Protokolle gefunden.",
+        "success": "ERFOLG",
+        "error": "FEHLER",
+        "processing": "VERARBEITUNG",
+        "chunks_processed": "{count} Chunks verarbeitet."
+      },
+      "articles": {
+        "title": "ARTIKELPOOL",
+        "total": "{count} GESAMT",
+        "search_placeholder": "DATEI SUCHEN...",
+        "all": "ALLE",
+        "review": "IN_PRÜFUNG",
+        "published": "VERÖFFENTLICHT",
+        "draft": "ENTWURF",
+        "select_page": "SELECT {count} {PAGE}",
+        "no_records": "KEINE_DATENSÄTZE_GEFUNDEN",
+        "author": "AUTOR",
+        "under_review": "IN_ÜBERPRÜFUNG"
+      },
+      "meta": {
+        "locale": "de-DE",
+        "system": "SYSTEM"
+      },
+      "status_labels": {
+        "draft": "ENTWURF",
+        "published": "AKTIV",
+        "review": "IN_ÜBERPRÜFUNG",
+        "under_review": "IN_ÜBERPRÜFUNG"
+      },
+      "dialogs": {
+        "new_url": "Neue URL-Quelle",
+        "name_label": "Quellenname",
+        "url_label": "URL-Adresse",
+        "save_sync": "Speichern und Synchronisieren"
+      },
+      "toasts": {
+        "fetch_error": "Ressourcen konnten nicht geladen werden",
+        "sync_started": "Synchronisierung gestartet",
+        "sync_desc": "Hintergrundaufgabe in Warteschlange",
+        "bulk_sync_started": "Massen-Synchronisierung gestartet",
+        "partial_success": "Teilerfolg",
+        "bulk_sync_desc": "{count} Ressourcen in Warteschlange",
+        "bulk_sync_error": "{count} fehlgeschlagen",
+        "dataset_scan_started": "Synchronisierung gestartet",
+        "dataset_scan_desc": "Datensatzordner wird gescannt...",
+        "dataset_sync_success": "Smart Sync erfolgreich",
+        "url_added": "URL-Quelle hinzugefügt",
+        "logs_error": "Protokolle konnten nicht geladen werden",
+        "publish_success": "{count} Artikel veröffentlicht"
+      }
+    },
+    "announcements": {
+      "title": "Ankündigungsmanagement",
+      "subtitle": "Unternehmenskommunikation und gezielte Ankündigungsoperationen",
+      "categories": {
+        "all": "ALLE",
+        "general": "Allgemein",
+        "product": "Produkt",
+        "security": "Sicherheit",
+        "compliance": "Compliance",
+        "operations": "Operationen",
+        "ai_tech": "KI & Technologie",
+        "infrastructure": "Infrastruktur",
+        "change_management": "Change Management",
+        "education": "Bildung",
+        "performance_reports": "Performance-Berichte",
+        "strategic_updates": "Strategische Updates",
+        "community": "Gemeinschaft"
+      },
+      "tabs": {
+        "create": "Ankündigung Erstellen",
+        "templates": "Vorlagenbibliothek",
+        "history": "Sendungsverlauf"
+      },
+      "editor": {
+        "title": "Inhaltseditor",
+        "desc": "Bereiten Sie den Inhalt der E-Mail vor, die an die Kunden gesendet wird.",
+        "template_select": "Vorlage Auswählen",
+        "title_label": "Name des Ankündigungsdatensatzes",
+        "title_placeholder": "z.B. Sommer 2024 Hotfix Ankündigung",
+        "subject_label": "E-Mail-Betreffzeile",
+        "subject_placeholder": "Für den Kunden sichtbare Betreffzeile",
+        "content_label": "Rich-Text-Inhalt",
+        "default_content": "<p>Hallo {{customer.name}}!</p><p>Ankündigungsinhalt hier einfügen...</p>",
+        "preview": "Vorschau",
+        "save_draft": "Entwurf Protokollieren"
+      },
+      "audience": {
+        "title": "Zielgruppe",
+        "desc": "Legen Sie fest, wer die Ankündigung erhalten soll.",
+        "industries": "Branchen",
+        "industry_placeholder": "Branche Auswählen",
+        "statuses": "Kundenstatus",
+        "status_placeholder": "Status Auswählen",
+        "companies": "Unternehmensname",
+        "company_placeholder": "Unternehmen Auswählen",
+        "tags": "Benutzerdefinierte Tags",
+        "tags_placeholder": "Tags hinzufügen (Enter)",
+        "target_audience": "Zielgruppe",
+        "persons": "Personen",
+        "select_filter": "Bitte wählen Sie mindestens einen Filter aus",
+        "realtime_telemetry": "Echtzeit-Telemetriedaten"
+      },
+      "template_editor": {
+        "title": "Vorlagen-Editor",
+        "modify_desc": "Datensatz {name} wird geändert.",
+        "new_desc": "Protokollieren Sie eine neue Kommunikationsvorlage für das System.",
+        "new_record": "Neuer Datensatz",
+        "name_label": "Vorlagenname",
+        "name_placeholder": "z.B. Willkommens-E-Mail",
+        "topic_label": "Kategorie (Topic)",
+        "topic_placeholder": "z.B. Onboarding",
+        "subject_label": "Standard-Betreffzeile",
+        "subject_placeholder": "Für den Kunden sichtbarer Betreff",
+        "content_label": "Rich-Text-Inhalt (Vorlage)",
+        "render_test": "Render-Test",
+        "update": "Aktualisieren",
+        "archive": "In Bibliothek Archivieren"
+      },
+      "library": {
+        "title": "Bibliothek",
+        "search_placeholder": "Name oder Thema suchen...",
+        "category_filter": "Kategoriefilter",
+        "all": "Alle",
+        "no_records": "Keine Datensätze Gefunden",
+        "apply": "Anwenden",
+        "preview": "Vorschau",
+        "delete": "Löschen",
+        "validated": "Validiert"
+      },
+      "history": {
+        "title": "Sendungsarchiv",
+        "desc": "Alle Ankündigungsdatensätze, die über das System protokolliert und veröffentlicht wurden.",
+        "empty": "Archiv Leer",
+        "sent": "GESENDET",
+        "draft": "ENTWURF",
+        "terminal_delivered": "{count} An Terminals Geliefert",
+        "broadcast": "Veröffentlichen"
+      },
+      "toasts": {
+        "template_empty": "Dieser Vorlageninhalt ist leer.",
+        "template_compile_error": "Vorlage konnte nicht kompiliert werden. Prüfen Sie die MJML-Syntax.",
+        "preview_error": "Vorschaufehler:",
+        "unknown_error": "Unbekannter Fehler",
+        "required_fields": "Vorlagenname und Inhalt sind erforderlich",
+        "template_updated": "Vorlage aktualisiert",
+        "template_added": "Vorlage zur Bibliothek hinzugefügt",
+        "template_applied": "{name} Vorlage angewendet",
+        "title_subject_required": "Titel und Betreff sind erforderlich",
+        "draft_saved": "Ankündigungsentwurf gespeichert",
+        "save_failed": "Speichern fehlgeschlagen: {message}",
+        "broadcast_success": "Ankündigung erfolgreich veröffentlicht",
+        "broadcast_error": "Veröffentlichung fehlgeschlagen",
+        "confirm_broadcast": "Sind Sie sicher, dass Sie diese Ankündigung senden möchten?",
+        "delete_success": "Datensatz gelöscht",
+        "delete_failed": "Löschen fehlgeschlagen",
+        "confirm_delete_announcement": "Sind Sie sicher, dass Sie diese Ankündigung löschen möchten?",
+        "confirm_delete_template": "Sind Sie sicher, dass Sie diese Vorlage löschen möchten?",
+        "error": "Fehler"
+      }
+    },
+    "teams": {
+      "fetch_error": "Fehler beim Laden der Daten.",
+      "search_placeholder": "Teams oder Abteilungen suchen...",
+      "no_description": "Keine Beschreibung für diese Abteilung hinzugefügt.",
+      "min_suffix": "Min.",
+      "profile_pic_alt": "Profilbild",
+      "statuses": {
+        "online": "Online",
+        "away": "Abwesend",
+        "dnd": "Nicht stören",
+        "offline": "Offline"
+      },
+      "loading": {
+        "agent": "Profildaten werden analysiert...",
+        "dept": "Abteilungsdaten werden geladen...",
+        "team": "Teamdaten werden synchronisiert..."
+      },
+      "nav": {
+        "back_teams": "Zurück zu Teams",
+        "back": "Zurück"
+      },
+      "actions": {
+        "edit_profile": "Profil bearbeiten",
+        "edit_dept": "Abteilung bearbeiten",
+        "add_skill": "Neue Fähigkeit hinzufügen",
+        "add_sla": "Neue SLA-Richtlinie",
+        "add_member": "Neues Mitglied hinzufügen",
+        "configure": "Konfigurieren",
+        "add_agent": "Neuen Agenten hinzufügen",
+        "add_team": "Neues Team",
+        "manage_team": "Team verwalten",
+        "details": "Details",
+        "view_profile": "Profil",
+        "view_team": "TEAM ANSEHEN",
+        "edit": "BEARBEITEN"
+      },
+      "tabs": {
+        "performance": "Leistung",
+        "skills": "Fähigkeiten",
+        "schedule": "Arbeitsplan",
+        "overview": "Übersicht",
+        "sla_policies": "SLA-Richtlinien",
+        "departments": "Abteilungen",
+        "teams": "Teams",
+        "agents": "Agenten"
+      },
+      "stats": {
+        "tickets": "Ticket-Statistiken",
+        "last_30_days": "LETZTE 30 TAGE",
+        "active_load": "Aktive Arbeitsbelastung",
+        "csat": "CSAT-Score",
+        "avg_response": "Durchschnittliche Antwortzeit",
+        "monthly_quota": "Monatliches Ticketkontingent",
+        "first_response_target": "SLA-Ziel für erste Antwort",
+        "active_teams": "Aktive Teams",
+        "total_agents": "Agenten gesamt",
+        "avg_response_dept": "Durchschnittliche Antwortzeit",
+        "sla_compliance": "SLA-Einhaltung",
+        "active_ticket_load": "Aktive Ticketbelastung",
+        "quick_stats": "Schnelle Statistiken",
+        "online_rate": "Online-Rate",
+        "pending_queue": "Ausstehende Warteschlange",
+        "resolved_today": "Heute gelöst",
+        "alerts": "Warnungen",
+        "overload": "Überlastung",
+        "sla_stable": "SLA Stabil"
+      },
+      "labels": {
+        "badges": "Erfolgsabzeichen",
+        "sla_master": "SLA-Meister",
+        "top_rated": "Bestbewertet",
+        "quick_resolve": "Schnelle Lösung",
+        "targets": "Ziele",
+        "technical_skills": "Technische Fähigkeiten",
+        "skills_desc": "Fachgebiete und Vertrauensniveau des Agenten.",
+        "no_skills": "Noch keine Fähigkeiten zugewiesen.",
+        "leave": "URLAUB",
+        "recent_activity": "Letzte Aktivitäten",
+        "critical_sla": "Kritische SLA-Ziele",
+        "first_response": "ERSTE ANTWORT",
+        "resolution": "LÖSUNG",
+        "first_response_time": "Erste Antwort",
+        "resolution_time": "Lösungszeit",
+        "sla_config": "SLA-Konfiguration",
+        "sla_config_desc": "Service-Level-Ziele der Abteilung.",
+        "automation_status": "AUTOMATISIERUNGSSTATUS",
+        "active": "AKTIV",
+        "passive": "PASSIV",
+        "round_robin": "Round Robin",
+        "rr_desc": "Sequenzielle Zuweisungsstrategie wird angewendet.",
+        "team_members": "Teammitglieder",
+        "command_center": "Team-Kommandozentrale",
+        "organization": "Eine Organisation: Aluplan Support",
+        "auto_assignment": "AUTO-ZUWEISUNG",
+        "strategy": "Strategie:",
+        "agent": "Agent / Vertreter",
+        "status": "Status",
+        "role": "Rolle",
+        "actions": "Aktionen"
+      },
+      "creation": {
+        "title": "Neues Team Erstellen",
+        "description": "Definieren Sie ein neues Team, um operative Prozesse zu verwalten.",
+        "team_name": "Teamname",
+        "team_name_placeholder": "Bsp: Technischer Support - Ebene 2",
+        "department": "Abteilung",
+        "select_department": "Wählen Sie eine Abteilung",
+        "desc_label": "Beschreibung",
+        "desc_placeholder": "Stellenbeschreibung des Teams...",
+        "auto_assign": "Automatische Zuweisung",
+        "auto_assign_desc": "Neue Tickets werden diesem Team automatisch zugewiesen.",
+        "assign_strategy": "Zuweisungsstrategie",
+        "round_robin": "Round Robin (Sequentiell)",
+        "least_loaded": "Am wenigsten belastet (Lastbasiert)",
+        "skill_based": "Fähigkeitsbasiert",
+        "submit": "Team Starten",
+        "submitting": "Wird erstellt...",
+        "success": "Neues Team erfolgreich erstellt.",
+        "error_dept": "Bitte wählen Sie eine Abteilung aus.",
+        "error_server": "Fehler beim Erstellen des Teams."
+      },
+      "member_add": {
+        "title": "Neuen Agenten Zuweisen",
+        "description": "Weisen Sie dem Team einen registrierten Benutzer als Agenten zu.",
+        "select_agent": "Benutzer (Agent)",
+        "select_agent_placeholder": "Wählen Sie einen Benutzer",
+        "loading_users": "Benutzer werden geladen...",
+        "no_users": "Keine neuen Benutzer zur Zuweisung verfügbar.",
+        "role": "Role im Team",
+        "select_role": "Rolle wählen",
+        "role_desc": "Diese Rolle bestimmt nur ihre Berechtigungen innerhalb dieses Teams.",
+        "cancel": "Abbrechen",
+        "submit": "Dem Team Zuweisen",
+        "submitting": "Hinzufügen...",
+        "success": "Neues Mitglied erfolgreich zum Team hinzugefügt.",
+        "error_select": "Bitte wählen Sie einen Agenten aus.",
+        "error_server": "Fehler beim Hinzufügen des Mitglieds."
+      }
+    },
+    "kb_approvals": {
+      "title": "KI-Genehmigungspool",
+      "subtitle": "Verwalten Sie Entwürfe für Artikel, die aus geschlossenen Tickets und 5-Sterne-Lösungen abgeleitet wurden.",
+      "refresh_queue": "WARTESCHLANGE AKTUALISIEREN",
+      "run_pipeline": "PIPELINE AUSFÜHREN",
+      "queue_title": "ZUR GENEHMIGUNG ANSTEHENDE EINHEITEN",
+      "units_loaded": "{count} EINHEITEN GELADEN",
+      "empty": {
+        "title": "Gute Arbeit!",
+        "desc": "Alle zur Genehmigung anstehenden Inhalte wurden überprüft und verarbeitet."
+      },
+      "table": {
+        "query": "ABFRAGE / PROBLEM",
+        "answer": "KI VORGESCHLAGENE LÖSUNG",
+        "confidence": "VERTRAUEN",
+        "source": "QUELLE",
+        "actions": "AKTIONEN",
+        "reliable": "{percent}% ZUVERLÄSSIG"
+      },
+      "buttons": {
+        "approve": "GENEHMIGEN",
+        "delete": "LÖSCHEN"
+      },
+      "toasts": {
+        "fetch_error": "Entwürfe konnten nicht geladen werden.",
+        "approve_success": "Inhalt zur Wissensdatenbank hinzugefügt.",
+        "approve_error": "Fehler bei der Genehmigung.",
+        "dismiss_success": "Inhalt abgelehnt.",
+        "dismiss_error": "Fehler beim Ablehnen.",
+        "pipeline_started": "Pipeline ausgelöst.",
+        "pipeline_error": "Pipeline-Fehler: {error}"
+      }
+    },
+    "knowledge_base": {
+      "title": "Wissensdatenbank",
+      "subtitle": "Unternehmensgedächtnis, Lösungsartikel und Dokumentationszentrum",
+      "buttons": {
+        "analytics": "ANALYTIK",
+        "new_article": "NEUER ARTIKEL",
+        "refresh": "AKTUALISIEREN",
+        "publish": "VERÖFFENTLICHEN",
+        "reject": "ABLEHNEN",
+        "detail": "DETAIL"
+      },
+      "search": {
+        "placeholder": "SUCHE..."
+      },
+      "filters": {
+        "all": "ALLE",
+        "draft": "ENTWURF",
+        "review": "IN_PRÜFUNG",
+        "active": "AKTIV",
+        "archived": "ARCHIVIERT"
+      },
+      "stats": {
+        "total_articles": "Insgesamt {count} Artikel",
+        "total": "Gesamt Artikel",
+        "published": "Veröffentlicht",
+        "views": "Ansichten"
+      },
+      "meta": {
+        "author": "AUTOR",
+        "update": "AKTUALISIERUNG",
+        "views": "ANSICHTEN"
+      },
+      "empty": {
+        "no_records": "Noch keine Artikel gefunden",
+        "loading": "Datenschichten werden geladen"
+      }
+    },
+    "meta": {
+      "locale": "de-DE",
+      "system": "SYSTEM"
+    },
+    "table": {
+      "select_all": "Alle auswählen",
+      "showing": "Angezeigt"
+    },
+    "system_topology": {
+      "title": "Systemressourcen-Topologie",
+      "subtitle": "SYSTEMRESSOURCEN_TOPOLOGIE: DATENFLUSS- UND VERARBEITUNGSARCHITEKTUR",
+      "refresh": "AKTUALISIEREN",
+      "sync_error": "Daten-Synchronisierungsfehler",
+      "total_entropy": "GESAMT-ENTROPIE",
+      "units": "EINHEITEN",
+      "status_running": "LÄUFT",
+      "pillars": {
+        "documents": "PDF/DOCX/XLS/TXT/MD",
+        "articles": "ADMIN-ARTIKEL",
+        "urls": "URL / WEB",
+        "tickets": "TICKET-LERNEN"
+      },
+      "layers": {
+        "doc_parser": "DOKUMENTEN-PARSER",
+        "rich_editor": "RICH-EDITOR",
+        "crawl_engine": "CRAWL-ENGINE",
+        "cluster_engine": "CLUSTER-ENGINE"
+      },
+      "strategies": {
+        "parent_child": "PARENT-CHILD",
+        "direct_embed": "DIREKTES EMBEDDING",
+        "content_clean": "INHALTSBEREINIGUNG",
+        "faq_generator": "FAQ-GENERATOR"
+      },
+      "vector": {
+        "unified_index": "VEREINHEITLICHTER VEKTORINDEX",
+        "re_ranking": "RE-RANKING AKTIV",
+        "trust_priority": "VERTRAUENSDIENST-PRIORITÄT"
+      },
+      "engine": {
+        "query_preproc": "ABFRAGE-VORVERARBEITUNG",
+        "hybrid_retrieval": "HYBRID-SUCHMASCHINE"
+      }
+    },
+    "products": {
+      "title": "Produkte und Module",
+      "subtitle": "Verwalten Sie die Hauptprodukte und Unterkategorien für die Klassifizierung durch künstliche Intelligenz für Ihre Support-Abteilungen.",
+      "actions": {
+        "add_product": "Neues Produkt hinzufügen",
+        "add_category": "Kategorie hinzufügen"
+      },
+      "empty": {
+        "no_products": "Noch keine Produkte definiert",
+        "no_products_desc": "Mit der Schaltfläche 'Neues Produkt hinzufügen' können Sie die Hauptprodukte und Module definieren, für die Kunden Tickets eröffnen können.",
+        "no_categories": "Für dieses Produkt wurde noch keine Unterkategorie/Modul definiert. Fügen Sie eine Kategorie für die intelligente KI-Kennzeichnung hinzu."
+      },
+      "labels": {
+        "subcategories": "Unterkategoriler (KI-Labels)",
+        "no_keywords": "Keine Schlüsselwörter",
+        "product_name": "Produktname",
+        "description": "Beschreibung",
+        "category_name": "Kategoriename",
+        "keywords": "Schlüsselwörter (mit Kommas trennen)",
+        "keywords_help": "Die KI kann dabei helfen, einen Kontext zu erstellen, wenn sie versucht, das Benutzerticket aus dieser Liste von Labels zu klassifizieren."
+      },
+      "placeholders": {
+        "product_name": "z. B. Aluplan Pro",
+        "description": "Eine kurze Beschreibung des Produkts...",
+        "category_name": "z. B. Rechnungsmodul",
+        "keywords": "z. B. Rechnungserstellung, Stornierung, MwSt, E-Rechnung"
+      },
+      "dialogs": {
+        "edit_product": "Produkt bearbeiten",
+        "add_product": "Neues Produkt hinzufügen",
+        "edit_category": "Kategorie bearbeiten",
+        "add_category": "Neues Modul / Neue Kategorie",
+        "product_desc": "Definieren Sie Ihr Hauptprodukt oder Ihre Hauptdienstleistung. Kunden sehen diese Produkte zuerst, wenn sie ein Ticket erstellen.",
+        "category_desc": "Geben Sie die Unterkategorie und die mit dieser Kategorie verknüpften Schlüsselwörter ein, die die KI für die Unterkennzeichnung eingehender Tickets verwendet."
+      },
+      "toasts": {
+        "fetch_error": "Fehler beim Laden der Produkte",
+        "product_updated": "Produkt aktualisiert",
+        "product_added": "Neues Produkt hinzugefügt",
+        "category_updated": "Kategorie aktualisiert",
+        "category_added": "Neue Kategorie hinzugefügt",
+        "product_deleted": "Produkt gelöscht",
+        "category_deleted": "Kategorie gelöscht",
+        "save_failed": "Registrierung fehlgeschlagen",
+        "delete_failed": "Löschen fehlgeschlagen"
+      },
+      "confirms": {
+        "delete_product": "Sind Sie sicher, dass Sie dieses Produkt und alle darunter liegenden Kategorien löschen möchten?",
+        "delete_category": "Sind Sie sicher, dass Sie diese Kategorie löschen möchten?"
+      }
+    },
+    "faq": {
+      "title": "FAQ_VERWALTUNGSEINHEIT",
+      "subtitle": "Überprüfen und synchronisieren Sie automatisch extrahierte operative Wissensbeispiele.",
+      "refresh_cache": "CACHE_AKTUALISIEREN",
+      "start_extraction": "EXTRAKTION_STARTEN",
+      "filters": {
+        "all": "ALLE",
+        "pending_review": "AUSSTEHENDE_PRÜFUNG",
+        "published": "VERÖFFENTLICHT",
+        "draft": "ENTWURF"
+      },
+      "not_found": "Keine FAQ gefunden",
+      "not_found_desc": "Versuchen Sie, den Filter zu ändern, oder starten Sie den Extraktionsprozess, um neue FAQs zu erstellen.",
+      "frequency": "HÄUFIGKEIT",
+      "confidence_score": "KONFIDENZWERD",
+      "approve": "GENEHMIGEN",
+      "dismiss": "VERWERFEN",
+      "source_ticket": "Quell-Ticket",
+      "toasts": {
+        "extraction_started": "Pipeline gestartet",
+        "extraction_started_desc": "Der FAQ-Extraktionsprozess läuft im Hintergrund.",
+        "fetch_error": "Fehler beim Abrufen der FAQs",
+        "approved": "FAQ genehmigt",
+        "approved_desc": "Beispiel wurde veröffentlicht.",
+        "dismissed": "FAQ verworfen",
+        "dismissed_desc": "Beispiel in Entwurf verschoben/gelöscht.",
+        "op_failed": "Vorgang fehlgeschlagen",
+        "pipeline_failed": "Pipeline konnte nicht gestartet werden"
+      }
+    },
+    "faq_learning": {
+      "title": "FAQ Auto-Lernpool",
+      "subtitle": "NEURALE SYNCHRONISATION: TRANSFORMATION OPERATIVER DATEN IN STRUKTURIERTES WISSEN",
+      "trigger_loop": "LERNZYKLUS AUSLÖSEN",
+      "health_analysis": "WISSENSDATENBANK_GESUNDHEITSANALYSE",
+      "realtime_telemetry_label": "ECHTZEIT-TELEMETRIE",
+      "resolution_rate": "LÖSUNGSQUOTE",
+      "prevented_tickets": "VERHINDERTE_TICKETS",
+      "writing_accuracy": "SCHREIBGENAUIGKEIT",
+      "highest_confidence": "HÖCHSTES_VERTRAUEN",
+      "total_interactions": "GESAMTINTERAKTIONEN",
+      "last_30_days": "ANFRAGEN_DER_LETZTEN_30_TAGE",
+      "confidence_distribution": "VERTRAUENSVERTEILUNG",
+      "bands": {
+        "high": "HOCH",
+        "medium": "MITTEL",
+        "low": "NIEDRIG",
+        "no_match": "KEINE_ÜBEREINSTIMMUNG"
+      },
+      "flow_status": "FLOW-STATUS",
+      "ingestion_engine": "DATENERFASSUNGS-ENGINE",
+      "ingestion_engine_desc": "Status: AKTIV | Überwachung geschlossener Ticket-Ereignisse",
+      "abstraction_layer": "ABSTRAKTIONSSCHICHT",
+      "abstraction_layer_desc": "Aktuell: BEREIT | Nomic-Embed-Strategie",
+      "validation_queue": "VALIDIERUNGSWARTESCHLANGE",
+      "validation_queue_desc": "{count} KANDIDATEN WARTEN AUF VALIDIERUNG",
+      "last_sync": "LETZTE_SYNCHRONISIERUNG",
+      "candidates_title": "LERNKANDIDATEN",
+      "waiting_validation": "WARTET_AUF_VALIDIERUNG",
+      "all_synced": "ALLE_MUSTER_SYNCHRONISIERT",
+      "all_synced_desc": "Führen Sie den Extraktionszyklus manuell aus, um neue Wissensbeispiele zu finden.",
+      "add_to_kb": "IN KB AUFNEHMEN",
+      "refresh": "AKTUALISIEREN",
+      "toasts": {
+        "pipeline_started": "KI-Pipeline gestartet",
+        "pipeline_desc": "Tiefenanalyse der gelösten Tickets läuft.",
+        "knowledge_committed": "Wissen bestätigt",
+        "knowledge_committed_desc": "Das Modell wurde erfolgreich in den allgemeinen Wissenspool integriert.",
+        "sync_error": "Datensynchronisierungsfehler",
+        "pipeline_exception": "Pipeline-Ausnahme",
+        "commit_error": "Übertragungsfehler"
+      }
+    },
+    "emails": {
+      "title": "E-Mail-Verwaltung",
+      "subtitle": "MJML-Vorlagen bearbeiten, neue Vorlagen erstellen und den Versandverlauf verfolgen.",
+      "tabs": {
+        "templates": "Vorlagen-Editor",
+        "logs": "Versandverlauf"
+      }
+    }
+  },
+  "profile": {
+    "title": "Mein Profil",
+    "subtitle": "Verwalten Sie Ihre persönlichen Informationen und Sicherheitseinstellungen",
+    "hotfix_warning_title": "ACHTUNG: Hotfix-Verifizierung erforderlich",
+    "hotfix_warning_desc": "Allplan-Nutzung erkannt. Für Systemstabilität und ununterbrochenen Support laden Sie bitte Ihre aktuelle <b>Hotinfo (.hxl)</b> Datei unten auf der Seite hoch.",
+    "crm_verified": "CRM VERIFIZIERT",
+    "personal_info": "Persönliche Informationen",
+    "roles_info": "Kontoinformationen ({roles})",
+    "roles": {
+      "admin": "Administrator",
+      "agent": "Agent",
+      "customer": "Kunde"
+    },
+    "labels": {
+      "email_static": "E-Mail (Unveränderlich)",
+      "full_name": "Vollständiger Name",
+      "phone": "Telefonnummer",
+      "customer_no_static": "Kundennummer (Unveränderlich)",
+      "company_name": "Firmenname",
+      "industry": "Branche",
+      "job_title": "Jobtitel",
+      "subscription": "Abonnement",
+      "status": "Status"
+    },
+    "placeholders": {
+      "phone": "+90 555 444 33 22",
+      "no_crm": "Kein CRM-Eintrag",
+      "company_name": "Ihr Firmenname",
+      "industry": "Branche, in der Sie tätig sind",
+      "job_title": "Ihr Jobtitel (z. B. Einkaufsleiter)",
+      "new_password": "Geben Sie Ihr neues Passwort ein",
+      "confirm_password": "Geben Sie Ihr neues Passwort erneut ein"
+    },
+    "contract_status": {
+      "ACTIVE": "Aktiv",
+      "EXPIRED": "Abgelaufen"
+    },
+    "account_status": {
+      "ACTIVE": "Aktiv",
+      "INACTIVE": "Inaktiv",
+      "SUSPENDED": "Suspendiert"
+    },
+    "password_change": {
+      "title": "Passwort ändern",
+      "description": "Lassen Sie dieses Feld leer, wenn Sie Ihr Passwort nicht ändern möchten.",
+      "new_password": "Neues Passwort",
+      "confirm_password": "Passwort verifizieren"
+    },
+    "save_button": "Änderungen speichern",
+    "saving_button": "Wird gespeichert...",
+    "mfa": {
+      "title": "Zwei-Faktor-Authentisierung (MFA)",
+      "description": "Verwenden Sie TOTP-basierte Authentifizierung (Google Authenticator, Authy usw.), um Ihre Kontosicherheit zu erhöhen.",
+      "status_label": "MFA-Status",
+      "active": "AKTİV",
+      "inactive": "INAKTIV",
+      "disable_btn": "Deaktivieren",
+      "setup_btn": "Einrichtung starten",
+      "dialog_title": "MFA-Einrichtung",
+      "dialog_desc": "Scannen Sie den Code mit einer beliebigen Authentifizierungs-App (Google Authenticator, Microsoft Authenticator, Authy).",
+      "key_creating": "Schlüssel wird generiert...",
+      "manual_key_label": "Manueller Eingabeschlüssel",
+      "token_label": "Verifizierungscode",
+      "token_placeholder": "000000",
+      "token_hint": "Aktivieren Sie die Funktion durch Eingabe des 6-stelligen Codes in Ihrer App",
+      "cancel": "Abbrechen",
+      "verify_enable": "Verifizieren und Aktivieren",
+      "verifying": "Wird verifiziert...",
+      "confirm_disable": "Sind Sie sicher, dass Sie die Zwei-Faktor-Authentisierung deaktivieren möchten? Ihre Sicherheit wird verringert."
+    },
+    "notifications": {
+      "title": "E-Mail-Benachrichtigungseinstellungen",
+      "description": "Legen Sie fest, in welchen Kategorien Sie E-Mails erhalten möchten",
+      "types": {
+        "ANNOUNCEMENTS": "Ankündigungen und Neuigkeiten",
+        "TICKETS": "Ticket-Aktualisierungen",
+        "SYSTEM": "System- und Sicherheitswarnungen"
+      },
+      "descriptions": {
+        "ANNOUNCEMENTS": "Kampagnen, Nachrichten und Produkt-Updates",
+        "TICKETS": "Alle Nachrichten im Zusammenhang mit Ihren Support-Anfragen",
+        "SYSTEM": "Passwort-Zurücksetzung, Kontobewegungen und kritische Warnungen"
+      }
+    },
+    "hotinfo": {
+      "title": "Systeminformationen (Hotinfo)",
+      "description": "Für Ihre Allplan-Supportanfragen erforderliche Systemkonfiguration",
+      "last_update": "Letzte Aktualisierung",
+      "status_up_to_date": "Ihre Systeminformationen sind auf dem neuesten Stand. Diese Informationen werden automatisch in Ihren Support-Anfragen verwendet.",
+      "update_btn": "Informationen aktualisieren (.hxl hochladen)",
+      "missing_title": "Systeminformationen fehlen",
+      "missing_desc": "Es wird empfohlen, Ihre Allplan-Hotinfo-Datei hochzuladen, damit unser Support-Team Ihnen schneller helfen kann.",
+      "upload_btn": "HXL-Datei hochladen",
+      "uploading": "Wird hochgeladen..."
+    },
+    "toasts": {
+      "pref_updated": "Einstellung aktualisiert",
+      "pref_failed": "Aktualisierung fehlgeschlagen",
+      "password_mismatch": "Passwörter stimmen nicht überein!",
+      "profile_updated": "Profil erfolgreich aktualisiert.",
+      "update_failed": "Aktualisierung fehlgeschlagen",
+      "hxl_invalid": "Bitte laden Sie eine gültige .hxl-Datei hoch",
+      "hotinfo_updated": "[TR] Sistem bilgileriniz başarıyla güncellendi",
+      "hotinfo_failed": "[TR] Dosya yüklenirken hata oluştu",
+      "mfa_gen_failed": "[TR] MFA anahtarı oluşturulamadı",
+      "mfa_enabled": "[TR] İki faktörlü doğrulama aktif edildi.",
+      "mfa_verify_failed": "[TR] Doğrulama başarısız",
+      "mfa_disabled": "Die Zwei-Faktor-Authentifizierung wurde deaktiviert.",
+      "mfa_disable_failed": "Vorgang fehlgeschlagen"
+    }
+  },
+  "help": {
+    "badge": "SYSTEM-LEITFADEN",
+    "title": "Bedienungsanleitung & Workflows",
+    "description": "Erfahren Sie Schritt für Schritt, wie Sie tägliche Abläufe, alle Funktionen der Aluplan Support-Plattform und KI-Module ausführen.",
+    "tabs": {
+      "customer": "Kunden",
+      "admin": "Support-Team & Administratoren"
+    },
+    "customer": {
+      "section1": {
+        "title": "Anmeldung und Übersicht",
+        "desc": "Der erste Bildschirm, den Sie sehen, wenn Sie sich im System anmelden, ist die <b>Übersicht (Dashboard)</b>. Auf diesem Bildschirm:",
+        "item1": "Sie können Ihre laufenden und auf eine Antwort wartenden aktiven Support-Anfragen sehen.",
+        "item2": "Sie können schnell auf die zuletzt erstellten Artikel zugreifen.",
+        "item3": "Sie können die für Sie freigegebenen Systemankündigungen auf der \"Ankündigungen\"-Tafel lesen."
+      },
+      "section2": {
+        "title": "Verwendung des KI-Assistenten",
+        "desc": "Bevor Sie ein Ticket eröffnen, empfehlen wir Ihnen, das Menü <b>KI-Assistent</b> (/ai) zu verwenden, um Ihr Problem schnell zu lösen.",
+        "item1": "Klicken Sie im linken Menü auf die Registerkarte KI-Assistent.",
+        "item2": "Schreiben Sie den Fehler, den Sie erhalten, oder das Thema, das Sie erfahren möchten, in das Nachrichtenfeld (z. B. <i>\"Programm stürzt beim Zeichnen von Wänden ab\"</i>).",
+        "item3": "Die KI durchsucht die gesamte Wissensdatenbank und präsentiert Ihnen direkt die Lösungsschritte. Wenn keine Lösung gefunden wird, schlägt sie vor, eine Support-Anfrage zu erstellen.",
+        "tip_label": "Tipp:",
+        "tip_desc": "Da die KI RAG (Lernalgorithmus) verwendet, erhalten Sie genauere Antworten, wenn Sie Fragen stellen, indem Sie den Namen der Software modules angeben (z. B. AX3000)."
+      },
+      "section3": {
+        "title": "Eröffnung und Verfolgung einer Support-Anfrage (Ticket)",
+        "desc": "Um das Problem an die Agenten weiterzuleiten, können Sie auf der Seite <b>Meine Support-Anfragen</b> einen neuen Datensatz erstellen.",
+        "step1_title": "Schritt 1: Produktauswahl",
+        "step1_desc": "Nachdem Sie auf die Schaltfläche Neue Anfrage geklickt haben, wählen Sie die Produktfamilie aus, bei der das Problem auftritt (z. B. ALLPLAN, AX3000). Auf diese Weise wird Ihre Anfrage direkt an das zuständige Expertenteam weitergeleitet.",
+        "step2_title": "Schritt 2: Betreff und Details",
+        "step2_desc": "Geben Sie einen klaren Titel und Details ein, die das aufgetretene Problem erläutern. Wählen Sie die Dringlichkeitsstufe (wird durch SLA bestimmt).",
+        "step3_title": "Schritt 3: Dateianhänge",
+        "step3_desc": "Sie können Screenshots, PDFs oder Projektdateien (Max. 10 MB) direkt per Drag & Drop hochladen."
+      }
+    },
+    "admin": {
+      "section1": {
+        "title": "Ticket-Warteschlange (Ticket-Management)",
+        "card1_title": "Operativer Pool",
+        "card1_desc": "Auf der Seite Ticket-Warteschlange werden Anfragen von allen Kunden gesammelt.",
+        "card1_item1_label": "Status ändern:",
+        "card1_item1_desc": "Sie können das Ticket aufrufen und den Status über das Dropdown-Menü im rechten Bereich ändern (Offen, Beantwortet, Geschlossen).",
+        "card1_item2_label": "Interne Notizen:",
+        "card1_item2_desc": "Verwenden Sie die Registerkarte <code>Interne Notiz (nur intern)</code>, um nur teaminterne Notizen zu machen, die der Kunde nicht sehen kann.",
+        "card1_item3_label": "Zuweisung:",
+        "card1_item3_desc": "Sie können das Ticket an einen bestimmten Experten übertragen, indem Sie die Schaltfläche \"Zuweisen\" verwenden.",
+        "card2_title": "KI-Co-Pilot (KI-gestützte Antwort)",
+        "card2_item1": "Klicken Sie oben rechts auf die Schaltfläche <b>\"KI-Antwortentwurf erstellen\"</b>, wenn Sie das Ticket aufrufen.",
+        "card2_item2": "Das System durchsucht die Nachricht des Kunden und den Wissenspool Ihres Unternehmens. Durch den Abgleich von Vektordaten bereitet es innerhalb von 5-10 Sekunden einen professionellen Entwurf vor, der sich auf die relevanten Dokumente bezieht. Sie können dem Kunden sofort antworten, indem Sie den Entwurf genehmigen und ihn nach Ihrem eigenen Stil bearbeiten."
+      },
+      "section2": {
+        "title": "Wissenspool & Lernschleife",
+        "item1_title": "Wissenspool-Management",
+        "item1_desc": "Damit die KI antworten kann, müssen Sie der Infrastruktur ständig neue Daten zur Verfügung stellen. Hierfür gibt es 3 Möglichkeiten:",
+        "item1_way1_label": "PDF / Datei-Upload:",
+        "item1_way1_desc": "Fügen Sie technische Spezifikationen direkt als PDFs zur Datenbank hinzu. Das System unterteilt diese in <u>Embedding (Vektor)</u> Teile.",
+        "item1_way2_label": "Web Scraper:",
+        "item1_way2_desc": "Wenn Sie dem System die aktuellen \"How to\"-URLs auf Ihrer Website übermitteln, liest die KI Ihre Website und speichert sie in ihrem Gedächtnis.",
+        "item1_way3_label": "Rohtext:",
+        "item1_way3_desc": "Sie können eine \"Anweisung\" für die KI erstellen, indem Sie häufig gestellte Fragen manuell eingeben.",
+        "item2_title": "Lernschleife und KI-Genehmigungen",
+        "item2_desc": "Wenn Kunden für geschlossene Tickets mit <b>5 Sternen</b> stimmen, geht das System davon aus, dass die Lösung perfekt ist. Um jedoch zu verhindern, dass diese Lösung direkt in die Hauptdatenbank geschrieben wird, landet sie auf der Registerkarte <b>KI-Genehmigungen</b>. Als Administrator können Sie auf dieser Registerkarte wählen, ob die Lösung von der KI gelernt (Genehmigen) oder übersprungen (Ablehnen) werden soll."
+      },
+      "section3": {
+        "title": "CRM & Produkt (Taxonomie) Konfiguration",
+        "card1_title": "Produkte und Modules",
+        "card1_desc1": "Hier verwalten Sie die Produktkarten, die der Kunde beim Eröffnen eines Tickets sieht. Der wichtigste Teil sind <b>Kategorien und Schlüsselwörter.</b>",
+        "card1_rule_label": "Taxonomie-Regel:",
+        "card1_rule_desc": "Schreiben Sie nicht nur Produktmerkmale (Wand, Balken), sondern auch Kundensymptome (Ruckeln, schwarzer Bildschirm, Schließen) in Kategorien (z. B. Modellabsturz). Die KI liest diese Schlüsselwörter und leitet das Ticket an das richtige Team (Triage) weiter.",
+        "card2_title": "Kunden- und Teamverwaltung",
+        "card2_desc": "Unter dem Menü <b>SYSTEM</b> im linken Bereich können Sie Kunden genehmigen und Support-Teams (Abteilungen) erstellen. Vergessen Sie nicht, die SLA-Regeln (Nach wie vielen Stunden soll geantwortet werden, soll es außerhalb der Arbeitszeit anhalten?) auf der Registerkarte Teamverwaltung festzulegen, damit Tickets automatisch zugewiesen werden können."
       }
     }
   }

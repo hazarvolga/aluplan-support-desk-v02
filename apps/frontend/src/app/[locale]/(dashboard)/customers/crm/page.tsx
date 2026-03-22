@@ -54,8 +54,10 @@ interface SyncLog {
     details: SyncDetails | null;
 }
 
-export default function CrmManagementPage() {
+export default function CrmManagementPage({ params }: { params: { locale: string } }) {
+    const { locale } = params;
     const t = useTranslations('customers');
+    const tc = useTranslations('common');
     const { toast } = useToast();
     const [config, setConfig] = useState({
         provider: 'DYNAMICS_365',
@@ -150,10 +152,10 @@ export default function CrmManagementPage() {
         setSaving(true);
         try {
             await api.crm.upsertConnection(config);
-            toast({ title: '✅ Başarılı', description: 'Bağlantı başarıyla kaydedildi ve doğrulandı.' });
+            toast({ title: '✅ ' + tc('success_title'), description: t('toasts.bulk_update_success', { count: 1 }) });
             loadData();
         } catch (error: any) {
-            toast({ variant: 'destructive', title: '❌ Bağlantı Hatası', description: error.response?.data?.message || error.message });
+            toast({ variant: 'destructive', title: '❌ ' + t('crm.error'), description: error.response?.data?.message || error.message });
         } finally {
             setSaving(false);
         }
@@ -164,7 +166,7 @@ export default function CrmManagementPage() {
         setSyncing(true);
         try {
             await api.crm.triggerSync(connection.id);
-            toast({ title: '🔄 Senkronizasyon', description: 'Senkronizasyon işlemi arka planda başlatıldı.' });
+            toast({ title: '🔄 ' + t('crm.sync_btn'), description: t('toasts.sync_started') });
             loadData();
         } catch (error) {
             console.error('Sync failed', error);
@@ -174,7 +176,7 @@ export default function CrmManagementPage() {
     };
 
     if (loading || !fieldDefinitions) {
-        return <div className="flex items-center justify-center h-64">Yükleniyor...</div>;
+        return <div className="flex items-center justify-center h-64">{tc('loading')}</div>;
     }
 
     const handleMappingChange = (entity: 'account' | 'contact', key: string, value: string) => {
@@ -224,8 +226,8 @@ export default function CrmManagementPage() {
         <div className="max-w-6xl mx-auto space-y-8 p-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">CRM Kontrol Merkezi</h1>
-                    <p className="text-muted-foreground mt-1">Microsoft Dynamics 365 ve Kurumsal CRM entegrasyonlarını yönetin.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">{t('crm.title')}</h1>
+                    <p className="text-muted-foreground mt-1">{t('crm.desc')}</p>
                 </div>
             </div>
 
@@ -236,38 +238,38 @@ export default function CrmManagementPage() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-sky-600">
                                 <ExternalLink className="h-5 w-5" />
-                                Dynamics 365 Bağlantı Ayarları
+                                {t('crm.connection_settings')}
                             </CardTitle>
                             <CardDescription>
-                                Azure Portal üzerinden oluşturduğunuz uygulama (App Registration) bilgilerini buraya girin.
+                                {t('crm.connection_desc')}
                             </CardDescription>
                         </CardHeader>
                         <form onSubmit={handleSave}>
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="tenantId">Azure Tenant ID</Label>
+                                        <Label htmlFor="tenantId">{t('crm.tenant_id')}</Label>
                                         <Input
                                             id="tenantId"
                                             value={config.tenantId}
                                             onChange={(e) => setConfig({ ...config, tenantId: e.target.value })}
-                                            placeholder="e.g. 88665...a54e"
+                                            placeholder="8fb...-4b...-8fb..."
                                             required
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="clientId">Uygulama (Client) ID</Label>
+                                        <Label htmlFor="clientId">{t('crm.client_id')}</Label>
                                         <Input
                                             id="clientId"
                                             value={config.clientId}
                                             onChange={(e) => setConfig({ ...config, clientId: e.target.value })}
-                                            placeholder="e.g. 12345...6789"
+                                            placeholder="f64...-4...-f64..."
                                             required
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="clientSecret">İstemci Parolası (Client Secret)</Label>
+                                    <Label htmlFor="clientSecret">{t('crm.client_secret')}</Label>
                                     <Input
                                         id="clientSecret"
                                         type="password"
@@ -278,23 +280,23 @@ export default function CrmManagementPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="webhookSecret">Webhook API Anahtarı (x-api-key)</Label>
+                                    <Label htmlFor="webhookSecret">{t('crm.webhook_api_key')}</Label>
                                     <div className="relative">
                                         <Input
                                             id="webhookSecret"
                                             type="text"
                                             value={config.webhookSecret}
                                             onChange={(e) => setConfig({ ...config, webhookSecret: e.target.value })}
-                                            placeholder="Gelişmiş güvenlik için rastgele bir anahtar girin"
+                                            placeholder={t('import.processing')}
                                             required
                                         />
                                         <p className="text-[10px] text-muted-foreground mt-1">
-                                            Bu anahtarı Power Automate akışınızdaki `x-api-key` başlığına eklemelisiniz.
+                                            {t('crm.webhook_hint')}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="instanceUrl">Dynamics Instance URL</Label>
+                                    <Label htmlFor="instanceUrl">{t('crm.instance_url')}</Label>
                                     <Input
                                         id="instanceUrl"
                                         value={config.instanceUrl}
@@ -307,7 +309,7 @@ export default function CrmManagementPage() {
                             <CardFooter className="border-t pt-6 bg-muted/30">
                                 <Button type="submit" disabled={saving}>
                                     {saving ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                    Bağlantıyı Kaydet ve Doğrula
+                                    {t('crm.save_and_verify')}
                                 </Button>
                             </CardFooter>
                         </form>
@@ -318,39 +320,39 @@ export default function CrmManagementPage() {
                 <div>
                     <Card className="h-full">
                         <CardHeader>
-                            <CardTitle>Bağlantı Durumu</CardTitle>
+                            <CardTitle>{t('crm.status_card_title')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Durum:</span>
+                                <span className="text-sm font-medium">{t('labels.status')}:</span>
                                 {connection?.isActive ? (
                                     <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
-                                        <CheckCircle2 className="mr-1 h-3 w-3" /> Aktif
+                                        <CheckCircle2 className="mr-1 h-3 w-3" /> {t('labels.active')}
                                     </Badge>
                                 ) : (
-                                    <Badge variant="outline" className="text-slate-400">Pasif</Badge>
+                                    <Badge variant="outline" className="text-slate-400">{t('labels.passive')}</Badge>
                                 )}
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Son Senkronizasyon:</span>
+                                <span className="text-sm font-medium">{t('crm.last_sync')}:</span>
                                 <span className="text-sm text-muted-foreground">
-                                    {connection?.lastSyncAt ? new Date(connection.lastSyncAt).toLocaleString('tr-TR') : 'Hiç yapılmadı'}
+                                    {connection?.lastSyncAt ? new Date(connection.lastSyncAt).toLocaleString(locale) : t('crm.never_synced')}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Senk. Durumu:</span>
+                                <span className="text-sm font-medium">{t('labels.syncing')}:</span>
                                 {connection?.syncStatus === 'SYNCING' ? (
-                                    <Badge className="bg-sky-500/10 text-sky-400 animate-pulse">Devam Ediyor</Badge>
+                                    <Badge className="bg-sky-500/10 text-sky-400 animate-pulse">{t('crm.in_progress')}</Badge>
                                 ) : connection?.syncStatus === 'ERROR' ? (
-                                    <Badge variant="destructive">Hata</Badge>
+                                    <Badge variant="destructive">{t('crm.error')}</Badge>
                                 ) : (
-                                    <Badge variant="secondary">Hazır</Badge>
+                                    <Badge variant="secondary">{t('crm.ready')}</Badge>
                                 )}
                             </div>
 
                             <div className="pt-6 border-t font-mono text-[10px] text-muted-foreground break-all">
-                                <p>Provider: {config.provider}</p>
-                                <p>Instance: {config.instanceUrl || '-'}</p>
+                                <p>{t('crm.provider_label')}: {config.provider}</p>
+                                <p>{t('crm.instance_label')}: {config.instanceUrl || '-'}</p>
                             </div>
                         </CardContent>
                         <CardFooter>
@@ -361,7 +363,7 @@ export default function CrmManagementPage() {
                                 onClick={handleSync}
                             >
                                 {syncing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                                Şimdi Senkronize Et
+                                {t('crm.sync_btn')}
                             </Button>
                         </CardFooter>
                     </Card>
@@ -424,19 +426,19 @@ export default function CrmManagementPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <History className="h-5 w-5" />
-                        Senkronizasyon Günlüğü
+                        {t('crm.log_title')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Tarih</TableHead>
-                                <TableHead>Durum</TableHead>
-                                <TableHead>Kayıt Sayısı</TableHead>
-                                <TableHead>Başarılı</TableHead>
-                                <TableHead>Hata</TableHead>
-                                <TableHead>Mesaj</TableHead>
+                                <TableHead>{t('labels.created_at')}</TableHead>
+                                <TableHead>{t('labels.status')}</TableHead>
+                                <TableHead>{t('labels.total')}</TableHead>
+                                <TableHead>{t('labels.passed')}</TableHead>
+                                <TableHead>{t('labels.failed')}</TableHead>
+                                <TableHead>{t('labels.system_info')}</TableHead>
                                 <TableHead></TableHead>
                             </TableRow>
                         </TableHeader>
@@ -444,7 +446,7 @@ export default function CrmManagementPage() {
                             {logs.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                                        İşlem kaydı bulunmuyor.
+                                        {t('crm.log_empty')}
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -461,6 +463,9 @@ export default function CrmManagementPage() {
 }
 
 function SyncLogRow({ log }: { log: SyncLog }) {
+    const t = useTranslations('customers');
+    const tc = useTranslations('common');
+    const locale = useLocale();
     const [expanded, setExpanded] = useState(false);
     const hasFailedRecords = (log.details?.failedRecords?.length ?? 0) > 0;
 
@@ -468,15 +473,15 @@ function SyncLogRow({ log }: { log: SyncLog }) {
         <>
             <TableRow>
                 <TableCell className="text-xs">
-                    {new Date(log.startedAt).toLocaleString('tr-TR')}
+                    {new Date(log.startedAt).toLocaleString(locale)}
                 </TableCell>
                 <TableCell>
                     {log.status === 'SUCCESS' ? (
-                        <Badge className="bg-emerald-500/10 text-emerald-400 border-none">Başarılı</Badge>
+                        <Badge className="bg-emerald-500/10 text-emerald-400 border-none">{t('crm.success')}</Badge>
                     ) : log.status === 'ERROR' ? (
-                        <Badge className="bg-red-500/10 text-red-400 border-none">Hata</Badge>
+                        <Badge className="bg-red-500/10 text-red-400 border-none">{t('crm.error')}</Badge>
                     ) : (
-                        <Badge variant="outline">Devam Ediyor</Badge>
+                        <Badge variant="outline">{t('crm.in_progress')}</Badge>
                     )}
                 </TableCell>
                 <TableCell>{log.totalRecords}</TableCell>
@@ -493,7 +498,7 @@ function SyncLogRow({ log }: { log: SyncLog }) {
                             className="h-7 px-2 text-xs"
                         >
                             {expanded ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
-                            Detaylar
+                            {t('accounts.details')}
                         </Button>
                     )}
                 </TableCell>
@@ -502,13 +507,13 @@ function SyncLogRow({ log }: { log: SyncLog }) {
                 <TableRow>
                     <TableCell colSpan={7} className="bg-muted/30 p-0">
                         <div className="p-4">
-                            <p className="text-xs font-semibold text-red-400 mb-2">Başarısız Kayıtlar</p>
+                            <p className="text-xs font-semibold text-red-400 mb-2">{t('import.stats_error')}</p>
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="text-xs">External ID</TableHead>
-                                        <TableHead className="text-xs">Tür</TableHead>
-                                        <TableHead className="text-xs">Hata Mesajı</TableHead>
+                                        <TableHead className="text-xs">{t('crm.external_id')}</TableHead>
+                                        <TableHead className="text-xs">{tc('type')}</TableHead>
+                                        <TableHead className="text-xs">{t('crm.log_message')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

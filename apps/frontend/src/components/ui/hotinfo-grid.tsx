@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslations } from 'next-intl';
 
 /**
  * Ensures mixed XML parsed data is rendered as a clean string.
@@ -18,7 +19,8 @@ export interface HotinfoGridProps {
 }
 
 export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
-    if (!data) return <div className="text-sm text-muted-foreground p-3">Sistem verisi bulunamadı.</div>;
+    const t = useTranslations('common.hotinfo_labels');
+    if (!data) return <div className="text-sm text-muted-foreground p-3">{t('not_found')}</div>;
 
     const isCompact = variant === 'compact';
 
@@ -51,19 +53,19 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
         <div className={containerClass}>
             {/* Allplan Versiyon */}
             <div className={`${itemWrapperClass} ${!isCompact ? 'md:col-span-1' : ''}`}>
-                <div className={labelClass}>Allplan Versiyon</div>
+                <div className={labelClass}>{t('allplan_version')}</div>
                 <div className={valContainerClass}>
                     <div className={valClass}>
                         {data.allplanVersion || '-'}
                         {data.allplanEdition && <span className={`${isCompact ? '' : 'ml-1'} text-[9px] text-slate-400 dark:text-cyan-400/70 block sm:inline`}>({data.allplanEdition})</span>}
                     </div>
-                    {data.allplanHotfix && <div className={isCompact ? subValClass : "text-[10px] text-brand-400 dark:text-cyan-400 mt-0.5"}>Hotfix: {data.allplanHotfix}</div>}
+                    {data.allplanHotfix && <div className={isCompact ? subValClass : "text-[10px] text-brand-400 dark:text-cyan-400 mt-0.5"}>{t('hotfix')}: {data.allplanHotfix}</div>}
                 </div>
             </div>
 
             {/* İşletim Sistemi */}
             <div className={`${itemWrapperClass} ${!isCompact ? 'md:col-span-2' : ''}`}>
-                <div className={labelClass}>İşletim Sistemi</div>
+                <div className={labelClass}>{t('os')}</div>
                 <div className={`${valContainerClass} ${isCompact ? '' : 'truncate'}`}>
                     <div className={valClass}>{data.osVersion || '-'}</div>
                 </div>
@@ -71,7 +73,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
 
             {/* CPU */}
             <div className={`${itemWrapperClass} ${!isCompact ? 'md:col-span-2' : ''}`}>
-                <div className={labelClass}>İşlemci (CPU)</div>
+                <div className={labelClass}>{t('cpu')}</div>
                 <div className={`${valContainerClass} ${isCompact ? '' : 'truncate'}`} title={data.cpu}>
                     <div className={valClass}>{data.cpu || '-'}</div>
                 </div>
@@ -79,7 +81,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
 
             {/* RAM */}
             <div className={`${itemWrapperClass} ${!isCompact ? 'md:col-span-1' : ''}`}>
-                <div className={labelClass}>RAM</div>
+                <div className={labelClass}>{t('ram')}</div>
                 <div className={valContainerClass}>
                     <div className={valClass}>{data.ram || '-'}</div>
                 </div>
@@ -87,20 +89,20 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
 
             {/* GPU & Video Details */}
             <div className={`${itemWrapperClass} ${!isCompact ? 'md:col-span-3' : ''} ${isCompact ? 'flex-col items-start gap-1 py-2' : ''}`}>
-                <div className={`${labelClass} ${isCompact ? 'w-full mb-1' : ''}`}>Ekran Kartı / GPU</div>
+                <div className={`${labelClass} ${isCompact ? 'w-full mb-1' : ''}`}>{t('gpu')}</div>
                 <div className={`${valContainerClass} ${isCompact ? 'text-left w-full' : ''}`}>
                     <div className={`${valClass} whitespace-pre-wrap`}>{sr(data.gpu) || '-'}</div>
                     <div className={`${subValClass} ${isCompact ? 'flex flex-row flex-wrap gap-2' : ''}`}>
-                        {data.gpuDriverVersion && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">Sürücü: <span className="text-slate-300 dark:text-cyan-300">{sr(data.gpuDriverVersion)}</span></span>}
-                        {data.openglVersion && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">OpenGL: <span className="text-slate-300 dark:text-cyan-300">{sr(data.openglVersion)}</span></span>}
-                        {data.vram && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">VRAM: <span className="text-slate-300 dark:text-cyan-300">{sr(data.vram)}</span></span>}
+                        {data.gpuDriverVersion && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">{t('gpu_driver')}: <span className="text-slate-300 dark:text-cyan-300">{sr(data.gpuDriverVersion)}</span></span>}
+                        {data.openglVersion && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">{t('opengl')}: <span className="text-slate-300 dark:text-cyan-300">{sr(data.openglVersion)}</span></span>}
+                        {data.vram && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">{t('vram')}: <span className="text-slate-300 dark:text-cyan-300">{sr(data.vram)}</span></span>}
                     </div>
                 </div>
             </div>
 
             {/* Ekran Çözünürlüğü */}
             <div className={itemWrapperClass}>
-                <div className={labelClass}>Çözünürlük</div>
+                <div className={labelClass}>{t('resolution')}</div>
                 <div className={valContainerClass}>
                     <div className={valClass}>{sr(data.screenResolution) || '-'}</div>
                 </div>
@@ -108,7 +110,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
 
             {/* Disk Info */}
             <div className={`${itemWrapperClass} ${!isCompact ? 'md:col-span-2' : ''}`}>
-                <div className={labelClass}>Disk</div>
+                <div className={labelClass}>{t('disk')}</div>
                 <div className={`${valContainerClass} ${isCompact ? '' : 'truncate'}`} title={sr(data.diskInfo) as string}>
                     <div className={valClass}>{sr(data.diskInfo) || '-'}</div>
                 </div>
@@ -116,7 +118,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
 
             {/* Lisans Tipi */}
             <div className={itemWrapperClass}>
-                <div className={labelClass}>Lisans</div>
+                <div className={labelClass}>{t('license')}</div>
                 <div className={valContainerClass}>
                     <div className={valClass}>{sr(data.licenseType) || '-'}</div>
                 </div>
@@ -124,7 +126,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
 
             {/* .NET Framework */}
             <div className={itemWrapperClass}>
-                <div className={labelClass}>.NET Framework</div>
+                <div className={labelClass}>{t('dotnet')}</div>
                 <div className={valContainerClass}>
                     <div className={valClass}>{sr(data.dotnetVersion) || '-'}</div>
                 </div>
@@ -132,7 +134,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
 
             {/* Ağ Bilgisi */}
             <div className={`${itemWrapperClass} ${!isCompact ? 'md:col-span-3' : ''} ${isCompact ? 'flex-col items-start gap-1 py-2' : ''}`}>
-                <div className={`${labelClass} ${isCompact ? 'w-full mb-1' : ''}`}>Ağ Bilgisi</div>
+                <div className={`${labelClass} ${isCompact ? 'w-full mb-1' : ''}`}>{t('network')}</div>
                 <div className={`${valContainerClass} ${isCompact ? 'text-left w-full' : ''}`}>
                     <div className={`${valClass} break-words`}>{sr(data.networkInfo) || '-'}</div>
                 </div>
@@ -140,7 +142,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
 
             {/* Installed Modules */}
             <div className={`${itemWrapperClass} border-b-0 pb-0 ${!isCompact ? 'md:col-span-3' : ''} ${isCompact ? 'flex-col items-start gap-2 pt-2' : ''}`}>
-                <div className={`${labelClass} ${isCompact ? 'w-full' : ''}`}>Yüklü Modüller (Max 10)</div>
+                <div className={`${labelClass} ${isCompact ? 'w-full' : ''}`}>{t('installed_modules')} (Max 10)</div>
                 <div className={`${valContainerClass} ${isCompact ? 'text-left w-full mt-1' : ''}`}>
                     <div className="flex flex-wrap gap-1.5">
                         {data.installedModules && Array.isArray(data.installedModules) && data.installedModules.length > 0 ? (
@@ -154,7 +156,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
                         )}
                         {data.installedModules?.length > 10 && (
                             <span className="text-[9px] text-slate-500 dark:text-cyan-600/60 font-medium self-center pl-1">
-                                ... +{data.installedModules.length - 10} adet
+                                ... +{data.installedModules.length - 10} {t('count_suffix')}
                             </span>
                         )}
                     </div>

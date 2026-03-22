@@ -39,7 +39,7 @@ export function EmailTemplates() {
                 }
             } catch (error) {
                 console.error(error);
-                toast.error(t('toasts.logs_load_error') || 'Templates could not be loaded');
+                toast.error(t('toasts.load_error'));
             } finally {
                 setLoading(false);
             }
@@ -57,7 +57,7 @@ export function EmailTemplates() {
                 setDirty(false);
                 setPreviewHtml(null);
             } catch (error: any) {
-                toast.error(t('toasts.load_error') || 'Template source could not be loaded');
+                toast.error(t('toasts.load_error'));
                 setMjmlSource('');
             }
         };
@@ -74,10 +74,10 @@ export function EmailTemplates() {
                 setPreviewSubject(result.subject);
                 setActiveTab('preview');
             } else {
-                toast.error(result.error || 'Compilation error');
+                toast.error(result.error || t('toasts.compile_error'));
             }
         } catch (error: any) {
-            toast.error(t('toasts.preview_error') || 'Preview could not be loaded');
+            toast.error(t('toasts.preview_error'));
             setPreviewHtml(null);
         } finally {
             setRendering(false);
@@ -90,11 +90,11 @@ export function EmailTemplates() {
         try {
             await api.email.saveTemplate(selected, mjmlSource);
             setDirty(false);
-            toast.success(`${selected} template saved.`);
+            toast.success(t('toasts.save_success', { name: selected }));
             // Auto-preview after save
             handlePreview();
         } catch (error: any) {
-            toast.error('Save failed: ' + error.message);
+            toast.error(t('toasts.save_failed', { message: error.message }));
         } finally {
             setSaving(false);
         }
@@ -103,7 +103,7 @@ export function EmailTemplates() {
     const handleCreateNew = useCallback(async () => {
         const name = newTemplateName.trim().toLowerCase().replace(/\s+/g, '-').replace(/\.mjml$/, '');
         if (!name) {
-            toast.error('Template name is required');
+            toast.error(t('toasts.name_required'));
             return;
         }
 
@@ -125,13 +125,13 @@ export function EmailTemplates() {
         </mj-text>
         <mj-divider border-width="1px" border-color="#f1f5f9" padding="20px 0" />
         <mj-text font-size="16px">
-          Your new email template has been successfully created.
+          ${t('default_mjml.text1')}
         </mj-text>
         <mj-text padding-top="20px">
-          You can use the MJML editor on the left to edit it. You can see the live result in the preview panel on the right.
+          ${t('default_mjml.text2')}
         </mj-text>
         <mj-button background-color="#0ea5e9" color="white" border-radius="8px" padding-top="30px" href="{{brand.help_center_url}}">
-          Help Center
+          ${t('default_mjml.button')}
         </mj-button>
       </mj-column>
     </mj-section>
@@ -144,9 +144,9 @@ export function EmailTemplates() {
             setSelected(name);
             setNewTemplateName('');
             setShowNewDialog(false);
-            toast.success(`${name} template created.`);
+            toast.success(t('toasts.create_success', { name }));
         } catch (error: any) {
-            toast.error('Creation failed: ' + error.message);
+            toast.error(t('toasts.create_failed', { message: error.message }));
         }
     }, [newTemplateName]);
 

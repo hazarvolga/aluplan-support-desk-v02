@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, Globe, Monitor, Save } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 interface Section {
     name: string;
@@ -23,6 +24,8 @@ interface Requirement {
 type LocalizedRequirements = Record<string, Requirement[]>;
 
 export function SystemRequirementsForm() {
+    const t = useTranslations('settings.requirements');
+    const tc = useTranslations('common');
     const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -63,9 +66,9 @@ export function SystemRequirementsForm() {
                 value: JSON.stringify(data),
                 isSecret: false
             });
-            toast({ title: 'Success', description: 'System requirements updated successfully' });
+            toast({ title: tc('success_title'), description: t('toasts.save_success') });
         } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+            toast({ title: tc('error_title'), description: t('toasts.save_error', { message: error.message }), variant: 'destructive' });
         } finally {
             setSaving(false);
         }
@@ -74,7 +77,7 @@ export function SystemRequirementsForm() {
     const addProduct = (locale: string) => {
         setData(prev => ({
             ...prev,
-            [locale]: [...(prev[locale] || []), { title: 'New Product', sections: [{ name: 'Requirements', items: ['Item 1'] }] }]
+            [locale]: [...(prev[locale] || []), { title: t('default_product_title'), sections: [{ name: t('default_section_name'), items: [t('default_item_text')] }] }]
         }));
     };
 
@@ -102,7 +105,7 @@ export function SystemRequirementsForm() {
             next[locale] = [...next[locale]];
             next[locale][pIdx] = {
                 ...next[locale][pIdx],
-                sections: [...next[locale][pIdx].sections, { name: 'New Section', items: [''] }]
+                sections: [...next[locale][pIdx].sections, { name: t('default_new_section'), items: [''] }]
             };
             return next;
         });
@@ -179,30 +182,30 @@ export function SystemRequirementsForm() {
                         <div className="p-2 bg-primary/10 rounded-lg">
                             <Monitor className="w-5 h-5 text-primary" />
                         </div>
-                        System Requirements
+                        {t('title')}
                     </CardTitle>
-                    <CardDescription className="text-slate-400">Manage product specifications and technical requirements for the login page</CardDescription>
+                    <CardDescription className="text-slate-400">{t('description')}</CardDescription>
                 </div>
                 <Button onClick={handleSave} disabled={saving} className="gap-2 px-6 h-11 font-bold shadow-lg shadow-primary/20">
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    Save Changes
+                    {t('save_btn')}
                 </Button>
             </CardHeader>
             <CardContent className="pt-8">
                 <Tabs defaultValue="tr" className="w-full">
                     <TabsList className="bg-slate-950/50 border border-white/5 p-1 h-12">
-                        <TabsTrigger value="tr" className="gap-2 px-6 data-[state=active]:bg-white/10"><Globe className="w-4 h-4" /> Turkish</TabsTrigger>
-                        <TabsTrigger value="en" className="gap-2 px-6 data-[state=active]:bg-white/10"><Globe className="w-4 h-4" /> English</TabsTrigger>
-                        <TabsTrigger value="de" className="gap-2 px-6 data-[state=active]:bg-white/10"><Globe className="w-4 h-4" /> German</TabsTrigger>
+                        <TabsTrigger value="tr" className="gap-2 px-6 data-[state=active]:bg-white/10"><Globe className="w-4 h-4" /> {tc('languages.tr')}</TabsTrigger>
+                        <TabsTrigger value="en" className="gap-2 px-6 data-[state=active]:bg-white/10"><Globe className="w-4 h-4" /> {tc('languages.en')}</TabsTrigger>
+                        <TabsTrigger value="de" className="gap-2 px-6 data-[state=active]:bg-white/10"><Globe className="w-4 h-4" /> {tc('languages.de')}</TabsTrigger>
                     </TabsList>
 
                     {['tr', 'en', 'de'].map((lang) => (
                         <TabsContent key={lang} value={lang} className="space-y-8 mt-8 animate-in fade-in slide-in-from-top-2 duration-300">
                             {(data[lang] || []).length === 0 && (
                                 <div className="text-center py-12 border-2 border-dashed border-white/5 rounded-2xl bg-white/[0.02]">
-                                    <p className="text-slate-500 mb-4 italic">No products defined for this language</p>
+                                    <p className="text-slate-500 mb-4 italic">{t('no_products')}</p>
                                     <Button onClick={() => addProduct(lang)} variant="secondary" size="sm">
-                                        Initialize {lang.toUpperCase()} List
+                                        {t('init_list', { lang: lang.toUpperCase() })}
                                     </Button>
                                 </div>
                             )}
@@ -214,18 +217,18 @@ export function SystemRequirementsForm() {
                                         size="icon"
                                         className="absolute top-4 right-4 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-full transition-all"
                                         onClick={() => removeProduct(lang, pIdx)}
-                                        title="Remove Product"
+                                        title={t('remove_product')}
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </Button>
 
                                     <div className="space-y-2 max-w-md">
-                                        <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Product Title</Label>
+                                        <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">{t('product_title_label')}</Label>
                                         <Input
                                             value={prod.title}
                                             onChange={(e) => updateProductTitle(lang, pIdx, e.target.value)}
                                             className="font-bold text-xl bg-slate-950/50 border-white/10 h-12 focus:ring-primary/50"
-                                            placeholder="e.g. ALLPLAN 2026"
+                                            placeholder={t('placeholders.product')}
                                         />
                                     </div>
 
@@ -242,17 +245,17 @@ export function SystemRequirementsForm() {
                                                 </Button>
 
                                                 <div className="space-y-2 max-w-sm">
-                                                    <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Section Header</Label>
+                                                    <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('section_header_label')}</Label>
                                                     <Input
                                                         value={section.name}
                                                         onChange={(e) => updateSectionName(lang, pIdx, sIdx, e.target.value)}
                                                         className="h-10 text-sm font-medium bg-slate-950/30 border-white/5 focus:border-white/20"
-                                                        placeholder="e.g. Hardware Requirements"
+                                                        placeholder={t('placeholders.section')}
                                                     />
                                                 </div>
 
                                                 <div className="space-y-3">
-                                                    <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Requirement Items</Label>
+                                                    <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('requirement_items_label')}</Label>
                                                     <div className="space-y-2">
                                                         {section.items.map((item, iIdx) => (
                                                             <div key={iIdx} className="flex gap-2 group/item">
@@ -260,7 +263,7 @@ export function SystemRequirementsForm() {
                                                                     value={item}
                                                                     onChange={(e) => updateItem(lang, pIdx, sIdx, iIdx, e.target.value)}
                                                                     className="h-10 text-sm bg-slate-950/50 border-white/10 focus:ring-0"
-                                                                    placeholder="Use **bold** for emphasis"
+                                                                    placeholder={t('placeholders.item')}
                                                                 />
                                                                 <Button
                                                                     variant="ghost"
@@ -279,7 +282,7 @@ export function SystemRequirementsForm() {
                                                         onClick={() => addItem(lang, pIdx, sIdx)}
                                                         className="w-full border-dashed border-white/10 hover:bg-white/5 hover:border-white/20 text-slate-400 h-9 transition-all"
                                                     >
-                                                        <Plus className="w-3 h-3 mr-2" /> Add Item
+                                                        <Plus className="w-3 h-3 mr-2" /> {t('add_item')}
                                                     </Button>
                                                 </div>
                                             </div>
@@ -290,7 +293,7 @@ export function SystemRequirementsForm() {
                                             onClick={() => addSection(lang, pIdx)}
                                             className="w-full bg-white/5 hover:bg-white/10 text-slate-300 font-medium h-11 border border-white/5"
                                         >
-                                            <Plus className="w-4 h-4 mr-2" /> Add Section
+                                            <Plus className="w-4 h-4 mr-2" /> {t('add_section')}
                                         </Button>
                                     </div>
                                 </div>
@@ -303,7 +306,7 @@ export function SystemRequirementsForm() {
                             >
                                 <div className="flex flex-col items-center gap-2">
                                     <Plus className="w-8 h-8 group-hover:scale-110 transition-transform" />
-                                    <span className="font-bold uppercase tracking-widest text-xs">Add New Product Specification</span>
+                                    <span className="font-bold uppercase tracking-widest text-xs">{t('add_new_spec')}</span>
                                 </div>
                             </Button>
                         </TabsContent>

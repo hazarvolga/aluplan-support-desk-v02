@@ -18,15 +18,13 @@ import {
     RefreshCw,
     Database,
     LineChart,
-    Layers,
-    Wand2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from "@/components/ui/progress";
-
-// import { SourceArchitectureView } from '@/components/dashboard/source-architecture-view';
+import { useTranslations } from 'next-intl';
 
 export default function FaqLearningPage() {
+    const t = useTranslations('admin.faq_learning');
     const [stats, setStats] = useState({
         totalInteractions: 0,
         deflectionRate: 0,
@@ -61,7 +59,7 @@ export default function FaqLearningPage() {
             setSourceStats(sourceRes);
 
         } catch (error) {
-            toast({ title: 'Data sync error', description: String(error), variant: 'destructive' });
+            toast({ title: t('toasts.sync_error'), description: String(error), variant: 'destructive' });
         } finally {
             setLoading(false);
         }
@@ -72,12 +70,12 @@ export default function FaqLearningPage() {
     const runPipeline = async () => {
         setPipelineInFlight(true);
         try {
-            toast({ title: 'AI_PIPELINE_INITIATED', description: 'Deep analysis of resolved tickets in progress.' });
+            toast({ title: t('toasts.pipeline_started'), description: t('toasts.pipeline_desc') });
             await api.faq.runPipeline();
             // In a real scenario, this might take a while, but for now we refetch.
             setTimeout(load, 3000);
         } catch (error) {
-            toast({ title: 'Pipeline Exception', description: String(error), variant: 'destructive' });
+            toast({ title: t('toasts.pipeline_exception'), description: String(error), variant: 'destructive' });
         } finally {
             setPipelineInFlight(false);
         }
@@ -86,10 +84,10 @@ export default function FaqLearningPage() {
     const handleCommit = async (id: string) => {
         try {
             await api.faq.approve(id);
-            toast({ title: 'Knowledge Committed', description: 'Pattern successfully integrated into public KB.' });
+            toast({ title: t('toasts.knowledge_committed'), description: t('toasts.knowledge_committed_desc') });
             load();
         } catch (error) {
-            toast({ title: 'Commit Error', description: String(error), variant: 'destructive' });
+            toast({ title: t('toasts.commit_error'), description: String(error), variant: 'destructive' });
         }
     };
 
@@ -100,10 +98,10 @@ export default function FaqLearningPage() {
                 <div>
                     <h1 className="text-[20px] font-bold tracking-tight uppercase flex items-center gap-2">
                         <Brain className="h-5 w-5 text-primary" />
-                        SSS Otomatik Öğrenme Havuzu
+                        {t('title')}
                     </h1>
                     <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mt-1">
-                        NÖRAL SENKRONİZASYON: OPERASYONEL VERİYİ YAPILANDIRILMIŞ BİLGİYE DÖNÜŞTÜRME
+                        {t('subtitle')}
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -113,7 +111,7 @@ export default function FaqLearningPage() {
                         className="h-8 text-[10px] uppercase font-bold tracking-widest border-border/40 rounded-none"
                     >
                         <RefreshCw className={`h-3 w-3 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        YENİLE
+                        {t('refresh')}
                     </Button>
                     <Button
                         onClick={runPipeline}
@@ -121,7 +119,7 @@ export default function FaqLearningPage() {
                         className="h-8 text-[10px] uppercase font-bold tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 rounded-none"
                     >
                         {pipelineInFlight ? <RefreshCw className="h-3 w-3 animate-spin mr-2" /> : <Zap className="h-3 w-3 mr-2" />}
-                        ÖĞRENME_DÖNGÜSÜNÜ_TETİKLE
+                        {t('trigger_loop')}
                     </Button>
                 </div>
             </div>
@@ -133,50 +131,51 @@ export default function FaqLearningPage() {
                     <CardHeader className="py-3 px-4 border-b border-border/20 flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-                                <LineChart className="h-3.5 w-3.5" /> BİLGİ_BANKASI_SAĞLIK_ANALİZİ
+                                <LineChart className="h-3.5 w-3.5" /> {t('health_analysis')}
                             </CardTitle>
                         </div>
                         <Badge variant="outline" className="text-[9px] font-mono border-primary/20 text-primary">
-                            GERÇEK_ZAMANLI_TELEMETRİ
+                            {t('realtime_telemetry_label')}
                         </Badge>
                     </CardHeader>
                     <CardContent className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">ÇÖZÜM_ORANI</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('resolution_rate')}</p>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-mono font-bold text-emerald-400">%{stats.deflectionRate || 0}</span>
-                                    <span className="text-[10px] text-muted-foreground/60">ÖNLENEN_BİLETLER</span>
+                                    <span className="text-[10px] text-muted-foreground/60">{t('prevented_tickets')}</span>
                                 </div>
                                 <Progress value={stats.deflectionRate || 0} className="h-1 rounded-none bg-muted" />
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">YAZ_DOĞRULUĞU</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('writing_accuracy')}</p>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-mono font-bold text-primary">%{stats.aiAccuracy || 0}</span>
-                                    <span className="text-[10px] text-muted-foreground/60">EN_YÜKSEK_GÜVEN</span>
+                                    <span className="text-[10px] text-muted-foreground/60">{t('highest_confidence')}</span>
                                 </div>
                                 <Progress value={stats.aiAccuracy || 0} className="h-1 rounded-none bg-muted accent-primary" />
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">TOPLAM_ETKİLEŞİM</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('total_interactions')}</p>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-mono font-bold text-foreground">{stats.totalInteractions || 0}</span>
-                                    <span className="text-[10px] text-muted-foreground/60">SON_30_GÜN_SORGU</span>
+                                    <span className="text-[10px] text-muted-foreground/60">{t('last_30_days')}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-8 pt-6 border-t border-border/20">
-                            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-4">GÜVEN_DAĞILIMI</h4>
+                            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-4">{t('confidence_distribution')}</h4>
                             <div className="space-y-3">
-                                {['YÜKSEK', 'ORTA', 'DÜŞÜK', 'EŞLEŞME_YOK'].map(band => {
-                                    const bandData = stats.confidenceDistribution?.find(d => d.band === (band === 'YÜKSEK' ? 'HIGH' : band === 'ORTA' ? 'MEDIUM' : band === 'DÜŞÜK' ? 'LOW' : 'NO_MATCH')) || { count: 0 };
+                                {['HIGH', 'MEDIUM', 'LOW', 'NO_MATCH'].map(band => {
+                                    const bandData = stats.confidenceDistribution?.find(d => d.band === band) || { count: 0 };
                                     const percentage = stats.totalInteractions > 0 ? (bandData.count / stats.totalInteractions) * 100 : 0;
+                                    const label = t(`bands.${band.toLowerCase()}`);
                                     return (
                                         <div key={band} className="space-y-1">
                                             <div className="flex justify-between text-[9px] font-mono text-muted-foreground uppercase">
-                                                <span>{band}</span>
+                                                <span>{label}</span>
                                                 <span>{bandData.count} ({Math.round(percentage)}%)</span>
                                             </div>
                                             <Progress value={percentage} className={`h-1 rounded-none bg-muted ${band === 'HIGH' ? 'bg-emerald-500/20' : band === 'LOW' ? 'bg-orange-500/20' : ''}`} />
@@ -191,7 +190,7 @@ export default function FaqLearningPage() {
                 <Card className="border-border/60 bg-muted/5 flex flex-col">
                     <CardHeader className="py-3 px-4 border-b border-border/20">
                         <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-                            <RefreshCw className="h-3.5 w-3.5" /> AKIŞ_DURUMU
+                            <RefreshCw className="h-3.5 w-3.5" /> {t('flow_status')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-6 flex-1 flex flex-col justify-between">
@@ -199,28 +198,28 @@ export default function FaqLearningPage() {
                             <div className="flex items-start gap-4">
                                 <div className="mt-1 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest">VERİ_ALIM_MOTORU</p>
-                                    <p className="text-[9px] text-muted-foreground font-mono">Durum: AKTİF | Kapatılan Bilet Olayları İzleniyor</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest">{t('ingestion_engine')}</p>
+                                    <p className="text-[9px] text-muted-foreground font-mono">{t('ingestion_engine_desc')}</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-4">
                                 <div className={`mt-1 h-2 w-2 rounded-full ${pipelineInFlight ? 'bg-primary animate-pulse shadow-[0_0_8px_rgba(var(--primary),0.5)]' : 'bg-muted-foreground/40'}`} />
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest">SOYUTLAMA_KATMANI</p>
-                                    <p className="text-[9px] text-muted-foreground font-mono">Mevcut: BOŞTA | Nomic-Embed Stratejisi</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest">{t('abstraction_layer')}</p>
+                                    <p className="text-[9px] text-muted-foreground font-mono">{t('abstraction_layer_desc')}</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-4">
                                 <div className={`mt-1 h-2 w-2 rounded-full ${candidates.length > 0 ? 'bg-orange-400' : 'bg-muted-foreground/40'}`} />
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest">DOĞRULAMA_KUYRUĞU</p>
-                                    <p className="text-[9px] text-muted-foreground font-mono">{candidates.length} ADAY_DOĞRULAMA_BEKLİYOR</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest">{t('validation_queue')}</p>
+                                    <p className="text-[9px] text-muted-foreground font-mono">{t('validation_queue_desc', { count: candidates.length })}</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-8 border-t border-border/20 pt-4 text-[9px] font-mono text-muted-foreground/60 uppercase text-center">
-                            SON_SENKRONİZASYON: {new Date().toLocaleTimeString()}
+                            {t('last_sync')}: {new Date().toLocaleTimeString()}
                         </div>
                     </CardContent>
                 </Card>
@@ -231,10 +230,10 @@ export default function FaqLearningPage() {
                 <div className="flex items-center gap-2 border-b border-border/20 pb-2">
                     <h2 className="text-[13px] font-bold uppercase tracking-widest flex items-center gap-2">
                         <FileText className="h-4 w-4 text-orange-400" />
-                        ÖĞRENME_ADAYLARI
+                        {t('candidates_title')}
                     </h2>
                     <Badge variant="outline" className="text-[9px] font-mono border-orange-500/20 text-orange-400">
-                        DOĞRULAMA_BEKLEYEN: {candidates.length}
+                        {t('waiting_validation')}: {candidates.length}
                     </Badge>
                 </div>
 
@@ -245,8 +244,8 @@ export default function FaqLearningPage() {
                 ) : candidates.length === 0 ? (
                     <div className="border border-dashed border-border/40 p-12 text-center bg-muted/5 opacity-50">
                         <CheckCircle2 className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-                        <p className="text-[10px] uppercase font-bold tracking-[0.2em]">TÜM_PATERNLER_EŞİTLENDİ</p>
-                        <p className="text-[9px] font-mono mt-1 opacity-60">Yeni bilgi örnekleri bulmak için çıkarma döngüsünü manuel olarak çalıştırın.</p>
+                        <p className="text-[10px] uppercase font-bold tracking-[0.2em]">{t('all_synced')}</p>
+                        <p className="text-[9px] font-mono mt-1 opacity-60">{t('all_synced_desc')}</p>
                     </div>
                 ) : (
                     <div className="grid gap-4">
@@ -257,14 +256,14 @@ export default function FaqLearningPage() {
                                         <div className="flex-1 space-y-3 min-w-0">
                                             <div className="flex items-center gap-3">
                                                 <Badge className="text-[9px] h-4 bg-orange-500/10 text-orange-400 border-orange-400/20 uppercase tracking-tighter">
-                                                    ONAY_BEKLEYEN
+                                                    {t('waiting_validation')}
                                                 </Badge>
                                                 <div className="flex items-center gap-1 text-[9px] font-mono text-muted-foreground uppercase">
                                                     <Zap className="h-2.5 w-2.5 text-primary" />
-                                                    GÜVEN: %{Math.round(c.confidenceScore * 100)}
+                                                    {t('highest_confidence')}: %{Math.round(c.confidenceScore * 100)}
                                                 </div>
                                                 <div className="flex items-center gap-1 text-[9px] font-mono text-muted-foreground uppercase opacity-40">
-                                                    | SIKLIK: {c.frequency}
+                                                    | {t('refresh')}: {c.frequency}
                                                 </div>
                                             </div>
 
@@ -289,13 +288,13 @@ export default function FaqLearningPage() {
                                                 onClick={() => handleCommit(c.id)}
                                                 className="h-8 px-4 text-[10px] uppercase font-bold tracking-widest bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-none"
                                             >
-                                                BİLGİ_BANKASINA_EKLE
+                                                {t('add_to_kb')}
                                             </Button>
                                             <Button
                                                 variant="ghost"
                                                 className="h-8 px-4 text-[10px] uppercase font-bold tracking-widest text-muted-foreground hover:text-red-500 rounded-none"
                                             >
-                                                YOK_SAY
+                                                {t('dismiss')}
                                             </Button>
                                         </div>
                                     </div>

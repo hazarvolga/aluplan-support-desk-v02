@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 function ResetPasswordForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
+    const t = useTranslations('auth.reset_password');
 
     const [loading, setLoading] = useState(false);
     const [password, setPassword] = useState('');
@@ -20,36 +22,36 @@ function ResetPasswordForm() {
 
     useEffect(() => {
         if (!token) {
-            toast.error('Geçersiz veya eksik sıfırlama bağlantısı.');
+            toast.error(t('error_invalid_link'));
             router.push('/login');
         }
-    }, [token, router]);
+    }, [token, router, t]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!token) {
-            toast.error('Eksik token.');
+            toast.error(t('error_missing_token'));
             return;
         }
 
         if (password.length < 8) {
-            toast.error('Şifreniz en az 8 karakter olmalıdır.');
+            toast.error(t('error_length'));
             return;
         }
 
         if (password !== confirm) {
-            toast.error('Şifreler eşleşmiyor.');
+            toast.error(t('error_mismatch'));
             return;
         }
 
         setLoading(true);
         try {
             const result = await api.auth.resetPassword(token, password);
-            toast.success(result.message || 'Şifreniz başarıyla güncellendi.');
+            toast.success(result.message || t('success_message'));
             router.push('/login');
         } catch (error: any) {
-            toast.error(error.message || 'Şifre sıfırlama sırasında bir hata oluştu.');
+            toast.error(error.message || t('error_failed'));
         } finally {
             setLoading(false);
         }
@@ -65,7 +67,7 @@ function ResetPasswordForm() {
             <div className="space-y-2 group">
                 <div className="flex justify-between items-center">
                     <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-focus-within:text-primary transition-colors">
-                        YENİ ŞİFRE
+                        {t('new_password_label')}
                     </label>
                 </div>
                 <div className="relative">
@@ -92,7 +94,7 @@ function ResetPasswordForm() {
             {/* Confirm Password */}
             <div className="space-y-2 group">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-focus-within:text-primary transition-colors">
-                    ŞİFREYİ DOĞRULA
+                    {t('confirm_password_label')}
                 </label>
                 <div className="relative">
                     <input
@@ -122,7 +124,7 @@ function ResetPasswordForm() {
                 {loading ? (
                     <Loader2 className="h-4 w-4 animate-spin text-white" />
                 ) : (
-                    "ŞİFREYİ GÜNCELLE"
+                    t('submit_btn')
                 )}
             </Button>
         </form>
@@ -130,6 +132,7 @@ function ResetPasswordForm() {
 }
 
 export default function ResetPasswordPage() {
+    const t = useTranslations('auth.reset_password');
     return (
         <div className="flex flex-col items-center justify-center min-h-[80vh]">
             <div className="w-full max-w-sm space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
@@ -139,10 +142,10 @@ export default function ResetPasswordPage() {
                     </div>
                     <div className="space-y-2">
                         <h1 className="text-2xl font-bold tracking-tight text-white font-mono">
-                            YENİ ŞİFRE BELİRLE
+                            {t('title')}
                         </h1>
                         <p className="text-[12px] text-muted-foreground uppercase tracking-widest font-medium">
-                            Güvenliğiniz için yeni bir şifre girin
+                            {t('subtitle')}
                         </p>
                     </div>
                 </div>

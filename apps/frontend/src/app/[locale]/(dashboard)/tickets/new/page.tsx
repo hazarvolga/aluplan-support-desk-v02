@@ -18,6 +18,7 @@ import { Paperclip, X, Loader2, ArrowLeft, CheckCircle2, AlertTriangle, Monitor,
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useTranslations, useLocale } from 'next-intl';
+import { HotinfoGrid } from '@/components/ui/hotinfo-grid';
 
 const getTicketSchema = (t: any) => z.object({
     subject: z.string().min(5, t('errors.subject_min')),
@@ -114,7 +115,7 @@ export default function NewTicketPage() {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('name', 'Hotinfo Upload');
+            formData.append('name', t('sections.hotinfo_upload_name') || 'Hotinfo Upload');
 
             const response = await api.post('/customers/me/hotinfo', formData);
 
@@ -279,84 +280,9 @@ export default function NewTicketPage() {
                                                     </div>
 
                                                     {/* System Info Grid */}
-                                                    {(() => {
-                                                        const sr = (val: any) => {
-                                                            if (!val) return null;
-                                                            if (typeof val === 'object') {
-                                                                return val['@_version'] || val['@_name'] || val['#text'] || JSON.stringify(val);
-                                                            }
-                                                            return String(val);
-                                                        };
-                                                        return (
-                                                            <div className="grid grid-cols-2 gap-px bg-white/5 m-px">
-                                                                <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">Allplan Edition & Hotfix</div>
-                                                                    <div className="text-sm font-semibold text-white">
-                                                                        {hotinfoData.allplanVersion || '-'}
-                                                                        {hotinfoData.allplanEdition && <span className="text-xs text-muted-foreground ml-1">({hotinfoData.allplanEdition})</span>}
-                                                                    </div>
-                                                                    {hotinfoData.allplanHotfix && <div className="text-[10px] text-brand-400 mt-0.5">Hotfix: {hotinfoData.allplanHotfix}</div>}
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.os')}</div>
-                                                                    <div className="text-sm font-semibold text-white">{hotinfoData.osVersion || '-'}</div>
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.gpu_driver')}</div>
-                                                                    <div className="text-sm font-semibold text-white">{sr(hotinfoData.gpuDriverVersion) || '-'}</div>
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.cpu')}</div>
-                                                                    <div className="text-sm font-semibold text-white truncate">{hotinfoData.cpu || '-'}</div>
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.opengl')}</div>
-                                                                    <div className="text-sm font-semibold text-white">{sr(hotinfoData.openglVersion) || '-'}</div>
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.gpu')}</div>
-                                                                    <div className="text-sm font-semibold text-white truncate">{sr(hotinfoData.gpu) || '-'}</div>
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">VRAM</div>
-                                                                    <div className="text-sm font-semibold text-white">{sr(hotinfoData.vram) || '-'}</div>
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">RAM</div>
-                                                                    <div className="text-sm font-semibold text-white">{hotinfoData.ram || '-'}</div>
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.screen_res')}</div>
-                                                                    <div className="text-sm font-semibold text-white">{sr(hotinfoData.screenResolution) || '-'}</div>
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.disk')}</div>
-                                                                    <div className="text-sm font-semibold text-white truncate">{sr(hotinfoData.diskInfo) || '-'}</div>
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.license')}</div>
-                                                                    <div className="text-sm font-semibold text-white">{sr(hotinfoData.licenseType) || '-'}</div>
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">.NET Framework</div>
-                                                                    <div className="text-sm font-semibold text-white">{sr(hotinfoData.dotnetVersion) || '-'}</div>
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80 col-span-2">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.network')}</div>
-                                                                    <div className="text-sm font-semibold text-white truncate">{sr(hotinfoData.networkInfo) || '-'}</div>
-                                                                </div>
-                                                                <div className="p-3 bg-slate-900/80 col-span-2">
-                                                                    <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider font-bold mb-1">{t('fields.modules')}</div>
-                                                                    <div className="flex flex-wrap gap-1.5 mt-1">
-                                                                        {hotinfoData.installedModules?.length > 0 ? hotinfoData.installedModules.slice(0, 10).map((mod: string, i: number) => (
-                                                                            <span key={i} className="text-[10px] bg-white/5 border border-white/10 px-2 py-0.5 rounded text-slate-300">{sr(mod)}</span>
-                                                                        )) : <span className="text-sm font-semibold text-white">-</span>}
-                                                                        {hotinfoData.installedModules?.length > 10 && <span className="text-[10px] text-muted-foreground">... +{hotinfoData.installedModules.length - 10} {ct('more')}</span>}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })()}
+                                                    <div className="p-3">
+                                                        <HotinfoGrid data={hotinfoData} variant="grid" />
+                                                    </div>
 
                                                     {/* Confirmation Actions */}
                                                     <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between gap-3 bg-slate-900/80">

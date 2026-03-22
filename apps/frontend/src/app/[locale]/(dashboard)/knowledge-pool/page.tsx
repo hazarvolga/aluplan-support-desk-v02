@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
     Database, Globe, FileText, RefreshCw,
     History, CheckCircle2, XCircle, Clock, Search,
@@ -30,6 +31,7 @@ type SortField = 'name' | 'status' | 'type' | 'lastSyncedAt' | 'embeddings';
 type SortDir = 'asc' | 'desc';
 
 export default function KnowledgePoolPage() {
+    const t = useTranslations('admin.knowledge_pool');
     const [activeTab, setActiveTab] = useState('sources');
 
     // Sources State
@@ -71,7 +73,7 @@ export default function KnowledgePoolPage() {
             const data = await api.pool.list();
             setSources(data);
         } catch {
-            toast({ title: 'Hata', description: 'Kaynaklar yüklenemedi', variant: 'destructive' });
+            toast({ title: t('logs.error'), description: t('toasts.fetch_error'), variant: 'destructive' });
         } finally {
             setLoadingSources(false);
         }
@@ -159,10 +161,10 @@ export default function KnowledgePoolPage() {
         setIsSyncing(prev => new Set(prev).add(id));
         try {
             await api.pool.sync(id);
-            toast({ title: 'Eşitleme Başlatıldı', description: 'Arka plan görevi kuyruğa alındı' });
+            toast({ title: t('toasts.sync_started'), description: t('toasts.sync_desc') });
             loadSources();
         } catch (err: any) {
-            toast({ title: 'Hata', description: err.message, variant: 'destructive' });
+            toast({ title: t('logs.error'), description: err.message, variant: 'destructive' });
         } finally {
             setIsSyncing(prev => { const n = new Set(prev); n.delete(id); return n; });
         }
@@ -178,8 +180,8 @@ export default function KnowledgePoolPage() {
             catch { fail++; }
         }
         toast({
-            title: fail === 0 ? 'Toplu Eşitleme Başlatıldı' : 'Kısmi Başarı',
-            description: `${ok} kaynak kuyruğa alındı${fail > 0 ? `, ${fail} hatalı` : ''}.`,
+            title: fail === 0 ? t('toasts.bulk_sync_started') : t('toasts.partial_success'),
+            description: t('toasts.bulk_sync_desc', { count: ok }) + (fail > 0 ? `, ${t('toasts.bulk_sync_error', { count: fail })}` : ''),
             variant: fail > 0 ? 'destructive' : 'default',
         });
         setIsBulkSyncing(false);
@@ -189,12 +191,12 @@ export default function KnowledgePoolPage() {
 
     const handleDatasetSync = async () => {
         try {
-            toast({ title: 'Senkronizasyon Başlatıldı', description: '/dataset klasörü taranıyor...' });
+            toast({ title: t('toasts.dataset_scan_started'), description: t('toasts.dataset_scan_desc') });
             const res = await api.pool.syncDataset();
-            toast({ title: 'Akıllı Eşitleme Başarılı', description: res.message || 'Dataset klasöründeki dosyalar işleme alındı.' });
+            toast({ title: t('toasts.dataset_sync_success'), description: res.message || t('toasts.dataset_sync_success') });
             loadSources();
         } catch (err: any) {
-            toast({ title: 'Senkronizasyon Hatası', description: err.message, variant: 'destructive' });
+            toast({ title: t('logs.error'), description: err.message, variant: 'destructive' });
         }
     };
 
@@ -202,12 +204,12 @@ export default function KnowledgePoolPage() {
         if (!urlName || !urlAddress) return;
         try {
             await api.pool.addUrl(urlName, urlAddress);
-            toast({ title: 'Başarılı', description: 'URL kaynağı eklendi' });
+            toast({ title: t('logs.success'), description: t('toasts.url_added') });
             setIsUrlModalOpen(false);
             setUrlName(''); setUrlAddress('');
             loadSources();
         } catch (err: any) {
-            toast({ title: 'Hata', description: err.message, variant: 'destructive' });
+            toast({ title: t('logs.error'), description: err.message, variant: 'destructive' });
         }
     };
 
@@ -217,7 +219,7 @@ export default function KnowledgePoolPage() {
             const data = await api.pool.logs(source.id);
             setLogs(data);
         } catch {
-            toast({ title: 'Hata', description: 'Günlükler yüklenemedi', variant: 'destructive' });
+            toast({ title: t('logs.error'), description: t('toasts.logs_error'), variant: 'destructive' });
         }
     };
 
@@ -230,8 +232,8 @@ export default function KnowledgePoolPage() {
             catch { fail++; }
         }
         toast({
-            title: fail === 0 ? 'Başarılı' : 'Kısmi Başarı',
-            description: `${ok} makale yayınlandı${fail > 0 ? `, ${fail} hatalı` : ''}.`,
+            title: fail === 0 ? t('logs.success') : t('toasts.partial_success'),
+            description: t('toasts.publish_success', { count: ok }) + (fail > 0 ? `, ${t('toasts.bulk_sync_error', { count: fail })}` : ''),
             variant: fail > 0 ? 'destructive' : 'default',
         });
         setIsPublishing(false);
@@ -261,45 +263,45 @@ export default function KnowledgePoolPage() {
                 {/* ── Header ── */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border/40 pb-4">
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-[16px] md:text-[18px] font-bold tracking-tight text-foreground uppercase truncate">BİLGİ_HAVUZU_KONTROL</h1>
-                        <p className="text-[9px] md:text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest">Yapay zeka için teknik kaynakların yönetimi ve indekslenmesi.</p>
+                        <h1 className="text-[16px] md:text-[18px] font-bold tracking-tight text-foreground uppercase truncate">{t('title')}</h1>
+                        <p className="text-[9px] md:text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest">{t('subtitle')}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         <TabsList className="bg-muted/10 border border-border/40 h-9">
-                            <TabsTrigger value="sources" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">HAM_KAYNAKLAR</TabsTrigger>
-                            <TabsTrigger value="articles" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">TOHUMLANMIŞ_İÇERİK</TabsTrigger>
+                            <TabsTrigger value="sources" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">{t('tabs.raw_sources')}</TabsTrigger>
+                            <TabsTrigger value="articles" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">{t('tabs.seeded_content')}</TabsTrigger>
                         </TabsList>
                         <div className="flex items-center gap-2">
                             <Dialog open={isUrlModalOpen} onOpenChange={setIsUrlModalOpen}>
                                 <DialogTrigger asChild>
                                     <Button className="bg-primary text-primary-foreground h-8 text-[10px] uppercase font-bold tracking-widest gap-2">
-                                        <Globe className="h-3 w-3" /> URL_EKLE
+                                        <Globe className="h-3 w-3" /> {t('buttons.add_url')}
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-[425px]">
-                                    <DialogHeader><DialogTitle>Yeni URL Kaynağı</DialogTitle></DialogHeader>
+                                    <DialogHeader><DialogTitle>{t('dialogs.new_url')}</DialogTitle></DialogHeader>
                                     <div className="grid gap-4 py-4">
                                         <div className="space-y-2">
-                                            <Label>Kaynak Adı</Label>
-                                            <Input value={urlName} onChange={e => setUrlName(e.target.value)} placeholder="Teknik Dokümantasyon" />
+                                            <Label>{t('dialogs.name_label')}</Label>
+                                            <Input value={urlName} onChange={e => setUrlName(e.target.value)} placeholder={t('placeholder')} />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>URL Adresi</Label>
+                                            <Label>{t('dialogs.url_label')}</Label>
                                             <Input value={urlAddress} onChange={e => setUrlAddress(e.target.value)} placeholder="https://example.com/docs" />
                                         </div>
                                     </div>
                                     <DialogFooter>
-                                        <Button onClick={handleAddUrl} className="w-full">Kaydet ve Eşitle</Button>
+                                        <Button onClick={handleAddUrl} className="w-full">{t('dialogs.save_sync')}</Button>
                                     </DialogFooter>
                                 </DialogContent>
                             </Dialog>
                             <Link href="/knowledge-pool/upload">
                                 <Button variant="outline" className="h-8 border-border/60 text-[10px] uppercase font-bold tracking-widest gap-2 bg-muted/20">
-                                    <FileText className="h-3 w-3" /> DOSYA_YÜKLE
+                                    <FileText className="h-3 w-3" /> {t('buttons.upload_file')}
                                 </Button>
                             </Link>
                             <Button onClick={handleDatasetSync} variant="outline" className="h-8 border-primary/40 text-[10px] uppercase font-bold tracking-widest gap-2 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground">
-                                <Database className="h-3 w-3" /> DATASET_TARA
+                                <Database className="h-3 w-3" /> {t('buttons.scan_dataset')}
                             </Button>
                         </div>
                     </div>
@@ -319,7 +321,7 @@ export default function KnowledgePoolPage() {
                                         <Input
                                             value={search}
                                             onChange={e => setSearch(e.target.value)}
-                                            placeholder="Kaynak ara..."
+                                            placeholder={t('articles.search_placeholder')}
                                             className="pl-8 h-8 text-[11px] bg-muted/10 border-border/50"
                                         />
                                     </div>
@@ -329,12 +331,12 @@ export default function KnowledgePoolPage() {
                                     {['', 'ACTIVE', 'SYNCING', 'FAILED'].map(s => (
                                         <button key={s} onClick={() => setStatusFilter(s)}
                                             className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest border rounded transition-all ${statusFilter === s ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}>
-                                            {s || 'HEPSİ'}
+                                            {s || t('filters.all')}
                                         </button>
                                     ))}
                                     <div className="w-px h-4 bg-border/40 mx-1" />
                                     {/* Type filter */}
-                                    {[{ v: '', l: 'TÜM_TİP' }, { v: 'URL', l: 'URL' }, { v: 'FILE', l: 'DOSYA' }].map(f => (
+                                    {[{ v: '', l: t('filters.all_types') }, { v: 'URL', l: t('filters.url') }, { v: 'FILE', l: t('filters.file') }].map(f => (
                                         <button key={f.v} onClick={() => setTypeFilter(f.v)}
                                             className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest border rounded transition-all ${typeFilter === f.v ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}>
                                             {f.l}
@@ -347,17 +349,17 @@ export default function KnowledgePoolPage() {
                             {someSelected && (
                                 <div className="flex items-center justify-between px-3 py-2 bg-primary/5 border border-primary/20 rounded">
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                                        {selectedIds.size} KAYNAK SEÇİLİ
+                                        {t('articles.select_page', { count: selectedIds.size }).replace('PAGE', 'SOURCE')}
                                     </span>
                                     <div className="flex gap-2">
                                         <Button size="sm" onClick={handleBulkSync} disabled={isBulkSyncing}
                                             className="h-7 text-[10px] uppercase font-bold tracking-widest gap-1.5">
                                             {isBulkSyncing ? <RefreshCw className="h-3 w-3 animate-spin" /> : <PlayCircle className="h-3 w-3" />}
-                                            TOPLU EŞİTLE ({selectedIds.size})
+                                            {t('buttons.bulk_sync', { count: selectedIds.size })}
                                         </Button>
                                         <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}
                                             className="h-7 text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
-                                            İPTAL
+                                            {t('buttons.cancel')}
                                         </Button>
                                     </div>
                                 </div>
@@ -374,25 +376,25 @@ export default function KnowledgePoolPage() {
                                                     checked={allFilteredSelected}
                                                     onChange={toggleSelectAll}
                                                     className="w-4 h-4 cursor-pointer accent-primary"
-                                                    aria-label="Tümünü seç"
+                                                    aria-label={t('table.select_all')}
                                                 />
                                             </TableHead>
                                             <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('name')}>
-                                                <span className="flex items-center gap-1">KAYNAK <SortIcon field="name" /></span>
+                                                <span className="flex items-center gap-1">{t('table.source')} <SortIcon field="name" /></span>
                                             </TableHead>
                                             <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-24" onClick={() => toggleSort('type')}>
-                                                <span className="flex items-center gap-1">TİP <SortIcon field="type" /></span>
+                                                <span className="flex items-center gap-1">{t('table.type')} <SortIcon field="type" /></span>
                                             </TableHead>
                                             <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-28" onClick={() => toggleSort('status')}>
-                                                <span className="flex items-center gap-1">DURUM <SortIcon field="status" /></span>
+                                                <span className="flex items-center gap-1">{t('table.status')} <SortIcon field="status" /></span>
                                             </TableHead>
                                             <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-24 text-right" onClick={() => toggleSort('embeddings')}>
-                                                <span className="flex items-center justify-end gap-1">VEKTÖR <SortIcon field="embeddings" /></span>
+                                                <span className="flex items-center justify-end gap-1">{t('table.vector')} <SortIcon field="embeddings" /></span>
                                             </TableHead>
                                             <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-32" onClick={() => toggleSort('lastSyncedAt')}>
-                                                <span className="flex items-center gap-1">SON_SENK <SortIcon field="lastSyncedAt" /></span>
+                                                <span className="flex items-center gap-1">{t('table.last_sync')} <SortIcon field="lastSyncedAt" /></span>
                                             </TableHead>
-                                            <TableHead className="text-[9px] font-bold uppercase tracking-widest w-24 text-right pr-3">İŞLEM</TableHead>
+                                            <TableHead className="text-[9px] font-bold uppercase tracking-widest w-24 text-right pr-3">{t('table.action')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -406,7 +408,7 @@ export default function KnowledgePoolPage() {
                                             <TableRow>
                                                 <TableCell colSpan={7} className="text-center py-16 text-muted-foreground">
                                                     <Database className="h-8 w-8 mx-auto mb-3 opacity-20" />
-                                                    <p className="text-[10px] uppercase font-mono tracking-widest">Kaynak bulunamadı</p>
+                                                    <p className="text-[10px] uppercase font-mono tracking-widest">{t('table.no_records')}</p>
                                                 </TableCell>
                                             </TableRow>
                                         ) : filteredSources.map(source => (
@@ -435,7 +437,7 @@ export default function KnowledgePoolPage() {
                                                 </TableCell>
                                                 <TableCell className="w-24">
                                                     <Badge variant="outline" className={`text-[9px] font-mono rounded-none px-1.5 ${source.type === 'URL' ? 'border-blue-500/30 text-blue-400 bg-blue-500/5' : 'border-amber-500/30 text-amber-400 bg-amber-500/5'}`}>
-                                                        {source.type === 'URL' ? 'URL' : source.type?.replace('FILE_', '') || 'DOSYA'}
+                                                        {source.type === 'URL' ? 'URL' : source.type?.replace('FILE_', '') || t('filters.file')}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="w-28">{statusBadge(source.status)}</TableCell>
@@ -444,7 +446,7 @@ export default function KnowledgePoolPage() {
                                                 </TableCell>
                                                 <TableCell className="w-32">
                                                     <span className="text-[10px] font-mono text-muted-foreground/60">
-                                                        {source.lastSyncedAt ? new Date(source.lastSyncedAt).toLocaleDateString('tr-TR') : '—'}
+                                                        {source.lastSyncedAt ? new Date(source.lastSyncedAt).toLocaleDateString(t('meta.locale')) : '—'}
                                                     </span>
                                                 </TableCell>
                                                 <TableCell className="w-24 pr-3">
@@ -467,8 +469,8 @@ export default function KnowledgePoolPage() {
 
                             {/* Footer count */}
                             <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground/50 uppercase px-1">
-                                <span>{filteredSources.length} / {sources.length} KAYNAK GÖSTERİLİYOR</span>
-                                {someSelected && <span className="text-primary">{selectedIds.size} SEÇİLİ</span>}
+                                <span>{filteredSources.length} / {sources.length} {t('table.source')} {t('table.showing')}</span>
+                                {someSelected && <span className="text-primary">{selectedIds.size} {t('articles.select_page', { count: selectedIds.size }).replace('PAGE', 'SELECTED').split(' ')[0]}</span>}
                             </div>
                         </div>
 
@@ -477,7 +479,7 @@ export default function KnowledgePoolPage() {
                             <div className="border border-border/60 rounded-md min-h-[400px] overflow-hidden">
                                 <div className="py-2.5 px-3 bg-muted/10 border-b border-border/40 flex items-center gap-2">
                                     <History className="h-3.5 w-3.5 text-muted-foreground" />
-                                    <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground">SENK_GÜNLÜKLERİ</span>
+                                    <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground">{t('logs.title')}</span>
                                     {activeSource && (
                                         <span className="ml-auto text-primary font-mono text-[9px] uppercase truncate max-w-[120px]">{activeSource.name}</span>
                                     )}
@@ -485,26 +487,26 @@ export default function KnowledgePoolPage() {
                                 {!activeSource ? (
                                     <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground opacity-30">
                                         <MousePointer2 className="h-8 w-8 mb-4" />
-                                        <p className="text-[10px] uppercase font-mono tracking-widest">Kaynak seçin</p>
+                                        <p className="text-[10px] uppercase font-mono tracking-widest">{t('logs.no_source')}</p>
                                     </div>
                                 ) : logs.length === 0 ? (
-                                    <div className="p-8 text-center text-muted-foreground font-mono text-[10px] uppercase opacity-40">Günlük bulunamadı.</div>
+                                    <div className="p-8 text-center text-muted-foreground font-mono text-[10px] uppercase opacity-40">{t('logs.no_logs')}</div>
                                 ) : (
                                     <div className="divide-y divide-border/20 max-h-[600px] overflow-auto">
                                         {logs.map(log => (
                                             <div key={log.id} className="p-3 space-y-1.5 hover:bg-muted/10">
                                                 <div className="flex items-center justify-between">
                                                     {log.status === 'SUCCESS' ? (
-                                                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-500 uppercase"><CheckCircle2 className="h-2.5 w-2.5" /> BAŞARILI</span>
+                                                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-500 uppercase"><CheckCircle2 className="h-2.5 w-2.5" /> {t('logs.success')}</span>
                                                     ) : log.status === 'FAILED' ? (
-                                                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-red-500 uppercase"><XCircle className="h-2.5 w-2.5" /> HATA</span>
+                                                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-red-500 uppercase"><XCircle className="h-2.5 w-2.5" /> {t('logs.error')}</span>
                                                     ) : (
-                                                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-amber-500 uppercase animate-pulse"><Clock className="h-2.5 w-2.5" /> İŞLENİYOR</span>
+                                                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-amber-500 uppercase animate-pulse"><Clock className="h-2.5 w-2.5" /> {t('logs.processing')}</span>
                                                     )}
-                                                    <span className="text-[9px] font-mono text-muted-foreground/60">{new Date(log.syncStartedAt).toLocaleString('tr-TR')}</span>
+                                                    <span className="text-[9px] font-mono text-muted-foreground/60">{new Date(log.syncStartedAt).toLocaleString(t('meta.locale'))}</span>
                                                 </div>
                                                 <p className="text-[10px] text-foreground/70 font-mono leading-tight uppercase">
-                                                    {log.status === 'SUCCESS' ? `${log.chunksProcessed} blok işlendi.` : log.status === 'FAILED' ? log.error : 'İşleniyor...'}
+                                                    {log.status === 'SUCCESS' ? t('logs.chunks_processed', { count: log.chunksProcessed }) : log.status === 'FAILED' ? log.error : t('logs.processing') + '...'}
                                                 </p>
                                             </div>
                                         ))}
@@ -522,23 +524,23 @@ export default function KnowledgePoolPage() {
                     <div className="space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/20">
                             <div className="flex items-center gap-2">
-                                <h2 className="text-[12px] font-bold uppercase tracking-widest">MAKALE_HAVUZU</h2>
-                                <Badge className="bg-primary/10 text-primary font-mono">{totalArticles} TOPLAM</Badge>
+                                <h2 className="text-[12px] font-bold uppercase tracking-widest">{t('articles.title')}</h2>
+                                <Badge className="bg-primary/10 text-primary font-mono">{t('articles.total', { count: totalArticles })}</Badge>
                             </div>
                             <div className="flex items-center gap-2 flex-1 max-w-md">
                                 <form onSubmit={e => { e.preventDefault(); setArticlePage(1); loadArticles(1); }} className="relative flex-1">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
                                     <input value={articleSearch} onChange={e => setArticleSearch(e.target.value)}
-                                        placeholder="DOSYA ARA..." className="w-full pl-9 pr-4 py-1.5 border border-border/60 bg-black/20 text-[11px] uppercase tracking-tight text-foreground focus:outline-none focus:ring-1 focus:ring-primary h-8" />
+                                        placeholder={t('articles.search_placeholder')} className="w-full pl-9 pr-4 py-1.5 border border-border/60 bg-black/20 text-[11px] uppercase tracking-tight text-foreground focus:outline-none focus:ring-1 focus:ring-primary h-8" />
                                 </form>
                                 <Button onClick={() => { setArticlePage(1); loadArticles(1); }} className="h-8 text-[10px] uppercase font-bold tracking-widest bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground">
-                                    <RefreshCw className={`h-3.5 w-3.5 mr-2 ${loadingArticles && articlePage === 1 ? 'animate-spin' : ''}`} /> YENİLE
+                                    <RefreshCw className={`h-3.5 w-3.5 mr-2 ${loadingArticles && articlePage === 1 ? 'animate-spin' : ''}`} /> {t('buttons.refresh')}
                                 </Button>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-1.5">
-                            {[{ value: '', label: 'HEPSİ' }, { value: 'REVIEW', label: 'İNCELEMEDE' }, { value: 'PUBLISHED', label: 'YAYINDA' }, { value: 'DRAFT', label: 'TASLAK' }].map(f => (
+                            {[{ value: '', label: t('articles.all') }, { value: 'REVIEW', label: t('articles.review') }, { value: 'PUBLISHED', label: t('articles.published') }, { value: 'DRAFT', label: t('articles.draft') }].map(f => (
                                 <button key={f.value} onClick={() => setArticleStatusFilter(f.value)}
                                     className={`px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest border rounded transition-all ${articleStatusFilter === f.value ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}>
                                     {f.label}
@@ -553,13 +555,13 @@ export default function KnowledgePoolPage() {
                                         checked={selectedArticleIds.size === articles.length && articles.length > 0}
                                         onChange={() => selectedArticleIds.size === articles.length ? setSelectedArticleIds(new Set()) : setSelectedArticleIds(new Set(articles.map((a: any) => a.id)))}
                                         className="w-4 h-4 cursor-pointer accent-primary" />
-                                    <span className="text-xs text-muted-foreground uppercase font-bold tracking-widest">SAYFAYI SEÇ ({selectedArticleIds.size} SEÇİLİ)</span>
+                                    <span className="text-xs text-muted-foreground uppercase font-bold tracking-widest">{t('articles.select_page', { count: selectedArticleIds.size })}</span>
                                 </div>
                                 {selectedArticleIds.size > 0 && (
                                     <Button onClick={handleBulkPublish} disabled={isPublishing} size="sm"
                                         className="h-7 text-[10px] uppercase font-bold bg-primary text-primary-foreground gap-1.5">
                                         {isPublishing ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                                        SEÇİLİLERİ YAYINLA
+                                        {t('buttons.publish_selected')}
                                     </Button>
                                 )}
                             </div>
@@ -570,7 +572,7 @@ export default function KnowledgePoolPage() {
                         ) : articles.length === 0 ? (
                             <div className="border border-border/40 bg-muted/5 p-12 flex flex-col items-center justify-center text-center">
                                 <FileText className="h-8 w-8 text-muted-foreground/30 mb-4" />
-                                <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">KAYIT_BULUNAMADI</h3>
+                                <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{t('articles.no_records')}</h3>
                             </div>
                         ) : (
                             <div className="divide-y divide-border/20 border-t border-b border-border/40 bg-card rounded-md">
@@ -583,7 +585,7 @@ export default function KnowledgePoolPage() {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2.5 mb-1 text-[9px] font-mono uppercase">
                                                     <Badge className={`px-1.5 py-0 h-4 border ${a.status === 'PUBLISHED' ? 'border-green-900/50 text-green-400 bg-green-400/5' : a.status === 'DRAFT' ? 'border-amber-900/50 text-amber-400 bg-amber-400/5' : 'border-orange-900/50 text-orange-400 bg-orange-400/5'}`}>
-                                                        {a.status === 'REVIEW' ? 'UNDER_REVIEW' : a.status || 'DRAFT'}
+                                                        {t(`status_labels.${(a.status || 'DRAFT').toLowerCase()}`)}
                                                     </Badge>
                                                     {a.tags?.map((t: string) => <span key={t} className="text-muted-foreground/40">#{t.toUpperCase()}</span>)}
                                                 </div>
@@ -591,15 +593,15 @@ export default function KnowledgePoolPage() {
                                                     <p className="font-bold text-foreground text-[14px] leading-tight tracking-tight truncate">{a.title}</p>
                                                 </Link>
                                                 <div className="flex items-center gap-4 mt-1 text-[9px] font-mono uppercase text-muted-foreground/60">
-                                                    <span>YETKİLİ: {a.creator?.fullName || 'SİSTEM'}</span>
-                                                    <span>{new Date(a.createdAt).toLocaleDateString('tr-TR')}</span>
+                                                    <span>{t('articles.author')}: {a.creator?.fullName || t('meta.system')}</span>
+                                                    <span>{new Date(a.createdAt).toLocaleDateString(t('meta.locale'))}</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="shrink-0">
                                             <Link href={`/knowledge-base/${a.id}`}>
                                                 <Button size="sm" variant="outline" className="h-7 text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted/5 hover:bg-primary hover:text-primary-foreground">
-                                                    INCELE <ArrowUpCircle className="h-3 w-3 ml-1" />
+                                                    {t('buttons.examine')} <ArrowUpCircle className="h-3 w-3 ml-1" />
                                                 </Button>
                                             </Link>
                                         </div>
@@ -613,7 +615,7 @@ export default function KnowledgePoolPage() {
                                 <Button variant="outline" className="text-[11px] font-bold uppercase tracking-widest bg-muted/5 hover:bg-muted/20 border-border/20"
                                     disabled={loadingArticles}
                                     onClick={() => { const next = articlePage + 1; setArticlePage(next); loadArticles(next); }}>
-                                    {loadingArticles ? <><RefreshCw className="h-3.5 w-3.5 mr-2 animate-spin" /> YÜKLENİYOR...</> : 'DAHA FAZLA YÜKLE'}
+                                    {loadingArticles ? <><RefreshCw className="h-3.5 w-3.5 mr-2 animate-spin" /> {t('buttons.loading')}</> : t('buttons.load_more')}
                                 </Button>
                             </div>
                         )}

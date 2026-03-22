@@ -2,6 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, useMemo } from 'react';
 import {
     Search, Mail, ShieldCheck, ShieldAlert,
@@ -53,10 +54,11 @@ interface CustomerItem {
     };
 }
 
-type SortField = 'fullName' | 'companyName' | 'email';
+type SortField = 'fullName' | 'companyName' | 'email' | 'status';
 type SortOrder = 'asc' | 'desc';
 
 export default function EmailValidationPage() {
+    const t = useTranslations('admin.email_validation');
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
@@ -113,7 +115,7 @@ export default function EmailValidationPage() {
             const data = await api.emailValidator.verify(email);
             setResult(data);
         } catch (err: any) {
-            toast.error(err.message || 'Doğrulama hatası');
+            toast.error(err.message || t('toasts.verify_error'));
         } finally {
             setLoading(false);
         }
@@ -134,9 +136,9 @@ export default function EmailValidationPage() {
                 resultMap[r.email] = r;
             });
             setBulkResults(resultMap);
-            toast.success(`${emailsToVerify.length} e-posta doğrulandı.`);
+            toast.success(t('toasts.verified_count', { count: emailsToVerify.length }));
         } catch (error: any) {
-            toast.error(error.message || 'Toplu doğrulama hatası');
+            toast.error(error.message || t('toasts.bulk_verify_error'));
         } finally {
             setValidatingBulk(false);
         }
@@ -166,18 +168,29 @@ export default function EmailValidationPage() {
         }
 
         result.sort((a, b) => {
-            let aValue = '';
-            let bValue = '';
+            let aValue: string | number = '';
+            let bValue: string | number = '';
             if (sortField === 'fullName') { aValue = a.fullName; bValue = b.fullName; }
             else if (sortField === 'email') { aValue = a.email; bValue = b.email; }
             else if (sortField === 'companyName') { aValue = a.customerProfile?.companyName || ''; bValue = b.customerProfile?.companyName || ''; }
+            else if (sortField === 'status') {
+                const aRes = bulkResults[a.email];
+                const bRes = bulkResults[b.email];
+                aValue = aRes?.summary?.score ?? -1;
+                bValue = bRes?.summary?.score ?? -1;
+            }
 
-            if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-            if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
+                if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+            } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+                if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+            }
             return 0;
         });
         return result;
-    }, [customers, searchTerm, sortField, sortOrder, filterIndustry, filterTag]);
+    }, [customers, searchTerm, sortField, sortOrder, filterIndustry, filterTag, bulkResults]);
 
     const isAllSelected = filteredCustomers.length > 0 && selectedIds.length === filteredCustomers.length;
 
@@ -196,6 +209,20 @@ export default function EmailValidationPage() {
         else { setSortField(field); setSortOrder('asc'); }
     };
 
+    const toggleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortOrder('asc');
+        }
+    };
+
+    const SortIcon = ({ field }: { field: SortField }) => {
+        if (sortField !== field) return <ArrowUpDown className="inline h-3 w-3 ml-1 opacity-30 group-hover:opacity-100 transition-opacity" />;
+        return sortOrder === 'asc' ? <ArrowUpDown className="inline h-3 w-3 ml-1" /> : <ArrowUpDown className="inline h-3 w-3 ml-1 rotate-180" />;
+    };
+
     const handleOpenDetail = (customer: CustomerItem) => {
         setSelectedCustomer(customer);
         setDetailDialogOpen(true);
@@ -206,9 +233,9 @@ export default function EmailValidationPage() {
         try {
             const data = await api.emailValidator.verify(email);
             setBulkResults(prev => ({ ...prev, [email]: data }));
-            toast.success(`${email} yeniden doğrulandı.`);
+            toast.success(t('toasts.reverified', { email: email }));
         } catch (err: any) {
-            toast.error(err.message || 'Doğrulama hatası');
+            toast.error(err.message || t('toasts.verify_error'));
         } finally {
             setLoading(false);
         }
@@ -235,13 +262,43 @@ export default function EmailValidationPage() {
         </div>
     );
 
+    const DataPoint = ({ label, value, desc, status, last }: { label: string; value: string; desc: string; status: 'success' | 'error'; last?: boolean }) => (
+        <div className={`p-6 rounded-xl border border-white/5 bg-white/[0.02] ${last ? '' : 'mb-4'}`}>
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                    <div className={`p-2.5 rounded-lg ${status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                        {status === 'success' ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
+                    </div>
+                    <span className="font-bold text-white text-lg">{label}</span>
+                </div>
+                <StatusBadge isValid={status === 'success'} label={value} />
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+        </div>
+    );
+
+    const handleSingleVerify = async () => {
+        if (!email) return;
+
+        setLoading(true);
+        setResult(null);
+        try {
+            const data = await api.emailValidator.verify(email);
+            setResult(data);
+        } catch (err: any) {
+            toast.error(err.message || t('toasts.verify_error'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-white/5 pb-8">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">E-Posta Doğrulama</h1>
-                    <p className="text-muted-foreground">E-posta adreslerinin geçerliliğini, DNS kayıtlarını ve SMTP durumunu kontrol edin.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">{t('title')}</h1>
+                    <p className="text-muted-foreground">{t('subtitle')}</p>
                 </div>
 
                 {activeTab === 'list' && (
@@ -251,19 +308,15 @@ export default function EmailValidationPage() {
                         className="h-11 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-bold uppercase tracking-widest hover:bg-emerald-500/20 px-8 rounded-xl"
                     >
                         {validatingBulk ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
-                        {selectedIds.length > 0 ? `Seçilenleri Doğrula (${selectedIds.length})` : 'Tümünü Doğrula'}
+                        {selectedIds.length > 0 ? t('bulk.verify_selected', { count: selectedIds.length }) : t('bulk.verify_all')}
                     </Button>
                 )}
             </div>
 
-            <Tabs defaultValue="single" className="space-y-8" onValueChange={setActiveTab}>
-                <TabsList className="bg-white/5 border border-white/5 p-1 rounded-xl h-12 shrink-0">
-                    <TabsTrigger value="single" className="rounded-lg px-8 text-[11px] font-bold uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white h-full">
-                        Hızlı Kontrol
-                    </TabsTrigger>
-                    <TabsTrigger value="list" className="rounded-lg px-8 text-[11px] font-bold uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white h-full">
-                        Müşteri Listesi
-                    </TabsTrigger>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                <TabsList className="bg-white/5 border border-white/10 p-1">
+                    <TabsTrigger value="single" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">{t('tabs.single')}</TabsTrigger>
+                    <TabsTrigger value="list" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">{t('tabs.bulk')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="single" className="space-y-8 mt-0">
@@ -274,7 +327,7 @@ export default function EmailValidationPage() {
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                 <input
                                     type="email"
-                                    placeholder="Doğrulanacak e-posta adresi (ör: user@example.com)"
+                                    placeholder={t('single.placeholder')}
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
@@ -286,8 +339,7 @@ export default function EmailValidationPage() {
                                 disabled={loading}
                                 className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-10 rounded-xl transition-all disabled:opacity-50 flex items-center gap-3 h-14"
                             >
-                                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
-                                {loading ? 'Doğrulanıyor...' : 'Analiz Et'}
+                                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t('single.button')}
                             </button>
                         </form>
                     </div>
@@ -316,81 +368,53 @@ export default function EmailValidationPage() {
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                                         <span className={`text-5xl font-black ${getScoreColor(result?.summary?.score || 0)}`}>{result?.summary?.score ?? 0}</span>
-                                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Skor</span>
+                                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">{t('score_card.score')}</span>
                                     </div>
                                 </div>
                                 <h3 className="text-2xl font-bold text-white mb-2">
-                                    {result?.summary?.status === 'VALID' ? 'Güvenilir' : result?.summary?.status === 'RISKY' ? 'Riskli' : 'Geçersiz'}
+                                    {result?.summary?.status === 'VALID' ? t('score_card.reliable') : result?.summary?.status === 'RISKY' ? t('score_card.risky') : t('score_card.invalid')}
                                 </h3>
                                 <p className="text-sm text-muted-foreground italic px-6 leading-relaxed">
-                                    {result?.intelligence?.isDisposable ? 'Geçici e-posta servisi tespit edildi.' :
-                                        result?.intelligence?.isRoleBased ? 'Kurumsal rol adresi (destek, bilgi vb.).' :
-                                            'E-posta adresi kullanımı için uygun görünüyor.'}
+                                    {result?.intelligence?.isDisposable ? t('score_card.disposable_hint') :
+                                        result?.intelligence?.isRoleBased ? t('score_card.role_based_hint') :
+                                            t('score_card.valid_hint')}
                                 </p>
                             </div>
 
                             {/* Data Points */}
                             <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* Syntax */}
-                                <div className="p-6 rounded-xl border border-white/5 bg-white/[0.02]">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-400">
-                                                <ShieldCheck className="h-5 w-5" />
-                                            </div>
-                                            <span className="font-bold text-white text-lg">Sözdizimi</span>
-                                        </div>
-                                        <StatusBadge isValid={!!result?.syntax?.isValid} label={result?.syntax?.isValid ? 'OK' : 'HATA'} />
-                                    </div>
-                                    <p className="text-sm text-muted-foreground leading-relaxed">E-posta formatı RFC standartlarına uygunluk kontrol edildi.</p>
-                                </div>
+                                <DataPoint
+                                    label={t('data_points.syntax')}
+                                    value={result.syntax.isValid ? t('data_labels.valid') : t('data_labels.invalid')}
+                                    desc={t('data_points.syntax_desc')}
+                                    status={result.syntax.isValid ? 'success' : 'error'}
+                                />
 
                                 {/* DNS */}
-                                <div className="p-6 rounded-xl border border-white/5 bg-white/[0.02]">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-400">
-                                                <Globe className="h-5 w-5" />
-                                            </div>
-                                            <span className="font-bold text-white text-lg">DNS / MX</span>
-                                        </div>
-                                        <StatusBadge isValid={!!result?.dns?.hasMx} label={result?.dns?.hasMx ? 'OK' : 'HATA'} />
-                                    </div>
-                                    <p className="text-sm text-muted-foreground leading-relaxed">Alan adının e-posta sunucu kayıtları ({result?.dns?.mxRecords?.[0]?.exchange || 'Yok'}) doğrulandı.</p>
-                                </div>
+                                <DataPoint
+                                    label={t('data_points.dns')}
+                                    value={result.dns.hasMx ? t('data_labels.found') : t('data_labels.missing')}
+                                    desc={t('data_points.dns_desc', { exchange: result.dns.mxRecords?.[0]?.exchange || '—' })}
+                                    status={result.dns.hasMx ? 'success' : 'error'}
+                                />
 
                                 {/* SMTP */}
-                                <div className="p-6 rounded-xl border border-white/5 bg-white/[0.02]">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2.5 rounded-lg bg-orange-500/10 text-orange-400">
-                                                <Server className="h-5 w-5" />
-                                            </div>
-                                            <span className="font-bold text-white text-lg">SMTP</span>
-                                        </div>
-                                        <StatusBadge isValid={!!result?.smtp?.canConnect} label={result?.smtp?.canConnect ? 'OK' : 'HATA'} />
-                                    </div>
-                                    <p className="text-sm text-muted-foreground leading-relaxed">Sunucuya socket seviyesinde erişildi ve handshake denendi.</p>
-                                </div>
+                                <DataPoint
+                                    label={t('data_points.smtp')}
+                                    value={result.smtp.canConnect ? t('data_labels.ok') : t('data_labels.error')}
+                                    desc={t('data_points.smtp_desc')}
+                                    status={result.smtp.canConnect ? 'success' : 'error'}
+                                />
 
                                 {/* Intelligence */}
-                                <div className="p-6 rounded-xl border border-white/5 bg-white/[0.02]">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400">
-                                                <Brain className="h-5 w-5" />
-                                            </div>
-                                            <span className="font-bold text-white text-lg">Zeka (AI)</span>
-                                        </div>
-                                        <StatusBadge isValid={!result?.intelligence?.isDisposable} label={result?.intelligence?.isDisposable ? 'RİSKLİ' : 'TEMİZ'} />
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {result?.intelligence?.isDisposable && <span className="text-[10px] bg-red-500/20 text-red-400 px-3 py-1 rounded-full font-bold uppercase">Disposable</span>}
-                                        {result?.intelligence?.isRoleBased && <span className="text-[10px] bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full font-bold uppercase">Role-Based</span>}
-                                        {result?.dns?.isCatchAll && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full font-bold uppercase">Catch-All</span>}
-                                        {!result?.intelligence?.isDisposable && !result?.intelligence?.isRoleBased && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full font-bold uppercase">Personal/Work</span>}
-                                    </div>
-                                </div>
+                                <DataPoint
+                                    label={t('data_points.ai')}
+                                    value={t('data_labels.enabled')}
+                                    desc={t('data_points.ai_desc')}
+                                    status="success"
+                                    last
+                                />
                             </div>
                         </div>
                     )}
@@ -401,8 +425,8 @@ export default function EmailValidationPage() {
                             <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
                                 <Info className="h-10 w-10 text-muted-foreground" />
                             </div>
-                            <h3 className="text-2xl font-bold text-white mb-2">Analiz İçin E-Posta Bekleniyor</h3>
-                            <p className="text-muted-foreground max-w-sm text-lg font-medium opacity-60">Lütfen yukarıdaki alana kontrol etmek istediğiniz adresi girin.</p>
+                            <h3 className="text-2xl font-bold text-white mb-2">{t('empty.waiting')}</h3>
+                            <p className="text-muted-foreground max-w-sm text-lg font-medium opacity-60">{t('empty.waiting_desc')}</p>
                         </div>
                     )}
                 </TabsContent>
@@ -415,7 +439,7 @@ export default function EmailValidationPage() {
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-blue-500 transition-colors" />
                                     <input
                                         type="text"
-                                        placeholder="Müşteri veya Şirket Arayın..."
+                                        placeholder={t('search.customer_search')}
                                         className="w-full pl-10 pr-4 h-11 bg-white/5 border border-white/10 rounded-xl text-[11px] font-bold uppercase tracking-tight text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-inner"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -429,7 +453,7 @@ export default function EmailValidationPage() {
                                             <SelectValue placeholder="Grup / Sektör" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-[#111111] border-white/10">
-                                            <SelectItem value="all" className="text-[10px] font-bold">TÜMÜ (GRUP)</SelectItem>
+                                            <SelectItem value="all" className="text-[10px] font-bold">{t('filters.all')} (GRUP)</SelectItem>
                                             {industries.map(ind => (
                                                 <SelectItem key={ind} value={ind} className="text-[10px] font-bold">{ind.toUpperCase()}</SelectItem>
                                             ))}
@@ -442,9 +466,9 @@ export default function EmailValidationPage() {
                                             <SelectValue placeholder="Etiket" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-[#111111] border-white/10">
-                                            <SelectItem value="all" className="text-[10px] font-bold">TÜMÜ (ETİKET)</SelectItem>
-                                            {tags.map(t => (
-                                                <SelectItem key={t} value={t} className="text-[10px] font-bold">{t.toUpperCase()}</SelectItem>
+                                            <SelectItem value="all" className="text-[10px] font-bold">{t('filters.all')} (ETİKET)</SelectItem>
+                                            {tags.map(t_val => (
+                                                <SelectItem key={t_val} value={t_val} className="text-[10px] font-bold">{t_val.toUpperCase()}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -453,7 +477,7 @@ export default function EmailValidationPage() {
 
                             <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground/40 uppercase tracking-[2px]">
                                 <Filter className="h-3 w-3" />
-                                {filteredCustomers.length} Filtrelenmiş Kayıt
+                                {t('search.filtered_records', { count: filteredCustomers.length })}
                             </div>
                         </div>
                         <Table>
@@ -467,14 +491,18 @@ export default function EmailValidationPage() {
                                             className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/20"
                                         />
                                     </TableHead>
-                                    <TableHead className="cursor-pointer font-bold text-[10px] text-muted-foreground uppercase py-4" onClick={() => handleSort('fullName')}>
-                                        Müşteri / Şirket <ArrowUpDown className="inline h-3 w-3 ml-1 opacity-30" />
+                                    <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer group" onClick={() => toggleSort('fullName')}>
+                                        <span className="flex items-center gap-1.5">{t('table.customer_company')} <SortIcon field="fullName" /></span>
                                     </TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4">E-posta</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 text-center">Sözdizimi</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 text-center">DNS / MX</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 text-center">SMTP</TableHead>
-                                    <TableHead className="font-bold text-[10px] text-muted-foreground uppercase py-4 text-right pr-8">Grup / Skor</TableHead>
+                                    <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer group" onClick={() => toggleSort('email')}>
+                                        <span className="flex items-center gap-1.5">{t('table.email')} <SortIcon field="email" /></span>
+                                    </TableHead>
+                                    <TableHead className="hidden md:table-cell text-[9px] font-bold uppercase tracking-widest">{t('table.syntax')}</TableHead>
+                                    <TableHead className="hidden md:table-cell text-[9px] font-bold uppercase tracking-widest">{t('table.dns_mx')}</TableHead>
+                                    <TableHead className="hidden lg:table-cell text-[9px] font-bold uppercase tracking-widest">{t('table.smtp')}</TableHead>
+                                    <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer group" onClick={() => toggleSort('status')}>
+                                        <span className="flex items-center gap-1.5">{t('table.group_score')} <SortIcon field="status" /></span>
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -482,14 +510,15 @@ export default function EmailValidationPage() {
                                     <TableRow className="border-none">
                                         <TableCell colSpan={7} className="py-20 text-center">
                                             <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto mb-4" />
-                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Müşteriler Yükleniyor...</p>
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('table.loading')}</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : filteredCustomers.length === 0 ? (
                                     <TableRow className="border-none">
                                         <TableCell colSpan={7} className="py-20 text-center opacity-30">
                                             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Sonuç Bulunamadı</p>
+                                            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{t('empty.no_results')}</p>
+                                            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-tight mt-1">{t('empty.no_results_desc')}</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -521,21 +550,21 @@ export default function EmailValidationPage() {
                                                 <TableCell className="text-center">
                                                     {vRes ? (
                                                         <Badge variant="outline" className={`text-[8px] font-black tracking-widest px-2 py-0.5 ${vRes.syntax?.isValid ? 'bg-emerald-500/10 text-emerald-400 border-none' : 'bg-red-500/10 text-red-400 border-none'}`}>
-                                                            {vRes.syntax?.isValid ? 'OK' : 'HATALI'}
+                                                            {vRes.syntax?.isValid ? t('data_labels.ok') : t('data_labels.error')}
                                                         </Badge>
                                                     ) : <span className="text-[8px] text-muted-foreground/20 font-bold">-</span>}
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {vRes ? (
                                                         <Badge variant="outline" className={`text-[8px] font-black tracking-widest px-2 py-0.5 ${vRes.dns?.hasMx ? 'bg-emerald-500/10 text-emerald-400 border-none' : 'bg-red-500/10 text-red-400 border-none'}`}>
-                                                            {vRes.dns?.hasMx ? 'DNS OK' : 'DNS YOK'}
+                                                            {vRes.dns?.hasMx ? `DNS ${t('data_labels.ok')}` : `DNS ${t('data_labels.missing')}`}
                                                         </Badge>
                                                     ) : <span className="text-[8px] text-muted-foreground/20 font-bold">-</span>}
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {vRes ? (
                                                         <Badge variant="outline" className={`text-[8px] font-black tracking-widest px-2 py-0.5 ${vRes.smtp?.canConnect ? 'bg-emerald-500/10 text-emerald-400 border-none' : 'bg-red-500/10 text-red-400 border-none'}`}>
-                                                            {vRes.smtp?.canConnect ? 'SMTP OK' : 'SMTP HATA'}
+                                                            {vRes.smtp?.canConnect ? `SMTP ${t('data_labels.ok')}` : `SMTP ${t('data_labels.error')}`}
                                                         </Badge>
                                                     ) : <span className="text-[8px] text-muted-foreground/20 font-bold">-</span>}
                                                 </TableCell>
@@ -567,7 +596,7 @@ export default function EmailValidationPage() {
                             <DialogHeader className="p-8 bg-[#111111] border-b border-white/5 space-y-4">
                                 <div className="flex justify-between items-start">
                                     <div className="space-y-1">
-                                        <Badge className="bg-blue-500/10 text-blue-400 border-none text-[8px] font-black uppercase tracking-widest mb-2">Detaylı Analiz</Badge>
+                                        <Badge className="bg-blue-500/10 text-blue-400 border-none text-[8px] font-black uppercase tracking-widest mb-2">{t('detail.title')}</Badge>
                                         <DialogTitle className="text-2xl font-bold text-white">{selectedCustomer.fullName}</DialogTitle>
                                         <DialogDescription className="text-muted-foreground text-sm font-mono">{selectedCustomer.email}</DialogDescription>
                                     </div>
@@ -598,7 +627,7 @@ export default function EmailValidationPage() {
                                         <div className="grid grid-cols-2 gap-4">
                                             <Card className="bg-white/[0.02] border-white/5 p-6 flex flex-col items-center justify-center text-center">
                                                 <div className="text-4xl font-black text-white mb-1">{bulkResults[selectedCustomer.email]?.summary?.score ?? 0}</div>
-                                                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Güven Skoru</div>
+                                                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('detail.trust_score')}</div>
                                             </Card>
                                             <Card className="bg-white/[0.02] border-white/5 p-6 flex flex-col items-center justify-center text-center">
                                                 <div className={`text-sm font-black uppercase tracking-widest mb-1 ${bulkResults[selectedCustomer.email]?.summary?.status === 'VALID' ? 'text-emerald-400' :
@@ -606,13 +635,13 @@ export default function EmailValidationPage() {
                                                     }`}>
                                                     {bulkResults[selectedCustomer.email]?.summary?.status ?? 'UNKNOWN'}
                                                 </div>
-                                                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Durum</div>
+                                                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('detail.status')}</div>
                                             </Card>
                                         </div>
 
                                         {/* Intelligence Details */}
                                         <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[3px] border-b border-white/5 pb-2">Zeka Katmanı (Intelligence)</h4>
+                                            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[3px] border-b border-white/5 pb-2">{t('detail.intelligence')}</h4>
                                             <div className="grid grid-cols-1 gap-2">
                                                 {[
                                                     { label: 'Disposable (Geçici)', value: bulkResults[selectedCustomer.email]?.intelligence?.isDisposable, icon: XCircle },
@@ -626,8 +655,8 @@ export default function EmailValidationPage() {
                                                             <span className="text-xs font-bold text-white/80">{item.label}</span>
                                                         </div>
                                                         {item.value ?
-                                                            <Badge className="bg-red-500/10 text-red-500 border-none text-[8px] font-black uppercase">YES / RİSKLİ</Badge> :
-                                                            <Badge className="bg-emerald-500/10 text-emerald-500 border-none text-[8px] font-black uppercase">NO / TEMİZ</Badge>
+                                                            <Badge className="bg-red-500/10 text-red-500 border-none text-[8px] font-black uppercase">{t('detail.yes_risky')}</Badge> :
+                                                            <Badge className="bg-emerald-500/10 text-emerald-500 border-none text-[8px] font-black uppercase">{t('detail.no_clean')}</Badge>
                                                         }
                                                     </div>
                                                 ))}
@@ -636,10 +665,10 @@ export default function EmailValidationPage() {
 
                                         {/* DNS & SMTP Logs */}
                                         <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[3px] border-b border-white/5 pb-2">Sunucu Kayıtları</h4>
+                                            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[3px] border-b border-white/5 pb-2">{t('detail.server_records')}</h4>
                                             <div className="bg-black/40 rounded-xl border border-white/5 p-4 font-mono text-[10px] text-white/60 space-y-2">
                                                 <div className="flex items-center gap-2 text-blue-400 font-bold mb-2">
-                                                    <Activity className="h-3 w-3" /> MX RECORD DATA
+                                                    <Activity className="h-3 w-3" /> {t('detail.mx_data')}
                                                 </div>
                                                 {(bulkResults[selectedCustomer.email]?.dns?.mxRecords || []).map((mx: any, i: number) => (
                                                     <div key={i} className="flex justify-between border-b border-white/5 pb-1">
@@ -647,33 +676,33 @@ export default function EmailValidationPage() {
                                                         <span className="text-white/40">{mx.exchange}</span>
                                                     </div>
                                                 ))}
-                                                {(!bulkResults[selectedCustomer.email]?.dns?.mxRecords?.length) && <div>MX Kaydı Bulunamadı.</div>}
+                                                {(!bulkResults[selectedCustomer.email]?.dns?.mxRecords?.length) && <div>{t('detail.no_mx')}</div>}
                                             </div>
 
                                             <div className="bg-black/40 rounded-xl border border-white/5 p-4 font-mono text-[10px] text-white/60">
                                                 <div className="flex items-center gap-2 text-orange-400 font-bold mb-2">
-                                                    <Server className="h-3 w-3" /> SMTP HANDSHAKE LOG
+                                                    <Server className="h-3 w-3" /> {t('detail.smtp_log')}
                                                 </div>
                                                 <div className="text-white/40 italic">
                                                     {bulkResults[selectedCustomer.email]?.smtp?.canConnect ?
-                                                        `Connection established successfully to ${bulkResults[selectedCustomer.email]?.dns?.mxRecords?.[0]?.exchange || 'server'}. EHLO accepted.` :
-                                                        'Connection failed or timeout during handshake.'
+                                                        t('detail.smtp_success', { server: bulkResults[selectedCustomer.email]?.dns?.mxRecords?.[0]?.exchange || 'server' }) :
+                                                        t('detail.smtp_fail')
                                                     }
                                                 </div>
                                             </div>
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center py-20 opacity-20 text-center space-y-4">
-                                        <ShieldQuestion className="h-16 w-16" />
-                                        <div className="text-sm font-bold uppercase tracking-widest">Veri Bulunmuyor</div>
-                                        <p className="text-xs max-w-[200px]">Bu e-posta henüz doğrulanmamış. Lütfen doğrulama işlemini başlatın.</p>
+                                    <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground opacity-30">
+                                        <Mail className="h-10 w-10 mb-4" />
+                                        <p className="text-[11px] font-bold uppercase tracking-widest">{t('empty.waiting')}</p>
+                                        <p className="text-[9px] mt-1 uppercase tracking-tight">{t('empty.waiting_desc')}</p>
                                         <Button
                                             variant="outline"
                                             className="h-10 rounded-xl border-white/10 font-bold text-[10px] uppercase"
                                             onClick={() => handleReverifySingle(selectedCustomer.email)}
                                         >
-                                            Şimdi Doğrula
+                                            {t('empty.verify_now')}
                                         </Button>
                                     </div>
                                 )}
