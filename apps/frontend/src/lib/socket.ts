@@ -5,7 +5,9 @@ let socket: Socket | null = null;
 export const getSocket = () => {
     let token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     if (!socket) {
-        const url = (typeof process !== 'undefined' && process.env ? process.env.NEXT_PUBLIC_WS_URL : '') || 'http://localhost:4000/ws';
+        const apiUrl = (typeof process !== 'undefined' && process.env ? process.env.NEXT_PUBLIC_API_URL : '') || 'http://localhost:4000/api/v1';
+        const defaultWsUrl = apiUrl.replace('/api/v1', '/ws');
+        const url = (typeof process !== 'undefined' && process.env ? process.env.NEXT_PUBLIC_WS_URL : '') || defaultWsUrl;
 
         socket = io(url, {
             auth: { token },
