@@ -554,8 +554,8 @@ export default function AdminSettingsPage() {
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">{t('ai.chat_model')}</Label>
-                                                    <Input value={getSetting('ai.groq.chat_model')} onChange={e => updateValue('ai.groq.chat_model', e.target.value)} placeholder="llama3-8b-8192" className="bg-black/50 h-8 text-sm" />
+                                                    <label className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Model</label>
+                                                    <Input value={getSetting('ai.groq.chat_model')} onChange={e => updateValue('ai.groq.chat_model', e.target.value)} placeholder="llama-3.1-8b-instant" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-xs text-muted-foreground">{t('ai.embedding')}</Label>
