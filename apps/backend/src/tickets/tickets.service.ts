@@ -21,7 +21,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiQueryService } from '../ai/ai-query.service';
 
 const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
-    NEW: [TicketStatus.OPEN],
+    NEW: [TicketStatus.OPEN, TicketStatus.DRAFT, TicketStatus.PENDING_CUSTOMER_REVIEW],
     OPEN: [TicketStatus.IN_PROGRESS, TicketStatus.PENDING_CUSTOMER, TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW],
     IN_PROGRESS: [TicketStatus.PENDING_CUSTOMER, TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW],
     PENDING_CUSTOMER: [TicketStatus.OPEN, TicketStatus.RESOLVED, TicketStatus.CLOSED, TicketStatus.PENDING_CUSTOMER_REVIEW],

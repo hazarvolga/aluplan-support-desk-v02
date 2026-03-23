@@ -742,12 +742,15 @@ model KnowledgeSourceSyncLog {
 model KnowledgePoolEmbedding {
   id        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sourceId  String                @map("source_id") @db.Uuid
+  parentId  String?               @map("parent_id") @db.Uuid
   embedding Unsupported("vector")
   content   String
   metadata  Json?
   modelName String                @map("model_name") @db.VarChar(100)
   createdAt DateTime              @default(now()) @map("created_at")
   source    KnowledgeSource       @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  parent    KnowledgePoolEmbedding? @relation("KpeHierarchy", fields: [parentId], references: [id])
+  children  KnowledgePoolEmbedding[] @relation("KpeHierarchy")
 
   @@index([sourceId], map: "idx_kpe_source")
   @@map("knowledge_pool_embeddings")
