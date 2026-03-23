@@ -20,7 +20,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { FieldMapping } from './field-mapping';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 interface CrmConnection {
     id: string;

@@ -71,7 +71,7 @@ export default function LoginPage() {
                 {/* Header & Logo */}
                 <div className="relative z-10 flex items-start justify-between mb-16">
                     <div>
-                        <Image src="/logos/aluplan-logo-white.svg" alt="Aluplan Logo" width={180} height={40} className="mb-6 opacity-90" />
+                        <Image src="/logos/aluplan-logo-white.svg" alt="Aluplan Logo" width={180} height={40} className="mb-6 opacity-90" priority />
                         <h1 className="text-[12px] font-bold tracking-[0.3em] uppercase text-muted-foreground/60 flex items-center gap-2">
                             <Terminal className="h-4 w-4" />
                             {t('gateway_title')}

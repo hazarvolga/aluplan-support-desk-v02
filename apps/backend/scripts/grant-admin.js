@@ -2,6 +2,10 @@ const { PrismaClient } = require('@aluplan/database');
 
 async function grantAdmin() {
     console.log('🚀 Enforcing uppercase ADMIN role for hazarvolga@gmail.com...');
+    if (!process.env.DATABASE_URL) {
+        console.error('❌ Error: DATABASE_URL environment variable is missing.');
+        process.exit(1);
+    }
     const prisma = new PrismaClient();
 
     try {
@@ -32,7 +36,8 @@ async function grantAdmin() {
 
         console.log('✅ Success! hazarvolga@gmail.com is now officially an ADMIN.');
     } catch (err) {
-        console.error('Failed to grant admin:', err);
+        console.error('❌ Failed to grant admin:', err.message);
+        process.exit(1); // Exit with error so deploy.sh knows it failed
     } finally {
         await prisma.$disconnect();
     }

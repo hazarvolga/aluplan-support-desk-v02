@@ -2,6 +2,10 @@ const { PrismaClient } = require('@aluplan/database');
 
 async function main() {
     console.log("🛠️ Starting CRM synced users role fix script...");
+    if (!process.env.DATABASE_URL) {
+        console.error("❌ Error: DATABASE_URL environment variable is missing.");
+        process.exit(1);
+    }
     const prisma = new PrismaClient();
 
     try {

@@ -23,7 +23,7 @@ export class TemplateService {
   // Fixed paths: In monorepo, we need robust lookup.
   private static mjmlBaseDir: string = '';
   private static localesDir: string = '';
-  private static readonly cache = new Map<string, Handlebars.TemplateDelegate>();
+  private static readonly cache = new Map<string, string>(); // Raw MJML strings — two-pass rendering
 
   public static getMjmlBaseDir(): string {
     this.ensurePaths();
@@ -76,12 +76,10 @@ export class TemplateService {
 
   public static compile(templateName: string, data: any, brandDefaults?: any): { html: string; text: string; subject: string } {
     this.ensurePaths();
-    let compiledTemplate = this.cache.get(templateName);
+    let mjmlContent = this.cache.get(templateName) ?? '';
+    let mjmlPath = '';
 
-    if (!compiledTemplate) {
-      let mjmlContent = '';
-
-      let mjmlPath = '';
+    if (!mjmlContent) {
       if (templateName === 'raw' && data.mjml) {
         const rawContent = data.mjml.trim();
         const isFullMjml = rawContent.toLowerCase().startsWith('<mjml>');
@@ -129,17 +127,16 @@ export class TemplateService {
         if (!html) throw new Error(errorMsg);
       }
 
-      compiledTemplate = Handlebars.compile(html);
-
-      // Only cache named templates, not raw ones to avoid memory bloat
+      // Cache raw MJML string only — NOT compiled templates
       if (templateName !== 'raw') {
-        this.cache.set(templateName, compiledTemplate);
+        this.cache.set(templateName, mjmlContent);
       }
     }
 
     // 1. Prepare Brand Context
     const rawBrand = {
       name: 'Aluplan',
+      email: 'destek@aluplan.com', // [FIX] brand.email required by BaseEmailSchema
       help_center_url: 'https://help.aluplan.com',
       primary_color: '#0EA5E9',
       logo_url: '/logo.png',
@@ -180,11 +177,26 @@ export class TemplateService {
     }
 
     try {
-      const htmlOutput = compiledTemplate(renderContext);
-      console.log(`[TEMPLATE-SERVICE] Handlebars rendering success.`);
+      // [FIX] Two-Pass Rendering:
+      // Pass 1: Handlebars on raw MJML resolves {{#if brand.primary_color}} etc.
+      // Pass 2: MJML compiles resolved content with valid CSS colors.
+      const resolvedMjml = Handlebars.compile(mjmlContent, { noEscape: true })(renderContext);
 
-      // 6. [PILLAR 5] - High Quality Plane Text
-      const textOutput = convert(htmlOutput, {
+      const { html, errors } = mjml2html(resolvedMjml, {
+        beautify: false,
+        validationLevel: 'soft',
+        filePath: mjmlPath || path.join(this.mjmlBaseDir, 'layouts', 'base.mjml')
+      });
+
+      if (errors && errors.length > 0) {
+        const errorMsg = `MJML Compilation Errors for template "${templateName}": ${errors.map((e: any) => `[Line ${e.line}] ${e.message}`).join('; ')}`;
+        console.warn(`[MJML-WARN] ${errorMsg}`);
+        // We log but don't strictly throw if html is still generated, to avoid breaking mail delivery
+        if (!html) throw new Error(errorMsg);
+      }
+
+      // [PILLAR 5] High Quality Plain Text
+      const textOutput = convert(html, {
         wordwrap: 130,
         selectors: [
           { selector: 'a', options: { hideLinkHrefIfSameAsText: true } },
@@ -193,7 +205,7 @@ export class TemplateService {
       });
 
       return {
-        html: htmlOutput,
+        html,
         text: textOutput,
         subject: data.dynamicSubject || `Aluplan Destek - Yeni Bildirim`
       };
