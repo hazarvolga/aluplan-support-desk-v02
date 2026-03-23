@@ -123,7 +123,7 @@ step_docker_compose() {
         log_ok "Tüm altyapı servisleri zaten çalışıyor ($running_count container)."
     else
         log_action "Docker Compose servisleri başlatılıyor..."
-        docker compose up -d postgres redis ollama 2>&1 | sed 's/^/  /'
+        docker compose up -d postgres redis minio 2>&1 | sed 's/^/  /'
         log_ok "Docker Compose servisleri başlatıldı."
     fi
 

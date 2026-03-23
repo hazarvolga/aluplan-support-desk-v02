@@ -29,14 +29,14 @@ export default defineConfig({
     webServer: [
         {
             command: 'pnpm --filter @aluplan/backend dev',
-            url: 'http://localhost:4000/api/v1/health',
-            reuseExistingServer: false,
+            url: 'http://localhost:4000/api/health',
+            reuseExistingServer: true,
             timeout: 300 * 1000,
         },
         {
             command: 'pnpm dev',
             url: 'http://localhost:3000',
-            reuseExistingServer: false,
+            reuseExistingServer: true,
             timeout: 300 * 1000,
         }
     ],
