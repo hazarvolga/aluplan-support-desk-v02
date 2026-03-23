@@ -18,6 +18,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         try {
             await this.$executeRawUnsafe(`ALTER TABLE "ai_interactions" ADD COLUMN IF NOT EXISTS "provider" TEXT;`);
             await this.$executeRawUnsafe(`ALTER TABLE "ai_interactions" ADD COLUMN IF NOT EXISTS "model" TEXT;`);
+            await this.$executeRawUnsafe(`ALTER TABLE "knowledge_pool_embeddings" ADD COLUMN IF NOT EXISTS "parent_id" UUID;`);
+            await this.$executeRawUnsafe(`ALTER TABLE "knowledge_embeddings" ADD COLUMN IF NOT EXISTS "parent_id" UUID;`);
         } catch (e: any) {
             this.logger.warn(`Dynamic schema patch skipped: ${e.message}`);
         }

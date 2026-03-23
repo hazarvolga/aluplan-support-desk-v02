@@ -199,7 +199,11 @@ export class KnowledgePoolProcessor extends WorkerHost {
         // Apply AI Pre-processing if enabled in metadata
         if (source.metadata?.useAiPreprocessing) {
             this.logger.log(`🧠 Applying AI Pre-processing for formatting and noise reduction: ${source.fileName}`);
-            content = (await this.aiService.cleanKnowledgeDocument(content)) ?? content;
+            try {
+                content = (await this.aiService.cleanKnowledgeDocument(content)) ?? content;
+            } catch (aiError: any) {
+                this.logger.warn(`⚠️ AI Pre-processing failed (${aiError.message}), falling back to raw content for ${source.fileName}`);
+            }
         }
 
         const hierarchies = hierarchicalChunk(content, { title: source.name || source.fileName });

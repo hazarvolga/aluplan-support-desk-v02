@@ -503,9 +503,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                                     onClick={() => setCsatScore(star)}
                                                     onMouseEnter={() => setCsatHover(star)}
                                                     onMouseLeave={() => setCsatHover(0)}
-                                                    className={`p-1 transition-all duration-150 ${(csatHover || csatScore) >= star ? 'text-orange-400' : 'text-muted/30 hover:text-orange-400/50'}`}
+                                                    className={`p-1 transition-all duration-200 ${(csatHover || csatScore) >= star ? 'text-orange-500 scale-110 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]' : 'text-zinc-500 hover:text-orange-400/60 hover:scale-105'}`}
                                                 >
-                                                    <Star className={`h-6 w-6 ${(csatHover || csatScore) >= star ? 'fill-orange-400' : ''}`} />
+                                                    <Star className={`h-8 w-8 transition-all ${(csatHover || csatScore) >= star ? 'fill-orange-500' : 'stroke-[1.5px]'}`} />
                                                 </button>
                                             ))}
                                         </div>

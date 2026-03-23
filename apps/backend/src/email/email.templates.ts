@@ -177,9 +177,9 @@ export class TemplateService {
     }
 
     try {
-      // [FIX] Two-Pass Rendering:
+      // [FIX] Three-Pass Rendering:
       // Pass 1: Handlebars on raw MJML resolves {{#if brand.primary_color}} etc.
-      // Pass 2: MJML compiles resolved content with valid CSS colors.
+      // Pass 2: MJML compiles resolved content, evaluating <mj-include>.
       const resolvedMjml = Handlebars.compile(mjmlContent, { noEscape: true })(renderContext);
 
       const { html, errors } = mjml2html(resolvedMjml, {
@@ -195,8 +195,11 @@ export class TemplateService {
         if (!html) throw new Error(errorMsg);
       }
 
+      // Pass 3: Resolve variables coming from <mj-include> files
+      const finalHtml = Handlebars.compile(html, { noEscape: true })(renderContext);
+
       // [PILLAR 5] High Quality Plain Text
-      const textOutput = convert(html, {
+      const textOutput = convert(finalHtml, {
         wordwrap: 130,
         selectors: [
           { selector: 'a', options: { hideLinkHrefIfSameAsText: true } },
@@ -205,7 +208,7 @@ export class TemplateService {
       });
 
       return {
-        html,
+        html: finalHtml,
         text: textOutput,
         subject: data.dynamicSubject || `Aluplan Destek - Yeni Bildirim`
       };
