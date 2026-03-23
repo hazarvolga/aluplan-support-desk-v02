@@ -181,6 +181,112 @@ async function main() {
         { key: 'ai_confidence_threshold_high', value: '0.90', isSecret: false },
         { key: 'ai_confidence_threshold_medium', value: '0.80', isSecret: false },
         { key: 'ai_similarity_threshold', value: '0.35', isSecret: false },
+        {
+            key: 'SYSTEM_REQUIREMENTS',
+            value: JSON.stringify({
+                "tr": [
+                    {
+                        "title": "Allplan 2026 (BIM & Mimari)",
+                        "sections": [
+                            {
+                                "name": "Donanım (Hardware)",
+                                "items": [
+                                    "**İşlemci:** Intel Core i5/i7/i9 veya AMD Ryzen 5/7/9 (Min 4 Çekirdek)",
+                                    "**Bellek:** Minimum 8 GB RAM (Karmaşık projeler için **32 GB** önerilir)",
+                                    "**Grafik:** 4 GB VRAM (Optimum performans için **16 GB** Onaylı GPU)",
+                                    "**Disk:** 20 GB boş SSD alanı"
+                                ]
+                            },
+                            {
+                                "name": "Yazılım (Software)",
+                                "items": [
+                                    "Windows 10 veya Windows 11 (64-bit)",
+                                    "Microsoft .NET Framework 4.8.1+",
+                                    "Güncel Grafik Kartı Sürücüleri"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Frilo & SCIA (Statik Analiz)",
+                        "sections": [
+                            {
+                                "name": "Sistem İhtiyaçları",
+                                "items": [
+                                    "**CPU:** Yüksek frekanslı çok çekirdekli işlemciler",
+                                    "**RAM:** Min 16 GB (Büyük sonlu eleman modelleri için 64 GB+)",
+                                    "**OpenGL:** Donanım hızlandırma destekli ekran kartı"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Sanal Mimari & Bulut Servisler",
+                        "sections": [
+                            {
+                                "name": "Bağlantı & Erişim",
+                                "items": [
+                                    "**Internet:** Stable Fiber / 50 Mbps+ (Bimplus & Share için)",
+                                    "**Citrix/VDI:** Windows Server 2019/2022 (GPU Passthrough ile)",
+                                    "**Güvenlik:** TLS 1.2+ şifreleme desteği"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "en": [
+                    {
+                        "title": "Allplan 2026 (BIM & Architecture)",
+                        "sections": [
+                            {
+                                "name": "Hardware",
+                                "items": [
+                                    "**Processor:** Intel Core i5/i7/i9 or AMD Ryzen 5/7/9 (Min 4 Core)",
+                                    "**Memory:** Minimum 8 GB RAM (**32 GB** recommended for complex BIM)",
+                                    "**Graphics:** 4 GB VRAM (**16 GB** Certified GPU for optimum performance)",
+                                    "**Disk:** 20 GB free SSD space"
+                                ]
+                            },
+                            {
+                                "name": "Software",
+                                "items": [
+                                    "Windows 10 or Windows 11 (64-bit)",
+                                    "Microsoft .NET Framework 4.8.1+",
+                                    "Latest Graphics Card Drivers"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Frilo & SCIA (Structural Analysis)",
+                        "sections": [
+                            {
+                                "name": "System Needs",
+                                "items": [
+                                    "**CPU:** High-frequency multi-core processors",
+                                    "**RAM:** Min 16 GB (64 GB+ for large FEM models)",
+                                    "**OpenGL:** Graphics card with hardware acceleration support"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Virtual Arch & Cloud Services",
+                        "sections": [
+                            {
+                                "name": "Connection & Access",
+                                "items": [
+                                    "**Internet:** Stable Fiber / 50 Mbps+ (For Bimplus & Share)",
+                                    "**Citrix/VDI:** Windows Server 2019/2022 (with GPU Passthrough)",
+                                    "**Security:** TLS 1.2+ encryption support"
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }),
+            isSecret: false
+        },
     ];
 
     for (const setting of defaultSettings) {
