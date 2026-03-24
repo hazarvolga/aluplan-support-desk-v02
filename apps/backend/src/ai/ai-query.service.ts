@@ -701,6 +701,58 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
     }
 
     /**
+     * Get Daily Health Trends for Charting
+     */
+    async getHealthTrends(days: number = 7) {
+        const now = new Date();
+        const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+        // We use a raw query for better performance and easier date grouping in PG
+        const trends = await this.prisma.$queryRaw<any[]>`
+            SELECT 
+                DATE_TRUNC('day', created_at) as date,
+                COUNT(id)::int as total,
+                COUNT(CASE WHEN confidence_band = 'HIGH' THEN 1 END)::int as high_conf,
+                COUNT(CASE WHEN ticket_created = true THEN 1 END)::int as tickets
+            FROM ai_interactions
+            WHERE created_at >= ${startDate}
+            GROUP BY 1
+            ORDER BY 1 ASC
+        `;
+
+        return trends.map(t => ({
+            date: t.date,
+            total: t.total,
+            accuracy: t.total > 0 ? (t.high_conf / t.total) * 100 : 0,
+            deflection: t.total > 0 ? ((t.total - t.tickets) / t.total) * 100 : 0
+        }));
+    }
+
+    /**
+     * Identify Knowledge Gaps (Top failed/low-confidence queries)
+     */
+    async getKnowledgeGaps(limit: number = 5) {
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        const gaps = await this.prisma.aiInteraction.groupBy({
+            by: ['userQuery'],
+            where: {
+                createdAt: { gte: sevenDaysAgo },
+                confidenceBand: { in: ['LOW', null] as any }
+            },
+            _count: { id: true },
+            orderBy: { _count: { id: 'desc' } },
+            take: limit
+        });
+
+        return gaps.map(g => ({
+            query: g.userQuery,
+            frequency: g._count.id
+        }));
+    }
+
+    /**
      * Get counts for the 4 Source Pillars (PDF, Admin, URL, Ticket)
      * as defined in FAQ_Self_Learing_mimarisi.MD
      */

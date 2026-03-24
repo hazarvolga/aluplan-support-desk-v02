@@ -63,33 +63,34 @@ export class PromptContextBuilderService {
                     }
                 }
             }
-
-            // 3. Current Query
-            context += `[3. Mevcut Sorgu]\n${userQuery}\n\n`;
-
-            // 4. System Rules
-            context += `[4. Sistem Kuralları]\n`;
-            context += `- Yanıtların profesyonel, yapıcı ve çözüm odaklı olmalıdır.\n`;
-            context += `- Kurum kimliğini (Aluplan Destek) koru.\n`;
-            context += `- Bilmediğin konularda uydurma, destek talebi oluşturmalarını öner.\n\n`;
-
-            // 5. Related Macros
-            // Ideally mapped through embeddings; for now, simple broad keyword search.
-            const macros = await this.prisma.macro.findMany({
-                take: 2 // limiting macro count
-            });
-            if (macros.length > 0) {
-                context += `[5. İlgili Yanıt Şablonları (Macros)]\n`;
-                macros.forEach(m => {
-                    context += `- ${m.name}\n`;
-                });
-                context += '\n';
-            }
-
-            // 6. Recent Actions / Telemetry
-            // Could integrate auth logs or frontend telemetry here.
-            context += `[6. Son Kullanıcı Eylemleri]\n- Kullanıcı /api/ai/query uç noktasından bir doğal dil sorgusu başlattı.\n\n`;
-
-            return context;
         }
+
+        // 3. Current Query
+        context += `[3. Mevcut Sorgu]\n${userQuery}\n\n`;
+
+        // 4. System Rules
+        context += `[4. Sistem Kuralları]\n`;
+        context += `- Yanıtların profesyonel, yapıcı ve çözüm odaklı olmalıdır.\n`;
+        context += `- Kurum kimliğini (Aluplan Destek) koru.\n`;
+        context += `- Bilmediğin konularda uydurma, destek talebi oluşturmalarını öner.\n\n`;
+
+        // 5. Related Macros
+        // Ideally mapped through embeddings; for now, simple broad keyword search.
+        const macros = await this.prisma.macro.findMany({
+            take: 2 // limiting macro count
+        });
+        if (macros.length > 0) {
+            context += `[5. İlgili Yanıt Şablonları (Macros)]\n`;
+            macros.forEach(m => {
+                context += `- ${m.name}\n`;
+            });
+            context += '\n';
+        }
+
+        // 6. Recent Actions / Telemetry
+        // Could integrate auth logs or frontend telemetry here.
+        context += `[6. Son Kullanıcı Eylemleri]\n- Kullanıcı /api/ai/query uç noktasından bir doğal dil sorgusu başlattı.\n\n`;
+
+        return context;
     }
+}
