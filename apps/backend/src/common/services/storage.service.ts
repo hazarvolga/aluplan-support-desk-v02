@@ -19,12 +19,14 @@ export class StorageService implements OnModuleInit {
     private readonly bucket: string;
     private readonly storageType: 'S3' | 'LOCAL';
     private readonly localPath: string;
+    private readonly publicEndpoint: string;
 
     constructor(private readonly configService: ConfigService) {
         const storageConfig = this.configService.get('storage');
         this.storageType = storageConfig.type || 'LOCAL';
         this.bucket = storageConfig.bucket;
         this.localPath = storageConfig.localPath || './uploads';
+        this.publicEndpoint = storageConfig.publicEndpoint;
 
         if (this.storageType === 'S3') {
             this.logger.log(`Initializing S3 Storage with endpoint: ${storageConfig.endpoint}`);
@@ -97,7 +99,14 @@ export class StorageService implements OnModuleInit {
                 Key: key,
             });
             // Presigned URL valid for 1 hour
-            return getSignedUrl(this.s3Client as any, command as any, { expiresIn: 3600 });
+            const url = await getSignedUrl(this.s3Client as any, command as any, { expiresIn: 3600 });
+
+            const internalEndpoint = this.configService.get('storage.endpoint');
+            if (this.publicEndpoint && internalEndpoint && this.publicEndpoint !== internalEndpoint) {
+                return url.replace(internalEndpoint, this.publicEndpoint);
+            }
+
+            return url;
         } else {
             // Serve via backend URL
             const port = this.configService.get('port') || 4000;

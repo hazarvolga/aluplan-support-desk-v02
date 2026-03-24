@@ -65,6 +65,7 @@ export default () => {
         storage: {
             type: process.env.STORAGE_TYPE || (process.env.STORAGE_ACCESS_KEY ? 'S3' : 'LOCAL'),
             endpoint: process.env.STORAGE_ENDPOINT || 'http://localhost:9000',
+            publicEndpoint: process.env.STORAGE_PUBLIC_ENDPOINT || process.env.STORAGE_ENDPOINT || 'http://localhost:9000',
             accessKey: process.env.STORAGE_ACCESS_KEY || '',
             secretKey: process.env.STORAGE_SECRET_KEY || '',
             bucket: process.env.STORAGE_BUCKET || 'aluplan-storage',
