@@ -53,9 +53,11 @@ RULES:
     - Find the answer and summarize it in your own technical sentences.
     - Select and synthesize the most critical part of the source.
 
+5) PROACTIVE CLARIFICATION
+    - If the user reports a generic error, crash, or problem but has not provided a hotinfo context, ALWAYS proactively request the user to attach the '_hotinf_.hxl' file for a healthier diagnosis.
+
 GOAL:
 To provide users with fast, technically accurate, controlled, and direct solutions in their preferred language.`;
-
 
 @Injectable()
 export class AiQueryService {
@@ -166,6 +168,7 @@ export class AiQueryService {
                 userId: userId ?? undefined,
                 userQuery,
                 kbContent: topResult.content,
+                skipHotinfoProfile: true,
             });
             const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
             const aiResult = await this.ai.reformat(finalPrompt, userQuery, topResult.content);
@@ -326,6 +329,7 @@ export class AiQueryService {
                 userId: userId ?? undefined,
                 userQuery,
                 kbContent: topResult.content,
+                skipHotinfoProfile: true,
             });
             const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
             usedPrompt = finalPrompt;
