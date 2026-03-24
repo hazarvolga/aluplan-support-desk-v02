@@ -46,20 +46,58 @@ export class AiService implements AiProvider {
         this.circuitOpenUntil = 0;
     }
 
-    private async runSafe<T>(op: () => Promise<T>): Promise<T | null> {
+    private async executeWithFallback<T>(
+        type: 'chat' | 'embed',
+        task: string,
+        operation: (provider: AiProvider) => Promise<T | null>
+    ): Promise<T | null> {
         if (!await this.isCircuitClosed()) {
             this.logger.warn('⚠️ AI Operation skipped: Circuit Breaker is OPEN or manually disabled.');
             return null;
         }
 
-        try {
-            const result = await op();
-            this.recordSuccess();
-            return result;
-        } catch (err) {
-            this.recordFailure();
-            throw err;
+        let primaryName = '';
+        if (type === 'chat') {
+            primaryName = await this.getProviderForTask(task);
+        } else {
+            primaryName = await this.settings.getValue('ai.embed_provider')
+                || await this.settings.getValue('ai.active_provider')
+                || process.env.EMBEDDING_PROVIDER?.toLowerCase()
+                || 'ollama';
         }
+
+        let fallbackName = await this.settings.getValue(type === 'chat' ? 'ai.fallback_provider' : 'ai.embed_fallback_provider');
+
+        let providersToTry = [primaryName];
+        if (fallbackName && fallbackName !== primaryName) {
+            providersToTry.push(fallbackName);
+        }
+
+        let lastError = null;
+
+        for (const pName of providersToTry) {
+            try {
+                const provider = await this.getProvider(pName);
+                const result = await operation(provider);
+                if (result !== null && result !== undefined) {
+                    this.recordSuccess();
+                    return result;
+                } else {
+                    lastError = new Error('Provider returned null');
+                }
+            } catch (err) {
+                lastError = err;
+                this.recordFailure();
+                this.logger.warn(`⚠️ API Error on Provider [${pName}]: ${err}`);
+
+                if (pName === primaryName && fallbackName && fallbackName !== primaryName) {
+                    this.logger.error(`🚨 SYSTEM ALERT: Primary AI Model (${primaryName}) failed. Auto-Fallback to (${fallbackName}) triggered. Error: ${err}`);
+                }
+            }
+        }
+
+        this.logger.error(`🚨 SYSTEM ALERT: All AI providers failed for task (${task}).`);
+        throw lastError || new Error('All AI providers failed');
     }
 
     private async getProviderByName(providerName: string | null): Promise<AiProvider | null> {
@@ -126,15 +164,13 @@ export class AiService implements AiProvider {
     }
 
     async embed(text: string): Promise<EmbeddingResult | null> {
-        return this.runSafe(async () => {
-            const provider = await this.getActiveEmbedProvider();
+        return this.executeWithFallback('embed', 'embedding', async (provider) => {
             return provider.embed(text);
         });
     }
 
     async generate(prompt: string, timeout?: number): Promise<string | null> {
-        return this.runSafe(async () => {
-            const provider = await this.getActiveChatProvider();
+        return this.executeWithFallback('chat', 'general', async (provider) => {
             return provider.generate(prompt, timeout);
         });
     }
@@ -163,78 +199,75 @@ export class AiService implements AiProvider {
     }
 
     async reformat(systemPrompt: string, userQuery: string, sourceContext: string, task: string = 'reformatting'): Promise<{ response: string; model: string } | null> {
-        if (!await this.isCircuitClosed()) {
-            this.logger.warn('⚠️ AI Operation skipped: Circuit Breaker is OPEN or manually disabled.');
-            return null;
-        }
-
-        try {
-            const providerName = await this.getProviderForTask(task);
-            const provider = await this.getProvider(providerName);
-            const model = await this.settings.getValue(`ai.${providerName}.chat_model`);
-
+        return this.executeWithFallback('chat', task, async (provider) => {
             const result = await provider.reformat(systemPrompt, userQuery, sourceContext);
-            this.recordSuccess();
-            if (result?.response) {
-                return { response: result.response, model: model || 'unknown' };
-            }
-            return null;
-        } catch (err) {
-            this.recordFailure();
-            throw err;
-        }
+            return result?.response ? result : null;
+        });
     }
 
     async *streamReformat(systemPrompt: string, userQuery: string, sourceContext: string, task: string = 'reformatting'): AsyncGenerator<string, void, unknown> {
-        const closed = await this.isCircuitClosed();
-        if (!closed) {
+        if (!await this.isCircuitClosed()) {
             yield 'AI servisi şu anda devre dışı (Circuit Breaker).';
             return;
         }
 
-        const providerName = await this.getProviderForTask(task);
-        const provider = await this.getProvider(providerName);
-        try {
-            if (provider.streamReformat) {
-                yield* provider.streamReformat(systemPrompt, userQuery, sourceContext);
-            } else {
-                const result = await provider.reformat(systemPrompt, userQuery, sourceContext);
-                if (result?.response) yield result.response;
+        const primaryName = await this.getProviderForTask(task);
+        const fallbackName = await this.settings.getValue('ai.fallback_provider');
+
+        const providersToTry = [primaryName];
+        if (fallbackName && fallbackName !== primaryName) providersToTry.push(fallbackName);
+
+        for (const pName of providersToTry) {
+            try {
+                const provider = await this.getProvider(pName);
+                let yieldedAnything = false;
+
+                if (provider.streamReformat) {
+                    const generator = provider.streamReformat(systemPrompt, userQuery, sourceContext);
+                    for await (const chunk of generator) {
+                        yieldedAnything = true;
+                        yield chunk;
+                    }
+                } else {
+                    const result = await provider.reformat(systemPrompt, userQuery, sourceContext);
+                    if (result?.response) {
+                        yield result.response;
+                        yieldedAnything = true;
+                    } else {
+                        throw new Error('Provider returned null');
+                    }
+                }
+
+                this.recordSuccess();
+                return;
+
+            } catch (err) {
+                this.recordFailure();
+                this.logger.warn(`⚠️ API Error on Provider [${pName}] during stream: ${err}`);
+
+                if (pName === primaryName && fallbackName && fallbackName !== primaryName) {
+                    this.logger.error(`🚨 SYSTEM ALERT: Primary AI Model (${primaryName}) failed during stream. Auto-Fallback to (${fallbackName}) triggered. Error: ${err}`);
+                } else {
+                    yield 'AI yanıtı oluşturulurken bir hata oluştu.';
+                }
             }
-            this.recordSuccess();
-        } catch (_err) {
-            this.recordFailure();
-            yield 'AI yanıtı oluşturulurken bir hata oluştu.';
         }
     }
 
     async suggestCategory(title: string, content: string, categories: string[]): Promise<string | null> {
-        return this.runSafe(async () => {
-            const providerName = await this.getProviderForTask('categorization');
-            const provider = await this.getProvider(providerName);
+        return this.executeWithFallback('chat', 'categorization', async (provider) => {
             return provider.suggestCategory(title, content, categories);
         });
     }
 
     async summarizeTicket(subject: string, conversation: string): Promise<string | null> {
-        return this.runSafe(async () => {
-            const providerName = await this.getProviderForTask('summarization');
-            const provider = await this.getProvider(providerName);
+        return this.executeWithFallback('chat', 'summarization', async (provider) => {
             return provider.summarizeTicket(subject, conversation);
         });
     }
 
     async cleanKnowledgeDocument(content: string): Promise<string | null> {
-        if (!await this.isCircuitClosed()) {
-            this.logger.warn('⚠️ AI Operation skipped: Circuit Breaker is OPEN or manually disabled.');
-            return content;
-        }
-
-        try {
-            const providerName = await this.getProviderForTask('clean_knowledge');
-            const provider = await this.getProvider(providerName);
-            const model = await this.settings.getValue(`ai.${providerName}.chat_model`);
-
+        return this.executeWithFallback('chat', 'clean_knowledge', async (provider) => {
             const prompt = `You are an expert technical writer and AI data engineer. 
 I am providing you with a raw, unstructured technical document (could be a PDF extract, a raw log file, or messy notes).
 Your task is to extract the core technical knowledge, errors, solutions, and symptoms, and format them into a clean, structured Markdown format 
@@ -250,53 +283,21 @@ Rules:
 RAW DOCUMENT:
 ${content}
 `;
-            const result = await provider.generate(prompt, 60000); // Allow up to 60s for large docs
-            this.recordSuccess();
-            return result;
-        } catch (err) {
-            this.recordFailure();
-            throw err;
-        }
+            return provider.generate(prompt, 60000);
+        });
     }
 
     async analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'> {
-        if (!await this.isCircuitClosed()) {
-            this.logger.warn('⚠️ AI Operation skipped: Circuit Breaker is OPEN or manually disabled.');
-            return 'NEUTRAL';
-        }
-
-        try {
-            const providerName = await this.getProviderForTask('analyze_sentiment');
-            const provider = await this.getProvider(providerName);
-            const model = await this.settings.getValue(`ai.${providerName}.chat_model`);
-
-            const res = await provider.analyzeSentiment(text);
-            this.recordSuccess();
-            return res;
-        } catch (err) {
-            this.recordFailure();
-            throw err;
-        }
+        const result = await this.executeWithFallback('chat', 'analyze_sentiment', async (provider) => {
+            return provider.analyzeSentiment(text);
+        });
+        return result || 'NEUTRAL';
     }
 
     async translate(text: string, targetLanguage: string): Promise<string | null> {
-        if (!await this.isCircuitClosed()) {
-            this.logger.warn('⚠️ AI Operation skipped: Circuit Breaker is OPEN or manually disabled.');
-            return null;
-        }
-
-        try {
-            const providerName = await this.getProviderForTask('translate');
-            const provider = await this.getProvider(providerName);
-            const model = await this.settings.getValue(`ai.${providerName}.chat_model`);
-
-            const result = await provider.translate(text, targetLanguage);
-            this.recordSuccess();
-            return result;
-        } catch (err) {
-            this.recordFailure();
-            throw err;
-        }
+        return this.executeWithFallback('chat', 'translate', async (provider) => {
+            return provider.translate(text, targetLanguage);
+        });
     }
 
     async isAvailable(): Promise<boolean> {

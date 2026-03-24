@@ -108,7 +108,7 @@ export class GenericOpenAiService implements AiProvider {
         } catch (err: any) {
             if (err instanceof BadRequestException) throw err;
             this.logger.warn(`⚠️ Custom AI embed failed (${baseUrl}): ${err.message}`);
-            return null;
+            throw err;
         }
     }
 
@@ -151,7 +151,7 @@ export class GenericOpenAiService implements AiProvider {
         } catch (err: any) {
             if (err instanceof BadRequestException) throw err;
             this.logger.warn(`⚠️ Custom AI generate failed (${baseUrl}): ${err.message}`);
-            return null;
+            throw err;
         }
     }
 
@@ -207,7 +207,7 @@ Above information source is official. Answer the user question logicially based 
         } catch (err: any) {
             if (err instanceof BadRequestException) throw err;
             this.logger.warn(`⚠️ Custom AI reformat failed (${baseUrl}): ${err.message}`);
-            return null;
+            throw err;
         }
     }
 
@@ -282,7 +282,7 @@ SONUÇ (YALNIZCA KELİME):`;
         } catch (error: any) {
             if (error instanceof BadRequestException) throw error;
             this.logger.error(`GenericOpenAI Translation API error: ${error.message}`);
-            return null;
+            throw error;
         }
     }
 

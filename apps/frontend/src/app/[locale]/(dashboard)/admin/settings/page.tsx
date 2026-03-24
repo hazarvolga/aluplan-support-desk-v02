@@ -46,6 +46,7 @@ export default function AdminSettingsPage() {
     const [settings, setSettings] = useState<any[]>([]);
     const [gmailAuthorizing, setGmailAuthorizing] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [aiHealth, setAiHealth] = useState<any>(null);
 
     // SLA States
     const [policies, setPolicies] = useState<any[]>([]);
@@ -67,6 +68,7 @@ export default function AdminSettingsPage() {
     useEffect(() => {
         loadSettings();
         loadSlaData();
+        loadAiHealth();
 
         // Read Gmail OAuth2 callback result from URL params
         const gmailStatus = searchParams.get('gmail_status');
@@ -92,6 +94,15 @@ export default function AdminSettingsPage() {
             });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadAiHealth = async () => {
+        try {
+            const res = await api.ai.getHealthStatus();
+            setAiHealth(res);
+        } catch (e) {
+            console.error('Failed to load AI health', e);
         }
     };
 
@@ -371,53 +382,120 @@ export default function AdminSettingsPage() {
                                 <CardDescription>{t('ai.description')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="space-y-4 pb-6 border-b border-border/40">
-                                    <div className="flex flex-col md:flex-row gap-6">
-                                        <div className="space-y-2 flex-1">
-                                            <Label className="text-[12px] font-bold tracking-widest uppercase">{t('ai.chat_provider')}</Label>
-                                            <Select
-                                                value={getSetting('ai.chat_provider') || getSetting('ai.active_provider') || 'ollama'}
-                                                onValueChange={v => updateValue('ai.chat_provider', v)}
-                                            >
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
-                                                    <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
-                                                    <SelectItem value="xai">{t('ai.providers.xai')}</SelectItem>
-                                                    <SelectItem value="groq">{t('ai.providers.groq')}</SelectItem>
-                                                    <SelectItem value="deepseek">{t('ai.providers.deepseek')}</SelectItem>
-                                                    <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
-                                                    <SelectItem value="custom">{t('ai.providers.custom')}</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <p className="text-xs text-muted-foreground mt-1">{t('ai.chat_provider_desc')}</p>
+                                {/* Auto-Fallback & Health Info Card */}
+                                <div className="mb-6 p-5 rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 via-background to-indigo-500/5 backdrop-blur-xl relative overflow-hidden shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                                    <div className="space-y-1 z-10 w-full md:w-3/4">
+                                        <div className="flex items-center gap-2">
+                                            <ShieldCheck className="h-5 w-5 text-blue-500" />
+                                            <h3 className="font-semibold text-base text-foreground tracking-tight">Auto-Fallback & Live Routing</h3>
                                         </div>
-                                        <div className="space-y-2 flex-1">
-                                            <Label className="text-[12px] font-bold tracking-widest uppercase">{t('ai.embed_provider')}</Label>
-                                            <Select
-                                                value={getSetting('ai.embed_provider') || getSetting('ai.active_provider') || 'ollama'}
-                                                onValueChange={v => updateValue('ai.embed_provider', v)}
-                                            >
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
-                                                    <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
-                                                    <SelectItem value="groq">{t('ai.providers.groq_no_embed')}</SelectItem>
-                                                    <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
-                                                    <SelectItem value="custom">{t('ai.providers.custom_info')}</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <p className="text-xs text-muted-foreground mt-1">{t('ai.embed_provider_desc')}</p>
+                                        <p className="text-sm text-foreground/80 leading-relaxed">
+                                            Ana AI modeli çöktüğünde veya hız limitine takıldığında, konuşmalar ve işlemler hataya düşmeden otomatik olarak belirlediğiniz 'Fallback' (Yedek) modeline devredilir.
+                                        </p>
+                                    </div>
+                                    <div className="z-10 flex items-center gap-4 bg-background/50 border rounded-lg p-3 shrink-0">
+                                        {aiHealth ? (
+                                            <>
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Primary</span>
+                                                    <Badge variant="outline" className={`text-[10px] ${aiHealth.providers[aiHealth.chatProvider]?.available ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/20' : 'bg-red-500/15 text-red-500 border-red-500/20'}`}>
+                                                        {aiHealth.providers[aiHealth.chatProvider]?.available ? 'ONLINE' : 'DOWN'}
+                                                    </Badge>
+                                                </div>
+                                                <div className="h-6 w-px bg-border"></div>
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Fallback</span>
+                                                    <Badge variant="outline" className={`text-[10px] ${getSetting('ai.fallback_provider') && getSetting('ai.fallback_provider') !== 'none' ? (aiHealth.providers[getSetting('ai.fallback_provider')]?.available ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/20' : 'bg-red-500/15 text-red-500 border-red-500/20') : 'bg-muted text-muted-foreground border-border'}`}>
+                                                        {!getSetting('ai.fallback_provider') || getSetting('ai.fallback_provider') === 'none' ? 'OFF' : (aiHealth.providers[getSetting('ai.fallback_provider')]?.available ? 'STANDBY' : 'DOWN')}
+                                                    </Badge>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /> <span className="text-xs text-muted-foreground">Checking...</span></div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6 pb-6 border-b border-border/40">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
+                                        {/* Primary Providers */}
+                                        <div className="space-y-4 p-4 rounded-lg bg-muted/20 border border-border/50">
+                                            <div className="flex items-center justify-between border-b pb-2 mb-2">
+                                                <h4 className="font-bold text-sm tracking-wide text-foreground">1. Primary AI</h4>
+                                                <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-500 border-blue-500/20">ACTIVE</Badge>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[12px] font-bold tracking-widest uppercase">{t('ai.chat_provider')}</Label>
+                                                <Select value={getSetting('ai.chat_provider') || getSetting('ai.active_provider') || 'ollama'} onValueChange={v => updateValue('ai.chat_provider', v)}>
+                                                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
+                                                        <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
+                                                        <SelectItem value="xai">{t('ai.providers.xai')}</SelectItem>
+                                                        <SelectItem value="groq">{t('ai.providers.groq')}</SelectItem>
+                                                        <SelectItem value="deepseek">{t('ai.providers.deepseek')}</SelectItem>
+                                                        <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
+                                                        <SelectItem value="custom">{t('ai.providers.custom')}</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[12px] font-bold tracking-widest uppercase">{t('ai.embed_provider')}</Label>
+                                                <Select value={getSetting('ai.embed_provider') || getSetting('ai.active_provider') || 'ollama'} onValueChange={v => updateValue('ai.embed_provider', v)}>
+                                                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
+                                                        <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
+                                                        <SelectItem value="groq">{t('ai.providers.groq_no_embed')}</SelectItem>
+                                                        <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
+                                                        <SelectItem value="custom">{t('ai.providers.custom_info')}</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+
+                                        {/* Fallback Providers */}
+                                        <div className="space-y-4 p-4 rounded-lg bg-orange-500/5 border border-orange-500/20">
+                                            <div className="flex items-center justify-between border-b border-orange-500/10 pb-2 mb-2">
+                                                <h4 className="font-bold text-sm tracking-wide text-foreground">2. Fallback AI</h4>
+                                                <Badge variant="outline" className="text-[10px] bg-orange-500/10 text-orange-500 border-orange-500/20">STANDBY</Badge>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[12px] font-bold tracking-widest uppercase flex items-center gap-1.5"><Globe className="h-3 w-3" /> FALLBACK CHAT</Label>
+                                                <Select value={getSetting('ai.fallback_provider') || 'none'} onValueChange={v => updateValue('ai.fallback_provider', v)}>
+                                                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">-- Devre Dışı --</SelectItem>
+                                                        <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
+                                                        <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
+                                                        <SelectItem value="xai">{t('ai.providers.xai')}</SelectItem>
+                                                        <SelectItem value="groq">{t('ai.providers.groq')}</SelectItem>
+                                                        <SelectItem value="deepseek">{t('ai.providers.deepseek')}</SelectItem>
+                                                        <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
+                                                        <SelectItem value="custom">{t('ai.providers.custom')}</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[12px] font-bold tracking-widest uppercase flex items-center gap-1.5"><Database className="h-3 w-3" /> FALLBACK EMBED</Label>
+                                                <Select value={getSetting('ai.embed_fallback_provider') || 'none'} onValueChange={v => updateValue('ai.embed_fallback_provider', v)}>
+                                                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">-- Devre Dışı --</SelectItem>
+                                                        <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
+                                                        <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
+                                                        <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
+                                                        <SelectItem value="custom">{t('ai.providers.custom_info')}</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                                    {(getSetting('ai.chat_provider') === 'ollama' || getSetting('ai.embed_provider') === 'ollama') && (
+                                    {([getSetting('ai.chat_provider'), getSetting('ai.embed_provider'), getSetting('ai.fallback_provider'), getSetting('ai.embed_fallback_provider')].includes('ollama')) && (
                                         /* Ollama Ayarları */
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
@@ -450,7 +528,7 @@ export default function AdminSettingsPage() {
                                         </div>
                                     )}
 
-                                    {(getSetting('ai.chat_provider') === 'openai' || getSetting('ai.embed_provider') === 'openai') && (
+                                    {([getSetting('ai.chat_provider'), getSetting('ai.embed_provider'), getSetting('ai.fallback_provider'), getSetting('ai.embed_fallback_provider')].includes('openai')) && (
                                         /* OpenAI Ayarları */
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
@@ -483,7 +561,7 @@ export default function AdminSettingsPage() {
                                         </div>
                                     )}
 
-                                    {(getSetting('ai.chat_provider') === 'xai') && (
+                                    {([getSetting('ai.chat_provider'), getSetting('ai.fallback_provider')].includes('xai')) && (
                                         /* xAI (Grok) Ayarları */
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
@@ -524,7 +602,7 @@ export default function AdminSettingsPage() {
                                         </div>
                                     )}
 
-                                    {(getSetting('ai.chat_provider') === 'groq' || getSetting('ai.embed_provider') === 'groq') && (
+                                    {([getSetting('ai.chat_provider'), getSetting('ai.embed_provider'), getSetting('ai.fallback_provider'), getSetting('ai.embed_fallback_provider')].includes('groq')) && (
                                         /* Groq Ayarları */
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
@@ -565,7 +643,7 @@ export default function AdminSettingsPage() {
                                         </div>
                                     )}
 
-                                    {(getSetting('ai.chat_provider') === 'deepseek') && (
+                                    {([getSetting('ai.chat_provider'), getSetting('ai.fallback_provider')].includes('deepseek')) && (
                                         /* DeepSeek Ayarları */
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
@@ -606,7 +684,7 @@ export default function AdminSettingsPage() {
                                         </div>
                                     )}
 
-                                    {(getSetting('ai.chat_provider') === 'llmapi' || getSetting('ai.embed_provider') === 'llmapi') && (
+                                    {([getSetting('ai.chat_provider'), getSetting('ai.embed_provider'), getSetting('ai.fallback_provider'), getSetting('ai.embed_fallback_provider')].includes('llmapi')) && (
                                         /* LLMAPI Ayarları */
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
@@ -647,7 +725,7 @@ export default function AdminSettingsPage() {
                                         </div>
                                     )}
 
-                                    {(getSetting('ai.chat_provider') === 'custom' || getSetting('ai.embed_provider') === 'custom') && (
+                                    {([getSetting('ai.chat_provider'), getSetting('ai.embed_provider'), getSetting('ai.fallback_provider'), getSetting('ai.embed_fallback_provider')].includes('custom')) && (
                                         /* Custom OpenAI Ayarları */
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
                                             <div className="flex justify-between items-center mb-2">
@@ -694,6 +772,8 @@ export default function AdminSettingsPage() {
                                         onClick={() => handleSave([
                                             'ai.chat_provider',
                                             'ai.embed_provider',
+                                            'ai.fallback_provider',
+                                            'ai.embed_fallback_provider',
                                             'ai.active_provider', // kept for backwards compatibility during migration 
                                             'ai.ollama.url',
                                             'ai.ollama.chat_model',

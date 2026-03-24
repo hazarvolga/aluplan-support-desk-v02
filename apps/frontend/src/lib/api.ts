@@ -269,6 +269,13 @@ export const api = {
                 method: 'POST', body: JSON.stringify({ rating, comment }),
             }),
         status: () => request<any>('/ai/status'),
+        getHealthStatus: () => request<{
+            status: 'HEALTHY' | 'DEGRADED' | 'DOWN';
+            chatProvider: string;
+            embedProvider: string;
+            circuitBreaker: { open: boolean; openUntil: number | null; failureCount: number };
+            providers: Record<string, { available: boolean; message: string }>;
+        }>('/ai/health-status'),
         testConnection: (provider: string) => request<{ success: boolean; provider: string; message: string }>('/ai/test-connection', {
             method: 'POST',
             body: JSON.stringify({ provider }),
