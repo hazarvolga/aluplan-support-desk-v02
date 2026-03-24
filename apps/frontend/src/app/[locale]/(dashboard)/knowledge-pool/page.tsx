@@ -193,7 +193,13 @@ export default function KnowledgePoolPage() {
         try {
             toast({ title: t('toasts.dataset_scan_started'), description: t('toasts.dataset_scan_desc') });
             const res = await api.pool.syncDataset();
-            toast({ title: t('toasts.dataset_sync_success'), description: res.message || t('toasts.dataset_sync_success') });
+
+            if (res && res.success === false) {
+                toast({ title: t('logs.error'), description: res.message || 'Dataset scan failed', variant: 'destructive' });
+                return;
+            }
+
+            toast({ title: t('toasts.dataset_sync_success'), description: res?.message || t('toasts.dataset_sync_success') });
             loadSources();
         } catch (err: any) {
             toast({ title: t('logs.error'), description: err.message, variant: 'destructive' });

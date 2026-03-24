@@ -79,86 +79,95 @@ export class KnowledgePoolService {
     }
 
     async syncLocalDataset() {
-        // Find dataset directory: try local root, then container root
-        let datasetDir = path.resolve(process.cwd(), 'dataset');
-        if (!fs.existsSync(datasetDir)) {
-            datasetDir = path.resolve(process.cwd(), '../../dataset');
-        }
+        try {
+            // Find dataset directory: try local root, then container root
+            let datasetDir = path.resolve(process.cwd(), 'dataset');
+            if (!fs.existsSync(datasetDir)) {
+                datasetDir = path.resolve(process.cwd(), '../../dataset');
+            }
 
-        if (!fs.existsSync(datasetDir)) {
-            this.logger.error(`Dataset directory not found at ${datasetDir}`);
-            return { success: false, message: 'Dataset directory not found', scanned: 0 };
-        }
+            if (!fs.existsSync(datasetDir)) {
+                this.logger.error(`Dataset directory not found at ${datasetDir}`);
+                return { success: false, message: 'Dataset directory not found', scanned: 0 };
+            }
 
-        const filesToSync: string[] = [];
-        const validExts = ['.md', '.json', '.csv', '.pdf', '.txt', '.msg'];
+            const filesToSync: string[] = [];
+            const validExts = ['.md', '.json', '.csv', '.pdf', '.txt', '.msg'];
 
-        const walkSync = (dir: string) => {
-            const files = fs.readdirSync(dir);
-            for (const file of files) {
-                const filePath = path.join(dir, file);
-                const stat = fs.statSync(filePath);
-                if (stat.isDirectory()) {
-                    walkSync(filePath);
-                } else if (validExts.includes(path.extname(file).toLowerCase())) {
-                    filesToSync.push(filePath);
+            const walkSync = (dir: string) => {
+                const files = fs.readdirSync(dir);
+                for (const file of files) {
+                    const filePath = path.join(dir, file);
+                    const stat = fs.statSync(filePath);
+                    if (stat.isDirectory()) {
+                        walkSync(filePath);
+                    } else if (validExts.includes(path.extname(file).toLowerCase())) {
+                        filesToSync.push(filePath);
+                    }
+                }
+            };
+
+            walkSync(datasetDir);
+
+            let addedCount = 0;
+            let existingCount = 0;
+
+            for (const filePath of filesToSync) {
+                const ext = path.extname(filePath).toLowerCase();
+                let type: KnowledgeSourceType = KnowledgeSourceType.FILE_TXT;
+                if (ext === '.md') type = KnowledgeSourceType.FILE_MD;
+                if (ext === '.json') type = KnowledgeSourceType.FILE_TXT;
+                if (ext === '.pdf') type = KnowledgeSourceType.FILE_PDF;
+                if (ext === '.csv') type = KnowledgeSourceType.FILE_CSV;
+                if (ext === '.msg') type = KnowledgeSourceType.FILE_MSG;
+
+                const fileName = path.basename(filePath);
+
+                const existing = await this.prisma.knowledgeSource.findFirst({
+                    where: { filePath }
+                });
+
+                // Basic language detection from filename or directory
+                let language = 'tr';
+                if (filePath.toLowerCase().includes('_de') || filePath.toLowerCase().includes('/de/') || fileName.toLowerCase().includes('germany')) language = 'de';
+                else if (filePath.toLowerCase().includes('_en') || filePath.toLowerCase().includes('/en/') || fileName.toLowerCase().includes('english')) language = 'en';
+
+                if (existing) {
+                    await this.triggerSync(existing.id);
+                    existingCount++;
+                } else {
+                    const source = await this.prisma.knowledgeSource.create({
+                        data: {
+                            name: `[Dataset] ${fileName.substring(0, 200)}`,
+                            type,
+                            fileName: fileName.substring(0, 255),
+                            filePath,
+                            status: KnowledgeSourceStatus.ACTIVE,
+                            language,
+                            metadata: {
+                                useAiPreprocessing: true,
+                            }
+                        },
+                    });
+                    await this.triggerSync(source.id);
+                    addedCount++;
                 }
             }
-        };
 
-        walkSync(datasetDir);
 
-        let addedCount = 0;
-        let existingCount = 0;
-
-        for (const filePath of filesToSync) {
-            const ext = path.extname(filePath).toLowerCase();
-            let type: KnowledgeSourceType = KnowledgeSourceType.FILE_TXT;
-            if (ext === '.md') type = KnowledgeSourceType.FILE_MD;
-            if (ext === '.json') type = KnowledgeSourceType.FILE_TXT;
-            if (ext === '.pdf') type = KnowledgeSourceType.FILE_PDF;
-            if (ext === '.csv') type = KnowledgeSourceType.FILE_CSV;
-            if (ext === '.msg') type = KnowledgeSourceType.FILE_MSG;
-
-            const fileName = path.basename(filePath);
-
-            const existing = await this.prisma.knowledgeSource.findFirst({
-                where: { filePath }
-            });
-
-            // Basic language detection from filename or directory
-            let language = 'tr';
-            if (filePath.toLowerCase().includes('_de') || filePath.toLowerCase().includes('/de/') || fileName.toLowerCase().includes('germany')) language = 'de';
-            else if (filePath.toLowerCase().includes('_en') || filePath.toLowerCase().includes('/en/') || fileName.toLowerCase().includes('english')) language = 'en';
-
-            if (existing) {
-                await this.triggerSync(existing.id);
-                existingCount++;
-            } else {
-                const source = await this.prisma.knowledgeSource.create({
-                    data: {
-                        name: `[Dataset] ${fileName}`,
-                        type,
-                        fileName,
-                        filePath,
-                        status: KnowledgeSourceStatus.ACTIVE,
-                        language,
-                        metadata: {
-                            useAiPreprocessing: true,
-                        }
-                    },
-                });
-                await this.triggerSync(source.id);
-                addedCount++;
-            }
+            return {
+                success: true,
+                message: `Dataset sync initiated. Added ${addedCount} new files. Checked ${existingCount} existing files.`,
+                totalFiles: filesToSync.length
+            };
+        } catch (error: any) {
+            this.logger.error(`Error syncing local dataset: ${error.message}`, error.stack);
+            return {
+                success: false,
+                message: `Dataset sync failed: ${error.message || 'Unknown error'}`,
+                scanned: 0
+            };
         }
-
-
-        return {
-            success: true,
-            message: `Dataset sync initiated. Added ${addedCount} new files. Checked ${existingCount} existing files.`,
-            totalFiles: filesToSync.length
-        };
     }
 
     async getSyncLogs(sourceId: string) {
