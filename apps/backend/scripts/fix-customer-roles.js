@@ -1,4 +1,6 @@
 const { PrismaClient } = require('@aluplan/database');
+const { PrismaPg } = require('@prisma/adapter-pg');
+const { Pool } = require('pg');
 
 async function main() {
     console.log("🛠️ Starting CRM synced users role fix script...");
@@ -6,7 +8,9 @@ async function main() {
         console.error("❌ Error: DATABASE_URL environment variable is missing.");
         process.exit(1);
     }
-    const prisma = new PrismaClient();
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const adapter = new PrismaPg(pool);
+    const prisma = new PrismaClient({ adapter });
 
     try {
         const customerRole = await prisma.role.findUnique({
