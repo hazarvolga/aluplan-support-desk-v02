@@ -51,7 +51,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             client.data.userId = payload.sub;
             client.data.role = payload.role;
             this.connectedClients++;
-            this.logger.log(`🔌 Client connected: ${payload.sub} (total: ${this.connectedClients})`);
+            this.logger.log(`🔌 Client connected: ${payload.sub} | Role: ${payload.role} (total: ${this.connectedClients})`);
 
             // Join role room for targeted notifications (lowercase for consistency)
             if (payload.role) {
@@ -161,8 +161,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     @OnEvent('ticket.created', { async: true })
     async emitTicketCreated(ticket: any) {
-        // Broadcast to relevant roles (Admin, Managers, Team Leads, Agents)
-        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').to('role:team-lead').to('role:agent').emit('ticket:created', {
+        this.logger.log(`📢 Broadcasting ticket:created event to admins/agents for Ticket #${ticket.ticketNumber} (ID: ${ticket.id})`);
+        const payload = {
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
             subject: ticket.subject,
@@ -170,8 +170,11 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             status: ticket.status,
             creatorName: ticket.creator?.fullName || 'Müşteri',
             productName: ticket.product?.name,
-        });
+        };
 
+        // Broadcast to relevant roles (Admin, Managers, Team Leads, Agents)
+        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').to('role:team-lead').to('role:agent').emit('ticket:created', payload);
+        this.logger.log(`✔️ Broadcast completed for ${ticket.ticketNumber}. Payload: ${JSON.stringify(payload)}`);
         // Background: Create persistent notifications (keeping it simple for now, but querying non-customers)
         const potentialAgents = await this.prisma.user.findMany({
             where: {

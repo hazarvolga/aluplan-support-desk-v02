@@ -14,6 +14,7 @@ export function GlobalTicketNotification() {
             socket.connect();
 
             const handleNewTicket = (ticket: any) => {
+                console.log('📢 [GlobalTicketNotification] Received ticket:created event!', ticket);
                 toast({
                     title: "🎟️ Yeni Ticket Oluşturuldu!",
                     description: `${ticket.creatorName || 'Bir müşteri'} yeni bir destek talebi açtı: "${ticket.subject}"`,
@@ -30,9 +31,11 @@ export function GlobalTicketNotification() {
                 });
             };
 
+            socket.on('connect', () => console.log('🟢 [GlobalTicketNotification] Socket connected:', socket.id));
             socket.on('ticket:created', handleNewTicket);
 
             return () => {
+                socket.off('connect');
                 socket.off('ticket:created', handleNewTicket);
             };
         } catch (err) {
