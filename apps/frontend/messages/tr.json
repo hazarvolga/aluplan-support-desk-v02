@@ -2091,6 +2091,20 @@
         "card1_rule_desc": "Kategorilere (Örn: Model Çökmesi) sadece ürün özellikleri (Duvar, Kiriş) değil, müşteri semptomlarını da (kasıyor, siyah ekran, kapanıyor) yazın. AI bu anahtar kelimeleri okuyarak bileti doğru takıma (Triage) yönlendirir.",
         "card2_title": "Müşteri ve Ekip Yönetimi",
         "card2_desc": "Sol panonun <b>SİSTEM</b> menüsü altından Müşterileri onaylayabilir ve Destek Ekiplerini (Departmanları) oluşturabilirsiniz. Biletlerin otomatik atanabilmesi için SLA kurallarını (Kaç saatte yanıt verilecek, mesai saati dışında dursun mu?) Ekip Yönetimi sekmesinden ayarlamayı unutmayın."
+      },
+      "section4": {
+        "title": "Duyuru Yönetimi (Announcements)",
+        "desc": "Sistem üzerinden müşterilerinize e-posta ile toplu veya hedeflenmiş duyurular (kampanya, bakım vb.) gönderme süreci 4 adımdan oluşur:",
+        "step1_title": "Adım 1: Şablon Hazırlama",
+        "step1_desc": "Tekrar kullanabileceğiniz e-posta içeriklerini 'Şablon Kütüphanesi' (Templates) sekmesinde tasarlar ve kaydedersiniz.",
+        "step2_title": "Adım 2: Duyuru Oluşturma ve Şablon Seçimi",
+        "step2_desc": "'Duyuru Oluştur' sekmesinde yeni bir içerik yazabilir veya üstteki menüden bir şablonu (Apply) içeriğe uygulayabilirsiniz.",
+        "step3_title": "Adım 3: Hedef Kitle Seçimi",
+        "step3_desc": "Sağ taraftaki filtreleri kullanarak duyurunun hangi sektör veya şirkete gideceğini belirlersiniz. Sistem size ulaşılacak kişi sayısını anında gösterir.",
+        "step4_title": "Adım 4: Taslağı Kaydet ve Yayınla",
+        "step4_desc": "'Taslağı Protokolle' butonuna bastığınızda duyurunuz taslak (Draft) olarak kaydedilir. Henüz kimseye e-posta gitmez. İlgili duyuruyu 'Gönderim Geçmişi' (History) sekmesinden kontrol edip 'Yayınla' (Broadcast) ikonuna tıklayarak asıl e-postaları seçilen kitleye gönderebilirsiniz.",
+        "tip_title": "İpucu:",
+        "tip_desc": "Onaylanmamış (Draft) durumdaki taslaklarınızı, göndermeden önce mutlaka preview (önizleme) modunda test etmelisiniz."
       }
     }
   }

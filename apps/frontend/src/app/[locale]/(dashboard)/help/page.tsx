@@ -10,7 +10,7 @@ import {
     Ticket, Bot, BookOpen, User, Settings,
     MessageSquareQuote, Database, Layers, Mail,
     Zap, Clock, ListChecks, HelpCircle, ArrowRight,
-    Users
+    Users, Megaphone, Send, Shield
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/role-guard';
 import { useTranslations } from 'next-intl';
@@ -228,6 +228,44 @@ export default function SystemGuidePage() {
                                     <p className="text-sm text-slate-400" dangerouslySetInnerHTML={{ __html: t('admin.section3.card2_desc') }} />
                                 </Card>
                             </div>
+                        </section>
+
+                        {/* 4. Duyuru Yönetimi (Announcements) */}
+                        <section className="space-y-4">
+                            <h2 className="text-2xl font-bold flex items-center gap-2">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600/20 text-blue-500 text-sm">4</span>
+                                {t('admin.section4.title')}
+                            </h2>
+                            <Card className="bg-slate-900/50 border-white/5">
+                                <CardContent className="pt-6 space-y-4">
+                                    <p className="text-slate-300" dangerouslySetInnerHTML={{ __html: t('admin.section4.desc') }} />
+
+                                    <div className="space-y-4 border-l-2 border-slate-700 pl-4 ml-2">
+                                        <div>
+                                            <h4 className="font-bold text-white mb-1 flex items-center gap-2"><BookOpen className="w-4 h-4 text-blue-400" /> {t('admin.section4.step1_title')}</h4>
+                                            <p className="text-sm text-slate-400">{t('admin.section4.step1_desc')}</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-white mb-1 flex items-center gap-2"><Megaphone className="w-4 h-4 text-emerald-400" /> {t('admin.section4.step2_title')}</h4>
+                                            <p className="text-sm text-slate-400">{t('admin.section4.step2_desc')}</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-white mb-1 flex items-center gap-2"><Users className="w-4 h-4 text-purple-400" /> {t('admin.section4.step3_title')}</h4>
+                                            <p className="text-sm text-slate-400">{t('admin.section4.step3_desc')}</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-white mb-1 flex items-center gap-2"><Send className="w-4 h-4 text-amber-400" /> {t('admin.section4.step4_title')}</h4>
+                                            <p className="text-sm text-slate-400">{t('admin.section4.step4_desc')}</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-blue-900/10 p-4 rounded-lg flex gap-3 mt-4 items-start border border-blue-500/20">
+                                        <Shield className="h-5 w-5 text-blue-400 shrink-0 mt-0.5" />
+                                        <span className="text-sm text-slate-300">
+                                            <strong>{t('admin.section4.tip_title')}</strong> {t('admin.section4.tip_desc')}
+                                        </span>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </section>
 
                     </TabsContent>

@@ -2086,6 +2086,20 @@
         "card1_rule_desc": "Schreiben Sie nicht nur Produktmerkmale (Wand, Balken), sondern auch Kundensymptome (Ruckeln, schwarzer Bildschirm, Schließen) in Kategorien (z. B. Modellabsturz). Die KI liest diese Schlüsselwörter und leitet das Ticket an das richtige Team (Triage) weiter.",
         "card2_title": "Kunden- und Teamverwaltung",
         "card2_desc": "Unter dem Menü <b>SYSTEM</b> im linken Bereich können Sie Kunden genehmigen und Support-Teams (Abteilungen) erstellen. Vergessen Sie nicht, die SLA-Regeln (Nach wie vielen Stunden soll geantwortet werden, soll es außerhalb der Arbeitszeit anhalten?) auf der Registerkarte Teamverwaltung festzulegen, damit Tickets automatisch zugewiesen werden können."
+      },
+      "section4": {
+        "title": "Verwaltung von Ankündigungen",
+        "desc": "Der Prozess des Versands von Massen- oder gezielten Ankündigungen (Kampagnen, Wartung usw.) per E-Mail an Ihre Kunden besteht aus 4 Schritten:",
+        "step1_title": "Schritt 1: Vorlagen Vorbereiten",
+        "step1_desc": "Sie entwerfen und speichern wiederverwendbare E-Mail-Inhalte in der Registerkarte 'Vorlagenbibliothek' (Templates).",
+        "step2_title": "Schritt 2: Ankündigung Erstellen und Vorlage Auswählen",
+        "step2_desc": "In der Registerkarte 'Ankündigung erstellen' können Sie neuen Inhalt schreiben oder eine Vorlage aus dem oberen Menü anwenden.",
+        "step3_title": "Schritt 3: Zielgruppe Auswählen",
+        "step3_desc": "Über die Filter auf der rechten Seite legen Sie fest, an welche Branche oder welches Unternehmen die Ankündigung gehen soll. Das System zeigt sofort die Anzahl der erreichbaren Personen an.",
+        "step4_title": "Schritt 4: Entwurf Speichern und Senden",
+        "step4_desc": "Wenn Sie auf die Schaltfläche 'Entwurf speichern' klicken, wird Ihre Ankündigung als Entwurf gespeichert. Es werden noch keine E-Mails versendet. Sie können die entsprechende Ankündigung auf der Registerkarte 'Sendeverlauf' (History) überprüfen und auf das Symbol 'Senden' (Broadcast) klicken, um die tatsächlichen E-Mails an die ausgewählte Zielgruppe zu senden.",
+        "tip_title": "Tipp:",
+        "tip_desc": "Sie sollten Ihre unbestätigten (Entwurfs-) Entwürfe immer im Vorschaumodus testen, bevor Sie sie versenden."
       }
     }
   }

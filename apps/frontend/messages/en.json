@@ -2105,6 +2105,20 @@
         "card1_rule_desc": "Write not only product features (Wall, Beam) but also customer symptoms (stuttering, black screen, closing) in categories (e.g., Model Crash). AI reads these keywords and directs the ticket to the correct team (Triage).",
         "card2_title": "Customer and Team Management",
         "card2_desc": "You can approve Customers and create Support Teams (Departments) from under the <b>SYSTEM</b> menu of the left panel. Do not forget to set the SLA rules (How many hours to respond, should it stop outside working hours?) from the Team Management tab so that tickets can be assigned automatically."
+      },
+      "section4": {
+        "title": "Announcements Management",
+        "desc": "The process of sending bulk or targeted announcements (campaigns, maintenance, etc.) via email to your customers consists of 4 steps:",
+        "step1_title": "Step 1: Preparing Templates",
+        "step1_desc": "You design and save reusable email contents in the 'Template Library' (Templates) tab.",
+        "step2_title": "Step 2: Creating an Announcement and Selecting a Template",
+        "step2_desc": "In the 'Create Announcement' tab, you can write new content or apply a template from the top menu.",
+        "step3_title": "Step 3: Selecting Target Audience",
+        "step3_desc": "Using the filters on the right, you determine which industry or company the announcement will go to. The system instantly shows the number of people to be reached.",
+        "step4_title": "Step 4: Save Draft and Broadcast",
+        "step4_desc": "When you press the 'Save Draft' button, your announcement is saved as a draft. No emails are sent yet. You can check the relevant announcement from the 'Broadcast History' (History) tab and click the 'Broadcast' icon to send the actual emails to the selected audience.",
+        "tip_title": "Tip:",
+        "tip_desc": "You should always test your unapproved (Draft) drafts in the preview mode before sending them."
       }
     }
   }
