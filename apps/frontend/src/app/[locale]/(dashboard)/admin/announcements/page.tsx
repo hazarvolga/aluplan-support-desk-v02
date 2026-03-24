@@ -236,6 +236,7 @@ export default function AnnouncementsPage() {
     };
 
     const applyTemplate = (temp: any) => {
+        setTitle(temp.name || '');
         setContentHtml(temp.contentMjml || temp.contentHtml || '');
         setSubject(temp.subject || '');
         setActiveTab('create');
