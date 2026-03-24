@@ -1,14 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSocket } from '@/lib/socket';
+import { getSocket } from '@/lib/socket';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
-import { Ticket } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 export function GlobalTicketNotification() {
-    const { socket } = useSocket();
     const { toast } = useToast();
 
     // We are optionally using next-intl, but since we don't have the exact translation keys 
@@ -16,7 +14,8 @@ export function GlobalTicketNotification() {
     // If you add this to the translation files, you can update it later.
 
     useEffect(() => {
-        if (!socket) return;
+        const socket = getSocket();
+        socket.connect();
 
         const handleNewTicket = (ticket: any) => {
             toast({
