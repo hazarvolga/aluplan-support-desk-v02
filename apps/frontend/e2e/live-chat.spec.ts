@@ -41,7 +41,7 @@ test.describe('Live Chat WebSocket Flow', () => {
     const customerEmail = 'test_customer@aluplan.com';
     const customerPassword = 'Test1234!';
     const adminEmail = 'hazarvolga@gmail.com';
-    const adminPassword = 'Vol?*187';
+    const adminPassword = 'Vol1872017';
 
     test('should activate live chat session end-to-end', async ({ page }) => {
         // ── SETUP: Create ticket via API ──────────────────────────────────
@@ -59,7 +59,7 @@ test.describe('Live Chat WebSocket Flow', () => {
 
         // ── UI: Customer Login & Request Chat ─────────────────────────────
         console.log('--- UI: Customer login & request chat ---');
-        await page.goto('/');
+        await page.goto('/tr/login');
         await page.getByTestId('login-email').fill(customerEmail);
         await page.getByTestId('login-password').fill(customerPassword);
         await page.getByTestId('login-submit').click();

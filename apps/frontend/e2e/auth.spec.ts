@@ -14,7 +14,7 @@ test.describe('Authentication Flow', () => {
 
     test('should load login page with correct elements', async ({ page }) => {
         // Arrange
-        await page.goto('/login');
+        await page.goto('/tr/login');
         await page.waitForSelector('[data-testid="login-email"]', { timeout: 120000 });
 
         // Assert - email input
@@ -29,7 +29,7 @@ test.describe('Authentication Flow', () => {
 
     test('should show error message on invalid credentials', async ({ page }) => {
         // Arrange
-        await page.goto('/login');
+        await page.goto('/tr/login');
         await page.waitForSelector('[data-testid="login-email"]', { timeout: 120000 });
 
         // Act
@@ -48,7 +48,7 @@ test.describe('Authentication Flow', () => {
 
     test('should redirect to dashboard on valid credentials', async ({ page }) => {
         // Arrange
-        await page.goto('/login');
+        await page.goto('/tr/login');
         await page.waitForSelector('[data-testid="login-email"]', { timeout: 120000 });
 
         // Act
@@ -63,7 +63,7 @@ test.describe('Authentication Flow', () => {
 
     test('should display system requirements accordion', async ({ page }) => {
         // Arrange
-        await page.goto('/login');
+        await page.goto('/tr/login');
 
         // Assert - Requirement accordion elements should be visible
         const accordion = page.getByTestId('requirement-accordion');

@@ -95,7 +95,7 @@ test.describe('Ticket Lifecycle Orchestration', () => {
 
         // ── UI PHASE: Customer logs in and completes CSAT + close ─────────
         console.log('--- [UI] Customer: Login → View Ticket → Rate & Close ---');
-        await page.goto('/login');
+        await page.goto('/tr/login');
         await expect(page.getByTestId('login-email')).toBeVisible({ timeout: 120000 });
         await page.getByTestId('login-email').fill(customerEmail);
         await page.getByTestId('login-password').fill(customerPassword);

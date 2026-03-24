@@ -56,7 +56,7 @@ test.describe('Attachment Upload Flow', () => {
         const ticketId = ticket.id;
 
         console.log('--- UI: Customer login & navigation ---');
-        await page.goto('/login');
+        await page.goto('/tr/login');
         await page.getByTestId('login-email').fill(customerEmail);
         await page.getByTestId('login-password').fill(customerPassword);
         await page.getByTestId('login-submit').click();

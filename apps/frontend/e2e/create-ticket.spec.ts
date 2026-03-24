@@ -6,7 +6,7 @@ import { test, expect, Page } from '@playwright/test';
  */
 
 async function loginAsAdmin(page: Page) {
-    await page.goto('/');
+    await page.goto('/tr/login');
     // Use data-testid for stability
     await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
     await page.getByTestId('login-password').fill('Vol1872017');

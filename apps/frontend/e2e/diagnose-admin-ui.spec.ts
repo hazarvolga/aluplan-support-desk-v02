@@ -31,7 +31,7 @@ test.describe('Admin Panel Interactivity Diagnostic', () => {
 
         // 2. Navigate to root (localized)
         console.log('Navigating to root page...');
-        await page.goto('/tr');
+        await page.goto('/tr/login');
         console.log(`Current URL: ${page.url()}`);
 
         // 3. Perform login using data-testid

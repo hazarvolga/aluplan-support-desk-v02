@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Full System Diagnostic E2E Test', () => {
 
     test('1. System Boot & Landing Page', async ({ page }) => {
-        const response = await page.goto('/tr', { waitUntil: 'domcontentloaded' });
+        const response = await page.goto('/tr/login', { waitUntil: 'domcontentloaded' });
         expect(response?.status()).toBe(200);
         await expect(page.locator('text=Aluplan').first()).toBeVisible();
     });
@@ -12,7 +12,7 @@ test.describe('Full System Diagnostic E2E Test', () => {
         page.on('console', msg => console.log(`[Browser] ${msg.type()}: ${msg.text()}`));
         page.on('pageerror', err => console.error(`[Browser Error]`, err));
 
-        await page.goto('/tr', { waitUntil: 'domcontentloaded' });
+        await page.goto('/tr/login', { waitUntil: 'domcontentloaded' });
 
         // Wait 8 seconds for unminified local Dev JS bundles to download and attach React Event Delegation
         await page.waitForTimeout(8000);
@@ -47,7 +47,7 @@ test.describe('Full System Diagnostic E2E Test', () => {
         const testUser = `test_customer_${Date.now()}@aluplan.com`;
 
         // Attempt login to verify redirect
-        await page.goto('/tr', { waitUntil: 'domcontentloaded' });
+        await page.goto('/tr/login', { waitUntil: 'domcontentloaded' });
 
         // Ensure app mounts and React Event Delegation is active
         await page.waitForTimeout(8000);
@@ -69,7 +69,7 @@ test.describe('Full System Diagnostic E2E Test', () => {
     test('4. Admin Dashboard Module Availability', async ({ page }) => {
         // We will directly use JS to set the token to avoid re-login if possible, 
         // but E2E tests are isolated. We need to login again.
-        await page.goto('/tr', { waitUntil: 'domcontentloaded' });
+        await page.goto('/tr/login', { waitUntil: 'domcontentloaded' });
         await page.waitForTimeout(8000);
         await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
         await expect(page.getByTestId('login-email')).toHaveValue('hazarvolga@gmail.com');

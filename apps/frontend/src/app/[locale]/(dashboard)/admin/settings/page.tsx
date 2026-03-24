@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
     Loader2, Bot, Globe, Mail, ShieldCheck, Palette, CheckCircle2,
     XCircle, ExternalLink, Plus, Trash2, Edit2, AlertCircle, Clock,
-    Upload, Trash, MessageSquare, Phone, Monitor
+    Upload, Trash, MessageSquare, Phone, Monitor, Database
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
