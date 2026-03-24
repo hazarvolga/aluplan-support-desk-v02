@@ -11,10 +11,26 @@ export class AttachmentsService {
         fileSize: number;
         mimeType: string;
         url: string;
-    }) {
-        return this.prisma.attachment.create({
+    }, hotinfoSnapshot?: any) {
+        const attachment = await this.prisma.attachment.create({
             data,
         });
+
+        if (hotinfoSnapshot) {
+            const message = await this.prisma.ticketMessage.findUnique({
+                where: { id: data.messageId },
+                select: { ticketId: true }
+            });
+            if (message?.ticketId) {
+                await this.prisma.ticket.update({
+                    where: { id: message.ticketId },
+                    data: { hotinfoSnapshot }
+                });
+                this.prisma.$queryRaw`SELECT 1`; // trigger
+            }
+        }
+
+        return attachment;
     }
 
     async findByMessage(messageId: string) {

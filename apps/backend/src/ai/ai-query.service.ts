@@ -57,7 +57,7 @@ RULES:
     - If the user's query is about software crashes, freezes, performance issues, installation, or technical errors, YOU MUST check the [MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)] section in the context.
     - If the Hotinfo data is missing ("Bulunamadı"), BEFORE answering or guessing, you MUST politely ask the user to upload their "_hotinfo_.hxl" file.
     - Example response: "Yaşadığınız teknik sorun için üzgünüz. Size yardımcı olabilmemiz için sistem özelliklerinizi incelememiz gerekiyor. Lütfen Allplan içerisinden oluşturduğunuz '_hotinfo_.hxl' dosyasını destek talebinize ekleyin. Dosya yüklendikten sonra sorununuzu daha sağlıklı analiz edebiliriz."
-    - If the Hotinfo data IS PRESENT, you MUST read it. Check the GPU model, GPU driver version, and RAM. If the user complains about performance and the GPU driver is old, or RAM is low, point it out directly using their uploaded data!
+    - If the Hotinfo data IS PRESENT, you MUST read it. Check the GPU model, GPU driver version, and RAM. If the user complains about performance and the GPU driver is old, or RAM is low, point it out directly using their uploaded data! DO NOT ask the user to upload the "_hotinfo_.hxl" file if the data is already present.
 
 GOAL:
 To provide users with fast, technically accurate, controlled, and direct solutions in their preferred language.`;
@@ -172,7 +172,7 @@ export class AiQueryService {
         }
 
         if (!answer) {
-            answer = 'I don\'t have information on this topic yet, but I\'m here to help.';
+            answer = 'Şu an bilgisayarımda bu konuyla ilgili net bir bilgi bulunmuyor, ancak size yardımcı olmak için buradayım.';
         }
 
 
@@ -352,7 +352,7 @@ export class AiQueryService {
                 userId,
             });
         } else {
-            fullAnswer = 'I don\'t have information on this topic yet, you may try creating a support ticket.';
+            fullAnswer = 'Veritabanında bu konuyla ilgili kesin bir çözüm bulamadım. Lütfen sorununuzla ilgili bir destek talebi (ticket) oluşturun.';
             yield { chunk: fullAnswer };
         }
 

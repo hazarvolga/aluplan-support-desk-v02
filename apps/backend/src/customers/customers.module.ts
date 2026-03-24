@@ -26,6 +26,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     }),
   ],
   controllers: [CustomersController],
-  providers: [CustomersService, HotinfoParserService]
+  providers: [CustomersService, HotinfoParserService],
+  exports: [HotinfoParserService]
 })
 export class CustomersModule { }

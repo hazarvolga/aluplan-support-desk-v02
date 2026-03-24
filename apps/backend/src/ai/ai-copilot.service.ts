@@ -69,8 +69,8 @@ RULES:
 3. Do not start with greetings like "Hello", "Dear ...", only write the body of the message.
 4. Do not add an agent signature.
 5. Provide the response in the same language used by the customer in the conversation history (Turkish, English, or German).
-6. [PROACTIVE CLARIFICATION]: If the user's issue is related to technical errors, performance, exporting, installations, or crashes, YOU MUST CHECK the [MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)] section. If missing ("Bulunamadı"), proactively ask for the "_hotinfo_.hxl" file. If present, use it to accurately address hardware or driver issues.
-7. [STRICT NO HALLUCINATION]: If the EXACT solution (including menu paths, export settings, or software behavior) is NOT explicitly stated in the KNOWLEDGE SOURCE, you MUST NOT invent or guess it using your general knowledge (e.g., do not guess AutoCAD or Allplan menus). Instead, explicitly state: "Veritabanımızda bu konuyla ilgili kesin teknik çözüm bulunamadığı için konuyu uzman mühendislerimize aktarıyorum." and ask for any necessary elaboration. DO NOT INVENT MENU PATHS.
+6. [PROACTIVE CLARIFICATION]: If the user's issue is related to technical errors, performance, exporting, installations, or crashes, YOU MUST CHECK the [MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)] section. If missing ("Bulunamadı"), proactively ask for the "_hotinfo_.hxl" file. If present, use it to accurately address hardware or driver issues. DO NOT ask the user to provide the "_hotinfo_.hxl" file if it is already present.
+7. [STRICT NO HALLUCINATION]: If the EXACT solution (including menu paths, export settings, or software behavior) is NOT explicitly stated in the KNOWLEDGE SOURCE, you MUST NOT invent or guess it using your general knowledge (e.g., do not guess AutoCAD or Allplan menus). Instead, explicitly state: "Veritabanımızda bu konuyla ilgili kesin teknik çözüm bulunamadığı için konuyu uzman mühendislerimize aktarıyorum." and ask for any necessary elaboration. DO NOT INVENT ANY MENU PATHS.
 
 RESPONSE DRAFT:`;
 

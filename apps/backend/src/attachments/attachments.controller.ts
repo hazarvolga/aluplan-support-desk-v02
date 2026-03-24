@@ -18,6 +18,7 @@ import { RbacGuard } from '../rbac/rbac.guard';
 import { RequirePermissions } from '../rbac/decorators/rbac.decorators';
 import { StorageService } from '../common/services/storage.service';
 import { Response } from 'express';
+import { HotinfoParserService } from '../customers/hotinfo-parser.service';
 
 @Controller('attachments')
 @UseGuards(RbacGuard)
@@ -25,6 +26,7 @@ export class AttachmentsController {
     constructor(
         private readonly attachmentsService: AttachmentsService,
         private readonly storageService: StorageService,
+        private readonly hotinfoParser: HotinfoParserService,
     ) { }
 
     @Post('upload/:messageId')
@@ -45,16 +47,24 @@ export class AttachmentsController {
         )
         file: Express.Multer.File,
     ) {
-        // Enforce classification: tickets/msg_{id}
         const storageKey = await this.storageService.uploadFile(file, `tickets/msg_${messageId}`);
+
+        let parsedHotinfo = null;
+        if (file.originalname.toLowerCase().includes('_hotinfo_') && file.originalname.toLowerCase().endsWith('.hxl')) {
+            try {
+                parsedHotinfo = this.hotinfoParser.parseHotinfo(file.buffer.toString('utf-8'));
+            } catch (e) {
+                // ignore parsing errors
+            }
+        }
 
         return this.attachmentsService.create({
             messageId,
             fileName: file.originalname,
             fileSize: file.size,
             mimeType: file.mimetype,
-            url: storageKey, // Store the object key, not a local path
-        });
+            url: storageKey,
+        }, parsedHotinfo);
     }
 
     @Get(':id/download')
