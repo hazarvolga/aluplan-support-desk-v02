@@ -75,7 +75,7 @@ export class HotinfoParserService {
             // ── CPU ──
             let cpu = 'Unknown';
             if (system?.processor) {
-                cpu = system.processor['@_name'] || system.processor['cpu-name'] || this.extractValue(system.processor) || 'Unknown';
+                cpu = system.processor['cpu-name'] || system.processor['@_name'] || this.extractValue(system.processor) || 'Unknown';
             }
 
             // ── GPU (Primary + Additional) ──
@@ -94,8 +94,8 @@ export class HotinfoParserService {
                     gpu = additionalGPU || primaryGPU || 'Unknown';
                 }
 
-                gpuDriverVersion = this.safeString(v['driver-version']) || this.safeString(v['@_driver-version']) || this.safeString(v['driver']) || '';
-                openglVersion = this.safeString(v['opengl-version']) || this.safeString(v['@_opengl-version']) || this.safeString(v['opengl']) || '';
+                gpuDriverVersion = this.safeString(v.driver?.['@_version']) || this.safeString(v['driver-version']) || this.safeString(v['@_driver-version']) || '';
+                openglVersion = this.safeString(v.opengl?.['@_version']) || this.safeString(v['opengl-version']) || this.safeString(v['@_opengl-version']) || '';
 
                 // VRAM
                 const dedicatedMem = v['dedicated-memory'] || v['@_dedicated-memory'] || v['adapter-ram'];

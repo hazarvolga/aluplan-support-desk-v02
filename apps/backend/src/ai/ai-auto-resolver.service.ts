@@ -27,7 +27,7 @@ export class AiAutoResolverService {
             const queryText = `${ticket.subject}\n\n${ticket.description || ''}`;
             this.logger.log(`🤖 Attempting auto-resolution for ticket ${ticket.ticketNumber}`);
 
-            const result = await this.aiQueryService.query(queryText, ticket.userId ?? undefined);
+            const result = await this.aiQueryService.query(queryText, ticket.userId ?? undefined, 'WEB', ticket.hotinfoSnapshot);
 
             if (result.confidence === 'HIGH' && result.answer) {
                 this.logger.log(`✍️ Creating Draft for ticket ${ticket.ticketNumber} with HIGH confidence AI response.`);

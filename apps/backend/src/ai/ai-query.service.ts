@@ -53,10 +53,11 @@ RULES:
     - Find the answer and summarize it in your own technical sentences.
     - Select and synthesize the most critical part of the source.
 
-5) PROACTIVE CLARIFICATION (COUNTER-QUESTIONING)
-    - If the user's query is about software crashes, freezes, performance issues, or technical errors (e.g., "donuyor", "kilitleniyor", "hata veriyor"), and they have NOT specified their Allplan Version or Graphics Card (GPU) details:
-    - You must FIRST politely ask for these two pieces of information (Version and GPU model) before providing a solution.
-    - Example response: "I'm sorry to hear that. To help you better, could you please specify which Allplan version you are using and what your graphics card model is? Meanwhile, based on our knowledge base, you can check..."
+5) PROACTIVE CLARIFICATION (HOTINFO / SİSTEM BİLGİSİ)
+    - If the user's query is about software crashes, freezes, performance issues, installation, or technical errors, YOU MUST check the [MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)] section in the context.
+    - If the Hotinfo data is missing ("Bulunamadı"), BEFORE answering or guessing, you MUST politely ask the user to upload their "_hotinfo_.hxl" file.
+    - Example response: "Yaşadığınız teknik sorun için üzgünüz. Size yardımcı olabilmemiz için sistem özelliklerinizi incelememiz gerekiyor. Lütfen Allplan içerisinden oluşturduğunuz '_hotinfo_.hxl' dosyasını destek talebinize ekleyin. Dosya yüklendikten sonra sorununuzu daha sağlıklı analiz edebiliriz."
+    - If the Hotinfo data IS PRESENT, you MUST read it. Check the GPU model, GPU driver version, and RAM. If the user complains about performance and the GPU driver is old, or RAM is low, point it out directly using their uploaded data!
 
 GOAL:
 To provide users with fast, technically accurate, controlled, and direct solutions in their preferred language.`;
@@ -83,10 +84,10 @@ export class AiQueryService {
         this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.75'));
     }
 
-    async query(userQuery: string, userId?: string | null, channel: CommunicationChannel = 'WEB'): Promise<AiQueryResult> {
+    async query(userQuery: string, userId?: string | null, channel: CommunicationChannel = 'WEB', hotinfoSnapshot?: any): Promise<AiQueryResult> {
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
-        const queryHash = createHash('sha256').update(userQuery + isStaff).digest('hex');
+        const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoSnapshot ? JSON.stringify(hotinfoSnapshot) : '')).digest('hex');
         const cacheKey = `ai: query: cache:${queryHash} `;
         const cached = await this.redis.get(cacheKey);
 
@@ -156,6 +157,7 @@ export class AiQueryService {
                 userId: userId ?? undefined,
                 userQuery,
                 kbContent: topResult.content,
+                hotinfoSnapshot,
             });
             const finalPrompt = `${systemPrompt} \n\n${contextPrompt} `;
             const aiResult = await this.ai.reformat(finalPrompt, userQuery, topResult.content);
@@ -267,10 +269,10 @@ export class AiQueryService {
             .slice(0, 5);
     }
 
-    async * streamQuery(userQuery: string, userId?: string | null): AsyncGenerator<any, void, unknown> {
+    async * streamQuery(userQuery: string, userId?: string | null, hotinfoSnapshot?: any): AsyncGenerator<any, void, unknown> {
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
-        const queryHash = createHash('sha256').update(userQuery + isStaff).digest('hex');
+        const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoSnapshot ? JSON.stringify(hotinfoSnapshot) : '')).digest('hex');
         const cacheKey = `ai: query: stream_cache:${queryHash} `;
         const cached = await this.redis.get(cacheKey);
 
@@ -332,6 +334,7 @@ export class AiQueryService {
                 userId: userId ?? undefined,
                 userQuery,
                 kbContent: topResult.content,
+                hotinfoSnapshot,
             });
             const finalPrompt = `${systemPrompt} \n\n${contextPrompt} `;
             usedPrompt = finalPrompt;

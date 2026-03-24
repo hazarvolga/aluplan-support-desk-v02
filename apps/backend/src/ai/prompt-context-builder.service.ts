@@ -5,6 +5,7 @@ export interface ContextOptions {
     userId?: string;
     userQuery: string;
     kbContent: string;
+    hotinfoSnapshot?: any;
 }
 
 @Injectable()
@@ -12,7 +13,7 @@ export class PromptContextBuilderService {
     constructor(private readonly prisma: PrismaService) { }
 
     async buildContext(options: ContextOptions): Promise<string> {
-        const { userId, userQuery, kbContent } = options;
+        const { userId, userQuery, kbContent, hotinfoSnapshot } = options;
         let context = '';
 
         // 0. Approved Knowledge Source (most critical — placed first for LLM attention)
@@ -20,7 +21,7 @@ export class PromptContextBuilderService {
             context += `[APPROVED KNOWLEDGE SOURCE]\n${kbContent}\n\n`;
         }
 
-        // 1. User Profile & Preferences
+        // 1. User Profile & Preferences & Hotinfo
         if (userId) {
             const user = await this.prisma.user.findUnique({
                 where: { id: userId },
@@ -30,6 +31,19 @@ export class PromptContextBuilderService {
                 context += `[1. Kullanıcı Profili]\nAd: ${user.fullName}\nEmail: ${user.email}\n`;
                 if (user.customerProfile) {
                     context += `Firma: ${user.customerProfile.companyName || 'Bilinmiyor'}\nSektör: ${user.customerProfile.industry || 'Bilinmiyor'}\n`;
+
+                    const h = hotinfoSnapshot || user.customerProfile.hotinfoData;
+                    if (h) {
+                        context += `\n[MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)]\n`;
+                        context += `- Allplan Sürümü: ${h.allplanVersion || 'Bilinmiyor'}\n`;
+                        context += `- İşletim Sistemi: ${h.osVersion || 'Bilinmiyor'}\n`;
+                        context += `- İşlemci (CPU): ${h.cpu || 'Bilinmiyor'}\n`;
+                        context += `- Ekran Kartı (GPU): ${h.gpu || 'Bilinmiyor'} (Sürücü: ${h.gpuDriverVersion || 'Bilinmiyor'})\n`;
+                        context += `- RAM: ${h.ram || 'Bilinmiyor'}\n`;
+                        context += `- Ekran Çözünürlüğü: ${h.screenResolution || 'Bilinmiyor'}\n\n`;
+                    } else {
+                        context += `\n[MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)]\nBulunamadı. (Kullanıcı henüz _hotinfo_.hxl dosyası yüklememiş)\n\n`;
+                    }
                 }
                 context += '\n';
 
