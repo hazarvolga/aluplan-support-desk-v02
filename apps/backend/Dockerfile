@@ -19,7 +19,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 RUN apk add --no-cache openssl fontconfig && \
     npm install -g pnpm@9.15.4 && \
-    npm install -g prisma@7.4.2
+    npm install -g prisma@7.5.0
 
 # 1. Copy entire workspace (metadata + source needed for pnpm install)
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
@@ -44,8 +44,8 @@ COPY --from=builder /app/apps/backend/src/email/templates ./apps/backend/src/ema
 COPY --from=builder /app/apps/backend/src/email/locales ./apps/backend/src/email/locales
 COPY --from=builder /app/dataset ./dataset/
 COPY --from=builder /app/apps/backend/scripts/deploy.sh ./deploy.sh
-COPY --from=builder /app/apps/backend/scripts/grant-admin.js ./scripts/grant-admin.js
-COPY --from=builder /app/apps/backend/scripts/fix-customer-roles.js ./scripts/fix-customer-roles.js
+COPY --from=builder /app/apps/backend/scripts/grant-admin.js ./apps/backend/scripts/grant-admin.js
+COPY --from=builder /app/apps/backend/scripts/fix-customer-roles.js ./apps/backend/scripts/fix-customer-roles.js
 
 # Final permissions and port config
 RUN chmod +x ./deploy.sh

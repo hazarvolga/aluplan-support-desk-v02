@@ -14,8 +14,8 @@ npx prisma migrate deploy \
   --config ./packages/database/prisma.config.js
 
 echo "Enforcing Admin Role & Fixing CRM user roles..."
-node scripts/grant-admin.js || echo "Failed to run grant-admin script but continuing..."
-node scripts/fix-customer-roles.js || echo "Failed to run fix-customer-roles script but continuing..."
+node apps/backend/scripts/grant-admin.js || echo "Failed to run grant-admin script but continuing..."
+node apps/backend/scripts/fix-customer-roles.js || echo "Failed to run fix-customer-roles script but continuing..."
 
 echo "Starting application..."
 node apps/backend/dist/src/main.js
