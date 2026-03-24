@@ -16,7 +16,7 @@ export class KnowledgePoolService {
         @InjectQueue('knowledge-sync') private readonly syncQueue: Queue,
     ) { }
 
-    async createSource(dto: CreateKnowledgeSourceDto) {
+    async createSource(dto: CreateKnowledgeSourceDto): Promise<any> {
         const source = await this.prisma.knowledgeSource.create({
             data: {
                 name: dto.name,
@@ -31,7 +31,7 @@ export class KnowledgePoolService {
         return source;
     }
 
-    async createFileSource(name: string, type: KnowledgeSourceType, file: Express.Multer.File) {
+    async createFileSource(name: string, type: KnowledgeSourceType, file: Express.Multer.File): Promise<any> {
         const source = await this.prisma.knowledgeSource.create({
             data: {
                 name,
@@ -46,7 +46,7 @@ export class KnowledgePoolService {
         return source;
     }
 
-    async getAllSources() {
+    async getAllSources(): Promise<any> {
         return this.prisma.knowledgeSource.findMany({
             orderBy: { createdAt: 'desc' },
             include: {

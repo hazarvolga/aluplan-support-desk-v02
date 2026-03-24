@@ -224,7 +224,7 @@ main() {
     step_port_cleanup
     step_docker_check
     step_docker_compose
-    step_ollama_models
+    # step_ollama_models
     step_launch
 }
 

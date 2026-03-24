@@ -48,7 +48,7 @@ export class KnowledgeBaseController {
     @ApiQuery({ name: 'search', required: false })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
-    findAll(@Query() q: any, @Request() req: any) {
+    findAll(@Query() q: any, @Request() req: any): Promise<any> {
         const isStaff = req.user?.role !== 'customer';
         return this.kbService.findAll({
             status: q.status,
@@ -63,42 +63,42 @@ export class KnowledgeBaseController {
     @Get('articles/:id')
     @RequirePermissions('kb:read')
     @ApiOperation({ summary: 'Get article detail (all versions)' })
-    findOne(@Param('id') id: string) {
+    findOne(@Param('id') id: string): Promise<any> {
         return this.kbService.findOne(id);
     }
 
     @Post('articles')
     @RequirePermissions('kb:create')
     @ApiOperation({ summary: 'Create new article (starts as DRAFT)' })
-    create(@Body() dto: CreateArticleDto, @Request() req: any) {
+    create(@Body() dto: CreateArticleDto, @Request() req: any): Promise<any> {
         return this.kbService.create(dto, req.user.sub);
     }
 
     @Patch('articles/:id')
     @RequirePermissions('kb:update')
     @ApiOperation({ summary: 'Update article (creates new version if content changes)' })
-    update(@Param('id') id: string, @Body() dto: UpdateArticleDto, @Request() req: any) {
+    update(@Param('id') id: string, @Body() dto: UpdateArticleDto, @Request() req: any): Promise<any> {
         return this.kbService.update(id, dto, req.user.sub);
     }
 
     @Post('articles/:id/submit')
     @RequirePermissions('kb:submit_review')
     @ApiOperation({ summary: 'Submit article for review' })
-    submitForReview(@Param('id') id: string) {
+    submitForReview(@Param('id') id: string): Promise<any> {
         return this.kbService.submitForReview(id);
     }
 
     @Post('articles/:id/review')
     @RequirePermissions('kb:approve')
     @ApiOperation({ summary: 'Approve or reject article (reviewer only)' })
-    review(@Param('id') id: string, @Body() dto: ReviewArticleDto, @Request() req: any) {
+    review(@Param('id') id: string, @Body() dto: ReviewArticleDto, @Request() req: any): Promise<any> {
         return this.kbService.review(id, dto, req.user.sub);
     }
 
     @Patch('articles/:id/archive')
     @RequirePermissions('kb:delete')
     @ApiOperation({ summary: 'Archive an article' })
-    archive(@Param('id') id: string) {
+    archive(@Param('id') id: string): Promise<any> {
         return this.kbService.archive(id);
     }
 
@@ -106,7 +106,7 @@ export class KnowledgeBaseController {
     @RequirePermissions('kb:read')
     @ApiOperation({ summary: 'Keyword search in published articles' })
     @ApiQuery({ name: 'q', required: true })
-    keywordSearch(@Query('q') query: string, @Request() req: any) {
+    keywordSearch(@Query('q') query: string, @Request() req: any): Promise<any> {
         const isStaff = req.user?.role !== 'customer';
         return this.kbService.keywordSearch(query, 10, isStaff);
     }
@@ -115,7 +115,7 @@ export class KnowledgeBaseController {
     @Public()
     @Post('articles/:id/view')
     @ApiOperation({ summary: 'Increment article view count' })
-    incrementViewCount(@Param('id') id: string) {
+    incrementViewCount(@Param('id') id: string): Promise<any> {
         return this.kbService.incrementViewCount(id);
     }
 

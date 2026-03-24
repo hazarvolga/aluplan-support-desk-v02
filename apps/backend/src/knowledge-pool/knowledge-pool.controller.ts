@@ -23,7 +23,7 @@ export class KnowledgePoolController {
     @Post('sources')
     @Roles('admin', 'super-admin')
     @ApiOperation({ summary: 'Add a new knowledge source (URL)' })
-    async addSource(@Body() dto: CreateKnowledgeSourceDto) {
+    async addSource(@Body() dto: CreateKnowledgeSourceDto): Promise<any> {
         return this.knowledgePoolService.createSource(dto);
     }
 
@@ -45,7 +45,7 @@ export class KnowledgePoolController {
         )
         file: Express.Multer.File,
         @Body('name') name: string,
-    ) {
+    ): Promise<any> {
         const logger = new Logger('KnowledgePoolController');
         logger.debug(`File Upload Request: name=${name}, originalname=${file.originalname}, mimetype=${file.mimetype}`);
 
@@ -80,7 +80,7 @@ export class KnowledgePoolController {
     @Get('sources')
     @Roles('admin', 'super-admin', 'agent')
     @ApiOperation({ summary: 'List all knowledge sources' })
-    async getSources() {
+    async getSources(): Promise<any> {
         return this.knowledgePoolService.getAllSources();
     }
 

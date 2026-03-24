@@ -53,7 +53,7 @@ export class KnowledgeBaseService {
         page?: number;
         limit?: number;
         includeInternal?: boolean;
-    }) {
+    }): Promise<any> {
         const { status, categoryId, search, page = 1, limit = 20, includeInternal = false } = params;
 
         const where: any = {
@@ -94,7 +94,7 @@ export class KnowledgeBaseService {
         return { data, total, page, limit, pages: Math.ceil(total / limit) };
     }
 
-    async findOne(id: string) {
+    async findOne(id: string): Promise<any> {
         const article = await this.prisma.knowledgeArticle.findUnique({
             where: { id },
             include: {
@@ -108,7 +108,7 @@ export class KnowledgeBaseService {
     }
 
     // ─── CREATE ─────────────────────────────────────────────
-    async create(dto: CreateArticleDto, createdBy: string) {
+    async create(dto: CreateArticleDto, createdBy: string): Promise<any> {
         const plainText = dto.content.replace(/[#*`_~>\[\]()-]/g, ' ').replace(/\s+/g, ' ').trim();
         const slug = makeSlug(dto.title);
 
@@ -141,7 +141,7 @@ export class KnowledgeBaseService {
     }
 
     // ─── UPDATE (creates new version) ───────────────────────
-    async update(id: string, dto: UpdateArticleDto, userId: string) {
+    async update(id: string, dto: UpdateArticleDto, userId: string): Promise<any> {
         const article = await this.findOne(id);
 
         if (dto.title || dto.categoryId || dto.tags) {
@@ -179,7 +179,7 @@ export class KnowledgeBaseService {
     }
 
     // ─── SUBMIT FOR REVIEW ──────────────────────────────────
-    async submitForReview(id: string) {
+    async submitForReview(id: string): Promise<any> {
         const article = await this.findOne(id);
 
         if (article.status !== 'DRAFT') {
@@ -193,7 +193,7 @@ export class KnowledgeBaseService {
     }
 
     // ─── REVIEW (approve / reject) ──────────────────────────
-    async review(id: string, dto: ReviewArticleDto, reviewerId: string) {
+    async review(id: string, dto: ReviewArticleDto, reviewerId: string): Promise<any> {
         const article = await this.findOne(id);
 
         // Provide warning but do not strictly prevent admins from publishing directly from DRAFT
@@ -231,7 +231,7 @@ export class KnowledgeBaseService {
     }
 
     // ─── ARCHIVE ────────────────────────────────────────────
-    async archive(id: string) {
+    async archive(id: string): Promise<any> {
         return this.prisma.knowledgeArticle.update({
             where: { id },
             data: { status: 'ARCHIVED' },
@@ -239,7 +239,7 @@ export class KnowledgeBaseService {
     }
 
     // ─── KEYWORD SEARCH ─────────────────────────────────────
-    async keywordSearch(query: string, limit = 10, includeInternal = false) {
+    async keywordSearch(query: string, limit = 10, includeInternal = false): Promise<any> {
         const where: any = {
             status: 'PUBLISHED',
             OR: [
@@ -261,7 +261,7 @@ export class KnowledgeBaseService {
         });
     }
     // ─── ANALYTICS & FEEDBACK ─────────────────────────────
-    async incrementViewCount(id: string) {
+    async incrementViewCount(id: string): Promise<any> {
         return this.prisma.knowledgeArticle.update({
             where: { id },
             data: { viewCount: { increment: 1 } },
