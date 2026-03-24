@@ -70,12 +70,19 @@ export class HotinfoParserService {
                 if (osVersion === 'Windows' && s['os-version']) {
                     osVersion = `Windows ${this.extractValue(s['os-version'])}`;
                 }
+
+                const buildStr = this.extractValue(s['build']);
+                if (buildStr) {
+                    const mappedVer = this.mapWindowsBuild(buildStr);
+                    if (mappedVer) osVersion += ` (${mappedVer} - Build ${buildStr})`;
+                    else osVersion += ` (Build ${buildStr})`;
+                }
             }
 
             // ── CPU ──
             let cpu = 'Unknown';
             if (system?.processor) {
-                cpu = system.processor['cpu-name'] || system.processor['@_name'] || this.extractValue(system.processor) || 'Unknown';
+                cpu = system.processor['@_name'] || system.processor['cpu-name'] || this.extractValue(system.processor) || 'Unknown';
             }
 
             // ── GPU (Primary + Additional) ──
@@ -94,8 +101,8 @@ export class HotinfoParserService {
                     gpu = additionalGPU || primaryGPU || 'Unknown';
                 }
 
-                gpuDriverVersion = this.safeString(v.driver?.['@_version']) || this.safeString(v['driver-version']) || this.safeString(v['@_driver-version']) || '';
-                openglVersion = this.safeString(v.opengl?.['@_version']) || this.safeString(v['opengl-version']) || this.safeString(v['@_opengl-version']) || '';
+                gpuDriverVersion = this.safeString(v['driver-version']) || this.safeString(v['@_driver-version']) || this.safeString(v['driver']) || '';
+                openglVersion = this.safeString(v['opengl-version']) || this.safeString(v['@_opengl-version']) || this.safeString(v['opengl']) || '';
 
                 // VRAM
                 const dedicatedMem = v['dedicated-memory'] || v['@_dedicated-memory'] || v['adapter-ram'];
@@ -164,6 +171,36 @@ export class HotinfoParserService {
                 networkInfo = n['@_name'] || n['adapter-name'] || this.extractValue(n) || '';
             }
 
+            // ── Error Trace ──
+            let errorTrace = '';
+            if (cadinfo?.sec) {
+                errorTrace += `SEC Hata: ${this.extractValue(cadinfo.sec)} | `;
+            }
+            if (jsonObj?.hotinfo?.traceinfo?.trace) {
+                let traceStr = '';
+                const traces = Array.isArray(jsonObj.hotinfo.traceinfo.trace) ? jsonObj.hotinfo.traceinfo.trace : [jsonObj.hotinfo.traceinfo.trace];
+                traces.forEach((t: any) => { traceStr += this.extractValue(t) + ' '; });
+                if (traceStr.trim()) {
+                    errorTrace += `Trace: ${traceStr.trim()}`;
+                }
+            }
+            if (errorTrace.endsWith(' | ')) errorTrace = errorTrace.substring(0, errorTrace.length - 3);
+
+            // ── Conflicting Processes ──
+            let conflictingProcesses: string[] = [];
+            if (system?.processes?.process) {
+                const procs = Array.isArray(system.processes.process) ? system.processes.process : [system.processes.process];
+                const knownConflicts = ['onedrive.exe', 'dropbox.exe', 'googledrive.exe', 'msmpeng.exe', 'teams.exe'];
+                conflictingProcesses = procs
+                    .map((p: any) => this.extractValue(p).toLowerCase())
+                    .filter((p: string) => knownConflicts.some(c => p.includes(c)))
+                    .map((p: string) => {
+                        const parts = p.split('\\');
+                        return parts[parts.length - 1]; // get just the executable name
+                    });
+                conflictingProcesses = [...new Set(conflictingProcesses)]; // Remove duplicates
+            }
+
             return {
                 // Core (always available)
                 allplanVersion,
@@ -183,6 +220,8 @@ export class HotinfoParserService {
                 networkInfo,
                 diskInfo,
                 installedModules,
+                errorTrace,
+                conflictingProcesses,
                 parsedAt: new Date().toISOString()
             };
 
@@ -205,5 +244,23 @@ export class HotinfoParserService {
     /** Safely extract string from possibly object node */
     private safeString(node: any): string {
         return this.extractValue(node);
+    }
+
+    /** Helper to map raw OS build numbers to human readable feature updates */
+    private mapWindowsBuild(build: string): string | null {
+        const b = parseInt(build, 10);
+        if (!b || isNaN(b)) return null;
+
+        // Windows 11
+        if (b >= 26100) return '24H2';
+        if (b >= 22631) return '23H2';
+        if (b >= 22621) return '22H2';
+        if (b >= 22000) return '21H2';
+
+        // Windows 10
+        if (b >= 19045) return '22H2';
+        if (b >= 19044) return '21H2';
+
+        return null;
     }
 }

@@ -42,4 +42,42 @@ describe('HotinfoParserService', () => {
         const result = service.parseHotinfo(badXml);
         expect(result).toBeNull();
     });
+
+    it('should extract error traces, map Windows versions, and identify conflicting processes', () => {
+        const mockXml = `<?xml version="1.0" encoding="utf-8"?>
+        <hotinfo>
+            <cadinfo>
+                <sec>Dosya kullanılamıyor. (C:\\\\License\\\\_SEC.NSE)</sec>
+            </cadinfo>
+            <system>
+                <platform name="Microsoft Windows 11 Enterprise">
+                    <system-caption>Microsoft Windows 11</system-caption>
+                    <build>26200</build>
+                </platform>
+                <processes>
+                    <process>C:\\\\Program Files\\\\Microsoft OneDrive\\\\OneDrive.exe</process>
+                    <process>C:\\\\Windows\\\\System32\\\\svchost.exe</process>
+                    <process>C:\\\\Program Files\\\\WindowsApps\\\\MSTeams\\\\teams.exe</process>
+                </processes>
+            </system>
+            <traceinfo>
+                <trace application="allplan">Dosya okunamadı.</trace>
+            </traceinfo>
+        </hotinfo>`;
+
+        const parsedData = service.parseHotinfo(mockXml);
+
+        expect(parsedData).toBeDefined();
+        if (parsedData) {
+            expect(parsedData.osVersion).toContain('Windows 11');
+            expect(parsedData.osVersion).toContain('24H2');
+
+            expect(parsedData.errorTrace).toContain('SEC Hata: Dosya kullanılamıyor.');
+            expect(parsedData.errorTrace).toContain('Trace: Dosya okunamadı.');
+
+            expect(parsedData.conflictingProcesses).toContain('onedrive.exe');
+            expect(parsedData.conflictingProcesses).toContain('teams.exe');
+            expect(parsedData.conflictingProcesses).not.toContain('svchost.exe');
+        }
+    });
 });

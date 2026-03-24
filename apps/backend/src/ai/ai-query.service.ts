@@ -53,12 +53,6 @@ RULES:
     - Find the answer and summarize it in your own technical sentences.
     - Select and synthesize the most critical part of the source.
 
-5) PROACTIVE CLARIFICATION (HOTINFO / SİSTEM BİLGİSİ)
-    - If the user's query is about software crashes, freezes, performance issues, installation, or technical errors, YOU MUST check the [MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)] section in the context.
-    - If the Hotinfo data is missing ("Bulunamadı"), BEFORE answering or guessing, you MUST politely ask the user to upload their "_hotinfo_.hxl" file.
-    - Example response: "Yaşadığınız teknik sorun için üzgünüz. Size yardımcı olabilmemiz için sistem özelliklerinizi incelememiz gerekiyor. Lütfen Allplan içerisinden oluşturduğunuz '_hotinfo_.hxl' dosyasını destek talebinize ekleyin. Dosya yüklendikten sonra sorununuzu daha sağlıklı analiz edebiliriz."
-    - If the Hotinfo data IS PRESENT, you MUST read it. Check the GPU model, GPU driver version, and RAM. If the user complains about performance and the GPU driver is old, or RAM is low, point it out directly using their uploaded data! DO NOT ask the user to upload the "_hotinfo_.hxl" file if the data is already present.
-
 GOAL:
 To provide users with fast, technically accurate, controlled, and direct solutions in their preferred language.`;
 
@@ -84,10 +78,10 @@ export class AiQueryService {
         this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.75'));
     }
 
-    async query(userQuery: string, userId?: string | null, channel: CommunicationChannel = 'WEB', hotinfoSnapshot?: any): Promise<AiQueryResult> {
+    async query(userQuery: string, userId?: string | null, channel: CommunicationChannel = 'WEB', hotinfoContext?: any): Promise<AiQueryResult> {
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
-        const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoSnapshot ? JSON.stringify(hotinfoSnapshot) : '')).digest('hex');
+        const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
         const cacheKey = `ai: query: cache:${queryHash} `;
         const cached = await this.redis.get(cacheKey);
 
@@ -97,8 +91,15 @@ export class AiQueryService {
             return result;
         }
 
+        let expandedQuery = userQuery;
+        if (hotinfoContext) {
+            const h = hotinfoContext;
+            expandedQuery += `\n[Hotinfo Sistem Özeti]: İşletim Sistemi: ${h.osVersion || ''}, Ekran Kartı: ${h.gpu || ''}, Hata: ${h.errorTrace || ''}, Çakışan İşlemler: ${h.conflictingProcesses?.join(', ') || ''}`;
+            this.logger.log(`🔍 AI Query Expanded with Hotinfo: Extracted Error [${h.errorTrace || 'None'}]`);
+        }
+
         // 1. Semantic search with role-based filtering
-        const searchResponse: SearchResponse = await this.embeddingService.search(userQuery, 10, null, isStaff);
+        const searchResponse: SearchResponse = await this.embeddingService.search(expandedQuery, 10, null, isStaff);
         let results = searchResponse.results;
 
         // 3. Re-ranking Phase (Section 5: Hybrid Retrieval Engine)
@@ -153,13 +154,20 @@ export class AiQueryService {
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
             const systemPrompt = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', DEFAULT_SYSTEM_PROMPT);
+
+            let dynamicSystemPrompt = systemPrompt;
+            if (hotinfoContext) {
+                const h = hotinfoContext;
+                dynamicSystemPrompt += `\n\n5) USER SYSTEM PROFILE (HOTINFO):\nThe user's system details are attached. Always cross-reference the user's error/issue with their system profile to provide accurate solutions. If you detect conflicting processes or specific errors, address them.\n`;
+                dynamicSystemPrompt += `- OS: ${h.osVersion || 'Unknown'}\n- GPU: ${h.gpu || 'Unknown'}\n- RAM: ${h.ram || 'Unknown'}\n- Allplan: ${h.allplanVersion || 'Unknown'}\n- Error Trace: ${h.errorTrace || 'None'}\n- Conflicting Processes: ${h.conflictingProcesses?.join(', ') || 'None'}\n`;
+            }
+
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
                 userQuery,
                 kbContent: topResult.content,
-                hotinfoSnapshot,
             });
-            const finalPrompt = `${systemPrompt} \n\n${contextPrompt} `;
+            const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
             const aiResult = await this.ai.reformat(finalPrompt, userQuery, topResult.content);
             answer = aiResult?.response ?? topResult.content;
 
@@ -172,7 +180,7 @@ export class AiQueryService {
         }
 
         if (!answer) {
-            answer = 'Şu an bilgisayarımda bu konuyla ilgili net bir bilgi bulunmuyor, ancak size yardımcı olmak için buradayım.';
+            answer = 'I don\'t have information on this topic yet, but I\'m here to help.';
         }
 
 
@@ -269,10 +277,10 @@ export class AiQueryService {
             .slice(0, 5);
     }
 
-    async * streamQuery(userQuery: string, userId?: string | null, hotinfoSnapshot?: any): AsyncGenerator<any, void, unknown> {
+    async * streamQuery(userQuery: string, userId?: string | null, channel: CommunicationChannel = 'WEB', hotinfoContext?: any): AsyncGenerator<any, void, unknown> {
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
-        const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoSnapshot ? JSON.stringify(hotinfoSnapshot) : '')).digest('hex');
+        const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
         const cacheKey = `ai: query: stream_cache:${queryHash} `;
         const cached = await this.redis.get(cacheKey);
 
@@ -282,40 +290,16 @@ export class AiQueryService {
             return;
         }
 
-        const searchResponse = await this.embeddingService.search(userQuery, 5, null, isStaff);
+        let expandedQuery = userQuery;
+        if (hotinfoContext) {
+            const h = hotinfoContext;
+            expandedQuery += `\n[Hotinfo Sistem Özeti]: İşletim Sistemi: ${h.osVersion || ''}, Ekran Kartı: ${h.gpu || ''}, Hata: ${h.errorTrace || ''}, Çakışan İşlemler: ${h.conflictingProcesses?.join(', ') || ''}`;
+        }
+
+        const searchResponse = await this.embeddingService.search(expandedQuery, 5, null, isStaff);
         const results = searchResponse.results;
         const topResult = results[0] ?? null;
         // ... rest of logic stays same ...
-
-        // CHANGE: LOW_CONFIDENCE_THRESHOLD guard — mirrors query() method
-        const LOW_CONFIDENCE_THRESHOLD = parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.72');
-        if (searchResponse.diagnostics.topScore < LOW_CONFIDENCE_THRESHOLD || results.length === 0) {
-            this.logger.warn(`🚫 streamQuery: No reliable context (topScore=${searchResponse.diagnostics.topScore.toFixed(3)}). Routing to human agent.`);
-
-            const providerName = await this.ai.getActiveProviderName();
-            const modelName = await this.ai.getActiveModelName();
-
-            await this.prisma.aiInteraction.create({
-                data: {
-                    userId,
-                    userQuery,
-                    responseGenerated: 'AI could not find a reliable source. Request routed to human agent.',
-                    confidenceBand: null,
-                    autoAnswered: false,
-                    similarityScore: searchResponse.diagnostics.topScore || undefined,
-                    provider: providerName,
-                    model: modelName,
-                    inputTokens: 0,
-                    outputTokens: 0,
-                    totalTokens: 0,
-                    estimatedCost: 0,
-                }
-            });
-
-            yield { chunk: 'No reliable source found. Please create a support ticket.' };
-            yield { done: true, suggestTicket: true };
-            return;
-        }
 
         let confidence: ConfidenceBand = 'NO_MATCH';
         let fullAnswer = '';
@@ -330,13 +314,20 @@ export class AiQueryService {
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
             const systemPrompt = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', DEFAULT_SYSTEM_PROMPT);
+
+            let dynamicSystemPrompt = systemPrompt;
+            if (hotinfoContext) {
+                const h = hotinfoContext;
+                dynamicSystemPrompt += `\n\n5) USER SYSTEM PROFILE (HOTINFO):\nThe user's system details are attached. Always cross-reference the user's error/issue with their system profile to provide accurate solutions. If you detect conflicting processes or specific errors, address them.\n`;
+                dynamicSystemPrompt += `- OS: ${h.osVersion || 'Unknown'}\n- GPU: ${h.gpu || 'Unknown'}\n- RAM: ${h.ram || 'Unknown'}\n- Allplan: ${h.allplanVersion || 'Unknown'}\n- Error Trace: ${h.errorTrace || 'None'}\n- Conflicting Processes: ${h.conflictingProcesses?.join(', ') || 'None'}\n`;
+            }
+
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
                 userQuery,
                 kbContent: topResult.content,
-                hotinfoSnapshot,
             });
-            const finalPrompt = `${systemPrompt} \n\n${contextPrompt} `;
+            const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
             usedPrompt = finalPrompt;
 
             const stream = this.ai.streamReformat(finalPrompt, userQuery, topResult.content);
@@ -352,7 +343,7 @@ export class AiQueryService {
                 userId,
             });
         } else {
-            fullAnswer = 'Veritabanında bu konuyla ilgili kesin bir çözüm bulamadım. Lütfen sorununuzla ilgili bir destek talebi (ticket) oluşturun.';
+            fullAnswer = 'I don\'t have information on this topic yet, you may try creating a support ticket.';
             yield { chunk: fullAnswer };
         }
 
@@ -400,7 +391,7 @@ export class AiQueryService {
 
         if (!user || !user.role) return false;
         // Staff are all roles except customer
-        return user.role.name.toUpperCase() !== 'CUSTOMER';
+        return user.role.name !== 'customer';
     }
     @OnEvent('ai.translate_message', { async: true })
     async handleTranslationRequest(payload: { ticketId: string; messageId: string; targetLanguage: string }) {
@@ -703,58 +694,6 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
                 count: s._count.id
             }))
         };
-    }
-
-    /**
-     * Get Daily Health Trends for Charting
-     */
-    async getHealthTrends(days: number = 7) {
-        const now = new Date();
-        const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-
-        // We use a raw query for better performance and easier date grouping in PG
-        const trends = await this.prisma.$queryRaw<any[]>`
-            SELECT 
-                DATE_TRUNC('day', created_at) as date,
-                COUNT(id)::int as total,
-                COUNT(CASE WHEN confidence_band = 'HIGH' THEN 1 END)::int as high_conf,
-                COUNT(CASE WHEN ticket_created = true THEN 1 END)::int as tickets
-            FROM ai_interactions
-            WHERE created_at >= ${startDate}
-            GROUP BY 1
-            ORDER BY 1 ASC
-        `;
-
-        return trends.map(t => ({
-            date: t.date,
-            total: t.total,
-            accuracy: t.total > 0 ? (t.high_conf / t.total) * 100 : 0,
-            deflection: t.total > 0 ? ((t.total - t.tickets) / t.total) * 100 : 0
-        }));
-    }
-
-    /**
-     * Identify Knowledge Gaps (Top failed/low-confidence queries)
-     */
-    async getKnowledgeGaps(limit: number = 5) {
-        const now = new Date();
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-        const gaps = await this.prisma.aiInteraction.groupBy({
-            by: ['userQuery'],
-            where: {
-                createdAt: { gte: sevenDaysAgo },
-                confidenceBand: { in: ['LOW', null] as any }
-            },
-            _count: { id: true },
-            orderBy: { _count: { id: 'desc' } },
-            take: limit
-        });
-
-        return gaps.map(g => ({
-            query: g.userQuery,
-            frequency: g._count.id
-        }));
     }
 
     /**
