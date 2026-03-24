@@ -154,7 +154,7 @@ export class AiQueryService {
             else confidence = 'LOW';
         }
 
-        if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
+        if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
             const systemPrompt = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', DEFAULT_SYSTEM_PROMPT);
 
             let dynamicSystemPrompt = systemPrompt;
@@ -315,7 +315,7 @@ export class AiQueryService {
 
         let usedPrompt = userQuery;
 
-        if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM')) {
+        if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
             const systemPrompt = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', DEFAULT_SYSTEM_PROMPT);
 
             let dynamicSystemPrompt = systemPrompt;
