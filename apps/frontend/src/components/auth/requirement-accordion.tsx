@@ -116,7 +116,7 @@ const RequirementAccordion: React.FC<RequirementAccordionProps> = ({ locale }) =
                                             <ul className="grid grid-cols-1 gap-2">
                                                 {section.items.map((item, iIdx) => {
                                                     // Simple markdown parsing for **bold**
-                                                    const parts = item.split(/(\*\*.*?\*\*)/g);
+                                                    const parts = (typeof item === 'string' ? item : '').split(/(\*\*.*?\*\*)/g);
                                                     return (
                                                         <li key={iIdx} className="text-sm text-gray-300 leading-relaxed flex gap-2">
                                                             <span className="text-white/40 mt-1">•</span>

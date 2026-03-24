@@ -21,7 +21,7 @@ export function GlobalTicketNotification() {
                     action: (
                         <ToastAction
                             altText="İncele"
-                            onClick={() => window.open(`/admin/tickets/${ticket.id}`, '_blank')}
+                            onClick={() => window.open(`/tickets/${ticket.id}`, '_blank')}
                             className="bg-primary text-primary-foreground hover:bg-primary/90"
                         >
                             İncele

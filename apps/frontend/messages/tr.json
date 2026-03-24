@@ -245,7 +245,8 @@
       "ai_confidence": "ANN_GÜVEN_DÜZEYİ",
       "status_stable": "Stabil",
       "status_online": "ÇEVRİMİÇİ",
-      "status_offline": "ÇEVRİMDIŞI"
+      "status_offline": "ÇEVRİMDIŞI",
+      "ai_node_prefix": "AI_NODE"
     },
     "knowledge_base": {
       "title": "BİLGİ_BANKASI_SORGUSU",

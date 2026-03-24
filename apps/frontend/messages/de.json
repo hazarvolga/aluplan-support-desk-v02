@@ -245,7 +245,8 @@
       "ai_confidence": "ANN_KONFIDENZ_DURCHSCHN.",
       "status_stable": "Stabil",
       "status_online": "ONLINE",
-      "status_offline": "OFFLINE"
+      "status_offline": "OFFLINE",
+      "ai_node_prefix": "AI_NODE"
     },
     "knowledge_base": {
       "title": "ABFRAGE_WISSENSDATENBANK",
