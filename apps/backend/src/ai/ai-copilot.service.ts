@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
+import { PromptContextBuilderService } from './prompt-context-builder.service';
 
 @Injectable()
 export class AiCopilotService {
@@ -9,6 +10,7 @@ export class AiCopilotService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
+        private readonly promptContextBuilder: PromptContextBuilderService,
     ) { }
 
     /**
@@ -24,13 +26,27 @@ export class AiCopilotService {
                     include: { sender: { select: { fullName: true } } }
                 },
                 interaction: true,
+                creator: {
+                    include: { customerProfile: true }
+                }
             }
         });
 
         if (!ticket) throw new NotFoundException('Ticket not found');
 
+        // Extract Hotinfo
+        const hotinfoSnapshot = ticket.hotinfoSnapshot || ticket.creator?.customerProfile?.hotinfoData;
+
         // Context from the initial AI search/RAG interaction
-        const context = ticket.interaction?.responseGenerated || 'No specific knowledge base context found for this incident.';
+        const kbContent = ticket.interaction?.responseGenerated || 'No specific knowledge base context found for this incident.';
+
+        // Use Context Builder to include Hotinfo properly
+        const context = await this.promptContextBuilder.buildContext({
+            userId: ticket.userId || undefined,
+            userQuery: ticket.subject + '\n' + (ticket.description || ''),
+            kbContent,
+            hotinfoSnapshot
+        });
 
         // Conversation overview
         const history = ticket.messages
@@ -39,9 +55,9 @@ export class AiCopilotService {
             .join('\n');
 
         const prompt = `Task: Prepare a response draft like a professional customer support representative.
-Use the following "KNOWLEDGE SOURCE" and "CONVERSATION HISTORY" to write an empathetic and technically accurate response to help the customer.
+Use the following "KNOWLEDGE SOURCE AND CONTEXT" and "CONVERSATION HISTORY" to write an empathetic and technically accurate response to help the customer.
 
-KNOWLEDGE SOURCE:
+KNOWLEDGE SOURCE AND CONTEXT:
 ${context}
 
 CONVERSATION HISTORY:
@@ -53,6 +69,8 @@ RULES:
 3. Do not start with greetings like "Hello", "Dear ...", only write the body of the message.
 4. Do not add an agent signature.
 5. Provide the response in the same language used by the customer in the conversation history (Turkish, English, or German).
+6. [PROACTIVE CLARIFICATION]: If the user's issue is related to technical errors, performance, exporting, installations, or crashes, YOU MUST CHECK the [MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)] section. If missing ("Bulunamadı"), proactively ask for the "_hotinfo_.hxl" file. If present, use it to accurately address hardware or driver issues.
+7. [NO HALLUCINATION]: We are Aluplan Support (Allplan). Do NOT invent or guess the user's software versions (like AutoCAD) unless explicitly stated.
 
 RESPONSE DRAFT:`;
 

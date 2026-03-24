@@ -42,6 +42,12 @@ export class PromptsService {
                         description: `Auto-generated default for ${name}`
                     }
                 });
+            } else if (name === 'SYSTEM_PROMPT_SUPPORT' && !exists.content.includes('[MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)]')) {
+                // FORCE UPDATE: Auto-heal the DB prompt template if it lacks the Hotinfo integration
+                await this.prisma.promptTemplate.update({
+                    where: { id: exists.id },
+                    data: { content: defaultContent }
+                });
             }
         } catch (_e) {
             // Ignore unique constraint or missing table errors temporarily
