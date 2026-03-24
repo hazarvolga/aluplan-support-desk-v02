@@ -158,16 +158,16 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         });
     }
 
-    // ─── EMIT METHODS (called from services) ────────────────
-
     async emitTicketCreated(ticket: any) {
-        // Broadcast to relevant roles (Admin, Managers, Team Leads)
-        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').to('role:team-lead').emit('ticket:created', {
+        // Broadcast to relevant roles (Admin, Managers, Team Leads, Agents)
+        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').to('role:team-lead').to('role:agent').emit('ticket:created', {
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
             subject: ticket.subject,
             priority: ticket.priority,
             status: ticket.status,
+            creatorName: ticket.creator?.fullName || 'Müşteri',
+            productName: ticket.product?.name,
         });
 
         // Background: Create persistent notifications (keeping it simple for now, but querying non-customers)

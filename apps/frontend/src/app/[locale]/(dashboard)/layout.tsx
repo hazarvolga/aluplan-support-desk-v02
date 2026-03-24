@@ -4,12 +4,14 @@ import { Sidebar } from '@/components/sidebar';
 import { RoleGuard } from '@/components/auth/role-guard';
 import { MobileHeader } from '@/components/mobile-header';
 import { useState } from 'react';
+import { GlobalTicketNotification } from '@/components/global-ticket-notification';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     return (
         <RoleGuard>
+            <GlobalTicketNotification />
             <div className="flex h-screen flex-col lg:flex-row overflow-hidden bg-background">
                 {/* Mobile Header */}
                 <MobileHeader

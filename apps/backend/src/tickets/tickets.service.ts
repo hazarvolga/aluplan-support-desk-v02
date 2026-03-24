@@ -84,7 +84,10 @@ export class TicketsService {
                 channel: dto.channel || 'WEB',
                 departmentId: dto.departmentId,
             },
-            include: { creator: { select: { id: true, fullName: true, email: true } } },
+            include: {
+                creator: { select: { id: true, fullName: true, email: true } },
+                product: { select: { name: true } }
+            },
         });
 
         this.logger.log(`🎫 Created ticket ${ticket.ticketNumber} (${priority})`);
