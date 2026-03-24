@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { EmailService } from '../email/email.service';
@@ -52,9 +53,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             this.connectedClients++;
             this.logger.log(`🔌 Client connected: ${payload.sub} (total: ${this.connectedClients})`);
 
-            // Join role room for targeted notifications
+            // Join role room for targeted notifications (lowercase for consistency)
             if (payload.role) {
-                await client.join(`role:${payload.role}`);
+                await client.join(`role:${payload.role.toLowerCase()}`);
             }
             await client.join(`user:${payload.sub}`);
         } catch {
@@ -158,6 +159,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         });
     }
 
+    @OnEvent('ticket.created', { async: true })
     async emitTicketCreated(ticket: any) {
         // Broadcast to relevant roles (Admin, Managers, Team Leads, Agents)
         this.server.to('role:admin').to('role:super-admin').to('role:department-manager').to('role:team-lead').to('role:agent').emit('ticket:created', {

@@ -1,0 +1,62 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img "Aluplan Logo" [ref=e6]
+          - heading "Operational Support Gateway" [level=1] [ref=e7]:
+            - img [ref=e8]
+            - text: Operational Support Gateway
+        - generic [ref=e10]:
+          - generic [ref=e11]:
+            - button "TR" [ref=e12] [cursor=pointer]
+            - button "EN" [ref=e13] [cursor=pointer]
+            - button "DE" [ref=e14] [cursor=pointer]
+          - generic [ref=e17]: "SYSTEM_STATUS: ACTIVE"
+      - heading "SYSTEM_BROADCAST // LATEST_NOTIFICATIONS" [level=2] [ref=e19]
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - paragraph [ref=e27]: Active DB Nodes
+            - paragraph [ref=e28]: 1,402
+          - generic [ref=e29]:
+            - paragraph [ref=e30]: Uptime (SLA)
+            - paragraph [ref=e31]: 99.99%
+        - generic [ref=e32]:
+          - generic [ref=e33]: Certified Infrastructure
+          - img "Allplan Partner" [ref=e34]
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - img [ref=e38]
+        - heading "ACCESS GATEWAY" [level=2] [ref=e41]
+        - paragraph [ref=e42]: Authentication required for telemetry read/write and support module access.
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - generic [ref=e45] [cursor=pointer]:
+            - img [ref=e46]
+            - text: SIGN IN
+          - link "REQUEST_ACCESS" [ref=e49] [cursor=pointer]:
+            - /url: /register
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - text: IDENTITY_TOKEN [EMAIL]
+            - textbox "operator@aluplan.com" [ref=e52]
+          - generic [ref=e53]:
+            - generic [ref=e54]:
+              - generic [ref=e55]: VERIFICATION_KEY [PASSWORD]
+              - generic [ref=e56] [cursor=pointer]: RECOVER_KEY?
+            - textbox "••••••••" [ref=e57]
+          - button "START SESSION" [ref=e58] [cursor=pointer]:
+            - generic [ref=e59]: START SESSION
+            - img [ref=e60]
+          - link "Don't have an account? Register" [ref=e64] [cursor=pointer]:
+            - /url: /register
+        - generic [ref=e65]:
+          - img [ref=e66]
+          - text: Connections are monitored via Aluplan Sec-Net
+  - region "Notifications (F8)":
+    - list
+```
