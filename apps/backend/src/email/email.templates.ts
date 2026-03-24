@@ -113,20 +113,6 @@ export class TemplateService {
         }
       }
 
-      const { html, errors } = mjml2html(mjmlContent, {
-        beautify: false,
-        validationLevel: 'soft',
-        filePath: mjmlPath || path.join(this.mjmlBaseDir, 'layouts', 'base.mjml')
-      });
-
-      if (errors && errors.length > 0) {
-        const errorMsg = `MJML Compilation Errors for template "${templateName}": ${errors.map((e: any) => `[Line ${e.line}] ${e.message}`).join('; ')}`;
-        console.error(`[MJML-ERROR] ${errorMsg}`);
-        // We log but don't strictly throw if html is still generated, to avoid breaking mail delivery
-        // unless it's a critical failure.
-        if (!html) throw new Error(errorMsg);
-      }
-
       // Cache raw MJML string only — NOT compiled templates
       if (templateName !== 'raw') {
         this.cache.set(templateName, mjmlContent);
