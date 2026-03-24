@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdf = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 import * as csv from 'csv-parser';
 
 @Injectable()
@@ -30,7 +30,8 @@ export class KnowledgePoolParserService {
     async parsePdf(filePath: string): Promise<string> {
         this.logger.debug(`Starting PDF parsing for: ${filePath}`);
         const dataBuffer = fs.readFileSync(filePath);
-        const data = await pdf(dataBuffer);
+        const parser = new PDFParse({ data: dataBuffer });
+        const data = await parser.getText();
         this.logger.debug(`Completed PDF parsing for: ${filePath}. extracted length: ${data?.text?.length || 0}`);
         return this.fixEncoding(data.text);
     }
