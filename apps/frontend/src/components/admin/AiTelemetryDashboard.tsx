@@ -16,6 +16,7 @@ export function AiTelemetryDashboard() {
     const [trends, setTrends] = useState<any[]>([]);
     const [gaps, setGaps] = useState<any[]>([]);
     const [sendingReport, setSendingReport] = useState(false);
+    const [testingStorage, setTestingStorage] = useState(false);
 
     useEffect(() => {
         loadMetrics();
@@ -50,11 +51,30 @@ export function AiTelemetryDashboard() {
         }
     };
 
+    const handleTestStorage = async () => {
+        try {
+            setTestingStorage(true);
+            const res = await api.ai.testStorage();
+            if (res.success) {
+                toast.success(res.message);
+            } else {
+                toast.error(res.message, {
+                    description: res.details?.advice,
+                    duration: 10000,
+                });
+            }
+        } catch (error: any) {
+            toast.error('Depolama testi başarısız oldu', {
+                description: error.message
+            });
+        } finally {
+            setTestingStorage(false);
+        }
+    };
+
     const triggerWeeklyReport = async () => {
         try {
             setSendingReport(true);
-            // We use the generic post if we don't have a specific api method yet, 
-            // but I should add it to api.ts or just use this:
             const res = await api.post('/ai/trigger-report', {});
             if (res.success) {
                 toast.success(t('dashboard.report_queued'));
@@ -95,16 +115,28 @@ export function AiTelemetryDashboard() {
                 <h3 className="text-xl font-bold flex items-center gap-2">
                     <LineChart className="h-5 w-5 text-primary" /> {t('dashboard.panel_title')}
                 </h3>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={triggerWeeklyReport}
-                    disabled={sendingReport}
-                >
-                    {sendingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    {t('dashboard.send_report')}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={handleTestStorage}
+                        disabled={testingStorage}
+                    >
+                        {testingStorage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Server className="h-4 w-4" />}
+                        S3 Bağlantısı Testi
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={triggerWeeklyReport}
+                        disabled={sendingReport}
+                    >
+                        {sendingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        {t('dashboard.send_report')}
+                    </Button>
+                </div>
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

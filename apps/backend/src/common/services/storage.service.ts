@@ -130,4 +130,46 @@ export class StorageService implements OnModuleInit {
             }
         }
     }
+
+    async testConnection(): Promise<{ success: boolean; message: string; details?: any }> {
+        if (this.storageType !== 'S3') {
+            return { success: true, message: 'Local storage is active and ready.' };
+        }
+
+        if (!this.s3Client) {
+            return { success: false, message: 'S3 Client not initialized. Check your credentials.' };
+        }
+
+        try {
+            // 1. Try to list bucket (lightweight check)
+            await this.s3Client.send(new HeadBucketCommand({ Bucket: this.bucket }));
+            return {
+                success: true,
+                message: `Successfully connected to Minio/S3. Bucket "${this.bucket}" is accessible.`,
+            };
+        } catch (error: any) {
+            const host = this.configService.get('storage.endpoint').split('//')[1]?.split(':')[0];
+            let errorMsg = error.message;
+            let advice = 'Check if Minio is running and reachabe.';
+
+            if (error.code === 'ENOTFOUND' || error.name === 'UnknownError' || error.message.includes('getaddrinfo')) {
+                errorMsg = `DNS Resolution Failed: Cannot find host "${host}"`;
+                advice = `Ensure the backend container is in the same Docker network as Minio. Try using "http://172.17.0.1:9000" (Docker Gateway) in .env if the internal name fails.`;
+            } else if (error.$metadata?.httpStatusCode === 403) {
+                errorMsg = 'Permission Denied (403)';
+                advice = 'Check your ACCESS_KEY and SECRET_KEY.';
+            }
+
+            return {
+                success: false,
+                message: errorMsg,
+                details: {
+                    endpoint: this.configService.get('storage.endpoint'),
+                    bucket: this.bucket,
+                    advice: advice,
+                    originalError: error.name || error.code
+                }
+            };
+        }
+    }
 }

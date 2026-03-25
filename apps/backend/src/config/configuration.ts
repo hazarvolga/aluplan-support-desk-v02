@@ -69,8 +69,8 @@ export default () => {
             accessKey: process.env.STORAGE_ACCESS_KEY || '',
             secretKey: process.env.STORAGE_SECRET_KEY || '',
             bucket: process.env.STORAGE_BUCKET || 'aluplan-storage',
-            region: process.env.STORAGE_REGION || 'us-east-1',
-            usePathStyle: process.env.STORAGE_USE_PATH_STYLE === 'true' || true,
+            region: process.env.STORAGE_REGION || 'auto', // R2 uses 'auto'
+            usePathStyle: process.env.STORAGE_USE_PATH_STYLE ? process.env.STORAGE_USE_PATH_STYLE === 'true' : true,
             localPath: process.env.STORAGE_LOCAL_PATH || './uploads',
         },
     };
@@ -81,7 +81,27 @@ export default () => {
         - DATABASE_HOST: ${config.database.url?.split('@')[1]?.split(':')[0] || 'MISSING'}
         - REDIS_URL: ${config.redis.url.replace(/\/\/.*@/, '//****:****@')}
         - REDIS_HOST: ${config.redis.host}
-        - REDIS_PORT: ${config.redis.port}`);
+        - REDIS_PORT: ${config.redis.port}
+        - STORAGE_ENDPOINT: ${config.storage.endpoint}
+        - STORAGE_REGION: ${config.storage.region}`);
+
+        if (config.storage.type === 'S3') {
+            const host = config.storage.endpoint.split('//')[1]?.split(':')[0];
+            if (host && host !== 'localhost' && !host.includes('cloudflarestorage.com')) {
+                import('dns').then(dns => {
+                    dns.lookup(host, (err) => {
+                        if (err) {
+                            console.error(`[Bootstrap] ❌ CRITICAL STORAGE DNS FAILURE: Host "${host}" is NOT resolvable from this container! (Error: ${err.code})`);
+                            console.error(`[Bootstrap] 👉 TROUBLESHOOT: If using Minio, ensure containers share a network. If using R2, verify your endpoint URL.`);
+                        } else {
+                            console.log(`[Bootstrap] ✅ Storage Host "${host}" is resolvable.`);
+                        }
+                    });
+                });
+            } else if (host?.includes('cloudflarestorage.com')) {
+                console.log(`[Bootstrap] ☁️ Cloudflare R2 detected as storage provider.`);
+            }
+        }
 
         if (!config.database.url) console.error('[Bootstrap] ❌ CRITICAL: DATABASE_URL is missing!');
         if (!process.env.REDIS_URL && !process.env.REDIS_HOST) {

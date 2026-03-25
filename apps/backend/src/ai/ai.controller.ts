@@ -12,6 +12,7 @@ import { OllamaService } from './ollama.service';
 import { AiService } from './ai.service';
 import { AiCopilotService } from './ai-copilot.service';
 import { AiReportingService } from './ai-reporting.service';
+import { StorageService } from '../common/services/storage.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 import { Public } from '../auth/decorators/public.decorator';
@@ -57,7 +58,15 @@ export class AiController {
         private readonly aiCopilotService: AiCopilotService,
         private readonly _ollama: OllamaService,
         private readonly aiReportingService: AiReportingService,
+        private readonly storageService: StorageService,
     ) { }
+
+    @Post('test-storage')
+    @Roles('ADMIN', 'SUPERUSER')
+    @ApiOperation({ summary: 'Test S3/Minio storage connectivity' })
+    async testStorage() {
+        return this.storageService.testConnection();
+    }
 
     @Post('query')
     @ApiOperation({ summary: 'Ask a question — semantic search + AI reformat pipeline' })
