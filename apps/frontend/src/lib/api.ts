@@ -406,7 +406,10 @@ export const api = {
                 body: formData,
             });
         },
-        getDownloadUrl: (id: string) => `${getApiUrl()}/attachments/${id}/download`,
+        getDownloadUrl: (id: string) => {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            return `${getApiUrl()}/attachments/${id}/download${token ? `?token=${token}` : ''}`;
+        },
     },
     customers: {
         list: () => request<any[]>('/customers'),

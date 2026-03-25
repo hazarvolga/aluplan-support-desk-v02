@@ -87,7 +87,7 @@ export default function CustomerProfilePage() {
 
     const handleDownloadHotinfo = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('access_token');
             const url = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/customers/${id}/hotinfo/download`;
 
             toast({ title: '📥 İndiriliyor', description: 'Hotinfo dosyası hazırlanıyor...' });

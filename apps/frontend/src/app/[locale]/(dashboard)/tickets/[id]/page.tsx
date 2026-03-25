@@ -625,7 +625,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                                             {msg.attachments.map((file: any) => (
                                                                 <a
                                                                     key={file.id}
-                                                                    href={`${api.getBaseUrl()}/attachments/${file.id}/download`}
+                                                                    href={api.attachments.getDownloadUrl(file.id)}
                                                                     target="_blank"
                                                                     className="flex items-center gap-2 bg-black/20 p-1.5 hover:bg-black/40 transition-none text-[10px] font-mono border border-border/20"
                                                                 >
