@@ -44,11 +44,13 @@ export function AiSettings() {
 
     // Form states
     const [openaiKey, setOpenaiKey] = useState('');
-    const [openaiModel, setOpenaiModel] = useState('gpt-4');
+    const [openaiModel, setOpenaiModel] = useState('gpt-4o-mini');
     const [anthropicKey, setAnthropicKey] = useState('');
     const [anthropicModel, setAnthropicModel] = useState('claude-3-opus-20240229');
     const [geminiKey, setGeminiKey] = useState('');
     const [geminiModel, setGeminiModel] = useState('gemini-1.5-pro');
+    const [llmapiKey, setLlmApiKey] = useState('');
+    const [llmapiModel, setLlmApiModel] = useState('gpt-4o');
     const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434');
     const [ollamaModel, setOllamaModel] = useState('llama3');
 
@@ -72,14 +74,14 @@ export function AiSettings() {
             // Map settings
             const findValue = (key: string) => settingsData.find((s: any) => s.key === key)?.value || '';
 
-            setOpenaiKey(findValue('ai.openai.key'));
-            setOpenaiModel(findValue('ai.openai.model') || 'gpt-4');
-            setAnthropicKey(findValue('ai.anthropic.key'));
-            setAnthropicModel(findValue('ai.anthropic.model') || 'claude-3-opus-20240229');
-            setGeminiKey(findValue('ai.gemini.key'));
-            setGeminiModel(findValue('ai.gemini.model') || 'gemini-1.5-pro');
+            setOpenaiKey(findValue('ai.openai.api_key'));
+            setOpenaiModel(findValue('ai.openai.chat_model') || 'gpt-4o-mini');
+            setAnthropicKey(findValue('ai.anthropic.api_key'));
+            setAnthropicModel(findValue('ai.anthropic.chat_model') || 'claude-3-5-sonnet-latest');
+            setLlmApiKey(findValue('ai.llmapi.api_key'));
+            setLlmApiModel(findValue('ai.llmapi.chat_model') || 'gpt-4o');
             setOllamaUrl(findValue('ai.ollama.url') || 'http://localhost:11434');
-            setOllamaModel(findValue('ai.ollama.model') || 'llama3');
+            setOllamaModel(findValue('ai.ollama.chat_model') || 'llama3');
 
             // Specialized
             setSpecializedCategorization(findValue('ai.specialized.categorization_provider') || 'global');
@@ -121,17 +123,17 @@ export function AiSettings() {
         try {
             const updates = [];
             if (provider === 'OpenAI') {
-                updates.push(api.settings.upsert({ key: 'ai.openai.key', value: openaiKey, isSecret: true }));
-                updates.push(api.settings.upsert({ key: 'ai.openai.model', value: openaiModel }));
+                updates.push(api.settings.upsert({ key: 'ai.openai.api_key', value: openaiKey, isSecret: true }));
+                updates.push(api.settings.upsert({ key: 'ai.openai.chat_model', value: openaiModel }));
             } else if (provider === 'Anthropic') {
-                updates.push(api.settings.upsert({ key: 'ai.anthropic.key', value: anthropicKey, isSecret: true }));
-                updates.push(api.settings.upsert({ key: 'ai.anthropic.model', value: anthropicModel }));
-            } else if (provider === 'Gemini') {
-                updates.push(api.settings.upsert({ key: 'ai.gemini.key', value: geminiKey, isSecret: true }));
-                updates.push(api.settings.upsert({ key: 'ai.gemini.model', value: geminiModel }));
+                updates.push(api.settings.upsert({ key: 'ai.anthropic.api_key', value: anthropicKey, isSecret: true }));
+                updates.push(api.settings.upsert({ key: 'ai.anthropic.chat_model', value: anthropicModel }));
+            } else if (provider === 'LLMAPI') {
+                updates.push(api.settings.upsert({ key: 'ai.llmapi.api_key', value: llmapiKey, isSecret: true }));
+                updates.push(api.settings.upsert({ key: 'ai.llmapi.chat_model', value: llmapiModel }));
             } else if (provider === 'Ollama') {
                 updates.push(api.settings.upsert({ key: 'ai.ollama.url', value: ollamaUrl }));
-                updates.push(api.settings.upsert({ key: 'ai.ollama.model', value: ollamaModel }));
+                updates.push(api.settings.upsert({ key: 'ai.ollama.chat_model', value: ollamaModel }));
             } else if (provider === 'Specialized') {
                 updates.push(api.settings.upsert({ key: 'ai.specialized.categorization_provider', value: specializedCategorization }));
                 updates.push(api.settings.upsert({ key: 'ai.specialized.summarization_provider', value: specializedSummarization }));
@@ -313,13 +315,13 @@ export function AiSettings() {
                     setModelValue={setAnthropicModel}
                 />
                 <ProviderCard
-                    name="Gemini"
+                    name="LLMAPI"
                     icon={Brain}
                     color="blue"
-                    keyValue={geminiKey}
-                    setKeyValue={setGeminiKey}
-                    modelValue={geminiModel}
-                    setModelValue={setGeminiModel}
+                    keyValue={llmapiKey}
+                    setKeyValue={setLlmApiKey}
+                    modelValue={llmapiModel}
+                    setModelValue={setLlmApiModel}
                 />
                 <ProviderCard
                     name="Ollama"

@@ -599,4 +599,20 @@ export class TicketsService {
         this.logger.log(`🎫 Bulk updated ${result.count} tickets (Agent: ${actorId})`);
         return result;
     }
+
+    // =============================================
+    // DELETE
+    // =============================================
+    async remove(id: string, actorId: string) {
+        const ticket = await this.findOne(id);
+
+        // Hard delete the ticket. Cascade will handle messages, attachments, escalations and embeddings.
+        await this.prisma.ticket.delete({
+            where: { id },
+        });
+
+        this.logger.warn(`🗑️ Ticket ${ticket.ticketNumber} deleted by Admin ${actorId}`);
+
+        return { success: true, message: `Ticket ${ticket.ticketNumber} deleted.` };
+    }
 }

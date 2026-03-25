@@ -21,7 +21,8 @@ import {
     Globe,
     Cpu,
     User,
-    TrendingUp
+    TrendingUp,
+    Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -29,6 +30,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations, useLocale } from 'next-intl';
+import { useAuth } from '@/components/auth/role-guard';
 
 const STATUS_COLORS: Record<string, string> = {
     NEW: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -72,6 +74,9 @@ export default function TicketsPage() {
     const [filter, setFilter] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [bulkLoading, setBulkLoading] = useState(false);
+    const { user } = useAuth();
+
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'DEPARTMENT_MANAGER';
 
     const load = async () => {
         setLoading(true);
@@ -115,6 +120,19 @@ export default function TicketsPage() {
             toast.error(t('bulk.error', { message: err.message }));
         } finally {
             setBulkLoading(false);
+        }
+    };
+
+    const handleDelete = async (e: React.MouseEvent, id: string, number: string) => {
+        e.stopPropagation();
+        if (!confirm(t('delete_confirm_desc'))) return;
+
+        try {
+            await api.tickets.delete(id);
+            toast.success(t('delete_success', { number }) || `Ticket #${number} deleted.`);
+            load();
+        } catch (err: any) {
+            toast.error(err.message);
         }
     };
 
@@ -259,6 +277,7 @@ export default function TicketsPage() {
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">{t('table.header.status')}</th>
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">{t('table.header.priority')}</th>
                                     <th className="px-6 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-right">{t('table.header.timestamp')}</th>
+                                    {isAdmin && <th className="px-6 w-12"></th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
@@ -343,6 +362,18 @@ export default function TicketsPage() {
                                             <td className="px-6 text-right font-mono text-[11px] text-muted-foreground group-hover:text-white transition-colors">
                                                 {new Date(ticket.createdAt).toLocaleDateString(locale)} {new Date(ticket.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                                             </td>
+                                            {isAdmin && (
+                                                <td className="px-6">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={(e) => handleDelete(e, ticket.id, ticket.ticketNumber)}
+                                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </td>
+                                            )}
                                         </tr>
                                     );
                                 })}

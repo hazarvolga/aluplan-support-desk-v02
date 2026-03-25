@@ -325,6 +325,9 @@
   "tickets": {
     "title": "Anfragenverwaltung",
     "subtitle": "Aktive Support-Anfragen und SLA-Leistungsverfolgung",
+    "delete": "Löschen",
+    "delete_confirm_title": "Ticket löschen",
+    "delete_confirm_desc": "Sind Sie sicher, dass Sie dieses Ticket löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
     "filters": {
       "all": "Alle Anfragen"
     },

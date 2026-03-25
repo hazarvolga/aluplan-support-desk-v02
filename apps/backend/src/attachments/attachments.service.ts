@@ -26,7 +26,7 @@ export class AttachmentsService {
                     where: { id: message.ticketId },
                     data: { hotinfoSnapshot }
                 });
-                this.prisma.$queryRaw`SELECT 1`; // trigger
+                await this.prisma.$queryRaw`SELECT 1`; // trigger
             }
         }
 

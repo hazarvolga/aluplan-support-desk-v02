@@ -66,9 +66,9 @@ export class AiService implements AiProvider {
                 || 'ollama';
         }
 
-        let fallbackName = await this.settings.getValue(type === 'chat' ? 'ai.fallback_provider' : 'ai.embed_fallback_provider');
+        const fallbackName = await this.settings.getValue(type === 'chat' ? 'ai.fallback_provider' : 'ai.embed_fallback_provider');
 
-        let providersToTry = [primaryName];
+        const providersToTry = [primaryName];
         if (fallbackName && fallbackName !== primaryName) {
             providersToTry.push(fallbackName);
         }

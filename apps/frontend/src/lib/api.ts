@@ -241,6 +241,7 @@ export const api = {
         getSlaStats: () => request<any>('/tickets/sla/stats'),
         bulkUpdate: (body: { ticketIds: string[]; status?: string; priority?: string; assignedTo?: string }) =>
             request<any>('/tickets/bulk', { method: 'PATCH', body: JSON.stringify(body) }),
+        delete: (id: string) => request<any>(`/tickets/${id}`, { method: 'DELETE' }),
     },
     ai: {
         query: (query: string, hotinfoContext?: any) =>

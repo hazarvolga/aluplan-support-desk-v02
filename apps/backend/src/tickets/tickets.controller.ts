@@ -10,8 +10,9 @@ import { BulkUpdateTicketDto } from './dto/bulk-update-ticket.dto';
 import { AddMessageDto } from './dto/add-message.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { RbacGuard } from '../rbac/rbac.guard';
-import { RequirePermissions } from '../rbac/decorators/rbac.decorators';
+import { RequirePermissions, Roles } from '../rbac/decorators/rbac.decorators';
 import { TicketStatus, TicketPriority } from '@aluplan/database';
+import { Delete } from '@nestjs/common';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @ApiTags('Tickets')
@@ -195,5 +196,13 @@ export class TicketsController {
         const message = await this.ticketsService.addMessage(id, dto, req.user.sub, req.user.role);
         this.notificationsGateway.emitNewMessage(id, message);
         return message;
+    }
+
+    // ─── DELETE ─────────────────────────────────
+    @Delete(':id')
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER')
+    @ApiOperation({ summary: 'Delete a ticket (Hard delete)' })
+    async remove(@Param('id') id: string, @Request() req: any) {
+        return this.ticketsService.remove(id, req.user.sub);
     }
 }

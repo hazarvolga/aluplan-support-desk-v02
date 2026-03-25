@@ -281,7 +281,7 @@
     "nav": {
       "dashboard": "Kontrol Paneli",
       "overview": "Genel Bakış",
-      "tickets": "Talep Kuyruğu",
+      "tickets": "Destek Talepleri",
       "my_tickets": "Destek Taleplerim",
       "kb_section": "BİLGİ BANKASI",
       "articles": "Makaleler",
@@ -325,6 +325,9 @@
   "tickets": {
     "title": "Talepler Yönetimi",
     "subtitle": "Aktif destek talepleri ve SLA performans takibi",
+    "delete": "Sil",
+    "delete_confirm_title": "Bileti Sil",
+    "delete_confirm_desc": "Bu destek talebini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
     "filters": {
       "all": "Tüm Talepler"
     },
