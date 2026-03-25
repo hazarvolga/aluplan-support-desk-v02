@@ -1,6 +1,6 @@
-export const dynamic = "force-dynamic";
-
 'use client';
+
+export const dynamic = "force-dynamic";
 
 import { AiTelemetryDashboard } from '@/components/admin/AiTelemetryDashboard';
 import { useTranslations } from 'next-intl';
