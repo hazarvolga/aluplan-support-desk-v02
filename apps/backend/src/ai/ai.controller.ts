@@ -24,6 +24,10 @@ export class AiQueryDto {
     @IsString()
     @MinLength(3)
     query: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    hotinfoContext?: any;
 }
 
 export class FeedbackDto {
@@ -72,7 +76,7 @@ export class AiController {
     @ApiOperation({ summary: 'Ask a question — semantic search + AI reformat pipeline' })
     @HttpCode(HttpStatus.OK)
     query(@Body() dto: AiQueryDto, @Request() req: any) {
-        return this.aiQueryService.query(dto.query, req.user.sub);
+        return this.aiQueryService.query(dto.query, req.user.sub, 'WEB', dto.hotinfoContext);
     }
 
     @Get('metrics')

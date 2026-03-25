@@ -83,7 +83,7 @@ export default function NewTicketPage() {
                 const user = await api.auth.me();
                 if (user?.customerProfile?.hotinfoData) {
                     setHotinfoData(user.customerProfile.hotinfoData);
-                    setIsHotinfoConfirmed(false); // User must explicitly confirm
+                    setIsHotinfoConfirmed(true); // Auto-confirm if already in profile
                     toast.info(t('toasts.hotinfo_loaded'));
                 }
             } catch (error) {
@@ -137,8 +137,11 @@ export default function NewTicketPage() {
         setAiAnswer(null);
 
         try {
+            // Include confirmed hotinfo context for deep diagnostics
+            const context = isHotinfoConfirmed ? hotinfoData : null;
+
             // Switch to specialized query endpoint for conversational RAG
-            const queryPromise = api.ai.query(`${subject} ${description}`);
+            const queryPromise = api.ai.query(`${subject} ${description}`, context);
             const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('AI_TIMEOUT')), 15000)
             );

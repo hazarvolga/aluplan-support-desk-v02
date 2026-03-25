@@ -550,25 +550,47 @@ export class AiQueryService {
             include: {
                 messages: {
                     orderBy: { createdAt: 'asc' },
-                    include: { sender: { select: { fullName: true } } }
-                }
+                    include: { sender: { select: { fullName: true, customerProfile: { select: { hotinfoData: true } } } } }
+                },
+                creator: { select: { fullName: true, customerProfile: { select: { hotinfoData: true } } } }
             }
         });
+
+        const h = ticket.hotinfoSnapshot || ticket.creator?.customerProfile?.hotinfoData;
+        let hotinfoContext = '';
+        if (h && typeof h === 'object') {
+            const data = h as any;
+            hotinfoContext = `\n[MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)]:
+- Allplan: ${data.allplanVersion || 'Bilinmiyor'} ${data.allplanEdition ? `(${data.allplanEdition})` : ''}
+- İşletim Sistemi: ${data.osVersion || 'Bilinmiyor'}
+- Ekran Kartı: ${data.gpu || 'Bilinmiyor'}
+- RAM: ${data.ram || 'Bilinmiyor'}
+- Hata Kaydı: ${data.errorTrace || 'Yok'}
+- Çakışan İşlemler: ${data.conflictingProcesses?.join(', ') || 'Yok'}\n`;
+        }
 
         const conversation = ticket.messages.map(m =>
             `${m.sender?.fullName || 'Sistem'}: ${m.message} `
         ).join('\n');
 
-        const prompt = `Task: Summarize the following support ticket conversation for agents in a concise (max 3-4 sentences) and professional manner.
-Subject: ${ticket.subject}
-Conversation:
+        const prompt = `Görevin: Aşağıdaki destek talebi görüşmesini temsilciler için kısa (en fazla 3-4 cümle) ve profesyonel bir şekilde özetlemek.
+
+${hotinfoContext}
+
+Konu: ${ticket.subject}
+Konuşma Geçmişi:
 ${conversation}
 
-Summarize and highlight the most critical points:`;
+Önemli Notlar:
+1. Müşterinin sistem bilgilerini (Allplan versiyonu, GPU vb.) yukarıdaki [MÜŞTERİ SİSTEM BİLGİLERİ] kısmından biliyorsun.
+2. Özetinde bu bilgileri kullanarak "Müşteri Allplan ${h ? (h as any).allplanVersion : '...'} versiyonu kullanıyor" gibi net ifadeler kullan.
+3. KESİNLİKLE "Hangi versiyonu kullanıyorsunuz?" veya "Güncel mi?" gibi zaten bildiğin bilgileri soran önerilerde BULUNMA.
+4. Teknik engelleri (GPU hatası, RAM eksikliği vb.) doğrudan belirt.
 
-        const result = await this.ai.reformat('', 'Please summarize this request.', prompt);
-        return result?.response ?? 'Summary could not be generated.';
+Özetle:`;
 
+        const result = await this.ai.reformat('Sen uzman bir teknik destek asistanısın.', 'Lütfen bu talebi özetle.', prompt);
+        return result?.response ?? 'Özet oluşturulamadı.';
     }
 
     /**

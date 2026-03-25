@@ -243,7 +243,7 @@ export const api = {
             request<any>('/tickets/bulk', { method: 'PATCH', body: JSON.stringify(body) }),
     },
     ai: {
-        query: (query: string) =>
+        query: (query: string, hotinfoContext?: any) =>
             request<{
                 query: string;
                 answer: string | null;
@@ -253,7 +253,7 @@ export const api = {
                 suggestTicket: boolean;
             }>('/ai/query', {
                 method: 'POST',
-                body: JSON.stringify({ query }),
+                body: JSON.stringify({ query, hotinfoContext }),
                 signal: typeof AbortSignal !== 'undefined' ? AbortSignal.timeout(45000) : undefined,
             }),
         search: (query: string, productId?: string | null, limit = 5) =>
