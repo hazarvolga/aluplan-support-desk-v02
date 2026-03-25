@@ -19,12 +19,18 @@ export class GenericOpenAiService implements AiProvider {
 
     private async getBaseUrl(): Promise<string | null> {
         const val = await this.settings.getValue(`${this.providerPrefix}.url`);
-        return val ?? null;
+        return val || null;
     }
 
     private async getApiKey(): Promise<string | null> {
         const val = await this.settings.getValue(`${this.providerPrefix}.api_key`);
-        return val ?? null;
+
+        // Auto-upgrade for GROQ_API_KEY from environment if not in settings
+        if (!val && this.providerPrefix === 'ai.groq') {
+            return this.config.get<string>('GROQ_API_KEY') || null;
+        }
+
+        return val || null;
     }
 
     private getProviderDefaultModel(baseUrl: string): string {
@@ -43,7 +49,8 @@ export class GenericOpenAiService implements AiProvider {
     }
 
     private async getEmbedModel(): Promise<string> {
-        return (await this.settings.getValue(`${this.providerPrefix}.embed_model`)) ??
+        return (await this.settings.getValue(`${this.providerPrefix}.embed_model`)) ||
+            this.config.get<string>('EMBEDDING_MODEL') ||
             'text-embedding-3-small';
     }
 

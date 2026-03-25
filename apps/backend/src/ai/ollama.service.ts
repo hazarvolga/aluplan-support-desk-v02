@@ -13,18 +13,18 @@ export class OllamaService implements AiProvider {
     ) { }
 
     private async getBaseUrl(): Promise<string> {
-        return (await this.settings.getValue('ai.ollama.url')) ??
+        return (await this.settings.getValue('ai.ollama.url')) ||
             this.config.get<string>('OLLAMA_BASE_URL', 'http://localhost:11434');
     }
 
     private async getEmbedModel(): Promise<string> {
-        return (await this.settings.getValue('ai.ollama.embed_model')) ??
+        return (await this.settings.getValue('ai.ollama.embed_model')) ||
             this.config.get<string>('EMBEDDING_MODEL',
                 this.config.get<string>('OLLAMA_MODEL', 'bge-m3'));
     }
 
     private async getChatModel(): Promise<string> {
-        return (await this.settings.getValue('ai.ollama.chat_model')) ??
+        return (await this.settings.getValue('ai.ollama.chat_model')) ||
             this.config.get<string>('OLLAMA_CHAT_MODEL', 'llama3.2:3b');
     }
 

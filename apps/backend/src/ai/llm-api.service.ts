@@ -14,24 +14,24 @@ export class LlmApiService implements AiProvider {
 
     private async getApiKey(): Promise<string | null> {
         const val = await this.settings.getValue('ai.llmapi.api_key');
-        return val ?? this.config.get<string>('LLMAPI_API_KEY') ?? null;
+        return val || this.config.get<string>('LLMAPI_API_KEY') || null;
     }
 
     private async getBaseUrl(): Promise<string> {
-        return (await this.settings.getValue('ai.llmapi.base_url')) ??
-            this.config.get<string>('LLMAPI_BASE_URL') ??
+        return (await this.settings.getValue('ai.llmapi.base_url')) ||
+            this.config.get<string>('LLMAPI_BASE_URL') ||
             'https://internal.llmapi.ai/v1';
     }
 
     private async getChatModel(): Promise<string> {
-        return (await this.settings.getValue('ai.llmapi.chat_model')) ??
-            this.config.get<string>('LLMAPI_CHAT_MODEL') ??
+        return (await this.settings.getValue('ai.llmapi.chat_model')) ||
+            this.config.get<string>('LLMAPI_CHAT_MODEL') ||
             'gpt-4o';
     }
 
     private async getEmbedModel(): Promise<string> {
-        let model = (await this.settings.getValue('ai.llmapi.embed_model')) ??
-            this.config.get<string>('LLMAPI_EMBED_MODEL') ??
+        let model = (await this.settings.getValue('ai.llmapi.embed_model')) ||
+            this.config.get<string>('LLMAPI_EMBED_MODEL') ||
             'text-embedding-3-small';
 
         // Auto-correct common user typo from the admin panel

@@ -14,16 +14,16 @@ export class OpenAiService implements AiProvider {
 
     private async getApiKey(): Promise<string | null> {
         const val = await this.settings.getValue('ai.openai.api_key');
-        return val ?? this.config.get<string>('OPENAI_API_KEY') ?? null;
+        return val || this.config.get<string>('OPENAI_API_KEY') || null;
     }
 
     private async getModel(): Promise<string> {
-        return (await this.settings.getValue('ai.openai.chat_model')) ??
+        return (await this.settings.getValue('ai.openai.chat_model')) ||
             'gpt-4o-mini';
     }
 
     private async getEmbedModel(): Promise<string> {
-        return (await this.settings.getValue('ai.openai.embed_model')) ??
+        return (await this.settings.getValue('ai.openai.embed_model')) ||
             'text-embedding-3-small';
     }
 
