@@ -19,18 +19,31 @@ export default function middleware(request: NextRequest) {
         pathname.startsWith(`/${locale}/profile`)
     );
 
+    let response: NextResponse;
+
     if (isDashboardRoute) {
         const token = request.cookies.get('access_token')?.value;
 
         if (!token) {
-            // Determine locale to redirect to login
             const locale = routing.locales.find(l => pathname.startsWith(`/${l}/`)) || routing.defaultLocale;
             const loginUrl = new URL(`/${locale}/login`, request.url);
-            return NextResponse.redirect(loginUrl);
+            response = NextResponse.redirect(loginUrl);
+        } else {
+            response = intlMiddleware(request);
         }
+    } else {
+        response = intlMiddleware(request);
     }
 
-    return intlMiddleware(request);
+    // Security Headers
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+    return response;
 }
 
 export const config = {
