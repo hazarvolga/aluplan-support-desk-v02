@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+export const dynamic = "force-dynamic";
+
 import { useTranslations } from 'next-intl';
 
 function ResetPasswordForm() {

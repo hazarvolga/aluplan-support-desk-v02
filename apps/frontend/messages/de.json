@@ -1313,419 +1313,6 @@
         "bulk_verify_error": "Massenverifizierungsfehler"
       }
     },
-    "knowledge_pool": {
-      "title": "WISSENSPOOL_KONTROLLE",
-      "subtitle": "Verwaltung und Indizierung technischer Ressourcen für KI.",
-      "placeholder": "Technische Dokumentation",
-      "tabs": {
-        "raw_sources": "ROHQUELLEN",
-        "seeded_content": "GESÄTE_INHALTE"
-      },
-      "buttons": {
-        "add_url": "URL_HINZUFÜGEN",
-        "upload_file": "DATEI_HOCHLADEN",
-        "scan_dataset": "DATENSATZ_SCANNEN",
-        "bulk_sync": "BULK-SYNC ({count})",
-        "cancel": "ABBRECHEN",
-        "refresh": "AKTUALISIEREN",
-        "publish_selected": "AUSGEWÄHLTE_VERÖFFENTLICHEN",
-        "examine": "UNTERSUCHEN",
-        "load_more": "MEHR_LADEN",
-        "loading": "LADEN..."
-      },
-      "table": {
-        "source": "QUELLE",
-        "type": "TYP",
-        "status": "STATUS",
-        "vector": "VEKTOR",
-        "last_sync": "LETZTER_SYNC",
-        "action": "AKTION",
-        "no_records": "Keine Ressourcen gefunden",
-        "select_all": "ALLE_AUSWÄHLEN",
-        "showing": "ANZEIGEN"
-      },
-      "filters": {
-        "all": "ALLE",
-        "active": "AKTIV",
-        "syncing": "SYNCHRONISIERT",
-        "failed": "FEHLGESCHLAGEN",
-        "all_types": "ALLE_TYPEN",
-        "url": "URL",
-        "file": "DATEI"
-      },
-      "logs": {
-        "title": "SYNC_LOGS",
-        "no_source": "Wählen Sie eine Quelle aus",
-        "no_logs": "Keine Protokolle gefunden.",
-        "success": "ERFOLG",
-        "error": "FEHLER",
-        "processing": "VERARBEITUNG",
-        "chunks_processed": "{count} Chunks verarbeitet."
-      },
-      "articles": {
-        "title": "ARTIKELPOOL",
-        "total": "{count} GESAMT",
-        "search_placeholder": "DATEI SUCHEN...",
-        "all": "ALLE",
-        "review": "IN_PRÜFUNG",
-        "published": "VERÖFFENTLICHT",
-        "draft": "ENTWURF",
-        "select_page": "SELECT {count} {PAGE}",
-        "no_records": "KEINE_DATENSÄTZE_GEFUNDEN",
-        "author": "AUTOR",
-        "under_review": "IN_ÜBERPRÜFUNG"
-      },
-      "meta": {
-        "locale": "de-DE",
-        "system": "SYSTEM"
-      },
-      "status_labels": {
-        "draft": "ENTWURF",
-        "published": "AKTIV",
-        "review": "IN_ÜBERPRÜFUNG",
-        "under_review": "IN_ÜBERPRÜFUNG"
-      },
-      "dialogs": {
-        "new_url": "Neue URL-Quelle",
-        "name_label": "Quellenname",
-        "url_label": "URL-Adresse",
-        "save_sync": "Speichern und Synchronisieren"
-      },
-      "toasts": {
-        "fetch_error": "Ressourcen konnten nicht geladen werden",
-        "sync_started": "Synchronisierung gestartet",
-        "sync_desc": "Hintergrundaufgabe in Warteschlange",
-        "bulk_sync_started": "Massen-Synchronisierung gestartet",
-        "partial_success": "Teilerfolg",
-        "bulk_sync_desc": "{count} Ressourcen in Warteschlange",
-        "bulk_sync_error": "{count} fehlgeschlagen",
-        "dataset_scan_started": "Synchronisierung gestartet",
-        "dataset_scan_desc": "Datensatzordner wird gescannt...",
-        "dataset_sync_success": "Smart Sync erfolgreich",
-        "url_added": "URL-Quelle hinzugefügt",
-        "logs_error": "Protokolle konnten nicht geladen werden",
-        "publish_success": "{count} Artikel veröffentlicht"
-      }
-    },
-    "announcements": {
-      "title": "Ankündigungsmanagement",
-      "subtitle": "Unternehmenskommunikation und gezielte Ankündigungsoperationen",
-      "categories": {
-        "all": "ALLE",
-        "general": "Allgemein",
-        "product": "Produkt",
-        "security": "Sicherheit",
-        "compliance": "Compliance",
-        "operations": "Operationen",
-        "ai_tech": "KI & Technologie",
-        "infrastructure": "Infrastruktur",
-        "change_management": "Change Management",
-        "education": "Bildung",
-        "performance_reports": "Performance-Berichte",
-        "strategic_updates": "Strategische Updates",
-        "community": "Gemeinschaft"
-      },
-      "tabs": {
-        "create": "Ankündigung Erstellen",
-        "templates": "Vorlagenbibliothek",
-        "history": "Sendungsverlauf"
-      },
-      "editor": {
-        "title": "Inhaltseditor",
-        "desc": "Bereiten Sie den Inhalt der E-Mail vor, die an die Kunden gesendet wird.",
-        "template_select": "Vorlage Auswählen",
-        "title_label": "Name des Ankündigungsdatensatzes",
-        "title_placeholder": "z.B. Sommer 2024 Hotfix Ankündigung",
-        "subject_label": "E-Mail-Betreffzeile",
-        "subject_placeholder": "Für den Kunden sichtbare Betreffzeile",
-        "content_label": "Rich-Text-Inhalt",
-        "default_content": "<p>Hallo {{customer.name}}!</p><p>Ankündigungsinhalt hier einfügen...</p>",
-        "preview": "Vorschau",
-        "save_draft": "Entwurf Protokollieren"
-      },
-      "audience": {
-        "title": "Zielgruppe",
-        "desc": "Legen Sie fest, wer die Ankündigung erhalten soll.",
-        "industries": "Branchen",
-        "industry_placeholder": "Branche Auswählen",
-        "statuses": "Kundenstatus",
-        "status_placeholder": "Status Auswählen",
-        "companies": "Unternehmensname",
-        "company_placeholder": "Unternehmen Auswählen",
-        "tags": "Benutzerdefinierte Tags",
-        "tags_placeholder": "Tags hinzufügen (Enter)",
-        "target_audience": "Zielgruppe",
-        "persons": "Personen",
-        "select_filter": "Bitte wählen Sie mindestens einen Filter aus",
-        "realtime_telemetry": "Echtzeit-Telemetriedaten"
-      },
-      "template_editor": {
-        "title": "Vorlagen-Editor",
-        "modify_desc": "Datensatz {name} wird geändert.",
-        "new_desc": "Protokollieren Sie eine neue Kommunikationsvorlage für das System.",
-        "new_record": "Neuer Datensatz",
-        "name_label": "Vorlagenname",
-        "name_placeholder": "z.B. Willkommens-E-Mail",
-        "topic_label": "Kategorie (Topic)",
-        "topic_placeholder": "z.B. Onboarding",
-        "subject_label": "Standard-Betreffzeile",
-        "subject_placeholder": "Für den Kunden sichtbarer Betreff",
-        "content_label": "Rich-Text-Inhalt (Vorlage)",
-        "render_test": "Render-Test",
-        "update": "Aktualisieren",
-        "archive": "In Bibliothek Archivieren"
-      },
-      "library": {
-        "title": "Bibliothek",
-        "search_placeholder": "Name oder Thema suchen...",
-        "category_filter": "Kategoriefilter",
-        "all": "Alle",
-        "no_records": "Keine Datensätze Gefunden",
-        "apply": "Anwenden",
-        "preview": "Vorschau",
-        "delete": "Löschen",
-        "validated": "Validiert"
-      },
-      "history": {
-        "title": "Sendungsarchiv",
-        "desc": "Alle Ankündigungsdatensätze, die über das System protokolliert und veröffentlicht wurden.",
-        "empty": "Archiv Leer",
-        "sent": "GESENDET",
-        "draft": "ENTWURF",
-        "terminal_delivered": "{count} An Terminals Geliefert",
-        "broadcast": "Veröffentlichen"
-      },
-      "toasts": {
-        "template_empty": "Dieser Vorlageninhalt ist leer.",
-        "template_compile_error": "Vorlage konnte nicht kompiliert werden. Prüfen Sie die MJML-Syntax.",
-        "preview_error": "Vorschaufehler:",
-        "unknown_error": "Unbekannter Fehler",
-        "required_fields": "Vorlagenname und Inhalt sind erforderlich",
-        "template_updated": "Vorlage aktualisiert",
-        "template_added": "Vorlage zur Bibliothek hinzugefügt",
-        "template_applied": "{name} Vorlage angewendet",
-        "title_subject_required": "Titel und Betreff sind erforderlich",
-        "draft_saved": "Ankündigungsentwurf gespeichert",
-        "save_failed": "Speichern fehlgeschlagen: {message}",
-        "broadcast_success": "Ankündigung erfolgreich veröffentlicht",
-        "broadcast_error": "Veröffentlichung fehlgeschlagen",
-        "confirm_broadcast": "Sind Sie sicher, dass Sie diese Ankündigung senden möchten?",
-        "delete_success": "Datensatz gelöscht",
-        "delete_failed": "Löschen fehlgeschlagen",
-        "confirm_delete_announcement": "Sind Sie sicher, dass Sie diese Ankündigung löschen möchten?",
-        "confirm_delete_template": "Sind Sie sicher, dass Sie diese Vorlage löschen möchten?",
-        "error": "Fehler"
-      }
-    },
-    "teams": {
-      "fetch_error": "Fehler beim Laden der Daten.",
-      "search_placeholder": "Teams oder Abteilungen suchen...",
-      "no_description": "Keine Beschreibung für diese Abteilung hinzugefügt.",
-      "min_suffix": "Min.",
-      "profile_pic_alt": "Profilbild",
-      "statuses": {
-        "online": "Online",
-        "away": "Abwesend",
-        "dnd": "Nicht stören",
-        "offline": "Offline"
-      },
-      "loading": {
-        "agent": "Profildaten werden analysiert...",
-        "dept": "Abteilungsdaten werden geladen...",
-        "team": "Teamdaten werden synchronisiert..."
-      },
-      "nav": {
-        "back_teams": "Zurück zu Teams",
-        "back": "Zurück"
-      },
-      "actions": {
-        "edit_profile": "Profil bearbeiten",
-        "edit_dept": "Abteilung bearbeiten",
-        "add_skill": "Neue Fähigkeit hinzufügen",
-        "add_sla": "Neue SLA-Richtlinie",
-        "add_member": "Neues Mitglied hinzufügen",
-        "configure": "Konfigurieren",
-        "add_agent": "Neuen Agenten hinzufügen",
-        "add_team": "Neues Team",
-        "manage_team": "Team verwalten",
-        "details": "Details",
-        "view_profile": "Profil",
-        "view_team": "TEAM ANSEHEN",
-        "edit": "BEARBEITEN"
-      },
-      "tabs": {
-        "performance": "Leistung",
-        "skills": "Fähigkeiten",
-        "schedule": "Arbeitsplan",
-        "overview": "Übersicht",
-        "sla_policies": "SLA-Richtlinien",
-        "departments": "Abteilungen",
-        "teams": "Teams",
-        "agents": "Agenten"
-      },
-      "stats": {
-        "tickets": "Ticket-Statistiken",
-        "last_30_days": "LETZTE 30 TAGE",
-        "active_load": "Aktive Arbeitsbelastung",
-        "csat": "CSAT-Score",
-        "avg_response": "Durchschnittliche Antwortzeit",
-        "monthly_quota": "Monatliches Ticketkontingent",
-        "first_response_target": "SLA-Ziel für erste Antwort",
-        "active_teams": "Aktive Teams",
-        "total_agents": "Agenten gesamt",
-        "avg_response_dept": "Durchschnittliche Antwortzeit",
-        "sla_compliance": "SLA-Einhaltung",
-        "active_ticket_load": "Aktive Ticketbelastung",
-        "quick_stats": "Schnelle Statistiken",
-        "online_rate": "Online-Rate",
-        "pending_queue": "Ausstehende Warteschlange",
-        "resolved_today": "Heute gelöst",
-        "alerts": "Warnungen",
-        "overload": "Überlastung",
-        "sla_stable": "SLA Stabil"
-      },
-      "labels": {
-        "badges": "Erfolgsabzeichen",
-        "sla_master": "SLA-Meister",
-        "top_rated": "Bestbewertet",
-        "quick_resolve": "Schnelle Lösung",
-        "targets": "Ziele",
-        "technical_skills": "Technische Fähigkeiten",
-        "skills_desc": "Fachgebiete und Vertrauensniveau des Agenten.",
-        "no_skills": "Noch keine Fähigkeiten zugewiesen.",
-        "leave": "URLAUB",
-        "recent_activity": "Letzte Aktivitäten",
-        "critical_sla": "Kritische SLA-Ziele",
-        "first_response": "ERSTE ANTWORT",
-        "resolution": "LÖSUNG",
-        "first_response_time": "Erste Antwort",
-        "resolution_time": "Lösungszeit",
-        "sla_config": "SLA-Konfiguration",
-        "sla_config_desc": "Service-Level-Ziele der Abteilung.",
-        "automation_status": "AUTOMATISIERUNGSSTATUS",
-        "active": "AKTIV",
-        "passive": "PASSIV",
-        "round_robin": "Round Robin",
-        "rr_desc": "Sequenzielle Zuweisungsstrategie wird angewendet.",
-        "team_members": "Teammitglieder",
-        "command_center": "Team-Kommandozentrale",
-        "organization": "Eine Organisation: Aluplan Support",
-        "auto_assignment": "AUTO-ZUWEISUNG",
-        "strategy": "Strategie:",
-        "agent": "Agent / Vertreter",
-        "status": "Status",
-        "role": "Rolle",
-        "actions": "Aktionen"
-      },
-      "creation": {
-        "title": "Neues Team Erstellen",
-        "description": "Definieren Sie ein neues Team, um operative Prozesse zu verwalten.",
-        "team_name": "Teamname",
-        "team_name_placeholder": "Bsp: Technischer Support - Ebene 2",
-        "department": "Abteilung",
-        "select_department": "Wählen Sie eine Abteilung",
-        "desc_label": "Beschreibung",
-        "desc_placeholder": "Stellenbeschreibung des Teams...",
-        "auto_assign": "Automatische Zuweisung",
-        "auto_assign_desc": "Neue Tickets werden diesem Team automatisch zugewiesen.",
-        "assign_strategy": "Zuweisungsstrategie",
-        "round_robin": "Round Robin (Sequentiell)",
-        "least_loaded": "Am wenigsten belastet (Lastbasiert)",
-        "skill_based": "Fähigkeitsbasiert",
-        "submit": "Team Starten",
-        "submitting": "Wird erstellt...",
-        "success": "Neues Team erfolgreich erstellt.",
-        "error_dept": "Bitte wählen Sie eine Abteilung aus.",
-        "error_server": "Fehler beim Erstellen des Teams."
-      },
-      "member_add": {
-        "title": "Neuen Agenten Zuweisen",
-        "description": "Weisen Sie dem Team einen registrierten Benutzer als Agenten zu.",
-        "select_agent": "Benutzer (Agent)",
-        "select_agent_placeholder": "Wählen Sie einen Benutzer",
-        "loading_users": "Benutzer werden geladen...",
-        "no_users": "Keine neuen Benutzer zur Zuweisung verfügbar.",
-        "role": "Role im Team",
-        "select_role": "Rolle wählen",
-        "role_desc": "Diese Rolle bestimmt nur ihre Berechtigungen innerhalb dieses Teams.",
-        "cancel": "Abbrechen",
-        "submit": "Dem Team Zuweisen",
-        "submitting": "Hinzufügen...",
-        "success": "Neues Mitglied erfolgreich zum Team hinzugefügt.",
-        "error_select": "Bitte wählen Sie einen Agenten aus.",
-        "error_server": "Fehler beim Hinzufügen des Mitglieds."
-      }
-    },
-    "kb_approvals": {
-      "title": "KI-Genehmigungspool",
-      "subtitle": "Verwalten Sie Entwürfe für Artikel, die aus geschlossenen Tickets und 5-Sterne-Lösungen abgeleitet wurden.",
-      "refresh_queue": "WARTESCHLANGE AKTUALISIEREN",
-      "run_pipeline": "PIPELINE AUSFÜHREN",
-      "queue_title": "ZUR GENEHMIGUNG ANSTEHENDE EINHEITEN",
-      "units_loaded": "{count} EINHEITEN GELADEN",
-      "empty": {
-        "title": "Gute Arbeit!",
-        "desc": "Alle zur Genehmigung anstehenden Inhalte wurden überprüft und verarbeitet."
-      },
-      "table": {
-        "query": "ABFRAGE / PROBLEM",
-        "answer": "KI VORGESCHLAGENE LÖSUNG",
-        "confidence": "VERTRAUEN",
-        "source": "QUELLE",
-        "actions": "AKTIONEN",
-        "reliable": "{percent}% ZUVERLÄSSIG"
-      },
-      "buttons": {
-        "approve": "GENEHMIGEN",
-        "delete": "LÖSCHEN"
-      },
-      "toasts": {
-        "fetch_error": "Entwürfe konnten nicht geladen werden.",
-        "approve_success": "Inhalt zur Wissensdatenbank hinzugefügt.",
-        "approve_error": "Fehler bei der Genehmigung.",
-        "dismiss_success": "Inhalt abgelehnt.",
-        "dismiss_error": "Fehler beim Ablehnen.",
-        "pipeline_started": "Pipeline ausgelöst.",
-        "pipeline_error": "Pipeline-Fehler: {error}"
-      }
-    },
-    "knowledge_base": {
-      "title": "Wissensdatenbank",
-      "subtitle": "Unternehmensgedächtnis, Lösungsartikel und Dokumentationszentrum",
-      "buttons": {
-        "analytics": "ANALYTIK",
-        "new_article": "NEUER ARTIKEL",
-        "refresh": "AKTUALISIEREN",
-        "publish": "VERÖFFENTLICHEN",
-        "reject": "ABLEHNEN",
-        "detail": "DETAIL"
-      },
-      "search": {
-        "placeholder": "SUCHE..."
-      },
-      "filters": {
-        "all": "ALLE",
-        "draft": "ENTWURF",
-        "review": "IN_PRÜFUNG",
-        "active": "AKTIV",
-        "archived": "ARCHIVIERT"
-      },
-      "stats": {
-        "total_articles": "Insgesamt {count} Artikel",
-        "total": "Gesamt Artikel",
-        "published": "Veröffentlicht",
-        "views": "Ansichten"
-      },
-      "meta": {
-        "author": "AUTOR",
-        "update": "AKTUALISIERUNG",
-        "views": "ANSICHTEN"
-      },
-      "empty": {
-        "no_records": "Noch keine Artikel gefunden",
-        "loading": "Datenschichten werden geladen"
-      }
-    },
     "meta": {
       "locale": "de-DE",
       "system": "SYSTEM"
@@ -1733,174 +1320,6 @@
     "table": {
       "select_all": "Alle auswählen",
       "showing": "Angezeigt"
-    },
-    "system_topology": {
-      "title": "Systemressourcen-Topologie",
-      "subtitle": "SYSTEMRESSOURCEN_TOPOLOGIE: DATENFLUSS- UND VERARBEITUNGSARCHITEKTUR",
-      "refresh": "AKTUALISIEREN",
-      "sync_error": "Daten-Synchronisierungsfehler",
-      "total_entropy": "GESAMT-ENTROPIE",
-      "units": "EINHEITEN",
-      "status_running": "LÄUFT",
-      "pillars": {
-        "documents": "PDF/DOCX/XLS/TXT/MD",
-        "articles": "ADMIN-ARTIKEL",
-        "urls": "URL / WEB",
-        "tickets": "TICKET-LERNEN"
-      },
-      "layers": {
-        "doc_parser": "DOKUMENTEN-PARSER",
-        "rich_editor": "RICH-EDITOR",
-        "crawl_engine": "CRAWL-ENGINE",
-        "cluster_engine": "CLUSTER-ENGINE"
-      },
-      "strategies": {
-        "parent_child": "PARENT-CHILD",
-        "direct_embed": "DIREKTES EMBEDDING",
-        "content_clean": "INHALTSBEREINIGUNG",
-        "faq_generator": "FAQ-GENERATOR"
-      },
-      "vector": {
-        "unified_index": "VEREINHEITLICHTER VEKTORINDEX",
-        "re_ranking": "RE-RANKING AKTIV",
-        "trust_priority": "VERTRAUENSDIENST-PRIORITÄT"
-      },
-      "engine": {
-        "query_preproc": "ABFRAGE-VORVERARBEITUNG",
-        "hybrid_retrieval": "HYBRID-SUCHMASCHINE"
-      }
-    },
-    "products": {
-      "title": "Produkte und Module",
-      "subtitle": "Verwalten Sie die Hauptprodukte und Unterkategorien für die Klassifizierung durch künstliche Intelligenz für Ihre Support-Abteilungen.",
-      "actions": {
-        "add_product": "Neues Produkt hinzufügen",
-        "add_category": "Kategorie hinzufügen"
-      },
-      "empty": {
-        "no_products": "Noch keine Produkte definiert",
-        "no_products_desc": "Mit der Schaltfläche 'Neues Produkt hinzufügen' können Sie die Hauptprodukte und Module definieren, für die Kunden Tickets eröffnen können.",
-        "no_categories": "Für dieses Produkt wurde noch keine Unterkategorie/Modul definiert. Fügen Sie eine Kategorie für die intelligente KI-Kennzeichnung hinzu."
-      },
-      "labels": {
-        "subcategories": "Unterkategoriler (KI-Labels)",
-        "no_keywords": "Keine Schlüsselwörter",
-        "product_name": "Produktname",
-        "description": "Beschreibung",
-        "category_name": "Kategoriename",
-        "keywords": "Schlüsselwörter (mit Kommas trennen)",
-        "keywords_help": "Die KI kann dabei helfen, einen Kontext zu erstellen, wenn sie versucht, das Benutzerticket aus dieser Liste von Labels zu klassifizieren."
-      },
-      "placeholders": {
-        "product_name": "z. B. Aluplan Pro",
-        "description": "Eine kurze Beschreibung des Produkts...",
-        "category_name": "z. B. Rechnungsmodul",
-        "keywords": "z. B. Rechnungserstellung, Stornierung, MwSt, E-Rechnung"
-      },
-      "dialogs": {
-        "edit_product": "Produkt bearbeiten",
-        "add_product": "Neues Produkt hinzufügen",
-        "edit_category": "Kategorie bearbeiten",
-        "add_category": "Neues Modul / Neue Kategorie",
-        "product_desc": "Definieren Sie Ihr Hauptprodukt oder Ihre Hauptdienstleistung. Kunden sehen diese Produkte zuerst, wenn sie ein Ticket erstellen.",
-        "category_desc": "Geben Sie die Unterkategorie und die mit dieser Kategorie verknüpften Schlüsselwörter ein, die die KI für die Unterkennzeichnung eingehender Tickets verwendet."
-      },
-      "toasts": {
-        "fetch_error": "Fehler beim Laden der Produkte",
-        "product_updated": "Produkt aktualisiert",
-        "product_added": "Neues Produkt hinzugefügt",
-        "category_updated": "Kategorie aktualisiert",
-        "category_added": "Neue Kategorie hinzugefügt",
-        "product_deleted": "Produkt gelöscht",
-        "category_deleted": "Kategorie gelöscht",
-        "save_failed": "Registrierung fehlgeschlagen",
-        "delete_failed": "Löschen fehlgeschlagen"
-      },
-      "confirms": {
-        "delete_product": "Sind Sie sicher, dass Sie dieses Produkt und alle darunter liegenden Kategorien löschen möchten?",
-        "delete_category": "Sind Sie sicher, dass Sie diese Kategorie löschen möchten?"
-      }
-    },
-    "faq": {
-      "title": "FAQ_VERWALTUNGSEINHEIT",
-      "subtitle": "Überprüfen und synchronisieren Sie automatisch extrahierte operative Wissensbeispiele.",
-      "refresh_cache": "CACHE_AKTUALISIEREN",
-      "start_extraction": "EXTRAKTION_STARTEN",
-      "filters": {
-        "all": "ALLE",
-        "pending_review": "AUSSTEHENDE_PRÜFUNG",
-        "published": "VERÖFFENTLICHT",
-        "draft": "ENTWURF"
-      },
-      "not_found": "Keine FAQ gefunden",
-      "not_found_desc": "Versuchen Sie, den Filter zu ändern, oder starten Sie den Extraktionsprozess, um neue FAQs zu erstellen.",
-      "frequency": "HÄUFIGKEIT",
-      "confidence_score": "KONFIDENZWERD",
-      "approve": "GENEHMIGEN",
-      "dismiss": "VERWERFEN",
-      "source_ticket": "Quell-Ticket",
-      "toasts": {
-        "extraction_started": "Pipeline gestartet",
-        "extraction_started_desc": "Der FAQ-Extraktionsprozess läuft im Hintergrund.",
-        "fetch_error": "Fehler beim Abrufen der FAQs",
-        "approved": "FAQ genehmigt",
-        "approved_desc": "Beispiel wurde veröffentlicht.",
-        "dismissed": "FAQ verworfen",
-        "dismissed_desc": "Beispiel in Entwurf verschoben/gelöscht.",
-        "op_failed": "Vorgang fehlgeschlagen",
-        "pipeline_failed": "Pipeline konnte nicht gestartet werden"
-      }
-    },
-    "faq_learning": {
-      "title": "FAQ Auto-Lernpool",
-      "subtitle": "NEURALE SYNCHRONISATION: TRANSFORMATION OPERATIVER DATEN IN STRUKTURIERTES WISSEN",
-      "trigger_loop": "LERNZYKLUS AUSLÖSEN",
-      "health_analysis": "WISSENSDATENBANK_GESUNDHEITSANALYSE",
-      "realtime_telemetry_label": "ECHTZEIT-TELEMETRIE",
-      "resolution_rate": "LÖSUNGSQUOTE",
-      "prevented_tickets": "VERHINDERTE_TICKETS",
-      "writing_accuracy": "SCHREIBGENAUIGKEIT",
-      "highest_confidence": "HÖCHSTES_VERTRAUEN",
-      "total_interactions": "GESAMTINTERAKTIONEN",
-      "last_30_days": "ANFRAGEN_DER_LETZTEN_30_TAGE",
-      "confidence_distribution": "VERTRAUENSVERTEILUNG",
-      "bands": {
-        "high": "HOCH",
-        "medium": "MITTEL",
-        "low": "NIEDRIG",
-        "no_match": "KEINE_ÜBEREINSTIMMUNG"
-      },
-      "flow_status": "FLOW-STATUS",
-      "ingestion_engine": "DATENERFASSUNGS-ENGINE",
-      "ingestion_engine_desc": "Status: AKTIV | Überwachung geschlossener Ticket-Ereignisse",
-      "abstraction_layer": "ABSTRAKTIONSSCHICHT",
-      "abstraction_layer_desc": "Aktuell: BEREIT | Nomic-Embed-Strategie",
-      "validation_queue": "VALIDIERUNGSWARTESCHLANGE",
-      "validation_queue_desc": "{count} KANDIDATEN WARTEN AUF VALIDIERUNG",
-      "last_sync": "LETZTE_SYNCHRONISIERUNG",
-      "candidates_title": "LERNKANDIDATEN",
-      "waiting_validation": "WARTET_AUF_VALIDIERUNG",
-      "all_synced": "ALLE_MUSTER_SYNCHRONISIERT",
-      "all_synced_desc": "Führen Sie den Extraktionszyklus manuell aus, um neue Wissensbeispiele zu finden.",
-      "add_to_kb": "IN KB AUFNEHMEN",
-      "refresh": "AKTUALISIEREN",
-      "toasts": {
-        "pipeline_started": "KI-Pipeline gestartet",
-        "pipeline_desc": "Tiefenanalyse der gelösten Tickets läuft.",
-        "knowledge_committed": "Wissen bestätigt",
-        "knowledge_committed_desc": "Das Modell wurde erfolgreich in den allgemeinen Wissenspool integriert.",
-        "sync_error": "Datensynchronisierungsfehler",
-        "pipeline_exception": "Pipeline-Ausnahme",
-        "commit_error": "Übertragungsfehler"
-      }
-    },
-    "emails": {
-      "title": "E-Mail-Verwaltung",
-      "subtitle": "MJML-Vorlagen bearbeiten, neue Vorlagen erstellen und den Versandverlauf verfolgen.",
-      "tabs": {
-        "templates": "Vorlagen-Editor",
-        "logs": "Versandverlauf"
-      }
     }
   },
   "profile": {
@@ -2101,6 +1520,587 @@
         "tip_title": "Tipp:",
         "tip_desc": "Sie sollten Ihre unbestätigten (Entwurfs-) Entwürfe immer im Vorschaumodus testen, bevor Sie sie versenden."
       }
+    }
+  },
+  "knowledge_pool": {
+    "title": "WISSENSPOOL_KONTROLLE",
+    "subtitle": "Verwaltung und Indizierung technischer Ressourcen für KI.",
+    "placeholder": "Technische Dokumentation",
+    "tabs": {
+      "raw_sources": "ROHQUELLEN",
+      "seeded_content": "GESÄTE_INHALTE"
+    },
+    "buttons": {
+      "add_url": "URL_HINZUFÜGEN",
+      "upload_file": "DATEI_HOCHLADEN",
+      "scan_dataset": "DATENSATZ_SCANNEN",
+      "bulk_sync": "BULK-SYNC ({count})",
+      "cancel": "ABBRECHEN",
+      "refresh": "AKTUALISIEREN",
+      "publish_selected": "AUSGEWÄHLTE_VERÖFFENTLICHEN",
+      "examine": "UNTERSUCHEN",
+      "load_more": "MEHR_LADEN",
+      "loading": "LADEN..."
+    },
+    "table": {
+      "source": "QUELLE",
+      "type": "TYP",
+      "status": "STATUS",
+      "vector": "VEKTOR",
+      "last_sync": "LETZTER_SYNC",
+      "action": "AKTION",
+      "no_records": "Keine Ressourcen gefunden",
+      "select_all": "ALLE_AUSWÄHLEN",
+      "showing": "ANZEIGEN"
+    },
+    "filters": {
+      "all": "ALLE",
+      "active": "AKTIV",
+      "syncing": "SYNCHRONISIERT",
+      "failed": "FEHLGESCHLAGEN",
+      "all_types": "ALLE_TYPEN",
+      "url": "URL",
+      "file": "DATEI"
+    },
+    "logs": {
+      "title": "SYNC_LOGS",
+      "no_source": "Wählen Sie eine Quelle aus",
+      "no_logs": "Keine Protokolle gefunden.",
+      "success": "ERFOLG",
+      "error": "FEHLER",
+      "processing": "VERARBEITUNG",
+      "chunks_processed": "{count} Chunks verarbeitet."
+    },
+    "articles": {
+      "title": "ARTIKELPOOL",
+      "total": "{count} GESAMT",
+      "search_placeholder": "DATEI SUCHEN...",
+      "all": "ALLE",
+      "review": "IN_PRÜFUNG",
+      "published": "VERÖFFENTLICHT",
+      "draft": "ENTWURF",
+      "select_page": "SELECT {count} {PAGE}",
+      "no_records": "KEINE_DATENSÄTZE_GEFUNDEN",
+      "author": "AUTOR",
+      "under_review": "IN_ÜBERPRÜFUNG"
+    },
+    "meta": {
+      "locale": "de-DE",
+      "system": "SYSTEM"
+    },
+    "status_labels": {
+      "draft": "ENTWURF",
+      "published": "AKTIV",
+      "review": "IN_ÜBERPRÜFUNG",
+      "under_review": "IN_ÜBERPRÜFUNG"
+    },
+    "dialogs": {
+      "new_url": "Neue URL-Quelle",
+      "name_label": "Quellenname",
+      "url_label": "URL-Adresse",
+      "save_sync": "Speichern und Synchronisieren"
+    },
+    "toasts": {
+      "fetch_error": "Ressourcen konnten nicht geladen werden",
+      "sync_started": "Synchronisierung gestartet",
+      "sync_desc": "Hintergrundaufgabe in Warteschlange",
+      "bulk_sync_started": "Massen-Synchronisierung gestartet",
+      "partial_success": "Teilerfolg",
+      "bulk_sync_desc": "{count} Ressourcen in Warteschlange",
+      "bulk_sync_error": "{count} fehlgeschlagen",
+      "dataset_scan_started": "Synchronisierung gestartet",
+      "dataset_scan_desc": "Datensatzordner wird gescannt...",
+      "dataset_sync_success": "Smart Sync erfolgreich",
+      "url_added": "URL-Quelle hinzugefügt",
+      "logs_error": "Protokolle konnten nicht geladen werden",
+      "publish_success": "{count} Artikel veröffentlicht"
+    }
+  },
+  "announcements": {
+    "title": "Ankündigungsmanagement",
+    "subtitle": "Unternehmenskommunikation und gezielte Ankündigungsoperationen",
+    "categories": {
+      "all": "ALLE",
+      "general": "Allgemein",
+      "product": "Produkt",
+      "security": "Sicherheit",
+      "compliance": "Compliance",
+      "operations": "Operationen",
+      "ai_tech": "KI & Technologie",
+      "infrastructure": "Infrastruktur",
+      "change_management": "Change Management",
+      "education": "Bildung",
+      "performance_reports": "Performance-Berichte",
+      "strategic_updates": "Strategische Updates",
+      "community": "Gemeinschaft"
+    },
+    "tabs": {
+      "create": "Ankündigung Erstellen",
+      "templates": "Vorlagenbibliothek",
+      "history": "Sendungsverlauf"
+    },
+    "editor": {
+      "title": "Inhaltseditor",
+      "desc": "Bereiten Sie den Inhalt der E-Mail vor, die an die Kunden gesendet wird.",
+      "template_select": "Vorlage Auswählen",
+      "title_label": "Name des Ankündigungsdatensatzes",
+      "title_placeholder": "z.B. Sommer 2024 Hotfix Ankündigung",
+      "subject_label": "E-Mail-Betreffzeile",
+      "subject_placeholder": "Für den Kunden sichtbare Betreffzeile",
+      "content_label": "Rich-Text-Inhalt",
+      "default_content": "<p>Hallo {{customer.name}}!</p><p>Ankündigungsinhalt hier einfügen...</p>",
+      "preview": "Vorschau",
+      "save_draft": "Entwurf Protokollieren"
+    },
+    "audience": {
+      "title": "Zielgruppe",
+      "desc": "Legen Sie fest, wer die Ankündigung erhalten soll.",
+      "industries": "Branchen",
+      "industry_placeholder": "Branche Auswählen",
+      "statuses": "Kundenstatus",
+      "status_placeholder": "Status Auswählen",
+      "companies": "Unternehmensname",
+      "company_placeholder": "Unternehmen Auswählen",
+      "tags": "Benutzerdefinierte Tags",
+      "tags_placeholder": "Tags hinzufügen (Enter)",
+      "target_audience": "Zielgruppe",
+      "persons": "Personen",
+      "select_filter": "Bitte wählen Sie mindestens einen Filter aus",
+      "realtime_telemetry": "Echtzeit-Telemetriedaten"
+    },
+    "template_editor": {
+      "title": "Vorlagen-Editor",
+      "modify_desc": "Datensatz {name} wird geändert.",
+      "new_desc": "Protokollieren Sie eine neue Kommunikationsvorlage für das System.",
+      "new_record": "Neuer Datensatz",
+      "name_label": "Vorlagenname",
+      "name_placeholder": "z.B. Willkommens-E-Mail",
+      "topic_label": "Kategorie (Topic)",
+      "topic_placeholder": "z.B. Onboarding",
+      "subject_label": "Standard-Betreffzeile",
+      "subject_placeholder": "Für den Kunden sichtbarer Betreff",
+      "content_label": "Rich-Text-Inhalt (Vorlage)",
+      "render_test": "Render-Test",
+      "update": "Aktualisieren",
+      "archive": "In Bibliothek Archivieren"
+    },
+    "library": {
+      "title": "Bibliothek",
+      "search_placeholder": "Name oder Thema suchen...",
+      "category_filter": "Kategoriefilter",
+      "all": "Alle",
+      "no_records": "Keine Datensätze Gefunden",
+      "apply": "Anwenden",
+      "preview": "Vorschau",
+      "delete": "Löschen",
+      "validated": "Validiert"
+    },
+    "history": {
+      "title": "Sendungsarchiv",
+      "desc": "Alle Ankündigungsdatensätze, die über das System protokolliert und veröffentlicht wurden.",
+      "empty": "Archiv Leer",
+      "sent": "GESENDET",
+      "draft": "ENTWURF",
+      "terminal_delivered": "{count} An Terminals Geliefert",
+      "broadcast": "Veröffentlichen"
+    },
+    "toasts": {
+      "template_empty": "Dieser Vorlageninhalt ist leer.",
+      "template_compile_error": "Vorlage konnte nicht kompiliert werden. Prüfen Sie die MJML-Syntax.",
+      "preview_error": "Vorschaufehler:",
+      "unknown_error": "Unbekannter Fehler",
+      "required_fields": "Vorlagenname und Inhalt sind erforderlich",
+      "template_updated": "Vorlage aktualisiert",
+      "template_added": "Vorlage zur Bibliothek hinzugefügt",
+      "template_applied": "{name} Vorlage angewendet",
+      "title_subject_required": "Titel und Betreff sind erforderlich",
+      "draft_saved": "Ankündigungsentwurf gespeichert",
+      "save_failed": "Speichern fehlgeschlagen: {message}",
+      "broadcast_success": "Ankündigung erfolgreich veröffentlicht",
+      "broadcast_error": "Veröffentlichung fehlgeschlagen",
+      "confirm_broadcast": "Sind Sie sicher, dass Sie diese Ankündigung senden möchten?",
+      "delete_success": "Datensatz gelöscht",
+      "delete_failed": "Löschen fehlgeschlagen",
+      "confirm_delete_announcement": "Sind Sie sicher, dass Sie diese Ankündigung löschen möchten?",
+      "confirm_delete_template": "Sind Sie sicher, dass Sie diese Vorlage löschen möchten?",
+      "error": "Fehler"
+    }
+  },
+  "teams": {
+    "fetch_error": "Fehler beim Laden der Daten.",
+    "search_placeholder": "Teams oder Abteilungen suchen...",
+    "no_description": "Keine Beschreibung für diese Abteilung hinzugefügt.",
+    "min_suffix": "Min.",
+    "profile_pic_alt": "Profilbild",
+    "statuses": {
+      "online": "Online",
+      "away": "Abwesend",
+      "dnd": "Nicht stören",
+      "offline": "Offline"
+    },
+    "loading": {
+      "agent": "Profildaten werden analysiert...",
+      "dept": "Abteilungsdaten werden geladen...",
+      "team": "Teamdaten werden synchronisiert..."
+    },
+    "nav": {
+      "back_teams": "Zurück zu Teams",
+      "back": "Zurück"
+    },
+    "actions": {
+      "edit_profile": "Profil bearbeiten",
+      "edit_dept": "Abteilung bearbeiten",
+      "add_skill": "Neue Fähigkeit hinzufügen",
+      "add_sla": "Neue SLA-Richtlinie",
+      "add_member": "Neues Mitglied hinzufügen",
+      "configure": "Konfigurieren",
+      "add_agent": "Neuen Agenten hinzufügen",
+      "add_team": "Neues Team",
+      "manage_team": "Team verwalten",
+      "details": "Details",
+      "view_profile": "Profil",
+      "view_team": "TEAM ANSEHEN",
+      "edit": "BEARBEITEN"
+    },
+    "tabs": {
+      "performance": "Leistung",
+      "skills": "Fähigkeiten",
+      "schedule": "Arbeitsplan",
+      "overview": "Übersicht",
+      "sla_policies": "SLA-Richtlinien",
+      "departments": "Abteilungen",
+      "teams": "Teams",
+      "agents": "Agenten"
+    },
+    "stats": {
+      "tickets": "Ticket-Statistiken",
+      "last_30_days": "LETZTE 30 TAGE",
+      "active_load": "Aktive Arbeitsbelastung",
+      "csat": "CSAT-Score",
+      "avg_response": "Durchschnittliche Antwortzeit",
+      "monthly_quota": "Monatliches Ticketkontingent",
+      "first_response_target": "SLA-Ziel für erste Antwort",
+      "active_teams": "Aktive Teams",
+      "total_agents": "Agenten gesamt",
+      "avg_response_dept": "Durchschnittliche Antwortzeit",
+      "sla_compliance": "SLA-Einhaltung",
+      "active_ticket_load": "Aktive Ticketbelastung",
+      "quick_stats": "Schnelle Statistiken",
+      "online_rate": "Online-Rate",
+      "pending_queue": "Ausstehende Warteschlange",
+      "resolved_today": "Heute gelöst",
+      "alerts": "Warnungen",
+      "overload": "Überlastung",
+      "sla_stable": "SLA Stabil"
+    },
+    "labels": {
+      "badges": "Erfolgsabzeichen",
+      "sla_master": "SLA-Meister",
+      "top_rated": "Bestbewertet",
+      "quick_resolve": "Schnelle Lösung",
+      "targets": "Ziele",
+      "technical_skills": "Technische Fähigkeiten",
+      "skills_desc": "Fachgebiete und Vertrauensniveau des Agenten.",
+      "no_skills": "Noch keine Fähigkeiten zugewiesen.",
+      "leave": "URLAUB",
+      "recent_activity": "Letzte Aktivitäten",
+      "critical_sla": "Kritische SLA-Ziele",
+      "first_response": "ERSTE ANTWORT",
+      "resolution": "LÖSUNG",
+      "first_response_time": "Erste Antwort",
+      "resolution_time": "Lösungszeit",
+      "sla_config": "SLA-Konfiguration",
+      "sla_config_desc": "Service-Level-Ziele der Abteilung.",
+      "automation_status": "AUTOMATISIERUNGSSTATUS",
+      "active": "AKTIV",
+      "passive": "PASSIV",
+      "round_robin": "Round Robin",
+      "rr_desc": "Sequenzielle Zuweisungsstrategie wird angewendet.",
+      "team_members": "Teammitglieder",
+      "command_center": "Team-Kommandozentrale",
+      "organization": "Eine Organisation: Aluplan Support",
+      "auto_assignment": "AUTO-ZUWEISUNG",
+      "strategy": "Strategie:",
+      "agent": "Agent / Vertreter",
+      "status": "Status",
+      "role": "Rolle",
+      "actions": "Aktionen"
+    },
+    "creation": {
+      "title": "Neues Team Erstellen",
+      "description": "Definieren Sie ein neues Team, um operative Prozesse zu verwalten.",
+      "team_name": "Teamname",
+      "team_name_placeholder": "Bsp: Technischer Support - Ebene 2",
+      "department": "Abteilung",
+      "select_department": "Wählen Sie eine Abteilung",
+      "desc_label": "Beschreibung",
+      "desc_placeholder": "Stellenbeschreibung des Teams...",
+      "auto_assign": "Automatische Zuweisung",
+      "auto_assign_desc": "Neue Tickets werden diesem Team automatisch zugewiesen.",
+      "assign_strategy": "Zuweisungsstrategie",
+      "round_robin": "Round Robin (Sequentiell)",
+      "least_loaded": "Am wenigsten belastet (Lastbasiert)",
+      "skill_based": "Fähigkeitsbasiert",
+      "submit": "Team Starten",
+      "submitting": "Wird erstellt...",
+      "success": "Neues Team erfolgreich erstellt.",
+      "error_dept": "Bitte wählen Sie eine Abteilung aus.",
+      "error_server": "Fehler beim Erstellen des Teams."
+    },
+    "member_add": {
+      "title": "Neuen Agenten Zuweisen",
+      "description": "Weisen Sie dem Team einen registrierten Benutzer als Agenten zu.",
+      "select_agent": "Benutzer (Agent)",
+      "select_agent_placeholder": "Wählen Sie einen Benutzer",
+      "loading_users": "Benutzer werden geladen...",
+      "no_users": "Keine neuen Benutzer zur Zuweisung verfügbar.",
+      "role": "Role im Team",
+      "select_role": "Rolle wählen",
+      "role_desc": "Diese Rolle bestimmt nur ihre Berechtigungen innerhalb dieses Teams.",
+      "cancel": "Abbrechen",
+      "submit": "Dem Team Zuweisen",
+      "submitting": "Hinzufügen...",
+      "success": "Neues Mitglied erfolgreich zum Team hinzugefügt.",
+      "error_select": "Bitte wählen Sie einen Agenten aus.",
+      "error_server": "Fehler beim Hinzufügen des Mitglieds."
+    }
+  },
+  "kb_approvals": {
+    "title": "KI-Genehmigungspool",
+    "subtitle": "Verwalten Sie Entwürfe für Artikel, die aus geschlossenen Tickets und 5-Sterne-Lösungen abgeleitet wurden.",
+    "refresh_queue": "WARTESCHLANGE AKTUALISIEREN",
+    "run_pipeline": "PIPELINE AUSFÜHREN",
+    "queue_title": "ZUR GENEHMIGUNG ANSTEHENDE EINHEITEN",
+    "units_loaded": "{count} EINHEITEN GELADEN",
+    "empty": {
+      "title": "Gute Arbeit!",
+      "desc": "Alle zur Genehmigung anstehenden Inhalte wurden überprüft und verarbeitet."
+    },
+    "table": {
+      "query": "ABFRAGE / PROBLEM",
+      "answer": "KI VORGESCHLAGENE LÖSUNG",
+      "confidence": "VERTRAUEN",
+      "source": "QUELLE",
+      "actions": "AKTIONEN",
+      "reliable": "{percent}% ZUVERLÄSSIG"
+    },
+    "buttons": {
+      "approve": "GENEHMIGEN",
+      "delete": "LÖSCHEN"
+    },
+    "toasts": {
+      "fetch_error": "Entwürfe konnten nicht geladen werden.",
+      "approve_success": "Inhalt zur Wissensdatenbank hinzugefügt.",
+      "approve_error": "Fehler bei der Genehmigung.",
+      "dismiss_success": "Inhalt abgelehnt.",
+      "dismiss_error": "Fehler beim Ablehnen.",
+      "pipeline_started": "Pipeline ausgelöst.",
+      "pipeline_error": "Pipeline-Fehler: {error}"
+    }
+  },
+  "knowledge_base": {
+    "title": "Wissensdatenbank",
+    "subtitle": "Unternehmensgedächtnis, Lösungsartikel und Dokumentationszentrum",
+    "buttons": {
+      "analytics": "ANALYTIK",
+      "new_article": "NEUER ARTIKEL",
+      "refresh": "AKTUALISIEREN",
+      "publish": "VERÖFFENTLICHEN",
+      "reject": "ABLEHNEN",
+      "detail": "DETAIL"
+    },
+    "search": {
+      "placeholder": "SUCHE..."
+    },
+    "filters": {
+      "all": "ALLE",
+      "draft": "ENTWURF",
+      "review": "IN_PRÜFUNG",
+      "active": "AKTIV",
+      "archived": "ARCHIVIERT"
+    },
+    "stats": {
+      "total_articles": "Insgesamt {count} Artikel",
+      "total": "Gesamt Artikel",
+      "published": "Veröffentlicht",
+      "views": "Ansichten"
+    },
+    "meta": {
+      "author": "AUTOR",
+      "update": "AKTUALISIERUNG",
+      "views": "ANSICHTEN"
+    },
+    "empty": {
+      "no_records": "Noch keine Artikel gefunden",
+      "loading": "Datenschichten werden geladen"
+    }
+  },
+  "system_topology": {
+    "title": "Systemressourcen-Topologie",
+    "subtitle": "SYSTEMRESSOURCEN_TOPOLOGIE: DATENFLUSS- UND VERARBEITUNGSARCHITEKTUR",
+    "refresh": "AKTUALISIEREN",
+    "sync_error": "Daten-Synchronisierungsfehler",
+    "total_entropy": "GESAMT-ENTROPIE",
+    "units": "EINHEITEN",
+    "status_running": "LÄUFT",
+    "pillars": {
+      "documents": "PDF/DOCX/XLS/TXT/MD",
+      "articles": "ADMIN-ARTIKEL",
+      "urls": "URL / WEB",
+      "tickets": "TICKET-LERNEN"
+    },
+    "layers": {
+      "doc_parser": "DOKUMENTEN-PARSER",
+      "rich_editor": "RICH-EDITOR",
+      "crawl_engine": "CRAWL-ENGINE",
+      "cluster_engine": "CLUSTER-ENGINE"
+    },
+    "strategies": {
+      "parent_child": "PARENT-CHILD",
+      "direct_embed": "DIREKTES EMBEDDING",
+      "content_clean": "INHALTSBEREINIGUNG",
+      "faq_generator": "FAQ-GENERATOR"
+    },
+    "vector": {
+      "unified_index": "VEREINHEITLICHTER VEKTORINDEX",
+      "re_ranking": "RE-RANKING AKTIV",
+      "trust_priority": "VERTRAUENSDIENST-PRIORITÄT"
+    },
+    "engine": {
+      "query_preproc": "ABFRAGE-VORVERARBEITUNG",
+      "hybrid_retrieval": "HYBRID-SUCHMASCHINE"
+    }
+  },
+  "products": {
+    "title": "Produkte und Module",
+    "subtitle": "Verwalten Sie die Hauptprodukte und Unterkategorien für die Klassifizierung durch künstliche Intelligenz für Ihre Support-Abteilungen.",
+    "actions": {
+      "add_product": "Neues Produkt hinzufügen",
+      "add_category": "Kategorie hinzufügen"
+    },
+    "empty": {
+      "no_products": "Noch keine Produkte definiert",
+      "no_products_desc": "Mit der Schaltfläche 'Neues Produkt hinzufügen' können Sie die Hauptprodukte und Module definieren, für die Kunden Tickets eröffnen können.",
+      "no_categories": "Für dieses Produkt wurde noch keine Unterkategorie/Modul definiert. Fügen Sie eine Kategorie für die intelligente KI-Kennzeichnung hinzu."
+    },
+    "labels": {
+      "subcategories": "Unterkategoriler (KI-Labels)",
+      "no_keywords": "Keine Schlüsselwörter",
+      "product_name": "Produktname",
+      "description": "Beschreibung",
+      "category_name": "Kategoriename",
+      "keywords": "Schlüsselwörter (mit Kommas trennen)",
+      "keywords_help": "Die KI kann dabei helfen, einen Kontext zu erstellen, wenn sie versucht, das Benutzerticket aus dieser Liste von Labels zu klassifizieren."
+    },
+    "placeholders": {
+      "product_name": "z. B. Aluplan Pro",
+      "description": "Eine kurze Beschreibung des Produkts...",
+      "category_name": "z. B. Rechnungsmodul",
+      "keywords": "z. B. Rechnungserstellung, Stornierung, MwSt, E-Rechnung"
+    },
+    "dialogs": {
+      "edit_product": "Produkt bearbeiten",
+      "add_product": "Neues Produkt hinzufügen",
+      "edit_category": "Kategorie bearbeiten",
+      "add_category": "Neues Modul / Neue Kategorie",
+      "product_desc": "Definieren Sie Ihr Hauptprodukt oder Ihre Hauptdienstleistung. Kunden sehen diese Produkte zuerst, wenn sie ein Ticket erstellen.",
+      "category_desc": "Geben Sie die Unterkategorie und die mit dieser Kategorie verknüpften Schlüsselwörter ein, die die KI für die Unterkennzeichnung eingehender Tickets verwendet."
+    },
+    "toasts": {
+      "fetch_error": "Fehler beim Laden der Produkte",
+      "product_updated": "Produkt aktualisiert",
+      "product_added": "Neues Produkt hinzugefügt",
+      "category_updated": "Kategorie aktualisiert",
+      "category_added": "Neue Kategorie hinzugefügt",
+      "product_deleted": "Produkt gelöscht",
+      "category_deleted": "Kategorie gelöscht",
+      "save_failed": "Registrierung fehlgeschlagen",
+      "delete_failed": "Löschen fehlgeschlagen"
+    },
+    "confirms": {
+      "delete_product": "Sind Sie sicher, dass Sie dieses Produkt und alle darunter liegenden Kategorien löschen möchten?",
+      "delete_category": "Sind Sie sicher, dass Sie diese Kategorie löschen möchten?"
+    }
+  },
+  "faq": {
+    "title": "FAQ_VERWALTUNGSEINHEIT",
+    "subtitle": "Überprüfen und synchronisieren Sie automatisch extrahierte operative Wissensbeispiele.",
+    "refresh_cache": "CACHE_AKTUALISIEREN",
+    "start_extraction": "EXTRAKTION_STARTEN",
+    "filters": {
+      "all": "ALLE",
+      "pending_review": "AUSSTEHENDE_PRÜFUNG",
+      "published": "VERÖFFENTLICHT",
+      "draft": "ENTWURF"
+    },
+    "not_found": "Keine FAQ gefunden",
+    "not_found_desc": "Versuchen Sie, den Filter zu ändern, oder starten Sie den Extraktionsprozess, um neue FAQs zu erstellen.",
+    "frequency": "HÄUFIGKEIT",
+    "confidence_score": "KONFIDENZWERD",
+    "approve": "GENEHMIGEN",
+    "dismiss": "VERWERFEN",
+    "source_ticket": "Quell-Ticket",
+    "toasts": {
+      "extraction_started": "Pipeline gestartet",
+      "extraction_started_desc": "Der FAQ-Extraktionsprozess läuft im Hintergrund.",
+      "fetch_error": "Fehler beim Abrufen der FAQs",
+      "approved": "FAQ genehmigt",
+      "approved_desc": "Beispiel wurde veröffentlicht.",
+      "dismissed": "FAQ verworfen",
+      "dismissed_desc": "Beispiel in Entwurf verschoben/gelöscht.",
+      "op_failed": "Vorgang fehlgeschlagen",
+      "pipeline_failed": "Pipeline konnte nicht gestartet werden"
+    }
+  },
+  "faq_learning": {
+    "title": "FAQ Auto-Lernpool",
+    "subtitle": "NEURALE SYNCHRONISATION: TRANSFORMATION OPERATIVER DATEN IN STRUKTURIERTES WISSEN",
+    "trigger_loop": "LERNZYKLUS AUSLÖSEN",
+    "health_analysis": "WISSENSDATENBANK_GESUNDHEITSANALYSE",
+    "realtime_telemetry_label": "ECHTZEIT-TELEMETRIE",
+    "resolution_rate": "LÖSUNGSQUOTE",
+    "prevented_tickets": "VERHINDERTE_TICKETS",
+    "writing_accuracy": "SCHREIBGENAUIGKEIT",
+    "highest_confidence": "HÖCHSTES_VERTRAUEN",
+    "total_interactions": "GESAMTINTERAKTIONEN",
+    "last_30_days": "ANFRAGEN_DER_LETZTEN_30_TAGE",
+    "confidence_distribution": "VERTRAUENSVERTEILUNG",
+    "bands": {
+      "high": "HOCH",
+      "medium": "MITTEL",
+      "low": "NIEDRIG",
+      "no_match": "KEINE_ÜBEREINSTIMMUNG"
+    },
+    "flow_status": "FLOW-STATUS",
+    "ingestion_engine": "DATENERFASSUNGS-ENGINE",
+    "ingestion_engine_desc": "Status: AKTIV | Überwachung geschlossener Ticket-Ereignisse",
+    "abstraction_layer": "ABSTRAKTIONSSCHICHT",
+    "abstraction_layer_desc": "Aktuell: BEREIT | Nomic-Embed-Strategie",
+    "validation_queue": "VALIDIERUNGSWARTESCHLANGE",
+    "validation_queue_desc": "{count} KANDIDATEN WARTEN AUF VALIDIERUNG",
+    "last_sync": "LETZTE_SYNCHRONISIERUNG",
+    "candidates_title": "LERNKANDIDATEN",
+    "waiting_validation": "WARTET_AUF_VALIDIERUNG",
+    "all_synced": "ALLE_MUSTER_SYNCHRONISIERT",
+    "all_synced_desc": "Führen Sie den Extraktionszyklus manuell aus, um neue Wissensbeispiele zu finden.",
+    "add_to_kb": "IN KB AUFNEHMEN",
+    "refresh": "AKTUALISIEREN",
+    "toasts": {
+      "pipeline_started": "KI-Pipeline gestartet",
+      "pipeline_desc": "Tiefenanalyse der gelösten Tickets läuft.",
+      "knowledge_committed": "Wissen bestätigt",
+      "knowledge_committed_desc": "Das Modell wurde erfolgreich in den allgemeinen Wissenspool integriert.",
+      "sync_error": "Datensynchronisierungsfehler",
+      "pipeline_exception": "Pipeline-Ausnahme",
+      "commit_error": "Übertragungsfehler"
+    }
+  },
+  "emails": {
+    "title": "E-Mail-Verwaltung",
+    "subtitle": "MJML-Vorlagen bearbeiten, neue Vorlagen erstellen und den Versandverlauf verfolgen.",
+    "tabs": {
+      "templates": "Vorlagen-Editor",
+      "logs": "Versandverlauf"
     }
   }
 }
