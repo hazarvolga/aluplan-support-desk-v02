@@ -65,6 +65,7 @@ export class LlmApiService implements AiProvider {
                     model,
                     input: text,
                 }),
+                signal: AbortSignal.timeout(60000),
             });
 
             if (response.ok) {
@@ -201,6 +202,7 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
                     temperature: 0.1,
                     stream: true,
                 }),
+                signal: AbortSignal.timeout(120_000), // Longer timeout for streaming
             });
 
             if (!response.ok) throw new Error(`LLMAPI HTTP ${response.status}`);

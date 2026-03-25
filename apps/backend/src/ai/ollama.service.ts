@@ -149,6 +149,7 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
                     stream: true,
                     options: { temperature: 0.1, top_p: 0.9 },
                 }),
+                signal: AbortSignal.timeout(180_000), // Longer timeout for local streaming
             });
 
             if (!response.ok) throw new Error(`Ollama stream HTTP ${response.status}`);

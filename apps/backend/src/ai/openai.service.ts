@@ -47,6 +47,7 @@ export class OpenAiService implements AiProvider {
                     model,
                     input: text,
                 }),
+                signal: AbortSignal.timeout(60000),
             });
 
             if (!response.ok) throw new Error(`OpenAI HTTP ${response.status}`);
