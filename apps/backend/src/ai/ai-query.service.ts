@@ -39,12 +39,12 @@ RULES:
 
 2) HANDLING UNAVAILABLE INFORMATION (NO GUESSING):
     If the user's exact problem is NOT solved by the provided knowledge source, DO NOT make up an answer. Instead, evaluate the nature of their query:
-    a) If they are reporting an error, crash, installation issue, or technical malfunction AND they HAVE NOT attached a Hotinfo file yet: 
-       -> Respond EXACTLY with: "This topic is not included in the current knowledge base. However, to diagnose your system, please create a support ticket and attach the '_hotinf_.hxl' file." (Translate to user language).
-    b) If they HAVE attached a Hotinfo profile (see Rule 4):
+    a) If the prompt DOES NOT contain "[Hotinfo Sistem Özeti]" AND they are reporting an error, crash, installation issue, or technical malfunction: 
+       -> Respond EXACTLY with: "Bu konu mevcut bilgi kaynağında yer almıyor. Sistem analizi için lütfen destek talebi oluşturun ve '_hotinf_.hxl' dosyanızı ekleyiniz." 
+    b) If the prompt DOES contain "[Hotinfo Sistem Özeti]" (see Rule 4):
        -> Proceed with Rule 4 to diagnose their hardware/software. Do not reject them.
     c) For all other unrelated/unfound queries:
-       -> Respond EXACTLY with: "This topic is not included in the current knowledge base. Please create a support ticket." (Translate to user language).
+       -> Respond EXACTLY with: "Bu konu mevcut bilgi kaynağında yer almıyor. Lütfen destek talebi oluşturunuz."
 
 3) TONE AND STRUCTURE
     - Do not use unnecessary greetings. Provide the solution directly.
@@ -87,7 +87,7 @@ export class AiQueryService {
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
         const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
-        const cacheKey = `ai: query: cache:${queryHash} `;
+        const cacheKey = `ai:query:cache:v2:${queryHash}`;
         const cached = await this.redis.get(cacheKey);
 
         if (cached) {
@@ -123,7 +123,7 @@ export class AiQueryService {
                     userId: userId || undefined,
                     channel,
                     userQuery,
-                    responseGenerated: 'AI could not find a reliable source. Request routed to human agent.',
+                    responseGenerated: 'Bu konu mevcut bilgi kaynağında yer almıyor. İşleminize destek temsilcisi ile devam edilecektir.',
                     confidenceBand: null,
                     autoAnswered: false,
                     similarityScore: searchResponse.diagnostics.topScore || undefined,
@@ -138,7 +138,7 @@ export class AiQueryService {
 
             return {
                 query: userQuery,
-                answer: 'No reliable source found. Your request will be routed to a support representative.',
+                answer: 'Bu konu mevcut bilgi kaynağında yer almıyor. Sistem analizi için lütfen destek talebi oluşturun ve \'_hotinf_.hxl\' dosyanızı ekleyiniz.',
                 confidence: 'NO_MATCH' as ConfidenceBand,
                 sources: [],
                 interactionId: interaction.id,
