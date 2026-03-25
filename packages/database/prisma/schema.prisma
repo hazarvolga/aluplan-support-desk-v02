@@ -68,6 +68,7 @@ model Department {
   isArchived  Boolean     @default(false) @map("is_archived")
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
+  deletedAt   DateTime?   @map("deleted_at")
   slaPolicies SlaPolicy[]
   teams       Team[]
   tickets     Ticket[]
@@ -86,6 +87,7 @@ model Team {
   assignmentStrategy    AssignmentStrategy @default(MANUAL) @map("assignment_strategy")
   createdAt             DateTime           @default(now()) @map("created_at")
   updatedAt             DateTime           @updatedAt @map("updated_at")
+  deletedAt             DateTime?          @map("deleted_at")
   members               TeamMember[]
   department            Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 
@@ -237,6 +239,7 @@ model CustomerProfile {
   tags              String[]          @default([])
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
+  deletedAt         DateTime?         @map("deleted_at")
   subscriptionModel String?           @map("subscription_model") @db.VarChar(100)
   announcementLogs  AnnouncementLog[]
   account           CrmAccount?       @relation(fields: [accountId], references: [id])
@@ -332,6 +335,7 @@ model Category {
   description String?
   sortOrder   Int                @default(0) @map("sort_order")
   createdAt   DateTime           @default(now()) @map("created_at")
+  deletedAt   DateTime?          @map("deleted_at")
   parent      Category?          @relation("CategoryParent", fields: [parentId], references: [id])
   children    Category[]         @relation("CategoryParent")
   articles    KnowledgeArticle[]
@@ -533,6 +537,7 @@ model Ticket {
   parentId            String?              @map("parent_id") @db.Uuid
   createdAt           DateTime             @default(now()) @map("created_at")
   updatedAt           DateTime             @updatedAt @map("updated_at")
+  deletedAt           DateTime?            @map("deleted_at")
   embeddings          TicketEmbedding[]
   escalations         TicketEscalation[]
   messages            TicketMessage[]
@@ -763,6 +768,7 @@ model Product {
   isActive         Boolean           @default(true) @map("is_active")
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
+  deletedAt        DateTime?         @map("deleted_at")
   aiInteractions   AiInteraction[]
   knowledgeSources KnowledgeSource[]
   categories       ProductCategory[]

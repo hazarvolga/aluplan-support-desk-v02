@@ -340,11 +340,10 @@ export class CustomersService {
             return { deletedCount: 0 };
         }
 
-        // Use Prisma's transaction to delete cascade properly or just rely on DB cascade
-        // We'll update the `deletedAt` field to soft delete if using the standard approach, 
-        // or actually delete them as requested:
-        const result = await this.prisma.user.deleteMany({
-            where: { id: { in: ids } }
+        // Use updateMany to soft-delete by setting the deletedAt field.
+        const result = await this.prisma.user.updateMany({
+            where: { id: { in: ids } },
+            data: { deletedAt: new Date() }
         });
 
         return { deletedCount: result.count };

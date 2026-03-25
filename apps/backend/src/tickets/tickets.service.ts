@@ -149,6 +149,7 @@ export class TicketsService {
             ...(priority && { priority }),
             ...(userId && { userId }),
             ...(isSlaBreached !== undefined && { isSlaBreached }),
+            deletedAt: null, // Always filter out soft-deleted tickets
         };
 
         // Handle assignedTo and teamId logic
@@ -204,8 +205,8 @@ export class TicketsService {
     // =============================================
     async findOne(id: string, requester?: any) {
         console.log(`[DEBUG-TICKET] findOne id=${id} requesterRole=${requester?.role} requesterId=${requester?.id}`);
-        const ticket = await this.prisma.ticket.findUnique({
-            where: { id },
+        const ticket = await this.prisma.ticket.findFirst({
+            where: { id, deletedAt: null },
             include: {
                 creator: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
                 assignee: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
@@ -234,7 +235,9 @@ export class TicketsService {
     }
 
     async findByNumber(ticketNumber: string, requester?: { id: string; role: string }) {
-        const ticket = await this.prisma.ticket.findUnique({ where: { ticketNumber } });
+        const ticket = await this.prisma.ticket.findFirst({
+            where: { ticketNumber, deletedAt: null }
+        });
         if (!ticket) throw new NotFoundException(`Ticket ${ticketNumber} not found`);
         return this.findOne(ticket.id, requester);
     }
@@ -606,9 +609,10 @@ export class TicketsService {
     async remove(id: string, actorId: string) {
         const ticket = await this.findOne(id);
 
-        // Hard delete the ticket. Cascade will handle messages, attachments, escalations and embeddings.
-        await this.prisma.ticket.delete({
+        // Mark the ticket as soft-deleted by setting the deletedAt timestamp.
+        await this.prisma.ticket.update({
             where: { id },
+            data: { deletedAt: new Date() }
         });
 
         this.logger.warn(`🗑️ Ticket ${ticket.ticketNumber} deleted by Admin ${actorId}`);
