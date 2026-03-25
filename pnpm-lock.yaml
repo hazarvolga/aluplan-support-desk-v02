@@ -382,6 +382,9 @@ importers:
       fishery:
         specifier: ^2.4.0
         version: 2.4.0
+      jest:
+        specifier: 29.7.0
+        version: 29.7.0(@types/node@22.19.11)(ts-node@10.9.2(@swc/core@1.15.18)(@types/node@22.19.11)(typescript@5.9.3))
       typescript:
         specifier: ^5.7.3
         version: 5.9.3
