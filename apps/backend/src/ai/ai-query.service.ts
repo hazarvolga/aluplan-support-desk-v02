@@ -742,7 +742,10 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
             by: ['userQuery'],
             where: {
                 createdAt: { gte: sevenDaysAgo },
-                confidenceBand: { in: ['LOW', null] as any }
+                OR: [
+                    { confidenceBand: 'LOW' },
+                    { confidenceBand: null }
+                ]
             },
             _count: { id: true },
             orderBy: { _count: { id: 'desc' } },
