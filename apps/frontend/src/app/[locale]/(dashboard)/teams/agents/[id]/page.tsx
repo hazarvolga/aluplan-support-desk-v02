@@ -31,6 +31,7 @@ import { useTranslations } from 'next-intl';
 
 export default function AgentProfilePage() {
     const t = useTranslations('teams');
+    const tc = useTranslations('common');
     const { id } = useParams();
     const router = useRouter();
     const [agent, setAgent] = useState<any>(null);
@@ -43,7 +44,7 @@ export default function AgentProfilePage() {
                 const res = await api.teams.getAgentProfile(id as string);
                 setAgent(res);
             } catch (error) {
-                toast({ title: 'Hata', description: 'Ajan profili alınamadı.', variant: 'destructive' });
+                toast({ title: tc('error_title'), description: t('errors.fetch_profile'), variant: 'destructive' });
                 router.push('/teams');
             } finally {
                 setLoading(false);
@@ -54,6 +55,10 @@ export default function AgentProfilePage() {
 
     if (loading) return <div className="p-8 animate-pulse text-muted-foreground font-mono text-center">{t('loading.agent')}</div>;
     if (!agent) return null;
+
+    const days = [
+        t('days.mon'), t('days.tue'), t('days.wed'), t('days.thu'), t('days.fri'), t('days.sat'), t('days.sun')
+    ];
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1400px] mx-auto pb-20">
@@ -88,11 +93,11 @@ export default function AgentProfilePage() {
                         </div>
                         <div className="flex flex-wrap gap-x-6 gap-y-2 text-muted-foreground font-medium">
                             <span className="flex items-center gap-1.5"><Mail className="h-4 w-4" /> {agent.email}</span>
-                            <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4" /> {agent.title || 'Kıdemli Destek Uzmanı'}</span>
+                            <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4" /> {agent.title || t('labels.senior_agent')}</span>
                             <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {agent.timezone}</span>
                         </div>
                         <p className="text-muted-foreground/80 max-w-2xl text-sm italic leading-relaxed">
-                            {agent.bio || 'Müşteri memnuniyeti odaklı, teknik çözüm süreçlerinde 5+ yıl deneyimli uzman.'}
+                            {agent.bio || t('labels.default_bio')}
                         </p>
                     </div>
 
@@ -132,7 +137,7 @@ export default function AgentProfilePage() {
                         <CardContent className="h-64 flex items-center justify-center border-t border-border/30">
                             <div className="text-center space-y-2">
                                 <Trophy className="h-12 w-12 text-primary/20 mx-auto" />
-                                <p className="text-muted-foreground italic text-sm">Performans grafikleri hazırlanıyor.</p>
+                                <p className="text-muted-foreground italic text-sm">{t('labels.preparing_charts')}</p>
                             </div>
                         </CardContent>
                         <CardFooter className="flex justify-center border-t border-border/30 p-0">
@@ -155,12 +160,12 @@ export default function AgentProfilePage() {
                                 <CardHeader className="bg-muted/30 pb-4">
                                     <div className="flex justify-between items-start">
                                         <Badge variant="outline" className="text-[10px] font-black uppercase text-muted-foreground">{tm.team.department?.name}</Badge>
-                                        <Badge className="bg-primary/10 text-primary border-none text-[10px] font-black">{tm.roleOverride || 'Üye'}</Badge>
+                                        <Badge className="bg-primary/10 text-primary border-none text-[10px] font-black">{tm.roleOverride || t('labels.member')}</Badge>
                                     </div>
                                     <CardTitle className="mt-3 text-2xl font-extrabold group-hover:text-primary transition-colors">{tm.team.name}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="pt-4 flex justify-between items-center">
-                                    <span className="text-xs text-muted-foreground font-medium">Katılım: {new Date(tm.joinedAt).toLocaleDateString('tr-TR')}</span>
+                                    <span className="text-xs text-muted-foreground font-medium">{t('labels.joined_at', { date: new Date(tm.joinedAt).toLocaleDateString() })}</span>
                                     <Button variant="ghost" size="sm" className="font-bold text-xs h-8 text-primary shadow-none">{t('actions.view_team')}</Button>
                                 </CardContent>
                             </Card>
@@ -181,7 +186,7 @@ export default function AgentProfilePage() {
                                     <div key={as.skill.id} className="space-y-2">
                                         <div className="flex justify-between items-end">
                                             <span className="font-bold text-lg">{as.skill.name}</span>
-                                            <span className="text-xs font-black text-primary">SEVİYE {as.proficiency}/10</span>
+                                            <span className="text-xs font-black text-primary">{t('labels.level_prefix')} {as.proficiency}/10</span>
                                         </div>
                                         <div className="h-3 bg-muted rounded-full overflow-hidden">
                                             <div className="h-full bg-gradient-to-r from-primary to-blue-600 rounded-full" style={{ width: `${as.proficiency * 10}%` }} />
@@ -200,7 +205,7 @@ export default function AgentProfilePage() {
                 {/* Schedule */}
                 <TabsContent value="schedule" className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-                        {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'].map((day, idx) => {
+                        {days.map((day, idx) => {
                             const shift = agent.shifts?.find((s: any) => s.dayOfWeek === (idx + 1) % 7);
                             return (
                                 <Card key={day} className={`rounded-2xl border-border/40 shadow-none ${shift ? 'bg-primary/5 border-primary/20' : 'bg-muted/20 opacity-50'}`}>

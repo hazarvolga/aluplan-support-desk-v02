@@ -16,6 +16,7 @@ import RequirementAccordion from '@/components/auth/requirement-accordion';
 
 export default function LoginPage() {
     const t = useTranslations('auth');
+    const tc = useTranslations('common');
     const { locale } = useParams() as { locale: string };
     const { login } = useAuth();
     const router = useRouter();
@@ -53,7 +54,10 @@ export default function LoginPage() {
             }
 
         } catch (err: any) {
-            setError(err.message ?? t('error_default'));
+            const errorMsg = err.message === 'common.session_expired'
+                ? tc('session_expired')
+                : (err.message ?? t('error_default'));
+            setError(errorMsg);
         } finally {
             setLoading(false);
         }

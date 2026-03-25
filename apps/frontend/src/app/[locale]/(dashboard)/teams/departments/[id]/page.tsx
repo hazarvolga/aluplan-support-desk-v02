@@ -26,6 +26,7 @@ import { useTranslations } from 'next-intl';
 
 export default function DepartmentDetailPage() {
     const t = useTranslations('teams');
+    const tc = useTranslations('common');
     const { id } = useParams();
     const router = useRouter();
     const [dept, setDept] = useState<any>(null);
@@ -38,7 +39,7 @@ export default function DepartmentDetailPage() {
                 const res = await api.teams.getDepartment(id as string);
                 setDept(res);
             } catch (error) {
-                toast({ title: 'Hata', description: 'Departman bilgileri alınamadı.', variant: 'destructive' });
+                toast({ title: tc('error_title'), description: t('errors.fetch_dept'), variant: 'destructive' });
                 router.push('/teams');
             } finally {
                 setLoading(false);
@@ -66,7 +67,7 @@ export default function DepartmentDetailPage() {
                             </Badge>
                         </div>
                         <p className="text-lg text-muted-foreground max-w-2xl">
-                            {dept.description || 'Bu departman organizasyonun temel destek kollarından biridir.'}
+                            {dept.description || t('labels.default_dept_desc')}
                         </p>
                     </div>
                     <div className="flex gap-2">
@@ -118,16 +119,16 @@ export default function DepartmentDetailPage() {
                                     <div key={sla.id} className="flex justify-between items-center p-3 rounded-lg bg-muted/40 border border-border/30">
                                         <div className="flex flex-col">
                                             <span className="font-bold text-sm">{sla.name}</span>
-                                            <span className="text-[10px] text-muted-foreground uppercase">{sla.priority} ÖNCELİK</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase">{sla.priority} {t('labels.priority_suffix')}</span>
                                         </div>
                                         <div className="flex gap-4">
                                             <div className="text-right">
                                                 <div className="text-[10px] text-muted-foreground uppercase font-bold">{t('labels.first_response')}</div>
-                                                <div className="text-sm font-black">{sla.firstResponseMinutes}dk</div>
+                                                <div className="text-sm font-black">{sla.firstResponseMinutes}{t('labels.minutes_suffix')}</div>
                                             </div>
                                             <div className="text-right">
                                                 <div className="text-[10px] text-muted-foreground uppercase font-bold">{t('labels.resolution')}</div>
-                                                <div className="text-sm font-black">{sla.resolutionMinutes}dk</div>
+                                                <div className="text-sm font-black">{sla.resolutionMinutes}{t('labels.minutes_suffix')}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -156,10 +157,10 @@ export default function DepartmentDetailPage() {
                                 <CardContent>
                                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                         <div className="flex items-center gap-1.5">
-                                            <Users className="h-4 w-4" /> {team._count?.members || 0} Ajan
+                                            <Users className="h-4 w-4" /> {t('labels.agent_count', { count: team._count?.members || 0 })}
                                         </div>
                                         <div className="flex items-center gap-1.5">
-                                            <Calendar className="h-4 w-4" /> {team.autoAssignmentEnabled ? 'Oto-Atama Açık' : 'Manuel Atama'}
+                                            <Calendar className="h-4 w-4" /> {team.autoAssignmentEnabled ? t('labels.auto_assign_on') : t('labels.auto_assign_off')}
                                         </div>
                                     </div>
                                 </CardContent>
@@ -185,11 +186,11 @@ export default function DepartmentDetailPage() {
                                         </div>
                                         <div className="col-span-1 text-center">
                                             <div className="text-[11px] text-muted-foreground font-bold uppercase">{t('labels.first_response_time')}</div>
-                                            <div className="text-xl font-black">{sla.firstResponseMinutes} dk</div>
+                                            <div className="text-xl font-black">{sla.firstResponseMinutes} {t('labels.minutes_suffix')}</div>
                                         </div>
                                         <div className="col-span-1 text-center">
                                             <div className="text-[11px] text-muted-foreground font-bold uppercase">{t('labels.resolution_time')}</div>
-                                            <div className="text-xl font-black">{sla.resolutionMinutes} dk</div>
+                                            <div className="text-xl font-black">{sla.resolutionMinutes} {t('labels.minutes_suffix')}</div>
                                         </div>
                                         <div className="col-span-1 flex justify-end">
                                             <Button variant="ghost" size="sm" className="font-bold text-xs uppercase tracking-widest text-primary">{t('actions.edit')}</Button>

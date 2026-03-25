@@ -76,7 +76,7 @@ export default function TicketsPage() {
     const [bulkLoading, setBulkLoading] = useState(false);
     const { user } = useAuth();
 
-    const isAdmin = user?.role === 'ADMIN' || user?.role === 'DEPARTMENT_MANAGER';
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'DEPARTMENT_MANAGER' || user?.role === 'TEAM_LEAD' || user?.role === 'SENIOR_AGENT';
 
     const load = async () => {
         setLoading(true);

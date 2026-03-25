@@ -4,9 +4,11 @@ import { useEffect } from 'react';
 import { getSocket } from '@/lib/socket';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { useTranslations } from 'next-intl';
 
 export function GlobalTicketNotification() {
     const { toast } = useToast();
+    const t = useTranslations('notifications');
 
     useEffect(() => {
         try {
@@ -16,15 +18,15 @@ export function GlobalTicketNotification() {
             const handleNewTicket = (ticket: any) => {
                 console.log('📢 [GlobalTicketNotification] Received ticket:created event!', ticket);
                 toast({
-                    title: "🎟️ Yeni Ticket Oluşturuldu!",
-                    description: `${ticket.creatorName || 'Bir müşteri'} yeni bir destek talebi açtı: "${ticket.subject}"`,
+                    title: t('new_ticket_title'),
+                    description: t('new_ticket_desc', { name: ticket.creatorName || 'Bir müşteri', subject: ticket.subject }),
                     action: (
                         <ToastAction
-                            altText="İncele"
+                            altText={t('view_action')}
                             onClick={() => window.open(`/tickets/${ticket.id}`, '_blank')}
                             className="bg-primary text-primary-foreground hover:bg-primary/90"
                         >
-                            İncele
+                            {t('view_action')}
                         </ToastAction>
                     ),
                     duration: 10000,

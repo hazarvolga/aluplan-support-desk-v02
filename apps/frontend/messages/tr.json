@@ -169,6 +169,7 @@
     "logout": "Çıkış Yap",
     "loading": "Yükleniyor...",
     "error": "Bir hata oluştu",
+    "session_expired": "Oturum süresi doldu. Lütfen tekrar giriş yapın.",
     "save": "Kaydet",
     "saving": "Kaydediliyor...",
     "reset": "Sıfırla",
@@ -260,7 +261,7 @@
     },
     "actions": {
       "create_ticket": "YENİ_TALEP_OLUŞTUR",
-      "manage_queue": "KUYRUĞU_YÖNET",
+      "manage_queue": "TALEPLERİ_YÖNET",
       "neural_analysis": "NÖRAL_ANALİZ"
     },
     "sections": {
@@ -323,7 +324,7 @@
     }
   },
   "tickets": {
-    "title": "Talepler Yönetimi",
+    "title": "Destek Talepleri",
     "subtitle": "Aktif destek talepleri ve SLA performans takibi",
     "delete": "Sil",
     "delete_confirm_title": "Bileti Sil",
@@ -1339,9 +1340,9 @@
     },
     "admin": {
       "section1": {
-        "title": "Bilet Kuyruğu (Ticket Management)",
+        "title": "Destek Talepleri (Ticket Management)",
         "card1_title": "Operasyonel Havuz",
-        "card1_desc": "Bilet Kuyruğu sayfasında tüm müşterilerden gelen talepler toplanır.",
+        "card1_desc": "Destek Talepleri sayfasında tüm müşterilerden gelen talepler toplanır.",
         "card1_item1_label": "Durum Değiştirme:",
         "card1_item1_desc": "Bilet içerisine girip sağ paneldeki dropdown'dan durumu değiştirebilirsiniz (Açık, Cevaplandı, Kapalı).",
         "card1_item2_label": "İç Notlar:",
@@ -1582,7 +1583,19 @@
       "agent": "Ajan / Temsilci",
       "status": "Durumu",
       "role": "Rol",
-      "actions": "İşlemler"
+      "actions": "İşlemler",
+      "senior_agent": "Kıdemli Destek Uzmanı",
+      "default_bio": "Müşteri memnuniyeti odaklı, teknik çözüm süreçlerinde 5+ yıl deneyimli uzman.",
+      "preparing_charts": "Performans grafikleri hazırlanıyor.",
+      "member": "Üye",
+      "joined_at": "Katılım: {date}",
+      "level_prefix": "SEVİYE",
+      "default_dept_desc": "Bu departman organizasyonun temel destek kollarından biridir.",
+      "priority_suffix": "ÖNCELİK",
+      "minutes_suffix": "dk",
+      "agent_count": "{count} Ajan",
+      "auto_assign_on": "Oto-Atama Açık",
+      "auto_assign_off": "Manuel Atama"
     },
     "creation": {
       "title": "Yeni Ekip Oluştur",
@@ -1621,6 +1634,19 @@
       "success": "Ekibe yeni üye başarıyla eklendi.",
       "error_select": "Lütfen bir ajan seçin.",
       "error_server": "Üye eklenirken bir hata oluştu."
+    },
+    "errors": {
+      "fetch_profile": "Ajan profili alınamadı.",
+      "fetch_dept": "Departman bilgileri alınamadı."
+    },
+    "days": {
+      "mon": "Pazartesi",
+      "tue": "Salı",
+      "wed": "Çarşamba",
+      "thu": "Perşembe",
+      "fri": "Cuma",
+      "sat": "Cumartesi",
+      "sun": "Pazar"
     }
   },
   "admin": {
@@ -2106,5 +2132,10 @@
         "token_label": "Token"
       }
     }
+  },
+  "notifications": {
+    "new_ticket_title": "🎟️ Yeni Ticket Oluşturuldu!",
+    "new_ticket_desc": "{name} yeni bir destek talebi açtı: \"{subject}\"",
+    "view_action": "İncele"
   }
 }

@@ -227,7 +227,8 @@
       "installed_modules": "Installed Modules",
       "count_suffix": "items",
       "not_found": "System data not found."
-    }
+    },
+    "session_expired": "Session expired. Please log in again."
   },
   "dashboard": {
     "title": "Control Center",
@@ -1598,7 +1599,19 @@
       "agent": "Agent / Rep",
       "status": "Status",
       "role": "Role",
-      "actions": "Actions"
+      "actions": "Actions",
+      "senior_agent": "Senior Support Agent",
+      "default_bio": "Expert agent with 5+ years experience in technical support and customer satisfaction.",
+      "preparing_charts": "Performance charts are being prepared.",
+      "member": "Member",
+      "joined_at": "Joined: {date}",
+      "level_prefix": "LEVEL",
+      "default_dept_desc": "This department is one of the core support arms of the organization.",
+      "priority_suffix": "PRIORITY",
+      "minutes_suffix": "min",
+      "agent_count": "{count} Agents",
+      "auto_assign_on": "Auto-Assign On",
+      "auto_assign_off": "Manual Assignment"
     },
     "creation": {
       "title": "Create New Team",
@@ -1637,6 +1650,19 @@
       "success": "New member successfully added to the team.",
       "error_select": "Please select an agent.",
       "error_server": "An error occurred while adding the member."
+    },
+    "errors": {
+      "fetch_profile": "Could not fetch agent profile.",
+      "fetch_dept": "Could not fetch department information."
+    },
+    "days": {
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday",
+      "sun": "Sunday"
     }
   },
   "admin": {
@@ -2124,5 +2150,10 @@
         "token_label": "Tokens"
       }
     }
+  },
+  "notifications": {
+    "new_ticket_title": "🎟️ New Ticket Created!",
+    "new_ticket_desc": "{name} opened a new support ticket: \"{subject}\"",
+    "view_action": "View"
   }
 }

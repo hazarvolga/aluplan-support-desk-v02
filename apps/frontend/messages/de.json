@@ -227,7 +227,8 @@
       "installed_modules": "Installierte Module",
       "count_suffix": "elemente",
       "not_found": "Systemdaten nicht gefunden."
-    }
+    },
+    "session_expired": "Sitzung abgelaufen. Bitte melden Sie sich erneut an."
   },
   "dashboard": {
     "title": "Kontrollzentrum",
@@ -1588,7 +1589,19 @@
       "agent": "Agent / Vertreter",
       "status": "Status",
       "role": "Rolle",
-      "actions": "Aktionen"
+      "actions": "Aktionen",
+      "senior_agent": "Senior Support Spezialist",
+      "default_bio": "Kundenorientierter Experte mit über 5 Jahren Erfahrung in technischen Supportprozessen.",
+      "preparing_charts": "Leistungsdiagramme werden vorbereitet.",
+      "member": "Mitglied",
+      "joined_at": "Beigetreten: {date}",
+      "level_prefix": "LEVEL",
+      "default_dept_desc": "Diese Abteilung ist einer der zentralen Supportbereiche des Unternehmens.",
+      "priority_suffix": "PRIORITÄT",
+      "minutes_suffix": "Min",
+      "agent_count": "{count} Agenten",
+      "auto_assign_on": "Auto-Zuweisung Ein",
+      "auto_assign_off": "Manuelle Zuweisung"
     },
     "creation": {
       "title": "Neues Team Erstellen",
@@ -1627,6 +1640,19 @@
       "success": "Neues Mitglied erfolgreich zum Team hinzugefügt.",
       "error_select": "Bitte wählen Sie einen Agenten aus.",
       "error_server": "Fehler beim Hinzufügen des Mitglieds."
+    },
+    "errors": {
+      "fetch_profile": "Agentenprofil konnte nicht geladen werden.",
+      "fetch_dept": "Abteilungsinformationen konnten nicht geladen werden."
+    },
+    "days": {
+      "mon": "Montag",
+      "tue": "Dienstag",
+      "wed": "Mittwoch",
+      "thu": "Donnerstag",
+      "fri": "Freitag",
+      "sat": "Samstag",
+      "sun": "Sonntag"
     }
   },
   "admin": {
@@ -2105,5 +2131,10 @@
         "token_label": "Token"
       }
     }
+  },
+  "notifications": {
+    "new_ticket_title": "🎟️ Neues Ticket erstellt!",
+    "new_ticket_desc": "{name} hat ein neues Support-Ticket eröffnet: \"{subject}\"",
+    "view_action": "Ansehen"
   }
 }

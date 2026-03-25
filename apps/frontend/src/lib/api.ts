@@ -70,7 +70,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
                         }
                     }
                 } catch (e) {
-                    throw new Error('Oturum süresi doldu. Lütfen tekrar giriş yapın.');
+                    throw new Error('common.session_expired');
                 }
             } else {
                 isRefreshing = true;
@@ -105,7 +105,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('refresh_token');
                     // role-guard.tsx will catch the 401 and redirect to login
-                    throw new Error('Oturum süresi doldu. Lütfen tekrar giriş yapın.');
+                    throw new Error('common.session_expired');
                 } finally {
                     isRefreshing = false;
                 }
