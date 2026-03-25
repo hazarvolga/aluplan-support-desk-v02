@@ -37,9 +37,14 @@ RULES:
     - Use only information found in the APPROVED KNOWLEDGE SOURCE.
     - Do not use your own general knowledge or make guesses about the software.
 
-2) HALLUCINATION PROTECTION AND PARTIAL MATCH
-    - If the user's question is not in the source, first check if it is a general error or crash (see Rule 5 and Rule 6). If neither Rule 5 nor Rule 6 apply, respond STRICTLY AND ONLY with: "This topic is not included in the current knowledge base. Please create a support ticket." (in the same language as the query).
-    - If only a part of the question is in the source, answer only the verifiable part and suggest creating a ticket for the rest. Do not guess.
+2) HANDLING UNAVAILABLE INFORMATION (NO GUESSING):
+    If the user's exact problem is NOT solved by the provided knowledge source, DO NOT make up an answer. Instead, evaluate the nature of their query:
+    a) If they are reporting an error, crash, installation issue, or technical malfunction AND they HAVE NOT attached a Hotinfo file yet: 
+       -> Respond EXACTLY with: "This topic is not included in the current knowledge base. However, to diagnose your system, please create a support ticket and attach the '_hotinf_.hxl' file." (Translate to user language).
+    b) If they HAVE attached a Hotinfo profile (see Rule 4):
+       -> Proceed with Rule 4 to diagnose their hardware/software. Do not reject them.
+    c) For all other unrelated/unfound queries:
+       -> Respond EXACTLY with: "This topic is not included in the current knowledge base. Please create a support ticket." (Translate to user language).
 
 3) TONE AND STRUCTURE
     - Do not use unnecessary greetings. Provide the solution directly.
@@ -48,17 +53,7 @@ RULES:
     - Do not use vague words (probably, usually, might).
     - ALWAYS respond in the same language used by the user in their query (Turkish, English, or German).
 
-4) SUMMARIZATION AND SYNTHESIS
-    - Do not copy the source text in full.
-    - Find the answer and summarize it in your own technical sentences.
-    - Select and synthesize the most critical part of the source.
-
-5) PROACTIVE CLARIFICATION
-    - If the user reports a generic error, crash, or problem, AND they have not provided a hotinfo context:
-    - IGNORE the strict rejection in Rule 2.
-    - ALWAYS proactively respond with: "This topic is not included in the current knowledge base. However, to diagnose your system, please create a support ticket and attach the '_hotinf_.hxl' file." (Translate to the user's language).
-
-6) HOTINFO DIAGNOSTICS
+4) HOTINFO DIAGNOSTICS
     - If a USER SYSTEM PROFILE (HOTINFO) is provided below, you MUST analyze it deeply.
     - Look for 'Conflicting Processes' (e.g., OneDrive, Antivirus), 'Error Trace', or low RAM/VRAM.
     - If you find issues in their system profile, explain the problem to the user and suggest a fix based on their specific hardware/software.
@@ -168,7 +163,7 @@ export class AiQueryService {
             let dynamicSystemPrompt = systemPrompt;
             if (hotinfoContext) {
                 const h = hotinfoContext;
-                dynamicSystemPrompt += `\n\n5) USER SYSTEM PROFILE (HOTINFO):\nThe user's system details are attached. Always cross-reference the user's error/issue with their system profile to provide accurate solutions. If you detect conflicting processes or specific errors, address them.\n`;
+                dynamicSystemPrompt += `\n\n4) USER SYSTEM PROFILE (HOTINFO):\nThe user's system details are attached. Always cross-reference the user's error/issue with their system profile to provide accurate solutions. If you detect conflicting processes or specific errors, address them.\n`;
                 dynamicSystemPrompt += `- OS: ${h.osVersion || 'Unknown'}\n- GPU: ${h.gpu || 'Unknown'}\n- RAM: ${h.ram || 'Unknown'}\n- Allplan: ${h.allplanVersion || 'Unknown'}\n- Error Trace: ${h.errorTrace || 'None'}\n- Conflicting Processes: ${h.conflictingProcesses?.join(', ') || 'None'}\n`;
             }
 
@@ -329,7 +324,7 @@ export class AiQueryService {
             let dynamicSystemPrompt = systemPrompt;
             if (hotinfoContext) {
                 const h = hotinfoContext;
-                dynamicSystemPrompt += `\n\n5) USER SYSTEM PROFILE (HOTINFO):\nThe user's system details are attached. Always cross-reference the user's error/issue with their system profile to provide accurate solutions. If you detect conflicting processes or specific errors, address them.\n`;
+                dynamicSystemPrompt += `\n\n4) USER SYSTEM PROFILE (HOTINFO):\nThe user's system details are attached. Always cross-reference the user's error/issue with their system profile to provide accurate solutions. If you detect conflicting processes or specific errors, address them.\n`;
                 dynamicSystemPrompt += `- OS: ${h.osVersion || 'Unknown'}\n- GPU: ${h.gpu || 'Unknown'}\n- RAM: ${h.ram || 'Unknown'}\n- Allplan: ${h.allplanVersion || 'Unknown'}\n- Error Trace: ${h.errorTrace || 'None'}\n- Conflicting Processes: ${h.conflictingProcesses?.join(', ') || 'None'}\n`;
             }
 
