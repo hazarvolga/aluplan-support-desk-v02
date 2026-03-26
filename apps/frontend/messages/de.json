@@ -1403,7 +1403,9 @@
       "missing": "Fehlt",
       "ok": "OK",
       "error": "Fehler",
-      "enabled": "Aktiviert"
+      "enabled": "Aktiviert",
+      "catch_all": "Sammeladresse",
+      "clean": "Sauber"
     },
     "tabs": {
       "single": "Schnellcheck",
@@ -1418,6 +1420,10 @@
       "verify_selected": "Ausgewählte Verifizieren ({count})",
       "verify_all": "Alle Verifizieren"
     },
+    "typo": {
+      "suggestion": "Meinten Sie?",
+      "use_suggested": "Vorschlag verwenden"
+    },
     "search": {
       "customer_search": "Kunde oder Unternehmen Suchen...",
       "filtered_records": "{count} Gefilterte Datensätze"
@@ -1429,6 +1435,7 @@
       "invalid": "Ungültig",
       "disposable_hint": "Temporärer E-Mail-Dienst erkannt.",
       "role_based_hint": "Unternehmensrollenadresse (Support, Info usw.).",
+      "catch_all_hint": "Akzeptiert alle E-Mails (Sammeladresse) Server.",
       "valid_hint": "E-Mail-Adresse scheint für die Verwendung geeignet zu sein."
     },
     "data_points": {
@@ -1438,8 +1445,12 @@
       "dns_desc": "E-Mail-Servereinträge ({exchange}) der Domain verifiziert.",
       "smtp": "SMTP",
       "smtp_desc": "Server auf Socket-Ebene erreicht und Handshake versucht.",
+      "greylisted": "Server hat vorübergehend abgelehnt (Greylisted), später erneut versuchen.",
       "ai": "Intelligenz (KI)",
-      "ai_desc": "Intelligenzschicht-Analyse durchgeführt."
+      "ai_desc": "Intelligenzschicht-Analyse durchgeführt.",
+      "risk": "Risikoanalyse",
+      "risk_clean": "Keine bekannten Risikofaktoren gefunden.",
+      "catch_all_desc": "Domain akzeptiert alle Adressen, Liefergarantie spiegelt dies wider."
     },
     "empty": {
       "waiting": "Warten auf E-Mail-Analyse",

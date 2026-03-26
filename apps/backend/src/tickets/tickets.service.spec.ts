@@ -86,7 +86,7 @@ describe('TicketsService', () => {
         it('should throw BadRequestException if transition is invalid', async () => {
             // Arrange
             const ticket = { id: 'tik1', status: 'NEW' };
-            prisma.ticket.findUnique.mockResolvedValue(ticket);
+            prisma.ticket.findFirst.mockResolvedValue(ticket);
 
             // Act & Assert
             await expect(service.transition('tik1', TicketStatus.RESOLVED, 'agent1')).rejects.toThrow(BadRequestException);
@@ -97,7 +97,7 @@ describe('TicketsService', () => {
             const ticket = { id: 'tik1', status: 'NEW', ticketNumber: 'SUP-00001' };
             const updatedTicket = { ...ticket, status: 'OPEN' };
 
-            prisma.ticket.findUnique.mockResolvedValue(ticket);
+            prisma.ticket.findFirst.mockResolvedValue(ticket);
             prisma.ticket.update.mockResolvedValue(updatedTicket);
 
             // Act
@@ -115,7 +115,7 @@ describe('TicketsService', () => {
             const ticket = { id: 'tik1', status: 'NEW', ticketNumber: 'SUP-00001' };
             const updatedTicket = { ...ticket, assignedTo: 'agent1', status: 'OPEN' };
 
-            prisma.ticket.findUnique.mockResolvedValue(ticket);
+            prisma.ticket.findFirst.mockResolvedValue(ticket);
             prisma.ticket.update.mockResolvedValue(updatedTicket);
 
             // Act
@@ -225,7 +225,7 @@ describe('TicketsService', () => {
             it('should throw BadRequestException when adding a message to a closed ticket', async () => {
                 // Arrange
                 const ticket = { id: 'tik1', status: 'CLOSED', userId: 'user1' };
-                prisma.ticket.findUnique.mockResolvedValue(ticket);
+                prisma.ticket.findFirst.mockResolvedValue(ticket);
 
                 // Act & Assert
                 await expect(service.addMessage('tik1', { message: 'hello' }, 'user1', 'customer'))
@@ -235,7 +235,7 @@ describe('TicketsService', () => {
             it('should reopen ticket if customer replies to PENDING_CUSTOMER', async () => {
                 // Arrange
                 const ticket = { id: 'tik1', status: 'PENDING_CUSTOMER', userId: 'user1' };
-                prisma.ticket.findUnique.mockResolvedValue(ticket);
+                prisma.ticket.findFirst.mockResolvedValue(ticket);
                 prisma.ticketMessage.create.mockResolvedValue({ id: 'msg1' });
 
                 // Act
@@ -252,7 +252,7 @@ describe('TicketsService', () => {
             it('should set closedAt when transitioning to CLOSED', async () => {
                 // Arrange
                 const ticket = { id: 'tik1', status: 'RESOLVED', ticketNumber: 'SUP-00001' };
-                prisma.ticket.findUnique.mockResolvedValue(ticket);
+                prisma.ticket.findFirst.mockResolvedValue(ticket);
                 prisma.ticket.update.mockResolvedValue({ ...ticket, status: 'CLOSED' });
 
                 // Act

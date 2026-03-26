@@ -36,24 +36,6 @@ services:
     networks:
       - aluplan_net
 
-  # ============================================
-  # MinIO — Self-Hosted Object Storage (Permanent)
-  # ============================================
-  minio:
-    image: minio/minio:latest
-    container_name: aluplan_minio
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-changeme}
-    ports:
-      - "9000:9000" # MinIO API
-      - "9001:9001" # MinIO Console
-    volumes:
-      - minio_data:/data
-    networks:
-      - aluplan_net
 
   # ============================================
   # NestJS Backend (Production Ready)
@@ -93,8 +75,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      minio:
-        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${PORT:-4000}/api/v1/health"]
       interval: 30s
@@ -125,25 +105,6 @@ services:
     networks:
       - aluplan_net
 
-  # ============================================
-  # MinIO Bucket Init (One-shot)
-  # ============================================
-  minio-init:
-    image: minio/mc:latest
-    container_name: aluplan_minio_init
-    depends_on:
-      - minio
-    entrypoint: >
-      /bin/sh -c "
-      sleep 10;
-      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-admin} ${MINIO_ROOT_PASSWORD:-changeme};
-      mc mb --ignore-existing local/${STORAGE_BUCKET:-attachments};
-      mc anonymous set download local/${STORAGE_BUCKET:-attachments};
-      echo 'MinIO bucket ready.';
-      exit 0;
-      "
-    networks:
-      - aluplan_net
 
 networks:
   aluplan_net:
@@ -152,4 +113,3 @@ networks:
 volumes:
   postgres_data:
   redis_data:
-  minio_data:

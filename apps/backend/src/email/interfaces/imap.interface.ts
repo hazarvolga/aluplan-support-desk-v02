@@ -1,6 +1,6 @@
 export interface SimpleImapConfig {
     user: string;
-    password?: string;
+    password: string;
     host: string;
     port: number;
     tls: boolean;

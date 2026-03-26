@@ -344,77 +344,104 @@ export default function EmailValidationPage() {
                         </form>
                     </div>
 
-                    {result && result.summary && (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-500">
-                            {/* Score Card */}
-                            <div className={`col-span-1 p-10 rounded-2xl border flex flex-col items-center justify-center text-center ${getScoreBg(result?.summary?.score)}`}>
-                                <div className="relative h-40 w-40 mb-6">
-                                    <svg className="h-full w-full" viewBox="0 0 36 36">
-                                        <path
-                                            className="stroke-white/5"
-                                            strokeDasharray="100, 100"
-                                            strokeWidth="3"
-                                            fill="none"
-                                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                        />
-                                        <path
-                                            className={getScoreColor(result?.summary?.score || 0).replace('text-', 'stroke-')}
-                                            strokeDasharray={`${result?.summary?.score || 0}, 100`}
-                                            strokeWidth="3"
-                                            strokeLinecap="round"
-                                            fill="none"
-                                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                        />
-                                    </svg>
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className={`text-5xl font-black ${getScoreColor(result?.summary?.score || 0)}`}>{result?.summary?.score ?? 0}</span>
-                                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">{t('score_card.score')}</span>
+                    {result && (
+                        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                            {/* LAYER 8: Typo Recommendation */}
+                            {result.syntax.suggestion && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <AlertCircle className="h-5 w-5 text-amber-400" />
+                                        <div>
+                                            <p className="text-sm font-bold text-white">{t('typo.suggestion')}</p>
+                                            <p className="text-xs text-amber-400/80">{result.syntax.suggestion}</p>
+                                        </div>
                                     </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-xs font-bold text-amber-400 hover:bg-amber-500/10"
+                                        onClick={() => {
+                                            setEmail(result.syntax.suggestion);
+                                            // Trigger verify if needed or just set email
+                                        }}
+                                    >
+                                        {t('typo.use_suggested')}
+                                    </Button>
+                                </motion.div>
+                            )}
+
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Score Card */}
+                                <div className={`col-span-1 p-10 rounded-2xl border flex flex-col items-center justify-center text-center ${getScoreBg(result.score)}`}>
+                                    <div className="relative h-40 w-40 mb-6">
+                                        <svg className="h-full w-full" viewBox="0 0 36 36">
+                                            <path
+                                                className="stroke-white/5"
+                                                strokeDasharray="100, 100"
+                                                strokeWidth="3"
+                                                fill="none"
+                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                            />
+                                            <path
+                                                className={getScoreColor(result.score || 0).replace('text-', 'stroke-')}
+                                                strokeDasharray={`${result.score || 0}, 100`}
+                                                strokeWidth="3"
+                                                strokeLinecap="round"
+                                                fill="none"
+                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                            />
+                                        </svg>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span className={`text-5xl font-black ${getScoreColor(result.score || 0)}`}>{result.score ?? 0}</span>
+                                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">{t('score_card.score')}</span>
+                                        </div>
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-white mb-2">
+                                        {result.status === 'VALID' ? t('score_card.reliable') : result.status === 'RISKY' ? t('score_card.risky') : t('score_card.invalid')}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground italic px-6 leading-relaxed">
+                                        {result.dns.isDisposable ? t('score_card.disposable_hint') :
+                                            result.syntax.isRoleBased ? t('score_card.role_based_hint') :
+                                                result.dns.isCatchAll ? t('score_card.catch_all_hint') :
+                                                    t('score_card.valid_hint')}
+                                    </p>
                                 </div>
-                                <h3 className="text-2xl font-bold text-white mb-2">
-                                    {result?.summary?.status === 'VALID' ? t('score_card.reliable') : result?.summary?.status === 'RISKY' ? t('score_card.risky') : t('score_card.invalid')}
-                                </h3>
-                                <p className="text-sm text-muted-foreground italic px-6 leading-relaxed">
-                                    {result?.intelligence?.isDisposable ? t('score_card.disposable_hint') :
-                                        result?.intelligence?.isRoleBased ? t('score_card.role_based_hint') :
-                                            t('score_card.valid_hint')}
-                                </p>
-                            </div>
 
-                            {/* Data Points */}
-                            <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Syntax */}
-                                <DataPoint
-                                    label={t('data_points.syntax')}
-                                    value={result.syntax.isValid ? t('data_labels.valid') : t('data_labels.invalid')}
-                                    desc={t('data_points.syntax_desc')}
-                                    status={result.syntax.isValid ? 'success' : 'error'}
-                                />
+                                {/* Data Points */}
+                                <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DataPoint
+                                        label={t('data_points.syntax')}
+                                        value={result.syntax.isValid ? t('data_labels.valid') : t('data_labels.invalid')}
+                                        desc={result.syntax.error || t('data_points.syntax_desc')}
+                                        status={result.syntax.isValid ? 'success' : 'error'}
+                                    />
 
-                                {/* DNS */}
-                                <DataPoint
-                                    label={t('data_points.dns')}
-                                    value={result.dns.hasMx ? t('data_labels.found') : t('data_labels.missing')}
-                                    desc={t('data_points.dns_desc', { exchange: result.dns.mxRecords?.[0]?.exchange || '—' })}
-                                    status={result.dns.hasMx ? 'success' : 'error'}
-                                />
+                                    <DataPoint
+                                        label={t('data_points.dns')}
+                                        value={result.dns.isValid ? t('data_labels.found') : t('data_labels.missing')}
+                                        desc={t('data_points.dns_desc', { exchange: result.dns.mxRecords?.[0] || '—' })}
+                                        status={result.dns.isValid ? 'success' : 'error'}
+                                    />
 
-                                {/* SMTP */}
-                                <DataPoint
-                                    label={t('data_points.smtp')}
-                                    value={result.smtp.canConnect ? t('data_labels.ok') : t('data_labels.error')}
-                                    desc={t('data_points.smtp_desc')}
-                                    status={result.smtp.canConnect ? 'success' : 'error'}
-                                />
+                                    <DataPoint
+                                        label={t('data_points.smtp')}
+                                        value={result.smtp.isValid ? t('data_labels.ok') : t('data_labels.error')}
+                                        desc={result.smtp.isGreyListed ? t('data_points.greylisted') : result.smtp.error || t('data_points.smtp_desc')}
+                                        status={result.smtp.isValid ? 'success' : 'error'}
+                                    />
 
-                                {/* Intelligence */}
-                                <DataPoint
-                                    label={t('data_points.ai')}
-                                    value={t('data_labels.enabled')}
-                                    desc={t('data_points.ai_desc')}
-                                    status="success"
-                                    last
-                                />
+                                    <DataPoint
+                                        label={t('data_points.risk')}
+                                        value={result.dns.isCatchAll ? t('data_labels.catch_all') : t('data_labels.clean')}
+                                        desc={result.dns.isCatchAll ? t('data_points.catch_all_desc') : t('data_points.risk_clean')}
+                                        status={result.dns.isCatchAll ? 'error' : 'success'}
+                                        last
+                                    />
+                                </div>
                             </div>
                         </div>
                     )}
@@ -556,25 +583,25 @@ export default function EmailValidationPage() {
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {vRes ? (
-                                                        <Badge variant="outline" className={`text-[8px] font-black tracking-widest px-2 py-0.5 ${vRes.dns?.hasMx ? 'bg-emerald-500/10 text-emerald-400 border-none' : 'bg-red-500/10 text-red-400 border-none'}`}>
-                                                            {vRes.dns?.hasMx ? `DNS ${t('data_labels.ok')}` : `DNS ${t('data_labels.missing')}`}
+                                                        <Badge variant="outline" className={`text-[8px] font-black tracking-widest px-2 py-0.5 ${vRes.dns?.isValid ? 'bg-emerald-500/10 text-emerald-400 border-none' : 'bg-red-500/10 text-red-400 border-none'}`}>
+                                                            {vRes.dns?.isValid ? `DNS ${t('data_labels.ok')}` : `DNS ${t('data_labels.missing')}`}
                                                         </Badge>
                                                     ) : <span className="text-[8px] text-muted-foreground/20 font-bold">-</span>}
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {vRes ? (
-                                                        <Badge variant="outline" className={`text-[8px] font-black tracking-widest px-2 py-0.5 ${vRes.smtp?.canConnect ? 'bg-emerald-500/10 text-emerald-400 border-none' : 'bg-red-500/10 text-red-400 border-none'}`}>
-                                                            {vRes.smtp?.canConnect ? `SMTP ${t('data_labels.ok')}` : `SMTP ${t('data_labels.error')}`}
+                                                        <Badge variant="outline" className={`text-[8px] font-black tracking-widest px-2 py-0.5 ${vRes.smtp?.isValid ? 'bg-emerald-500/10 text-emerald-400 border-none' : 'bg-red-500/10 text-red-400 border-none'}`}>
+                                                            {vRes.smtp?.isValid ? `SMTP ${t('data_labels.ok')}` : `SMTP ${t('data_labels.error')}`}
                                                         </Badge>
                                                     ) : <span className="text-[8px] text-muted-foreground/20 font-bold">-</span>}
                                                 </TableCell>
                                                 <TableCell className="text-right pr-8">
                                                     {vRes ? (
                                                         <div className="flex items-center justify-end gap-3">
-                                                            <Badge variant="outline" className={`text-[8px] font-black tracking-widest px-2 py-0.5 ${vRes.summary?.status === 'VALID' ? 'bg-emerald-500/10 text-emerald-400 border-none' : vRes.summary?.status === 'RISKY' ? 'bg-amber-500/10 text-amber-400 border-none' : 'bg-red-500/10 text-red-400 border-none'}`}>
-                                                                {vRes.summary?.status}
+                                                            <Badge variant="outline" className={`text-[8px] font-black tracking-widest px-2 py-0.5 ${vRes.status === 'VALID' ? 'bg-emerald-500/10 text-emerald-400 border-none' : vRes.status === 'RISKY' ? 'bg-amber-500/10 text-amber-400 border-none' : 'bg-red-500/10 text-red-400 border-none'}`}>
+                                                                {vRes.status}
                                                             </Badge>
-                                                            <span className={`font-mono text-xs font-bold leading-none ${getScoreColor(vRes.summary?.score || 0)}`}>{vRes.summary?.score || 0}</span>
+                                                            <span className={`font-mono text-xs font-bold leading-none ${getScoreColor(vRes.score || 0)}`}>{vRes.score || 0}</span>
                                                         </div>
                                                     ) : <span className="text-[8px] text-muted-foreground/20 font-bold">-</span>}
                                                 </TableCell>
@@ -626,14 +653,14 @@ export default function EmailValidationPage() {
                                         {/* Score Overview */}
                                         <div className="grid grid-cols-2 gap-4">
                                             <Card className="bg-white/[0.02] border-white/5 p-6 flex flex-col items-center justify-center text-center">
-                                                <div className="text-4xl font-black text-white mb-1">{bulkResults[selectedCustomer.email]?.summary?.score ?? 0}</div>
+                                                <div className="text-4xl font-black text-white mb-1">{bulkResults[selectedCustomer.email]?.score ?? 0}</div>
                                                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('detail.trust_score')}</div>
                                             </Card>
                                             <Card className="bg-white/[0.02] border-white/5 p-6 flex flex-col items-center justify-center text-center">
-                                                <div className={`text-sm font-black uppercase tracking-widest mb-1 ${bulkResults[selectedCustomer.email]?.summary?.status === 'VALID' ? 'text-emerald-400' :
-                                                    bulkResults[selectedCustomer.email]?.summary?.status === 'RISKY' ? 'text-amber-400' : 'text-red-400'
+                                                <div className={`text-sm font-black uppercase tracking-widest mb-1 ${bulkResults[selectedCustomer.email]?.status === 'VALID' ? 'text-emerald-400' :
+                                                    bulkResults[selectedCustomer.email]?.status === 'RISKY' ? 'text-amber-400' : 'text-red-400'
                                                     }`}>
-                                                    {bulkResults[selectedCustomer.email]?.summary?.status ?? 'UNKNOWN'}
+                                                    {bulkResults[selectedCustomer.email]?.status ?? 'UNKNOWN'}
                                                 </div>
                                                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('detail.status')}</div>
                                             </Card>
@@ -644,8 +671,8 @@ export default function EmailValidationPage() {
                                             <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[3px] border-b border-white/5 pb-2">{t('detail.intelligence')}</h4>
                                             <div className="grid grid-cols-1 gap-2">
                                                 {[
-                                                    { label: 'Disposable (Geçici)', value: bulkResults[selectedCustomer.email]?.intelligence?.isDisposable, icon: XCircle },
-                                                    { label: 'Role-Based (Kurumsal)', value: bulkResults[selectedCustomer.email]?.intelligence?.isRoleBased, icon: Users },
+                                                    { label: 'Disposable (Geçici)', value: bulkResults[selectedCustomer.email]?.dns?.isDisposable, icon: XCircle },
+                                                    { label: 'Role-Based (Kurumsal)', value: bulkResults[selectedCustomer.email]?.syntax?.isRoleBased, icon: Users },
                                                     { label: 'Catch-All (Genel Alıcı)', value: bulkResults[selectedCustomer.email]?.dns?.isCatchAll, icon: Globe },
                                                     { label: 'SMTP Connection', value: bulkResults[selectedCustomer.email]?.smtp?.canConnect, icon: Server }
                                                 ].map((item, idx) => (
@@ -672,8 +699,7 @@ export default function EmailValidationPage() {
                                                 </div>
                                                 {(bulkResults[selectedCustomer.email]?.dns?.mxRecords || []).map((mx: any, i: number) => (
                                                     <div key={i} className="flex justify-between border-b border-white/5 pb-1">
-                                                        <span>Priority: {mx.priority}</span>
-                                                        <span className="text-white/40">{mx.exchange}</span>
+                                                        <span className="text-white/40">{mx}</span>
                                                     </div>
                                                 ))}
                                                 {(!bulkResults[selectedCustomer.email]?.dns?.mxRecords?.length) && <div>{t('detail.no_mx')}</div>}
@@ -684,9 +710,9 @@ export default function EmailValidationPage() {
                                                     <Server className="h-3 w-3" /> {t('detail.smtp_log')}
                                                 </div>
                                                 <div className="text-white/40 italic">
-                                                    {bulkResults[selectedCustomer.email]?.smtp?.canConnect ?
-                                                        t('detail.smtp_success', { server: bulkResults[selectedCustomer.email]?.dns?.mxRecords?.[0]?.exchange || 'server' }) :
-                                                        t('detail.smtp_fail')
+                                                    {bulkResults[selectedCustomer.email]?.smtp?.isValid ?
+                                                        t('detail.smtp_success', { server: bulkResults[selectedCustomer.email]?.dns?.mxRecords?.[0] || 'server' }) :
+                                                        bulkResults[selectedCustomer.email]?.smtp?.error || t('detail.smtp_fail')
                                                     }
                                                 </div>
                                             </div>

@@ -57,7 +57,7 @@ describe('UsersService', () => {
         it('should return user without password hash', async () => {
             // Arrange
             const user = { id: '1', passwordHash: 'hash', email: 'test@t.com' };
-            prisma.user.findUnique.mockResolvedValue(user);
+            prisma.user.findFirst.mockResolvedValue(user);
 
             // Act
             const result = await service.findOne('1');
@@ -69,7 +69,7 @@ describe('UsersService', () => {
 
         it('should throw NotFoundException if user not found', async () => {
             // Arrange
-            prisma.user.findUnique.mockResolvedValue(null);
+            prisma.user.findFirst.mockResolvedValue(null);
 
             // Act & Assert
             await expect(service.findOne('999')).rejects.toThrow(NotFoundException);

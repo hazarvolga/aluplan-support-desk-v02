@@ -1413,7 +1413,9 @@
       "missing": "Missing",
       "ok": "OK",
       "error": "Error",
-      "enabled": "Enabled"
+      "enabled": "Enabled",
+      "catch_all": "Catch-All",
+      "clean": "Clean"
     },
     "tabs": {
       "single": "Quick Check",
@@ -1428,6 +1430,10 @@
       "verify_selected": "Verify Selected ({count})",
       "verify_all": "Verify All"
     },
+    "typo": {
+      "suggestion": "Did you mean?",
+      "use_suggested": "Use suggested"
+    },
     "search": {
       "customer_search": "Search Customer or Company...",
       "filtered_records": "{count} Filtered Records"
@@ -1439,6 +1445,7 @@
       "invalid": "Invalid",
       "disposable_hint": "Disposable email service detected.",
       "role_based_hint": "Corporate role address (support, info, etc.).",
+      "catch_all_hint": "Accepts all emails (Catch-All) server.",
       "valid_hint": "Suitable for email usage."
     },
     "data_points": {
@@ -1448,8 +1455,12 @@
       "dns_desc": "Domain email server records ({exchange}) verified.",
       "smtp": "SMTP",
       "smtp_desc": "Connected to server at socket level and handshake attempted.",
+      "greylisted": "Server temporarily rejected (Greylisted), should retry later.",
       "ai": "Intelligence (AI)",
-      "ai_desc": "Intelligence layer analysis performed."
+      "ai_desc": "Intelligence layer analysis performed.",
+      "risk": "Risk Analysis",
+      "risk_clean": "No known risk factors found.",
+      "catch_all_desc": "Domain accepts all addresses, delivery guarantee reflects this."
     },
     "empty": {
       "waiting": "Waiting for Email Analysis",

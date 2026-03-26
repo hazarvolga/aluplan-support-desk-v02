@@ -55,14 +55,16 @@ function buildContact(overrides: Record<string, any> = {}): Record<string, any> 
 // ─── Mock Prisma ─────────────────────────────────────────────────────────────
 
 const mockTx = {
-    user: { findUnique: jest.fn(), create: jest.fn() },
-    role: { findUnique: jest.fn() },
+    user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
+    role: { findUnique: jest.fn(), findFirst: jest.fn() },
     crmAccount: { findUnique: jest.fn() },
     customerProfile: { upsert: jest.fn() },
 };
 
 const mockPrisma = {
     crmAccount: { upsert: jest.fn() },
+    role: { findFirst: jest.fn(), create: jest.fn(), findUnique: jest.fn() },
+    user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
     $transaction: jest.fn((cb: any) => cb(mockTx)),
 };
 

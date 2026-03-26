@@ -1401,7 +1401,9 @@
       "missing": "Eksik",
       "ok": "Tamam",
       "error": "Hata",
-      "enabled": "Aktif"
+      "enabled": "Aktif",
+      "catch_all": "Genel Alıcı",
+      "clean": "Temiz"
     },
     "tabs": {
       "single": "Hızlı Kontrol",
@@ -1416,6 +1418,10 @@
       "verify_selected": "Seçilenleri Doğrula ({count})",
       "verify_all": "Tümünü Doğrula"
     },
+    "typo": {
+      "suggestion": "Bunu mu demek istediniz?",
+      "use_suggested": "Önerileni Kullan"
+    },
     "search": {
       "customer_search": "Müşteri veya Şirket Arayın...",
       "filtered_records": "{count} Filtrelenmiş Kayıt"
@@ -1427,6 +1433,7 @@
       "invalid": "Geçersiz",
       "disposable_hint": "Geçici e-posta servisi tespit edildi.",
       "role_based_hint": "Kurumsal rol adresi (destek, bilgi vb.).",
+      "catch_all_hint": "Tüm e-postaları kabul eden (Catch-All) sunucu.",
       "valid_hint": "E-posta adresi kullanımı için uygun görünüyor."
     },
     "data_points": {
@@ -1436,8 +1443,12 @@
       "dns_desc": "Alan adının e-posta sunucu kayıtları ({exchange}) doğrulandı.",
       "smtp": "SMTP",
       "smtp_desc": "Sunucuya socket seviyesinde erişildi ve handshake denendi.",
+      "greylisted": "Sunucu geçici olarak reddetti (Greylisted), daha sonra tekrar denenmeli.",
       "ai": "Zeka (AI)",
-      "ai_desc": "Zeka katmanı analizi yapıldı."
+      "ai_desc": "Zeka katmanı analizi yapıldı.",
+      "risk": "Risk Analizi",
+      "risk_clean": "Bilinen bir risk faktörü bulunamadı.",
+      "catch_all_desc": "Alan adı tüm adresleri kabul ediyor, kesin teslimat garantisi yok."
     },
     "empty": {
       "waiting": "Analiz İçin E-Posta Bekleniyor",

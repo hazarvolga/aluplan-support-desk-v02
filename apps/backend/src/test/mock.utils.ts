@@ -28,6 +28,14 @@ export const mockPrismaService: any = {
         findMany: jest.fn(),
         create: jest.fn(),
     },
+    team: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+    },
     teamMember: {
         findUnique: jest.fn(),
         findFirst: jest.fn(),
@@ -38,7 +46,19 @@ export const mockPrismaService: any = {
     },
     department: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+    },
+    product: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
     },
     faqEntry: {
         findUnique: jest.fn(),
@@ -57,6 +77,7 @@ export const mockPrismaService: any = {
         delete: jest.fn(),
     },
     $transaction: jest.fn((callback: any) => callback(mockPrismaService)),
+    $queryRaw: jest.fn(),
 };
 
 export const mockConfigService = {

@@ -11,6 +11,8 @@ export interface EmailValidationResult {
     score: number; // 0-100
     syntax: {
         isValid: boolean;
+        normalized?: string;
+        suggestion?: string;
         error?: string;
     };
     dns: {
@@ -23,6 +25,7 @@ export interface EmailValidationResult {
         isValid: boolean;
         canConnect?: boolean;
         hasInbox?: boolean;
+        isGreyListed?: boolean;
         error?: string;
     };
     metadata?: {

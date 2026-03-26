@@ -8,6 +8,7 @@ import { PrismaModule } from '../../src/prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 
 describe('UsersService (Integration)', () => {
+    jest.setTimeout(30000); // 30 seconds for DB operations
     let testModule: TestingModule;
     let service: UsersService;
     let prisma: PrismaService;

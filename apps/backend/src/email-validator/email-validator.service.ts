@@ -26,9 +26,13 @@ export class EmailValidatorService {
             smtp: { isValid: false }
         };
 
-        // 1. Syntax Check
+        // 1. Syntax Check (LAYER 1 & 9)
         const syntaxResult = this.syntax.validate(email);
-        result.syntax = syntaxResult;
+        result.syntax = {
+            ...syntaxResult,
+            suggestion: this.syntax.suggestCorrection(email) || undefined
+        };
+
         if (!syntaxResult.isValid) {
             result.status = ValidationStatus.INVALID;
             result.score = 0;
@@ -36,13 +40,8 @@ export class EmailValidatorService {
         }
         result.score += 20;
 
-        // 2. DNS Check
-        const domain = this.syntax.extractDomain(email);
-        if (!domain) {
-            result.status = ValidationStatus.INVALID;
-            return result;
-        }
-
+        // 2. DNS Check (LAYER 2 & 3)
+        const domain = syntaxResult.normalized!.split('@')[1];
         const dnsResult = await this.dns.validate(domain);
         result.dns = {
             ...dnsResult,
@@ -51,7 +50,7 @@ export class EmailValidatorService {
 
         if (!dnsResult.isValid) {
             result.status = ValidationStatus.INVALID;
-            result.score = 10; // Some points for valid syntax but domain is dead
+            result.score = 10;
             return result;
         }
         result.score += 30;
@@ -64,17 +63,48 @@ export class EmailValidatorService {
             result.score -= 10;
         }
 
-        // 4. SMTP Handshake (Only if DNS is valid)
-        // We try the first MX record for now
-        const mxHost = dnsResult.mxRecords[0];
-        const smtpResult = await this.smtp.validate(email, mxHost);
-        result.smtp = smtpResult;
+        // 4. SMTP Handshake (LAYER 4, 5 & 7)
+        // Sequentially attempt all MX hosts until success or fatal error
+        let smtpSuccess = false;
+        for (const mxHost of dnsResult.mxRecords) {
+            const smtpResult = await this.smtp.validate(email, mxHost);
+            result.smtp = {
+                isValid: smtpResult.isValid,
+                canConnect: smtpResult.canConnect,
+                isGreyListed: smtpResult.isGreyListed,
+                error: smtpResult.error
+            };
 
-        if (smtpResult.isValid) {
-            result.score += 50;
+            if (smtpResult.isValid) {
+                smtpSuccess = true;
+                break;
+            }
+
+            // If it's a permanent rejection, we might want to stop early, 
+            // but usually it's safer to check other MXs if they exist.
+            if (!smtpResult.canConnect) continue;
+
+            // If greylisted, we could retry after a delay, 
+            // but for real-time validation we typically report and move on.
+            // Layer 7 requirement fulfilled by detecting and reporting it.
         }
 
-        // 5. Final Status
+        if (smtpSuccess) {
+            result.score += 50;
+
+            // 5. CATCH-ALL DETECTION (LAYER 6)
+            // If the main email is valid, check a random one at the same domain
+            const randomEmail = `verify-${Math.random().toString(36).substring(2, 10)}@${domain}`;
+            const catchAllCheck = await this.smtp.validate(randomEmail, dnsResult.mxRecords[0]);
+
+            if (catchAllCheck.isValid) {
+                result.dns.isCatchAll = true;
+                result.score -= 20; // Risky because we can't confirm individual mailbox
+                this.logger.debug(`Domain ${domain} detected as Catch-All`);
+            }
+        }
+
+        // 6. Final Status (LAYER 10 Orchestration)
         if (result.score >= 70) {
             result.status = ValidationStatus.VALID;
         } else if (result.score >= 40) {
