@@ -387,8 +387,12 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 token = await this.getAccessToken(config);
                 console.log(`${connIdStr} Token acquired ✅`);
             } catch (tokenErr) {
+                if (tokenErr.message.includes('Missing required Dynamics 365 credentials')) {
+                    console.log(`${connIdStr} CRM credentials not fully configured yet. Returning empty discovery data.`);
+                    return { account: [], contact: [] };
+                }
                 const details = tokenErr.response?.data ? JSON.stringify(tokenErr.response.data) : tokenErr.message;
-                console.error(`${connIdStr} [PHASE:TOKEN] 401/Auth rejection: ${details}`);
+                console.error(`${connIdStr} [PHASE:TOKEN] Auth rejection: ${details}`);
                 throw new Error(`Authentication with Microsoft failed: ${tokenErr.message}`);
             }
 

@@ -586,6 +586,7 @@
       "placeholder": "Müşteri veya şirket ara..."
     },
     "labels": {
+      "status": "Durum",
       "active": "AKTİF",
       "suspended": "ASKIYA ALINDI",
       "passive": "PASİF",
@@ -599,6 +600,7 @@
       "passed": "BAŞARILI",
       "failed": "HATALI",
       "pending": "BEKLEMEDE",
+      "created_at": "Hesap Oluşturulma",
       "system_info": "Sistem Bilgileri (Hotinfo)",
       "personal_info": "Kişisel Bilgiler",
       "corporate_info": "Kurumsal Bilgiler",
@@ -609,7 +611,6 @@
       "company_name": "Firma Adı",
       "customer_no": "Müşteri Numarası",
       "contract_status": "Müşteri Durumu",
-      "created_at": "Hesap Oluşturulma",
       "save_all": "Tüm Değişiklikleri Kaydet",
       "saving": "Kaydediliyor...",
       "reset_password": "Şifreyi Sıfırla",
@@ -618,8 +619,7 @@
       "download_hxl": ".HXL İndir",
       "general": "Genel",
       "accounts": "Hesaplar",
-      "record_count": "{count} Kayıt",
-      "status": "Durum"
+      "record_count": "{count} Kayıt"
     },
     "table": {
       "loading": "Veriler veritabanından çekiliyor",

@@ -586,6 +586,7 @@
       "placeholder": "Kunde oder Unternehmen suchen..."
     },
     "labels": {
+      "status": "Status",
       "active": "AKTIV",
       "suspended": "SUSPENDIERT",
       "passive": "PASSIV",
@@ -599,6 +600,7 @@
       "passed": "ERFOLGREICH",
       "failed": "FEHLGESCHLAGEN",
       "pending": "AUSSTEHEND",
+      "created_at": "Konto erstellt",
       "system_info": "Systeminformationen (Hotinfo)",
       "personal_info": "Persönliche Informationen",
       "corporate_info": "Unternehmensinformationen",
@@ -609,7 +611,6 @@
       "company_name": "Firmenname",
       "customer_no": "Kundennummer",
       "contract_status": "Kundenstatus",
-      "created_at": "Konto erstellt",
       "save_all": "Alle Änderungen speichern",
       "saving": "Speichern...",
       "reset_password": "Passwort zurücksetzen",
@@ -618,8 +619,7 @@
       "download_hxl": ".HXL herunterladen",
       "general": "Allgemein",
       "accounts": "Konten",
-      "record_count": "{count} Datensätze",
-      "status": "Status"
+      "record_count": "{count} Datensätze"
     },
     "table": {
       "loading": "Daten werden aus der Datenbank abgerufen",
