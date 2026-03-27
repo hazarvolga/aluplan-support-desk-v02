@@ -285,14 +285,23 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             || 'Unknown';
 
                         // customerNo: 
-                        // 1. Önce hesap numarasını (Account Number) deneyelim (User'ın tercihi bu yönde)
-                        // 2. Eğer o yoksa CRM Mapping'den gelen değeri kullanalım (new_customerid gibi)
+                        // 1. CRM Mapping'den gelen özel bir değer varsa onu kullanalım (en yüksek öncelikli)
+                        // 2. Eğer o yoksa hesap numarasını (Account Number) baz alalım ama çakışmayı önlemek için contact fragment ekleyelim
                         // 3. O da yoksa contactId'den türetelim.
-                        const clientNo = accountInfo?.accountNumber
-                            || this.resolveField(contact, 'customerNo', mappings, 'new_customerid')
-                            || `DYN-C-${contactId.substring(0, 8)}`;
+                        const mappedNo = this.resolveField(contact, 'customerNo', mappings, 'new_customerid');
+                        const accountNum = accountInfo?.accountNumber;
 
-                        this.logger.debug(`Mapped customerNo: ${clientNo} for contact: ${email}`);
+                        let clientNo: string;
+                        if (mappedNo && mappedNo !== '-') {
+                            clientNo = mappedNo;
+                        } else if (accountNum) {
+                            // Birden fazla çalışan aynı hesap numarasına sahip olabileceği için benzersizlik için ek takı kullanıyoruz
+                            clientNo = `${accountNum}-${contactId.substring(0, 5)}`;
+                        } else {
+                            clientNo = `DYN-${contactId.substring(0, 10)}`;
+                        }
+
+                        this.logger.debug(`Generated unique customerNo: ${clientNo} for contact: ${email} (Account: ${accountNum || 'N/A'})`);
 
                         // 3. Upsert CustomerProfile
                         await tx.customerProfile.upsert({

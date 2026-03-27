@@ -745,53 +745,6 @@
       "accounts": "Accounts",
       "record_count": "{count} Records"
     },
-    "users": {
-      "title": "Team Management",
-      "desc": "Manage support agents, managers, and admins.",
-      "add_user": "Add User",
-      "edit_user": "Edit User",
-      "delete_confirm": "Are you sure you want to delete user {name}?",
-      "empty": "No users found",
-      "deleted_success": "User successfully deleted",
-      "fetch_error": "Error fetching users",
-      "dialog": {
-        "title_create": "Add New User",
-        "title_edit": "Edit User",
-        "full_name": "Full Name",
-        "name_placeholder": "John Doe",
-        "email": "Email",
-        "email_placeholder": "john@example.com",
-        "password": "Password",
-        "password_placeholder": "******",
-        "new_password_optional": "New Password (Optional)",
-        "role": "Role",
-        "select_role_placeholder": "Select a role",
-        "roles": {
-          "admin": "Admin",
-          "support_manager": "Support Manager",
-          "support_agent": "Support Agent",
-          "viewer": "Viewer"
-        },
-        "btn_create": "Create",
-        "btn_update": "Update"
-      },
-      "validation": {
-        "name_min": "Name must be at least 2 characters",
-        "email_invalid": "Invalid email address",
-        "password_min": "Password must be at least 6 characters",
-        "password_required": "Password required for new user"
-      },
-      "toasts": {
-        "created": "User created successfully",
-        "updated": "User updated successfully"
-      },
-      "table": {
-        "user": "User",
-        "role": "Role",
-        "email": "Email",
-        "actions": "Actions"
-      }
-    },
     "crm": {
       "title": "CRM Control Center",
       "desc": "Manage Microsoft Dynamics 365 and Enterprise CRM integrations.",
@@ -843,6 +796,53 @@
       "delete_desc": "{count} data objects will be permanently deleted. This action cannot be undone.",
       "delete_confirm": "START DELETE PROTOCOL",
       "cancel": "CANCEL"
+    }
+  },
+  "users": {
+    "title": "Team Management",
+    "desc": "Manage support agents, managers, and admins.",
+    "add_user": "Add User",
+    "edit_user": "Edit User",
+    "delete_confirm": "Are you sure you want to delete user {name}?",
+    "empty": "No users found",
+    "deleted_success": "User successfully deleted",
+    "fetch_error": "Error fetching users",
+    "dialog": {
+      "title_create": "Add New User",
+      "title_edit": "Edit User",
+      "full_name": "Full Name",
+      "name_placeholder": "John Doe",
+      "email": "Email",
+      "email_placeholder": "john@example.com",
+      "password": "Password",
+      "password_placeholder": "******",
+      "new_password_optional": "New Password (Optional)",
+      "role": "Role",
+      "select_role_placeholder": "Select a role",
+      "roles": {
+        "admin": "Admin",
+        "support_manager": "Support Manager",
+        "support_agent": "Support Agent",
+        "viewer": "Viewer"
+      },
+      "btn_create": "Create",
+      "btn_update": "Update"
+    },
+    "validation": {
+      "name_min": "Name must be at least 2 characters",
+      "email_invalid": "Invalid email address",
+      "password_min": "Password must be at least 6 characters",
+      "password_required": "Password required for new user"
+    },
+    "toasts": {
+      "created": "User created successfully",
+      "updated": "User updated successfully"
+    },
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "email": "Email",
+      "actions": "Actions"
     }
   },
   "settings": {
@@ -1403,768 +1403,770 @@
       }
     }
   },
-  "email_validation": {
-    "title": "Email Validation",
-    "subtitle": "Check email validity, DNS records, and SMTP status.",
-    "data_labels": {
-      "valid": "Valid",
-      "invalid": "Invalid",
-      "found": "Found",
-      "missing": "Missing",
-      "ok": "OK",
-      "error": "Error",
-      "enabled": "Enabled",
-      "catch_all": "Catch-All",
-      "clean": "Clean"
-    },
-    "tabs": {
-      "single": "Quick Check",
-      "bulk": "Customer List"
-    },
-    "single": {
-      "placeholder": "Email address to verify (e.g., user@example.com)",
-      "button": "Analyze",
-      "verifying": "Verifying..."
-    },
-    "bulk": {
-      "verify_selected": "Verify Selected ({count})",
-      "verify_all": "Verify All"
-    },
-    "typo": {
-      "suggestion": "Did you mean?",
-      "use_suggested": "Use suggested"
-    },
-    "search": {
-      "customer_search": "Search Customer or Company...",
-      "filtered_records": "{count} Filtered Records"
-    },
-    "score_card": {
-      "score": "Score",
-      "reliable": "Reliable",
-      "risky": "Risky",
-      "invalid": "Invalid",
-      "disposable_hint": "Disposable email service detected.",
-      "role_based_hint": "Corporate role address (support, info, etc.).",
-      "catch_all_hint": "Accepts all emails (Catch-All) server.",
-      "valid_hint": "Suitable for email usage."
-    },
-    "data_points": {
-      "syntax": "Syntax",
-      "syntax_desc": "Email format checked for RFC compliance.",
-      "dns": "DNS / MX",
-      "dns_desc": "Domain email server records ({exchange}) verified.",
-      "smtp": "SMTP",
-      "smtp_desc": "Connected to server at socket level and handshake attempted.",
-      "greylisted": "Server temporarily rejected (Greylisted), should retry later.",
-      "ai": "Intelligence (AI)",
-      "ai_desc": "Intelligence layer analysis performed.",
-      "risk": "Risk Analysis",
-      "risk_clean": "No known risk factors found.",
-      "catch_all_desc": "Domain accepts all addresses, delivery guarantee reflects this."
-    },
-    "empty": {
-      "waiting": "Waiting for Email Analysis",
-      "waiting_desc": "Please enter the address you want to check in the field above.",
-      "no_results": "No Results Found",
-      "no_results_desc": "No customers matching your search criteria were found.",
-      "no_data": "No Data Available",
-      "no_data_desc": "This email has not been verified yet. Please start the verification process.",
-      "verify_now": "Verify Now"
-    },
-    "filters": {
-      "all": "All"
-    },
-    "table": {
-      "customer_company": "Customer / Company",
-      "email": "Email",
-      "syntax": "Syntax",
-      "dns_mx": "DNS / MX",
-      "smtp": "SMTP",
-      "group_score": "Group / Score",
-      "loading": "Loading Customers..."
-    },
-    "detail": {
-      "title": "Detailed Analysis",
-      "trust_score": "Trust Score",
-      "status": "Status",
-      "intelligence": "Intelligence Layer",
-      "server_records": "Server Records",
-      "mx_data": "MX RECORD DATA",
-      "no_mx": "MX Records Not Found.",
-      "smtp_log": "SMTP HANDSHAKE LOG",
-      "yes_risky": "YES / RISKY",
-      "no_clean": "NO / CLEAN",
-      "smtp_success": "Connection established successfully to {server}. EHLO accepted.",
-      "smtp_fail": "Connection failed or timeout during handshake."
-    },
-    "toasts": {
-      "verified_count": "{count} emails verified.",
-      "reverified": "{email} re-verified.",
-      "verify_error": "Verification error",
-      "bulk_verify_error": "Bulk verification error"
-    }
-  },
-  "meta": {
-    "locale": "en-US",
-    "system": "SYSTEM"
-  },
-  "table": {
-    "select_all": "Select all",
-    "showing": "Showing"
-  },
-  "teams": {
-    "fetch_error": "An error occurred while loading data.",
-    "search_placeholder": "Search teams or departments...",
-    "no_description": "No description added for this department.",
-    "min_suffix": "min",
-    "profile_pic_alt": "profile picture",
-    "statuses": {
-      "online": "Online",
-      "away": "Away",
-      "dnd": "Do Not Disturb",
-      "offline": "Offline"
-    },
-    "loading": {
-      "agent": "Analyzing profile data...",
-      "dept": "Loading department data...",
-      "team": "Synchronizing team data..."
-    },
-    "nav": {
-      "back_teams": "Back to Teams",
-      "back": "Go Back"
-    },
-    "actions": {
-      "edit_profile": "Edit Profile",
-      "edit_dept": "Edit Department",
-      "add_skill": "Add New Skill",
-      "add_sla": "Add New SLA Policy",
-      "add_member": "Add New Member",
-      "configure": "Configure",
-      "add_agent": "Add New Agent",
-      "add_team": "New Team",
-      "manage_team": "Manage Team",
-      "details": "Details",
-      "view_profile": "Profile",
-      "view_team": "VIEW TEAM",
-      "edit": "EDIT"
-    },
-    "tabs": {
-      "performance": "Performance",
-      "skills": "Skills",
-      "schedule": "Work Schedule",
-      "overview": "Overview",
-      "sla_policies": "SLA Policies",
-      "departments": "Departments",
-      "teams": "Teams",
-      "agents": "Agents"
-    },
-    "stats": {
-      "tickets": "Ticket Statistics",
-      "last_30_days": "LAST 30 DAYS",
-      "active_load": "Active Workload",
-      "csat": "CSAT Score",
-      "avg_response": "Avg. Response",
-      "monthly_quota": "Monthly Ticket Quota",
-      "first_response_target": "First Response SLA Target",
-      "active_teams": "Active Teams",
-      "total_agents": "Total Agents",
-      "avg_response_dept": "Avg. Response Time",
-      "sla_compliance": "SLA Compliance",
-      "active_ticket_load": "Active Ticket Load",
-      "quick_stats": "Quick Statistics",
-      "online_rate": "Online Rate",
-      "pending_queue": "Pending Queue",
-      "resolved_today": "Resolved Today",
-      "alerts": "Alerts",
-      "overload": "Overload",
-      "sla_stable": "SLA Stable"
-    },
-    "labels": {
-      "badges": "Achievement Badges",
-      "sla_master": "SLA Master",
-      "top_rated": "Top Rated",
-      "quick_resolve": "Quick Resolve",
-      "targets": "Targets",
-      "technical_skills": "Technical Skills",
-      "skills_desc": "Agent's areas of expertise and confidence levels.",
-      "no_skills": "No skills assigned yet.",
-      "leave": "LEAVE",
-      "recent_activity": "Recent Activity",
-      "critical_sla": "Critical SLA Targets",
-      "first_response": "FIRST RESPONSE",
-      "resolution": "RESOLUTION",
-      "first_response_time": "First Response",
-      "resolution_time": "Resolution Time",
-      "sla_config": "SLA Configuration",
-      "sla_config_desc": "Service level targets across the department.",
-      "automation_status": "AUTOMATION STATUS",
-      "active": "ACTIVE",
-      "passive": "PASSIVE",
-      "round_robin": "Round Robin",
-      "rr_desc": "Sequential assignment strategy is applied.",
-      "team_members": "Team Members",
-      "command_center": "Team Command Center",
-      "organization": "Single Organization: Aluplan Support System",
-      "auto_assignment": "AUTO-ASSIGNMENT",
-      "strategy": "Strategy:",
-      "agent": "Agent / Rep",
-      "status": "Status",
-      "role": "Role",
-      "actions": "Actions",
-      "senior_agent": "Senior Support Agent",
-      "default_bio": "Expert agent with 5+ years experience in technical support and customer satisfaction.",
-      "preparing_charts": "Performance charts are being prepared.",
-      "member": "Member",
-      "joined_at": "Joined: {date}",
-      "level_prefix": "LEVEL",
-      "default_dept_desc": "This department is one of the core support arms of the organization.",
-      "priority_suffix": "PRIORITY",
-      "minutes_suffix": "min",
-      "agent_count": "{count} Agents",
-      "auto_assign_on": "Auto-Assign On",
-      "auto_assign_off": "Manual Assignment"
-    },
-    "creation": {
-      "title": "Create New Team",
-      "description": "Define a new team to manage operational processes.",
-      "team_name": "Team Name",
-      "team_name_placeholder": "Ex: Technical Support - Level 2",
-      "department": "Department",
-      "select_department": "Select a department",
-      "desc_label": "Description",
-      "desc_placeholder": "Team's job description...",
-      "auto_assign": "Auto Assignment",
-      "auto_assign_desc": "New tickets are automatically assigned to this team.",
-      "assign_strategy": "Assignment Strategy",
-      "round_robin": "Round Robin (Sequential)",
-      "least_loaded": "Least Loaded (Load Based)",
-      "skill_based": "Skill Based (Ability Based)",
-      "submit": "Launch Team",
-      "submitting": "Creating...",
-      "success": "New team created successfully.",
-      "error_dept": "Please select a department.",
-      "error_server": "An error occurred while creating the team."
-    },
-    "member_add": {
-      "title": "Assign New Agent",
-      "description": "Assign a registered user to the team as an agent.",
-      "select_agent": "User (Agent)",
-      "select_agent_placeholder": "Select a user",
-      "loading_users": "Loading users...",
-      "no_users": "No new users available to assign.",
-      "role": "In-Team Role",
-      "select_role": "Select role",
-      "role_desc": "This role only determines their permissions within this team.",
-      "cancel": "Cancel",
-      "submit": "Assign to Team",
-      "submitting": "Adding...",
-      "success": "New member successfully added to the team.",
-      "error_select": "Please select an agent.",
-      "error_server": "An error occurred while adding the member."
-    },
-    "errors": {
-      "fetch_profile": "Could not fetch agent profile.",
-      "fetch_dept": "Could not fetch department information."
-    },
-    "days": {
-      "mon": "Monday",
-      "tue": "Tuesday",
-      "wed": "Wednesday",
-      "thu": "Thursday",
-      "fri": "Friday",
-      "sat": "Saturday",
-      "sun": "Sunday"
-    }
-  },
   "admin": {
-    "knowledge_pool": {
-      "title": "KNOWLEDGE_POOL_CONTROL",
-      "subtitle": "Management and indexing of technical resources for AI.",
-      "placeholder": "Technical Documentation",
-      "tabs": {
-        "raw_sources": "RAW_SOURCES",
-        "seeded_content": "SEEDED_CONTENT"
-      },
-      "buttons": {
-        "add_url": "ADD_URL",
-        "upload_file": "UPLOAD_FILE",
-        "scan_dataset": "SCAN_DATASET",
-        "bulk_sync": "BULK-SYNC ({count})",
-        "cancel": "CANCEL",
-        "refresh": "REFRESH",
-        "publish_selected": "PUBLISH SELECTED",
-        "examine": "EXAMINE",
-        "load_more": "LOAD MORE",
-        "loading": "LOADING..."
-      },
-      "table": {
-        "source": "SOURCE",
-        "type": "TYPE",
-        "status": "STATUS",
-        "vector": "VECTOR",
-        "last_sync": "LAST_SYNC",
-        "action": "ACTION",
-        "no_records": "No resources found",
-        "select_all": "SELECT_ALL",
-        "showing": "SHOWING"
-      },
-      "filters": {
-        "all": "ALL",
-        "active": "ACTIVE",
-        "syncing": "SYNCED",
-        "failed": "FAILED",
-        "all_types": "ALL_TYPES",
-        "url": "URL",
-        "file": "FILE"
-      },
-      "logs": {
-        "title": "SYNC_LOGS",
-        "no_source": "Select a source",
-        "no_logs": "No logs found.",
-        "success": "SUCCESS",
-        "error": "ERROR",
-        "processing": "PROCESSING",
-        "chunks_processed": "{count} chunks processed."
-      },
-      "articles": {
-        "title": "ARTICLE_POOL",
-        "total": "{count} TOTAL",
-        "search_placeholder": "SEARCH FILE...",
-        "all": "ALL",
-        "review": "IN_REVIEW",
-        "published": "PUBLISHED",
-        "draft": "DRAFT",
-        "select_page": "SELECT {count} {PAGE}",
-        "no_records": "NO_RECORDS_FOUND",
-        "author": "AUTHOR",
-        "under_review": "UNDER_REVIEW"
-      },
-      "meta": {
-        "locale": "en-US",
-        "system": "SYSTEM"
-      },
-      "status_labels": {
-        "draft": "DRAFT",
-        "published": "PUBLISHED",
-        "review": "UNDER_REVIEW",
-        "under_review": "UNDER_REVIEW"
-      },
-      "dialogs": {
-        "new_url": "New URL Source",
-        "name_label": "Source Name",
-        "url_label": "URL Address",
-        "save_sync": "Save and Sync"
-      },
-      "toasts": {
-        "fetch_error": "Could not load resources",
-        "sync_started": "Sync Started",
-        "sync_desc": "Background task in queue",
-        "bulk_sync_started": "Bulk Sync Started",
-        "partial_success": "Partial Success",
-        "bulk_sync_desc": "{count} resources in queue",
-        "bulk_sync_error": "{count} failed",
-        "dataset_scan_started": "Sync Started",
-        "dataset_scan_desc": "Scanning dataset folder...",
-        "dataset_sync_success": "Smart Sync Successful",
-        "url_added": "URL source added",
-        "logs_error": "Could not load logs",
-        "publish_success": "{count} articles published"
-      }
-    },
-    "announcements": {
-      "title": "Announcement Management",
-      "subtitle": "Corporate communication and targeted announcement operations",
-      "enterprise_control": "Enterprise Control",
-      "preview_prepared": "Prepared Content Preview",
-      "close": "Close",
-      "industries": "Industries",
-      "customer_status": "Customer Status",
-      "company_name": "Company Name",
-      "special_tags": "Special Tags",
-      "categories": {
-        "all": "ALL",
-        "general": "General",
-        "product": "Product",
-        "security": "Security",
-        "compliance": "Compliance",
-        "operations": "Operations",
-        "ai_tech": "AI & Technology",
-        "infrastructure": "Infrastructure",
-        "change_management": "Change Management",
-        "education": "Education",
-        "performance_reports": "Performance Reports",
-        "strategic_updates": "Strategic Updates",
-        "community": "Community"
+    "email_validation": {
+      "title": "Email Validation",
+      "subtitle": "Check email validity, DNS records, and SMTP status.",
+      "data_labels": {
+        "valid": "Valid",
+        "invalid": "Invalid",
+        "found": "Found",
+        "missing": "Missing",
+        "ok": "OK",
+        "error": "Error",
+        "enabled": "Enabled",
+        "catch_all": "Catch-All",
+        "clean": "Clean"
       },
       "tabs": {
-        "create": "Create Announcement",
-        "templates": "Template Library",
-        "history": "Broadcast History"
+        "single": "Quick Check",
+        "bulk": "Customer List"
       },
-      "editor": {
-        "title": "Content Editor",
-        "desc": "Prepare the content of the email that will be sent to customers.",
-        "template_select": "Select Template",
-        "title_label": "Announcement Record Name",
-        "title_placeholder": "e.g., Summer 2024 Hotfix Announcement",
-        "subject_label": "Email Subject Line",
-        "subject_placeholder": "Subject line visible to the customer",
-        "content_label": "Rich Text Content",
-        "default_content": "<p>Hello {{customer.name}}!</p><p>Announcement content goes here...</p>",
-        "preview": "Preview",
-        "save_draft": "Log Draft"
+      "single": {
+        "placeholder": "Email address to verify (e.g., user@example.com)",
+        "button": "Analyze",
+        "verifying": "Verifying..."
       },
-      "audience": {
-        "title": "Target Audience",
-        "desc": "Define who will receive the announcement.",
-        "industries": "Industries",
-        "industry_placeholder": "Select Industry",
-        "statuses": "Customer Status",
-        "status_placeholder": "Select Status",
-        "companies": "Company Name",
-        "company_placeholder": "Select Company",
-        "tags": "Custom Tags",
-        "tags_placeholder": "Add tags (Enter)",
-        "target_audience": "Targeted Audience",
-        "persons": "Persons",
-        "select_filter": "Please select at least one filter",
-        "realtime_telemetry": "Real-time telemetry data"
+      "bulk": {
+        "verify_selected": "Verify Selected ({count})",
+        "verify_all": "Verify All"
       },
-      "template_editor": {
-        "title": "Template Editor",
-        "modify_desc": "Modifying {name} record.",
-        "new_desc": "Log a new communication template for the system.",
-        "new_record": "New Record",
-        "name_label": "Template Name",
-        "name_placeholder": "e.g., Welcome Email",
-        "topic_label": "Topic",
-        "topic_placeholder": "e.g., Onboarding",
-        "subject_label": "Default Subject Line",
-        "subject_placeholder": "Subject visible to the customer",
-        "content_label": "Rich Text Content (Template)",
-        "render_test": "Render Test",
-        "update": "Update",
-        "archive": "Archive to Library"
-      },
-      "library": {
-        "title": "Library",
-        "search_placeholder": "Search name or topic...",
-        "category_filter": "Category Filter",
-        "all": "All",
-        "no_records": "No Records Found",
-        "apply": "Apply",
-        "preview": "Preview",
-        "delete": "Delete",
-        "validated": "Validated"
-      },
-      "history": {
-        "title": "Broadcast Archive",
-        "desc": "All announcement records logged and published through the system.",
-        "empty": "Archive Empty",
-        "sent": "SENT",
-        "draft": "DRAFT",
-        "terminal_delivered": "{count} Delivered to Terminal",
-        "broadcast": "Publish"
-      },
-      "toasts": {
-        "template_empty": "This template content is empty.",
-        "template_compile_error": "Template could not be compiled. Check MJML syntax.",
-        "preview_error": "Preview error:",
-        "unknown_error": "Unknown error",
-        "required_fields": "Template name and content are required",
-        "template_updated": "Template updated",
-        "template_added": "Template added to library",
-        "template_applied": "{name} template applied",
-        "title_subject_required": "Title and Subject required",
-        "draft_saved": "Announcement draft saved",
-        "save_failed": "Save failed: {message}",
-        "broadcast_success": "Announcement broadcasted successfully",
-        "broadcast_error": "Broadcast failed",
-        "confirm_broadcast": "Are you sure you want to broadcast this announcement?",
-        "delete_success": "Record deleted",
-        "delete_failed": "Delete failed",
-        "confirm_delete_announcement": "Are you sure you want to delete this announcement?",
-        "confirm_delete_template": "Are you sure you want to delete this template?",
-        "error": "Error"
-      }
-    },
-    "emails": {
-      "title": "Email Management",
-      "subtitle": "Edit MJML templates, create new templates, and track delivery history.",
-      "tabs": {
-        "templates": "Template Editor",
-        "logs": "Delivery History"
-      }
-    },
-    "kb_approvals": {
-      "title": "AI Approval Pool",
-      "subtitle": "Review and authorize knowledge units automatically synthesized from processed tickets.",
-      "refresh_queue": "REFRESH QUEUE",
-      "run_pipeline": "RUN PIPELINE",
-      "queue_title": "PENDING APPROVAL UNITS",
-      "units_loaded": "{count} UNITS LOADED",
-      "empty": {
-        "title": "Great Work!",
-        "desc": "All pending approval content has been reviewed and processed."
-      },
-      "table": {
-        "query": "QUERY / PROBLEM",
-        "answer": "AI SUGGESTED SOLUTION",
-        "confidence": "CONFIDENCE",
-        "source": "SOURCE",
-        "actions": "ACTIONS",
-        "reliable": "{percent}% RELIABLE",
-        "loading": "LOADING...",
-        "empty": "NO RECORDS FOUND"
-      },
-      "buttons": {
-        "approve": "APPROVE",
-        "delete": "DELETE"
-      },
-      "toasts": {
-        "fetch_error": "Could not load drafts.",
-        "approve_success": "Content added to knowledge base.",
-        "approve_error": "Error during approval.",
-        "dismiss_success": "Content dismissed.",
-        "dismiss_error": "Error during dismissal.",
-        "pipeline_started": "Pipeline triggered.",
-        "pipeline_error": "Pipeline error: {error}"
-      }
-    },
-    "knowledge_base": {
-      "title": "Knowledge Base",
-      "subtitle": "Corporate memory, solution articles and documentation center",
-      "buttons": {
-        "analytics": "ANALYTICS",
-        "new_article": "NEW ARTICLE",
-        "refresh": "REFRESH",
-        "publish": "PUBLISH",
-        "reject": "REJECT",
-        "detail": "DETAIL"
+      "typo": {
+        "suggestion": "Did you mean?",
+        "use_suggested": "Use suggested"
       },
       "search": {
-        "placeholder": "SEARCH..."
+        "customer_search": "Search Customer or Company...",
+        "filtered_records": "{count} Filtered Records"
+      },
+      "score_card": {
+        "score": "Score",
+        "reliable": "Reliable",
+        "risky": "Risky",
+        "invalid": "Invalid",
+        "disposable_hint": "Disposable email service detected.",
+        "role_based_hint": "Corporate role address (support, info, etc.).",
+        "catch_all_hint": "Accepts all emails (Catch-All) server.",
+        "valid_hint": "Suitable for email usage."
+      },
+      "data_points": {
+        "syntax": "Syntax",
+        "syntax_desc": "Email format checked for RFC compliance.",
+        "dns": "DNS / MX",
+        "dns_desc": "Domain email server records ({exchange}) verified.",
+        "smtp": "SMTP",
+        "smtp_desc": "Connected to server at socket level and handshake attempted.",
+        "greylisted": "Server temporarily rejected (Greylisted), should retry later.",
+        "ai": "Intelligence (AI)",
+        "ai_desc": "Intelligence layer analysis performed.",
+        "risk": "Risk Analysis",
+        "risk_clean": "No known risk factors found.",
+        "catch_all_desc": "Domain accepts all addresses, delivery guarantee reflects this."
+      },
+      "empty": {
+        "waiting": "Waiting for Email Analysis",
+        "waiting_desc": "Please enter the address you want to check in the field above.",
+        "no_results": "No Results Found",
+        "no_results_desc": "No customers matching your search criteria were found.",
+        "no_data": "No Data Available",
+        "no_data_desc": "This email has not been verified yet. Please start the verification process.",
+        "verify_now": "Verify Now"
       },
       "filters": {
-        "all": "ALL",
-        "draft": "DRAFT",
-        "review": "IN REVIEW",
-        "active": "ACTIVE",
-        "archived": "ARCHIVED"
+        "all": "All"
+      },
+      "table": {
+        "customer_company": "Customer / Company",
+        "email": "Email",
+        "syntax": "Syntax",
+        "dns_mx": "DNS / MX",
+        "smtp": "SMTP",
+        "group_score": "Group / Score",
+        "loading": "Loading Customers..."
+      },
+      "detail": {
+        "title": "Detailed Analysis",
+        "trust_score": "Trust Score",
+        "status": "Status",
+        "intelligence": "Intelligence Layer",
+        "server_records": "Server Records",
+        "mx_data": "MX RECORD DATA",
+        "no_mx": "MX Records Not Found.",
+        "smtp_log": "SMTP HANDSHAKE LOG",
+        "yes_risky": "YES / RISKY",
+        "no_clean": "NO / CLEAN",
+        "smtp_success": "Connection established successfully to {server}. EHLO accepted.",
+        "smtp_fail": "Connection failed or timeout during handshake."
+      },
+      "toasts": {
+        "verified_count": "{count} emails verified.",
+        "reverified": "{email} re-verified.",
+        "verify_error": "Verification error",
+        "bulk_verify_error": "Bulk verification error"
+      }
+    },
+    "meta": {
+      "locale": "en-US",
+      "system": "SYSTEM"
+    },
+    "table": {
+      "select_all": "Select all",
+      "showing": "Showing"
+    },
+    "teams": {
+      "fetch_error": "An error occurred while loading data.",
+      "search_placeholder": "Search teams or departments...",
+      "no_description": "No description added for this department.",
+      "min_suffix": "min",
+      "profile_pic_alt": "profile picture",
+      "statuses": {
+        "online": "Online",
+        "away": "Away",
+        "dnd": "Do Not Disturb",
+        "offline": "Offline"
+      },
+      "loading": {
+        "agent": "Analyzing profile data...",
+        "dept": "Loading department data...",
+        "team": "Synchronizing team data..."
+      },
+      "nav": {
+        "back_teams": "Back to Teams",
+        "back": "Go Back"
+      },
+      "actions": {
+        "edit_profile": "Edit Profile",
+        "edit_dept": "Edit Department",
+        "add_skill": "Add New Skill",
+        "add_sla": "Add New SLA Policy",
+        "add_member": "Add New Member",
+        "configure": "Configure",
+        "add_agent": "Add New Agent",
+        "add_team": "New Team",
+        "manage_team": "Manage Team",
+        "details": "Details",
+        "view_profile": "Profile",
+        "view_team": "VIEW TEAM",
+        "edit": "EDIT"
+      },
+      "tabs": {
+        "performance": "Performance",
+        "skills": "Skills",
+        "schedule": "Work Schedule",
+        "overview": "Overview",
+        "sla_policies": "SLA Policies",
+        "departments": "Departments",
+        "teams": "Teams",
+        "agents": "Agents"
       },
       "stats": {
-        "total_articles": "Total {count} articles",
-        "total": "Total Articles",
-        "published": "Published",
-        "views": "Views"
-      },
-      "meta": {
-        "author": "AUTHOR",
-        "update": "UPDATE",
-        "views": "VIEWS"
-      },
-      "empty": {
-        "no_records": "No articles found yet",
-        "loading": "Loading Data Layers"
-      }
-    },
-    "system_topology": {
-      "title": "System Source Topology",
-      "subtitle": "SYSTEM_SOURCE_TOPOLOGY: DATA FLOW AND PROCESSING ARCHITECTURE",
-      "refresh": "REFRESH",
-      "sync_error": "Data sync error",
-      "total_entropy": "TOTAL ENTROPY",
-      "units": "UNITS",
-      "status_running": "RUNNING",
-      "pillars": {
-        "documents": "PDF/DOCX/XLS/TXT/MD",
-        "articles": "ADMIN ARTICLES",
-        "urls": "URL / WEB",
-        "tickets": "TICKET LEARNING"
-      },
-      "layers": {
-        "doc_parser": "DOC PARSER",
-        "rich_editor": "RICH EDITOR",
-        "crawl_engine": "CRAWL ENGINE",
-        "cluster_engine": "CLUSTER ENGINE"
-      },
-      "strategies": {
-        "parent_child": "PARENT-CHILD",
-        "direct_embed": "DIRECT EMBED",
-        "content_clean": "CONTENT CLEAN",
-        "faq_generator": "FAQ GENERATOR"
-      },
-      "vector": {
-        "unified_index": "UNIFIED VECTOR INDEX",
-        "re_ranking": "RE-RANKING ACTIVE",
-        "trust_priority": "TRUST SCORE PRIORITY"
-      },
-      "engine": {
-        "query_preproc": "QUERY PREPROC",
-        "hybrid_retrieval": "HYBRID RETRIEVAL ENGINE"
-      }
-    },
-    "products": {
-      "title": "Products and Modules",
-      "subtitle": "Manage the main products and subcategories for classification by artificial intelligence for your support departments.",
-      "actions": {
-        "add_product": "Add New Product",
-        "add_category": "Add Category"
-      },
-      "empty": {
-        "no_products": "No Products Defined Yet",
-        "no_products_desc": "You can define the main products and modules that customers can open tickets for using the 'Add New Product' button.",
-        "no_categories": "No subcategory/module defined for this product yet. Add a category for AI smart labeling."
+        "tickets": "Ticket Statistics",
+        "last_30_days": "LAST 30 DAYS",
+        "active_load": "Active Workload",
+        "csat": "CSAT Score",
+        "avg_response": "Avg. Response",
+        "monthly_quota": "Monthly Ticket Quota",
+        "first_response_target": "First Response SLA Target",
+        "active_teams": "Active Teams",
+        "total_agents": "Total Agents",
+        "avg_response_dept": "Avg. Response Time",
+        "sla_compliance": "SLA Compliance",
+        "active_ticket_load": "Active Ticket Load",
+        "quick_stats": "Quick Statistics",
+        "online_rate": "Online Rate",
+        "pending_queue": "Pending Queue",
+        "resolved_today": "Resolved Today",
+        "alerts": "Alerts",
+        "overload": "Overload",
+        "sla_stable": "SLA Stable"
       },
       "labels": {
-        "subcategories": "Subcategories (AI Labels)",
-        "no_keywords": "No keywords",
-        "product_name": "Product Name",
-        "description": "Description",
-        "category_name": "Category Name",
-        "keywords": "Keywords (Separate with Commas)",
-        "keywords_help": "AI can help create context when trying to classify the user ticket from this list of labels."
+        "badges": "Achievement Badges",
+        "sla_master": "SLA Master",
+        "top_rated": "Top Rated",
+        "quick_resolve": "Quick Resolve",
+        "targets": "Targets",
+        "technical_skills": "Technical Skills",
+        "skills_desc": "Agent's areas of expertise and confidence levels.",
+        "no_skills": "No skills assigned yet.",
+        "leave": "LEAVE",
+        "recent_activity": "Recent Activity",
+        "critical_sla": "Critical SLA Targets",
+        "first_response": "FIRST RESPONSE",
+        "resolution": "RESOLUTION",
+        "first_response_time": "First Response",
+        "resolution_time": "Resolution Time",
+        "sla_config": "SLA Configuration",
+        "sla_config_desc": "Service level targets across the department.",
+        "automation_status": "AUTOMATION STATUS",
+        "active": "ACTIVE",
+        "passive": "PASSIVE",
+        "round_robin": "Round Robin",
+        "rr_desc": "Sequential assignment strategy is applied.",
+        "team_members": "Team Members",
+        "command_center": "Team Command Center",
+        "organization": "Single Organization: Aluplan Support System",
+        "auto_assignment": "AUTO-ASSIGNMENT",
+        "strategy": "Strategy:",
+        "agent": "Agent / Rep",
+        "status": "Status",
+        "role": "Role",
+        "actions": "Actions",
+        "senior_agent": "Senior Support Agent",
+        "default_bio": "Expert agent with 5+ years experience in technical support and customer satisfaction.",
+        "preparing_charts": "Performance charts are being prepared.",
+        "member": "Member",
+        "joined_at": "Joined: {date}",
+        "level_prefix": "LEVEL",
+        "default_dept_desc": "This department is one of the core support arms of the organization.",
+        "priority_suffix": "PRIORITY",
+        "minutes_suffix": "min",
+        "agent_count": "{count} Agents",
+        "auto_assign_on": "Auto-Assign On",
+        "auto_assign_off": "Manual Assignment"
       },
-      "placeholders": {
-        "product_name": "e.g., Aluplan Pro",
-        "description": "A short description of the product...",
-        "category_name": "e.g., Invoice Module",
-        "keywords": "e.g., invoice creation, cancellation, vat, e-invoice"
+      "creation": {
+        "title": "Create New Team",
+        "description": "Define a new team to manage operational processes.",
+        "team_name": "Team Name",
+        "team_name_placeholder": "Ex: Technical Support - Level 2",
+        "department": "Department",
+        "select_department": "Select a department",
+        "desc_label": "Description",
+        "desc_placeholder": "Team's job description...",
+        "auto_assign": "Auto Assignment",
+        "auto_assign_desc": "New tickets are automatically assigned to this team.",
+        "assign_strategy": "Assignment Strategy",
+        "round_robin": "Round Robin (Sequential)",
+        "least_loaded": "Least Loaded (Load Based)",
+        "skill_based": "Skill Based (Ability Based)",
+        "submit": "Launch Team",
+        "submitting": "Creating...",
+        "success": "New team created successfully.",
+        "error_dept": "Please select a department.",
+        "error_server": "An error occurred while creating the team."
       },
-      "dialogs": {
-        "edit_product": "Edit Product",
-        "add_product": "Add New Product",
-        "edit_category": "Edit Category",
-        "add_category": "Add New Module / Category",
-        "product_desc": "Define your main product or service. Customers will see these products first when creating a ticket.",
-        "category_desc": "Enter the subcategory and keywords associated with that category that AI will use to sub-label incoming tickets."
+      "member_add": {
+        "title": "Assign New Agent",
+        "description": "Assign a registered user to the team as an agent.",
+        "select_agent": "User (Agent)",
+        "select_agent_placeholder": "Select a user",
+        "loading_users": "Loading users...",
+        "no_users": "No new users available to assign.",
+        "role": "In-Team Role",
+        "select_role": "Select role",
+        "role_desc": "This role only determines their permissions within this team.",
+        "cancel": "Cancel",
+        "submit": "Assign to Team",
+        "submitting": "Adding...",
+        "success": "New member successfully added to the team.",
+        "error_select": "Please select an agent.",
+        "error_server": "An error occurred while adding the member."
       },
-      "toasts": {
-        "fetch_error": "Error loading products",
-        "product_updated": "Product updated",
-        "product_added": "New product added",
-        "category_updated": "Category updated",
-        "category_added": "New category added",
-        "product_deleted": "Product deleted",
-        "category_deleted": "Category deleted",
-        "save_failed": "Registration failed",
-        "delete_failed": "Deletion failed"
+      "errors": {
+        "fetch_profile": "Could not fetch agent profile.",
+        "fetch_dept": "Could not fetch department information."
       },
-      "confirms": {
-        "delete_product": "Are you sure you want to delete this product and all categories under it?",
-        "delete_category": "Are you sure you want to delete this category?"
+      "days": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
       }
     },
-    "faq": {
-      "title": "FAQ_MANAGEMENT_UNIT",
-      "subtitle": "Review and synchronize automatically extracted operational knowledge samples.",
-      "refresh_cache": "REFRESH_CACHE",
-      "start_extraction": "START_EXTRACTION",
-      "filters": {
-        "all": "ALL",
-        "pending_review": "PENDING_REVIEW",
-        "published": "PUBLISHED",
-        "draft": "DRAFT"
+    "admin": {
+      "knowledge_pool": {
+        "title": "KNOWLEDGE_POOL_CONTROL",
+        "subtitle": "Management and indexing of technical resources for AI.",
+        "placeholder": "Technical Documentation",
+        "tabs": {
+          "raw_sources": "RAW_SOURCES",
+          "seeded_content": "SEEDED_CONTENT"
+        },
+        "buttons": {
+          "add_url": "ADD_URL",
+          "upload_file": "UPLOAD_FILE",
+          "scan_dataset": "SCAN_DATASET",
+          "bulk_sync": "BULK-SYNC ({count})",
+          "cancel": "CANCEL",
+          "refresh": "REFRESH",
+          "publish_selected": "PUBLISH SELECTED",
+          "examine": "EXAMINE",
+          "load_more": "LOAD MORE",
+          "loading": "LOADING..."
+        },
+        "table": {
+          "source": "SOURCE",
+          "type": "TYPE",
+          "status": "STATUS",
+          "vector": "VECTOR",
+          "last_sync": "LAST_SYNC",
+          "action": "ACTION",
+          "no_records": "No resources found",
+          "select_all": "SELECT_ALL",
+          "showing": "SHOWING"
+        },
+        "filters": {
+          "all": "ALL",
+          "active": "ACTIVE",
+          "syncing": "SYNCED",
+          "failed": "FAILED",
+          "all_types": "ALL_TYPES",
+          "url": "URL",
+          "file": "FILE"
+        },
+        "logs": {
+          "title": "SYNC_LOGS",
+          "no_source": "Select a source",
+          "no_logs": "No logs found.",
+          "success": "SUCCESS",
+          "error": "ERROR",
+          "processing": "PROCESSING",
+          "chunks_processed": "{count} chunks processed."
+        },
+        "articles": {
+          "title": "ARTICLE_POOL",
+          "total": "{count} TOTAL",
+          "search_placeholder": "SEARCH FILE...",
+          "all": "ALL",
+          "review": "IN_REVIEW",
+          "published": "PUBLISHED",
+          "draft": "DRAFT",
+          "select_page": "SELECT {count} {PAGE}",
+          "no_records": "NO_RECORDS_FOUND",
+          "author": "AUTHOR",
+          "under_review": "UNDER_REVIEW"
+        },
+        "meta": {
+          "locale": "en-US",
+          "system": "SYSTEM"
+        },
+        "status_labels": {
+          "draft": "DRAFT",
+          "published": "PUBLISHED",
+          "review": "UNDER_REVIEW",
+          "under_review": "UNDER_REVIEW"
+        },
+        "dialogs": {
+          "new_url": "New URL Source",
+          "name_label": "Source Name",
+          "url_label": "URL Address",
+          "save_sync": "Save and Sync"
+        },
+        "toasts": {
+          "fetch_error": "Could not load resources",
+          "sync_started": "Sync Started",
+          "sync_desc": "Background task in queue",
+          "bulk_sync_started": "Bulk Sync Started",
+          "partial_success": "Partial Success",
+          "bulk_sync_desc": "{count} resources in queue",
+          "bulk_sync_error": "{count} failed",
+          "dataset_scan_started": "Sync Started",
+          "dataset_scan_desc": "Scanning dataset folder...",
+          "dataset_sync_success": "Smart Sync Successful",
+          "url_added": "URL source added",
+          "logs_error": "Could not load logs",
+          "publish_success": "{count} articles published"
+        }
       },
-      "not_found": "No FAQ found",
-      "not_found_desc": "Try changing the filter or start the extraction process to create new FAQs.",
-      "frequency": "FREQUENCY",
-      "confidence_score": "CONFIDENCE_SCORE",
-      "approve": "APPROVE",
-      "dismiss": "DISMISS",
-      "source_ticket": "Source Ticket",
-      "toasts": {
-        "extraction_started": "Pipeline Started",
-        "extraction_started_desc": "FAQ extraction process is running in the background.",
-        "fetch_error": "Error fetching FAQs",
-        "approved": "FAQ Approved",
-        "approved_desc": "Sample has been published.",
-        "dismissed": "FAQ Dismissed",
-        "dismissed_desc": "Sample moved to draft/deleted.",
-        "op_failed": "Operation failed",
-        "pipeline_failed": "Failed to run pipeline"
-      }
-    },
-    "faq_learning": {
-      "title": "FAQ Auto Learning Pool",
-      "subtitle": "NEURAL SYNC: TRANSFORMING OPERATIONAL DATA INTO STRUCTURED KNOWLEDGE",
-      "trigger_loop": "TRIGGER LEARNING LOOP",
-      "health_analysis": "KB_HEALTH_ANALYSIS",
-      "realtime_telemetry_label": "REAL-TIME TELEMETRY",
-      "resolution_rate": "RESOLUTION_RATE",
-      "prevented_tickets": "PREVENTED_TICKETS",
-      "writing_accuracy": "WRITING_ACCURACY",
-      "highest_confidence": "HIGHEST_CONFIDENCE",
-      "total_interactions": "TOTAL_INTERACTIONS",
-      "last_30_days": "LAST_30_DAYS_QUERIES",
-      "confidence_distribution": "CONFIDENCE_DISTRIBUTION",
-      "bands": {
-        "high": "HIGH",
-        "medium": "MEDIUM",
-        "low": "LOW",
-        "no_match": "NO_MATCH"
+      "announcements": {
+        "title": "Announcement Management",
+        "subtitle": "Corporate communication and targeted announcement operations",
+        "enterprise_control": "Enterprise Control",
+        "preview_prepared": "Prepared Content Preview",
+        "close": "Close",
+        "industries": "Industries",
+        "customer_status": "Customer Status",
+        "company_name": "Company Name",
+        "special_tags": "Special Tags",
+        "categories": {
+          "all": "ALL",
+          "general": "General",
+          "product": "Product",
+          "security": "Security",
+          "compliance": "Compliance",
+          "operations": "Operations",
+          "ai_tech": "AI & Technology",
+          "infrastructure": "Infrastructure",
+          "change_management": "Change Management",
+          "education": "Education",
+          "performance_reports": "Performance Reports",
+          "strategic_updates": "Strategic Updates",
+          "community": "Community"
+        },
+        "tabs": {
+          "create": "Create Announcement",
+          "templates": "Template Library",
+          "history": "Broadcast History"
+        },
+        "editor": {
+          "title": "Content Editor",
+          "desc": "Prepare the content of the email that will be sent to customers.",
+          "template_select": "Select Template",
+          "title_label": "Announcement Record Name",
+          "title_placeholder": "e.g., Summer 2024 Hotfix Announcement",
+          "subject_label": "Email Subject Line",
+          "subject_placeholder": "Subject line visible to the customer",
+          "content_label": "Rich Text Content",
+          "default_content": "<p>Hello {{customer.name}}!</p><p>Announcement content goes here...</p>",
+          "preview": "Preview",
+          "save_draft": "Log Draft"
+        },
+        "audience": {
+          "title": "Target Audience",
+          "desc": "Define who will receive the announcement.",
+          "industries": "Industries",
+          "industry_placeholder": "Select Industry",
+          "statuses": "Customer Status",
+          "status_placeholder": "Select Status",
+          "companies": "Company Name",
+          "company_placeholder": "Select Company",
+          "tags": "Custom Tags",
+          "tags_placeholder": "Add tags (Enter)",
+          "target_audience": "Targeted Audience",
+          "persons": "Persons",
+          "select_filter": "Please select at least one filter",
+          "realtime_telemetry": "Real-time telemetry data"
+        },
+        "template_editor": {
+          "title": "Template Editor",
+          "modify_desc": "Modifying {name} record.",
+          "new_desc": "Log a new communication template for the system.",
+          "new_record": "New Record",
+          "name_label": "Template Name",
+          "name_placeholder": "e.g., Welcome Email",
+          "topic_label": "Topic",
+          "topic_placeholder": "e.g., Onboarding",
+          "subject_label": "Default Subject Line",
+          "subject_placeholder": "Subject visible to the customer",
+          "content_label": "Rich Text Content (Template)",
+          "render_test": "Render Test",
+          "update": "Update",
+          "archive": "Archive to Library"
+        },
+        "library": {
+          "title": "Library",
+          "search_placeholder": "Search name or topic...",
+          "category_filter": "Category Filter",
+          "all": "All",
+          "no_records": "No Records Found",
+          "apply": "Apply",
+          "preview": "Preview",
+          "delete": "Delete",
+          "validated": "Validated"
+        },
+        "history": {
+          "title": "Broadcast Archive",
+          "desc": "All announcement records logged and published through the system.",
+          "empty": "Archive Empty",
+          "sent": "SENT",
+          "draft": "DRAFT",
+          "terminal_delivered": "{count} Delivered to Terminal",
+          "broadcast": "Publish"
+        },
+        "toasts": {
+          "template_empty": "This template content is empty.",
+          "template_compile_error": "Template could not be compiled. Check MJML syntax.",
+          "preview_error": "Preview error:",
+          "unknown_error": "Unknown error",
+          "required_fields": "Template name and content are required",
+          "template_updated": "Template updated",
+          "template_added": "Template added to library",
+          "template_applied": "{name} template applied",
+          "title_subject_required": "Title and Subject required",
+          "draft_saved": "Announcement draft saved",
+          "save_failed": "Save failed: {message}",
+          "broadcast_success": "Announcement broadcasted successfully",
+          "broadcast_error": "Broadcast failed",
+          "confirm_broadcast": "Are you sure you want to broadcast this announcement?",
+          "delete_success": "Record deleted",
+          "delete_failed": "Delete failed",
+          "confirm_delete_announcement": "Are you sure you want to delete this announcement?",
+          "confirm_delete_template": "Are you sure you want to delete this template?",
+          "error": "Error"
+        }
       },
-      "flow_status": "FLOW_STATUS",
-      "ingestion_engine": "DATA_INGESTION_ENGINE",
-      "ingestion_engine_desc": "Status: ACTIVE | Monitoring Closed Ticket Events",
-      "abstraction_layer": "ABSTRACTION_LAYER",
-      "abstraction_layer_desc": "Current: IDLE | Nomic-Embed Strategy",
-      "validation_queue": "VALIDATION_QUEUE",
-      "validation_queue_desc": "{count} CANDIDATES_AWAITING_VALIDATION",
-      "last_sync": "LAST_SYNC",
-      "candidates_title": "LEARNING_CANDIDATES",
-      "waiting_validation": "AWAITING_VALIDATION",
-      "all_synced": "ALL_PATTERNS_SYNCED",
-      "all_synced_desc": "Run the extraction loop manually to find new knowledge samples.",
-      "add_to_kb": "ADD TO KB",
-      "refresh": "REFRESH",
-      "toasts": {
-        "pipeline_started": "AI Pipeline Started",
-        "pipeline_desc": "In-depth analysis of resolved tickets is in progress.",
-        "knowledge_committed": "Knowledge Committed",
-        "knowledge_committed_desc": "The model has been successfully integrated into the general knowledge pool.",
+      "emails": {
+        "title": "Email Management",
+        "subtitle": "Edit MJML templates, create new templates, and track delivery history.",
+        "tabs": {
+          "templates": "Template Editor",
+          "logs": "Delivery History"
+        }
+      },
+      "kb_approvals": {
+        "title": "AI Approval Pool",
+        "subtitle": "Review and authorize knowledge units automatically synthesized from processed tickets.",
+        "refresh_queue": "REFRESH QUEUE",
+        "run_pipeline": "RUN PIPELINE",
+        "queue_title": "PENDING APPROVAL UNITS",
+        "units_loaded": "{count} UNITS LOADED",
+        "empty": {
+          "title": "Great Work!",
+          "desc": "All pending approval content has been reviewed and processed."
+        },
+        "table": {
+          "query": "QUERY / PROBLEM",
+          "answer": "AI SUGGESTED SOLUTION",
+          "confidence": "CONFIDENCE",
+          "source": "SOURCE",
+          "actions": "ACTIONS",
+          "reliable": "{percent}% RELIABLE",
+          "loading": "LOADING...",
+          "empty": "NO RECORDS FOUND"
+        },
+        "buttons": {
+          "approve": "APPROVE",
+          "delete": "DELETE"
+        },
+        "toasts": {
+          "fetch_error": "Could not load drafts.",
+          "approve_success": "Content added to knowledge base.",
+          "approve_error": "Error during approval.",
+          "dismiss_success": "Content dismissed.",
+          "dismiss_error": "Error during dismissal.",
+          "pipeline_started": "Pipeline triggered.",
+          "pipeline_error": "Pipeline error: {error}"
+        }
+      },
+      "knowledge_base": {
+        "title": "Knowledge Base",
+        "subtitle": "Corporate memory, solution articles and documentation center",
+        "buttons": {
+          "analytics": "ANALYTICS",
+          "new_article": "NEW ARTICLE",
+          "refresh": "REFRESH",
+          "publish": "PUBLISH",
+          "reject": "REJECT",
+          "detail": "DETAIL"
+        },
+        "search": {
+          "placeholder": "SEARCH..."
+        },
+        "filters": {
+          "all": "ALL",
+          "draft": "DRAFT",
+          "review": "IN REVIEW",
+          "active": "ACTIVE",
+          "archived": "ARCHIVED"
+        },
+        "stats": {
+          "total_articles": "Total {count} articles",
+          "total": "Total Articles",
+          "published": "Published",
+          "views": "Views"
+        },
+        "meta": {
+          "author": "AUTHOR",
+          "update": "UPDATE",
+          "views": "VIEWS"
+        },
+        "empty": {
+          "no_records": "No articles found yet",
+          "loading": "Loading Data Layers"
+        }
+      },
+      "system_topology": {
+        "title": "System Source Topology",
+        "subtitle": "SYSTEM_SOURCE_TOPOLOGY: DATA FLOW AND PROCESSING ARCHITECTURE",
+        "refresh": "REFRESH",
         "sync_error": "Data sync error",
-        "pipeline_exception": "Pipeline Exception",
-        "commit_error": "Commit Error"
+        "total_entropy": "TOTAL ENTROPY",
+        "units": "UNITS",
+        "status_running": "RUNNING",
+        "pillars": {
+          "documents": "PDF/DOCX/XLS/TXT/MD",
+          "articles": "ADMIN ARTICLES",
+          "urls": "URL / WEB",
+          "tickets": "TICKET LEARNING"
+        },
+        "layers": {
+          "doc_parser": "DOC PARSER",
+          "rich_editor": "RICH EDITOR",
+          "crawl_engine": "CRAWL ENGINE",
+          "cluster_engine": "CLUSTER ENGINE"
+        },
+        "strategies": {
+          "parent_child": "PARENT-CHILD",
+          "direct_embed": "DIRECT EMBED",
+          "content_clean": "CONTENT CLEAN",
+          "faq_generator": "FAQ GENERATOR"
+        },
+        "vector": {
+          "unified_index": "UNIFIED VECTOR INDEX",
+          "re_ranking": "RE-RANKING ACTIVE",
+          "trust_priority": "TRUST SCORE PRIORITY"
+        },
+        "engine": {
+          "query_preproc": "QUERY PREPROC",
+          "hybrid_retrieval": "HYBRID RETRIEVAL ENGINE"
+        }
+      },
+      "products": {
+        "title": "Products and Modules",
+        "subtitle": "Manage the main products and subcategories for classification by artificial intelligence for your support departments.",
+        "actions": {
+          "add_product": "Add New Product",
+          "add_category": "Add Category"
+        },
+        "empty": {
+          "no_products": "No Products Defined Yet",
+          "no_products_desc": "You can define the main products and modules that customers can open tickets for using the 'Add New Product' button.",
+          "no_categories": "No subcategory/module defined for this product yet. Add a category for AI smart labeling."
+        },
+        "labels": {
+          "subcategories": "Subcategories (AI Labels)",
+          "no_keywords": "No keywords",
+          "product_name": "Product Name",
+          "description": "Description",
+          "category_name": "Category Name",
+          "keywords": "Keywords (Separate with Commas)",
+          "keywords_help": "AI can help create context when trying to classify the user ticket from this list of labels."
+        },
+        "placeholders": {
+          "product_name": "e.g., Aluplan Pro",
+          "description": "A short description of the product...",
+          "category_name": "e.g., Invoice Module",
+          "keywords": "e.g., invoice creation, cancellation, vat, e-invoice"
+        },
+        "dialogs": {
+          "edit_product": "Edit Product",
+          "add_product": "Add New Product",
+          "edit_category": "Edit Category",
+          "add_category": "Add New Module / Category",
+          "product_desc": "Define your main product or service. Customers will see these products first when creating a ticket.",
+          "category_desc": "Enter the subcategory and keywords associated with that category that AI will use to sub-label incoming tickets."
+        },
+        "toasts": {
+          "fetch_error": "Error loading products",
+          "product_updated": "Product updated",
+          "product_added": "New product added",
+          "category_updated": "Category updated",
+          "category_added": "New category added",
+          "product_deleted": "Product deleted",
+          "category_deleted": "Category deleted",
+          "save_failed": "Registration failed",
+          "delete_failed": "Deletion failed"
+        },
+        "confirms": {
+          "delete_product": "Are you sure you want to delete this product and all categories under it?",
+          "delete_category": "Are you sure you want to delete this category?"
+        }
+      },
+      "faq": {
+        "title": "FAQ_MANAGEMENT_UNIT",
+        "subtitle": "Review and synchronize automatically extracted operational knowledge samples.",
+        "refresh_cache": "REFRESH_CACHE",
+        "start_extraction": "START_EXTRACTION",
+        "filters": {
+          "all": "ALL",
+          "pending_review": "PENDING_REVIEW",
+          "published": "PUBLISHED",
+          "draft": "DRAFT"
+        },
+        "not_found": "No FAQ found",
+        "not_found_desc": "Try changing the filter or start the extraction process to create new FAQs.",
+        "frequency": "FREQUENCY",
+        "confidence_score": "CONFIDENCE_SCORE",
+        "approve": "APPROVE",
+        "dismiss": "DISMISS",
+        "source_ticket": "Source Ticket",
+        "toasts": {
+          "extraction_started": "Pipeline Started",
+          "extraction_started_desc": "FAQ extraction process is running in the background.",
+          "fetch_error": "Error fetching FAQs",
+          "approved": "FAQ Approved",
+          "approved_desc": "Sample has been published.",
+          "dismissed": "FAQ Dismissed",
+          "dismissed_desc": "Sample moved to draft/deleted.",
+          "op_failed": "Operation failed",
+          "pipeline_failed": "Failed to run pipeline"
+        }
+      },
+      "faq_learning": {
+        "title": "FAQ Auto Learning Pool",
+        "subtitle": "NEURAL SYNC: TRANSFORMING OPERATIONAL DATA INTO STRUCTURED KNOWLEDGE",
+        "trigger_loop": "TRIGGER LEARNING LOOP",
+        "health_analysis": "KB_HEALTH_ANALYSIS",
+        "realtime_telemetry_label": "REAL-TIME TELEMETRY",
+        "resolution_rate": "RESOLUTION_RATE",
+        "prevented_tickets": "PREVENTED_TICKETS",
+        "writing_accuracy": "WRITING_ACCURACY",
+        "highest_confidence": "HIGHEST_CONFIDENCE",
+        "total_interactions": "TOTAL_INTERACTIONS",
+        "last_30_days": "LAST_30_DAYS_QUERIES",
+        "confidence_distribution": "CONFIDENCE_DISTRIBUTION",
+        "bands": {
+          "high": "HIGH",
+          "medium": "MEDIUM",
+          "low": "LOW",
+          "no_match": "NO_MATCH"
+        },
+        "flow_status": "FLOW_STATUS",
+        "ingestion_engine": "DATA_INGESTION_ENGINE",
+        "ingestion_engine_desc": "Status: ACTIVE | Monitoring Closed Ticket Events",
+        "abstraction_layer": "ABSTRACTION_LAYER",
+        "abstraction_layer_desc": "Current: IDLE | Nomic-Embed Strategy",
+        "validation_queue": "VALIDATION_QUEUE",
+        "validation_queue_desc": "{count} CANDIDATES_AWAITING_VALIDATION",
+        "last_sync": "LAST_SYNC",
+        "candidates_title": "LEARNING_CANDIDATES",
+        "waiting_validation": "AWAITING_VALIDATION",
+        "all_synced": "ALL_PATTERNS_SYNCED",
+        "all_synced_desc": "Run the extraction loop manually to find new knowledge samples.",
+        "add_to_kb": "ADD TO KB",
+        "refresh": "REFRESH",
+        "toasts": {
+          "pipeline_started": "AI Pipeline Started",
+          "pipeline_desc": "In-depth analysis of resolved tickets is in progress.",
+          "knowledge_committed": "Knowledge Committed",
+          "knowledge_committed_desc": "The model has been successfully integrated into the general knowledge pool.",
+          "sync_error": "Data sync error",
+          "pipeline_exception": "Pipeline Exception",
+          "commit_error": "Commit Error"
+        }
+      },
+      "live_support_request": {
+        "title": "Support Requests",
+        "description": "Manage system-wide open and active support requests."
+      },
+      "ai_health": {
+        "title": "AI HEALTH & TELEMETRY",
+        "subtitle": "Real-time monitoring of AI models, token usage, and RAG performance.",
+        "dashboard": {
+          "panel_title": "AI Health & Performance Panel",
+          "send_report": "Send Weekly Report Now",
+          "report_queued": "Report queued. Please check your mailbox.",
+          "report_failed": "Cloud not generate report.",
+          "total_requests": "Total Requests",
+          "total_tokens": "Total Tokens",
+          "approx_cost": "Approx. Cost",
+          "active_models": "Active Models",
+          "unknown": "Unknown",
+          "performance_trends": "Performance Trends (Last 7 Days)",
+          "performance_desc": "Change in AI accuracy and deflection rates over time.",
+          "kb_gaps": "Knowledge Base Gaps",
+          "kb_gaps_desc": "Most popular unanswered user questions.",
+          "times_unanswered": "unanswered {count} times",
+          "no_gaps": "No significant knowledge gaps detected.",
+          "channel_distribution": "Channel Distribution",
+          "channel_desc": "See which channels the requests are coming from.",
+          "requests_count": "{count} Requests",
+          "efficiency_summary": "Efficiency Summary (30 Day)",
+          "efficiency_desc": "AI response quality and system health.",
+          "rag_accuracy": "RAG Accuracy (High Confidence)",
+          "deflection_rate": "Deflection Rate",
+          "token_label": "Tokens"
+        }
       }
     },
-    "live_support_request": {
-      "title": "Support Requests",
-      "description": "Manage system-wide open and active support requests."
-    },
-    "ai_health": {
-      "title": "AI HEALTH & TELEMETRY",
-      "subtitle": "Real-time monitoring of AI models, token usage, and RAG performance.",
-      "dashboard": {
-        "panel_title": "AI Health & Performance Panel",
-        "send_report": "Send Weekly Report Now",
-        "report_queued": "Report queued. Please check your mailbox.",
-        "report_failed": "Cloud not generate report.",
-        "total_requests": "Total Requests",
-        "total_tokens": "Total Tokens",
-        "approx_cost": "Approx. Cost",
-        "active_models": "Active Models",
-        "unknown": "Unknown",
-        "performance_trends": "Performance Trends (Last 7 Days)",
-        "performance_desc": "Change in AI accuracy and deflection rates over time.",
-        "kb_gaps": "Knowledge Base Gaps",
-        "kb_gaps_desc": "Most popular unanswered user questions.",
-        "times_unanswered": "unanswered {count} times",
-        "no_gaps": "No significant knowledge gaps detected.",
-        "channel_distribution": "Channel Distribution",
-        "channel_desc": "See which channels the requests are coming from.",
-        "requests_count": "{count} Requests",
-        "efficiency_summary": "Efficiency Summary (30 Day)",
-        "efficiency_desc": "AI response quality and system health.",
-        "rag_accuracy": "RAG Accuracy (High Confidence)",
-        "deflection_rate": "Deflection Rate",
-        "token_label": "Tokens"
-      }
+    "notifications": {
+      "new_ticket_title": "🎟️ New Ticket Created!",
+      "new_ticket_desc": "{name} opened a new support ticket: \"{subject}\"",
+      "view_action": "View"
     }
-  },
-  "notifications": {
-    "new_ticket_title": "🎟️ New Ticket Created!",
-    "new_ticket_desc": "{name} opened a new support ticket: \"{subject}\"",
-    "view_action": "View"
   }
 }

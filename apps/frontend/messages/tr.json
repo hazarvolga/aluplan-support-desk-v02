@@ -734,53 +734,6 @@
       "accounts": "Hesaplar",
       "record_count": "{count} Kayıt"
     },
-    "users": {
-      "title": "Ekip Yönetimi",
-      "desc": "Destek temsilcilerini, yöneticileri ve adminleri yönetin.",
-      "add_user": "Kullanıcı Ekle",
-      "edit_user": "Kullanıcı Düzenle",
-      "delete_confirm": "{name} kullanıcısını silmek istediğinize emin misiniz?",
-      "empty": "Kullanıcı bulunamadı",
-      "deleted_success": "Kullanıcı başarıyla silindi",
-      "fetch_error": "Kullanıcılar yüklenirken hata oluştu",
-      "dialog": {
-        "title_create": "Yeni Kullanıcı Ekle",
-        "title_edit": "Kullanıcı Düzenle",
-        "full_name": "Ad Soyad",
-        "name_placeholder": "John Doe",
-        "email": "E-posta",
-        "email_placeholder": "john@example.com",
-        "password": "Şifre",
-        "password_placeholder": "******",
-        "new_password_optional": "Yeni Şifre (İsteğe Bağlı)",
-        "role": "Rol",
-        "select_role_placeholder": "Bir rol seçin",
-        "roles": {
-          "admin": "Yönetici",
-          "support_manager": "Destek Müdürü",
-          "support_agent": "Destek Uzmanı",
-          "viewer": "Gözlemci"
-        },
-        "btn_create": "Oluştur",
-        "btn_update": "Güncelle"
-      },
-      "validation": {
-        "name_min": "Ad en az 2 karakter olmalıdır",
-        "email_invalid": "Geçersiz e-posta adresi",
-        "password_min": "Şifre en az 6 karakter olmalıdır",
-        "password_required": "Yeni kullanıcı için şifre gereklidir"
-      },
-      "toasts": {
-        "created": "Kullanıcı başarıyla oluşturuldu",
-        "updated": "Kullanıcı başarıyla güncellendi"
-      },
-      "table": {
-        "user": "Kullanıcı",
-        "role": "Rol",
-        "email": "E-posta",
-        "actions": "İşlemler"
-      }
-    },
     "crm": {
       "title": "CRM Kontrol Merkezi",
       "desc": "Microsoft Dynamics 365 ve Kurumsal CRM entegrasyonlarını yönetin.",
@@ -1391,275 +1344,6 @@
       }
     }
   },
-  "email_validation": {
-    "title": "E-Posta Doğrulama",
-    "subtitle": "E-posta adreslerinin geçerliliğini, DNS kayıtlarını ve SMTP durumunu kontrol edin.",
-    "data_labels": {
-      "valid": "Geçerli",
-      "invalid": "Geçersiz",
-      "found": "Bulundu",
-      "missing": "Eksik",
-      "ok": "Tamam",
-      "error": "Hata",
-      "enabled": "Aktif",
-      "catch_all": "Genel Alıcı",
-      "clean": "Temiz"
-    },
-    "tabs": {
-      "single": "Hızlı Kontrol",
-      "bulk": "Müşteri Listesi"
-    },
-    "single": {
-      "placeholder": "Doğrulanacak e-posta adresi (ör: user@example.com)",
-      "button": "Analiz Et",
-      "verifying": "Doğrulanıyor..."
-    },
-    "bulk": {
-      "verify_selected": "Seçilenleri Doğrula ({count})",
-      "verify_all": "Tümünü Doğrula"
-    },
-    "typo": {
-      "suggestion": "Bunu mu demek istediniz?",
-      "use_suggested": "Önerileni Kullan"
-    },
-    "search": {
-      "customer_search": "Müşteri veya Şirket Arayın...",
-      "filtered_records": "{count} Filtrelenmiş Kayıt"
-    },
-    "score_card": {
-      "score": "Skor",
-      "reliable": "Güvenilir",
-      "risky": "Riskli",
-      "invalid": "Geçersiz",
-      "disposable_hint": "Geçici e-posta servisi tespit edildi.",
-      "role_based_hint": "Kurumsal rol adresi (destek, bilgi vb.).",
-      "catch_all_hint": "Tüm e-postaları kabul eden (Catch-All) sunucu.",
-      "valid_hint": "E-posta adresi kullanımı için uygun görünüyor."
-    },
-    "data_points": {
-      "syntax": "Sözdizimi",
-      "syntax_desc": "E-posta formatı RFC standartlarına uygunluk kontrol edildi.",
-      "dns": "DNS / MX",
-      "dns_desc": "Alan adının e-posta sunucu kayıtları ({exchange}) doğrulandı.",
-      "smtp": "SMTP",
-      "smtp_desc": "Sunucuya socket seviyesinde erişildi ve handshake denendi.",
-      "greylisted": "Sunucu geçici olarak reddetti (Greylisted), daha sonra tekrar denenmeli.",
-      "ai": "Zeka (AI)",
-      "ai_desc": "Zeka katmanı analizi yapıldı.",
-      "risk": "Risk Analizi",
-      "risk_clean": "Bilinen bir risk faktörü bulunamadı.",
-      "catch_all_desc": "Alan adı tüm adresleri kabul ediyor, kesin teslimat garantisi yok."
-    },
-    "empty": {
-      "waiting": "Analiz İçin E-Posta Bekleniyor",
-      "waiting_desc": "Lütfen yukarıdaki alana kontrol etmek istediğiniz adresi girin.",
-      "no_results": "Sonuç Bulunamadı",
-      "no_results_desc": "Arama kriterlerinize uygun müşteri bulunamadı.",
-      "no_data": "Veri Bulunmuyor",
-      "no_data_desc": "Bu e-posta henüz doğrulanmamış. Lütfen doğrulama işlemini başlatın.",
-      "verify_now": "Şimdi Doğrula"
-    },
-    "filters": {
-      "all": "Hepsi"
-    },
-    "table": {
-      "customer_company": "Müşteri / Şirket",
-      "email": "E-posta",
-      "syntax": "Sözdizimi",
-      "dns_mx": "DNS / MX",
-      "smtp": "SMTP",
-      "group_score": "Grup / Skor",
-      "loading": "Müşteriler Yükleniyor..."
-    },
-    "detail": {
-      "title": "Detaylı Analiz",
-      "trust_score": "Güven Skoru",
-      "status": "Durum",
-      "intelligence": "Zeka Katmanı (Intelligence)",
-      "server_records": "Sunucu Kayıtları",
-      "mx_data": "MX RECORD DATA",
-      "no_mx": "MX Kaydı Bulunamadı.",
-      "smtp_log": "SMTP HANDSHAKE LOG",
-      "yes_risky": "EVET / RİSKLİ",
-      "no_clean": "HAYIR / TEMİZ",
-      "smtp_success": "{server} sunucusuna başarıyla bağlantı kuruldu. EHLO kabul edildi.",
-      "smtp_fail": "Bağlantı başarısız veya handshake sırasında zaman aşımı oluştu."
-    },
-    "toasts": {
-      "verified_count": "{count} e-posta doğrulandı.",
-      "reverified": "{email} yeniden doğrulandı.",
-      "verify_error": "Doğrulama hatası",
-      "bulk_verify_error": "Toplu doğrulama hatası"
-    }
-  },
-  "meta": {
-    "locale": "tr-TR",
-    "system": "SİSTEM"
-  },
-  "teams": {
-    "fetch_error": "Veriler yüklenirken bir sorun oluştu.",
-    "search_placeholder": "Ekip veya departman ara...",
-    "no_description": "Bu departman için açıklama eklenmemiş.",
-    "min_suffix": "dk",
-    "profile_pic_alt": "profil resmi",
-    "statuses": {
-      "online": "Çevrimiçi",
-      "away": "Dışarıda",
-      "dnd": "Rahatsız Etmeyin",
-      "offline": "Çevrimdışı"
-    },
-    "loading": {
-      "agent": "Profil verileri analiz ediliyor...",
-      "dept": "Departman verileri yükleniyor...",
-      "team": "Ekip verileri senkronize ediliyor..."
-    },
-    "nav": {
-      "back_teams": "Ekiplere Dön",
-      "back": "Geri Dön"
-    },
-    "actions": {
-      "edit_profile": "Profili Düzenle",
-      "edit_dept": "Departmanı Düzenle",
-      "add_skill": "Yeni Yetkinlik Ekle",
-      "add_sla": "Yeni SLA Politikası Ekle",
-      "add_member": "Yeni Üye Ekle",
-      "configure": "Yapılandır",
-      "add_agent": "Yeni Ajan Ekle",
-      "add_team": "Yeni Ekip",
-      "manage_team": "Takımı Yönet",
-      "details": "Detaylar",
-      "view_profile": "Profil",
-      "view_team": "TAKIMI GÖR",
-      "edit": "DÜZENLE"
-    },
-    "tabs": {
-      "performance": "Performans",
-      "skills": "Yetkinlikler",
-      "schedule": "Çalışma Takvimi",
-      "overview": "Genel Bakış",
-      "sla_policies": "SLA Politikaları",
-      "departments": "Departmanlar",
-      "teams": "Ekipler",
-      "agents": "Ajanlar"
-    },
-    "stats": {
-      "tickets": "Ticket İstatistikleri",
-      "last_30_days": "SON 30 GÜN",
-      "active_load": "Aktif İş Yükü",
-      "csat": "CSAT Skoru",
-      "avg_response": "Ort. Yanıt",
-      "monthly_quota": "Aylık Ticket Kotası",
-      "first_response_target": "İlk Yanıt SLA Hedefi",
-      "active_teams": "Aktif Ekipler",
-      "total_agents": "Toplam Ajan",
-      "avg_response_dept": "Ort. Yanıt Süresi",
-      "sla_compliance": "SLA Uyumu",
-      "active_ticket_load": "Aktif Ticket Yükü",
-      "quick_stats": "Hızlı İstatistikler",
-      "online_rate": "Online Oranı",
-      "pending_queue": "Bekleyen Kuyruk",
-      "resolved_today": "Bugün Çözülen",
-      "alerts": "Uyarılar",
-      "overload": "Fazla Yüklenme",
-      "sla_stable": "SLA Stabil"
-    },
-    "labels": {
-      "badges": "Başarı Rozetleri",
-      "sla_master": "SLA Master",
-      "top_rated": "Top Rated",
-      "quick_resolve": "Hızlı Çözüm",
-      "targets": "Hedefler",
-      "technical_skills": "Teknik Yetkinlikler",
-      "skills_desc": "Ajanın uzmanlık alanları ve güven seviyeleri.",
-      "no_skills": "Henüz yetkinlik atanmamış.",
-      "leave": "İZİN",
-      "recent_activity": "Son Aktiviteler",
-      "critical_sla": "Kritik SLA Hedefleri",
-      "first_response": "İLK YANIT",
-      "resolution": "ÇÖZÜM",
-      "first_response_time": "İlk Yanıt",
-      "resolution_time": "Çözüm Süresi",
-      "sla_config": "SLA Yapılandırması",
-      "sla_config_desc": "Departman genelindeki hizmet seviyesi hedefleri.",
-      "automation_status": "OTOMASYON DURUMU",
-      "active": "AKTİF",
-      "passive": "PASİF",
-      "round_robin": "Round Robin",
-      "rr_desc": "Sıralı atama stratejisi uygulanıyor.",
-      "team_members": "Ekip Üyeleri",
-      "command_center": "Ekip Komuta Merkezi",
-      "organization": "Tek Organizasyon: Aluplan Destek Sistemi",
-      "auto_assignment": "OTO-ATAMA",
-      "strategy": "Strateji:",
-      "agent": "Ajan / Temsilci",
-      "status": "Durumu",
-      "role": "Rol",
-      "actions": "İşlemler",
-      "senior_agent": "Kıdemli Destek Uzmanı",
-      "default_bio": "Müşteri memnuniyeti odaklı, teknik çözüm süreçlerinde 5+ yıl deneyimli uzman.",
-      "preparing_charts": "Performans grafikleri hazırlanıyor.",
-      "member": "Üye",
-      "joined_at": "Katılım: {date}",
-      "level_prefix": "SEVİYE",
-      "default_dept_desc": "Bu departman organizasyonun temel destek kollarından biridir.",
-      "priority_suffix": "ÖNCELİK",
-      "minutes_suffix": "dk",
-      "agent_count": "{count} Ajan",
-      "auto_assign_on": "Oto-Atama Açık",
-      "auto_assign_off": "Manuel Atama"
-    },
-    "creation": {
-      "title": "Yeni Ekip Oluştur",
-      "description": "Operasyonel süreçleri yönetmek için yeni bir ekip tanımlayın.",
-      "team_name": "Ekip İsmi",
-      "team_name_placeholder": "Örn: Teknik Destek - Seviye 2",
-      "department": "Departman",
-      "select_department": "Departman seçin",
-      "desc_label": "Açıklama",
-      "desc_placeholder": "Ekibin görev tanımı...",
-      "auto_assign": "Otomatik Atama",
-      "auto_assign_desc": "Yeni ticketlar bu ekibe otomatik atanır.",
-      "assign_strategy": "Atama Stratejisi",
-      "round_robin": "Round Robin (Sıralı)",
-      "least_loaded": "Least Loaded (Yük Bazlı)",
-      "skill_based": "Skill Based (Yetenek Bazlı)",
-      "submit": "Ekibi Başlat",
-      "submitting": "Oluşturuluyor...",
-      "success": "Yeni ekip başarıyla oluşturuldu.",
-      "error_dept": "Lütfen bir departman seçin.",
-      "error_server": "Ekip oluşturulurken bir hata oluştu."
-    },
-    "member_add": {
-      "title": "Yeni Ajan Ata",
-      "description": "Ekibe sistemde kayıtlı olan bir kullanıcıyı ajan olarak atayın.",
-      "select_agent": "Kullanıcı (Ajan)",
-      "select_agent_placeholder": "Bir kullanıcı seçin",
-      "loading_users": "Kullanıcılar yükleniyor...",
-      "no_users": "Atanabilecek yeni kullanıcı bulunamadı.",
-      "role": "Ekip İçi Rolü",
-      "select_role": "Rol seçin",
-      "role_desc": "Bu rol sadece bu ekip içindeki yetkilerini belirler.",
-      "cancel": "İptal",
-      "submit": "Ekibe Ata",
-      "submitting": "Ekleniyor...",
-      "success": "Ekibe yeni üye başarıyla eklendi.",
-      "error_select": "Lütfen bir ajan seçin.",
-      "error_server": "Üye eklenirken bir hata oluştu."
-    },
-    "errors": {
-      "fetch_profile": "Ajan profili alınamadı.",
-      "fetch_dept": "Departman bilgileri alınamadı."
-    },
-    "days": {
-      "mon": "Pazartesi",
-      "tue": "Salı",
-      "wed": "Çarşamba",
-      "thu": "Perşembe",
-      "fri": "Cuma",
-      "sat": "Cumartesi",
-      "sun": "Pazar"
-    }
-  },
   "admin": {
     "knowledge_pool": {
       "title": "BİLGİ HAVUZU KONTROLÜ",
@@ -2142,11 +1826,327 @@
         "deflection_rate": "Talep Savuşturma (Deflection)",
         "token_label": "Token"
       }
+    },
+    "email_validation": {
+      "title": "E-Posta Doğrulama",
+      "subtitle": "E-posta adreslerinin geçerliliğini, DNS kayıtlarını ve SMTP durumunu kontrol edin.",
+      "data_labels": {
+        "valid": "Geçerli",
+        "invalid": "Geçersiz",
+        "found": "Bulundu",
+        "missing": "Eksik",
+        "ok": "Tamam",
+        "error": "Hata",
+        "enabled": "Aktif",
+        "catch_all": "Genel Alıcı",
+        "clean": "Temiz"
+      },
+      "tabs": {
+        "single": "Hızlı Kontrol",
+        "bulk": "Müşteri Listesi"
+      },
+      "single": {
+        "placeholder": "Doğrulanacak e-posta adresi (ör: user@example.com)",
+        "button": "Analiz Et",
+        "verifying": "Doğrulanıyor..."
+      },
+      "bulk": {
+        "verify_selected": "Seçilenleri Doğrula ({count})",
+        "verify_all": "Tümünü Doğrula"
+      },
+      "typo": {
+        "suggestion": "Bunu mu demek istediniz?",
+        "use_suggested": "Önerileni Kullan"
+      },
+      "search": {
+        "customer_search": "Müşteri veya Şirket Arayın...",
+        "filtered_records": "{count} Filtrelenmiş Kayıt"
+      },
+      "score_card": {
+        "score": "Skor",
+        "reliable": "Güvenilir",
+        "risky": "Riskli",
+        "invalid": "Geçersiz",
+        "disposable_hint": "Geçici e-posta servisi tespit edildi.",
+        "role_based_hint": "Kurumsal rol adresi (destek, bilgi vb.).",
+        "catch_all_hint": "Tüm e-postaları kabul eden (Catch-All) sunucu.",
+        "valid_hint": "E-posta adresi kullanımı için uygun görünüyor."
+      },
+      "data_points": {
+        "syntax": "Sözdizimi",
+        "syntax_desc": "E-posta formatı RFC standartlarına uygunluk kontrol edildi.",
+        "dns": "DNS / MX",
+        "dns_desc": "Alan adının e-posta sunucu kayıtları ({exchange}) doğrulandı.",
+        "smtp": "SMTP",
+        "smtp_desc": "Sunucuya socket seviyesinde erişildi ve handshake denendi.",
+        "greylisted": "Sunucu geçici olarak reddetti (Greylisted), daha sonra tekrar denenmeli.",
+        "ai": "Zeka (AI)",
+        "ai_desc": "Zeka katmanı analizi yapıldı.",
+        "risk": "Risk Analizi",
+        "risk_clean": "Bilinen bir risk faktörü bulunamadı.",
+        "catch_all_desc": "Alan adı tüm adresleri kabul ediyor, kesin teslimat garantisi yok."
+      },
+      "empty": {
+        "waiting": "Analiz İçin E-Posta Bekleniyor",
+        "waiting_desc": "Lütfen yukarıdaki alana kontrol etmek istediğiniz adresi girin.",
+        "no_results": "Sonuç Bulunamadı",
+        "no_results_desc": "Arama kriterlerinize uygun müşteri bulunamadı.",
+        "no_data": "Veri Bulunmuyor",
+        "no_data_desc": "Bu e-posta henüz doğrulanmamış. Lütfen doğrulama işlemini başlatın.",
+        "verify_now": "Şimdi Doğrula"
+      },
+      "filters": {
+        "all": "Hepsi"
+      },
+      "table": {
+        "customer_company": "Müşteri / Şirket",
+        "email": "E-posta",
+        "syntax": "Sözdizimi",
+        "dns_mx": "DNS / MX",
+        "smtp": "SMTP",
+        "group_score": "Grup / Skor",
+        "loading": "Müşteriler Yükleniyor..."
+      },
+      "detail": {
+        "title": "Detaylı Analiz",
+        "trust_score": "Güven Skoru",
+        "status": "Durum",
+        "intelligence": "Zeka Katmanı (Intelligence)",
+        "server_records": "Sunucu Kayıtları",
+        "mx_data": "MX RECORD DATA",
+        "no_mx": "MX Kaydı Bulunamadı.",
+        "smtp_log": "SMTP HANDSHAKE LOG",
+        "yes_risky": "EVET / RİSKLİ",
+        "no_clean": "HAYIR / TEMİZ",
+        "smtp_success": "{server} sunucusuna başarıyla bağlantı kuruldu. EHLO kabul edildi.",
+        "smtp_fail": "Bağlantı başarısız veya handshake sırasında zaman aşımı oluştu."
+      },
+      "toasts": {
+        "verified_count": "{count} e-posta doğrulandı.",
+        "reverified": "{email} yeniden doğrulandı.",
+        "verify_error": "Doğrulama hatası",
+        "bulk_verify_error": "Toplu doğrulama hatası"
+      }
+    },
+    "meta": {
+      "locale": "tr-TR",
+      "system": "SİSTEM"
+    },
+    "teams": {
+      "fetch_error": "Veriler yüklenirken bir sorun oluştu.",
+      "search_placeholder": "Ekip veya departman ara...",
+      "no_description": "Bu departman için açıklama eklenmemiş.",
+      "min_suffix": "dk",
+      "profile_pic_alt": "profil resmi",
+      "statuses": {
+        "online": "Çevrimiçi",
+        "away": "Dışarıda",
+        "dnd": "Rahatsız Etmeyin",
+        "offline": "Çevrimdışı"
+      },
+      "loading": {
+        "agent": "Profil verileri analiz ediliyor...",
+        "dept": "Departman verileri yükleniyor...",
+        "team": "Ekip verileri senkronize ediliyor..."
+      },
+      "nav": {
+        "back_teams": "Ekiplere Dön",
+        "back": "Geri Dön"
+      },
+      "actions": {
+        "edit_profile": "Profili Düzenle",
+        "edit_dept": "Departmanı Düzenle",
+        "add_skill": "Yeni Yetkinlik Ekle",
+        "add_sla": "Yeni SLA Politikası Ekle",
+        "add_member": "Yeni Üye Ekle",
+        "configure": "Yapılandır",
+        "add_agent": "Yeni Ajan Ekle",
+        "add_team": "Yeni Ekip",
+        "manage_team": "Takımı Yönet",
+        "details": "Detaylar",
+        "view_profile": "Profil",
+        "view_team": "TAKIMI GÖR",
+        "edit": "DÜZENLE"
+      },
+      "tabs": {
+        "performance": "Performans",
+        "skills": "Yetkinlikler",
+        "schedule": "Çalışma Takvimi",
+        "overview": "Genel Bakış",
+        "sla_policies": "SLA Politikaları",
+        "departments": "Departmanlar",
+        "teams": "Ekipler",
+        "agents": "Ajanlar"
+      },
+      "stats": {
+        "tickets": "Ticket İstatistikleri",
+        "last_30_days": "SON 30 GÜN",
+        "active_load": "Aktif İş Yükü",
+        "csat": "CSAT Skoru",
+        "avg_response": "Ort. Yanıt",
+        "monthly_quota": "Aylık Ticket Kotası",
+        "first_response_target": "İlk Yanıt SLA Hedefi",
+        "active_teams": "Aktif Ekipler",
+        "total_agents": "Toplam Ajan",
+        "avg_response_dept": "Ort. Yanıt Süresi",
+        "sla_compliance": "SLA Uyumu",
+        "active_ticket_load": "Aktif Ticket Yükü",
+        "quick_stats": "Hızlı İstatistikler",
+        "online_rate": "Online Oranı",
+        "pending_queue": "Bekleyen Kuyruk",
+        "resolved_today": "Bugün Çözülen",
+        "alerts": "Uyarılar",
+        "overload": "Fazla Yüklenme",
+        "sla_stable": "SLA Stabil"
+      },
+      "labels": {
+        "badges": "Başarı Rozetleri",
+        "sla_master": "SLA Master",
+        "top_rated": "Top Rated",
+        "quick_resolve": "Hızlı Çözüm",
+        "targets": "Hedefler",
+        "technical_skills": "Teknik Yetkinlikler",
+        "skills_desc": "Ajanın uzmanlık alanları ve güven seviyeleri.",
+        "no_skills": "Henüz yetkinlik atanmamış.",
+        "leave": "İZİN",
+        "recent_activity": "Son Aktiviteler",
+        "critical_sla": "Kritik SLA Hedefleri",
+        "first_response": "İLK YANIT",
+        "resolution": "ÇÖZÜM",
+        "first_response_time": "İlk Yanıt",
+        "resolution_time": "Çözüm Süresi",
+        "sla_config": "SLA Yapılandırması",
+        "sla_config_desc": "Departman genelindeki hizmet seviyesi hedefleri.",
+        "automation_status": "OTOMASYON DURUMU",
+        "active": "AKTİF",
+        "passive": "PASİF",
+        "round_robin": "Round Robin",
+        "rr_desc": "Sıralı atama stratejisi uygulanıyor.",
+        "team_members": "Ekip Üyeleri",
+        "command_center": "Ekip Komuta Merkezi",
+        "organization": "Tek Organizasyon: Aluplan Destek Sistemi",
+        "auto_assignment": "OTO-ATAMA",
+        "strategy": "Strateji:",
+        "agent": "Ajan / Temsilci",
+        "status": "Durumu",
+        "role": "Rol",
+        "actions": "İşlemler",
+        "senior_agent": "Kıdemli Destek Uzmanı",
+        "default_bio": "Müşteri memnuniyeti odaklı, teknik çözüm süreçlerinde 5+ yıl deneyimli uzman.",
+        "preparing_charts": "Performans grafikleri hazırlanıyor.",
+        "member": "Üye",
+        "joined_at": "Katılım: {date}",
+        "level_prefix": "SEVİYE",
+        "default_dept_desc": "Bu departman organizasyonun temel destek kollarından biridir.",
+        "priority_suffix": "ÖNCELİK",
+        "minutes_suffix": "dk",
+        "agent_count": "{count} Ajan",
+        "auto_assign_on": "Oto-Atama Açık",
+        "auto_assign_off": "Manuel Atama"
+      },
+      "creation": {
+        "title": "Yeni Ekip Oluştur",
+        "description": "Operasyonel süreçleri yönetmek için yeni bir ekip tanımlayın.",
+        "team_name": "Ekip İsmi",
+        "team_name_placeholder": "Örn: Teknik Destek - Seviye 2",
+        "department": "Departman",
+        "select_department": "Departman seçin",
+        "desc_label": "Açıklama",
+        "desc_placeholder": "Ekibin görev tanımı...",
+        "auto_assign": "Otomatik Atama",
+        "auto_assign_desc": "Yeni ticketlar bu ekibe otomatik atanır.",
+        "assign_strategy": "Atama Stratejisi",
+        "round_robin": "Round Robin (Sıralı)",
+        "least_loaded": "Least Loaded (Yük Bazlı)",
+        "skill_based": "Skill Based (Yetenek Bazlı)",
+        "submit": "Ekibi Başlat",
+        "submitting": "Oluşturuluyor...",
+        "success": "Yeni ekip başarıyla oluşturuldu.",
+        "error_dept": "Lütfen bir departman seçin.",
+        "error_server": "Ekip oluşturulurken bir hata oluştu."
+      },
+      "member_add": {
+        "title": "Yeni Ajan Ata",
+        "description": "Ekibe sistemde kayıtlı olan bir kullanıcıyı ajan olarak atayın.",
+        "select_agent": "Kullanıcı (Ajan)",
+        "select_agent_placeholder": "Bir kullanıcı seçin",
+        "loading_users": "Kullanıcılar yükleniyor...",
+        "no_users": "Atanabilecek yeni kullanıcı bulunamadı.",
+        "role": "Ekip İçi Rolü",
+        "select_role": "Rol seçin",
+        "role_desc": "Bu rol sadece bu ekip içindeki yetkilerini belirler.",
+        "cancel": "İptal",
+        "submit": "Ekibe Ata",
+        "submitting": "Ekleniyor...",
+        "success": "Ekibe yeni üye başarıyla eklendi.",
+        "error_select": "Lütfen bir ajan seçin.",
+        "error_server": "Üye eklenirken bir hata oluştu."
+      },
+      "errors": {
+        "fetch_profile": "Ajan profili alınamadı.",
+        "fetch_dept": "Departman bilgileri alınamadı."
+      },
+      "days": {
+        "mon": "Pazartesi",
+        "tue": "Salı",
+        "wed": "Çarşamba",
+        "thu": "Perşembe",
+        "fri": "Cuma",
+        "sat": "Cumartesi",
+        "sun": "Pazar"
+      }
     }
   },
   "notifications": {
     "new_ticket_title": "🎟️ Yeni Ticket Oluşturuldu!",
     "new_ticket_desc": "{name} yeni bir destek talebi açtı: \"{subject}\"",
     "view_action": "İncele"
+  },
+  "users": {
+    "title": "Ekip Yönetimi",
+    "desc": "Destek temsilcilerini, yöneticileri ve adminleri yönetin.",
+    "add_user": "Kullanıcı Ekle",
+    "edit_user": "Kullanıcı Düzenle",
+    "delete_confirm": "{name} kullanıcısını silmek istediğinize emin misiniz?",
+    "empty": "Kullanıcı bulunamadı",
+    "deleted_success": "Kullanıcı başarıyla silindi",
+    "fetch_error": "Kullanıcılar yüklenirken hata oluştu",
+    "dialog": {
+      "title_create": "Yeni Kullanıcı Ekle",
+      "title_edit": "Kullanıcı Düzenle",
+      "full_name": "Ad Soyad",
+      "name_placeholder": "John Doe",
+      "email": "E-posta",
+      "email_placeholder": "john@example.com",
+      "password": "Şifre",
+      "password_placeholder": "******",
+      "new_password_optional": "Yeni Şifre (İsteğe Bağlı)",
+      "role": "Rol",
+      "select_role_placeholder": "Bir rol seçin",
+      "roles": {
+        "admin": "Yönetici",
+        "support_manager": "Destek Müdürü",
+        "support_agent": "Destek Uzmanı",
+        "viewer": "Gözlemci"
+      },
+      "btn_create": "Oluştur",
+      "btn_update": "Güncelle"
+    },
+    "validation": {
+      "name_min": "Ad en az 2 karakter olmalıdır",
+      "email_invalid": "Geçersiz e-posta adresi",
+      "password_min": "Şifre en az 6 karakter olmalıdır",
+      "password_required": "Yeni kullanıcı için şifre gereklidir"
+    },
+    "toasts": {
+      "created": "Kullanıcı başarıyla oluşturuldu",
+      "updated": "Kullanıcı başarıyla güncellendi"
+    },
+    "table": {
+      "user": "Kullanıcı",
+      "role": "Rol",
+      "email": "E-posta",
+      "actions": "İşlemler"
+    }
   }
 }
