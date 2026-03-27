@@ -58,7 +58,12 @@ async function main() {
                 priority: TicketPriority.MEDIUM,
                 firstResponseMinutes: 60,
                 resolutionMinutes: 480
-            }
+            },
+            teams: [
+                { name: 'L1 Support', slug: 'l1-support' },
+                { name: 'L2 Support', slug: 'l2-support' },
+                { name: 'Engineering Escalation', slug: 'engineering-escalation' }
+            ]
         },
         {
             name: 'Billing & Payments',
@@ -71,7 +76,10 @@ async function main() {
                 priority: TicketPriority.MEDIUM,
                 firstResponseMinutes: 120,
                 resolutionMinutes: 1440
-            }
+            },
+            teams: [
+                { name: 'Billing Support', slug: 'billing-support' }
+            ]
         },
         {
             name: 'Sales & Pre-Sales',
@@ -84,7 +92,10 @@ async function main() {
                 priority: TicketPriority.HIGH,
                 firstResponseMinutes: 30,
                 resolutionMinutes: 240
-            }
+            },
+            teams: [
+                { name: 'Sales Team', slug: 'sales-team' }
+            ]
         },
         {
             name: 'Customer Success',
@@ -97,7 +108,10 @@ async function main() {
                 priority: TicketPriority.MEDIUM,
                 firstResponseMinutes: 240,
                 resolutionMinutes: 2880
-            }
+            },
+            teams: [
+                { name: 'CS Team', slug: 'cs-team' }
+            ]
         },
         {
             name: 'General Inquiries',
@@ -110,7 +124,10 @@ async function main() {
                 priority: TicketPriority.LOW,
                 firstResponseMinutes: 240,
                 resolutionMinutes: 1440
-            }
+            },
+            teams: [
+                { name: 'General Support', slug: 'general-support' }
+            ]
         },
         {
             name: 'Security & Compliance',
@@ -123,12 +140,15 @@ async function main() {
                 priority: TicketPriority.URGENT,
                 firstResponseMinutes: 30,
                 resolutionMinutes: 240
-            }
+            },
+            teams: [
+                { name: 'Security Team', slug: 'security-team' }
+            ]
         }
     ];
 
     for (const deptDef of DEFAULT_DEPARTMENTS) {
-        const { sla, ...deptData } = deptDef;
+        const { sla, teams, ...deptData } = deptDef;
         const dept = await prisma.department.upsert({
             where: { slug: deptData.slug },
             update: {
@@ -165,7 +185,25 @@ async function main() {
             }
         });
 
-        console.log(`✅ Department '${deptData.name}' with default SLA seeded`);
+        // Seed Teams for this dept
+        if (teams) {
+            for (const teamDef of teams) {
+                await prisma.team.upsert({
+                    where: { slug: teamDef.slug },
+                    create: {
+                        name: teamDef.name,
+                        slug: teamDef.slug,
+                        departmentId: dept.id,
+                    },
+                    update: {
+                        name: teamDef.name,
+                        departmentId: dept.id,
+                    }
+                });
+            }
+        }
+
+        console.log(`✅ Department '${deptData.name}' with default teams and SLA seeded`);
     }
 
     // 3. Seed Default Settings
@@ -186,49 +224,79 @@ async function main() {
             value: JSON.stringify({
                 "tr": [
                     {
-                        "title": "Allplan 2026 (BIM & Mimari)",
+                        "title": "ALLPLAN 2026",
                         "sections": [
                             {
-                                "name": "Donanım (Hardware)",
+                                "name": "Donanım Gereksinimleri",
                                 "items": [
-                                    "**İşlemci:** Intel Core i5/i7/i9 veya AMD Ryzen 5/7/9 (Min 4 Çekirdek)",
-                                    "**Bellek:** Minimum 8 GB RAM (Karmaşık projeler için **32 GB** önerilir)",
-                                    "**Grafik:** 4 GB VRAM (Optimum performans için **16 GB** Onaylı GPU)",
-                                    "**Disk:** 20 GB boş SSD alanı"
+                                    "**MİNİMUM:** Intel/AMD Ryzen işlemci (ARM desteklenmez), 8 GB RAM, 20 GB boş disk alanı, OpenGL 4.2 uyumlu GPU (4 GB RAM / Redshift için 8 GB), 1920x1080 çözünürlük.",
+                                    "**ÖNERİLEN:** Intel i5/i7/i9 veya Ryzen 5/7/9, 32 GB RAM, SSD depolama, 4K çözünürlük, Vulkan 1.2 veya OpenGL 4.5 GPU (>= 16 GB RAM)."
                                 ]
                             },
                             {
-                                "name": "Yazılım (Software)",
+                                "name": "Yazılım Gereksinimleri",
                                 "items": [
-                                    "Windows 10 veya Windows 11 (64-bit)",
-                                    "Microsoft .NET Framework 4.8.1+",
-                                    "Güncel Grafik Kartı Sürücüleri"
+                                    "**İŞLETİM SİSTEMİ:** Windows 11 v24H2, Windows Server 2019/2022/2025 Standard Edition.",
+                                    "**VERİ SUNUCULARI:** Windows Server 2019/2022/2025, Windows Storage Server 2022 (NAS).",
+                                    "**NAS/DFS UYARISI:** DFS desteklenmez; kilitlenmelere ve veri kaybına yol açabilir."
                                 ]
                             }
                         ]
                     },
                     {
-                        "title": "Frilo & SCIA (Statik Analiz)",
+                        "title": "FRILO 2026",
                         "sections": [
                             {
-                                "name": "Sistem İhtiyaçları",
+                                "name": "Donanım ve Yazılım",
                                 "items": [
-                                    "**CPU:** Yüksek frekanslı çok çekirdekli işlemciler",
-                                    "**RAM:** Min 16 GB (Büyük sonlu eleman modelleri için 64 GB+)",
-                                    "**OpenGL:** Donanım hızlandırma destekli ekran kartı"
+                                    "**MİNİMUM:** Intel/AMD Ryzen, 8 GB RAM, 10 GB disk alanı, OpenGL uyumlu GPU (2GB VRAM), 1280x1024 çözünürlük.",
+                                    "**ÖNERİLEN:** Intel Core i5/i7/i9 veya Ryzen 5/7/9, 16 GB RAM, SSD, OpenGL 4.3 GPU (4GB RAM), 1920x1080 çözünürlük.",
+                                    "**İŞLETİM SİSTEMİ:** Windows 11 v24H2.",
+                                    "**VT (Opsiyonel):** Firebird 4, MariaDB, MsSQL Server 2019/2022/8.4."
                                 ]
                             }
                         ]
                     },
                     {
-                        "title": "Sanal Mimari & Bulut Servisler",
+                        "title": "SCIA Engineer 2026",
                         "sections": [
                             {
-                                "name": "Bağlantı & Erişim",
+                                "name": "Gereksinimler",
                                 "items": [
-                                    "**Internet:** Stable Fiber / 50 Mbps+ (Bimplus & Share için)",
-                                    "**Citrix/VDI:** Windows Server 2019/2022 (GPU Passthrough ile)",
-                                    "**Güvenlik:** TLS 1.2+ şifreleme desteği"
+                                    "**MİNİMUM:** Intel i7/Ryzen 5, 16 GB RAM, SSD, 5GB disk, 256MB GPU, OpenGL 2.1, FHD (4K desteklenir).",
+                                    "**ÖNERİLEN:** Intel i7/Ryzen 7, 32+ GB RAM, SSD, 5GB+ disk, 4GB+ GPU, FHD."
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Sanal Ortamlar",
+                        "sections": [
+                            {
+                                "name": "Politika",
+                                "items": [
+                                    "Citrix, Azure Sanal Masaüstü ve hibrit kurulumlar desteklenir.",
+                                    "Kurulum yönteminden bağımsız olarak teknik destek sağlanmaktadır.",
+                                    "Altyapısal sorunlar dahili BT birimlerince çözülmelidir."
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Servisler (Share, BIMPLUS, Exchange)",
+                        "sections": [
+                            {
+                                "name": "ALLPLAN Share",
+                                "items": [
+                                    "**AĞ:** 10/20 Mbit/s min (50/100 önerilen), gecikme < 50ms, LAN bağlantısı önerilir.",
+                                    "**DEPOLAMA:** Yerel SSD önerilir; ağ sürücüleri erişimi yavaşlatır."
+                                ]
+                            },
+                            {
+                                "name": "BIMPLUS & Exchange",
+                                "items": [
+                                    "**BIMPLUS:** 10 Mbit/s İnternet, WebGL 1.0, Güncel Tarayıcı.",
+                                    "**EXCHANGE:** 10 Mbit/s İnternet, Acrobat Reader, SSL Beyaz Liste."
                                 ]
                             }
                         ]
@@ -236,49 +304,84 @@ async function main() {
                 ],
                 "en": [
                     {
-                        "title": "Allplan 2026 (BIM & Architecture)",
+                        "title": "ALLPLAN 2026",
                         "sections": [
                             {
-                                "name": "Hardware",
+                                "name": "Hardware Requirements",
                                 "items": [
-                                    "**Processor:** Intel Core i5/i7/i9 or AMD Ryzen 5/7/9 (Min 4 Core)",
-                                    "**Memory:** Minimum 8 GB RAM (**32 GB** recommended for complex BIM)",
-                                    "**Graphics:** 4 GB VRAM (**16 GB** Certified GPU for optimum performance)",
-                                    "**Disk:** 20 GB free SSD space"
+                                    "**MINIMUM:** Intel/AMD Ryzen processor (ARM not supported), 8 GB RAM, 20 GB free disk, OpenGL 4.2 compatible GPU (4 GB RAM / 8 GB for Redshift), 1920x1080 resolution.",
+                                    "**RECOMMENDATION:** Intel i5/i7/i9 or Ryzen 5/7/9, 32 GB RAM, SSD, 4K resolution, Vulkan 1.2 or OpenGL 4.5 GPU (>= 16 GB RAM), allplan.com/info/graphiccards certification."
                                 ]
                             },
                             {
-                                "name": "Software",
+                                "name": "Software Requirements",
                                 "items": [
-                                    "Windows 10 or Windows 11 (64-bit)",
-                                    "Microsoft .NET Framework 4.8.1+",
-                                    "Latest Graphics Card Drivers"
+                                    "**OS:** Windows 11 v24H2 (LTSC 2024 supported), Windows Server 2019/2022/2025 Standard.",
+                                    "**DATA SERVERS:** Windows Server 2019/2022/2025, Windows Storage Server 2022 (NAS).",
+                                    "**NAS/DFS WARNING:** DFS is NOT supported; can lead to crashes, deadlocks, and deleted files."
                                 ]
                             }
                         ]
                     },
                     {
-                        "title": "Frilo & SCIA (Structural Analysis)",
+                        "title": "FRILO 2026",
                         "sections": [
                             {
-                                "name": "System Needs",
+                                "name": "Hardware & Software",
                                 "items": [
-                                    "**CPU:** High-frequency multi-core processors",
-                                    "**RAM:** Min 16 GB (64 GB+ for large FEM models)",
-                                    "**OpenGL:** Graphics card with hardware acceleration support"
+                                    "**MINIMUM:** Intel/AMD Ryzen, 8 GB RAM, 10 GB disk, OpenGL GPU (2GB VRAM), 1280x1024 resolution.",
+                                    "**RECOMMENDED:** Intel Core i5/i7/i9 or Ryzen 5/7/9, 16 GB RAM, SSD, OpenGL 4.3 GPU (4GB RAM), 1920x1080 resolution.",
+                                    "**OS:** Windows 11 v24H2.",
+                                    "**DB (Optional):** Firebird 4, MariaDB, MsSQL Server 2019/2022/8.4."
                                 ]
                             }
                         ]
                     },
                     {
-                        "title": "Virtual Arch & Cloud Services",
+                        "title": "SCIA Engineer 2026",
                         "sections": [
                             {
-                                "name": "Connection & Access",
+                                "name": "Requirements",
                                 "items": [
-                                    "**Internet:** Stable Fiber / 50 Mbps+ (For Bimplus & Share)",
-                                    "**Citrix/VDI:** Windows Server 2019/2022 (with GPU Passthrough)",
-                                    "**Security:** TLS 1.2+ encryption support"
+                                    "**MINIMUM:** Intel i7/Ryzen 5, 16 GB RAM, SSD, 5GB disk, 256MB GPU, OpenGL 2.1, FHD (up to 4K).",
+                                    "**RECOMMENDATION:** Intel i7/Ryzen 7, 32+ GB RAM, SSD, 5GB+ disk, 4GB+ GPU, FHD (up to 4K)."
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Virtual Environments",
+                        "sections": [
+                            {
+                                "name": "Policy",
+                                "items": [
+                                    "ALLPLAN can be deployed in local installations, Citrix-based solutions, Azure Virtual Desktop, and other remote/hybrid setups.",
+                                    "Dedicated technical support is provided regardless of deployment approach.",
+                                    "If the issue is infrastructure-linked, users will be directed to their internal IT departments."
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "title": "ALLPLAN Share / BIMPLUS / Exchange",
+                        "sections": [
+                            {
+                                "name": "ALLPLAN Share",
+                                "items": [
+                                    "**NETWORK:** 10/20 Mbit/s min (50/100 recommended), latency < 50ms (best < 10ms), LAN preferred over WLAN.",
+                                    "**STORAGE:** Local SSD recommended for file storage; network drives slow down access and must not be shared between users."
+                                ]
+                            },
+                            {
+                                "name": "BIMPLUS (Technical prerequisites)",
+                                "items": [
+                                    "10 Mbit/s Internet (50 Mbps recommended), JavaScript, WebGL 1.0, Latest Modern Browser (IE not supported)."
+                                ]
+                            },
+                            {
+                                "name": "ALLPLAN Exchange",
+                                "items": [
+                                    "Exchange user/company account, 10 Mbit/s Internet, Acrobat Reader, Latest Browser, official SSL whitelisting."
                                 ]
                             }
                         ]
@@ -287,6 +390,7 @@ async function main() {
             }),
             isSecret: false
         },
+
     ];
 
     for (const setting of defaultSettings) {
@@ -304,29 +408,65 @@ async function main() {
             name: "ALLPLAN",
             description: "Mimari ve Mühendislik BIM Çözümü",
             categories: [
-                { name: "Sistem, Lisans & Abonelik", keywords: ["cloud licensing", "wibu", "dongle", "aktivasyon", "hata kodu", "ultimate", "professional", "concept", "basic", "yavaşlama", "bağlantı hatası", "çökme", "açılmıyor", "donma", "performans", "kilitlendi", "yanıt vermiyor", "eğitim lisansı", "kurulum hatası", "crash"] },
-                { name: "Mimari ve 3B Modelleme", keywords: ["duvar", "taşıyıcı", "çizim", "ölçülendirme", "katman", "pafta", "kesit", "ölçek", "ai görselleştirme", "render", "kaplama", "lumion", "nasıl yapılır", "how to", "ayarlar", "arayüz bozuk", "siyah ekran", "kütüphane eksik", "yazdır", "pdf çıktı"] },
-                { name: "Mühendislik (Donatı & Çelik)", keywords: ["donatı", "çelik", "betonarme", "donatı pozlama", "metraj listesi", "scia", "frilo", "precast", "şantiye", "hesap hatası"] },
-                { name: "BIM, Veri Paylaşımı & Altyapı", keywords: ["ifc", "dwg", "koordinasyon", "referans model", "bulut", "bimplus", "allplan share", "civil", "köprü", "altyapı", "bozuk dosya", "corrupt", "senkronizasyon hatası", "kaydetme sorunu", "teamwork hatası", "yedekleme", "kurtarma", "bak backup"] }
+                {
+                    name: "Sistem, Lisans & Abonelik",
+                    keywords: [
+                        "cloud licensing", "wibu", "dongle", "aktivasyon", "hata kodu", "ultimate", "professional", "concept", "basic",
+                        "yavaşlama", "bağlantı hatası", "çökme", "açılmıyor", "donma", "performans", "kilitlendi", "yanıt vermiyor",
+                        "eğitim lisansı", "kurulum hatası", "crash", "kurulum", "setup", "yükleme", "donanım", "sistem gereksinimleri",
+                        "ekran kartı", "ram", "lisans", "etkinleştirme", "müşteri no", "destek", "abonelik", "allmenu", "güncelleme",
+                        "update", "servis paketi", "return", "license transfer", "taşıma", "bilgisayar", "codemeter"
+                    ]
+                },
+                {
+                    name: "Mimari ve 3B Modelleme",
+                    keywords: [
+                        "duvar", "taşıyıcı", "çizim", "ölçülendirme", "katman", "pafta", "kesit", "ölçek", "ai görselleştirme", "render",
+                        "kaplama", "lumion", "nasıl yapılır", "how to", "ayarlar", "arayüz bozuk", "siyah ekran", "kütüphane eksik",
+                        "yazdır", "pdf çıktı", "model", "mimari", "ndo", "format", "dosya", "kalem", "pen", "renk", "çizgi", "sembol",
+                        "kütüphane", "library", "smartpart", "pythonpart", "2d", "3d", "nesne", "wizard", "sihirbaz", "hız",
+                        "object palette", "filtre", "yönetim", "plane set", "kot", "yükseklik", "güneş", "analiz", "gölge", "visual scripting",
+                        "akıllı nesne", "pbc", "dob", "handles", "tutamaç", "more_horiz", "actionbar"
+                    ]
+                },
+                {
+                    name: "Mühendislik (Donatı & Çelik)",
+                    keywords: [
+                        "donatı", "çelik", "betonarme", "donatı pozlama", "metraj listesi", "scia", "frilo", "precast", "şantiye",
+                        "hesap hatası", "rebar", "detay", "metraj", "liste", "rapor", "excel", "birleşim", "bağlantı", "bending schedule",
+                        "shape code", "büküm şekli", "sds2", "bamtec", "statik", "yapısal analiz", "saf", "autoconverter"
+                    ]
+                },
+                {
+                    name: "BIM, Veri Paylaşımı & Altyapı",
+                    keywords: [
+                        "ifc", "dwg", "koordinasyon", "referans model", "bulut", "bimplus", "allplan share", "civil", "köprü",
+                        "altyapı", "bozuk dosya", "corrupt", "senkronizasyon hatası", "kaydetme sorunu", "teamwork hatası", "yedekleme",
+                        "kurtarma", "bak backup", "share", "cloud", "ortak çalışma", "revizyon", "çakışma", "point cloud", "nokta bulutu",
+                        "import", "arazi", "topografya", "terren", "drawing file", "dgn", "xref", "referans", "bep", "standart", "iso 19650",
+                        "federated model", "alignment", "landxml", "bcf", "clash detection", "eir", "property set manager", "ids", "mvd"
+                    ]
+                }
             ]
         },
         {
             name: "AX3000",
             description: "Mekanik ve Elektrik Tesisat (MEP) Çözümü",
             categories: [
-                { name: "Mekanik, Elektrik & Sıhhi Tesisat", keywords: ["boru", "vana", "sıhhi tesisat", "şebeke", "bağlantı", "boyutlandırma", "elektrik", "tava", "kablo", "çarpışma", "çakışma"] },
-                { name: "İklimlendirme (HVAC) & TS825", keywords: ["ısıtma", "soğutma", "havalandırma", "ts825", "ekb", "iklim", "vr", "debi", "yalıtım", "enerji performansı", "hata kodu"] }
+                { name: "Mekanik, Elektrik & Sıhhi Tesisat", keywords: ["boru", "vana", "sıhhi tesisat", "şebeke", "bağlantı", "boyutlandırma", "elektrik", "tava", "kablo", "çarpışma", "çakışma", "mep", "ventilation", "heating", "cooling"] },
+                { name: "İklimlendirme (HVAC) & TS825", keywords: ["ısıtma", "soğutma", "havalandırma", "ts825", "ekb", "iklim", "vr", "debi", "yalıtım", "enerji performansı", "hata kodu", "psychrometric", "duct", "pipe"] }
             ]
         },
         {
             name: "CDS Add-on",
             description: "Aluplan Geliştirilmiş Eklentileri",
             categories: [
-                { name: "Arazi, Altyapı & Rampa", keywords: ["arazi", "kazı", "dolgu", "yol", "sürüş eğrisi", "rampa", "otopark", "drive curve", "hafriyat", "eğim hatası"] },
-                { name: "Akıllı Tasarım Araçları", keywords: ["çelik profil", "3b ölçü", "grafik metin", "dwg converter", "skp dönüştürücü", "geometri araçları", "eklenti çalışmıyor", "plugin hatası"] }
+                { name: "Arazi, Altyapı & Rampa", keywords: ["arazi", "kazı", "dolgu", "yol", "sürüş eğrisi", "rampa", "otopark", "drive curve", "hafriyat", "eğim hatası", "terrain", "road", "bridge", "tunnel"] },
+                { name: "Akıllı Tasarım Araçları", keywords: ["çelik profil", "3b ölçü", "grafik metin", "dwg converter", "skp dönüştürücü", "geometri araçları", "eklenti çalışmıyor", "plugin hatası", "utility", "helper", "productivity"] }
             ]
         }
     ];
+
 
     for (const prodDef of PRODUCTS_TAXONOMY) {
         let product = await prisma.product.findFirst({ where: { name: prodDef.name } });
