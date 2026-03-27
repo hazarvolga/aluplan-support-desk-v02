@@ -21,6 +21,8 @@ import { toast } from 'sonner';
 
 import { EmailTemplates } from './components/EmailTemplates';
 import { AiSettings } from './components/AiSettings';
+import { StorageSettings } from './components/StorageSettings';
+import { CrmSettings } from './components/CrmSettings';
 
 export default function SettingsPage() {
     const t = useTranslations('settings');
@@ -142,6 +144,12 @@ export default function SettingsPage() {
                     <TabsTrigger value="macros" className="data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400 gap-2"><Zap className="h-4 w-4" aria-hidden="true" /> {t('tabs.macros')}</TabsTrigger>
                     <TabsTrigger value="ai" className="data-[state=active]:bg-brand-500/10 data-[state=active]:text-brand-400 gap-2">
                         <Brain className="h-4 w-4" aria-hidden="true" /> {t('tabs.ai')}
+                    </TabsTrigger>
+                    <TabsTrigger value="storage" className="data-[state=active]:bg-brand-500/10 data-[state=active]:text-brand-400 gap-2">
+                        <Server className="h-4 w-4" aria-hidden="true" /> {t('tabs.storage')}
+                    </TabsTrigger>
+                    <TabsTrigger value="crm" className="data-[state=active]:bg-brand-500/10 data-[state=active]:text-brand-400 gap-2">
+                        <Globe className="h-4 w-4" aria-hidden="true" /> {t('tabs.crm')}
                     </TabsTrigger>
                     <TabsTrigger value="security" className="data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-400 gap-2"><Shield className="h-4 w-4" aria-hidden="true" /> {t('tabs.security')}</TabsTrigger>
                 </TabsList>
@@ -270,6 +278,16 @@ export default function SettingsPage() {
                 {/* AI SETTINGS */}
                 <TabsContent value="ai" className="space-y-6">
                     <AiSettings />
+                </TabsContent>
+
+                {/* STORAGE SETTINGS */}
+                <TabsContent value="storage" className="space-y-6">
+                    <StorageSettings />
+                </TabsContent>
+
+                {/* CRM SETTINGS */}
+                <TabsContent value="crm" className="space-y-6">
+                    <CrmSettings />
                 </TabsContent>
 
                 {/* SECURITY & API (Future placeholder for now, shows encryption status) */}

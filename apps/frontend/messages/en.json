@@ -799,7 +799,30 @@
       "whatsapp": "WhatsApp",
       "requirements": "System Requirements",
       "macros": "Macros",
+      "storage": "Depolama",
+      "crm": "CRM Entegrasyonu",
       "security": "Security & API"
+    },
+    "storage": {
+      "title": "Bulut Depolama (R2)",
+      "desc": "Cloudflare R2 nesne depolama yapılandırması.",
+      "access_key": "Access Key ID",
+      "secret_key": "Secret Access Key",
+      "endpoint": "Endpoint URL",
+      "bucket": "Bucket Adı",
+      "save_success": "Depolama ayarları kaydedildi.",
+      "save_error": "Kaydetme hatası: {message}"
+    },
+    "crm": {
+      "title": "Dynamics 365 CRM",
+      "desc": "Kurumsal CRM bağlantı ve senkronizasyon ayarları.",
+      "instance_url": "Instance URL",
+      "tenant_id": "Tenant ID",
+      "client_id": "Client ID",
+      "client_secret": "Client Secret",
+      "api_key": "CRM API Key (x-api-key)",
+      "save_success": "CRM ayarları kaydedildi.",
+      "save_error": "Kaydetme hatası: {message}"
     },
     "macros": {
       "title": "Canned Responses (Macros)",
