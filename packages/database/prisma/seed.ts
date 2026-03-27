@@ -28,21 +28,27 @@ async function main() {
         adminRole = await prisma.role.create({ data: { name: 'ADMIN', isSystem: true } });
     }
 
-    const admin = await prisma.user.upsert({
-        where: { email: 'hazarvolga@gmail.com' },
-        update: {
-            roleId: adminRole.id,
-            passwordHash: hash,
-            fullName: 'hazarvolga',
-        },
-        create: {
-            email: 'hazarvolga@gmail.com',
-            fullName: 'hazarvolga',
-            passwordHash: hash,
-            roleId: adminRole.id,
-            status: 'ACTIVE',
-        },
-    });
+    let admin = await prisma.user.findUnique({ where: { email: 'hazarvolga@gmail.com' } });
+    if (admin) {
+        admin = await prisma.user.update({
+            where: { id: admin.id },
+            data: {
+                roleId: adminRole.id,
+                passwordHash: hash,
+                fullName: 'hazarvolga',
+            }
+        });
+    } else {
+        admin = await prisma.user.create({
+            data: {
+                email: 'hazarvolga@gmail.com',
+                fullName: 'hazarvolga',
+                passwordHash: hash,
+                roleId: adminRole.id,
+                status: 'ACTIVE',
+            }
+        });
+    }
     console.log('✅ Admin user seeded');
 
     // 2. Default Departments Seeding (from ekip.md)
@@ -149,57 +155,75 @@ async function main() {
 
     for (const deptDef of DEFAULT_DEPARTMENTS) {
         const { sla, teams, ...deptData } = deptDef;
-        const dept = await prisma.department.upsert({
-            where: { slug: deptData.slug },
-            update: {
-                name: deptData.name,
-                description: deptData.description,
-                color: deptData.color,
-                icon: deptData.icon,
-                isDefault: true,
-            },
-            create: {
-                ...deptData,
-                isDefault: true,
-            },
-        });
+        let dept = await prisma.department.findUnique({ where: { slug: deptData.slug } });
+        if (dept) {
+            dept = await prisma.department.update({
+                where: { id: dept.id },
+                data: {
+                    name: deptData.name,
+                    description: deptData.description,
+                    color: deptData.color,
+                    icon: deptData.icon,
+                    isDefault: true,
+                }
+            });
+        } else {
+            dept = await prisma.department.create({
+                data: {
+                    ...deptData,
+                    isDefault: true,
+                }
+            });
+        }
 
         // Seed SLA for this dept
         const slaId = `00000000-0000-0000-0000-${dept.id.substring(dept.id.length - 12)}`;
-        await prisma.slaPolicy.upsert({
-            where: { id: slaId },
-            create: {
-                id: slaId,
-                name: sla.name,
-                departmentId: dept.id,
-                priority: sla.priority,
-                firstResponseMinutes: sla.firstResponseMinutes,
-                resolutionMinutes: sla.resolutionMinutes,
-                businessHoursOnly: true
-            },
-            update: {
-                name: sla.name,
-                priority: sla.priority,
-                firstResponseMinutes: sla.firstResponseMinutes,
-                resolutionMinutes: sla.resolutionMinutes,
-            }
-        });
+        const existingSla = await prisma.slaPolicy.findUnique({ where: { id: slaId } });
+        if (existingSla) {
+            await prisma.slaPolicy.update({
+                where: { id: slaId },
+                data: {
+                    name: sla.name,
+                    priority: sla.priority,
+                    firstResponseMinutes: sla.firstResponseMinutes,
+                    resolutionMinutes: sla.resolutionMinutes,
+                }
+            });
+        } else {
+            await prisma.slaPolicy.create({
+                data: {
+                    id: slaId,
+                    name: sla.name,
+                    departmentId: dept.id,
+                    priority: sla.priority,
+                    firstResponseMinutes: sla.firstResponseMinutes,
+                    resolutionMinutes: sla.resolutionMinutes,
+                    businessHoursOnly: true
+                }
+            });
+        }
 
         // Seed Teams for this dept
         if (teams) {
             for (const teamDef of teams) {
-                await prisma.team.upsert({
-                    where: { slug: teamDef.slug },
-                    create: {
-                        name: teamDef.name,
-                        slug: teamDef.slug,
-                        departmentId: dept.id,
-                    },
-                    update: {
-                        name: teamDef.name,
-                        departmentId: dept.id,
-                    }
-                });
+                const existingTeam = await prisma.team.findUnique({ where: { slug: teamDef.slug } });
+                if (existingTeam) {
+                    await prisma.team.update({
+                        where: { id: existingTeam.id },
+                        data: {
+                            name: teamDef.name,
+                            departmentId: dept.id,
+                        }
+                    });
+                } else {
+                    await prisma.team.create({
+                        data: {
+                            name: teamDef.name,
+                            slug: teamDef.slug,
+                            departmentId: dept.id,
+                        }
+                    });
+                }
             }
         }
 
@@ -394,11 +418,18 @@ async function main() {
     ];
 
     for (const setting of defaultSettings) {
-        await prisma.setting.upsert({
-            where: { key: setting.key },
-            update: {},
-            create: setting,
-        });
+        const existingSetting = await prisma.setting.findUnique({ where: { key: setting.key } });
+        if (existingSetting) {
+            // Only update if it's not a secret or if we want to force update system data
+            if (setting.key === 'SYSTEM_REQUIREMENTS' || !setting.isSecret) {
+                await prisma.setting.update({
+                    where: { key: setting.key },
+                    data: { value: setting.value }
+                });
+            }
+        } else {
+            await prisma.setting.create({ data: setting });
+        }
     }
     console.log('✅ Default settings seeded');
 
@@ -467,34 +498,33 @@ async function main() {
         }
     ];
 
-
     for (const prodDef of PRODUCTS_TAXONOMY) {
         let product = await prisma.product.findFirst({ where: { name: prodDef.name } });
 
-        if (!product) {
-            product = await prisma.product.create({
-                data: { name: prodDef.name, description: prodDef.description, isActive: true }
-            });
-        } else {
-            await prisma.product.update({
+        if (product) {
+            product = await prisma.product.update({
                 where: { id: product.id },
                 data: { description: prodDef.description, isActive: true }
+            });
+        } else {
+            product = await prisma.product.create({
+                data: { name: prodDef.name, description: prodDef.description, isActive: true }
             });
         }
 
         for (const catDef of prodDef.categories) {
-            let category = await prisma.productCategory.findFirst({
+            const category = await prisma.productCategory.findFirst({
                 where: { productId: product.id, name: catDef.name }
             });
 
-            if (!category) {
-                await prisma.productCategory.create({
-                    data: { productId: product.id, name: catDef.name, keywords: catDef.keywords, isActive: true }
-                });
-            } else {
+            if (category) {
                 await prisma.productCategory.update({
                     where: { id: category.id },
                     data: { keywords: catDef.keywords, isActive: true }
+                });
+            } else {
+                await prisma.productCategory.create({
+                    data: { productId: product.id, name: catDef.name, keywords: catDef.keywords, isActive: true }
                 });
             }
         }
@@ -521,34 +551,44 @@ async function main() {
     ];
 
     for (const testCust of testCustomers) {
-        const user = await prisma.user.upsert({
-            where: { email: testCust.email },
-            update: { fullName: testCust.fullName },
-            create: {
-                email: testCust.email,
-                fullName: testCust.fullName,
-                passwordHash: hash,
-                roleId: testCust.email === 'hazarvolga@gmail.com' ? adminRole.id : customerRole.id,
-                status: 'ACTIVE',
-            }
-        });
+        let user = await prisma.user.findUnique({ where: { email: testCust.email } });
+        if (user) {
+            user = await prisma.user.update({
+                where: { id: user.id },
+                data: { fullName: testCust.fullName }
+            });
+        } else {
+            user = await prisma.user.create({
+                data: {
+                    email: testCust.email,
+                    fullName: testCust.fullName,
+                    passwordHash: hash,
+                    roleId: testCust.email === 'hazarvolga@gmail.com' ? adminRole.id : customerRole.id,
+                    status: 'ACTIVE',
+                }
+            });
+        }
 
-        await prisma.customerProfile.upsert({
-            where: { userId: user.id },
-            update: { phoneNumber: testCust.phoneNumber },
-            create: {
-                userId: user.id,
-                firstName: testCust.fullName.split(' ')[0],
-                lastName: testCust.fullName.split(' ')[1] || 'User',
-                companyName: 'Test Corp',
-                customerNo: `CUST-${user.id.substring(0, 5)}`,
-                phoneNumber: testCust.phoneNumber
-            }
-        });
+        const existingProfile = await prisma.customerProfile.findUnique({ where: { userId: user.id } });
+        if (existingProfile) {
+            await prisma.customerProfile.update({
+                where: { id: existingProfile.id },
+                data: { phoneNumber: testCust.phoneNumber }
+            });
+        } else {
+            await prisma.customerProfile.create({
+                data: {
+                    userId: user.id,
+                    firstName: testCust.fullName.split(' ')[0],
+                    lastName: testCust.fullName.split(' ')[1] || 'User',
+                    companyName: 'Test Corp',
+                    customerNo: `CUST-${user.id.substring(0, 5)}`,
+                    phoneNumber: testCust.phoneNumber
+                }
+            });
+        }
     }
     console.log('✅ Test customers seeded');
-
-    // 5. Knowledge Base seeding removed — articles are now managed via admin UI only.
 
     console.log('\n🎉 Seed complete!');
 }

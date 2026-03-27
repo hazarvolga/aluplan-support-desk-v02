@@ -303,39 +303,42 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
                         this.logger.debug(`Generated unique customerNo: ${clientNo} for contact: ${email} (Account: ${accountNum || 'N/A'})`);
 
-                        // 3. Upsert CustomerProfile
-                        await tx.customerProfile.upsert({
-                            where: { userId: user.id },
-                            update: {
-                                firstName,
-                                lastName,
-                                jobTitle,
-                                phoneNumber,
-                                companyName,
-                                accountId: linkedAccountId || null,
-                                externalContactId: contactId,
-                                customerNo: clientNo,
-                                contractStatus,
-                                subscriptionModel: subscriptionModel || null,
-                                industry: industryFromAccount || null,
-                                crmVerified: true,
-                            },
-                            create: {
-                                user: { connect: { id: user.id } },
-                                firstName,
-                                lastName,
-                                customerNo: clientNo,
-                                jobTitle,
-                                phoneNumber,
-                                companyName,
-                                ...(linkedAccountId ? { account: { connect: { id: linkedAccountId } } } : {}),
-                                externalContactId: contactId,
-                                contractStatus,
-                                subscriptionModel: subscriptionModel || null,
-                                industry: industryFromAccount || null,
-                                crmVerified: true,
-                            },
+                        // 3. Sync CustomerProfile manually to bypass Prisma upsert ghost column bug
+                        const existingProfile = await tx.customerProfile.findUnique({
+                            where: { userId: user.id }
                         });
+
+                        const profileData = {
+                            firstName,
+                            lastName,
+                            jobTitle,
+                            phoneNumber,
+                            companyName,
+                            externalContactId: contactId,
+                            customerNo: clientNo,
+                            contractStatus,
+                            subscriptionModel: subscriptionModel || null,
+                            industry: industryFromAccount || null,
+                            crmVerified: true,
+                        };
+
+                        if (existingProfile) {
+                            await tx.customerProfile.update({
+                                where: { id: existingProfile.id },
+                                data: {
+                                    ...profileData,
+                                    accountId: linkedAccountId || null,
+                                }
+                            });
+                        } else {
+                            await tx.customerProfile.create({
+                                data: {
+                                    ...profileData,
+                                    user: { connect: { id: user.id } },
+                                    ...(linkedAccountId ? { account: { connect: { id: linkedAccountId } } } : {}),
+                                }
+                            });
+                        }
                     });
                     successCount++;
                 } catch (err) {
