@@ -79,15 +79,15 @@ export class AiQueryService {
         private readonly langfuse: LangfuseService,
         private readonly redis: RedisService,
     ) {
-        this.highThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_HIGH', '0.90'));
-        this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.75'));
+        this.highThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_HIGH', '0.85'));
+        this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.70'));
     }
 
     async query(userQuery: string, userId?: string | null, channel: CommunicationChannel = 'WEB', hotinfoContext?: any): Promise<AiQueryResult> {
-        // 0. Cache lookup (simplified for internal/external aware caching)
+        // ... (cache logic)
         const isStaff = await this.isStaff(userId);
         const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
-        const cacheKey = `ai:query:cache:v2:${queryHash}`;
+        const cacheKey = `ai:query:cache:v3:${queryHash}`; // Updated cache version
         const cached = await this.redis.get(cacheKey);
 
         if (cached) {
@@ -103,15 +103,15 @@ export class AiQueryService {
             this.logger.log(`🔍 AI Query Expanded with Hotinfo: Extracted Error [${h.errorTrace || 'None'}]`);
         }
 
-        // 1. Semantic search with role-based filtering
+        // 1. Semantic search
         const searchResponse: SearchResponse = await this.embeddingService.search(expandedQuery, 10, null, isStaff);
         let results = searchResponse.results;
 
-        // 3. Re-ranking Phase (Section 5: Hybrid Retrieval Engine)
+        // Re-ranking
         results = this.rerankResults(results);
 
-        // CHANGE 5: No-match hard floor — if topScore < LOW_CONFIDENCE_THRESHOLD, do NOT call LLM
-        const LOW_CONFIDENCE_THRESHOLD = parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.72');
+        // Lowered floor for response generation
+        const LOW_CONFIDENCE_THRESHOLD = parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.62');
         if (searchResponse.diagnostics.topScore < LOW_CONFIDENCE_THRESHOLD || results.length === 0) {
             this.logger.warn(`🚫 No reliable context found(topScore = ${searchResponse.diagnostics.topScore.toFixed(3)}).Routing to human agent.`);
 
@@ -305,7 +305,6 @@ export class AiQueryService {
         const searchResponse = await this.embeddingService.search(expandedQuery, 5, null, isStaff);
         const results = searchResponse.results;
         const topResult = results[0] ?? null;
-        // ... rest of logic stays same ...
 
         let confidence: ConfidenceBand = 'NO_MATCH';
         let fullAnswer = '';
@@ -313,7 +312,7 @@ export class AiQueryService {
         if (topResult) {
             if (topResult.similarity >= this.highThreshold) confidence = 'HIGH';
             else if (topResult.similarity >= this.mediumThreshold) confidence = 'MEDIUM';
-            else confidence = 'LOW';
+            else if (topResult.similarity >= 0.62) confidence = 'LOW'; // Match query() floor
         }
 
         let usedPrompt = userQuery;

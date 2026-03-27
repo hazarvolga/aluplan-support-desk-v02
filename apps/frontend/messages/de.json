@@ -169,6 +169,7 @@
     "logout": "Abmelden",
     "loading": "Laden...",
     "error": "Ein Fehler ist aufgetreten",
+    "session_expired": "Sitzung abgelaufen. Bitte melden Sie sich erneut an.",
     "save": "Speichern",
     "saving": "Wird gespeichert...",
     "reset": "Zurücksetzen",
@@ -227,8 +228,7 @@
       "installed_modules": "Installierte Module",
       "count_suffix": "elemente",
       "not_found": "Systemdaten nicht gefunden."
-    },
-    "session_expired": "Sitzung abgelaufen. Bitte melden Sie sich erneut an."
+    }
   },
   "dashboard": {
     "title": "Kontrollzentrum",
@@ -677,7 +677,6 @@
             "email": "E-Mail",
             "phoneNumber": "Telefonnummer",
             "jobTitle": "Jobtitel / Position",
-            "companyName": "Firmenname",
             "industry": "Branche",
             "customerNo": "Kundennummer",
             "fullName": "Vollständiger Name",
@@ -734,53 +733,6 @@
       "general": "Allgemein",
       "accounts": "Konten",
       "record_count": "{count} Datensätze"
-    },
-    "users": {
-      "title": "Teamverwaltung",
-      "desc": "Verwalten Sie Support-Agenten, Manager und Administratoren.",
-      "add_user": "Benutzer hinzufügen",
-      "edit_user": "Benutzer bearbeiten",
-      "delete_confirm": "Sind Sie sicher, dass Sie den Benutzer {name} löschen möchten?",
-      "empty": "Keine Benutzer gefunden",
-      "deleted_success": "Benutzer erfolgreich gelöscht",
-      "fetch_error": "Fehler beim Laden der Benutzer",
-      "dialog": {
-        "title_create": "Neuen Benutzer hinzufügen",
-        "title_edit": "Benutzer bearbeiten",
-        "full_name": "Vollständiger Name",
-        "name_placeholder": "John Doe",
-        "email": "E-Mail",
-        "email_placeholder": "john@example.com",
-        "password": "Passwort",
-        "password_placeholder": "******",
-        "new_password_optional": "Neues Passwort (optional)",
-        "role": "Rolle",
-        "select_role_placeholder": "Wählen Sie eine Rolle",
-        "roles": {
-          "admin": "Administrator",
-          "support_manager": "Support-Manager",
-          "support_agent": "Support-Mitarbeiter",
-          "viewer": "Betrachter"
-        },
-        "btn_create": "Erstellen",
-        "btn_update": "Aktualisieren"
-      },
-      "validation": {
-        "name_min": "Der Name muss mindestens 2 Zeichen lang sein",
-        "email_invalid": "Ungültige E-Mail-Adresse",
-        "password_min": "Das Passwort muss mindestens 6 Zeichen lang sein",
-        "password_required": "Passwort ist für neue Benutzer erforderlich"
-      },
-      "toasts": {
-        "created": "Benutzer erfolgreich erstellt",
-        "updated": "Benutzer erfolgreich aktualisiert"
-      },
-      "table": {
-        "user": "Benutzer",
-        "role": "Rolle",
-        "email": "E-Mail",
-        "actions": "Aktionen"
-      }
     },
     "crm": {
       "title": "CRM-Kontrollzentrum",
@@ -977,7 +929,6 @@
       "not_authorized": "Nicht autorisiert",
       "smtp_host": "Host",
       "smtp_port": "Port",
-      "from_address_label": "Absender-E-Mail-Adresse",
       "smtp_user": "Benutzername",
       "smtp_pass": "Passwort",
       "resend_api_key": "API-Schlüssel",
@@ -1393,376 +1344,16 @@
       }
     }
   },
-  "email_validation": {
-    "title": "E-Mail-Validierung",
-    "subtitle": "Überprüfen Sie E-Mail-Gültigkeit, DNS-Einträge und SMTP-Status.",
-    "data_labels": {
-      "valid": "Gültig",
-      "invalid": "Ungültig",
-      "found": "Gefunden",
-      "missing": "Fehlt",
-      "ok": "OK",
-      "error": "Fehler",
-      "enabled": "Aktiviert",
-      "catch_all": "Sammeladresse",
-      "clean": "Sauber"
-    },
-    "tabs": {
-      "single": "Schnellcheck",
-      "bulk": "Kundenliste"
-    },
-    "single": {
-      "placeholder": "Zu verifizierende E-Mail-Adresse (z.B. user@example.com)",
-      "button": "Analysieren",
-      "verifying": "Verifizierung..."
-    },
-    "bulk": {
-      "verify_selected": "Ausgewählte Verifizieren ({count})",
-      "verify_all": "Alle Verifizieren"
-    },
-    "typo": {
-      "suggestion": "Meinten Sie?",
-      "use_suggested": "Vorschlag verwenden"
-    },
-    "search": {
-      "customer_search": "Kunde oder Unternehmen Suchen...",
-      "filtered_records": "{count} Gefilterte Datensätze"
-    },
-    "score_card": {
-      "score": "Score",
-      "reliable": "Zuverlässig",
-      "risky": "Riskant",
-      "invalid": "Ungültig",
-      "disposable_hint": "Temporärer E-Mail-Dienst erkannt.",
-      "role_based_hint": "Unternehmensrollenadresse (Support, Info usw.).",
-      "catch_all_hint": "Akzeptiert alle E-Mails (Sammeladresse) Server.",
-      "valid_hint": "E-Mail-Adresse scheint für die Verwendung geeignet zu sein."
-    },
-    "data_points": {
-      "syntax": "Syntax",
-      "syntax_desc": "E-Mail-Format auf Übereinstimmung mit RFC-Standards geprüft.",
-      "dns": "DNS / MX",
-      "dns_desc": "E-Mail-Servereinträge ({exchange}) der Domain verifiziert.",
-      "smtp": "SMTP",
-      "smtp_desc": "Server auf Socket-Ebene erreicht und Handshake versucht.",
-      "greylisted": "Server hat vorübergehend abgelehnt (Greylisted), später erneut versuchen.",
-      "ai": "Intelligenz (KI)",
-      "ai_desc": "Intelligenzschicht-Analyse durchgeführt.",
-      "risk": "Risikoanalyse",
-      "risk_clean": "Keine bekannten Risikofaktoren gefunden.",
-      "catch_all_desc": "Domain akzeptiert alle Adressen, Liefergarantie spiegelt dies wider."
-    },
-    "empty": {
-      "waiting": "Warten auf E-Mail-Analyse",
-      "waiting_desc": "Bitte geben Sie die Adresse ein, die Sie überprüfen möchten.",
-      "no_results": "Keine Ergebnisse Gefunden",
-      "no_results_desc": "Es wurden keine Kunden gefunden, die Ihren Suchkriterien entsprechen.",
-      "no_data": "Keine Daten Verfügbar",
-      "no_data_desc": "Diese E-Mail wurde noch nicht verifiziert. Bitte starten Sie den Verifizierungsprozess.",
-      "verify_now": "Jetzt Verifizieren"
-    },
-    "filters": {
-      "all": "Alle"
-    },
-    "table": {
-      "customer_company": "Kunde / Unternehmen",
-      "email": "E-Mail",
-      "syntax": "Syntax",
-      "dns_mx": "DNS / MX",
-      "smtp": "SMTP",
-      "group_score": "Gruppe / Score",
-      "loading": "Kunden werden geladen..."
-    },
-    "detail": {
-      "title": "Detailanalyse",
-      "trust_score": "Vertrauenswert",
-      "status": "Status",
-      "intelligence": "Intelligenzschicht",
-      "server_records": "Servereinträge",
-      "mx_data": "MX RECORD DATA",
-      "no_mx": "Keine MX-Einträge Gefunden.",
-      "smtp_log": "SMTP HANDSHAKE LOG",
-      "yes_risky": "JA / RISIKOREICH",
-      "no_clean": "NEIN / SAUBER",
-      "smtp_success": "Verbindung zum Server {server} erfolgreich hergestellt. EHLO akzeptiert.",
-      "smtp_fail": "Verbindung fehlgeschlagen oder Zeitüberschreitung beim Handshake."
-    },
-    "toasts": {
-      "verified_count": "{count} E-Mails verifiziert.",
-      "reverified": "{email} erneut verifiziert.",
-      "verify_error": "Verifizierungsfehler",
-      "bulk_verify_error": "Massenverifizierungsfehler"
-    }
-  },
-  "meta": {
-    "locale": "de-DE",
-    "system": "SYSTEM"
-  },
-  "table": {
-    "select_all": "Alle auswählen",
-    "showing": "Angezeigt"
-  },
-  "teams": {
-    "fetch_error": "Fehler beim Laden der Daten.",
-    "search_placeholder": "Teams oder Abteilungen suchen...",
-    "no_description": "Keine Beschreibung für diese Abteilung hinzugefügt.",
-    "min_suffix": "Min.",
-    "profile_pic_alt": "Profilbild",
-    "statuses": {
-      "online": "Online",
-      "away": "Abwesend",
-      "dnd": "Nicht stören",
-      "offline": "Offline"
-    },
-    "loading": {
-      "agent": "Profildaten werden analysiert...",
-      "dept": "Abteilungsdaten werden geladen...",
-      "team": "Teamdaten werden synchronisiert..."
-    },
-    "nav": {
-      "back_teams": "Zurück zu Teams",
-      "back": "Zurück"
-    },
-    "actions": {
-      "edit_profile": "Profil bearbeiten",
-      "edit_dept": "Abteilung bearbeiten",
-      "add_skill": "Neue Fähigkeit hinzufügen",
-      "add_sla": "Neue SLA-Richtlinie",
-      "add_member": "Neues Mitglied hinzufügen",
-      "configure": "Konfigurieren",
-      "add_agent": "Neuen Agenten hinzufügen",
-      "add_team": "Neues Team",
-      "manage_team": "Team verwalten",
-      "details": "Details",
-      "view_profile": "Profil",
-      "view_team": "TEAM ANSEHEN",
-      "edit": "BEARBEITEN"
-    },
-    "tabs": {
-      "performance": "Leistung",
-      "skills": "Fähigkeiten",
-      "schedule": "Arbeitsplan",
-      "overview": "Übersicht",
-      "sla_policies": "SLA-Richtlinien",
-      "departments": "Abteilungen",
-      "teams": "Teams",
-      "agents": "Agenten"
-    },
-    "stats": {
-      "tickets": "Ticket-Statistiken",
-      "last_30_days": "LETZTE 30 TAGE",
-      "active_load": "Aktive Arbeitsbelastung",
-      "csat": "CSAT-Score",
-      "avg_response": "Durchschnittliche Antwortzeit",
-      "monthly_quota": "Monatliches Ticketkontingent",
-      "first_response_target": "SLA-Ziel für erste Antwort",
-      "active_teams": "Aktive Teams",
-      "total_agents": "Agenten gesamt",
-      "avg_response_dept": "Durchschnittliche Antwortzeit",
-      "sla_compliance": "SLA-Einhaltung",
-      "active_ticket_load": "Aktive Ticketbelastung",
-      "quick_stats": "Schnelle Statistiken",
-      "online_rate": "Online-Rate",
-      "pending_queue": "Ausstehende Warteschlange",
-      "resolved_today": "Heute gelöst",
-      "alerts": "Warnungen",
-      "overload": "Überlastung",
-      "sla_stable": "SLA Stabil"
-    },
-    "labels": {
-      "badges": "Erfolgsabzeichen",
-      "sla_master": "SLA-Meister",
-      "top_rated": "Bestbewertet",
-      "quick_resolve": "Schnelle Lösung",
-      "targets": "Ziele",
-      "technical_skills": "Technische Fähigkeiten",
-      "skills_desc": "Fachgebiete und Vertrauensniveau des Agenten.",
-      "no_skills": "Noch keine Fähigkeiten zugewiesen.",
-      "leave": "URLAUB",
-      "recent_activity": "Letzte Aktivitäten",
-      "critical_sla": "Kritische SLA-Ziele",
-      "first_response": "ERSTE ANTWORT",
-      "resolution": "LÖSUNG",
-      "first_response_time": "Erste Antwort",
-      "resolution_time": "Lösungszeit",
-      "sla_config": "SLA-Konfiguration",
-      "sla_config_desc": "Service-Level-Ziele der Abteilung.",
-      "automation_status": "AUTOMATISIERUNGSSTATUS",
-      "active": "AKTIV",
-      "passive": "PASSIV",
-      "round_robin": "Round Robin",
-      "rr_desc": "Sequenzielle Zuweisungsstrategie wird angewendet.",
-      "team_members": "Teammitglieder",
-      "command_center": "Team-Kommandozentrale",
-      "organization": "Eine Organisation: Aluplan Support",
-      "auto_assignment": "AUTO-ZUWEISUNG",
-      "strategy": "Strategie:",
-      "agent": "Agent / Vertreter",
-      "status": "Status",
-      "role": "Rolle",
-      "actions": "Aktionen",
-      "senior_agent": "Senior Support Spezialist",
-      "default_bio": "Kundenorientierter Experte mit über 5 Jahren Erfahrung in technischen Supportprozessen.",
-      "preparing_charts": "Leistungsdiagramme werden vorbereitet.",
-      "member": "Mitglied",
-      "joined_at": "Beigetreten: {date}",
-      "level_prefix": "LEVEL",
-      "default_dept_desc": "Diese Abteilung ist einer der zentralen Supportbereiche des Unternehmens.",
-      "priority_suffix": "PRIORITÄT",
-      "minutes_suffix": "Min",
-      "agent_count": "{count} Agenten",
-      "auto_assign_on": "Auto-Zuweisung Ein",
-      "auto_assign_off": "Manuelle Zuweisung"
-    },
-    "creation": {
-      "title": "Neues Team Erstellen",
-      "description": "Definieren Sie ein neues Team, um operative Prozesse zu verwalten.",
-      "team_name": "Teamname",
-      "team_name_placeholder": "Bsp: Technischer Support - Ebene 2",
-      "department": "Abteilung",
-      "select_department": "Wählen Sie eine Abteilung",
-      "desc_label": "Beschreibung",
-      "desc_placeholder": "Stellenbeschreibung des Teams...",
-      "auto_assign": "Automatische Zuweisung",
-      "auto_assign_desc": "Neue Tickets werden diesem Team automatisch zugewiesen.",
-      "assign_strategy": "Zuweisungsstrategie",
-      "round_robin": "Round Robin (Sequentiell)",
-      "least_loaded": "Am wenigsten belastet (Lastbasiert)",
-      "skill_based": "Fähigkeitsbasiert",
-      "submit": "Team Starten",
-      "submitting": "Wird erstellt...",
-      "success": "Neues Team erfolgreich erstellt.",
-      "error_dept": "Bitte wählen Sie eine Abteilung aus.",
-      "error_server": "Fehler beim Erstellen des Teams."
-    },
-    "member_add": {
-      "title": "Neuen Agenten Zuweisen",
-      "description": "Weisen Sie dem Team einen registrierten Benutzer als Agenten zu.",
-      "select_agent": "Benutzer (Agent)",
-      "select_agent_placeholder": "Wählen Sie einen Benutzer",
-      "loading_users": "Benutzer werden geladen...",
-      "no_users": "Keine neuen Benutzer zur Zuweisung verfügbar.",
-      "role": "Role im Team",
-      "select_role": "Rolle wählen",
-      "role_desc": "Diese Rolle bestimmt nur ihre Berechtigungen innerhalb dieses Teams.",
-      "cancel": "Abbrechen",
-      "submit": "Dem Team Zuweisen",
-      "submitting": "Hinzufügen...",
-      "success": "Neues Mitglied erfolgreich zum Team hinzugefügt.",
-      "error_select": "Bitte wählen Sie einen Agenten aus.",
-      "error_server": "Fehler beim Hinzufügen des Mitglieds."
-    },
-    "errors": {
-      "fetch_profile": "Agentenprofil konnte nicht geladen werden.",
-      "fetch_dept": "Abteilungsinformationen konnten nicht geladen werden."
-    },
-    "days": {
-      "mon": "Montag",
-      "tue": "Dienstag",
-      "wed": "Mittwoch",
-      "thu": "Donnerstag",
-      "fri": "Freitag",
-      "sat": "Samstag",
-      "sun": "Sonntag"
-    }
-  },
-  "knowledge_pool": {
-    "title": "WISSENSPOOL_KONTROLLE",
-    "subtitle": "Verwaltung und Indizierung technischer Ressourcen für KI.",
-    "placeholder": "Technische Dokumentation",
-    "tabs": {
-      "raw_sources": "ROHQUELLEN",
-      "seeded_content": "GESÄTE_INHALTE"
-    },
-    "buttons": {
-      "add_url": "URL_HINZUFÜGEN",
-      "upload_file": "DATEI_HOCHLADEN",
-      "scan_dataset": "DATENSATZ_SCANNEN",
-      "bulk_sync": "BULK-SYNC ({count})",
-      "cancel": "ABBRECHEN",
-      "refresh": "AKTUALISIEREN",
-      "publish_selected": "AUSGEWÄHLTE_VERÖFFENTLICHEN",
-      "examine": "UNTERSUCHEN",
-      "load_more": "MEHR_LADEN",
-      "loading": "LADEN..."
-    },
-    "table": {
-      "source": "QUELLE",
-      "type": "TYP",
-      "status": "STATUS",
-      "vector": "VEKTOR",
-      "last_sync": "LETZTER_SYNC",
-      "action": "AKTION",
-      "no_records": "Keine Ressourcen gefunden",
-      "select_all": "ALLE_AUSWÄHLEN",
-      "showing": "ANZEIGEN"
-    },
-    "filters": {
-      "all": "ALLE",
-      "active": "AKTIV",
-      "syncing": "SYNCHRONISIERT",
-      "failed": "FEHLGESCHLAGEN",
-      "all_types": "ALLE_TYPEN",
-      "url": "URL",
-      "file": "DATEI"
-    },
-    "logs": {
-      "title": "SYNC_LOGS",
-      "no_source": "Wählen Sie eine Quelle aus",
-      "no_logs": "Keine Protokolle gefunden.",
-      "success": "ERFOLG",
-      "error": "FEHLER",
-      "processing": "VERARBEITUNG",
-      "chunks_processed": "{count} Chunks verarbeitet."
-    },
-    "articles": {
-      "title": "ARTIKELPOOL",
-      "total": "{count} GESAMT",
-      "search_placeholder": "DATEI SUCHEN...",
-      "all": "ALLE",
-      "review": "IN_PRÜFUNG",
-      "published": "VERÖFFENTLICHT",
-      "draft": "ENTWURF",
-      "select_page": "SELECT {count} {PAGE}",
-      "no_records": "KEINE_DATENSÄTZE_GEFUNDEN",
-      "author": "AUTOR",
-      "under_review": "IN_ÜBERPRÜFUNG"
-    },
-    "meta": {
-      "locale": "de-DE",
-      "system": "SYSTEM"
-    },
-    "status_labels": {
-      "draft": "ENTWURF",
-      "published": "AKTIV",
-      "review": "IN_ÜBERPRÜFUNG",
-      "under_review": "IN_ÜBERPRÜFUNG"
-    },
-    "dialogs": {
-      "new_url": "Neue URL-Quelle",
-      "name_label": "Quellenname",
-      "url_label": "URL-Adresse",
-      "save_sync": "Speichern und Synchronisieren"
-    },
-    "toasts": {
-      "fetch_error": "Ressourcen konnten nicht geladen werden",
-      "sync_started": "Synchronisierung gestartet",
-      "sync_desc": "Hintergrundaufgabe in Warteschlange",
-      "bulk_sync_started": "Massen-Synchronisierung gestartet",
-      "partial_success": "Teilerfolg",
-      "bulk_sync_desc": "{count} Ressourcen in Warteschlange",
-      "bulk_sync_error": "{count} fehlgeschlagen",
-      "dataset_scan_started": "Synchronisierung gestartet",
-      "dataset_scan_desc": "Datensatzordner wird gescannt...",
-      "dataset_sync_success": "Smart Sync erfolgreich",
-      "url_added": "URL-Quelle hinzugefügt",
-      "logs_error": "Protokolle konnten nicht geladen werden",
-      "publish_success": "{count} Artikel veröffentlicht"
-    }
-  },
   "announcements": {
     "title": "Ankündigungsmanagement",
     "subtitle": "Unternehmenskommunikation und gezielte Ankündigungsoperationen",
+    "enterprise_control": "[TR] Enterprise Control",
+    "preview_prepared": "[TR] Hazırlanan İçerik Önizlemesi",
+    "close": "[TR] Kapat",
+    "industries": "[TR] Sektörler",
+    "customer_status": "[TR] Müşteri Durumu",
+    "company_name": "[TR] Şirket Adı",
+    "special_tags": "[TR] Özel Etiketler",
     "categories": {
       "all": "ALLE",
       "general": "Allgemein",
@@ -1984,166 +1575,578 @@
       "hybrid_retrieval": "HYBRID-SUCHMASCHINE"
     }
   },
-  "products": {
-    "title": "Produkte und Module",
-    "subtitle": "Verwalten Sie die Hauptprodukte und Unterkategorien für die Klassifizierung durch künstliche Intelligenz für Ihre Support-Abteilungen.",
-    "actions": {
-      "add_product": "Neues Produkt hinzufügen",
-      "add_category": "Kategorie hinzufügen"
-    },
-    "empty": {
-      "no_products": "Noch keine Produkte definiert",
-      "no_products_desc": "Mit der Schaltfläche 'Neues Produkt hinzufügen' können Sie die Hauptprodukte und Module definieren, für die Kunden Tickets eröffnen können.",
-      "no_categories": "Für dieses Produkt wurde noch keine Unterkategorie/Modul definiert. Fügen Sie eine Kategorie für die intelligente KI-Kennzeichnung hinzu."
-    },
-    "labels": {
-      "subcategories": "Unterkategoriler (KI-Labels)",
-      "no_keywords": "Keine Schlüsselwörter",
-      "product_name": "Produktname",
-      "description": "Beschreibung",
-      "category_name": "Kategoriename",
-      "keywords": "Schlüsselwörter (mit Kommas trennen)",
-      "keywords_help": "Die KI kann dabei helfen, einen Kontext zu erstellen, wenn sie versucht, das Benutzerticket aus dieser Liste von Labels zu klassifizieren."
-    },
-    "placeholders": {
-      "product_name": "z. B. Aluplan Pro",
-      "description": "Eine kurze Beschreibung des Produkts...",
-      "category_name": "z. B. Rechnungsmodul",
-      "keywords": "z. B. Rechnungserstellung, Stornierung, MwSt, E-Rechnung"
-    },
-    "dialogs": {
-      "edit_product": "Produkt bearbeiten",
-      "add_product": "Neues Produkt hinzufügen",
-      "edit_category": "Kategorie bearbeiten",
-      "add_category": "Neues Modul / Neue Kategorie",
-      "product_desc": "Definieren Sie Ihr Hauptprodukt oder Ihre Hauptdienstleistung. Kunden sehen diese Produkte zuerst, wenn sie ein Ticket erstellen.",
-      "category_desc": "Geben Sie die Unterkategorie und die mit dieser Kategorie verknüpften Schlüsselwörter ein, die die KI für die Unterkennzeichnung eingehender Tickets verwendet."
-    },
-    "toasts": {
-      "fetch_error": "Fehler beim Laden der Produkte",
-      "product_updated": "Produkt aktualisiert",
-      "product_added": "Neues Produkt hinzugefügt",
-      "category_updated": "Kategorie aktualisiert",
-      "category_added": "Neue Kategorie hinzugefügt",
-      "product_deleted": "Produkt gelöscht",
-      "category_deleted": "Kategorie gelöscht",
-      "save_failed": "Registrierung fehlgeschlagen",
-      "delete_failed": "Löschen fehlgeschlagen"
-    },
-    "confirms": {
-      "delete_product": "Sind Sie sicher, dass Sie dieses Produkt und alle darunter liegenden Kategorien löschen möchten?",
-      "delete_category": "Sind Sie sicher, dass Sie diese Kategorie löschen möchten?"
-    }
-  },
-  "faq": {
-    "title": "FAQ_VERWALTUNGSEINHEIT",
-    "subtitle": "Überprüfen und synchronisieren Sie automatisch extrahierte operative Wissensbeispiele.",
-    "refresh_cache": "CACHE_AKTUALISIEREN",
-    "start_extraction": "EXTRAKTION_STARTEN",
-    "filters": {
-      "all": "ALLE",
-      "pending_review": "AUSSTEHENDE_PRÜFUNG",
-      "published": "VERÖFFENTLICHT",
-      "draft": "ENTWURF"
-    },
-    "not_found": "Keine FAQ gefunden",
-    "not_found_desc": "Versuchen Sie, den Filter zu ändern, oder starten Sie den Extraktionsprozess, um neue FAQs zu erstellen.",
-    "frequency": "HÄUFIGKEIT",
-    "confidence_score": "KONFIDENZWERD",
-    "approve": "GENEHMIGEN",
-    "dismiss": "VERWERFEN",
-    "source_ticket": "Quell-Ticket",
-    "toasts": {
-      "extraction_started": "Pipeline gestartet",
-      "extraction_started_desc": "Der FAQ-Extraktionsprozess läuft im Hintergrund.",
-      "fetch_error": "Fehler beim Abrufen der FAQs",
-      "approved": "FAQ genehmigt",
-      "approved_desc": "Beispiel wurde veröffentlicht.",
-      "dismissed": "FAQ verworfen",
-      "dismissed_desc": "Beispiel in Entwurf verschoben/gelöscht.",
-      "op_failed": "Vorgang fehlgeschlagen",
-      "pipeline_failed": "Pipeline konnte nicht gestartet werden"
-    }
-  },
-  "faq_learning": {
-    "title": "FAQ Auto-Lernpool",
-    "subtitle": "NEURALE SYNCHRONISATION: TRANSFORMATION OPERATIVER DATEN IN STRUKTURIERTES WISSEN",
-    "trigger_loop": "LERNZYKLUS AUSLÖSEN",
-    "health_analysis": "WISSENSDATENBANK_GESUNDHEITSANALYSE",
-    "realtime_telemetry_label": "ECHTZEIT-TELEMETRIE",
-    "resolution_rate": "LÖSUNGSQUOTE",
-    "prevented_tickets": "VERHINDERTE_TICKETS",
-    "writing_accuracy": "SCHREIBGENAUIGKEIT",
-    "highest_confidence": "HÖCHSTES_VERTRAUEN",
-    "total_interactions": "GESAMTINTERAKTIONEN",
-    "last_30_days": "ANFRAGEN_DER_LETZTEN_30_TAGE",
-    "confidence_distribution": "VERTRAUENSVERTEILUNG",
-    "bands": {
-      "high": "HOCH",
-      "medium": "MITTEL",
-      "low": "NIEDRIG",
-      "no_match": "KEINE_ÜBEREINSTIMMUNG"
-    },
-    "flow_status": "FLOW-STATUS",
-    "ingestion_engine": "DATENERFASSUNGS-ENGINE",
-    "ingestion_engine_desc": "Status: AKTIV | Überwachung geschlossener Ticket-Ereignisse",
-    "abstraction_layer": "ABSTRAKTIONSSCHICHT",
-    "abstraction_layer_desc": "Aktuell: BEREIT | Nomic-Embed-Strategie",
-    "validation_queue": "VALIDIERUNGSWARTESCHLANGE",
-    "validation_queue_desc": "{count} KANDIDATEN WARTEN AUF VALIDIERUNG",
-    "last_sync": "LETZTE_SYNCHRONISIERUNG",
-    "candidates_title": "LERNKANDIDATEN",
-    "waiting_validation": "WARTET_AUF_VALIDIERUNG",
-    "all_synced": "ALLE_MUSTER_SYNCHRONISIERT",
-    "all_synced_desc": "Führen Sie den Extraktionszyklus manuell aus, um neue Wissensbeispiele zu finden.",
-    "add_to_kb": "IN KB AUFNEHMEN",
-    "refresh": "AKTUALISIEREN",
-    "toasts": {
-      "pipeline_started": "KI-Pipeline gestartet",
-      "pipeline_desc": "Tiefenanalyse der gelösten Tickets läuft.",
-      "knowledge_committed": "Wissen bestätigt",
-      "knowledge_committed_desc": "Das Modell wurde erfolgreich in den allgemeinen Wissenspool integriert.",
-      "sync_error": "Datensynchronisierungsfehler",
-      "pipeline_exception": "Pipeline-Ausnahme",
-      "commit_error": "Übertragungsfehler"
-    }
-  },
-  "live_support_request": {
-    "title": "Support-Anfragen",
-    "description": "Systemweite offene und aktive Support-Anfragen verwalten."
-  },
-  "ai_health": {
-    "title": "KI-GESUNDHEIT & TELEMETRIE",
-    "subtitle": "Echtzeitüberwachung von KI-Modellen, Token-Verbrauch und RAG-Leistung.",
-    "dashboard": {
-      "panel_title": "KI-Zustand & Performance-Panel",
-      "send_report": "Wöchentlichen Bericht jetzt senden",
-      "report_queued": "Bericht in Warteschlange. Bitte prüfen Sie Ihr Postfach.",
-      "report_failed": "Bericht konnte nicht erstellt werden.",
-      "total_requests": "Gesamtanzahl Anfragen",
-      "total_tokens": "Gesamt-Token",
-      "approx_cost": "Ungefähre Kosten",
-      "active_models": "Aktive Modelle",
-      "unknown": "Unbekannt",
-      "performance_trends": "Performance-Trends (Letzte 7 Tage)",
-      "performance_desc": "Änderung der AI-Genauigkeit und Savuşturma-Raten im Laufe der Zeit.",
-      "kb_gaps": "Wissensdatenbank-Lücken",
-      "kb_gaps_desc": "Beliebteste unbeantwortete User-Fragen.",
-      "times_unanswered": "{count} Mal unbeantwortet geblieben",
-      "no_gaps": "Keine nennenswerten Wissenslücken festgestellt.",
-      "channel_distribution": "Kanalverteilung",
-      "channel_desc": "Sehen Sie, aus welchen Kanälen die Anfragen kommen.",
-      "requests_count": "{count} Anfragen",
-      "efficiency_summary": "Effizienzzusammenfassung (30 Tage)",
-      "efficiency_desc": "AI-Antwortqualität und Systemstabilität.",
-      "rag_accuracy": "RAG-Genauigkeit (Hohes Vertrauen)",
-      "deflection_rate": "Savuşturma-Rate (Deflection)",
-      "token_label": "Token"
-    }
+  "meta": {
+    "locale": "de-DE",
+    "system": "SYSTEM"
   },
   "notifications": {
     "new_ticket_title": "🎟️ Neues Ticket erstellt!",
     "new_ticket_desc": "{name} hat ein neues Support-Ticket eröffnet: \"{subject}\"",
     "view_action": "Ansehen"
+  },
+  "admin": {
+    "products": {
+      "title": "Produkte und Module",
+      "subtitle": "Verwalten Sie die Hauptprodukte und Unterkategorien für die Klassifizierung durch künstliche Intelligenz für Ihre Support-Abteilungen.",
+      "actions": {
+        "add_product": "Neues Produkt hinzufügen",
+        "add_category": "Kategorie hinzufügen"
+      },
+      "empty": {
+        "no_products": "Noch keine Produkte definiert",
+        "no_products_desc": "Mit der Schaltfläche 'Neues Produkt hinzufügen' können Sie die Hauptprodukte und Module definieren, für die Kunden Tickets eröffnen können.",
+        "no_categories": "Für dieses Produkt wurde noch keine Unterkategorie/Modul definiert. Fügen Sie eine Kategorie für die intelligente KI-Kennzeichnung hinzu."
+      },
+      "labels": {
+        "subcategories": "Unterkategoriler (KI-Labels)",
+        "no_keywords": "Keine Schlüsselwörter",
+        "product_name": "Produktname",
+        "description": "Beschreibung",
+        "category_name": "Kategoriename",
+        "keywords": "Schlüsselwörter (mit Kommas trennen)",
+        "keywords_help": "Die KI kann dabei helfen, einen Kontext zu erstellen, wenn sie versucht, das Benutzerticket aus dieser Liste von Labels zu klassifizieren."
+      },
+      "placeholders": {
+        "product_name": "z. B. Aluplan Pro",
+        "description": "Eine kurze Beschreibung des Produkts...",
+        "category_name": "z. B. Rechnungsmodul",
+        "keywords": "z. B. Rechnungserstellung, Stornierung, MwSt, E-Rechnung"
+      },
+      "dialogs": {
+        "edit_product": "Produkt bearbeiten",
+        "add_product": "Neues Produkt hinzufügen",
+        "edit_category": "Kategorie bearbeiten",
+        "add_category": "Neues Modul / Neue Kategorie",
+        "product_desc": "Definieren Sie Ihr Hauptprodukt oder Ihre Hauptdienstleistung. Kunden sehen diese Produkte zuerst, wenn sie ein Ticket erstellen.",
+        "category_desc": "Geben Sie die Unterkategorie und die mit dieser Kategorie verknüpften Schlüsselwörter ein, die die KI für die Unterkennzeichnung eingehender Tickets verwendet."
+      },
+      "toasts": {
+        "fetch_error": "Fehler beim Laden der Produkte",
+        "product_updated": "Produkt aktualisiert",
+        "product_added": "Neues Produkt hinzugefügt",
+        "category_updated": "Kategorie aktualisiert",
+        "category_added": "Neue Kategorie hinzugefügt",
+        "product_deleted": "Produkt gelöscht",
+        "category_deleted": "Kategorie gelöscht",
+        "save_failed": "Registrierung fehlgeschlagen",
+        "delete_failed": "Löschen fehlgeschlagen"
+      },
+      "confirms": {
+        "delete_product": "Sind Sie sicher, dass Sie dieses Produkt und alle darunter liegenden Kategorien löschen möchten?",
+        "delete_category": "Sind Sie sicher, dass Sie diese Kategorie löschen möchten?"
+      }
+    },
+    "faq": {
+      "title": "FAQ_VERWALTUNGSEINHEIT",
+      "subtitle": "Überprüfen und synchronisieren Sie automatisch extrahierte operative Wissensbeispiele.",
+      "refresh_cache": "CACHE_AKTUALISIEREN",
+      "start_extraction": "EXTRAKTION_STARTEN",
+      "filters": {
+        "all": "ALLE",
+        "pending_review": "AUSSTEHENDE_PRÜFUNG",
+        "published": "VERÖFFENTLICHT",
+        "draft": "ENTWURF"
+      },
+      "not_found": "Keine FAQ gefunden",
+      "not_found_desc": "Versuchen Sie, den Filter zu ändern, oder starten Sie den Extraktionsprozess, um neue FAQs zu erstellen.",
+      "frequency": "HÄUFIGKEIT",
+      "confidence_score": "KONFIDENZWERD",
+      "approve": "GENEHMIGEN",
+      "dismiss": "VERWERFEN",
+      "source_ticket": "Quell-Ticket",
+      "toasts": {
+        "extraction_started": "Pipeline gestartet",
+        "extraction_started_desc": "Der FAQ-Extraktionsprozess läuft im Hintergrund.",
+        "fetch_error": "Fehler beim Abrufen der FAQs",
+        "approved": "FAQ genehmigt",
+        "approved_desc": "Beispiel wurde veröffentlicht.",
+        "dismissed": "FAQ verworfen",
+        "dismissed_desc": "Beispiel in Entwurf verschoben/gelöscht.",
+        "op_failed": "Vorgang fehlgeschlagen",
+        "pipeline_failed": "Pipeline konnte nicht gestartet werden"
+      }
+    },
+    "faq_learning": {
+      "title": "FAQ Auto-Lernpool",
+      "subtitle": "NEURALE SYNCHRONISATION: TRANSFORMATION OPERATIVER DATEN IN STRUKTURIERTES WISSEN",
+      "trigger_loop": "LERNZYKLUS AUSLÖSEN",
+      "health_analysis": "WISSENSDATENBANK_GESUNDHEITSANALYSE",
+      "realtime_telemetry_label": "ECHTZEIT-TELEMETRIE",
+      "resolution_rate": "LÖSUNGSQUOTE",
+      "prevented_tickets": "VERHINDERTE_TICKETS",
+      "writing_accuracy": "SCHREIBGENAUIGKEIT",
+      "highest_confidence": "HÖCHSTES_VERTRAUEN",
+      "total_interactions": "GESAMTINTERAKTIONEN",
+      "last_30_days": "ANFRAGEN_DER_LETZTEN_30_TAGE",
+      "confidence_distribution": "VERTRAUENSVERTEILUNG",
+      "bands": {
+        "high": "HOCH",
+        "medium": "MITTEL",
+        "low": "NIEDRIG",
+        "no_match": "KEINE_ÜBEREINSTIMMUNG"
+      },
+      "flow_status": "FLOW-STATUS",
+      "ingestion_engine": "DATENERFASSUNGS-ENGINE",
+      "ingestion_engine_desc": "Status: AKTIV | Überwachung geschlossener Ticket-Ereignisse",
+      "abstraction_layer": "ABSTRAKTIONSSCHICHT",
+      "abstraction_layer_desc": "Aktuell: BEREIT | Nomic-Embed-Strategie",
+      "validation_queue": "VALIDIERUNGSWARTESCHLANGE",
+      "validation_queue_desc": "{count} KANDIDATEN WARTEN AUF VALIDIERUNG",
+      "last_sync": "LETZTE_SYNCHRONISIERUNG",
+      "candidates_title": "LERNKANDIDATEN",
+      "waiting_validation": "WARTET_AUF_VALIDIERUNG",
+      "all_synced": "ALLE_MUSTER_SYNCHRONISIERT",
+      "all_synced_desc": "Führen Sie den Extraktionszyklus manuell aus, um neue Wissensbeispiele zu finden.",
+      "add_to_kb": "IN KB AUFNEHMEN",
+      "refresh": "AKTUALISIEREN",
+      "toasts": {
+        "pipeline_started": "KI-Pipeline gestartet",
+        "pipeline_desc": "Tiefenanalyse der gelösten Tickets läuft.",
+        "knowledge_committed": "Wissen bestätigt",
+        "knowledge_committed_desc": "Das Modell wurde erfolgreich in den allgemeinen Wissenspool integriert.",
+        "sync_error": "Datensynchronisierungsfehler",
+        "pipeline_exception": "Pipeline-Ausnahme",
+        "commit_error": "Übertragungsfehler"
+      }
+    },
+    "live_support_request": {
+      "title": "Support-Anfragen",
+      "description": "Systemweite offene und aktive Support-Anfragen verwalten."
+    },
+    "ai_health": {
+      "title": "KI-GESUNDHEIT & TELEMETRIE",
+      "subtitle": "Echtzeitüberwachung von KI-Modellen, Token-Verbrauch und RAG-Leistung.",
+      "dashboard": {
+        "panel_title": "KI-Zustand & Performance-Panel",
+        "send_report": "Wöchentlichen Bericht jetzt senden",
+        "report_queued": "Bericht in Warteschlange. Bitte prüfen Sie Ihr Postfach.",
+        "report_failed": "Bericht konnte nicht erstellt werden.",
+        "total_requests": "Gesamtanzahl Anfragen",
+        "total_tokens": "Gesamt-Token",
+        "approx_cost": "Ungefähre Kosten",
+        "active_models": "Aktive Modelle",
+        "unknown": "Unbekannt",
+        "performance_trends": "Performance-Trends (Letzte 7 Tage)",
+        "performance_desc": "Änderung der AI-Genauigkeit und Savuşturma-Raten im Laufe der Zeit.",
+        "kb_gaps": "Wissensdatenbank-Lücken",
+        "kb_gaps_desc": "Beliebteste unbeantwortete User-Fragen.",
+        "times_unanswered": "{count} Mal unbeantwortet geblieben",
+        "no_gaps": "Keine nennenswerten Wissenslücken festgestellt.",
+        "channel_distribution": "Kanalverteilung",
+        "channel_desc": "Sehen Sie, aus welchen Kanälen die Anfragen kommen.",
+        "requests_count": "{count} Anfragen",
+        "efficiency_summary": "Effizienzzusammenfassung (30 Tage)",
+        "efficiency_desc": "AI-Antwortqualität und Systemstabilität.",
+        "rag_accuracy": "RAG-Genauigkeit (Hohes Vertrauen)",
+        "deflection_rate": "Savuşturma-Rate (Deflection)",
+        "token_label": "Token"
+      }
+    },
+    "email_validation": {
+      "title": "E-Mail-Validierung",
+      "subtitle": "Überprüfen Sie E-Mail-Gültigkeit, DNS-Einträge und SMTP-Status.",
+      "data_labels": {
+        "valid": "Gültig",
+        "invalid": "Ungültig",
+        "found": "Gefunden",
+        "missing": "Fehlt",
+        "ok": "OK",
+        "error": "Fehler",
+        "enabled": "Aktiviert",
+        "catch_all": "Sammeladresse",
+        "clean": "Sauber"
+      },
+      "tabs": {
+        "single": "Schnellcheck",
+        "bulk": "Kundenliste"
+      },
+      "single": {
+        "placeholder": "Zu verifizierende E-Mail-Adresse (z.B. user@example.com)",
+        "button": "Analysieren",
+        "verifying": "Verifizierung..."
+      },
+      "bulk": {
+        "verify_selected": "Ausgewählte Verifizieren ({count})",
+        "verify_all": "Alle Verifizieren"
+      },
+      "typo": {
+        "suggestion": "Meinten Sie?",
+        "use_suggested": "Vorschlag verwenden"
+      },
+      "search": {
+        "customer_search": "Kunde oder Unternehmen Suchen...",
+        "filtered_records": "{count} Gefilterte Datensätze"
+      },
+      "score_card": {
+        "score": "Score",
+        "reliable": "Zuverlässig",
+        "risky": "Riskant",
+        "invalid": "Ungültig",
+        "disposable_hint": "Temporärer E-Mail-Dienst erkannt.",
+        "role_based_hint": "Unternehmensrollenadresse (Support, Info usw.).",
+        "catch_all_hint": "Akzeptiert alle E-Mails (Sammeladresse) Server.",
+        "valid_hint": "E-Mail-Adresse scheint für die Verwendung geeignet zu sein."
+      },
+      "data_points": {
+        "syntax": "Syntax",
+        "syntax_desc": "E-Mail-Format auf Übereinstimmung mit RFC-Standards geprüft.",
+        "dns": "DNS / MX",
+        "dns_desc": "E-Mail-Servereinträge ({exchange}) der Domain verifiziert.",
+        "smtp": "SMTP",
+        "smtp_desc": "Server auf Socket-Ebene erreicht und Handshake versucht.",
+        "greylisted": "Server hat vorübergehend abgelehnt (Greylisted), später erneut versuchen.",
+        "ai": "Intelligenz (KI)",
+        "ai_desc": "Intelligenzschicht-Analyse durchgeführt.",
+        "risk": "Risikoanalyse",
+        "risk_clean": "Keine bekannten Risikofaktoren gefunden.",
+        "catch_all_desc": "Domain akzeptiert alle Adressen, Liefergarantie spiegelt dies wider."
+      },
+      "empty": {
+        "waiting": "Warten auf E-Mail-Analyse",
+        "waiting_desc": "Bitte geben Sie die Adresse ein, die Sie überprüfen möchten.",
+        "no_results": "Keine Ergebnisse Gefunden",
+        "no_results_desc": "Es wurden keine Kunden gefunden, die Ihren Suchkriterien entsprechen.",
+        "no_data": "Keine Daten Verfügbar",
+        "no_data_desc": "Diese E-Mail wurde noch nicht verifiziert. Bitte starten Sie den Verifizierungsprozess.",
+        "verify_now": "Jetzt Verifizieren"
+      },
+      "filters": {
+        "all": "Alle"
+      },
+      "table": {
+        "customer_company": "Kunde / Unternehmen",
+        "email": "E-Mail",
+        "syntax": "Syntax",
+        "dns_mx": "DNS / MX",
+        "smtp": "SMTP",
+        "group_score": "Gruppe / Score",
+        "loading": "Kunden werden geladen..."
+      },
+      "detail": {
+        "title": "Detailanalyse",
+        "trust_score": "Vertrauenswert",
+        "status": "Status",
+        "intelligence": "Intelligenzschicht",
+        "server_records": "Servereinträge",
+        "mx_data": "MX RECORD DATA",
+        "no_mx": "Keine MX-Einträge Gefunden.",
+        "smtp_log": "SMTP HANDSHAKE LOG",
+        "yes_risky": "JA / RISIKOREICH",
+        "no_clean": "NEIN / SAUBER",
+        "smtp_success": "Verbindung zum Server {server} erfolgreich hergestellt. EHLO akzeptiert.",
+        "smtp_fail": "Verbindung fehlgeschlagen oder Zeitüberschreitung beim Handshake."
+      },
+      "toasts": {
+        "verified_count": "{count} E-Mails verifiziert.",
+        "reverified": "{email} erneut verifiziert.",
+        "verify_error": "Verifizierungsfehler",
+        "bulk_verify_error": "Massenverifizierungsfehler"
+      }
+    },
+    "teams": {
+      "fetch_error": "Fehler beim Laden der Daten.",
+      "search_placeholder": "Teams oder Abteilungen suchen...",
+      "no_description": "Keine Beschreibung für diese Abteilung hinzugefügt.",
+      "min_suffix": "Min.",
+      "profile_pic_alt": "Profilbild",
+      "statuses": {
+        "online": "Online",
+        "away": "Abwesend",
+        "dnd": "Nicht stören",
+        "offline": "Offline"
+      },
+      "loading": {
+        "agent": "Profildaten werden analysiert...",
+        "dept": "Abteilungsdaten werden geladen...",
+        "team": "Teamdaten werden synchronisiert..."
+      },
+      "nav": {
+        "back_teams": "Zurück zu Teams",
+        "back": "Zurück"
+      },
+      "actions": {
+        "edit_profile": "Profil bearbeiten",
+        "edit_dept": "Abteilung bearbeiten",
+        "add_skill": "Neue Fähigkeit hinzufügen",
+        "add_sla": "Neue SLA-Richtlinie",
+        "add_member": "Neues Mitglied hinzufügen",
+        "configure": "Konfigurieren",
+        "add_agent": "Neuen Agenten hinzufügen",
+        "add_team": "Neues Team",
+        "manage_team": "Team verwalten",
+        "details": "Details",
+        "view_profile": "Profil",
+        "view_team": "TEAM ANSEHEN",
+        "edit": "BEARBEITEN"
+      },
+      "tabs": {
+        "performance": "Leistung",
+        "skills": "Fähigkeiten",
+        "schedule": "Arbeitsplan",
+        "overview": "Übersicht",
+        "sla_policies": "SLA-Richtlinien",
+        "departments": "Abteilungen",
+        "teams": "Teams",
+        "agents": "Agenten"
+      },
+      "stats": {
+        "tickets": "Ticket-Statistiken",
+        "last_30_days": "LETZTE 30 TAGE",
+        "active_load": "Aktive Arbeitsbelastung",
+        "csat": "CSAT-Score",
+        "avg_response": "Durchschnittliche Antwortzeit",
+        "monthly_quota": "Monatliches Ticketkontingent",
+        "first_response_target": "SLA-Ziel für erste Antwort",
+        "active_teams": "Aktive Teams",
+        "total_agents": "Agenten gesamt",
+        "avg_response_dept": "Durchschnittliche Antwortzeit",
+        "sla_compliance": "SLA-Einhaltung",
+        "active_ticket_load": "Aktive Ticketbelastung",
+        "quick_stats": "Schnelle Statistiken",
+        "online_rate": "Online-Rate",
+        "pending_queue": "Ausstehende Warteschlange",
+        "resolved_today": "Heute gelöst",
+        "alerts": "Warnungen",
+        "overload": "Überlastung",
+        "sla_stable": "SLA Stabil"
+      },
+      "labels": {
+        "badges": "Erfolgsabzeichen",
+        "sla_master": "SLA-Meister",
+        "top_rated": "Bestbewertet",
+        "quick_resolve": "Schnelle Lösung",
+        "targets": "Ziele",
+        "technical_skills": "Technische Fähigkeiten",
+        "skills_desc": "Fachgebiete und Vertrauensniveau des Agenten.",
+        "no_skills": "Noch keine Fähigkeiten zugewiesen.",
+        "leave": "URLAUB",
+        "recent_activity": "Letzte Aktivitäten",
+        "critical_sla": "Kritische SLA-Ziele",
+        "first_response": "ERSTE ANTWORT",
+        "resolution": "LÖSUNG",
+        "first_response_time": "Erste Antwort",
+        "resolution_time": "Lösungszeit",
+        "sla_config": "SLA-Konfiguration",
+        "sla_config_desc": "Service-Level-Ziele der Abteilung.",
+        "automation_status": "AUTOMATISIERUNGSSTATUS",
+        "active": "AKTIV",
+        "passive": "PASSIV",
+        "round_robin": "Round Robin",
+        "rr_desc": "Sequenzielle Zuweisungsstrategie wird angewendet.",
+        "team_members": "Teammitglieder",
+        "command_center": "Team-Kommandozentrale",
+        "organization": "Eine Organisation: Aluplan Support",
+        "auto_assignment": "AUTO-ZUWEISUNG",
+        "strategy": "Strategie:",
+        "agent": "Agent / Vertreter",
+        "status": "Status",
+        "role": "Rolle",
+        "actions": "Aktionen",
+        "senior_agent": "Senior Support Spezialist",
+        "default_bio": "Kundenorientierter Experte mit über 5 Jahren Erfahrung in technischen Supportprozessen.",
+        "preparing_charts": "Leistungsdiagramme werden vorbereitet.",
+        "member": "Mitglied",
+        "joined_at": "Beigetreten: {date}",
+        "level_prefix": "LEVEL",
+        "default_dept_desc": "Diese Abteilung ist einer der zentralen Supportbereiche des Unternehmens.",
+        "priority_suffix": "PRIORITÄT",
+        "minutes_suffix": "Min",
+        "agent_count": "{count} Agenten",
+        "auto_assign_on": "Auto-Zuweisung Ein",
+        "auto_assign_off": "Manuelle Zuweisung"
+      },
+      "creation": {
+        "title": "Neues Team Erstellen",
+        "description": "Definieren Sie ein neues Team, um operative Prozesse zu verwalten.",
+        "team_name": "Teamname",
+        "team_name_placeholder": "Bsp: Technischer Support - Ebene 2",
+        "department": "Abteilung",
+        "select_department": "Wählen Sie eine Abteilung",
+        "desc_label": "Beschreibung",
+        "desc_placeholder": "Stellenbeschreibung des Teams...",
+        "auto_assign": "Automatische Zuweisung",
+        "auto_assign_desc": "Neue Tickets werden diesem Team automatisch zugewiesen.",
+        "assign_strategy": "Zuweisungsstrategie",
+        "round_robin": "Round Robin (Sequentiell)",
+        "least_loaded": "Am wenigsten belastet (Lastbasiert)",
+        "skill_based": "Fähigkeitsbasiert",
+        "submit": "Team Starten",
+        "submitting": "Wird erstellt...",
+        "success": "Neues Team erfolgreich erstellt.",
+        "error_dept": "Bitte wählen Sie eine Abteilung aus.",
+        "error_server": "Fehler beim Erstellen des Teams."
+      },
+      "member_add": {
+        "title": "Neuen Agenten Zuweisen",
+        "description": "Weisen Sie dem Team einen registrierten Benutzer als Agenten zu.",
+        "select_agent": "Benutzer (Agent)",
+        "select_agent_placeholder": "Wählen Sie einen Benutzer",
+        "loading_users": "Benutzer werden geladen...",
+        "no_users": "Keine neuen Benutzer zur Zuweisung verfügbar.",
+        "role": "Role im Team",
+        "select_role": "Rolle wählen",
+        "role_desc": "Diese Rolle bestimmt nur ihre Berechtigungen innerhalb dieses Teams.",
+        "cancel": "Abbrechen",
+        "submit": "Dem Team Zuweisen",
+        "submitting": "Hinzufügen...",
+        "success": "Neues Mitglied erfolgreich zum Team hinzugefügt.",
+        "error_select": "Bitte wählen Sie einen Agenten aus.",
+        "error_server": "Fehler beim Hinzufügen des Mitglieds."
+      },
+      "errors": {
+        "fetch_profile": "Agentenprofil konnte nicht geladen werden.",
+        "fetch_dept": "Abteilungsinformationen konnten nicht geladen werden."
+      },
+      "days": {
+        "mon": "Montag",
+        "tue": "Dienstag",
+        "wed": "Mittwoch",
+        "thu": "Donnerstag",
+        "fri": "Freitag",
+        "sat": "Samstag",
+        "sun": "Sonntag"
+      }
+    },
+    "users": {
+      "title": "[TR] Ekip Yönetimi",
+      "desc": "[TR] Destek temsilcilerini, yöneticileri ve adminleri yönetin.",
+      "add_user": "[TR] Kullanıcı Ekle",
+      "edit_user": "[TR] Kullanıcı Düzenle",
+      "delete_confirm": "[TR] {name} kullanıcısını silmek istediğinize emin misiniz?",
+      "empty": "[TR] Kullanıcı bulunamadı",
+      "deleted_success": "[TR] Kullanıcı başarıyla silindi",
+      "fetch_error": "[TR] Kullanıcılar yüklenirken hata oluştu",
+      "dialog": {
+        "title_create": "[TR] Yeni Kullanıcı Ekle",
+        "title_edit": "[TR] Kullanıcı Düzenle",
+        "full_name": "[TR] Ad Soyad",
+        "name_placeholder": "[TR] John Doe",
+        "email": "[TR] E-posta",
+        "email_placeholder": "[TR] john@example.com",
+        "password": "[TR] Şifre",
+        "password_placeholder": "[TR] ******",
+        "new_password_optional": "[TR] Yeni Şifre (İsteğe Bağlı)",
+        "role": "[TR] Rol",
+        "select_role_placeholder": "[TR] Bir rol seçin",
+        "roles": {
+          "admin": "[TR] Yönetici",
+          "support_manager": "[TR] Destek Müdürü",
+          "support_agent": "[TR] Destek Uzmanı",
+          "viewer": "[TR] Gözlemci"
+        },
+        "btn_create": "[TR] Oluştur",
+        "btn_update": "[TR] Güncelle"
+      },
+      "validation": {
+        "name_min": "[TR] Ad en az 2 karakter olmalıdır",
+        "email_invalid": "[TR] Geçersiz e-posta adresi",
+        "password_min": "[TR] Şifre en az 6 karakter olmalıdır",
+        "password_required": "[TR] Yeni kullanıcı için şifre gereklidir"
+      },
+      "toasts": {
+        "created": "[TR] Kullanıcı başarıyla oluşturuldu",
+        "updated": "[TR] Kullanıcı başarıyla güncellendi"
+      },
+      "table": {
+        "user": "[TR] Kullanıcı",
+        "role": "[TR] Rol",
+        "email": "[TR] E-posta",
+        "actions": "[TR] İşlemler"
+      }
+    },
+    "knowledge_pool": {
+      "title": "WISSENSPOOL_KONTROLLE",
+      "subtitle": "Verwaltung und Indizierung technischer Ressourcen für KI.",
+      "placeholder": "Technische Dokumentation",
+      "tabs": {
+        "raw_sources": "ROHQUELLEN",
+        "seeded_content": "GESÄTE_INHALTE"
+      },
+      "buttons": {
+        "add_url": "URL_HINZUFÜGEN",
+        "upload_file": "DATEI_HOCHLADEN",
+        "scan_dataset": "DATENSATZ_SCANNEN",
+        "bulk_sync": "BULK-SYNC ({count})",
+        "cancel": "ABBRECHEN",
+        "refresh": "AKTUALISIEREN",
+        "publish_selected": "AUSGEWÄHLTE_VERÖFFENTLICHEN",
+        "examine": "UNTERSUCHEN",
+        "load_more": "MEHR_LADEN",
+        "loading": "LADEN..."
+      },
+      "table": {
+        "source": "QUELLE",
+        "type": "TYP",
+        "status": "STATUS",
+        "vector": "VEKTOR",
+        "last_sync": "LETZTER_SYNC",
+        "action": "AKTION",
+        "no_records": "Keine Ressourcen gefunden",
+        "select_all": "ALLE_AUSWÄHLEN",
+        "showing": "ANZEIGEN"
+      },
+      "filters": {
+        "all": "ALLE",
+        "active": "AKTIV",
+        "syncing": "SYNCHRONISIERT",
+        "failed": "FEHLGESCHLAGEN",
+        "all_types": "ALLE_TYPEN",
+        "url": "URL",
+        "file": "DATEI"
+      },
+      "logs": {
+        "title": "SYNC_LOGS",
+        "no_source": "Wählen Sie eine Quelle aus",
+        "no_logs": "Keine Protokolle gefunden.",
+        "success": "ERFOLG",
+        "error": "FEHLER",
+        "processing": "VERARBEITUNG",
+        "chunks_processed": "{count} Chunks verarbeitet."
+      },
+      "articles": {
+        "title": "ARTIKELPOOL",
+        "total": "{count} GESAMT",
+        "search_placeholder": "DATEI SUCHEN...",
+        "all": "ALLE",
+        "review": "IN_PRÜFUNG",
+        "published": "VERÖFFENTLICHT",
+        "draft": "ENTWURF",
+        "select_page": "SELECT {count} {PAGE}",
+        "no_records": "KEINE_DATENSÄTZE_GEFUNDEN",
+        "author": "AUTOR",
+        "under_review": "IN_ÜBERPRÜFUNG"
+      },
+      "meta": {
+        "locale": "de-DE",
+        "system": "SYSTEM"
+      },
+      "status_labels": {
+        "draft": "ENTWURF",
+        "published": "AKTIV",
+        "review": "IN_ÜBERPRÜFUNG",
+        "under_review": "IN_ÜBERPRÜFUNG"
+      },
+      "dialogs": {
+        "new_url": "Neue URL-Quelle",
+        "name_label": "Quellenname",
+        "url_label": "URL-Adresse",
+        "save_sync": "Speichern und Synchronisieren"
+      },
+      "toasts": {
+        "fetch_error": "Ressourcen konnten nicht geladen werden",
+        "sync_started": "Synchronisierung gestartet",
+        "sync_desc": "Hintergrundaufgabe in Warteschlange",
+        "bulk_sync_started": "Massen-Synchronisierung gestartet",
+        "partial_success": "Teilerfolg",
+        "bulk_sync_desc": "{count} Ressourcen in Warteschlange",
+        "bulk_sync_error": "{count} fehlgeschlagen",
+        "dataset_scan_started": "Synchronisierung gestartet",
+        "dataset_scan_desc": "Datensatzordner wird gescannt...",
+        "dataset_sync_success": "Smart Sync erfolgreich",
+        "url_added": "URL-Quelle hinzugefügt",
+        "logs_error": "Protokolle konnten nicht geladen werden",
+        "publish_success": "{count} Artikel veröffentlicht"
+      }
+    }
   }
 }

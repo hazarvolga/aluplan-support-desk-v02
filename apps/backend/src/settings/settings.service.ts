@@ -32,20 +32,30 @@ export class SettingsService {
             finalValue = this.crypto.encrypt(dto.value);
         }
 
-        const setting = await this.prisma.setting.upsert({
-            where: { key: dto.key },
-            update: {
-                value: finalValue,
-                isSecret: dto.isSecret ?? false,
-                updatedBy: userId,
-            },
-            create: {
-                key: dto.key,
-                value: finalValue,
-                isSecret: dto.isSecret ?? false,
-                updatedBy: userId,
-            },
+        const existing = await this.prisma.setting.findUnique({
+            where: { key: dto.key }
         });
+
+        let setting;
+        if (existing) {
+            setting = await this.prisma.setting.update({
+                where: { id: existing.id },
+                data: {
+                    value: finalValue,
+                    isSecret: dto.isSecret ?? false,
+                    updatedBy: userId,
+                }
+            });
+        } else {
+            setting = await this.prisma.setting.create({
+                data: {
+                    key: dto.key,
+                    value: finalValue,
+                    isSecret: dto.isSecret ?? false,
+                    updatedBy: userId,
+                }
+            });
+        }
 
         // Update cache
         this.cache.set(dto.key, dto.value); // Store plaintext in cache for internal use
@@ -58,7 +68,7 @@ export class SettingsService {
         // 1. If key is a provider switch, check if its models are configured
         if (key === 'ai.chat_provider' || key === 'ai.embed_provider' || key.startsWith('ai.specialized.')) {
             const providerToValidate = value;
-            
+
             if (providerToValidate === 'ollama') {
                 const url = await this.getValue('ai.ollama.url');
                 const chatModel = await this.getValue('ai.ollama.chat_model');
@@ -96,10 +106,10 @@ export class SettingsService {
             if (!value || value.trim() === '') {
                 const parts = key.split('.');
                 const providerName = parts[1]; // e.g. 'openai' from 'ai.openai.chat_model'
-                
+
                 const currentChat = await this.getValue('ai.chat_provider');
                 const currentEmbed = await this.getValue('ai.embed_provider');
-                
+
                 // Also check specialized mappings
                 const specializedKeys = [
                     'ai.specialized.categorization_provider',
@@ -108,7 +118,7 @@ export class SettingsService {
                     'ai.specialized.analyze_sentiment_provider',
                     'ai.specialized.translate_provider'
                 ];
-                
+
                 let isUsedInSpecialized = false;
                 for (const sKey of specializedKeys) {
                     if (await this.getValue(sKey) === providerName) {

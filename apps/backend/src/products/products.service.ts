@@ -50,32 +50,45 @@ export class ProductsService {
 
     async restoreAllplanFaqs() {
         // Enforce Allplan product and category setup
-        const product = await this.prisma.product.upsert({
-            where: { id: '00000000-0000-0000-0000-000000000001' as any }, // Mock or specific ID if needed, using name search for safety
-            update: {},
-            create: {
-                name: 'Allplan',
-                description: 'Allplan BIM software support',
-            },
-        });
+        let product = await this.prisma.product.findFirst({ where: { name: 'Allplan' } });
+        if (product) {
+            product = await this.prisma.product.update({
+                where: { id: product.id },
+                data: {}
+            });
+        } else {
+            product = await this.prisma.product.create({
+                data: {
+                    name: 'Allplan',
+                    description: 'Allplan BIM software support',
+                }
+            });
+        }
 
         // Use name search for stability
-        const actualProduct = await this.prisma.product.findFirst({ where: { name: 'Allplan' } });
+        const actualProduct = product;
         if (!actualProduct) throw new NotFoundException('Failed to ensure Allplan product');
 
-        const category = await this.prisma.productCategory.upsert({
-            where: { id: '00000000-0000-0000-0000-000000000002' as any },
-            update: {},
-            create: {
-                productId: actualProduct.id,
-                name: 'Genel',
-                keywords: ['allplan', 'genel'],
-            },
+        let category = await this.prisma.productCategory.findFirst({
+            where: { name: 'Genel', productId: actualProduct.id }
         });
 
-        const actualCategory = await this.prisma.productCategory.findFirst({
-            where: { name: 'Genel', productId: actualProduct.id },
-        });
+        if (category) {
+            category = await this.prisma.productCategory.update({
+                where: { id: category.id },
+                data: {}
+            });
+        } else {
+            category = await this.prisma.productCategory.create({
+                data: {
+                    productId: actualProduct.id,
+                    name: 'Genel',
+                    keywords: ['allplan', 'genel'],
+                }
+            });
+        }
+
+        const actualCategory = category;
 
         // FAQ restoration
         const faqs = [
@@ -92,16 +105,22 @@ export class ProductsService {
         ];
 
         for (const faq of faqs) {
-            await this.prisma.faqEntry.upsert({
-                where: { id: 'unique-id-per-faq' as any }, // In a real scenario, use unique keys
-                update: faq,
-                create: {
-                    ...faq,
-                    status: 'PUBLISHED' as any,
-                    confidenceScore: 0.99,
-                    isInternal: false,
-                },
-            });
+            const existing = await this.prisma.faqEntry.findFirst({ where: { question: faq.question } });
+            if (existing) {
+                await this.prisma.faqEntry.update({
+                    where: { id: existing.id },
+                    data: faq
+                });
+            } else {
+                await this.prisma.faqEntry.create({
+                    data: {
+                        ...faq,
+                        status: 'PUBLISHED' as any,
+                        confidenceScore: 0.99,
+                        isInternal: false,
+                    }
+                });
+            }
         }
 
         return { message: 'Restoration completed successfully', product: actualProduct, category: actualCategory };

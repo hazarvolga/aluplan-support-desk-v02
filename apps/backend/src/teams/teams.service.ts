@@ -176,16 +176,19 @@ export class TeamsService {
 
     // MEMBERS & AGENTS
     async addMember(teamId: string, data: { userId: string; roleOverride?: SystemRole }) {
-        return this.prisma.teamMember.upsert({
-            where: {
-                userId_teamId: { userId: data.userId, teamId }
-            },
-            create: {
+        const existing = await this.prisma.teamMember.findUnique({
+            where: { userId_teamId: { userId: data.userId, teamId } }
+        });
+        if (existing) {
+            return this.prisma.teamMember.update({
+                where: { id: existing.id },
+                data: { roleOverride: data.roleOverride }
+            });
+        }
+        return this.prisma.teamMember.create({
+            data: {
                 teamId,
                 userId: data.userId,
-                roleOverride: data.roleOverride
-            },
-            update: {
                 roleOverride: data.roleOverride
             }
         });
@@ -248,10 +251,17 @@ export class TeamsService {
     }
 
     async addAgentSkill(userId: string, skillId: string, proficiency: number) {
-        return this.prisma.agentSkill.upsert({
-            where: { userId_skillId: { userId, skillId } },
-            create: { userId, skillId, proficiency },
-            update: { proficiency }
+        const existing = await this.prisma.agentSkill.findUnique({
+            where: { userId_skillId: { userId, skillId } }
+        });
+        if (existing) {
+            return this.prisma.agentSkill.update({
+                where: { id: existing.id },
+                data: { proficiency }
+            });
+        }
+        return this.prisma.agentSkill.create({
+            data: { userId, skillId, proficiency }
         });
     }
 }

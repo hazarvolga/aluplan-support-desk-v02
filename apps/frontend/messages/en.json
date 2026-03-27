@@ -169,6 +169,7 @@
     "logout": "Logout",
     "loading": "Loading...",
     "error": "An error occurred",
+    "session_expired": "Session expired. Please log in again.",
     "save": "Save",
     "saving": "Saving...",
     "reset": "Reset",
@@ -227,8 +228,7 @@
       "installed_modules": "Installed Modules",
       "count_suffix": "items",
       "not_found": "System data not found."
-    },
-    "session_expired": "Session expired. Please log in again."
+    }
   },
   "dashboard": {
     "title": "Control Center",
@@ -526,12 +526,6 @@
       "button": "Start Now"
     }
   },
-  "article": {
-    "no_records": "NO ARTICLES FOUND",
-    "author": "AUTHOR",
-    "update": "UPDATE",
-    "views": "{count} VIEWS"
-  },
   "ai": {
     "title": "AI Support Navigator",
     "subtitle": "Semantic Intelligence queries in the unified knowledge pool",
@@ -580,11 +574,7 @@
       "sort_za": "Sort Z to A",
       "group": "GROUP",
       "group_by": "Group by this field",
-      "ungroup": "Remove Grouping",
-      "sort": "Sort",
-      "filter": "Filter",
-      "clear": "Clear",
-      "search": "Search"
+      "ungroup": "Remove Grouping"
     },
     "tabs": {
       "customers": "Customers",
@@ -687,7 +677,6 @@
             "email": "Email",
             "phoneNumber": "Phone Number",
             "jobTitle": "Job Title / Position",
-            "companyName": "Company Name",
             "industry": "Industry",
             "customerNo": "Customer Number",
             "fullName": "Full Name",
@@ -796,53 +785,6 @@
       "delete_desc": "{count} data objects will be permanently deleted. This action cannot be undone.",
       "delete_confirm": "START DELETE PROTOCOL",
       "cancel": "CANCEL"
-    }
-  },
-  "users": {
-    "title": "Team Management",
-    "desc": "Manage support agents, managers, and admins.",
-    "add_user": "Add User",
-    "edit_user": "Edit User",
-    "delete_confirm": "Are you sure you want to delete user {name}?",
-    "empty": "No users found",
-    "deleted_success": "User successfully deleted",
-    "fetch_error": "Error fetching users",
-    "dialog": {
-      "title_create": "Add New User",
-      "title_edit": "Edit User",
-      "full_name": "Full Name",
-      "name_placeholder": "John Doe",
-      "email": "Email",
-      "email_placeholder": "john@example.com",
-      "password": "Password",
-      "password_placeholder": "******",
-      "new_password_optional": "New Password (Optional)",
-      "role": "Role",
-      "select_role_placeholder": "Select a role",
-      "roles": {
-        "admin": "Admin",
-        "support_manager": "Support Manager",
-        "support_agent": "Support Agent",
-        "viewer": "Viewer"
-      },
-      "btn_create": "Create",
-      "btn_update": "Update"
-    },
-    "validation": {
-      "name_min": "Name must be at least 2 characters",
-      "email_invalid": "Invalid email address",
-      "password_min": "Password must be at least 6 characters",
-      "password_required": "Password required for new user"
-    },
-    "toasts": {
-      "created": "User created successfully",
-      "updated": "User updated successfully"
-    },
-    "table": {
-      "user": "User",
-      "role": "Role",
-      "email": "Email",
-      "actions": "Actions"
     }
   },
   "settings": {
@@ -987,7 +929,6 @@
       "not_authorized": "Not Authorized",
       "smtp_host": "Host",
       "smtp_port": "Port",
-      "from_address_label": "From Email Address",
       "smtp_user": "Username",
       "smtp_pass": "Password",
       "resend_api_key": "API Key",
@@ -1403,607 +1344,247 @@
       }
     }
   },
-  "email_validation": {
-    "title": "Email Validation",
-    "subtitle": "Check email validity, DNS records, and SMTP status.",
-    "data_labels": {
-      "valid": "Valid",
-      "invalid": "Invalid",
-      "found": "Found",
-      "missing": "Missing",
-      "ok": "OK",
-      "error": "Error",
-      "enabled": "Enabled",
-      "catch_all": "Catch-All",
-      "clean": "Clean"
+  "announcements": {
+    "title": "[TR] Duyuru Yönetimi",
+    "subtitle": "[TR] Kurumsal iletişim ve hedefli duyuru operasyonları",
+    "enterprise_control": "[TR] Enterprise Control",
+    "preview_prepared": "[TR] Hazırlanan İçerik Önizlemesi",
+    "close": "[TR] Kapat",
+    "industries": "[TR] Sektörler",
+    "customer_status": "[TR] Müşteri Durumu",
+    "company_name": "[TR] Şirket Adı",
+    "special_tags": "[TR] Özel Etiketler",
+    "categories": {
+      "all": "[TR] HEPSİ",
+      "general": "[TR] Genel",
+      "product": "[TR] Ürün",
+      "security": "[TR] Güvenlik",
+      "compliance": "[TR] Uyum (Compliance)",
+      "operations": "[TR] Operasyonlar",
+      "ai_tech": "[TR] Yapay Zeka ve Teknoloji",
+      "infrastructure": "[TR] Altyapı",
+      "change_management": "[TR] Değişim Yönetimi",
+      "education": "[TR] Eğitim",
+      "performance_reports": "[TR] Performans Raporları",
+      "strategic_updates": "[TR] Stratejik Güncellemeler",
+      "community": "[TR] Topluluk"
     },
     "tabs": {
-      "single": "Quick Check",
-      "bulk": "Customer List"
+      "create": "[TR] Duyuru Oluştur",
+      "templates": "[TR] Şablon Kütüphanesi",
+      "history": "[TR] Gönderim Geçmişi"
     },
-    "single": {
-      "placeholder": "Email address to verify (e.g., user@example.com)",
-      "button": "Analyze",
-      "verifying": "Verifying..."
+    "editor": {
+      "title": "[TR] İçerik Editörü",
+      "desc": "[TR] Müşterilere gidecek olan mailin içeriğini hazırlayın.",
+      "template_select": "[TR] Şablon Seç",
+      "title_label": "[TR] Duyuru Kaydı Adı",
+      "title_placeholder": "[TR] Örn: 2024 Yaz Hotfix Duyurusu",
+      "subject_label": "[TR] E-Posta Konu Başlığı",
+      "subject_placeholder": "[TR] Müşteriye görünecek konu başlığı",
+      "content_label": "[TR] Zengin Metin İçeriği",
+      "default_content": "[TR] <p>Merhaba {{customer.name}}!</p><p>Duyuru içeriği buraya gelecek...</p>",
+      "preview": "[TR] Önizleme",
+      "save_draft": "[TR] Taslağı Protokolle"
     },
-    "bulk": {
-      "verify_selected": "Verify Selected ({count})",
-      "verify_all": "Verify All"
+    "audience": {
+      "title": "[TR] Hedef Kitle",
+      "desc": "[TR] Duyurunun kimlere ulaşacağını belirleyin.",
+      "industries": "[TR] Sektörler",
+      "industry_placeholder": "[TR] Sektör Seç",
+      "statuses": "[TR] Müşteri Durumu",
+      "status_placeholder": "[TR] Durum Seç",
+      "companies": "[TR] Şirket Adı",
+      "company_placeholder": "[TR] Şirket Seç",
+      "tags": "[TR] Özel Etiketler",
+      "tags_placeholder": "[TR] Etiket ekleyin (Enter)",
+      "target_audience": "[TR] Hedeflenen Kitle",
+      "persons": "[TR] Kişi",
+      "select_filter": "[TR] Lütfen en az bir filtre seçin",
+      "realtime_telemetry": "[TR] Real-time telemetri verisi"
     },
-    "typo": {
-      "suggestion": "Did you mean?",
-      "use_suggested": "Use suggested"
+    "template_editor": {
+      "title": "[TR] Şablon Düzenleyici",
+      "modify_desc": "[TR] {name} kaydı modifiye ediliyor.",
+      "new_desc": "[TR] Sistem için yeni bir iletişim şablonu protokolleyin.",
+      "new_record": "[TR] Yeni Kayıt",
+      "name_label": "[TR] Şablon İsmi",
+      "name_placeholder": "[TR] Örn: Hoşgeldin Maili",
+      "topic_label": "[TR] Kategori (Topic)",
+      "topic_placeholder": "[TR] Örn: Onboarding",
+      "subject_label": "[TR] Varsayılan Konu Başlığı",
+      "subject_placeholder": "[TR] Müşteriye görünecek konu",
+      "content_label": "[TR] Zengin Metin İçeriği (Şablon)",
+      "render_test": "[TR] Render Testi",
+      "update": "[TR] Güncelle",
+      "archive": "[TR] Kütüphaneye Arşivle"
     },
-    "search": {
-      "customer_search": "Search Customer or Company...",
-      "filtered_records": "{count} Filtered Records"
+    "library": {
+      "title": "[TR] Kütüphane",
+      "search_placeholder": "[TR] İsim veya konu ara...",
+      "category_filter": "[TR] Kategori Filtresi",
+      "all": "[TR] Tümü",
+      "no_records": "[TR] Kayıt Bulunamadı",
+      "apply": "[TR] Uygula",
+      "preview": "[TR] Önizle",
+      "delete": "[TR] Sil",
+      "validated": "[TR] Onaylandı"
     },
-    "score_card": {
-      "score": "Score",
-      "reliable": "Reliable",
-      "risky": "Risky",
-      "invalid": "Invalid",
-      "disposable_hint": "Disposable email service detected.",
-      "role_based_hint": "Corporate role address (support, info, etc.).",
-      "catch_all_hint": "Accepts all emails (Catch-All) server.",
-      "valid_hint": "Suitable for email usage."
-    },
-    "data_points": {
-      "syntax": "Syntax",
-      "syntax_desc": "Email format checked for RFC compliance.",
-      "dns": "DNS / MX",
-      "dns_desc": "Domain email server records ({exchange}) verified.",
-      "smtp": "SMTP",
-      "smtp_desc": "Connected to server at socket level and handshake attempted.",
-      "greylisted": "Server temporarily rejected (Greylisted), should retry later.",
-      "ai": "Intelligence (AI)",
-      "ai_desc": "Intelligence layer analysis performed.",
-      "risk": "Risk Analysis",
-      "risk_clean": "No known risk factors found.",
-      "catch_all_desc": "Domain accepts all addresses, delivery guarantee reflects this."
-    },
-    "empty": {
-      "waiting": "Waiting for Email Analysis",
-      "waiting_desc": "Please enter the address you want to check in the field above.",
-      "no_results": "No Results Found",
-      "no_results_desc": "No customers matching your search criteria were found.",
-      "no_data": "No Data Available",
-      "no_data_desc": "This email has not been verified yet. Please start the verification process.",
-      "verify_now": "Verify Now"
-    },
-    "filters": {
-      "all": "All"
-    },
-    "table": {
-      "customer_company": "Customer / Company",
-      "email": "Email",
-      "syntax": "Syntax",
-      "dns_mx": "DNS / MX",
-      "smtp": "SMTP",
-      "group_score": "Group / Score",
-      "loading": "Loading Customers..."
-    },
-    "detail": {
-      "title": "Detailed Analysis",
-      "trust_score": "Trust Score",
-      "status": "Status",
-      "intelligence": "Intelligence Layer",
-      "server_records": "Server Records",
-      "mx_data": "MX RECORD DATA",
-      "no_mx": "MX Records Not Found.",
-      "smtp_log": "SMTP HANDSHAKE LOG",
-      "yes_risky": "YES / RISKY",
-      "no_clean": "NO / CLEAN",
-      "smtp_success": "Connection established successfully to {server}. EHLO accepted.",
-      "smtp_fail": "Connection failed or timeout during handshake."
+    "history": {
+      "title": "[TR] Gönderim Arşivi",
+      "desc": "[TR] Sistem üzerinden protokollenen ve yayınlanan tüm duyuru kayıtları.",
+      "empty": "[TR] Arşiv Boş",
+      "sent": "[TR] GÖNDERİLDİ",
+      "draft": "[TR] TASLAK",
+      "terminal_delivered": "[TR] {count} Terminale İletildi",
+      "broadcast": "[TR] Yayınla"
     },
     "toasts": {
-      "verified_count": "{count} emails verified.",
-      "reverified": "{email} re-verified.",
-      "verify_error": "Verification error",
-      "bulk_verify_error": "Bulk verification error"
+      "template_empty": "[TR] Bu şablonun içeriği boş.",
+      "template_compile_error": "[TR] Şablon derlenemedi. MJML sözdizimini kontrol edin.",
+      "preview_error": "[TR] Önizleme hatası:",
+      "unknown_error": "[TR] Bilinmeyen hata",
+      "required_fields": "[TR] Şablon adı ve içeriği gereklidir",
+      "template_updated": "[TR] Şablon güncellendi",
+      "template_added": "[TR] Şablon kütüphaneye eklendi",
+      "template_applied": "[TR] {name} şablonu uygulandı",
+      "title_subject_required": "[TR] Başlık ve Konu gerekli",
+      "draft_saved": "[TR] Duyuru taslağı kaydedildi",
+      "save_failed": "[TR] Kaydetme hatası: {message}",
+      "broadcast_success": "[TR] Duyuru başarıyla yayınlandı",
+      "broadcast_error": "[TR] Yayınlama hatası",
+      "confirm_broadcast": "[TR] Bu duyuruyu yayınlamak istediğinize emin misiniz?",
+      "delete_success": "[TR] Kayıt silindi",
+      "delete_failed": "[TR] Silme hatası",
+      "confirm_delete_announcement": "[TR] Bu duyuruyu silmek istediğinize emin misiniz?",
+      "confirm_delete_template": "[TR] Bu şablonu silmek istediğinize emin misiniz?",
+      "error": "[TR] Hata"
+    }
+  },
+  "emails": {
+    "title": "[TR] E-Posta Yönetimi",
+    "subtitle": "[TR] MJML şablonlarını düzenleyin, yeni şablonlar oluşturun ve gönderim geçmişini takip edin.",
+    "tabs": {
+      "templates": "[TR] Şablon Editör",
+      "logs": "[TR] Gönderim Geçmişi"
+    }
+  },
+  "kb_approvals": {
+    "title": "[TR] AI Onay Havuzu",
+    "subtitle": "[TR] Kapanan biletlerden ve 5 yıldızlı çözümlerden türetilen taslak makaleleri yönetin.",
+    "refresh_queue": "[TR] KUYRUĞU YENİLE",
+    "run_pipeline": "[TR] PIPELINE ÇALIŞTIR",
+    "queue_title": "[TR] ONAY BEKLEYEN BİRİMLER",
+    "units_loaded": "[TR] {count} BİRİM YÜKLENDİ",
+    "empty": {
+      "title": "[TR] Harika İş!",
+      "desc": "[TR] Tüm onay bekleyen içerikler incelendi ve işleme alındı."
+    },
+    "table": {
+      "query": "[TR] SORGU / PROBLEM",
+      "answer": "[TR] AI ÖNERİLEN ÇÖZÜM",
+      "confidence": "[TR] GÜVEN",
+      "source": "[TR] KAYNAK",
+      "actions": "[TR] İŞLEMLER",
+      "reliable": "[TR] %{percent} GÜVENLİ"
+    },
+    "buttons": {
+      "approve": "[TR] ONAYLA",
+      "delete": "[TR] SİL"
+    },
+    "toasts": {
+      "fetch_error": "[TR] Taslaklar yüklenemedi.",
+      "approve_success": "[TR] İçerik bilgi bankasına eklendi.",
+      "approve_error": "[TR] Onaylanırken hata oluştu.",
+      "dismiss_success": "[TR] İçerik reddedildi.",
+      "dismiss_error": "[TR] Reddedilirken hata oluştu.",
+      "pipeline_started": "[TR] Pipeline tetiklendi.",
+      "pipeline_error": "[TR] Pipeline hatası: {error}"
+    }
+  },
+  "knowledge_base": {
+    "title": "[TR] Bilgi Bankası",
+    "subtitle": "[TR] Kurumsal hafıza, çözüm makaleleri ve dokümantasyon merkezi",
+    "buttons": {
+      "analytics": "[TR] ANALİTİK",
+      "new_article": "[TR] YENİ MAKALE",
+      "refresh": "[TR] YENİLE",
+      "publish": "[TR] YAYINLA",
+      "reject": "[TR] REDDET",
+      "detail": "[TR] DETAY"
+    },
+    "search": {
+      "placeholder": "[TR] ARA..."
+    },
+    "filters": {
+      "all": "[TR] HEPSİ",
+      "draft": "[TR] TASLAK",
+      "review": "[TR] İNCELEMEDE",
+      "active": "[TR] AKTİF",
+      "archived": "[TR] ARŞİVLENDİ"
+    },
+    "stats": {
+      "total_articles": "[TR] Toplam {count} makale",
+      "total": "[TR] Toplam Makale",
+      "published": "[TR] Yayınlananlar",
+      "views": "[TR] Görüntülenme"
+    },
+    "meta": {
+      "author": "[TR] YETKİLİ",
+      "update": "[TR] GÜNCELLEME",
+      "views": "[TR] İZLENME"
+    },
+    "empty": {
+      "no_records": "[TR] Henüz makale bulunamadı",
+      "loading": "[TR] Veri Katmanları Yükleniyor"
+    }
+  },
+  "system_topology": {
+    "title": "[TR] Sistem Kaynak Topolojisi",
+    "subtitle": "[TR] SYSTEM_SOURCE_TOPOLOGY: VERI AKIŞI VE İŞLEME MİMARİSİ",
+    "refresh": "[TR] YENİLE",
+    "sync_error": "[TR] Veri senkronizasyon hatası",
+    "total_entropy": "[TR] TOPLAM ENTROPİ",
+    "units": "[TR] BİRİM",
+    "status_running": "[TR] ÇALIŞIYOR",
+    "pillars": {
+      "documents": "[TR] PDF/DOCX/XLS/TXT/MD",
+      "articles": "[TR] ADMİN MAKALE",
+      "urls": "[TR] URL / WEB",
+      "tickets": "[TR] BİLET ÖĞRENİMİ"
+    },
+    "layers": {
+      "doc_parser": "[TR] DOKÜMAN AYRIŞTIRICI",
+      "rich_editor": "[TR] ZENGİN EDİTÖR",
+      "crawl_engine": "[TR] TARAMA MOTORU",
+      "cluster_engine": "[TR] KÜMELEME MOTORU"
+    },
+    "strategies": {
+      "parent_child": "[TR] EBEVEYN-ÇOCUK",
+      "direct_embed": "[TR] DOĞRUDAN GÖMME",
+      "content_clean": "[TR] İÇERİK TEMİZLEME",
+      "faq_generator": "[TR] S.S.S. ÜRETİCİ"
+    },
+    "vector": {
+      "unified_index": "[TR] BİRLEŞİK VEKTÖR DİZİNİ",
+      "re_ranking": "[TR] YENİDEN SIRALAMA AKTİF",
+      "trust_priority": "[TR] GÜVEN PUANI ÖNCELİĞİ"
+    },
+    "engine": {
+      "query_preproc": "[TR] SORGU ÖN İŞLEME",
+      "hybrid_retrieval": "[TR] HİBRİT ERİŞİM MOTORU"
     }
   },
   "meta": {
     "locale": "en-US",
     "system": "SYSTEM"
   },
-  "table": {
-    "select_all": "Select all",
-    "showing": "Showing"
-  },
-  "teams": {
-    "fetch_error": "An error occurred while loading data.",
-    "search_placeholder": "Search teams or departments...",
-    "no_description": "No description added for this department.",
-    "min_suffix": "min",
-    "profile_pic_alt": "profile picture",
-    "statuses": {
-      "online": "Online",
-      "away": "Away",
-      "dnd": "Do Not Disturb",
-      "offline": "Offline"
-    },
-    "loading": {
-      "agent": "Analyzing profile data...",
-      "dept": "Loading department data...",
-      "team": "Synchronizing team data..."
-    },
-    "nav": {
-      "back_teams": "Back to Teams",
-      "back": "Go Back"
-    },
-    "actions": {
-      "edit_profile": "Edit Profile",
-      "edit_dept": "Edit Department",
-      "add_skill": "Add New Skill",
-      "add_sla": "Add New SLA Policy",
-      "add_member": "Add New Member",
-      "configure": "Configure",
-      "add_agent": "Add New Agent",
-      "add_team": "New Team",
-      "manage_team": "Manage Team",
-      "details": "Details",
-      "view_profile": "Profile",
-      "view_team": "VIEW TEAM",
-      "edit": "EDIT"
-    },
-    "tabs": {
-      "performance": "Performance",
-      "skills": "Skills",
-      "schedule": "Work Schedule",
-      "overview": "Overview",
-      "sla_policies": "SLA Policies",
-      "departments": "Departments",
-      "teams": "Teams",
-      "agents": "Agents"
-    },
-    "stats": {
-      "tickets": "Ticket Statistics",
-      "last_30_days": "LAST 30 DAYS",
-      "active_load": "Active Workload",
-      "csat": "CSAT Score",
-      "avg_response": "Avg. Response",
-      "monthly_quota": "Monthly Ticket Quota",
-      "first_response_target": "First Response SLA Target",
-      "active_teams": "Active Teams",
-      "total_agents": "Total Agents",
-      "avg_response_dept": "Avg. Response Time",
-      "sla_compliance": "SLA Compliance",
-      "active_ticket_load": "Active Ticket Load",
-      "quick_stats": "Quick Statistics",
-      "online_rate": "Online Rate",
-      "pending_queue": "Pending Queue",
-      "resolved_today": "Resolved Today",
-      "alerts": "Alerts",
-      "overload": "Overload",
-      "sla_stable": "SLA Stable"
-    },
-    "labels": {
-      "badges": "Achievement Badges",
-      "sla_master": "SLA Master",
-      "top_rated": "Top Rated",
-      "quick_resolve": "Quick Resolve",
-      "targets": "Targets",
-      "technical_skills": "Technical Skills",
-      "skills_desc": "Agent's areas of expertise and confidence levels.",
-      "no_skills": "No skills assigned yet.",
-      "leave": "LEAVE",
-      "recent_activity": "Recent Activity",
-      "critical_sla": "Critical SLA Targets",
-      "first_response": "FIRST RESPONSE",
-      "resolution": "RESOLUTION",
-      "first_response_time": "First Response",
-      "resolution_time": "Resolution Time",
-      "sla_config": "SLA Configuration",
-      "sla_config_desc": "Service level targets across the department.",
-      "automation_status": "AUTOMATION STATUS",
-      "active": "ACTIVE",
-      "passive": "PASSIVE",
-      "round_robin": "Round Robin",
-      "rr_desc": "Sequential assignment strategy is applied.",
-      "team_members": "Team Members",
-      "command_center": "Team Command Center",
-      "organization": "Single Organization: Aluplan Support System",
-      "auto_assignment": "AUTO-ASSIGNMENT",
-      "strategy": "Strategy:",
-      "agent": "Agent / Rep",
-      "status": "Status",
-      "role": "Role",
-      "actions": "Actions",
-      "senior_agent": "Senior Support Agent",
-      "default_bio": "Expert agent with 5+ years experience in technical support and customer satisfaction.",
-      "preparing_charts": "Performance charts are being prepared.",
-      "member": "Member",
-      "joined_at": "Joined: {date}",
-      "level_prefix": "LEVEL",
-      "default_dept_desc": "This department is one of the core support arms of the organization.",
-      "priority_suffix": "PRIORITY",
-      "minutes_suffix": "min",
-      "agent_count": "{count} Agents",
-      "auto_assign_on": "Auto-Assign On",
-      "auto_assign_off": "Manual Assignment"
-    },
-    "creation": {
-      "title": "Create New Team",
-      "description": "Define a new team to manage operational processes.",
-      "team_name": "Team Name",
-      "team_name_placeholder": "Ex: Technical Support - Level 2",
-      "department": "Department",
-      "select_department": "Select a department",
-      "desc_label": "Description",
-      "desc_placeholder": "Team's job description...",
-      "auto_assign": "Auto Assignment",
-      "auto_assign_desc": "New tickets are automatically assigned to this team.",
-      "assign_strategy": "Assignment Strategy",
-      "round_robin": "Round Robin (Sequential)",
-      "least_loaded": "Least Loaded (Load Based)",
-      "skill_based": "Skill Based (Ability Based)",
-      "submit": "Launch Team",
-      "submitting": "Creating...",
-      "success": "New team created successfully.",
-      "error_dept": "Please select a department.",
-      "error_server": "An error occurred while creating the team."
-    },
-    "member_add": {
-      "title": "Assign New Agent",
-      "description": "Assign a registered user to the team as an agent.",
-      "select_agent": "User (Agent)",
-      "select_agent_placeholder": "Select a user",
-      "loading_users": "Loading users...",
-      "no_users": "No new users available to assign.",
-      "role": "In-Team Role",
-      "select_role": "Select role",
-      "role_desc": "This role only determines their permissions within this team.",
-      "cancel": "Cancel",
-      "submit": "Assign to Team",
-      "submitting": "Adding...",
-      "success": "New member successfully added to the team.",
-      "error_select": "Please select an agent.",
-      "error_server": "An error occurred while adding the member."
-    },
-    "errors": {
-      "fetch_profile": "Could not fetch agent profile.",
-      "fetch_dept": "Could not fetch department information."
-    },
-    "days": {
-      "mon": "Monday",
-      "tue": "Tuesday",
-      "wed": "Wednesday",
-      "thu": "Thursday",
-      "fri": "Friday",
-      "sat": "Saturday",
-      "sun": "Sunday"
-    }
+  "notifications": {
+    "new_ticket_title": "🎟️ New Ticket Created!",
+    "new_ticket_desc": "{name} opened a new support ticket: \"{subject}\"",
+    "view_action": "View"
   },
   "admin": {
-    "knowledge_pool": {
-      "title": "KNOWLEDGE_POOL_CONTROL",
-      "subtitle": "Management and indexing of technical resources for AI.",
-      "placeholder": "Technical Documentation",
-      "tabs": {
-        "raw_sources": "RAW_SOURCES",
-        "seeded_content": "SEEDED_CONTENT"
-      },
-      "buttons": {
-        "add_url": "ADD_URL",
-        "upload_file": "UPLOAD_FILE",
-        "scan_dataset": "SCAN_DATASET",
-        "bulk_sync": "BULK-SYNC ({count})",
-        "cancel": "CANCEL",
-        "refresh": "REFRESH",
-        "publish_selected": "PUBLISH SELECTED",
-        "examine": "EXAMINE",
-        "load_more": "LOAD MORE",
-        "loading": "LOADING..."
-      },
-      "table": {
-        "source": "SOURCE",
-        "type": "TYPE",
-        "status": "STATUS",
-        "vector": "VECTOR",
-        "last_sync": "LAST_SYNC",
-        "action": "ACTION",
-        "no_records": "No resources found",
-        "select_all": "SELECT_ALL",
-        "showing": "SHOWING"
-      },
-      "filters": {
-        "all": "ALL",
-        "active": "ACTIVE",
-        "syncing": "SYNCED",
-        "failed": "FAILED",
-        "all_types": "ALL_TYPES",
-        "url": "URL",
-        "file": "FILE"
-      },
-      "logs": {
-        "title": "SYNC_LOGS",
-        "no_source": "Select a source",
-        "no_logs": "No logs found.",
-        "success": "SUCCESS",
-        "error": "ERROR",
-        "processing": "PROCESSING",
-        "chunks_processed": "{count} chunks processed."
-      },
-      "articles": {
-        "title": "ARTICLE_POOL",
-        "total": "{count} TOTAL",
-        "search_placeholder": "SEARCH FILE...",
-        "all": "ALL",
-        "review": "IN_REVIEW",
-        "published": "PUBLISHED",
-        "draft": "DRAFT",
-        "select_page": "SELECT {count} {PAGE}",
-        "no_records": "NO_RECORDS_FOUND",
-        "author": "AUTHOR",
-        "under_review": "UNDER_REVIEW"
-      },
-      "meta": {
-        "locale": "en-US",
-        "system": "SYSTEM"
-      },
-      "status_labels": {
-        "draft": "DRAFT",
-        "published": "PUBLISHED",
-        "review": "UNDER_REVIEW",
-        "under_review": "UNDER_REVIEW"
-      },
-      "dialogs": {
-        "new_url": "New URL Source",
-        "name_label": "Source Name",
-        "url_label": "URL Address",
-        "save_sync": "Save and Sync"
-      },
-      "toasts": {
-        "fetch_error": "Could not load resources",
-        "sync_started": "Sync Started",
-        "sync_desc": "Background task in queue",
-        "bulk_sync_started": "Bulk Sync Started",
-        "partial_success": "Partial Success",
-        "bulk_sync_desc": "{count} resources in queue",
-        "bulk_sync_error": "{count} failed",
-        "dataset_scan_started": "Sync Started",
-        "dataset_scan_desc": "Scanning dataset folder...",
-        "dataset_sync_success": "Smart Sync Successful",
-        "url_added": "URL source added",
-        "logs_error": "Could not load logs",
-        "publish_success": "{count} articles published"
-      }
-    },
-    "announcements": {
-      "title": "Announcement Management",
-      "subtitle": "Corporate communication and targeted announcement operations",
-      "enterprise_control": "Enterprise Control",
-      "preview_prepared": "Prepared Content Preview",
-      "close": "Close",
-      "industries": "Industries",
-      "customer_status": "Customer Status",
-      "company_name": "Company Name",
-      "special_tags": "Special Tags",
-      "categories": {
-        "all": "ALL",
-        "general": "General",
-        "product": "Product",
-        "security": "Security",
-        "compliance": "Compliance",
-        "operations": "Operations",
-        "ai_tech": "AI & Technology",
-        "infrastructure": "Infrastructure",
-        "change_management": "Change Management",
-        "education": "Education",
-        "performance_reports": "Performance Reports",
-        "strategic_updates": "Strategic Updates",
-        "community": "Community"
-      },
-      "tabs": {
-        "create": "Create Announcement",
-        "templates": "Template Library",
-        "history": "Broadcast History"
-      },
-      "editor": {
-        "title": "Content Editor",
-        "desc": "Prepare the content of the email that will be sent to customers.",
-        "template_select": "Select Template",
-        "title_label": "Announcement Record Name",
-        "title_placeholder": "e.g., Summer 2024 Hotfix Announcement",
-        "subject_label": "Email Subject Line",
-        "subject_placeholder": "Subject line visible to the customer",
-        "content_label": "Rich Text Content",
-        "default_content": "<p>Hello {{customer.name}}!</p><p>Announcement content goes here...</p>",
-        "preview": "Preview",
-        "save_draft": "Log Draft"
-      },
-      "audience": {
-        "title": "Target Audience",
-        "desc": "Define who will receive the announcement.",
-        "industries": "Industries",
-        "industry_placeholder": "Select Industry",
-        "statuses": "Customer Status",
-        "status_placeholder": "Select Status",
-        "companies": "Company Name",
-        "company_placeholder": "Select Company",
-        "tags": "Custom Tags",
-        "tags_placeholder": "Add tags (Enter)",
-        "target_audience": "Targeted Audience",
-        "persons": "Persons",
-        "select_filter": "Please select at least one filter",
-        "realtime_telemetry": "Real-time telemetry data"
-      },
-      "template_editor": {
-        "title": "Template Editor",
-        "modify_desc": "Modifying {name} record.",
-        "new_desc": "Log a new communication template for the system.",
-        "new_record": "New Record",
-        "name_label": "Template Name",
-        "name_placeholder": "e.g., Welcome Email",
-        "topic_label": "Topic",
-        "topic_placeholder": "e.g., Onboarding",
-        "subject_label": "Default Subject Line",
-        "subject_placeholder": "Subject visible to the customer",
-        "content_label": "Rich Text Content (Template)",
-        "render_test": "Render Test",
-        "update": "Update",
-        "archive": "Archive to Library"
-      },
-      "library": {
-        "title": "Library",
-        "search_placeholder": "Search name or topic...",
-        "category_filter": "Category Filter",
-        "all": "All",
-        "no_records": "No Records Found",
-        "apply": "Apply",
-        "preview": "Preview",
-        "delete": "Delete",
-        "validated": "Validated"
-      },
-      "history": {
-        "title": "Broadcast Archive",
-        "desc": "All announcement records logged and published through the system.",
-        "empty": "Archive Empty",
-        "sent": "SENT",
-        "draft": "DRAFT",
-        "terminal_delivered": "{count} Delivered to Terminal",
-        "broadcast": "Publish"
-      },
-      "toasts": {
-        "template_empty": "This template content is empty.",
-        "template_compile_error": "Template could not be compiled. Check MJML syntax.",
-        "preview_error": "Preview error:",
-        "unknown_error": "Unknown error",
-        "required_fields": "Template name and content are required",
-        "template_updated": "Template updated",
-        "template_added": "Template added to library",
-        "template_applied": "{name} template applied",
-        "title_subject_required": "Title and Subject required",
-        "draft_saved": "Announcement draft saved",
-        "save_failed": "Save failed: {message}",
-        "broadcast_success": "Announcement broadcasted successfully",
-        "broadcast_error": "Broadcast failed",
-        "confirm_broadcast": "Are you sure you want to broadcast this announcement?",
-        "delete_success": "Record deleted",
-        "delete_failed": "Delete failed",
-        "confirm_delete_announcement": "Are you sure you want to delete this announcement?",
-        "confirm_delete_template": "Are you sure you want to delete this template?",
-        "error": "Error"
-      }
-    },
-    "emails": {
-      "title": "Email Management",
-      "subtitle": "Edit MJML templates, create new templates, and track delivery history.",
-      "tabs": {
-        "templates": "Template Editor",
-        "logs": "Delivery History"
-      }
-    },
-    "kb_approvals": {
-      "title": "AI Approval Pool",
-      "subtitle": "Review and authorize knowledge units automatically synthesized from processed tickets.",
-      "refresh_queue": "REFRESH QUEUE",
-      "run_pipeline": "RUN PIPELINE",
-      "queue_title": "PENDING APPROVAL UNITS",
-      "units_loaded": "{count} UNITS LOADED",
-      "empty": {
-        "title": "Great Work!",
-        "desc": "All pending approval content has been reviewed and processed."
-      },
-      "table": {
-        "query": "QUERY / PROBLEM",
-        "answer": "AI SUGGESTED SOLUTION",
-        "confidence": "CONFIDENCE",
-        "source": "SOURCE",
-        "actions": "ACTIONS",
-        "reliable": "{percent}% RELIABLE",
-        "loading": "LOADING...",
-        "empty": "NO RECORDS FOUND"
-      },
-      "buttons": {
-        "approve": "APPROVE",
-        "delete": "DELETE"
-      },
-      "toasts": {
-        "fetch_error": "Could not load drafts.",
-        "approve_success": "Content added to knowledge base.",
-        "approve_error": "Error during approval.",
-        "dismiss_success": "Content dismissed.",
-        "dismiss_error": "Error during dismissal.",
-        "pipeline_started": "Pipeline triggered.",
-        "pipeline_error": "Pipeline error: {error}"
-      }
-    },
-    "knowledge_base": {
-      "title": "Knowledge Base",
-      "subtitle": "Corporate memory, solution articles and documentation center",
-      "buttons": {
-        "analytics": "ANALYTICS",
-        "new_article": "NEW ARTICLE",
-        "refresh": "REFRESH",
-        "publish": "PUBLISH",
-        "reject": "REJECT",
-        "detail": "DETAIL"
-      },
-      "search": {
-        "placeholder": "SEARCH..."
-      },
-      "filters": {
-        "all": "ALL",
-        "draft": "DRAFT",
-        "review": "IN REVIEW",
-        "active": "ACTIVE",
-        "archived": "ARCHIVED"
-      },
-      "stats": {
-        "total_articles": "Total {count} articles",
-        "total": "Total Articles",
-        "published": "Published",
-        "views": "Views"
-      },
-      "meta": {
-        "author": "AUTHOR",
-        "update": "UPDATE",
-        "views": "VIEWS"
-      },
-      "empty": {
-        "no_records": "No articles found yet",
-        "loading": "Loading Data Layers"
-      }
-    },
-    "system_topology": {
-      "title": "System Source Topology",
-      "subtitle": "SYSTEM_SOURCE_TOPOLOGY: DATA FLOW AND PROCESSING ARCHITECTURE",
-      "refresh": "REFRESH",
-      "sync_error": "Data sync error",
-      "total_entropy": "TOTAL ENTROPY",
-      "units": "UNITS",
-      "status_running": "RUNNING",
-      "pillars": {
-        "documents": "PDF/DOCX/XLS/TXT/MD",
-        "articles": "ADMIN ARTICLES",
-        "urls": "URL / WEB",
-        "tickets": "TICKET LEARNING"
-      },
-      "layers": {
-        "doc_parser": "DOC PARSER",
-        "rich_editor": "RICH EDITOR",
-        "crawl_engine": "CRAWL ENGINE",
-        "cluster_engine": "CLUSTER ENGINE"
-      },
-      "strategies": {
-        "parent_child": "PARENT-CHILD",
-        "direct_embed": "DIRECT EMBED",
-        "content_clean": "CONTENT CLEAN",
-        "faq_generator": "FAQ GENERATOR"
-      },
-      "vector": {
-        "unified_index": "UNIFIED VECTOR INDEX",
-        "re_ranking": "RE-RANKING ACTIVE",
-        "trust_priority": "TRUST SCORE PRIORITY"
-      },
-      "engine": {
-        "query_preproc": "QUERY PREPROC",
-        "hybrid_retrieval": "HYBRID RETRIEVAL ENGINE"
-      }
-    },
     "products": {
       "title": "Products and Modules",
       "subtitle": "Manage the main products and subcategories for classification by artificial intelligence for your support departments.",
@@ -2160,11 +1741,412 @@
         "deflection_rate": "Deflection Rate",
         "token_label": "Tokens"
       }
+    },
+    "email_validation": {
+      "title": "Email Validation",
+      "subtitle": "Check email validity, DNS records, and SMTP status.",
+      "data_labels": {
+        "valid": "Valid",
+        "invalid": "Invalid",
+        "found": "Found",
+        "missing": "Missing",
+        "ok": "OK",
+        "error": "Error",
+        "enabled": "Enabled",
+        "catch_all": "Catch-All",
+        "clean": "Clean"
+      },
+      "tabs": {
+        "single": "Quick Check",
+        "bulk": "Customer List"
+      },
+      "single": {
+        "placeholder": "Email address to verify (e.g., user@example.com)",
+        "button": "Analyze",
+        "verifying": "Verifying..."
+      },
+      "bulk": {
+        "verify_selected": "Verify Selected ({count})",
+        "verify_all": "Verify All"
+      },
+      "typo": {
+        "suggestion": "Did you mean?",
+        "use_suggested": "Use suggested"
+      },
+      "search": {
+        "customer_search": "Search Customer or Company...",
+        "filtered_records": "{count} Filtered Records"
+      },
+      "score_card": {
+        "score": "Score",
+        "reliable": "Reliable",
+        "risky": "Risky",
+        "invalid": "Invalid",
+        "disposable_hint": "Disposable email service detected.",
+        "role_based_hint": "Corporate role address (support, info, etc.).",
+        "catch_all_hint": "Accepts all emails (Catch-All) server.",
+        "valid_hint": "Suitable for email usage."
+      },
+      "data_points": {
+        "syntax": "Syntax",
+        "syntax_desc": "Email format checked for RFC compliance.",
+        "dns": "DNS / MX",
+        "dns_desc": "Domain email server records ({exchange}) verified.",
+        "smtp": "SMTP",
+        "smtp_desc": "Connected to server at socket level and handshake attempted.",
+        "greylisted": "Server temporarily rejected (Greylisted), should retry later.",
+        "ai": "Intelligence (AI)",
+        "ai_desc": "Intelligence layer analysis performed.",
+        "risk": "Risk Analysis",
+        "risk_clean": "No known risk factors found.",
+        "catch_all_desc": "Domain accepts all addresses, delivery guarantee reflects this."
+      },
+      "empty": {
+        "waiting": "Waiting for Email Analysis",
+        "waiting_desc": "Please enter the address you want to check in the field above.",
+        "no_results": "No Results Found",
+        "no_results_desc": "No customers matching your search criteria were found.",
+        "no_data": "No Data Available",
+        "no_data_desc": "This email has not been verified yet. Please start the verification process.",
+        "verify_now": "Verify Now"
+      },
+      "filters": {
+        "all": "All"
+      },
+      "table": {
+        "customer_company": "Customer / Company",
+        "email": "Email",
+        "syntax": "Syntax",
+        "dns_mx": "DNS / MX",
+        "smtp": "SMTP",
+        "group_score": "Group / Score",
+        "loading": "Loading Customers..."
+      },
+      "detail": {
+        "title": "Detailed Analysis",
+        "trust_score": "Trust Score",
+        "status": "Status",
+        "intelligence": "Intelligence Layer",
+        "server_records": "Server Records",
+        "mx_data": "MX RECORD DATA",
+        "no_mx": "MX Records Not Found.",
+        "smtp_log": "SMTP HANDSHAKE LOG",
+        "yes_risky": "YES / RISKY",
+        "no_clean": "NO / CLEAN",
+        "smtp_success": "Connection established successfully to {server}. EHLO accepted.",
+        "smtp_fail": "Connection failed or timeout during handshake."
+      },
+      "toasts": {
+        "verified_count": "{count} emails verified.",
+        "reverified": "{email} re-verified.",
+        "verify_error": "Verification error",
+        "bulk_verify_error": "Bulk verification error"
+      }
+    },
+    "teams": {
+      "fetch_error": "An error occurred while loading data.",
+      "search_placeholder": "Search teams or departments...",
+      "no_description": "No description added for this department.",
+      "min_suffix": "min",
+      "profile_pic_alt": "profile picture",
+      "statuses": {
+        "online": "Online",
+        "away": "Away",
+        "dnd": "Do Not Disturb",
+        "offline": "Offline"
+      },
+      "loading": {
+        "agent": "Analyzing profile data...",
+        "dept": "Loading department data...",
+        "team": "Synchronizing team data..."
+      },
+      "nav": {
+        "back_teams": "Back to Teams",
+        "back": "Go Back"
+      },
+      "actions": {
+        "edit_profile": "Edit Profile",
+        "edit_dept": "Edit Department",
+        "add_skill": "Add New Skill",
+        "add_sla": "Add New SLA Policy",
+        "add_member": "Add New Member",
+        "configure": "Configure",
+        "add_agent": "Add New Agent",
+        "add_team": "New Team",
+        "manage_team": "Manage Team",
+        "details": "Details",
+        "view_profile": "Profile",
+        "view_team": "VIEW TEAM",
+        "edit": "EDIT"
+      },
+      "tabs": {
+        "performance": "Performance",
+        "skills": "Skills",
+        "schedule": "Work Schedule",
+        "overview": "Overview",
+        "sla_policies": "SLA Policies",
+        "departments": "Departments",
+        "teams": "Teams",
+        "agents": "Agents"
+      },
+      "stats": {
+        "tickets": "Ticket Statistics",
+        "last_30_days": "LAST 30 DAYS",
+        "active_load": "Active Workload",
+        "csat": "CSAT Score",
+        "avg_response": "Avg. Response",
+        "monthly_quota": "Monthly Ticket Quota",
+        "first_response_target": "First Response SLA Target",
+        "active_teams": "Active Teams",
+        "total_agents": "Total Agents",
+        "avg_response_dept": "Avg. Response Time",
+        "sla_compliance": "SLA Compliance",
+        "active_ticket_load": "Active Ticket Load",
+        "quick_stats": "Quick Statistics",
+        "online_rate": "Online Rate",
+        "pending_queue": "Pending Queue",
+        "resolved_today": "Resolved Today",
+        "alerts": "Alerts",
+        "overload": "Overload",
+        "sla_stable": "SLA Stable"
+      },
+      "labels": {
+        "badges": "Achievement Badges",
+        "sla_master": "SLA Master",
+        "top_rated": "Top Rated",
+        "quick_resolve": "Quick Resolve",
+        "targets": "Targets",
+        "technical_skills": "Technical Skills",
+        "skills_desc": "Agent's areas of expertise and confidence levels.",
+        "no_skills": "No skills assigned yet.",
+        "leave": "LEAVE",
+        "recent_activity": "Recent Activity",
+        "critical_sla": "Critical SLA Targets",
+        "first_response": "FIRST RESPONSE",
+        "resolution": "RESOLUTION",
+        "first_response_time": "First Response",
+        "resolution_time": "Resolution Time",
+        "sla_config": "SLA Configuration",
+        "sla_config_desc": "Service level targets across the department.",
+        "automation_status": "AUTOMATION STATUS",
+        "active": "ACTIVE",
+        "passive": "PASSIVE",
+        "round_robin": "Round Robin",
+        "rr_desc": "Sequential assignment strategy is applied.",
+        "team_members": "Team Members",
+        "command_center": "Team Command Center",
+        "organization": "Single Organization: Aluplan Support System",
+        "auto_assignment": "AUTO-ASSIGNMENT",
+        "strategy": "Strategy:",
+        "agent": "Agent / Rep",
+        "status": "Status",
+        "role": "Role",
+        "actions": "Actions",
+        "senior_agent": "Senior Support Agent",
+        "default_bio": "Expert agent with 5+ years experience in technical support and customer satisfaction.",
+        "preparing_charts": "Performance charts are being prepared.",
+        "member": "Member",
+        "joined_at": "Joined: {date}",
+        "level_prefix": "LEVEL",
+        "default_dept_desc": "This department is one of the core support arms of the organization.",
+        "priority_suffix": "PRIORITY",
+        "minutes_suffix": "min",
+        "agent_count": "{count} Agents",
+        "auto_assign_on": "Auto-Assign On",
+        "auto_assign_off": "Manual Assignment"
+      },
+      "creation": {
+        "title": "Create New Team",
+        "description": "Define a new team to manage operational processes.",
+        "team_name": "Team Name",
+        "team_name_placeholder": "Ex: Technical Support - Level 2",
+        "department": "Department",
+        "select_department": "Select a department",
+        "desc_label": "Description",
+        "desc_placeholder": "Team's job description...",
+        "auto_assign": "Auto Assignment",
+        "auto_assign_desc": "New tickets are automatically assigned to this team.",
+        "assign_strategy": "Assignment Strategy",
+        "round_robin": "Round Robin (Sequential)",
+        "least_loaded": "Least Loaded (Load Based)",
+        "skill_based": "Skill Based (Ability Based)",
+        "submit": "Launch Team",
+        "submitting": "Creating...",
+        "success": "New team created successfully.",
+        "error_dept": "Please select a department.",
+        "error_server": "An error occurred while creating the team."
+      },
+      "member_add": {
+        "title": "Assign New Agent",
+        "description": "Assign a registered user to the team as an agent.",
+        "select_agent": "User (Agent)",
+        "select_agent_placeholder": "Select a user",
+        "loading_users": "Loading users...",
+        "no_users": "No new users available to assign.",
+        "role": "In-Team Role",
+        "select_role": "Select role",
+        "role_desc": "This role only determines their permissions within this team.",
+        "cancel": "Cancel",
+        "submit": "Assign to Team",
+        "submitting": "Adding...",
+        "success": "New member successfully added to the team.",
+        "error_select": "Please select an agent.",
+        "error_server": "An error occurred while adding the member."
+      },
+      "errors": {
+        "fetch_profile": "Could not fetch agent profile.",
+        "fetch_dept": "Could not fetch department information."
+      },
+      "days": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      }
+    },
+    "users": {
+      "title": "Team Management",
+      "desc": "Manage support agents, managers, and admins.",
+      "add_user": "Add User",
+      "edit_user": "Edit User",
+      "delete_confirm": "Are you sure you want to delete user {name}?",
+      "empty": "No users found",
+      "deleted_success": "User successfully deleted",
+      "fetch_error": "Error fetching users",
+      "dialog": {
+        "title_create": "Add New User",
+        "title_edit": "Edit User",
+        "full_name": "Full Name",
+        "name_placeholder": "John Doe",
+        "email": "Email",
+        "email_placeholder": "john@example.com",
+        "password": "Password",
+        "password_placeholder": "******",
+        "new_password_optional": "New Password (Optional)",
+        "role": "Role",
+        "select_role_placeholder": "Select a role",
+        "roles": {
+          "admin": "Admin",
+          "support_manager": "Support Manager",
+          "support_agent": "Support Agent",
+          "viewer": "Viewer"
+        },
+        "btn_create": "Create",
+        "btn_update": "Update"
+      },
+      "validation": {
+        "name_min": "Name must be at least 2 characters",
+        "email_invalid": "Invalid email address",
+        "password_min": "Password must be at least 6 characters",
+        "password_required": "Password required for new user"
+      },
+      "toasts": {
+        "created": "User created successfully",
+        "updated": "User updated successfully"
+      },
+      "table": {
+        "user": "User",
+        "role": "Role",
+        "email": "Email",
+        "actions": "Actions"
+      }
+    },
+    "knowledge_pool": {
+      "title": "KNOWLEDGE_POOL_CONTROL",
+      "subtitle": "Management and indexing of technical resources for AI.",
+      "placeholder": "Technical Documentation",
+      "tabs": {
+        "raw_sources": "RAW_SOURCES",
+        "seeded_content": "SEEDED_CONTENT"
+      },
+      "buttons": {
+        "add_url": "ADD_URL",
+        "upload_file": "UPLOAD_FILE",
+        "scan_dataset": "SCAN_DATASET",
+        "bulk_sync": "BULK-SYNC ({count})",
+        "cancel": "CANCEL",
+        "refresh": "REFRESH",
+        "publish_selected": "PUBLISH SELECTED",
+        "examine": "EXAMINE",
+        "load_more": "LOAD MORE",
+        "loading": "LOADING..."
+      },
+      "table": {
+        "source": "SOURCE",
+        "type": "TYPE",
+        "status": "STATUS",
+        "vector": "VECTOR",
+        "last_sync": "LAST_SYNC",
+        "action": "ACTION",
+        "no_records": "No resources found",
+        "select_all": "SELECT_ALL",
+        "showing": "SHOWING"
+      },
+      "filters": {
+        "all": "ALL",
+        "active": "ACTIVE",
+        "syncing": "SYNCED",
+        "failed": "FAILED",
+        "all_types": "ALL_TYPES",
+        "url": "URL",
+        "file": "FILE"
+      },
+      "logs": {
+        "title": "SYNC_LOGS",
+        "no_source": "Select a source",
+        "no_logs": "No logs found.",
+        "success": "SUCCESS",
+        "error": "ERROR",
+        "processing": "PROCESSING",
+        "chunks_processed": "{count} chunks processed."
+      },
+      "articles": {
+        "title": "ARTICLE_POOL",
+        "total": "{count} TOTAL",
+        "search_placeholder": "SEARCH FILE...",
+        "all": "ALL",
+        "review": "IN_REVIEW",
+        "published": "PUBLISHED",
+        "draft": "DRAFT",
+        "select_page": "SELECT {count} {PAGE}",
+        "no_records": "NO_RECORDS_FOUND",
+        "author": "AUTHOR",
+        "under_review": "UNDER_REVIEW"
+      },
+      "meta": {
+        "locale": "en-US",
+        "system": "SYSTEM"
+      },
+      "status_labels": {
+        "draft": "DRAFT",
+        "published": "PUBLISHED",
+        "review": "UNDER_REVIEW",
+        "under_review": "UNDER_REVIEW"
+      },
+      "dialogs": {
+        "new_url": "New URL Source",
+        "name_label": "Source Name",
+        "url_label": "URL Address",
+        "save_sync": "Save and Sync"
+      },
+      "toasts": {
+        "fetch_error": "Could not load resources",
+        "sync_started": "Sync Started",
+        "sync_desc": "Background task in queue",
+        "bulk_sync_started": "Bulk Sync Started",
+        "partial_success": "Partial Success",
+        "bulk_sync_desc": "{count} resources in queue",
+        "bulk_sync_error": "{count} failed",
+        "dataset_scan_started": "Sync Started",
+        "dataset_scan_desc": "Scanning dataset folder...",
+        "dataset_sync_success": "Smart Sync Successful",
+        "url_added": "URL source added",
+        "logs_error": "Could not load logs",
+        "publish_success": "{count} articles published"
+      }
     }
-  },
-  "notifications": {
-    "new_ticket_title": "🎟️ New Ticket Created!",
-    "new_ticket_desc": "{name} opened a new support ticket: \"{subject}\"",
-    "view_action": "View"
   }
 }

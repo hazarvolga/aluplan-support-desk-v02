@@ -7,18 +7,14 @@ const trRaw = JSON.parse(fs.readFileSync(path.join(basePath, 'tr.json'), 'utf-8'
 const enRaw = JSON.parse(fs.readFileSync(path.join(basePath, 'en.json'), 'utf-8'));
 const deRaw = JSON.parse(fs.readFileSync(path.join(basePath, 'de.json'), 'utf-8'));
 
-// Helper to get nested value
-function getValue(obj, keyPath) {
-    return keyPath.split('.').reduce((o, i) => (o ? o[i] : undefined), obj);
-}
-
-// Build a flat dictionary of EN and DE
+// Build a flat dictionary
 function flatten(obj, prefix = '', res = {}) {
     for (const key in obj) {
-        if (typeof obj[key] === 'object' && obj[key] !== null) {
-            flatten(obj[key], `${prefix}${key}.`, res);
+        const fullKey = prefix ? `${prefix}.${key}` : key;
+        if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+            flatten(obj[key], fullKey, res);
         } else {
-            res[`${prefix}${key}`] = obj[key];
+            res[fullKey] = obj[key];
         }
     }
     return res;
@@ -27,11 +23,23 @@ function flatten(obj, prefix = '', res = {}) {
 const enFlat = flatten(enRaw);
 const deFlat = flatten(deRaw);
 
-// Reconstruct perfectly matching TR structure
+let missingEnCount = 0;
+let missingDeCount = 0;
+
+// Reconstruct matching TR structure
 function syncNode(trNode, currentPath = '') {
     if (typeof trNode === 'string') {
-        const enVal = enFlat[currentPath] || enFlat['settings.' + currentPath] || `[TR] ${trNode}`;
-        const deVal = deFlat[currentPath] || deFlat['settings.' + currentPath] || `[TR] ${trNode}`;
+        let enVal = enFlat[currentPath];
+        let deVal = deFlat[currentPath];
+
+        if (!enVal) {
+            enVal = `[TR] ${trNode}`;
+            missingEnCount++;
+        }
+        if (!deVal) {
+            deVal = `[TR] ${trNode}`;
+            missingDeCount++;
+        }
         return { en: enVal, de: deVal };
     }
 
@@ -53,4 +61,7 @@ const synced = syncNode(trRaw);
 fs.writeFileSync(path.join(basePath, 'en.json'), JSON.stringify(synced.en, null, 2));
 fs.writeFileSync(path.join(basePath, 'de.json'), JSON.stringify(synced.de, null, 2));
 
-console.log('Successfully synchronized en.json and de.json with tr.json hierarchy.');
+console.log('✅ i18n Synchronization Complete:');
+console.log(`- English: ${missingEnCount} missing keys patched.`);
+console.log(`- German: ${missingDeCount} missing keys patched.`);
+console.log(`- Files written to ${basePath}`);
