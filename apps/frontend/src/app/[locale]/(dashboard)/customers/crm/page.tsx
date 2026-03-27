@@ -56,8 +56,10 @@ interface SyncLog {
     details: SyncDetails | null;
 }
 
-export default function CrmManagementPage({ params }: { params: { locale: string } }) {
-    const { locale } = params;
+import { use } from 'react';
+
+export default function CrmManagementPage({ params }: { params: Promise<{ locale: string }> }) {
+    const { locale } = use(params);
     const t = useTranslations('customers');
     const tc = useTranslations('common');
     const { toast } = useToast();

@@ -22,7 +22,7 @@
       "card2_title": "Studentenlizenzen",
       "card2_desc": "Holen Sie sich sofort Ihre kostenlose Studenten- und Dozentenlizenz über Allplan Campus.",
       "card2_cta": "Campus-Portal",
-      "card2_link": "[TR] https://campus.allplan.com/index.html",
+      "card2_link": "https://campus.allplan.com/index.html",
       "oska_link": "https://aluplan.com.tr/solutions/bimx5",
       "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi"
     },
@@ -43,16 +43,16 @@
       "plugins_desc": "Werkzeuge für lokale Vorschriften wie TAKS, KAKS, Parkplatzberechnungen und Flächenpläne."
     },
     "stats": {
-      "users": "[TR] 10.000+",
-      "users_label": "[TR] Aktif Kullanıcı",
-      "projects": "[TR] 5.000+",
-      "projects_label": "[TR] BIM Modeli",
-      "support": "[TR] 7/24",
-      "support_label": "[TR] Teknik Destek"
+      "users": "10.000+",
+      "users_label": "Aktif Kullanıcı",
+      "projects": "5.000+",
+      "projects_label": "BIM Modeli",
+      "support": "7/24",
+      "support_label": "Teknik Destek"
     },
     "social_proof": {
-      "title": "[TR] SEKTÖR_LİDERLERİNİN_TERCİHİ",
-      "subtitle": "[TR] Türkiye'nin önde gelen mimarlık ve mühendislik ofisleri Allplan ile geleceği tasarlıyor."
+      "title": "SEKTÖR_LİDERLERİNİN_TERCİHİ",
+      "subtitle": "Türkiye'nin önde gelen mimarlık ve mühendislik ofisleri Allplan ile geleceği tasarlıyor."
     }
   },
   "auth": {
@@ -1246,11 +1246,11 @@
       "profile_updated": "Profil erfolgreich aktualisiert.",
       "update_failed": "Aktualisierung fehlgeschlagen",
       "hxl_invalid": "Bitte laden Sie eine gültige .hxl-Datei hoch",
-      "hotinfo_updated": "[TR] Sistem bilgileriniz başarıyla güncellendi",
-      "hotinfo_failed": "[TR] Dosya yüklenirken hata oluştu",
-      "mfa_gen_failed": "[TR] MFA anahtarı oluşturulamadı",
-      "mfa_enabled": "[TR] İki faktörlü doğrulama aktif edildi.",
-      "mfa_verify_failed": "[TR] Doğrulama başarısız",
+      "hotinfo_updated": "Sistem bilgileriniz başarıyla güncellendi",
+      "hotinfo_failed": "Dosya yüklenirken hata oluştu",
+      "mfa_gen_failed": "MFA anahtarı oluşturulamadı",
+      "mfa_enabled": "İki faktörlü doğrulama aktif edildi.",
+      "mfa_verify_failed": "Doğrulama başarısız",
       "mfa_disabled": "Die Zwei-Faktor-Authentifizierung wurde deaktiviert.",
       "mfa_disable_failed": "Vorgang fehlgeschlagen"
     }
@@ -1291,215 +1291,57 @@
         "step3_desc": "Sie können Screenshots, PDFs oder Projektdateien (Max. 10 MB) direkt per Drag & Drop hochladen."
       }
     },
-    "admin": {
+    "admin_help": {
       "section1": {
-        "title": "Ticket-Warteschlange (Ticket-Management)",
-        "card1_title": "Operativer Pool",
-        "card1_desc": "Auf der Seite Ticket-Warteschlange werden Anfragen von allen Kunden gesammelt.",
-        "card1_item1_label": "Status ändern:",
-        "card1_item1_desc": "Sie können das Ticket aufrufen und den Status über das Dropdown-Menü im rechten Bereich ändern (Offen, Beantwortet, Geschlossen).",
-        "card1_item2_label": "Interne Notizen:",
-        "card1_item2_desc": "Verwenden Sie die Registerkarte <code>Interne Notiz (nur intern)</code>, um nur teaminterne Notizen zu machen, die der Kunde nicht sehen kann.",
-        "card1_item3_label": "Zuweisung:",
-        "card1_item3_desc": "Sie können das Ticket an einen bestimmten Experten übertragen, indem Sie die Schaltfläche \"Zuweisen\" verwenden.",
-        "card2_title": "KI-Co-Pilot (KI-gestützte Antwort)",
-        "card2_item1": "Klicken Sie oben rechts auf die Schaltfläche <b>\"KI-Antwortentwurf erstellen\"</b>, wenn Sie das Ticket aufrufen.",
-        "card2_item2": "Das System durchsucht die Nachricht des Kunden und den Wissenspool Ihres Unternehmens. Durch den Abgleich von Vektordaten bereitet es innerhalb von 5-10 Sekunden einen professionellen Entwurf vor, der sich auf die relevanten Dokumente bezieht. Sie können dem Kunden sofort antworten, indem Sie den Entwurf genehmigen und ihn nach Ihrem eigenen Stil bearbeiten."
+        "title": "Destek Talepleri (Ticket Management)",
+        "card1_title": "Operasyonel Havuz",
+        "card1_desc": "Destek Talepleri sayfasında tüm müşterilerden gelen talepler toplanır.",
+        "card1_item1_label": "Durum Değiştirme:",
+        "card1_item1_desc": "Bilet içerisine girip sağ paneldeki dropdown'dan durumu değiştirebilirsiniz (Açık, Cevaplandı, Kapalı).",
+        "card1_item2_label": "İç Notlar:",
+        "card1_item2_desc": "Müşterinin göremeyeceği sadece ekip içi notlar almak için <code>İç Not (Internal Only)</code> sekmesini kullanın.",
+        "card1_item3_label": "Atama:",
+        "card1_item3_desc": "\"Ata\" butonunu kullanarak bileti spesifik bir uzman temsilciye devredebilirsiniz.",
+        "card2_title": "AI Co-Pilot (Yapay Zeka Destekli Yanıt)",
+        "card2_item1": "Biletin içine girdiğinizde sağ üstte yer alan <b>\"AI Yanıt Taslağı Oluştur\"</b> butonuna basın.",
+        "card2_item2": "Sistem, müşterinin mesajını ve firmanızın Bilgi Havuzunu tarar. Vektörel veri eşleşmesi yaparak 5-10 saniye içerisinde ilgili dokümanlara atıfta bulunan profesyonel bir taslak hazırlar. Taslağı onaylayıp kendi tarzınıza göre düzenleyerek müşteriye anında yanıt dönebilirsiniz."
       },
       "section2": {
-        "title": "Wissenspool & Lernschleife",
-        "item1_title": "Wissenspool-Management",
-        "item1_desc": "Damit die KI antworten kann, müssen Sie der Infrastruktur ständig neue Daten zur Verfügung stellen. Hierfür gibt es 3 Möglichkeiten:",
-        "item1_way1_label": "PDF / Datei-Upload:",
-        "item1_way1_desc": "Fügen Sie technische Spezifikationen direkt als PDFs zur Datenbank hinzu. Das System unterteilt diese in <u>Embedding (Vektor)</u> Teile.",
+        "title": "Bilgi Havuzu & Öğrenme Döngüsü",
+        "item1_title": "Bilgi Havuzu (Knowledge Pool) Yönetimi",
+        "item1_desc": "Yapay zekanın cevap verebilmesi için altyapıya sürekli yeni veri sağlamanız gerekir. Bunun 3 yolu vardır:",
+        "item1_way1_label": "PDF / Dosya Yükleme:",
+        "item1_way1_desc": "Doğrudan teknik şartnameleri PDF olarak veritabanına ekleyin. Sistem bunları <u>Embedding (Vektör)</u> parçalarına ayırır.",
         "item1_way2_label": "Web Scraper:",
-        "item1_way2_desc": "Wenn Sie dem System die aktuellen \"How to\"-URLs auf Ihrer Website übermitteln, liest die KI Ihre Website und speichert sie in ihrem Gedächtnis.",
-        "item1_way3_label": "Rohtext:",
-        "item1_way3_desc": "Sie können eine \"Anweisung\" für die KI erstellen, indem Sie häufig gestellte Fragen manuell eingeben.",
-        "item2_title": "Lernschleife und KI-Genehmigungen",
-        "item2_desc": "Wenn Kunden für geschlossene Tickets mit <b>5 Sternen</b> stimmen, geht das System davon aus, dass die Lösung perfekt ist. Um jedoch zu verhindern, dass diese Lösung direkt in die Hauptdatenbank geschrieben wird, landet sie auf der Registerkarte <b>KI-Genehmigungen</b>. Als Administrator können Sie auf dieser Registerkarte wählen, ob die Lösung von der KI gelernt (Genehmigen) oder übersprungen (Ablehnen) werden soll."
+        "item1_way2_desc": "Sitenizdeki güncel \"Nasıl Yapılır\" URL adreslerini sisteme verdiğinizde yapay zeka web sitenizi okuyup hafızasına kaydeder.",
+        "item1_way3_label": "Özel Metin (Raw Text):",
+        "item1_way3_desc": "Sıkça sorulan soruları el ile girerek AI için \"Instruction\" yaratabilirsiniz.",
+        "item2_title": "Öğrenme Döngüsü ve AI Onayları",
+        "item2_desc": "Müşteriler kapalı biletleri <b>5 yıldız</b> ile oyladığında, sistem o çözümün mükemmel olduğunu düşünür. Ancak bu çözümün direkt ana veritabanına yazılmasını önlemek için <b>AI Onayları</b> sekmesine düşer. Yönetici olarak bu sekmede çözümün yapay zeka tarafından öğrenilmesini (Onay) veya atlanmasını (Red) seçebilirsiniz."
       },
       "section3": {
-        "title": "CRM & Produkt (Taxonomie) Konfiguration",
-        "card1_title": "Produkte und Modules",
-        "card1_desc1": "Hier verwalten Sie die Produktkarten, die der Kunde beim Eröffnen eines Tickets sieht. Der wichtigste Teil sind <b>Kategorien und Schlüsselwörter.</b>",
-        "card1_rule_label": "Taxonomie-Regel:",
-        "card1_rule_desc": "Schreiben Sie nicht nur Produktmerkmale (Wand, Balken), sondern auch Kundensymptome (Ruckeln, schwarzer Bildschirm, Schließen) in Kategorien (z. B. Modellabsturz). Die KI liest diese Schlüsselwörter und leitet das Ticket an das richtige Team (Triage) weiter.",
-        "card2_title": "Kunden- und Teamverwaltung",
-        "card2_desc": "Unter dem Menü <b>SYSTEM</b> im linken Bereich können Sie Kunden genehmigen und Support-Teams (Abteilungen) erstellen. Vergessen Sie nicht, die SLA-Regeln (Nach wie vielen Stunden soll geantwortet werden, soll es außerhalb der Arbeitszeit anhalten?) auf der Registerkarte Teamverwaltung festzulegen, damit Tickets automatisch zugewiesen werden können."
+        "title": "CRM & Ürün (Taksonomi) Yapılandırması",
+        "card1_title": "Ürünler ve Modüller",
+        "card1_desc1": "Müşteri bilet açtığında gördüğü Ürün kartlarını buradan yönetirsiniz. En önemli kısım <b>Kategoriler ve Anahtar Kelimelerdir.</b>",
+        "card1_rule_label": "Taksonomi Kuralı:",
+        "card1_rule_desc": "Kategorilere (Örn: Model Çökmesi) sadece ürün özellikleri (Duvar, Kiriş) değil, müşteri semptomlarını da (kasıyor, siyah ekran, kapanıyor) yazın. AI bu anahtar kelimeleri okuyarak bileti doğru takıma (Triage) yönlendirir.",
+        "card2_title": "Müşteri ve Ekip Yönetimi",
+        "card2_desc": "Sol panonun <b>SİSTEM</b> menüsü altından Müşterileri onaylayabilir ve Destek Ekiplerini (Departmanları) oluşturabilirsiniz. Biletlerin otomatik atanabilmesi için SLA kurallarını (Kaç saatte yanıt verilecek, mesai saati dışında dursun mu?) Ekip Yönetimi sekmesinden ayarlamayı unutmayın."
       },
       "section4": {
-        "title": "Verwaltung von Ankündigungen",
-        "desc": "Der Prozess des Versands von Massen- oder gezielten Ankündigungen (Kampagnen, Wartung usw.) per E-Mail an Ihre Kunden besteht aus 4 Schritten:",
-        "step1_title": "Schritt 1: Vorlagen Vorbereiten",
-        "step1_desc": "Sie entwerfen und speichern wiederverwendbare E-Mail-Inhalte in der Registerkarte 'Vorlagenbibliothek' (Templates).",
-        "step2_title": "Schritt 2: Ankündigung Erstellen und Vorlage Auswählen",
-        "step2_desc": "In der Registerkarte 'Ankündigung erstellen' können Sie neuen Inhalt schreiben oder eine Vorlage aus dem oberen Menü anwenden.",
-        "step3_title": "Schritt 3: Zielgruppe Auswählen",
-        "step3_desc": "Über die Filter auf der rechten Seite legen Sie fest, an welche Branche oder welches Unternehmen die Ankündigung gehen soll. Das System zeigt sofort die Anzahl der erreichbaren Personen an.",
-        "step4_title": "Schritt 4: Entwurf Speichern und Senden",
-        "step4_desc": "Wenn Sie auf die Schaltfläche 'Entwurf speichern' klicken, wird Ihre Ankündigung als Entwurf gespeichert. Es werden noch keine E-Mails versendet. Sie können die entsprechende Ankündigung auf der Registerkarte 'Sendeverlauf' (History) überprüfen und auf das Symbol 'Senden' (Broadcast) klicken, um die tatsächlichen E-Mails an die ausgewählte Zielgruppe zu senden.",
-        "tip_title": "Tipp:",
-        "tip_desc": "Sie sollten Ihre unbestätigten (Entwurfs-) Entwürfe immer im Vorschaumodus testen, bevor Sie sie versenden."
+        "title": "Duyuru Yönetimi (Announcements)",
+        "desc": "Sistem üzerinden müşterilerinize e-posta ile toplu veya hedeflenmiş duyurular (kampanya, bakım vb.) gönderme süreci 4 adımdan oluşur:",
+        "step1_title": "Adım 1: Şablon Hazırlama",
+        "step1_desc": "Tekrar kullanabileceğiniz e-posta içeriklerini 'Şablon Kütüphanesi' (Templates) sekmesinde tasarlar ve kaydedersiniz.",
+        "step2_title": "Adım 2: Duyuru Oluşturma ve Şablon Seçimi",
+        "step2_desc": "'Duyuru Oluştur' sekmesinde yeni bir içerik yazabilir veya üstteki menüden bir şablonu (Apply) içeriğe uygulayabilirsiniz.",
+        "step3_title": "Adım 3: Hedef Kitle Seçimi",
+        "step3_desc": "Sağ taraftaki filtreleri kullanarak duyurunun hangi sektör veya şirkete gideceğini belirlersiniz. Sistem size ulaşılacak kişi sayısını anında gösterir.",
+        "step4_title": "Adım 4: Taslağı Kaydet ve Yayınla",
+        "step4_desc": "'Taslağı Protokolle' butonuna bastığınızda duyurunuz taslak (Draft) olarak kaydedilir. Henüz kimseye e-posta gitmez. İlgili duyuruyu 'Gönderim Geçmişi' (History) sekmesinden kontrol edip 'Yayınla' (Broadcast) ikonuna tıklayarak asıl e-postaları seçilen kitleye gönderebilirsiniz.",
+        "tip_title": "İpucu:",
+        "tip_desc": "Onaylanmamış (Draft) durumdaki taslaklarınızı, göndermeden önce mutlaka preview (önizleme) modunda test etmelisiniz."
       }
-    }
-  },
-  "announcements": {
-    "title": "Ankündigungsmanagement",
-    "subtitle": "Unternehmenskommunikation und gezielte Ankündigungsoperationen",
-    "enterprise_control": "[TR] Enterprise Control",
-    "preview_prepared": "[TR] Hazırlanan İçerik Önizlemesi",
-    "close": "[TR] Kapat",
-    "industries": "[TR] Sektörler",
-    "customer_status": "[TR] Müşteri Durumu",
-    "company_name": "[TR] Şirket Adı",
-    "special_tags": "[TR] Özel Etiketler",
-    "categories": {
-      "all": "ALLE",
-      "general": "Allgemein",
-      "product": "Produkt",
-      "security": "Sicherheit",
-      "compliance": "Compliance",
-      "operations": "Operationen",
-      "ai_tech": "KI & Technologie",
-      "infrastructure": "Infrastruktur",
-      "change_management": "Change Management",
-      "education": "Bildung",
-      "performance_reports": "Performance-Berichte",
-      "strategic_updates": "Strategische Updates",
-      "community": "Gemeinschaft"
-    },
-    "tabs": {
-      "create": "Ankündigung Erstellen",
-      "templates": "Vorlagenbibliothek",
-      "history": "Sendungsverlauf"
-    },
-    "editor": {
-      "title": "Inhaltseditor",
-      "desc": "Bereiten Sie den Inhalt der E-Mail vor, die an die Kunden gesendet wird.",
-      "template_select": "Vorlage Auswählen",
-      "title_label": "Name des Ankündigungsdatensatzes",
-      "title_placeholder": "z.B. Sommer 2024 Hotfix Ankündigung",
-      "subject_label": "E-Mail-Betreffzeile",
-      "subject_placeholder": "Für den Kunden sichtbare Betreffzeile",
-      "content_label": "Rich-Text-Inhalt",
-      "default_content": "<p>Hallo {{customer.name}}!</p><p>Ankündigungsinhalt hier einfügen...</p>",
-      "preview": "Vorschau",
-      "save_draft": "Entwurf Protokollieren"
-    },
-    "audience": {
-      "title": "Zielgruppe",
-      "desc": "Legen Sie fest, wer die Ankündigung erhalten soll.",
-      "industries": "Branchen",
-      "industry_placeholder": "Branche Auswählen",
-      "statuses": "Kundenstatus",
-      "status_placeholder": "Status Auswählen",
-      "companies": "Unternehmensname",
-      "company_placeholder": "Unternehmen Auswählen",
-      "tags": "Benutzerdefinierte Tags",
-      "tags_placeholder": "Tags hinzufügen (Enter)",
-      "target_audience": "Zielgruppe",
-      "persons": "Personen",
-      "select_filter": "Bitte wählen Sie mindestens einen Filter aus",
-      "realtime_telemetry": "Echtzeit-Telemetriedaten"
-    },
-    "template_editor": {
-      "title": "Vorlagen-Editor",
-      "modify_desc": "Datensatz {name} wird geändert.",
-      "new_desc": "Protokollieren Sie eine neue Kommunikationsvorlage für das System.",
-      "new_record": "Neuer Datensatz",
-      "name_label": "Vorlagenname",
-      "name_placeholder": "z.B. Willkommens-E-Mail",
-      "topic_label": "Kategorie (Topic)",
-      "topic_placeholder": "z.B. Onboarding",
-      "subject_label": "Standard-Betreffzeile",
-      "subject_placeholder": "Für den Kunden sichtbarer Betreff",
-      "content_label": "Rich-Text-Inhalt (Vorlage)",
-      "render_test": "Render-Test",
-      "update": "Aktualisieren",
-      "archive": "In Bibliothek Archivieren"
-    },
-    "library": {
-      "title": "Bibliothek",
-      "search_placeholder": "Name oder Thema suchen...",
-      "category_filter": "Kategoriefilter",
-      "all": "Alle",
-      "no_records": "Keine Datensätze Gefunden",
-      "apply": "Anwenden",
-      "preview": "Vorschau",
-      "delete": "Löschen",
-      "validated": "Validiert"
-    },
-    "history": {
-      "title": "Sendungsarchiv",
-      "desc": "Alle Ankündigungsdatensätze, die über das System protokolliert und veröffentlicht wurden.",
-      "empty": "Archiv Leer",
-      "sent": "GESENDET",
-      "draft": "ENTWURF",
-      "terminal_delivered": "{count} An Terminals Geliefert",
-      "broadcast": "Veröffentlichen"
-    },
-    "toasts": {
-      "template_empty": "Dieser Vorlageninhalt ist leer.",
-      "template_compile_error": "Vorlage konnte nicht kompiliert werden. Prüfen Sie die MJML-Syntax.",
-      "preview_error": "Vorschaufehler:",
-      "unknown_error": "Unbekannter Fehler",
-      "required_fields": "Vorlagenname und Inhalt sind erforderlich",
-      "template_updated": "Vorlage aktualisiert",
-      "template_added": "Vorlage zur Bibliothek hinzugefügt",
-      "template_applied": "{name} Vorlage angewendet",
-      "title_subject_required": "Titel und Betreff sind erforderlich",
-      "draft_saved": "Ankündigungsentwurf gespeichert",
-      "save_failed": "Speichern fehlgeschlagen: {message}",
-      "broadcast_success": "Ankündigung erfolgreich veröffentlicht",
-      "broadcast_error": "Veröffentlichung fehlgeschlagen",
-      "confirm_broadcast": "Sind Sie sicher, dass Sie diese Ankündigung senden möchten?",
-      "delete_success": "Datensatz gelöscht",
-      "delete_failed": "Löschen fehlgeschlagen",
-      "confirm_delete_announcement": "Sind Sie sicher, dass Sie diese Ankündigung löschen möchten?",
-      "confirm_delete_template": "Sind Sie sicher, dass Sie diese Vorlage löschen möchten?",
-      "error": "Fehler"
-    }
-  },
-  "emails": {
-    "title": "E-Mail-Verwaltung",
-    "subtitle": "MJML-Vorlagen bearbeiten, neue Vorlagen erstellen und den Versandverlauf verfolgen.",
-    "tabs": {
-      "templates": "Vorlagen-Editor",
-      "logs": "Versandverlauf"
-    }
-  },
-  "kb_approvals": {
-    "title": "KI-Genehmigungspool",
-    "subtitle": "Verwalten Sie Entwürfe für Artikel, die aus geschlossenen Tickets und 5-Sterne-Lösungen abgeleitet wurden.",
-    "refresh_queue": "WARTESCHLANGE AKTUALISIEREN",
-    "run_pipeline": "PIPELINE AUSFÜHREN",
-    "queue_title": "ZUR GENEHMIGUNG ANSTEHENDE EINHEITEN",
-    "units_loaded": "{count} EINHEITEN GELADEN",
-    "empty": {
-      "title": "Gute Arbeit!",
-      "desc": "Alle zur Genehmigung anstehenden Inhalte wurden überprüft und verarbeitet."
-    },
-    "table": {
-      "query": "ABFRAGE / PROBLEM",
-      "answer": "KI VORGESCHLAGENE LÖSUNG",
-      "confidence": "VERTRAUEN",
-      "source": "QUELLE",
-      "actions": "AKTIONEN",
-      "reliable": "{percent}% ZUVERLÄSSIG"
-    },
-    "buttons": {
-      "approve": "GENEHMIGEN",
-      "delete": "LÖSCHEN"
-    },
-    "toasts": {
-      "fetch_error": "Entwürfe konnten nicht geladen werden.",
-      "approve_success": "Inhalt zur Wissensdatenbank hinzugefügt.",
-      "approve_error": "Fehler bei der Genehmigung.",
-      "dismiss_success": "Inhalt abgelehnt.",
-      "dismiss_error": "Fehler beim Ablehnen.",
-      "pipeline_started": "Pipeline ausgelöst.",
-      "pipeline_error": "Pipeline-Fehler: {error}"
     }
   },
   "knowledge_base": {
@@ -1514,65 +1356,29 @@
       "detail": "DETAIL"
     },
     "search": {
-      "placeholder": "SUCHE..."
+      "placeholder": "SUCHEN..."
     },
     "filters": {
       "all": "ALLE",
       "draft": "ENTWURF",
-      "review": "IN_PRÜFUNG",
+      "review": "WIRD GEPRÜFT",
       "active": "AKTIV",
       "archived": "ARCHIVIERT"
     },
     "stats": {
       "total_articles": "Insgesamt {count} Artikel",
-      "total": "Gesamt Artikel",
+      "total": "Gesamtartikel",
       "published": "Veröffentlicht",
-      "views": "Ansichten"
+      "views": "Aufrufe"
     },
     "meta": {
       "author": "AUTOR",
       "update": "AKTUALISIERUNG",
-      "views": "ANSICHTEN"
+      "views": "AUFRUFE"
     },
     "empty": {
       "no_records": "Noch keine Artikel gefunden",
-      "loading": "Datenschichten werden geladen"
-    }
-  },
-  "system_topology": {
-    "title": "Systemressourcen-Topologie",
-    "subtitle": "SYSTEMRESSOURCEN_TOPOLOGIE: DATENFLUSS- UND VERARBEITUNGSARCHITEKTUR",
-    "refresh": "AKTUALISIEREN",
-    "sync_error": "Daten-Synchronisierungsfehler",
-    "total_entropy": "GESAMT-ENTROPIE",
-    "units": "EINHEITEN",
-    "status_running": "LÄUFT",
-    "pillars": {
-      "documents": "PDF/DOCX/XLS/TXT/MD",
-      "articles": "ADMIN-ARTIKEL",
-      "urls": "URL / WEB",
-      "tickets": "TICKET-LERNEN"
-    },
-    "layers": {
-      "doc_parser": "DOKUMENTEN-PARSER",
-      "rich_editor": "RICH-EDITOR",
-      "crawl_engine": "CRAWL-ENGINE",
-      "cluster_engine": "CLUSTER-ENGINE"
-    },
-    "strategies": {
-      "parent_child": "PARENT-CHILD",
-      "direct_embed": "DIREKTES EMBEDDING",
-      "content_clean": "INHALTSBEREINIGUNG",
-      "faq_generator": "FAQ-GENERATOR"
-    },
-    "vector": {
-      "unified_index": "VEREINHEITLICHTER VEKTORINDEX",
-      "re_ranking": "RE-RANKING AKTIV",
-      "trust_priority": "VERTRAUENSDIENST-PRIORITÄT"
-    },
-    "engine": {
-      "query_preproc": "ABFRAGE-VORVERARBEITUNG",
-      "hybrid_retrieval": "HYBRID-SUCHMASCHINE"
+      "loading": "Datenebenen werden geladen..."
     }
   },
   "meta": {
@@ -1844,214 +1650,233 @@
       }
     },
     "teams": {
-      "fetch_error": "Fehler beim Laden der Daten.",
+      "fetch_error": "Veriler yüklenirken bir sorun oluştu.",
       "search_placeholder": "Teams oder Abteilungen suchen...",
-      "no_description": "Keine Beschreibung für diese Abteilung hinzugefügt.",
-      "min_suffix": "Min.",
-      "profile_pic_alt": "Profilbild",
+      "no_description": "Bu departman için açıklama eklenmemiş.",
+      "min_suffix": "dk",
+      "profile_pic_alt": "profil resmi",
       "statuses": {
-        "online": "Online",
-        "away": "Abwesend",
-        "dnd": "Nicht stören",
-        "offline": "Offline"
+        "online": "Çevrimiçi",
+        "away": "Dışarıda",
+        "dnd": "Rahatsız Etmeyin",
+        "offline": "Çevrimdışı"
       },
       "loading": {
-        "agent": "Profildaten werden analysiert...",
-        "dept": "Abteilungsdaten werden geladen...",
-        "team": "Teamdaten werden synchronisiert..."
+        "agent": "Profil verileri analiz ediliyor...",
+        "dept": "Departman verileri yükleniyor...",
+        "team": "Ekip verileri senkronize ediliyor..."
       },
       "nav": {
-        "back_teams": "Zurück zu Teams",
-        "back": "Zurück"
+        "back_teams": "Ekiplere Dön",
+        "back": "Geri Dön"
       },
       "actions": {
-        "edit_profile": "Profil bearbeiten",
-        "edit_dept": "Abteilung bearbeiten",
-        "add_skill": "Neue Fähigkeit hinzufügen",
-        "add_sla": "Neue SLA-Richtlinie",
-        "add_member": "Neues Mitglied hinzufügen",
-        "configure": "Konfigurieren",
-        "add_agent": "Neuen Agenten hinzufügen",
+        "edit_profile": "Profili Düzenle",
+        "edit_dept": "Departmanı Düzenle",
+        "add_skill": "Yeni Yetkinlik Ekle",
+        "add_sla": "Yeni SLA Politikası Ekle",
+        "add_member": "Yeni Üye Ekle",
+        "configure": "Yapılandır",
+        "add_agent": "Agent hinzufügen",
         "add_team": "Neues Team",
-        "manage_team": "Team verwalten",
+        "manage_team": "Takımı Yönet",
         "details": "Details",
         "view_profile": "Profil",
-        "view_team": "TEAM ANSEHEN",
-        "edit": "BEARBEITEN"
+        "view_team": "TAKIMI GÖR",
+        "edit": "DÜZENLE"
       },
       "tabs": {
-        "performance": "Leistung",
-        "skills": "Fähigkeiten",
-        "schedule": "Arbeitsplan",
-        "overview": "Übersicht",
-        "sla_policies": "SLA-Richtlinien",
+        "performance": "Performans",
+        "skills": "Yetkinlikler",
+        "schedule": "Çalışma Takvimi",
+        "overview": "Genel Bakış",
+        "sla_policies": "SLA Politikaları",
         "departments": "Abteilungen",
         "teams": "Teams",
         "agents": "Agenten"
       },
       "stats": {
-        "tickets": "Ticket-Statistiken",
-        "last_30_days": "LETZTE 30 TAGE",
-        "active_load": "Aktive Arbeitsbelastung",
-        "csat": "CSAT-Score",
-        "avg_response": "Durchschnittliche Antwortzeit",
-        "monthly_quota": "Monatliches Ticketkontingent",
-        "first_response_target": "SLA-Ziel für erste Antwort",
-        "active_teams": "Aktive Teams",
-        "total_agents": "Agenten gesamt",
-        "avg_response_dept": "Durchschnittliche Antwortzeit",
-        "sla_compliance": "SLA-Einhaltung",
-        "active_ticket_load": "Aktive Ticketbelastung",
-        "quick_stats": "Schnelle Statistiken",
-        "online_rate": "Online-Rate",
-        "pending_queue": "Ausstehende Warteschlange",
-        "resolved_today": "Heute gelöst",
-        "alerts": "Warnungen",
-        "overload": "Überlastung",
+        "tickets": "Ticket İstatistikleri",
+        "last_30_days": "SON 30 GÜN",
+        "active_load": "Aktif İş Yükü",
+        "csat": "CSAT Skoru",
+        "avg_response": "Ort. Yanıt",
+        "monthly_quota": "Aylık Ticket Kotası",
+        "first_response_target": "İlk Yanıt SLA Hedefi",
+        "active_teams": "Aktif Ekipler",
+        "total_agents": "Toplam Ajan",
+        "avg_response_dept": "Ort. Yanıt Süresi",
+        "sla_compliance": "SLA Uyumu",
+        "active_ticket_load": "Aktif Ticket Yükü",
+        "quick_stats": "Hızlı İstatistikler",
+        "online_rate": "Online Oranı",
+        "pending_queue": "Bekleyen Kuyruk",
+        "resolved_today": "Bugün Çözülen",
+        "alerts": "Uyarılar",
+        "overload": "Fazla Yüklenme",
         "sla_stable": "SLA Stabil"
       },
       "labels": {
-        "badges": "Erfolgsabzeichen",
-        "sla_master": "SLA-Meister",
-        "top_rated": "Bestbewertet",
-        "quick_resolve": "Schnelle Lösung",
-        "targets": "Ziele",
-        "technical_skills": "Technische Fähigkeiten",
-        "skills_desc": "Fachgebiete und Vertrauensniveau des Agenten.",
-        "no_skills": "Noch keine Fähigkeiten zugewiesen.",
-        "leave": "URLAUB",
+        "badges": "Başarı Rozetleri",
+        "sla_master": "SLA Master",
+        "top_rated": "Top Rated",
+        "quick_resolve": "Hızlı Çözüm",
+        "targets": "Hedefler",
+        "technical_skills": "Teknik Yetkinlikler",
+        "skills_desc": "Ajanın uzmanlık alanları ve güven seviyeleri.",
+        "no_skills": "Henüz yetkinlik atanmamış.",
+        "leave": "İZİN",
         "recent_activity": "Letzte Aktivitäten",
-        "critical_sla": "Kritische SLA-Ziele",
-        "first_response": "ERSTE ANTWORT",
-        "resolution": "LÖSUNG",
-        "first_response_time": "Erste Antwort",
-        "resolution_time": "Lösungszeit",
-        "sla_config": "SLA-Konfiguration",
-        "sla_config_desc": "Service-Level-Ziele der Abteilung.",
-        "automation_status": "AUTOMATISIERUNGSSTATUS",
-        "active": "AKTIV",
-        "passive": "PASSIV",
+        "critical_sla": "Kritik SLA Hedefleri",
+        "first_response": "İLK YANIT",
+        "resolution": "ÇÖZÜM",
+        "first_response_time": "İlk Yanıt",
+        "resolution_time": "Çözüm Süresi",
+        "sla_config": "SLA Yapılandırması",
+        "sla_config_desc": "Departman genelindeki hizmet seviyesi hedefleri.",
+        "automation_status": "OTOMASYON DURUMU",
+        "active": "AKTİF",
+        "passive": "PASİF",
         "round_robin": "Round Robin",
-        "rr_desc": "Sequenzielle Zuweisungsstrategie wird angewendet.",
-        "team_members": "Teammitglieder",
+        "rr_desc": "Sıralı atama stratejisi uygulanıyor.",
+        "team_members": "Ekip Üyeleri",
         "command_center": "Team-Kommandozentrale",
-        "organization": "Eine Organisation: Aluplan Support",
-        "auto_assignment": "AUTO-ZUWEISUNG",
-        "strategy": "Strategie:",
+        "organization": "Einzelne Organisation: Aluplan Support System",
+        "auto_assignment": "OTO-ATAMA",
+        "strategy": "Strateji:",
         "agent": "Agent / Vertreter",
         "status": "Status",
         "role": "Rolle",
         "actions": "Aktionen",
-        "senior_agent": "Senior Support Spezialist",
-        "default_bio": "Kundenorientierter Experte mit über 5 Jahren Erfahrung in technischen Supportprozessen.",
-        "preparing_charts": "Leistungsdiagramme werden vorbereitet.",
-        "member": "Mitglied",
-        "joined_at": "Beigetreten: {date}",
-        "level_prefix": "LEVEL",
-        "default_dept_desc": "Diese Abteilung ist einer der zentralen Supportbereiche des Unternehmens.",
-        "priority_suffix": "PRIORITÄT",
-        "minutes_suffix": "Min",
-        "agent_count": "{count} Agenten",
-        "auto_assign_on": "Auto-Zuweisung Ein",
-        "auto_assign_off": "Manuelle Zuweisung"
+        "senior_agent": "Kıdemli Destek Uzmanı",
+        "default_bio": "Müşteri memnuniyeti odaklı, teknik çözüm süreçlerinde 5+ yıl deneyimli uzman.",
+        "preparing_charts": "Performans grafikleri hazırlanıyor.",
+        "member": "Üye",
+        "joined_at": "Katılım: {date}",
+        "level_prefix": "SEVİYE",
+        "default_dept_desc": "Bu departman organizasyonun temel destek kollarından biridir.",
+        "priority_suffix": "ÖNCELİK",
+        "minutes_suffix": "dk",
+        "agent_count": "{count} Ajan",
+        "auto_assign_on": "Oto-Atama Açık",
+        "auto_assign_off": "Manuel Atama",
+        "tickets": "Ticket İstatistikleri",
+        "last_30_days": "SON 30 GÜN",
+        "active_load": "Aktif İş Yükü",
+        "csat": "CSAT Skoru",
+        "avg_response": "Ort. Yanıt",
+        "monthly_quota": "Aylık Ticket Kotası",
+        "first_response_target": "İlk Yanıt SLA Hedefi",
+        "active_teams": "Aktif Ekipler",
+        "total_agents": "Toplam Ajan",
+        "avg_response_dept": "Ort. Yanıt Süresi",
+        "sla_compliance": "SLA Uyumu",
+        "active_ticket_load": "Aktive Ticketbelastung",
+        "quick_stats": "Hızlı İstatistikler",
+        "online_rate": "Online Oranı",
+        "pending_queue": "Bekleyen Kuyruk",
+        "resolved_today": "Bugün Çözülen",
+        "alerts": "Uyarılar",
+        "overload": "Fazla Yüklenme",
+        "sla_stable": "SLA Stabil"
       },
       "creation": {
-        "title": "Neues Team Erstellen",
-        "description": "Definieren Sie ein neues Team, um operative Prozesse zu verwalten.",
-        "team_name": "Teamname",
-        "team_name_placeholder": "Bsp: Technischer Support - Ebene 2",
+        "title": "Yeni Ekip Oluştur",
+        "description": "Operasyonel süreçleri yönetmek için yeni bir ekip tanımlayın.",
+        "team_name": "Ekip İsmi",
+        "team_name_placeholder": "Örn: Teknik Destek - Seviye 2",
         "department": "Abteilung",
-        "select_department": "Wählen Sie eine Abteilung",
+        "select_department": "Departman seçin",
         "desc_label": "Beschreibung",
-        "desc_placeholder": "Stellenbeschreibung des Teams...",
-        "auto_assign": "Automatische Zuweisung",
-        "auto_assign_desc": "Neue Tickets werden diesem Team automatisch zugewiesen.",
-        "assign_strategy": "Zuweisungsstrategie",
-        "round_robin": "Round Robin (Sequentiell)",
-        "least_loaded": "Am wenigsten belastet (Lastbasiert)",
-        "skill_based": "Fähigkeitsbasiert",
-        "submit": "Team Starten",
-        "submitting": "Wird erstellt...",
-        "success": "Neues Team erfolgreich erstellt.",
-        "error_dept": "Bitte wählen Sie eine Abteilung aus.",
-        "error_server": "Fehler beim Erstellen des Teams."
+        "desc_placeholder": "Ekibin görev tanımı...",
+        "auto_assign": "Otomatik Atama",
+        "auto_assign_desc": "Yeni ticketlar bu ekibe otomatik atanır.",
+        "assign_strategy": "Atama Stratejisi",
+        "round_robin": "Round Robin (Sıralı)",
+        "least_loaded": "Least Loaded (Yük Bazlı)",
+        "skill_based": "Skill Based (Yetenek Bazlı)",
+        "submit": "Ekibi Başlat",
+        "submitting": "Oluşturuluyor...",
+        "success": "Yeni ekip başarıyla oluşturuldu.",
+        "error_dept": "Lütfen bir departman seçin.",
+        "error_server": "Ekip oluşturulurken bir hata oluştu."
       },
       "member_add": {
-        "title": "Neuen Agenten Zuweisen",
-        "description": "Weisen Sie dem Team einen registrierten Benutzer als Agenten zu.",
-        "select_agent": "Benutzer (Agent)",
-        "select_agent_placeholder": "Wählen Sie einen Benutzer",
-        "loading_users": "Benutzer werden geladen...",
-        "no_users": "Keine neuen Benutzer zur Zuweisung verfügbar.",
-        "role": "Role im Team",
-        "select_role": "Rolle wählen",
-        "role_desc": "Diese Rolle bestimmt nur ihre Berechtigungen innerhalb dieses Teams.",
-        "cancel": "Abbrechen",
-        "submit": "Dem Team Zuweisen",
-        "submitting": "Hinzufügen...",
-        "success": "Neues Mitglied erfolgreich zum Team hinzugefügt.",
-        "error_select": "Bitte wählen Sie einen Agenten aus.",
-        "error_server": "Fehler beim Hinzufügen des Mitglieds."
+        "title": "Yeni Ajan Ata",
+        "description": "Ekibe sistemde kayıtlı olan bir kullanıcıyı ajan olarak atayın.",
+        "select_agent": "Kullanıcı (Ajan)",
+        "select_agent_placeholder": "Bir kullanıcı seçin",
+        "loading_users": "Kullanıcılar yükleniyor...",
+        "no_users": "Atanabilecek yeni kullanıcı bulunamadı.",
+        "role": "Ekip İçi Rolü",
+        "select_role": "Rol seçin",
+        "role_desc": "Bu rol sadece bu ekip içindeki yetkilerini belirler.",
+        "cancel": "Cancel",
+        "submit": "Ekibe Ata",
+        "submitting": "Ekleniyor...",
+        "success": "Ekibe yeni üye başarıyla eklendi.",
+        "error_select": "Lütfen bir ajan seçin.",
+        "error_server": "Üye eklenirken bir hata oluştu."
       },
       "errors": {
-        "fetch_profile": "Agentenprofil konnte nicht geladen werden.",
-        "fetch_dept": "Abteilungsinformationen konnten nicht geladen werden."
+        "fetch_profile": "Ajan profili alınamadı.",
+        "fetch_dept": "Departman bilgileri alınamadı."
       },
       "days": {
-        "mon": "Montag",
-        "tue": "Dienstag",
-        "wed": "Mittwoch",
-        "thu": "Donnerstag",
-        "fri": "Freitag",
-        "sat": "Samstag",
-        "sun": "Sonntag"
+        "mon": "Pazartesi",
+        "tue": "Salı",
+        "wed": "Çarşamba",
+        "thu": "Perşembe",
+        "fri": "Cuma",
+        "sat": "Cumartesi",
+        "sun": "Pazar"
       }
     },
     "users": {
-      "title": "[TR] Ekip Yönetimi",
-      "desc": "[TR] Destek temsilcilerini, yöneticileri ve adminleri yönetin.",
-      "add_user": "[TR] Kullanıcı Ekle",
-      "edit_user": "[TR] Kullanıcı Düzenle",
-      "delete_confirm": "[TR] {name} kullanıcısını silmek istediğinize emin misiniz?",
-      "empty": "[TR] Kullanıcı bulunamadı",
-      "deleted_success": "[TR] Kullanıcı başarıyla silindi",
-      "fetch_error": "[TR] Kullanıcılar yüklenirken hata oluştu",
+      "title": "Ekip Yönetimi",
+      "desc": "Destek temsilcilerini, yöneticileri ve adminleri yönetin.",
+      "add_user": "Kullanıcı Ekle",
+      "edit_user": "Kullanıcı Düzenle",
+      "delete_confirm": "{name} kullanıcısını silmek istediğinize emin misiniz?",
+      "empty": "Kullanıcı bulunamadı",
+      "deleted_success": "Kullanıcı başarıyla silindi",
+      "fetch_error": "Kullanıcılar yüklenirken hata oluştu",
       "dialog": {
-        "title_create": "[TR] Yeni Kullanıcı Ekle",
-        "title_edit": "[TR] Kullanıcı Düzenle",
-        "full_name": "[TR] Ad Soyad",
-        "name_placeholder": "[TR] John Doe",
-        "email": "[TR] E-posta",
-        "email_placeholder": "[TR] john@example.com",
-        "password": "[TR] Şifre",
-        "password_placeholder": "[TR] ******",
-        "new_password_optional": "[TR] Yeni Şifre (İsteğe Bağlı)",
-        "role": "[TR] Rol",
-        "select_role_placeholder": "[TR] Bir rol seçin",
+        "title_create": "Yeni Kullanıcı Ekle",
+        "title_edit": "Kullanıcı Düzenle",
+        "full_name": "Ad Soyad",
+        "name_placeholder": "John Doe",
+        "email": "E-Mail",
+        "email_placeholder": "john@example.com",
+        "password": "Şifre",
+        "password_placeholder": "******",
+        "new_password_optional": "Yeni Şifre (İsteğe Bağlı)",
+        "role": "Rolle",
+        "select_role_placeholder": "Bir rol seçin",
         "roles": {
-          "admin": "[TR] Yönetici",
-          "support_manager": "[TR] Destek Müdürü",
-          "support_agent": "[TR] Destek Uzmanı",
-          "viewer": "[TR] Gözlemci"
+          "admin": "Yönetici",
+          "support_manager": "Destek Müdürü",
+          "support_agent": "Destek Uzmanı",
+          "viewer": "Gözlemci"
         },
-        "btn_create": "[TR] Oluştur",
-        "btn_update": "[TR] Güncelle"
+        "btn_create": "Oluştur",
+        "btn_update": "Güncelle"
       },
       "validation": {
-        "name_min": "[TR] Ad en az 2 karakter olmalıdır",
-        "email_invalid": "[TR] Geçersiz e-posta adresi",
-        "password_min": "[TR] Şifre en az 6 karakter olmalıdır",
-        "password_required": "[TR] Yeni kullanıcı için şifre gereklidir"
+        "name_min": "Ad en az 2 karakter olmalıdır",
+        "email_invalid": "Geçersiz e-posta adresi",
+        "password_min": "Şifre en az 6 karakter olmalıdır",
+        "password_required": "Yeni kullanıcı için şifre gereklidir"
       },
       "toasts": {
-        "created": "[TR] Kullanıcı başarıyla oluşturuldu",
-        "updated": "[TR] Kullanıcı başarıyla güncellendi"
+        "created": "Kullanıcı başarıyla oluşturuldu",
+        "updated": "Kullanıcı başarıyla güncellendi"
       },
       "table": {
-        "user": "[TR] Kullanıcı",
-        "role": "[TR] Rol",
-        "email": "[TR] E-posta",
-        "actions": "[TR] İşlemler"
+        "user": "Kullanıcı",
+        "role": "Rolle",
+        "email": "E-Mail",
+        "actions": "İşlemler"
       }
     },
     "knowledge_pool": {
@@ -2147,6 +1972,1598 @@
         "logs_error": "Protokolle konnten nicht geladen werden",
         "publish_success": "{count} Artikel veröffentlicht"
       }
+    },
+    "announcements": {
+      "title": "Ankündigungsmanagement",
+      "subtitle": "Unternehmenskommunikation und gezielte Ankündigungen",
+      "enterprise_control": "Enterprise-Steuerung",
+      "preview_prepared": "Vorschau des vorbereiteten Inhalts",
+      "close": "Schließen",
+      "industries": "Branchen",
+      "customer_status": "Kundenstatus",
+      "company_name": "Unternehmensname",
+      "special_tags": "Spezielle Tags",
+      "categories": {
+        "all": "HEPSİ",
+        "general": "Allgemein",
+        "product": "Ürün",
+        "security": "Güvenlik",
+        "compliance": "Uyum (Compliance)",
+        "operations": "Operasyonlar",
+        "ai_tech": "Yapay Zeka ve Teknoloji",
+        "infrastructure": "Altyapı",
+        "change_management": "Değişim Yönetimi",
+        "education": "Eğitim",
+        "performance_reports": "Performans Raporları",
+        "strategic_updates": "Stratejik Güncellemeler",
+        "community": "Topluluk"
+      },
+      "tabs": {
+        "create": "Ankündigung erstellen",
+        "templates": "Vorlagenbibliothek",
+        "history": "Sendeverlauf"
+      },
+      "editor": {
+        "title": "Inhalts-Editor",
+        "desc": "Bereiten Sie den E-Mail-Inhalt für Kunden vor.",
+        "template_select": "Vorlage auswählen",
+        "title_label": "Name des Ankündigungsdatensatzes",
+        "title_placeholder": "Z.B. 2024 Sommer Hotfix Ankündigung",
+        "subject_label": "E-Mail-Betreffzeile",
+        "subject_placeholder": "Betreff, der dem Kunden angezeigt wird",
+        "content_label": "Rich-Text-Inhalt",
+        "default_content": "<p>Hallo {{customer.name}}!</p><p>Hier kommt der Inhalt der Ankündigung...</p>",
+        "preview": "Vorschau",
+        "save_draft": "Entwurf protokollieren"
+      },
+      "audience": {
+        "title": "Zielgruppe",
+        "desc": "Legen Sie fest, wen die Ankündigung erreichen soll.",
+        "industries": "Branchen",
+        "industry_placeholder": "Branche auswählen",
+        "statuses": "Kundenstatus",
+        "status_placeholder": "Status auswählen",
+        "companies": "Unternehmensname",
+        "company_placeholder": "Unternehmen auswählen",
+        "tags": "Spezielle Tags",
+        "tags_placeholder": "Tag hinzufügen (Enter)",
+        "target_audience": "Zielgruppe",
+        "persons": "Personen",
+        "select_filter": "Bitte wählen Sie mindestens einen Filter aus",
+        "realtime_telemetry": "Real-time telemetri verisi"
+      },
+      "template_editor": {
+        "title": "Şablon Düzenleyici",
+        "modify_desc": "{name} kaydı modifiye ediliyor.",
+        "new_desc": "Sistem için yeni bir iletişim şablonu protokolleyin.",
+        "new_record": "Yeni Kayıt",
+        "name_label": "Şablon İsmi",
+        "name_placeholder": "Örn: Hoşgeldin Maili",
+        "topic_label": "Kategori (Topic)",
+        "topic_placeholder": "Örn: Onboarding",
+        "subject_label": "Varsayılan Konu Başlığı",
+        "subject_placeholder": "Müşteriye görünecek konu",
+        "content_label": "Zengin Metin İçeriği (Şablon)",
+        "render_test": "Render Testi",
+        "update": "Güncelle",
+        "archive": "Kütüphaneye Arşivle"
+      },
+      "library": {
+        "title": "Kütüphane",
+        "search_placeholder": "İsim veya konu ara...",
+        "category_filter": "Kategori Filtresi",
+        "all": "Tümü",
+        "no_records": "Kayıt Bulunamadı",
+        "apply": "Uygula",
+        "preview": "Önizle",
+        "delete": "Delete",
+        "validated": "Onaylandı"
+      },
+      "history": {
+        "title": "Gönderim Arşivi",
+        "desc": "Sistem üzerinden protokollenen ve yayınlanan tüm duyuru kayıtları.",
+        "empty": "Arşiv Boş",
+        "sent": "GÖNDERİLDİ",
+        "draft": "TASLAK",
+        "terminal_delivered": "{count} Terminale İletildi",
+        "broadcast": "Veröffentlichen"
+      },
+      "toasts": {
+        "template_empty": "Bu şablonun içeriği boş.",
+        "template_compile_error": "Şablon derlenemedi. MJML sözdizimini kontrol edin.",
+        "preview_error": "Önizleme hatası:",
+        "unknown_error": "Bilinmeyen hata",
+        "required_fields": "Şablon adı ve içeriği gereklidir",
+        "template_updated": "Şablon güncellendi",
+        "template_added": "Şablon kütüphaneye eklendi",
+        "template_applied": "{name} şablonu uygulandı",
+        "title_subject_required": "Başlık ve Konu gerekli",
+        "draft_saved": "Duyuru taslağı kaydedildi",
+        "save_failed": "Kaydetme hatası: {message}",
+        "broadcast_success": "Duyuru başarıyla yayınlandı",
+        "broadcast_error": "Yayınlama hatası",
+        "confirm_broadcast": "Bu duyuruyu yayınlamak istediğinize emin misiniz?",
+        "delete_success": "Kayıt silindi",
+        "delete_failed": "Silme hatası",
+        "confirm_delete_announcement": "Bu duyuruyu silmek istediğinize emin misiniz?",
+        "confirm_delete_template": "Bu şablonu silmek istediğinize emin misiniz?",
+        "error": "Fehler"
+      }
+    },
+    "emails": {
+      "title": "E-Posta Yönetimi",
+      "subtitle": "MJML şablonlarını düzenleyin, yeni şablonlar oluşturun ve gönderim geçmişini takip edin.",
+      "tabs": {
+        "templates": "Şablon Editör",
+        "logs": "Gönderim Geçmişi"
+      }
+    },
+    "kb_approvals": {
+      "title": "AI Onay Havuzu",
+      "subtitle": "Kapanan biletlerden ve 5 yıldızlı çözümlerden türetilen taslak makaleleri yönetin.",
+      "refresh_queue": "KUYRUĞU YENİLE",
+      "run_pipeline": "PIPELINE ÇALIŞTIR",
+      "queue_title": "ONAY BEKLEYEN BİRİMLER",
+      "units_loaded": "{count} BİRİM YÜKLENDİ",
+      "empty": {
+        "title": "Harika İş!",
+        "desc": "Tüm onay bekleyen içerikler incelendi ve işleme alındı."
+      },
+      "table": {
+        "query": "SORGU / PROBLEM",
+        "answer": "AI ÖNERİLEN ÇÖZÜM",
+        "confidence": "GÜVEN",
+        "source": "KAYNAK",
+        "actions": "İŞLEMLER",
+        "reliable": "%{percent} GÜVENLİ"
+      },
+      "buttons": {
+        "approve": "ONAYLA",
+        "delete": "SİL"
+      },
+      "toasts": {
+        "fetch_error": "Taslaklar yüklenemedi.",
+        "approve_success": "İçerik bilgi bankasına eklendi.",
+        "approve_error": "Onaylanırken hata oluştu.",
+        "dismiss_success": "İçerik reddedildi.",
+        "dismiss_error": "Reddedilirken hata oluştu.",
+        "pipeline_started": "Pipeline tetiklendi.",
+        "pipeline_error": "Pipeline hatası: {error}"
+      }
+    },
+    "system_topology": {
+      "title": "Sistem Kaynak Topolojisi",
+      "subtitle": "SYSTEM_SOURCE_TOPOLOGY: VERI AKIŞI VE İŞLEME MİMARİSİ",
+      "refresh": "YENİLE",
+      "sync_error": "Veri senkronizasyon hatası",
+      "total_entropy": "TOPLAM ENTROPİ",
+      "units": "BİRİM",
+      "status_running": "ÇALIŞIYOR",
+      "pillars": {
+        "documents": "PDF/DOCX/XLS/TXT/MD",
+        "articles": "ADMİN MAKALE",
+        "urls": "URL / WEB",
+        "tickets": "BİLET ÖĞRENİMİ"
+      },
+      "layers": {
+        "doc_parser": "DOKÜMAN AYRIŞTIRICI",
+        "rich_editor": "ZENGİN EDİTÖR",
+        "crawl_engine": "TARAMA MOTORU",
+        "cluster_engine": "KÜMELEME MOTORU"
+      },
+      "strategies": {
+        "parent_child": "EBEVEYN-ÇOCUK",
+        "direct_embed": "DOĞRUDAN GÖMME",
+        "content_clean": "İÇERİK TEMİZLEME",
+        "faq_generator": "S.S.S. ÜRETİCİ"
+      },
+      "vector": {
+        "unified_index": "BİRLEŞİK VEKTÖR DİZİNİ",
+        "re_ranking": "YENİDEN SIRALAMA AKTİF",
+        "trust_priority": "GÜVEN PUANI ÖNCELİĞİ"
+      },
+      "engine": {
+        "query_preproc": "SORGU ÖN İŞLEME",
+        "hybrid_retrieval": "HİBRİT ERİŞİM MOTORU"
+      }
+    },
+    "customers": {
+      "title": "Müşteri Portalı",
+      "subtitle": "Kurumsal Müşteri Portföyü ve CRM Entegrasyon Merkezi",
+      "actions": {
+        "import": "İçe Aktar",
+        "verify_emails": "E-postaları Doğrula",
+        "verify_selected": "Seçilenleri Doğrula ({count})",
+        "delete_selected": "Seçili {count} Kaydı Sil",
+        "deleting": "Siliniyor..."
+      },
+      "table_controls": {
+        "sort_az": "A'dan Z'ye Sırala",
+        "sort_za": "Z'den A'ya Sırala",
+        "group": "GRUPLA",
+        "group_by": "Buna Göre Grupla",
+        "ungroup": "Gruplamayı Kaldır"
+      },
+      "tabs": {
+        "customers": "Müşteriler",
+        "accounts": "Hesaplar",
+        "sync": "Senkronizasyon",
+        "history": "İşlem Geçmişi"
+      },
+      "search": {
+        "placeholder": "Müşteri veya şirket ara..."
+      },
+      "table": {
+        "loading": "Veriler veritabanından çekiliyor",
+        "empty": "Kayıt bulunamadı.",
+        "headers": {
+          "customer_no": "Müşteri No",
+          "name": "Ad Soyad",
+          "email": "E-Mail",
+          "company": "Şirket",
+          "title": "Ünvan",
+          "phone": "Telefon",
+          "contractStatus": "Sözleşme Durumu",
+          "subscriptionModel": "Abonelik Modeli",
+          "industry": "Sektör",
+          "status": "Status",
+          "createdAt": "Oluşturulma Tarihi",
+          "actions": "İşlem"
+        }
+      },
+      "accounts": {
+        "structure": "Şirket Yapısı",
+        "industry_domain": "Sektör / Alan",
+        "ecosystem": "Ekosistem",
+        "crm_verification": "CRM Doğrulaması",
+        "website": "Web Sitesi",
+        "address": "Adres",
+        "profiles": "{count} PROFİL",
+        "details": "DETAYLAR",
+        "manual_entry": "MANUEL_GİRİŞ",
+        "dynamics_ok": "DYNAMICS_OK",
+        "not_found": "HESAP BULUNAMADI",
+        "details_subtitle": "Şirket Detayları",
+        "joined_system": "Sisteme Giriş",
+        "registered_contacts": "Kayıtlı Kişiler",
+        "registered_contacts_desc": "Bu şirkete bağlı tüm müşteri kayıtları",
+        "people_count": "{count} Kişi",
+        "no_contacts_found": "Bu şirket için kayıtlı kişi bulunamadı."
+      },
+      "sync": {
+        "checking": "CRM VERİ GÜNLÜKLERİ KONTROL EDİLİYOR...",
+        "no_integration": "CRM Entegrasyonu Yok",
+        "no_integration_desc": "Müşteri ve şirket verilerini otomatik senkronize etmek için Dynamics 365 veritabanınızı bağlayın.",
+        "configure_btn": "KONTROL MERKEZİNİ YAPILANDIR",
+        "last_transfer": "Son Transfer",
+        "last_transfer_none": "YOK",
+        "system_status": "Sistem Durumu",
+        "trigger_sync": "Transferi Tetikle",
+        "edit_settings": "AYARLARI DÜZENLE",
+        "mapping": {
+          "account_title": "HESAP EŞLEŞTİRME",
+          "contact_title": "MÜŞTERİ EŞLEŞTİRME",
+          "description": "CRM üzerindeki hangi alanın sistemimizdeki hangi veriye karşılık geleceğini tanımlayın.",
+          "warning": "Yanlış eşleştirme, veri senkronizasyonunda tutarsızlıklara neden olabilir. Değişiklik yapmadan önce CRM şemasını kontrol edin.",
+          "custom_fields": "Özel Alanlar",
+          "add_field": "Alan Ekle",
+          "field_label": "Görünen Ad",
+          "field_key": "Sistem Anahtarı",
+          "select_crm_field": "CRM alanı seçin...",
+          "add_new_column": "Yeni Kolon Ekle",
+          "step_1_crm": "1. CRM Alanı Seçin",
+          "crm_select_placeholder": "CRM'den alan seç...",
+          "step_2_display_name": "2. Görünen İsim",
+          "display_name_placeholder": "Örn: Segment",
+          "step_3_system_key": "3. Sistem Anahtarı",
+          "system_key_placeholder": "Örn: segment",
+          "add_column_btn": "Kolonu Listeye Ekle",
+          "add_custom_btn": "Yeni Özel Alan / Kolon Ekle",
+          "visibility_title": "Görünürlük ve Sıralama",
+          "visibility_desc": "Burada yaptığınız sıralama ve görünürlük ayarları, Müşteriler ve Hesaplar tablolarını otomatik olarak güncelleyecektir. Göz ikonuna tıklayarak istemediğiniz kolonları gizleyebilir, okları kullanarak sıralamayı değiştirebilirsiniz.",
+          "system_key": "Sistem Anahtarı",
+          "badge_custom": "ÖZEL",
+          "badge_mapped": "EŞLEŞMİŞ",
+          "search_crm_fields": "CRM alanlarında ara...",
+          "field_not_found": "Alan bulunamadı.",
+          "sample_data": "Örnek Veri:",
+          "fields": {
+            "account": {
+              "name": "Şirket Adı / Ünvan",
+              "industry": "Sektör",
+              "website": "Web Sitesi",
+              "address": "Adres",
+              "customerNo": "Müşteri Numarası",
+              "crm_verification": "CRM Doğrulaması",
+              "system_id": "Sistem ID (CRM)",
+              "email": "Genel E-posta",
+              "phone": "Genel Telefon"
+            },
+            "contact": {
+              "firstName": "Ad",
+              "lastName": "Soyad",
+              "email": "E-Mail",
+              "phoneNumber": "Telefon",
+              "jobTitle": "Görev / Ünvan",
+              "industry": "Sektör",
+              "customerNo": "Müşteri Numarası",
+              "fullName": "Ad Soyad",
+              "status": "Status",
+              "system_id": "Sistem ID (CRM)",
+              "contractStatus": "Sözleşme Durumu",
+              "subscriptionModel": "Abonelik Modeli"
+            }
+          }
+        }
+      },
+      "history": {
+        "no_data": "Geçmiş verisi yok"
+      },
+      "toasts": {
+        "delete_success_title": "Silme İşlemi Başarılı",
+        "delete_success_desc": "{count} adet kayıt sistemden kaldırıldı.",
+        "sync_started": "Arka plan senkronizasyonu başlatıldı.",
+        "verify_success": "{count} e-posta doğrulandı.",
+        "bulk_update_success": "SİSTEM_KOMUTU_BAŞARILI: {count}_KAYIT_GÜNCELLENDİ",
+        "bulk_update_error": "SİSTEM_KOMUTU_HATASI: {message}"
+      },
+      "labels": {
+        "active": "AKTİF",
+        "suspended": "ASKIYA ALINDI",
+        "passive": "PASİF",
+        "verified": "DOĞRULANDI",
+        "not_verified": "DOĞRULANMADI",
+        "syncing": "SENKRONİZE EDİLİYOR",
+        "unknown": "BİLİNMEYEN",
+        "items": "Öğe",
+        "score": "Skor",
+        "total": "TOPLAM",
+        "passed": "BAŞARILI",
+        "failed": "HATALI",
+        "pending": "BEKLEMEDE",
+        "system_info": "Sistem Bilgileri (Hotinfo)",
+        "personal_info": "Kişisel Bilgiler",
+        "corporate_info": "Kurumsal Bilgiler",
+        "first_name": "Ad",
+        "last_name": "Soyad",
+        "job_title": "Görev / Unvan",
+        "phone": "Telefon",
+        "company_name": "Firma Adı",
+        "customer_no": "Müşteri Numarası",
+        "contract_status": "Müşteri Durumu",
+        "created_at": "Hesap Oluşturulma",
+        "save_all": "Tüm Değişiklikleri Kaydet",
+        "saving": "Kaydediliyor...",
+        "reset_password": "Şifreyi Sıfırla",
+        "reset_password_confirm": "Devam edilsin mi? Müşteriye yeni, rastgele bir şifre atanacaktır.",
+        "hotinfo_data": "Cihaz konfigürasyonu ve Allplan detayları",
+        "download_hxl": ".HXL İndir",
+        "general": "Allgemein",
+        "accounts": "Hesaplar",
+        "record_count": "{count} Kayıt"
+      },
+      "crm": {
+        "title": "CRM Kontrol Merkezi",
+        "desc": "Microsoft Dynamics 365 ve Kurumsal CRM entegrasyonlarını yönetin.",
+        "connection_settings": "Dynamics 365 Bağlantı Ayarları",
+        "connection_desc": "Azure Portal üzerinden oluşturduğunuz uygulama (App Registration) bilgilerini buraya girin.",
+        "status_card_title": "Bağlantı Durumu",
+        "last_sync": "Son Senkronizasyon",
+        "never_synced": "Hiç yapılmadı",
+        "sync_btn": "Şimdi Senkronize Et",
+        "success": "Erfolgreich",
+        "error": "Fehler",
+        "in_progress": "Devam Ediyor",
+        "ready": "Hazır",
+        "log_title": "Senkronizasyon Günlüğü",
+        "log_empty": "İşlem kaydı bulunmuyor.",
+        "log_message": "Hata Mesajı",
+        "save_and_verify": "Bağlantıyı Kaydet ve Doğrula",
+        "client_id": "Uygulama (Client) ID",
+        "client_secret": "İstemci Parolası (Client Secret)",
+        "webhook_api_key": "Webhook API Anahtarı (x-api-key)",
+        "webhook_hint": "Bu anahtarı Power Automate akışınızdaki `x-api-key` başlığına eklemelisiniz.",
+        "tenant_id": "Azure Kiracı (Tenant) ID",
+        "instance_url": "Dynamics Sunucu Adresi (URL)",
+        "external_id": "Harici ID",
+        "provider_label": "Servis Sağlayıcı",
+        "instance_label": "Sunucu"
+      },
+      "import": {
+        "title": "Müşterileri İçe Aktar",
+        "subtitle": "Dynamics 365 verilerini sisteme senkronize edin",
+        "select_file": "CSV Dosyanızı Seçin",
+        "file_hint": "Client ID ve Şirket bilgilerinin dolu olduğundan emin olun. Eksik veriler geçici kodlarla oluşturulacaktır.",
+        "select_btn": "Dosya Seç (CSV/Semicolon)",
+        "processing": "İşleniyor...",
+        "analysis_complete": "Veri Analizi Tamamlandı",
+        "missing_client_no": "Müşteri No Eksik",
+        "missing_company": "Şirket Adı Eksik",
+        "attention": "DİKKAT:",
+        "attention_desc": "Eksik 'Client ID' verisi olan kullanıcılar, CRM doğrulaması yapılmadan içe aktarılacaktır. Eksik şirket bilgileri 'Bilinmeyen Firma' olarak işaretlenecektir.",
+        "cancel": "Vazgeç",
+        "start_import": "Şimdi İçe Aktar",
+        "writing_data": "Veriler Yazılıyor...",
+        "summary_title": "İçe Aktarma Özeti",
+        "new_upload": "Yeni Yükleme",
+        "go_to_customers": "Müşterilere Git"
+      },
+      "confirm": {
+        "delete_title": "Sistem Protokolü: Silme Onayı",
+        "delete_desc": "{count} adet veri nesnesi kalıcı olarak silinecek. Bu işlem geri alınamaz.",
+        "delete_confirm": "SİLME PROTOKOLÜNÜ BAŞLAT",
+        "cancel": "İPTAL"
+      }
+    },
+    "settings": {
+      "title": "Sistem Ayarları",
+      "subtitle": "Platform genelindeki yapılandırmaları ve entegrasyonları yönetin.",
+      "tabs": {
+        "general": "Allgemein",
+        "ai": "YZE",
+        "email": "E-Mail",
+        "sla": "SLA",
+        "branding": "Markalama",
+        "whatsapp": "WhatsApp",
+        "requirements": "Sistem Gereksinimleri",
+        "macros": "Macrolar",
+        "security": "Güvenlik & API"
+      },
+      "macros": {
+        "title": "Canned Responses (Macrolar)",
+        "description": "Sık kullanılan yanıtları yönetin.",
+        "header_label": "Macro Başlığı",
+        "header_placeholder": "örn: Hoşgeldiniz",
+        "content_label": "Yanıt İçeriği",
+        "content_placeholder": "Müşteriye gönderilecek metin...",
+        "add": "Hinzufügen",
+        "create_success": "Macro oluşturuldu",
+        "delete_success": "Macro silindi",
+        "delete_error": "Silme hatası: {message}"
+      },
+      "email_forms": {
+        "smtp_title": "Giden Sunucu (SMTP)",
+        "smtp_desc": "Sistem bildirimleri için SMTP yapılandırması.",
+        "imap_title": "Gelen Sunucu (IMAP)",
+        "imap_desc": "Mail-to-Ticket entegrasyonu için IMAP ayarları.",
+        "host": "Sunucu (Host)",
+        "user": "Kullanıcı",
+        "pass": "Şifre",
+        "port": "Port",
+        "save": "Save"
+      },
+      "security": {
+        "title": "Güvenlik & Şifreleme",
+        "desc": "Sistem güvenlik sertifikaları ve API anahtarları.",
+        "active_text": "AES-256-GCM Aktif",
+        "encryption_desc": "Tüm hassas veriler at-rest şifrelenmektedir."
+      },
+      "general": {
+        "title": "Genel Yapılandırma",
+        "description": "Temel platform ayarları.",
+        "portal_name": "Platform Adı",
+        "portal_name_placeholder": "örn: Aluplan Destek",
+        "frontend_url": "Frontend URL",
+        "frontend_url_placeholder": "https://destek.aluplan.com",
+        "portal_version": "KONTROL PANELİ v1.0"
+      },
+      "ai": {
+        "title": "Yapay Zeka Entegrasyonu",
+        "description": "Grok (xAI), DeepSeek, OpenAI veya Ollama servislerini yapılandırın.",
+        "chat_provider": "Varsayılan Sohbet Sağlayıcısı",
+        "chat_provider_desc": "Talep yanıtları ve asistan işlevleri için kullanılır.",
+        "embed_provider": "Varsayılan Vektörleştirme Sağlayıcısı",
+        "embed_provider_desc": "Bilgi bankası araması ve doküman indeksleme için kullanılır.",
+        "test_btn": "Bağlantıyı Test Et",
+        "save_btn": "Değişiklikleri Kaydet",
+        "center_title": "AI Zeka Merkezi",
+        "center_desc": "Çoklu yapay zeka sağlayıcılarını yönetin, hibrit model geçişlerini yapılandırın ve motor sağlığını izleyin.",
+        "motor_desc": "Zekayı güçlendiren {name} motoru.",
+        "primary_engine": "Birincil Motor",
+        "specialized_title": "Özel Görev Eşleşmeleri",
+        "specialized_desc": "Hangi görev için hangi AI motorunun kullanılacağını belirleyin.",
+        "task_categorization": "Bilet Kategorizasyonu",
+        "task_summarization": "Bilet Özetleme",
+        "task_reformatting": "RAG & Yeniden Biçimlendirme",
+        "task_sentiment": "Duygu Analizi (Sentiment)",
+        "task_translation": "Otomatik Çeviri",
+        "save_mappings": "Eşleşmeleri Kaydet",
+        "rag_title": "Semantik Arama & RAG Yapılandırması",
+        "rag_desc": "Bilgi havuzunuzu vektörleştiren ve arama kalitesini belirleyen temel ayarlar.",
+        "advanced_params": "Gelişmiş Parametreler",
+        "global_default": "Global Varsayılan",
+        "ollama_local": "Ollama (Lokal)",
+        "status_active": "Aktiv",
+        "status_inactive": "Passiv",
+        "hide_key": "{name} anahtarını gizle",
+        "show_key": "{name} anahtarını göster",
+        "model_placeholder": "örn: gpt-4, claude-3-opus...",
+        "total_latency": "Toplam Gecikme",
+        "validation": {
+          "missing_fields": "Eksik alanlar: {fields}",
+          "fields": {
+            "api_key": "API Anahtarı",
+            "chat_model": "Sohbet Modeli",
+            "embed_model": "Vektör Modeli",
+            "url": "Bağlantı URL"
+          }
+        },
+        "toasts": {
+          "load_error": "AI ayarları yüklenemedi: {message}",
+          "test_success": "{provider} bağlantısı başarılı!",
+          "test_error": "{provider} bağlantı hatası: {message}",
+          "test_failed": "Bağlantı testi başarısız: {message}",
+          "save_success": "{provider} ayarları kaydedildi.",
+          "save_error": "Kaydetme hatası: {message}"
+        },
+        "ollama": {
+          "title": "Ollama (Yerel)",
+          "chat_model": "Sohbet Modeli",
+          "embed_model": "Vektör Modeli"
+        },
+        "openai": {
+          "title": "OpenAI (Bulut)",
+          "chat_model": "Sohbet Modeli",
+          "embed_model": "Vektör Modeli"
+        },
+        "providers": {
+          "ollama": "Ollama (Yerel)",
+          "openai": "OpenAI (Bulut)",
+          "openai_cloud": "OpenAI (Bulut - Önerilen)",
+          "xai": "xAI (Grok)",
+          "groq": "Groq (Hızlı ve Ücretsiz)",
+          "deepseek": "DeepSeek",
+          "llmapi": "LLMAPI (Önerilen)",
+          "custom": "Özel (OpenAI Uyumlu)",
+          "custom_info": "Özel (Destekleniyorsa)",
+          "other_custom": "Diğer özel servis",
+          "groq_no_embed": "Groq (Vektörleme desteklenmiyor)"
+        }
+      },
+      "email": {
+        "title": "E-posta Servis Ayarları",
+        "description": "Sistem bildirimleri ve müşteri yazışmaları için sağlayıcı yapılandırması.",
+        "active_provider": "Aktif Sağlayıcı",
+        "from_address": "Gönderen E-posta Adresi",
+        "ollama_title": "Ollama (Yerel) Yapılandırması",
+        "openai_title": "OpenAI Altyapı Yapılandırması",
+        "azure_title": "Azure OpenAI Yapılandırması",
+        "status_active": "Aktiv",
+        "status_inactive": "Devre Dışı",
+        "resend_title": "Resend Yapılandırması",
+        "smtp_title": "SMTP Yapılandırması",
+        "gmail_title": "Gmail OAuth2 Yapılandırması",
+        "authorized": "Yetkilendirildi",
+        "not_authorized": "Yetkilendirilmedi",
+        "smtp_host": "Sunucu (Host)",
+        "smtp_port": "Port",
+        "smtp_user": "Kullanıcı Adı",
+        "smtp_pass": "Şifre",
+        "resend_api_key": "API Anahtarı",
+        "gmail_client_id": "Client ID",
+        "gmail_client_secret": "Client Secret",
+        "redirect_uri_label": "Yetkili Yönlendirme URI (Google Cloud Console'a ekleyin)",
+        "save_provider_btn": "E-posta Sağlayıcısını Kaydet",
+        "test_connection_btn": "Bağlantıyı Test Et",
+        "gmail": {
+          "credentials_save": "Kimlik Bilgilerini Kaydet",
+          "authorize_btn": "Google ile Yetkilendir",
+          "auth_hint": "Önce kimlik bilgilerinizi kaydedin, ardından 'Google ile Yetkilendir' butonuna tıklayın. İzin verdikten sonra buraya yönlendirileceksiniz."
+        },
+        "providers": {
+          "resend": "Resend (API)",
+          "smtp": "SMTP (Geleneksel)",
+          "gmail": "Gmail (OAuth2)"
+        },
+        "tabs": {
+          "config": "Yapılandırma",
+          "templates": "Şablonlar",
+          "logs": "Günlükler"
+        },
+        "logs": {
+          "title": "Gönderim Geçmişi",
+          "description": "Sistem tarafından gönderilen tüm işlemsel e-postaların dökümü.",
+          "table": {
+            "recipient": "Alıcı",
+            "template": "Şablon",
+            "status": "Status",
+            "date": "Tarih",
+            "empty": "Henüz e-posta gönderim kaydı bulunamadı."
+          },
+          "status": {
+            "sent": "GÖNDERİLDİ",
+            "delivered": "ULAŞTI",
+            "bounced": "GERİ_DÖNDÜ",
+            "failed": "BAŞARISIZ",
+            "pending": "BEKLEMEDE"
+          },
+          "pagination": {
+            "prev": "Geri",
+            "next": "İleri",
+            "page": "SAYFA"
+          },
+          "toasts": {
+            "logs_load_error": "Günlükler yüklenemedi"
+          }
+        },
+        "templates": {
+          "title": "E-posta Şablonları",
+          "description": "MJML tabanlı e-posta şablonlarını yönetin ve özelleştirin.",
+          "preview_module": "Şablon Önizleme Modülü",
+          "preview_desc": "Aktif MJML şablonlarını mock verilerle test edin.",
+          "select_placeholder": "Şablon seçin...",
+          "new_btn": "Yeni Şablon",
+          "preview_btn": "Önizleme",
+          "save_btn": "Save",
+          "new_placeholder": "Şablon adı (örn: welcome-email)",
+          "create_btn": "Oluştur",
+          "cancel_btn": "Cancel",
+          "editor_title": "MJML EDİTÖRÜ",
+          "editor_placeholder": "MJML kodunuzu buraya yazın...",
+          "preview_title": "ÖNİZLEME",
+          "subject_label": "Konu",
+          "preview_hint": "Önizleme bulunamadı",
+          "preview_flow_hint": "Lütfen bir şablon seçin ve Önizleme butonuna tıklayın.",
+          "safe_editor_title": "Güvenli Editör",
+          "safe_editor_desc": "MJML şablonunu güvenli bir ortamda düzenleyin.",
+          "default_mjml": {
+            "text1": "Yeni e-posta şablonunuz başarıyla oluşturuldu.",
+            "text2": "Düzenlemek için soldaki MJML editörünü kullanabilirsiniz. Sağdaki önizleme panelinde canlı sonucu görebilirsiniz.",
+            "button": "Yardım Merkezi"
+          },
+          "toasts": {
+            "load_error": "Şablonlar yüklenemedi",
+            "compile_error": "Derleme hatası",
+            "preview_failed": "Önizleme yüklenemedi: {message}",
+            "save_success": "{name} şablonu kaydedildi.",
+            "save_failed": "Kayıt başarısız: {message}",
+            "create_success": "{name} şablonu oluşturuldu.",
+            "create_failed": "Oluşturma başarısız: {message}",
+            "name_required": "Şablon adı gerekli"
+          }
+        }
+      },
+      "sla": {
+        "title": "SLA Politikaları",
+        "description": "Müşteri destek sürelerini ve hizmet seviyesi hedeflerini yönetin.",
+        "add_policy": "Politika Ekle",
+        "table": {
+          "name": "Politika Adı",
+          "priority": "Öncelik",
+          "department": "Abteilung",
+          "response": "İlk Yanıt",
+          "resolution": "Çözüm",
+          "hours": "Çalışma Saatleri",
+          "actions": "İşlemler"
+        },
+        "empty_state": "Henüz bir SLA politikası tanımlanmamış.",
+        "how_it_works": "Nasıl çalışır?",
+        "how_it_works_desc": "Yeni bir talep oluşturulduğunda sistem önce bu departman ve önceliğe eşleşen bir politika arar.",
+        "form": {
+          "edit_title": "Politikayı Düzenle",
+          "new_title": "Yeni SLA Politikası",
+          "name_label": "Politika Adı",
+          "priority_label": "Öncelik Seviyesi",
+          "department_label": "İlgili Departman",
+          "response_label": "İlk Yanıt Süresi (dakika)",
+          "resolve_label": "Çözüm Süresi (dakika)",
+          "business_hours": "Sadece çalışma saatleri içinde",
+          "placeholders": {
+            "name": "örn: Standart Destek",
+            "department": "Departman seçin"
+          },
+          "cancel_btn": "Cancel"
+        }
+      },
+      "branding": {
+        "title": "Markalama ve Kurumsal Kimlik",
+        "description": "Kurumsal kimlik ve iletişim bilgileri. Bu bilgiler e-posta footer alanında otomatik gösterilir.",
+        "company_label": "Şirket Adı",
+        "logo_label": "Şirket Logosu",
+        "email_label": "Şirket E-posta",
+        "phone_label": "Şirket Telefon",
+        "address_label": "İletişim Adresi (Footer)",
+        "social_links": "Sosyal Medya Linkleri",
+        "upload_btn": "Logo Yükle",
+        "uploading": "Yükleniyor...",
+        "logo_hint": "PNG, JPG veya SVG (Maks 2MB)",
+        "save_btn": "Marka Ayarlarını Kaydet",
+        "placeholders": {
+          "company": "örn: Aluplan A.Ş.",
+          "email": "destek@aluplan.com.tr",
+          "phone": "+90 ...",
+          "address": "örn: Örnek Mah. Örnek Cad. No:123..."
+        },
+        "logo_title": "Logo"
+      },
+      "whatsapp": {
+        "title": "WhatsApp Entegrasyonu",
+        "description": "Meta WhatsApp Business API servislerini yapılandırın ve gelen talepleri takip edin.",
+        "verify_token": "Doğrulama Anahtarı (Verify Token)",
+        "access_token": "Erişim Anahtarı (Access Token)",
+        "phone_number_id": "Telefon Numarası ID",
+        "webhook_url": "Webhook URL",
+        "webhook_hint": "Bu URL'yi Meta Developer portalındaki Webhook yapılandırmasına kopyalayın.",
+        "status_configured": "Yapılandırıldı",
+        "status_missing": "Yapılandırma Eksik",
+        "save_btn": "WhatsApp Ayarlarını Kaydet"
+      },
+      "requirements": {
+        "title": "Sistem Gereksinimleri",
+        "description": "Giriş sayfası için ürün özelliklerini ve teknik gereksinimleri yönetin.",
+        "save_btn": "Değişiklikleri Kaydet",
+        "no_products": "Bu dil için tanımlanmış ürün bulunamadı.",
+        "init_list": "{lang} Listesini Başlat",
+        "remove_product": "Ürünü Kaldır",
+        "product_title_label": "Ürün Başlığı",
+        "section_header_label": "Bölüm Başlığı",
+        "requirement_items_label": "Gereksinim Öğeleri",
+        "add_item": "Öğe Ekle",
+        "add_section": "Bölüm Ekle",
+        "add_new_spec": "Yeni Ürün Özelliği Ekle",
+        "default_product_title": "Yeni Ürün",
+        "default_section_name": "Gereksinimler",
+        "default_item_text": "Madde 1",
+        "default_new_section": "Yeni Bölüm",
+        "placeholders": {
+          "product": "örn: ALLPLAN 2026",
+          "section": "örn: Donanım Gereksinimleri",
+          "item": "Vurgu için **kalın** kullanın"
+        },
+        "toasts": {
+          "save_success": "Sistem gereksinimleri başarıyla güncellendi.",
+          "save_error": "Güncelleme sırasında hata oluştu: {message}"
+        }
+      },
+      "toasts": {
+        "save_success": "{key} başarıyla güncellendi.",
+        "save_error": "Hata: {message}",
+        "load_error": "Veriler yüklenemedi: {message}",
+        "url_copied": "URL kopyalandı.",
+        "gmail_success": "Gmail hesabı başarıyla bağlandı.",
+        "gmail_error": "Yetkilendirme başarısız oldu.",
+        "logo_success": "Logo başarıyla kaydedildi.",
+        "logo_error": "Logo yüklenirken hata oluştu.",
+        "policy_save_success": "Politika kaydedildi.",
+        "policy_delete_success": "Politika silindi.",
+        "policy_confirm_delete": "Bu politikayı silmek istediğinizden emin misiniz?",
+        "connection_success": "Bağlantı başarılı",
+        "connection_failed": "Bağlantı başarısız",
+        "connection_error": "Bağlantı hatası",
+        "ollama_ok": "Ollama ile iletişim sağlandı.",
+        "ollama_fail": "Ollama servisine ulaşılamadı.",
+        "openai_ok": "OpenAI anahtarları doğrulandı.",
+        "openai_fail": "API anahtarı geçersiz veya eksik.",
+        "xai_ok": "xAI bağlantısı başarılı.",
+        "xai_fail": "xAI bağlantısı başarısız.",
+        "groq_ok": "Groq bağlantısı doğrulandı.",
+        "groq_fail": "API anahtarı veya yapılandırma hatası.",
+        "deepseek_ok": "DeepSeek bağlantısı başarılı.",
+        "deepseek_fail": "DeepSeek bağlantısı başarısız. API anahtarınızı kontrol edin.",
+        "llmapi_ok": "LLMAPI.ai bağlantısı başarılı.",
+        "llmapi_fail": "LLMAPI.ai bağlantısı başarısız.",
+        "custom_ok": "Özel API bağlantısı doğrulandı.",
+        "custom_fail": "Özel yapılandırma hatası.",
+        "server_unreachable": "Sunucuya ulaşılamıyor.",
+        "gmail_credentials_hint": "Önce Client ID ve Secret'ı kaydedin.",
+        "logo_upload_error": "Logo yükleme hatası.",
+        "generic_error": "Bir hata oluştu.",
+        "generic_success_hint": "{provider} servisine erişim sağlandı.",
+        "generic_fail_hint": "Servis şu anda ulaşılamaz durumda."
+      }
+    },
+    "knowledge_base": {
+      "title": "Wissensdatenbank",
+      "subtitle": "Unternehmensgedächtnis, Lösungsartikel und Dokumentationszentrum",
+      "buttons": {
+        "analytics": "ANALYTIK",
+        "new_article": "NEUER ARTIKEL",
+        "refresh": "AKTUALISIEREN",
+        "publish": "VERÖFFENTLICHEN",
+        "reject": "ABLEHNEN",
+        "detail": "DETAIL"
+      },
+      "search": {
+        "placeholder": "SUCHEN..."
+      },
+      "filters": {
+        "all": "ALLE",
+        "draft": "ENTWURF",
+        "review": "WIRD GEPRÜFT",
+        "active": "AKTIV",
+        "archived": "ARCHIVIERT"
+      },
+      "stats": {
+        "total_articles": "Insgesamt {count} Artikel",
+        "total": "Gesamtartikel",
+        "published": "Veröffentlicht",
+        "views": "Aufrufe"
+      },
+      "meta": {
+        "author": "AUTOR",
+        "update": "AKTUALISIERUNG",
+        "views": "AUFRUFE"
+      },
+      "empty": {
+        "no_records": "Noch keine Artikel gefunden",
+        "loading": "Datenebenen werden geladen..."
+      }
+    }
+  },
+  "products": {
+    "title": "Ürünler ve Modüller",
+    "subtitle": "Destek departmanlarınız için ana ürünleri ve yapay zeka tarafından sınıflandırılacak alt kategorileri yönetin.",
+    "actions": {
+      "add_product": "Yeni Ürün Ekle",
+      "add_category": "Kategori Ekle"
+    },
+    "empty": {
+      "no_products": "Henüz Ürün Tanımlanmamış",
+      "no_products_desc": "Müşterilerin talep açabileceği ana ürünleri ve modülleri \"Yeni Ürün Ekle\" butonunu kullanarak tanımlayabilirsiniz.",
+      "no_categories": "Bu ürün için henüz alt kategori/modül tanımlanmamış. AI akıllı etiketlemesi için kategori ekleyin."
+    },
+    "labels": {
+      "subcategories": "Alt Kategoriler (Yapay Zeka Etiketleri)",
+      "no_keywords": "Anahtar kelime yok",
+      "product_name": "Ürün Adı",
+      "description": "Beschreibung",
+      "category_name": "Kategori Adı",
+      "keywords": "Anahtar Kelimeler (Virgülle Ayırın)",
+      "keywords_help": "Yapay zeka, kullanıcı biletini bu etiketler listesinden birine sınıflandırmaya çalışırken bu kelimeler bağlam oluşturmasına yardımcı olabilir."
+    },
+    "placeholders": {
+      "product_name": "Örn: Aluplan Pro",
+      "description": "Ürünle ilgili kısa bir açıklama...",
+      "category_name": "Örn: Fatura Modülü",
+      "keywords": "Örn: fatura oluşturma, iptal, kdv, e-fatura"
+    },
+    "dialogs": {
+      "edit_product": "Ürünü Düzenle",
+      "add_product": "Yeni Ürün Ekle",
+      "edit_category": "Kategoriyi Düzenle",
+      "add_category": "Yeni Modül / Kategori Ekle",
+      "product_desc": "Ana ürün veya hizmetinizi tanımlayın. Müşteriler bilet oluştururken ilk olarak bu ürünleri görecekler.",
+      "category_desc": "Gelen biletlerin yapay zeka tarafından alt etiketlenmesi için kullanacağı alt kategoriyi ve o kategoriyle bağdaşan anahtar kelimeleri girin."
+    },
+    "toasts": {
+      "fetch_error": "Ürünler yüklenirken hata oluştu",
+      "product_updated": "Ürün güncellendi",
+      "product_added": "Yeni ürün eklendi",
+      "category_updated": "Kategori güncellendi",
+      "category_added": "Yeni kategori eklendi",
+      "product_deleted": "Ürün silindi",
+      "category_deleted": "Kategori silindi",
+      "save_failed": "Kayıt başarısız",
+      "delete_failed": "Silme başarısız"
+    },
+    "confirms": {
+      "delete_product": "Bu ürünü ve altındaki tüm kategorileri silmek istediğinize emin misiniz?",
+      "delete_category": "Bu kategoriyi silmek istediğinize emin misiniz?"
+    }
+  },
+  "faq": {
+    "title": "SSS_YÖNETİM_BİRİMİ",
+    "subtitle": "Otomatik olarak ayıklanan operasyonel bilgi örneklerini inceleyin ve senkronize edin.",
+    "refresh_cache": "ÖNBELLEĞİ_YENİLE",
+    "start_extraction": "AYIKLAMAYI_BAŞLAT",
+    "filters": {
+      "all": "HEPSİ",
+      "pending_review": "ONAY_BEKLİYOR",
+      "published": "YAYINDA",
+      "draft": "TASLAK"
+    },
+    "not_found": "SSS bulunamadı",
+    "not_found_desc": "Filtreyi değiştirmeyi deneyin veya yeni SSS'ler oluşturmak için ayıklama işlemini başlatın.",
+    "frequency": "SIKLIK",
+    "confidence_score": "GÜVEN_SKORU",
+    "approve": "ONAYLA",
+    "dismiss": "YOK_SAY",
+    "source_ticket": "Kaynak Talep",
+    "toasts": {
+      "extraction_started": "Pipeline Başlatıldı",
+      "extraction_started_desc": "SSS ayıklama işlemi arka planda çalışıyor.",
+      "fetch_error": "SSS'ler yüklenirken hata oluştu",
+      "approved": "SSS Onaylandı",
+      "approved_desc": "Örnek başarıyla yayınlandı.",
+      "dismissed": "SSS Yok Sayıldı",
+      "dismissed_desc": "Örnek taslağa taşındı veya silindi.",
+      "op_failed": "İşlem başarısız oldu",
+      "pipeline_failed": "Pipeline başlatılamadı"
+    }
+  },
+  "faq_learning": {
+    "title": "SSS Otomatik Öğrenme Havuzu",
+    "subtitle": "NÖRAL SENKRONİZASYON: OPERASYONEL VERİYİ YAPILANDIRILMIŞ BİLGİYE DÖNÜŞTÜRME",
+    "trigger_loop": "ÖĞRENME_DÖNGÜSÜNÜ_TETİKLE",
+    "health_analysis": "BİLGİ_BANKASI_SAĞLIK_ANALİZİ",
+    "realtime_telemetry_label": "GERÇEK_ZAMANLI_TELEMETRİ",
+    "resolution_rate": "ÇÖZÜM_ORANI",
+    "prevented_tickets": "ÖNLENEN_BİLETLER",
+    "writing_accuracy": "YAZ_DOĞRULUĞU",
+    "highest_confidence": "EN_YÜKSEK_GÜVEN",
+    "total_interactions": "TOPLAM_ETKİLEŞİM",
+    "last_30_days": "SON_30_GÜN_SORGU",
+    "confidence_distribution": "GÜVEN_DAĞILIMI",
+    "bands": {
+      "high": "YÜKSEK",
+      "medium": "ORTA",
+      "low": "DÜŞÜK",
+      "no_match": "EŞLEŞME_YOK"
+    },
+    "flow_status": "AKIŞ_DURUMU",
+    "ingestion_engine": "VERİ_ALIM_MOTORU",
+    "ingestion_engine_desc": "Durum: AKTİF | Kapatılan Bilet Olayları İzleniyor",
+    "abstraction_layer": "SOYUTLAMA_KATMANI",
+    "abstraction_layer_desc": "Mevcut: BOŞTA | Nomic-Embed Stratejisi",
+    "validation_queue": "DOĞRULAMA_KUYRUĞU",
+    "validation_queue_desc": "{count} ADAY_DOĞRULAMA_BEKLİYOR",
+    "last_sync": "SON_SENKRONİZASYON",
+    "candidates_title": "ÖĞRENME_ADAYLARI",
+    "waiting_validation": "DOĞRULAMA_BEKLEYEN",
+    "all_synced": "TÜM_PATERNLER_EŞİTLENDİ",
+    "all_synced_desc": "Yeni bilgi örnekleri bulmak için çıkarma döngüsünü manuel olarak çalıştırın.",
+    "add_to_kb": "BİLGİ_BANKASINA_EKLE",
+    "refresh": "YENİLE",
+    "toasts": {
+      "pipeline_started": "Yapay Zeka Hattı Başlatıldı",
+      "pipeline_desc": "Çözülen biletlerin derinlemesine analizi devam ediyor.",
+      "knowledge_committed": "Bilgi Onaylandı",
+      "knowledge_committed_desc": "Model başarıyla genel bilgi havuzuna entegre edildi.",
+      "sync_error": "Veri senkronizasyon hatası",
+      "pipeline_exception": "Pipeline istisnası oluştu",
+      "commit_error": "Onaylama hatası"
+    }
+  },
+  "live_support_request": {
+    "title": "Destek Talepleri",
+    "description": "Sistem genelindeki açık ve aktif destek taleplerini yönetin."
+  },
+  "ai_health": {
+    "title": "YAPAY ZEKA SAĞLIK VE TELEMETRİ",
+    "subtitle": "AI modellerinin, token kullanımının ve RAG performansının gerçek zamanlı izlenmesi.",
+    "dashboard": {
+      "panel_title": "AI Sağlık & Performans Paneli",
+      "send_report": "Haftalık Raporu Şimdi Gönder",
+      "report_queued": "Rapor kuyruğa alındı. Mailboxınızı kontrol edin.",
+      "report_failed": "Rapor oluşturulamadı.",
+      "total_requests": "Toplam İstek",
+      "total_tokens": "Toplam Token",
+      "approx_cost": "Yaklaşık Maliyet",
+      "active_models": "Aktif Modeller",
+      "unknown": "Bilinmiyor",
+      "performance_trends": "Performans Trendleri (Son 7 Gün)",
+      "performance_desc": "AI doğruluğu ve savuşturma oranlarının zaman içindeki değişimi.",
+      "kb_gaps": "Bilgi Havuzu Boşlukları",
+      "kb_gaps_desc": "Cevaplanamayan en popüler kullanıcı soruları.",
+      "times_unanswered": "{count} kez cevapsız kaldı",
+      "no_gaps": "Belirgin bir bilgi boşluğu tespit edilmedi.",
+      "channel_distribution": "Kanal Dağılımı",
+      "channel_desc": "İsteklerin hangi kanallardan geldiğini görün.",
+      "requests_count": "{count} İstek",
+      "efficiency_summary": "Verimlilik Özeti (30 Günlük)",
+      "efficiency_desc": "AI yanıt kalitesi ve sistem sağlığı.",
+      "rag_accuracy": "RAG Doğruluğu (Yüksek Güven)",
+      "deflection_rate": "Talep Savuşturma (Deflection)",
+      "token_label": "Token"
+    }
+  },
+  "email_validation": {
+    "title": "E-Posta Doğrulama",
+    "subtitle": "E-posta adreslerinin geçerliliğini, DNS kayıtlarını ve SMTP durumunu kontrol edin.",
+    "data_labels": {
+      "valid": "Geçerli",
+      "invalid": "Geçersiz",
+      "found": "Bulundu",
+      "missing": "Eksik",
+      "ok": "Tamam",
+      "error": "Fehler",
+      "enabled": "Aktiv",
+      "catch_all": "Genel Alıcı",
+      "clean": "Temiz"
+    },
+    "tabs": {
+      "single": "Hızlı Kontrol",
+      "bulk": "Müşteri Listesi"
+    },
+    "single": {
+      "placeholder": "Doğrulanacak e-posta adresi (ör: user@example.com)",
+      "button": "Analiz Et",
+      "verifying": "Doğrulanıyor..."
+    },
+    "bulk": {
+      "verify_selected": "Seçilenleri Doğrula ({count})",
+      "verify_all": "Tümünü Doğrula"
+    },
+    "typo": {
+      "suggestion": "Bunu mu demek istediniz?",
+      "use_suggested": "Önerileni Kullan"
+    },
+    "search": {
+      "customer_search": "Müşteri veya Şirket Arayın...",
+      "filtered_records": "{count} Filtrelenmiş Kayıt"
+    },
+    "score_card": {
+      "score": "Skor",
+      "reliable": "Güvenilir",
+      "risky": "Riskli",
+      "invalid": "Geçersiz",
+      "disposable_hint": "Geçici e-posta servisi tespit edildi.",
+      "role_based_hint": "Kurumsal rol adresi (destek, bilgi vb.).",
+      "catch_all_hint": "Tüm e-postaları kabul eden (Catch-All) sunucu.",
+      "valid_hint": "E-posta adresi kullanımı için uygun görünüyor."
+    },
+    "data_points": {
+      "syntax": "Sözdizimi",
+      "syntax_desc": "E-posta formatı RFC standartlarına uygunluk kontrol edildi.",
+      "dns": "DNS / MX",
+      "dns_desc": "Alan adının e-posta sunucu kayıtları ({exchange}) doğrulandı.",
+      "smtp": "SMTP",
+      "smtp_desc": "Sunucuya socket seviyesinde erişildi ve handshake denendi.",
+      "greylisted": "Sunucu geçici olarak reddetti (Greylisted), daha sonra tekrar denenmeli.",
+      "ai": "Zeka (AI)",
+      "ai_desc": "Zeka katmanı analizi yapıldı.",
+      "risk": "Risk Analizi",
+      "risk_clean": "Bilinen bir risk faktörü bulunamadı.",
+      "catch_all_desc": "Alan adı tüm adresleri kabul ediyor, kesin teslimat garantisi yok."
+    },
+    "empty": {
+      "waiting": "Analiz İçin E-Posta Bekleniyor",
+      "waiting_desc": "Lütfen yukarıdaki alana kontrol etmek istediğiniz adresi girin.",
+      "no_results": "Sonuç Bulunamadı",
+      "no_results_desc": "Arama kriterlerinize uygun müşteri bulunamadı.",
+      "no_data": "Veri Bulunmuyor",
+      "no_data_desc": "Bu e-posta henüz doğrulanmamış. Lütfen doğrulama işlemini başlatın.",
+      "verify_now": "Şimdi Doğrula"
+    },
+    "filters": {
+      "all": "Alle"
+    },
+    "table": {
+      "customer_company": "Müşteri / Şirket",
+      "email": "E-Mail",
+      "syntax": "Sözdizimi",
+      "dns_mx": "DNS / MX",
+      "smtp": "SMTP",
+      "group_score": "Grup / Skor",
+      "loading": "Müşteriler Yükleniyor..."
+    },
+    "detail": {
+      "title": "Detaylı Analiz",
+      "trust_score": "Güven Skoru",
+      "status": "Status",
+      "intelligence": "Zeka Katmanı (Intelligence)",
+      "server_records": "Sunucu Kayıtları",
+      "mx_data": "MX RECORD DATA",
+      "no_mx": "MX Kaydı Bulunamadı.",
+      "smtp_log": "SMTP HANDSHAKE LOG",
+      "yes_risky": "EVET / RİSKLİ",
+      "no_clean": "HAYIR / TEMİZ",
+      "smtp_success": "{server} sunucusuna başarıyla bağlantı kuruldu. EHLO kabul edildi.",
+      "smtp_fail": "Bağlantı başarısız veya handshake sırasında zaman aşımı oluştu."
+    },
+    "toasts": {
+      "verified_count": "{count} e-posta doğrulandı.",
+      "reverified": "{email} yeniden doğrulandı.",
+      "verify_error": "Doğrulama hatası",
+      "bulk_verify_error": "Toplu doğrulama hatası"
+    }
+  },
+  "teams": {
+    "fetch_error": "Veriler yüklenirken bir sorun oluştu.",
+    "search_placeholder": "Teams oder Abteilungen suchen...",
+    "no_description": "Bu departman için açıklama eklenmemiş.",
+    "min_suffix": "dk",
+    "profile_pic_alt": "profil resmi",
+    "statuses": {
+      "online": "Çevrimiçi",
+      "away": "Dışarıda",
+      "dnd": "Rahatsız Etmeyin",
+      "offline": "Çevrimdışı"
+    },
+    "loading": {
+      "agent": "Profil verileri analiz ediliyor...",
+      "dept": "Departman verileri yükleniyor...",
+      "team": "Ekip verileri senkronize ediliyor..."
+    },
+    "nav": {
+      "back_teams": "Ekiplere Dön",
+      "back": "Geri Dön"
+    },
+    "actions": {
+      "edit_profile": "Profili Düzenle",
+      "edit_dept": "Departmanı Düzenle",
+      "add_skill": "Yeni Yetkinlik Ekle",
+      "add_sla": "Yeni SLA Politikası Ekle",
+      "add_member": "Yeni Üye Ekle",
+      "configure": "Yapılandır",
+      "add_agent": "Agent hinzufügen",
+      "add_team": "Neues Team",
+      "manage_team": "Takımı Yönet",
+      "details": "Details",
+      "view_profile": "Profil",
+      "view_team": "TAKIMI GÖR",
+      "edit": "DÜZENLE"
+    },
+    "tabs": {
+      "performance": "Performans",
+      "skills": "Yetkinlikler",
+      "schedule": "Çalışma Takvimi",
+      "overview": "Genel Bakış",
+      "sla_policies": "SLA Politikaları",
+      "departments": "Abteilungen",
+      "teams": "Teams",
+      "agents": "Agenten"
+    },
+    "stats": {
+      "tickets": "Ticket İstatistikleri",
+      "last_30_days": "SON 30 GÜN",
+      "active_load": "Aktif İş Yükü",
+      "csat": "CSAT Skoru",
+      "avg_response": "Ort. Yanıt",
+      "monthly_quota": "Aylık Ticket Kotası",
+      "first_response_target": "İlk Yanıt SLA Hedefi",
+      "active_teams": "Aktif Ekipler",
+      "total_agents": "Toplam Ajan",
+      "avg_response_dept": "Ort. Yanıt Süresi",
+      "sla_compliance": "SLA Uyumu",
+      "active_ticket_load": "Aktif Ticket Yükü",
+      "quick_stats": "Hızlı İstatistikler",
+      "online_rate": "Online Oranı",
+      "pending_queue": "Bekleyen Kuyruk",
+      "resolved_today": "Bugün Çözülen",
+      "alerts": "Uyarılar",
+      "overload": "Fazla Yüklenme",
+      "sla_stable": "SLA Stabil"
+    },
+    "labels": {
+      "badges": "Başarı Rozetleri",
+      "sla_master": "SLA Master",
+      "top_rated": "Top Rated",
+      "quick_resolve": "Hızlı Çözüm",
+      "targets": "Hedefler",
+      "technical_skills": "Teknik Yetkinlikler",
+      "skills_desc": "Ajanın uzmanlık alanları ve güven seviyeleri.",
+      "no_skills": "Henüz yetkinlik atanmamış.",
+      "leave": "İZİN",
+      "recent_activity": "Letzte Aktivitäten",
+      "critical_sla": "Kritik SLA Hedefleri",
+      "first_response": "İLK YANIT",
+      "resolution": "ÇÖZÜM",
+      "first_response_time": "İlk Yanıt",
+      "resolution_time": "Çözüm Süresi",
+      "sla_config": "SLA Yapılandırması",
+      "sla_config_desc": "Departman genelindeki hizmet seviyesi hedefleri.",
+      "automation_status": "OTOMASYON DURUMU",
+      "active": "AKTİF",
+      "passive": "PASİF",
+      "round_robin": "Round Robin",
+      "rr_desc": "Sıralı atama stratejisi uygulanıyor.",
+      "team_members": "Ekip Üyeleri",
+      "command_center": "Team-Kommandozentrale",
+      "organization": "Einzelne Organisation: Aluplan Support System",
+      "auto_assignment": "OTO-ATAMA",
+      "strategy": "Strateji:",
+      "agent": "Agent / Vertreter",
+      "status": "Status",
+      "role": "Rolle",
+      "actions": "Aktionen",
+      "senior_agent": "Kıdemli Destek Uzmanı",
+      "default_bio": "Müşteri memnuniyeti odaklı, teknik çözüm süreçlerinde 5+ yıl deneyimli uzman.",
+      "preparing_charts": "Performans grafikleri hazırlanıyor.",
+      "member": "Üye",
+      "joined_at": "Katılım: {date}",
+      "level_prefix": "SEVİYE",
+      "default_dept_desc": "Bu departman organizasyonun temel destek kollarından biridir.",
+      "priority_suffix": "ÖNCELİK",
+      "minutes_suffix": "dk",
+      "agent_count": "{count} Ajan",
+      "auto_assign_on": "Oto-Atama Açık",
+      "auto_assign_off": "Manuel Atama",
+      "tickets": "Ticket İstatistikleri",
+      "last_30_days": "SON 30 GÜN",
+      "active_load": "Aktif İş Yükü",
+      "csat": "CSAT Skoru",
+      "avg_response": "Ort. Yanıt",
+      "monthly_quota": "Aylık Ticket Kotası",
+      "first_response_target": "İlk Yanıt SLA Hedefi",
+      "active_teams": "Aktif Ekipler",
+      "total_agents": "Toplam Ajan",
+      "avg_response_dept": "Ort. Yanıt Süresi",
+      "sla_compliance": "SLA Uyumu",
+      "active_ticket_load": "Aktive Ticketbelastung",
+      "quick_stats": "Hızlı İstatistikler",
+      "online_rate": "Online Oranı",
+      "pending_queue": "Bekleyen Kuyruk",
+      "resolved_today": "Bugün Çözülen",
+      "alerts": "Uyarılar",
+      "overload": "Fazla Yüklenme",
+      "sla_stable": "SLA Stabil"
+    },
+    "creation": {
+      "title": "Yeni Ekip Oluştur",
+      "description": "Operasyonel süreçleri yönetmek için yeni bir ekip tanımlayın.",
+      "team_name": "Ekip İsmi",
+      "team_name_placeholder": "Örn: Teknik Destek - Seviye 2",
+      "department": "Abteilung",
+      "select_department": "Departman seçin",
+      "desc_label": "Beschreibung",
+      "desc_placeholder": "Ekibin görev tanımı...",
+      "auto_assign": "Otomatik Atama",
+      "auto_assign_desc": "Yeni ticketlar bu ekibe otomatik atanır.",
+      "assign_strategy": "Atama Stratejisi",
+      "round_robin": "Round Robin (Sıralı)",
+      "least_loaded": "Least Loaded (Yük Bazlı)",
+      "skill_based": "Skill Based (Yetenek Bazlı)",
+      "submit": "Ekibi Başlat",
+      "submitting": "Oluşturuluyor...",
+      "success": "Yeni ekip başarıyla oluşturuldu.",
+      "error_dept": "Lütfen bir departman seçin.",
+      "error_server": "Ekip oluşturulurken bir hata oluştu."
+    },
+    "member_add": {
+      "title": "Yeni Ajan Ata",
+      "description": "Ekibe sistemde kayıtlı olan bir kullanıcıyı ajan olarak atayın.",
+      "select_agent": "Kullanıcı (Ajan)",
+      "select_agent_placeholder": "Bir kullanıcı seçin",
+      "loading_users": "Kullanıcılar yükleniyor...",
+      "no_users": "Atanabilecek yeni kullanıcı bulunamadı.",
+      "role": "Ekip İçi Rolü",
+      "select_role": "Rol seçin",
+      "role_desc": "Bu rol sadece bu ekip içindeki yetkilerini belirler.",
+      "cancel": "Cancel",
+      "submit": "Ekibe Ata",
+      "submitting": "Ekleniyor...",
+      "success": "Ekibe yeni üye başarıyla eklendi.",
+      "error_select": "Lütfen bir ajan seçin.",
+      "error_server": "Üye eklenirken bir hata oluştu."
+    },
+    "errors": {
+      "fetch_profile": "Ajan profili alınamadı.",
+      "fetch_dept": "Departman bilgileri alınamadı."
+    },
+    "days": {
+      "mon": "Pazartesi",
+      "tue": "Salı",
+      "wed": "Çarşamba",
+      "thu": "Perşembe",
+      "fri": "Cuma",
+      "sat": "Cumartesi",
+      "sun": "Pazar"
+    }
+  },
+  "users": {
+    "title": "Ekip Yönetimi",
+    "desc": "Destek temsilcilerini, yöneticileri ve adminleri yönetin.",
+    "add_user": "Kullanıcı Ekle",
+    "edit_user": "Kullanıcı Düzenle",
+    "delete_confirm": "{name} kullanıcısını silmek istediğinize emin misiniz?",
+    "empty": "Kullanıcı bulunamadı",
+    "deleted_success": "Kullanıcı başarıyla silindi",
+    "fetch_error": "Kullanıcılar yüklenirken hata oluştu",
+    "dialog": {
+      "title_create": "Yeni Kullanıcı Ekle",
+      "title_edit": "Kullanıcı Düzenle",
+      "full_name": "Ad Soyad",
+      "name_placeholder": "John Doe",
+      "email": "E-Mail",
+      "email_placeholder": "john@example.com",
+      "password": "Şifre",
+      "password_placeholder": "******",
+      "new_password_optional": "Yeni Şifre (İsteğe Bağlı)",
+      "role": "Rolle",
+      "select_role_placeholder": "Bir rol seçin",
+      "roles": {
+        "admin": "Yönetici",
+        "support_manager": "Destek Müdürü",
+        "support_agent": "Destek Uzmanı",
+        "viewer": "Gözlemci"
+      },
+      "btn_create": "Oluştur",
+      "btn_update": "Güncelle"
+    },
+    "validation": {
+      "name_min": "Ad en az 2 karakter olmalıdır",
+      "email_invalid": "Geçersiz e-posta adresi",
+      "password_min": "Şifre en az 6 karakter olmalıdır",
+      "password_required": "Yeni kullanıcı için şifre gereklidir"
+    },
+    "toasts": {
+      "created": "Kullanıcı başarıyla oluşturuldu",
+      "updated": "Kullanıcı başarıyla güncellendi"
+    },
+    "table": {
+      "user": "Kullanıcı",
+      "role": "Rolle",
+      "email": "E-Mail",
+      "actions": "İşlemler"
+    }
+  },
+  "knowledge_pool": {
+    "title": "BİLGİ HAVUZU KONTROLÜ",
+    "subtitle": "Yapay zeka için teknik kaynakların yönetimi ve indekslenmesi.",
+    "placeholder": "Teknik Dokümantasyon",
+    "tabs": {
+      "raw_sources": "HAM KAYNAKLAR",
+      "seeded_content": "ÜRETİLMİŞ İÇERİK"
+    },
+    "buttons": {
+      "add_url": "URL EKLE",
+      "upload_file": "DOSYA YÜKLE",
+      "scan_dataset": "DATASET TARA",
+      "bulk_sync": "TOPLU EŞİTLE ({count})",
+      "cancel": "İPTAL",
+      "refresh": "YENİLE",
+      "publish_selected": "SEÇİLENLERİ YAYINLA",
+      "examine": "İNCELE",
+      "load_more": "DAHA FAZLA YÜKLE",
+      "loading": "YÜKLENİYOR..."
+    },
+    "table": {
+      "source": "KAYNAK",
+      "type": "TİP",
+      "status": "DURUM",
+      "vector": "VEKTÖR",
+      "last_sync": "SON EŞİTLEME",
+      "action": "İŞLEM",
+      "no_records": "Kaynak bulunamadı",
+      "select_all": "TÜMÜNÜ SEÇ",
+      "showing": "GÖSTERİLİYOR"
+    },
+    "filters": {
+      "all": "HEPSİ",
+      "active": "AKTİF",
+      "syncing": "EŞİTLENİYOR",
+      "failed": "BAŞARISIZ",
+      "all_types": "TÜM TİPLER",
+      "url": "URL",
+      "file": "DOSYA"
+    },
+    "logs": {
+      "title": "EŞİTLEME GÜNLÜĞÜ",
+      "no_source": "Bir kaynak seçin",
+      "no_logs": "Kayıt bulunamadı.",
+      "success": "BAŞARILI",
+      "error": "HATA",
+      "processing": "İŞLENİYOR",
+      "chunks_processed": "{count} parça işlendi."
+    },
+    "articles": {
+      "title": "MAKALE HAVUZU",
+      "total": "{count} TOPLAM",
+      "search_placeholder": "DOSYA ARA...",
+      "all": "HEPSİ",
+      "review": "İNCELEMEDE",
+      "published": "YAYINLANDI",
+      "draft": "TASLAK",
+      "select_page": "{count} SEÇİLDİ",
+      "no_records": "KAYIT BULUNAMADI",
+      "author": "YAZAR",
+      "under_review": "İNCELEMEDE"
+    },
+    "meta": {
+      "locale": "tr-TR",
+      "system": "SİSTEM"
+    },
+    "status_labels": {
+      "draft": "TASLAK",
+      "published": "YAYINLANDI",
+      "review": "İNCELEMEDE",
+      "under_review": "İNCELEMEDE"
+    },
+    "dialogs": {
+      "new_url": "Yeni URL Kaynağı",
+      "name_label": "Kaynak Adı",
+      "url_label": "URL Adresi",
+      "save_sync": "Kaydet ve Eşitle"
+    },
+    "toasts": {
+      "fetch_error": "Kaynaklar yüklenemedi",
+      "sync_started": "Eşitleme Başlatıldı",
+      "sync_desc": "Arka plan görevi sırada",
+      "bulk_sync_started": "Toplu Eşitleme Başlatıldı",
+      "partial_success": "Kısmi Başarı",
+      "bulk_sync_desc": "{count} kaynak sırada",
+      "bulk_sync_error": "{count} başarısız",
+      "dataset_scan_started": "Eşitleme Başlatıldı",
+      "dataset_scan_desc": "Dataset klasörü taranıyor...",
+      "dataset_sync_success": "Akıllı Eşitleme Başarılı",
+      "url_added": "URL kaynağı eklendi",
+      "logs_error": "Günlükler yüklenemedi",
+      "publish_success": "{count} makale yayınlandı"
+    }
+  },
+  "announcements": {
+    "title": "Ankündigungsmanagement",
+    "subtitle": "Unternehmenskommunikation und gezielte Ankündigungen",
+    "enterprise_control": "Enterprise-Steuerung",
+    "preview_prepared": "Vorschau des vorbereiteten Inhalts",
+    "close": "Schließen",
+    "industries": "Branchen",
+    "customer_status": "Kundenstatus",
+    "company_name": "Unternehmensname",
+    "special_tags": "Spezielle Tags",
+    "categories": {
+      "all": "HEPSİ",
+      "general": "Allgemein",
+      "product": "Ürün",
+      "security": "Güvenlik",
+      "compliance": "Uyum (Compliance)",
+      "operations": "Operasyonlar",
+      "ai_tech": "Yapay Zeka ve Teknoloji",
+      "infrastructure": "Altyapı",
+      "change_management": "Değişim Yönetimi",
+      "education": "Eğitim",
+      "performance_reports": "Performans Raporları",
+      "strategic_updates": "Stratejik Güncellemeler",
+      "community": "Topluluk"
+    },
+    "tabs": {
+      "create": "Ankündigung erstellen",
+      "templates": "Vorlagenbibliothek",
+      "history": "Sendeverlauf"
+    },
+    "editor": {
+      "title": "Inhalts-Editor",
+      "desc": "Bereiten Sie den E-Mail-Inhalt für Kunden vor.",
+      "template_select": "Vorlage auswählen",
+      "title_label": "Name des Ankündigungsdatensatzes",
+      "title_placeholder": "Z.B. 2024 Sommer Hotfix Ankündigung",
+      "subject_label": "E-Mail-Betreffzeile",
+      "subject_placeholder": "Betreff, der dem Kunden angezeigt wird",
+      "content_label": "Rich-Text-Inhalt",
+      "default_content": "<p>Hallo {{customer.name}}!</p><p>Hier kommt der Inhalt der Ankündigung...</p>",
+      "preview": "Vorschau",
+      "save_draft": "Entwurf protokollieren"
+    },
+    "audience": {
+      "title": "Zielgruppe",
+      "desc": "Legen Sie fest, wen die Ankündigung erreichen soll.",
+      "industries": "Branchen",
+      "industry_placeholder": "Branche auswählen",
+      "statuses": "Kundenstatus",
+      "status_placeholder": "Status auswählen",
+      "companies": "Unternehmensname",
+      "company_placeholder": "Unternehmen auswählen",
+      "tags": "Spezielle Tags",
+      "tags_placeholder": "Tag hinzufügen (Enter)",
+      "target_audience": "Zielgruppe",
+      "persons": "Personen",
+      "select_filter": "Bitte wählen Sie mindestens einen Filter aus",
+      "realtime_telemetry": "Real-time telemetri verisi"
+    },
+    "template_editor": {
+      "title": "Şablon Düzenleyici",
+      "modify_desc": "{name} kaydı modifiye ediliyor.",
+      "new_desc": "Sistem için yeni bir iletişim şablonu protokolleyin.",
+      "new_record": "Yeni Kayıt",
+      "name_label": "Şablon İsmi",
+      "name_placeholder": "Örn: Hoşgeldin Maili",
+      "topic_label": "Kategori (Topic)",
+      "topic_placeholder": "Örn: Onboarding",
+      "subject_label": "Varsayılan Konu Başlığı",
+      "subject_placeholder": "Müşteriye görünecek konu",
+      "content_label": "Zengin Metin İçeriği (Şablon)",
+      "render_test": "Render Testi",
+      "update": "Güncelle",
+      "archive": "Kütüphaneye Arşivle"
+    },
+    "library": {
+      "title": "Kütüphane",
+      "search_placeholder": "İsim veya konu ara...",
+      "category_filter": "Kategori Filtresi",
+      "all": "Tümü",
+      "no_records": "Kayıt Bulunamadı",
+      "apply": "Uygula",
+      "preview": "Önizle",
+      "delete": "Delete",
+      "validated": "Onaylandı"
+    },
+    "history": {
+      "title": "Gönderim Arşivi",
+      "desc": "Sistem üzerinden protokollenen ve yayınlanan tüm duyuru kayıtları.",
+      "empty": "Arşiv Boş",
+      "sent": "GÖNDERİLDİ",
+      "draft": "TASLAK",
+      "terminal_delivered": "{count} Terminale İletildi",
+      "broadcast": "Veröffentlichen"
+    },
+    "toasts": {
+      "template_empty": "Bu şablonun içeriği boş.",
+      "template_compile_error": "Şablon derlenemedi. MJML sözdizimini kontrol edin.",
+      "preview_error": "Önizleme hatası:",
+      "unknown_error": "Bilinmeyen hata",
+      "required_fields": "Şablon adı ve içeriği gereklidir",
+      "template_updated": "Şablon güncellendi",
+      "template_added": "Şablon kütüphaneye eklendi",
+      "template_applied": "{name} şablonu uygulandı",
+      "title_subject_required": "Başlık ve Konu gerekli",
+      "draft_saved": "Duyuru taslağı kaydedildi",
+      "save_failed": "Kaydetme hatası: {message}",
+      "broadcast_success": "Duyuru başarıyla yayınlandı",
+      "broadcast_error": "Yayınlama hatası",
+      "confirm_broadcast": "Bu duyuruyu yayınlamak istediğinize emin misiniz?",
+      "delete_success": "Kayıt silindi",
+      "delete_failed": "Silme hatası",
+      "confirm_delete_announcement": "Bu duyuruyu silmek istediğinize emin misiniz?",
+      "confirm_delete_template": "Bu şablonu silmek istediğinize emin misiniz?",
+      "error": "Fehler"
+    }
+  },
+  "emails": {
+    "title": "E-Posta Yönetimi",
+    "subtitle": "MJML şablonlarını düzenleyin, yeni şablonlar oluşturun ve gönderim geçmişini takip edin.",
+    "tabs": {
+      "templates": "Şablon Editör",
+      "logs": "Gönderim Geçmişi"
+    }
+  },
+  "kb_approvals": {
+    "title": "AI Onay Havuzu",
+    "subtitle": "Kapanan biletlerden ve 5 yıldızlı çözümlerden türetilen taslak makaleleri yönetin.",
+    "refresh_queue": "KUYRUĞU YENİLE",
+    "run_pipeline": "PIPELINE ÇALIŞTIR",
+    "queue_title": "ONAY BEKLEYEN BİRİMLER",
+    "units_loaded": "{count} BİRİM YÜKLENDİ",
+    "empty": {
+      "title": "Harika İş!",
+      "desc": "Tüm onay bekleyen içerikler incelendi ve işleme alındı."
+    },
+    "table": {
+      "query": "SORGU / PROBLEM",
+      "answer": "AI ÖNERİLEN ÇÖZÜM",
+      "confidence": "GÜVEN",
+      "source": "KAYNAK",
+      "actions": "İŞLEMLER",
+      "reliable": "%{percent} GÜVENLİ"
+    },
+    "buttons": {
+      "approve": "ONAYLA",
+      "delete": "SİL"
+    },
+    "toasts": {
+      "fetch_error": "Taslaklar yüklenemedi.",
+      "approve_success": "İçerik bilgi bankasına eklendi.",
+      "approve_error": "Onaylanırken hata oluştu.",
+      "dismiss_success": "İçerik reddedildi.",
+      "dismiss_error": "Reddedilirken hata oluştu.",
+      "pipeline_started": "Pipeline tetiklendi.",
+      "pipeline_error": "Pipeline hatası: {error}"
+    }
+  },
+  "system_topology": {
+    "title": "Sistem Kaynak Topolojisi",
+    "subtitle": "SYSTEM_SOURCE_TOPOLOGY: VERI AKIŞI VE İŞLEME MİMARİSİ",
+    "refresh": "YENİLE",
+    "sync_error": "Veri senkronizasyon hatası",
+    "total_entropy": "TOPLAM ENTROPİ",
+    "units": "BİRİM",
+    "status_running": "ÇALIŞIYOR",
+    "pillars": {
+      "documents": "PDF/DOCX/XLS/TXT/MD",
+      "articles": "ADMİN MAKALE",
+      "urls": "URL / WEB",
+      "tickets": "BİLET ÖĞRENİMİ"
+    },
+    "layers": {
+      "doc_parser": "DOKÜMAN AYRIŞTIRICI",
+      "rich_editor": "ZENGİN EDİTÖR",
+      "crawl_engine": "TARAMA MOTORU",
+      "cluster_engine": "KÜMELEME MOTORU"
+    },
+    "strategies": {
+      "parent_child": "EBEVEYN-ÇOCUK",
+      "direct_embed": "DOĞRUDAN GÖMME",
+      "content_clean": "İÇERİK TEMİZLEME",
+      "faq_generator": "S.S.S. ÜRETİCİ"
+    },
+    "vector": {
+      "unified_index": "BİRLEŞİK VEKTÖR DİZİNİ",
+      "re_ranking": "YENİDEN SIRALAMA AKTİF",
+      "trust_priority": "GÜVEN PUANI ÖNCELİĞİ"
+    },
+    "engine": {
+      "query_preproc": "SORGU ÖN İŞLEME",
+      "hybrid_retrieval": "HİBRİT ERİŞİM MOTORU"
     }
   }
 }

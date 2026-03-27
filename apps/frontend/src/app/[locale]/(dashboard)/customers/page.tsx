@@ -92,8 +92,10 @@ interface AccountItem {
 type SortField = 'companyName' | 'fullName' | 'jobTitle' | 'email' | 'status' | 'createdAt' | 'contractStatus' | 'subscriptionModel' | 'industry' | 'customerNo' | 'phoneNumber' | 'crmVerified' | 'name' | 'website' | 'address' | 'accountNumber';
 type SortOrder = 'asc' | 'desc';
 
-export default function CustomersPage({ params }: { params: { locale: string } }) {
-    const { locale } = params;
+import { use } from 'react';
+
+export default function CustomersPage({ params }: { params: Promise<{ locale: string }> }) {
+    const { locale } = use(params);
     const t = useTranslations('customers');
     const tc = useTranslations('common');
     const { toast } = useToast();
