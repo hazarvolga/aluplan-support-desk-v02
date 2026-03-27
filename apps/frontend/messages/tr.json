@@ -2094,57 +2094,57 @@
       "sat": "Cumartesi",
       "sun": "Pazar"
     }
-  }
-},
-"notifications": {
-  "new_ticket_title": "🎟️ Yeni Ticket Oluşturuldu!",
-  "new_ticket_desc": "{name} yeni bir destek talebi açtı: \"{subject}\"",
-  "view_action": "İncele"
-},
-"users": {
-  "title": "Ekip Yönetimi",
-  "desc": "Destek temsilcilerini, yöneticileri ve adminleri yönetin.",
-  "add_user": "Kullanıcı Ekle",
-  "edit_user": "Kullanıcı Düzenle",
-  "delete_confirm": "{name} kullanıcısını silmek istediğinize emin misiniz?",
-  "empty": "Kullanıcı bulunamadı",
-  "deleted_success": "Kullanıcı başarıyla silindi",
-  "fetch_error": "Kullanıcılar yüklenirken hata oluştu",
-  "dialog": {
-    "title_create": "Yeni Kullanıcı Ekle",
-    "title_edit": "Kullanıcı Düzenle",
-    "full_name": "Ad Soyad",
-    "name_placeholder": "John Doe",
-    "email": "E-posta",
-    "email_placeholder": "john@example.com",
-    "password": "Şifre",
-    "password_placeholder": "******",
-    "new_password_optional": "Yeni Şifre (İsteğe Bağlı)",
-    "role": "Rol",
-    "select_role_placeholder": "Bir rol seçin",
-    "roles": {
-      "admin": "Yönetici",
-      "support_manager": "Destek Müdürü",
-      "support_agent": "Destek Uzmanı",
-      "viewer": "Gözlemci"
+  },
+  "notifications": {
+    "new_ticket_title": "🎟️ Yeni Ticket Oluşturuldu!",
+    "new_ticket_desc": "{name} yeni bir destek talebi açtı: \"{subject}\"",
+    "view_action": "İncele"
+  },
+  "users": {
+    "title": "Ekip Yönetimi",
+    "desc": "Destek temsilcilerini, yöneticileri ve adminleri yönetin.",
+    "add_user": "Kullanıcı Ekle",
+    "edit_user": "Kullanıcı Düzenle",
+    "delete_confirm": "{name} kullanıcısını silmek istediğinize emin misiniz?",
+    "empty": "Kullanıcı bulunamadı",
+    "deleted_success": "Kullanıcı başarıyla silindi",
+    "fetch_error": "Kullanıcılar yüklenirken hata oluştu",
+    "dialog": {
+      "title_create": "Yeni Kullanıcı Ekle",
+      "title_edit": "Kullanıcı Düzenle",
+      "full_name": "Ad Soyad",
+      "name_placeholder": "John Doe",
+      "email": "E-posta",
+      "email_placeholder": "john@example.com",
+      "password": "Şifre",
+      "password_placeholder": "******",
+      "new_password_optional": "Yeni Şifre (İsteğe Bağlı)",
+      "role": "Rol",
+      "select_role_placeholder": "Bir rol seçin",
+      "roles": {
+        "admin": "Yönetici",
+        "support_manager": "Destek Müdürü",
+        "support_agent": "Destek Uzmanı",
+        "viewer": "Gözlemci"
+      },
+      "btn_create": "Oluştur",
+      "btn_update": "Güncelle"
     },
-    "btn_create": "Oluştur",
-    "btn_update": "Güncelle"
-  },
-  "validation": {
-    "name_min": "Ad en az 2 karakter olmalıdır",
-    "email_invalid": "Geçersiz e-posta adresi",
-    "password_min": "Şifre en az 6 karakter olmalıdır",
-    "password_required": "Yeni kullanıcı için şifre gereklidir"
-  },
-  "toasts": {
-    "created": "Kullanıcı başarıyla oluşturuldu",
-    "updated": "Kullanıcı başarıyla güncellendi"
-  },
-  "table": {
-    "user": "Kullanıcı",
-    "role": "Rol",
-    "email": "E-posta",
-    "actions": "İşlemler"
+    "validation": {
+      "name_min": "Ad en az 2 karakter olmalıdır",
+      "email_invalid": "Geçersiz e-posta adresi",
+      "password_min": "Şifre en az 6 karakter olmalıdır",
+      "password_required": "Yeni kullanıcı için şifre gereklidir"
+    },
+    "toasts": {
+      "created": "Kullanıcı başarıyla oluşturuldu",
+      "updated": "Kullanıcı başarıyla güncellendi"
+    },
+    "table": {
+      "user": "Kullanıcı",
+      "role": "Rol",
+      "email": "E-posta",
+      "actions": "İşlemler"
+    }
   }
 }
