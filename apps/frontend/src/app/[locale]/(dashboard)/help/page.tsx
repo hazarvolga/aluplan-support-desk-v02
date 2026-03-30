@@ -147,27 +147,27 @@ export default function SystemGuidePage() {
                         <section className="space-y-4">
                             <h2 className="text-2xl font-bold flex items-center gap-2">
                                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600/20 text-blue-500 text-sm">1</span>
-                                {t('admin.section1.title')}
+                                {t('admin_guide.guide.section1.title')}
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Card className="bg-slate-900/50 border-white/5">
-                                    <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><ListChecks className="text-blue-400 h-5 w-5" /> {t('admin.section1.card1_title')}</CardTitle></CardHeader>
+                                    <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><ListChecks className="text-blue-400 h-5 w-5" /> {t('admin_guide.guide.section1.card1_title')}</CardTitle></CardHeader>
                                     <CardContent className="text-sm text-slate-300 space-y-2">
-                                        <p dangerouslySetInnerHTML={{ __html: t('admin.section1.card1_desc') }} />
+                                        <p dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section1.card1_desc') }} />
                                         <ul className="list-disc pl-5 space-y-1 text-slate-400">
-                                            <li><strong className="text-slate-200">{t('admin.section1.card1_item1_label')}</strong> {t('admin.section1.card1_item1_desc')}</li>
-                                            <li><strong className="text-slate-200">{t('admin.section1.card1_item2_label')}</strong> <code dangerouslySetInnerHTML={{ __html: t('admin.section1.card1_item2_desc') }} /></li>
-                                            <li><strong className="text-slate-200">{t('admin.section1.card1_item3_label')}</strong> {t('admin.section1.card1_item3_desc')}</li>
+                                            <li><strong className="text-slate-200">{t('admin_guide.guide.section1.card1_item1_label')}</strong> {t('admin_guide.guide.section1.card1_item1_desc')}</li>
+                                            <li><strong className="text-slate-200">{t('admin_guide.guide.section1.card1_item2_label')}</strong> <code dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section1.card1_item2_desc') }} /></li>
+                                            <li><strong className="text-slate-200">{t('admin_guide.guide.section1.card1_item3_label')}</strong> {t('admin_guide.guide.section1.card1_item3_desc')}</li>
                                         </ul>
                                     </CardContent>
                                 </Card>
 
                                 <Card className="bg-slate-900/50 border-white/5">
-                                    <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><Bot className="text-emerald-400 h-5 w-5" /> {t('admin.section1.card2_title')}</CardTitle></CardHeader>
+                                    <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><Bot className="text-emerald-400 h-5 w-5" /> {t('admin_guide.guide.section1.card2_title')}</CardTitle></CardHeader>
                                     <CardContent className="text-sm text-slate-300 space-y-2">
-                                        <p dangerouslySetInnerHTML={{ __html: t('admin.section1.card2_item1') }} />
+                                        <p dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section1.card2_item1') }} />
                                         <p className="text-slate-400">
-                                            {t('admin.section1.card2_item2')}
+                                            {t('admin_guide.guide.section1.card2_item2')}
                                         </p>
                                     </CardContent>
                                 </Card>
@@ -178,7 +178,7 @@ export default function SystemGuidePage() {
                         <section className="space-y-4">
                             <h2 className="text-2xl font-bold flex items-center gap-2">
                                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600/20 text-blue-500 text-sm">2</span>
-                                {t('admin.section2.title')}
+                                {t('admin_guide.guide.section2.title')}
                             </h2>
                             <Card className="bg-slate-900/50 border-white/5">
                                 <CardContent className="pt-6 space-y-6">
@@ -186,22 +186,22 @@ export default function SystemGuidePage() {
                                     <div className="space-y-2">
                                         <h3 className="font-bold flex items-center gap-2 text-white">
                                             <Database className="h-4 w-4 text-emerald-400" />
-                                            {t('admin.section2.item1_title')}
+                                            {t('admin_guide.guide.section2.item1_title')}
                                         </h3>
-                                        <p className="text-sm text-slate-400">{t('admin.section2.item1_desc')}</p>
+                                        <p className="text-sm text-slate-400">{t('admin_guide.guide.section2.item1_desc')}</p>
                                         <ul className="text-sm text-slate-300 space-y-2 pl-4 border-l-2 border-emerald-500/30">
-                                            <li><strong dangerouslySetInnerHTML={{ __html: t('admin.section2.item1_way1_label') }} /> <span dangerouslySetInnerHTML={{ __html: t('admin.section2.item1_way1_desc') }} /></li>
-                                            <li><strong dangerouslySetInnerHTML={{ __html: t('admin.section2.item1_way2_label') }} /> {t('admin.section2.item1_way2_desc')}</li>
-                                            <li><strong dangerouslySetInnerHTML={{ __html: t('admin.section2.item1_way3_label') }} /> {t('admin.section2.item1_way3_desc')}</li>
+                                            <li><strong dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section2.item1_way1_label') }} /> <span dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section2.item1_way1_desc') }} /></li>
+                                            <li><strong dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section2.item1_way2_label') }} /> {t('admin_guide.guide.section2.item1_way2_desc')}</li>
+                                            <li><strong dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section2.item1_way3_label') }} /> {t('admin_guide.guide.section2.item1_way3_desc')}</li>
                                         </ul>
                                     </div>
 
                                     <div className="space-y-2">
                                         <h3 className="font-bold flex items-center gap-2 text-white">
                                             <MessageSquareQuote className="h-4 w-4 text-amber-400" />
-                                            {t('admin.section2.item2_title')}
+                                            {t('admin_guide.guide.section2.item2_title')}
                                         </h3>
-                                        <p className="text-sm text-slate-400" dangerouslySetInnerHTML={{ __html: t('admin.section2.item2_desc') }} />
+                                        <p className="text-sm text-slate-400" dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section2.item2_desc') }} />
                                     </div>
                                 </CardContent>
                             </Card>
@@ -211,21 +211,21 @@ export default function SystemGuidePage() {
                         <section className="space-y-4">
                             <h2 className="text-2xl font-bold flex items-center gap-2">
                                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600/20 text-blue-500 text-sm">3</span>
-                                {t('admin.section3.title')}
+                                {t('admin_guide.guide.section3.title')}
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Card className="bg-slate-900/50 border-white/5 p-4 space-y-2">
                                     <Layers className="h-6 w-6 text-purple-400 mb-2" />
-                                    <h3 className="font-bold text-white">{t('admin.section3.card1_title')}</h3>
+                                    <h3 className="font-bold text-white">{t('admin_guide.guide.section3.card1_title')}</h3>
                                     <p className="text-sm text-slate-400">
-                                        <span dangerouslySetInnerHTML={{ __html: t('admin.section3.card1_desc1') }} /><br /><br />
-                                        <em dangerouslySetInnerHTML={{ __html: t('admin.section3.card1_rule_label') }} /> <span dangerouslySetInnerHTML={{ __html: t('admin.section3.card1_rule_desc') }} />
+                                        <span dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section3.card1_desc1') }} /><br /><br />
+                                        <em dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section3.card1_rule_label') }} /> <span dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section3.card1_rule_desc') }} />
                                     </p>
                                 </Card>
                                 <Card className="bg-slate-900/50 border-white/5 p-4 space-y-2">
                                     <Users className="h-6 w-6 text-blue-400 mb-2" />
-                                    <h3 className="font-bold text-white">{t('admin.section3.card2_title')}</h3>
-                                    <p className="text-sm text-slate-400" dangerouslySetInnerHTML={{ __html: t('admin.section3.card2_desc') }} />
+                                    <h3 className="font-bold text-white">{t('admin_guide.guide.section3.card2_title')}</h3>
+                                    <p className="text-sm text-slate-400" dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section3.card2_desc') }} />
                                 </Card>
                             </div>
                         </section>
@@ -234,34 +234,34 @@ export default function SystemGuidePage() {
                         <section className="space-y-4">
                             <h2 className="text-2xl font-bold flex items-center gap-2">
                                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600/20 text-blue-500 text-sm">4</span>
-                                {t('admin.section4.title')}
+                                {t('admin_guide.guide.section4.title')}
                             </h2>
                             <Card className="bg-slate-900/50 border-white/5">
                                 <CardContent className="pt-6 space-y-4">
-                                    <p className="text-slate-300" dangerouslySetInnerHTML={{ __html: t('admin.section4.desc') }} />
+                                    <p className="text-slate-300" dangerouslySetInnerHTML={{ __html: t('admin_guide.guide.section4.desc') }} />
 
                                     <div className="space-y-4 border-l-2 border-slate-700 pl-4 ml-2">
                                         <div>
-                                            <h4 className="font-bold text-white mb-1 flex items-center gap-2"><BookOpen className="w-4 h-4 text-blue-400" /> {t('admin.section4.step1_title')}</h4>
-                                            <p className="text-sm text-slate-400">{t('admin.section4.step1_desc')}</p>
+                                            <h4 className="font-bold text-white mb-1 flex items-center gap-2"><BookOpen className="w-4 h-4 text-blue-400" /> {t('admin_guide.guide.section4.step1_title')}</h4>
+                                            <p className="text-sm text-slate-400">{t('admin_guide.guide.section4.step1_desc')}</p>
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-white mb-1 flex items-center gap-2"><Megaphone className="w-4 h-4 text-emerald-400" /> {t('admin.section4.step2_title')}</h4>
-                                            <p className="text-sm text-slate-400">{t('admin.section4.step2_desc')}</p>
+                                            <h4 className="font-bold text-white mb-1 flex items-center gap-2"><Megaphone className="w-4 h-4 text-emerald-400" /> {t('admin_guide.guide.section4.step2_title')}</h4>
+                                            <p className="text-sm text-slate-400">{t('admin_guide.guide.section4.step2_desc')}</p>
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-white mb-1 flex items-center gap-2"><Users className="w-4 h-4 text-purple-400" /> {t('admin.section4.step3_title')}</h4>
-                                            <p className="text-sm text-slate-400">{t('admin.section4.step3_desc')}</p>
+                                            <h4 className="font-bold text-white mb-1 flex items-center gap-2"><Users className="w-4 h-4 text-purple-400" /> {t('admin_guide.guide.section4.step3_title')}</h4>
+                                            <p className="text-sm text-slate-400">{t('admin_guide.guide.section4.step3_desc')}</p>
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-white mb-1 flex items-center gap-2"><Send className="w-4 h-4 text-amber-400" /> {t('admin.section4.step4_title')}</h4>
-                                            <p className="text-sm text-slate-400">{t('admin.section4.step4_desc')}</p>
+                                            <h4 className="font-bold text-white mb-1 flex items-center gap-2"><Send className="w-4 h-4 text-amber-400" /> {t('admin_guide.guide.section4.step4_title')}</h4>
+                                            <p className="text-sm text-slate-400">{t('admin_guide.guide.section4.step4_desc')}</p>
                                         </div>
                                     </div>
                                     <div className="bg-blue-900/10 p-4 rounded-lg flex gap-3 mt-4 items-start border border-blue-500/20">
                                         <Shield className="h-5 w-5 text-blue-400 shrink-0 mt-0.5" />
                                         <span className="text-sm text-slate-300">
-                                            <strong>{t('admin.section4.tip_title')}</strong> {t('admin.section4.tip_desc')}
+                                            <strong>{t('admin_guide.guide.section4.tip_title')}</strong> {t('admin_guide.guide.section4.tip_desc')}
                                         </span>
                                     </div>
                                 </CardContent>

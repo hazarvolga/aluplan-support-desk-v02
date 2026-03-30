@@ -1315,7 +1315,7 @@
         "step3_desc": "You can upload screenshots, PDFs, or project files (Max 10MB) directly by dragging and dropping."
       }
     },
-    "admin": {
+    "admin_guide": {
       "section1": {
         "title": "Support Requests (Ticket Management)",
         "card1_title": "Operational Pool",

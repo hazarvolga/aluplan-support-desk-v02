@@ -1315,7 +1315,7 @@
         "step3_desc": "Sie können Screenshots, PDFs oder Projektdateien (Max. 10 MB) direkt per Drag & Drop hochladen."
       }
     },
-    "admin": {
+    "admin_guide": {
       "section1": {
         "title": "Support-Anfragen (Ticket-Management)",
         "card1_title": "Operativer Pool",
@@ -1335,7 +1335,7 @@
         "item1_title": "Wissenspool-Management",
         "item1_desc": "Damit die KI Antworten geben kann, müssen Sie die Infrastruktur ständig mit neuen Daten versorgen. Hierfür gibt es 3 Möglichkeiten:",
         "item1_way1_label": "PDF / Datei-Upload:",
-        "item1_way1_desc": "Fügen Sie technische Spezifikationen direkt als PDFs zur Datenbank hinzu. Das System zerlegt diese in <u>Embedding (Vektor)</u>-Teile.",
+        "item1_way1_desc": "Fügen Sie technische Spezifikationen direkt als PDFs zur Datenbank hinzu. Das System zerlegt diese in <u>Embedding (Vektör)</u>-Teile.",
         "item1_way2_label": "Web Scraper:",
         "item1_way2_desc": "Wenn Sie dem System aktuelle \"How-To\"-URLs zur Verfügung stellen, liest die KI Ihre Website und speichert sie in ihrem Gedächtnis.",
         "item1_way3_label": "Rohtext:",
