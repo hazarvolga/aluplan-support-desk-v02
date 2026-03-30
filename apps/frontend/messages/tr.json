@@ -1315,7 +1315,7 @@
         "step3_desc": "Ekran görüntüsü, PDF veya proje dosyalarını (Maks 10MB) doğrudan sürükleyip bırakarak yükleyebilirsiniz."
       }
     },
-    "admin_help": {
+    "admin": {
       "section1": {
         "title": "Destek Talepleri (Ticket Management)",
         "card1_title": "Operasyonel Havuz",

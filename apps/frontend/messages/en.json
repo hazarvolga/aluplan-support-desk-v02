@@ -1315,56 +1315,56 @@
         "step3_desc": "You can upload screenshots, PDFs, or project files (Max 10MB) directly by dragging and dropping."
       }
     },
-    "admin_help": {
+    "admin": {
       "section1": {
-        "title": "Destek Talepleri (Ticket Management)",
-        "card1_title": "Operasyonel Havuz",
-        "card1_desc": "Destek Talepleri sayfasında tüm müşterilerden gelen talepler toplanır.",
-        "card1_item1_label": "Durum Değiştirme:",
-        "card1_item1_desc": "Bilet içerisine girip sağ paneldeki dropdown'dan durumu değiştirebilirsiniz (Açık, Cevaplandı, Kapalı).",
-        "card1_item2_label": "İç Notlar:",
-        "card1_item2_desc": "Müşterinin göremeyeceği sadece ekip içi notlar almak için <code>İç Not (Internal Only)</code> sekmesini kullanın.",
-        "card1_item3_label": "Atama:",
-        "card1_item3_desc": "\"Ata\" butonunu kullanarak bileti spesifik bir uzman temsilciye devredebilirsiniz.",
-        "card2_title": "AI Co-Pilot (Yapay Zeka Destekli Yanıt)",
-        "card2_item1": "Biletin içine girdiğinizde sağ üstte yer alan <b>\"AI Yanıt Taslağı Oluştur\"</b> butonuna basın.",
-        "card2_item2": "Sistem, müşterinin mesajını ve firmanızın Bilgi Havuzunu tarar. Vektörel veri eşleşmesi yaparak 5-10 saniye içerisinde ilgili dokümanlara atıfta bulunan profesyonel bir taslak hazırlar. Taslağı onaylayıp kendi tarzınıza göre düzenleyerek müşteriye anında yanıt dönebilirsiniz."
+        "title": "Support Requests (Ticket Management)",
+        "card1_title": "Operational Pool",
+        "card1_desc": "The Support Requests page aggregates all incoming requests from customers.",
+        "card1_item1_label": "Status Change:",
+        "card1_item1_desc": "You can change the status (Open, Replied, Closed) from the dropdown in the right panel after entering the ticket.",
+        "card1_item2_label": "Internal Notes:",
+        "card1_item2_desc": "Use the <code>Internal Note (Internal Only)</code> tab to take notes that are only visible to the team and not the customer.",
+        "card1_item3_label": "Assignment:",
+        "card1_item3_desc": "You can delegate the ticket to a specific expert agent using the \"Assign\" button.",
+        "card2_title": "AI Co-Pilot (AI-Powered Response)",
+        "card2_item1": "When you enter a ticket, press the <b>\"Generate AI Response Draft\"</b> button located at the top right.",
+        "card2_item2": "The system scans the customer's message and your company's Knowledge Pool. It matches data through vector search and prepares a professional draft citing relevant documents within 5-10 seconds. You can approve and edit the draft in your own style and respond to the customer instantly."
       },
       "section2": {
-        "title": "Bilgi Havuzu & Öğrenme Döngüsü",
-        "item1_title": "Bilgi Havuzu (Knowledge Pool) Yönetimi",
-        "item1_desc": "Yapay zekanın cevap verebilmesi için altyapıya sürekli yeni veri sağlamanız gerekir. Bunun 3 yolu vardır:",
-        "item1_way1_label": "PDF / Dosya Yükleme:",
-        "item1_way1_desc": "Doğrudan teknik şartnameleri PDF olarak veritabanına ekleyin. Sistem bunları <u>Embedding (Vektör)</u> parçalarına ayırır.",
+        "title": "Knowledge Pool & Learning Cycle",
+        "item1_title": "Knowledge Pool Management",
+        "item1_desc": "For the AI to provide answers, you need to continuously provide new data to the infrastructure. There are 3 ways to do this:",
+        "item1_way1_label": "PDF / File Upload:",
+        "item1_way1_desc": "Add technical specifications directly to the database as PDFs. The system breaks these into <u>Embedding (Vector)</u> parts.",
         "item1_way2_label": "Web Scraper:",
-        "item1_way2_desc": "Sitenizdeki güncel \"Nasıl Yapılır\" URL adreslerini sisteme verdiğinizde yapay zeka web sitenizi okuyup hafızasına kaydeder.",
-        "item1_way3_label": "Özel Metin (Raw Text):",
-        "item1_way3_desc": "Sıkça sorulan soruları el ile girerek AI için \"Instruction\" yaratabilirsiniz.",
-        "item2_title": "Öğrenme Döngüsü ve AI Onayları",
-        "item2_desc": "Müşteriler kapalı biletleri <b>5 yıldız</b> ile oyladığında, sistem o çözümün mükemmel olduğunu düşünür. Ancak bu çözümün direkt ana veritabanına yazılmasını önlemek için <b>AI Onayları</b> sekmesine düşer. Yönetici olarak bu sekmede çözümün yapay zeka tarafından öğrenilmesini (Onay) veya atlanmasını (Red) seçebilirsiniz."
+        "item1_way2_desc": "When you provide current \"How-To\" URLs to the system, the AI reads your website and saves it to its memory.",
+        "item1_way3_label": "Raw Text:",
+        "item1_way3_desc": "You can create \"Instructions\" for AI by manually entering frequently asked questions.",
+        "item2_title": "Learning Cycle and AI Approvals",
+        "item2_desc": "When customers rate closed tickets with <b>5 stars</b>, the system considers that solution perfect. However, to prevent this solution from being written directly to the main database, it goes to the <b>AI Approvals</b> tab. As an admin, you can choose to have the solution learned by the AI (Approve) or skipped (Reject) in this tab."
       },
       "section3": {
-        "title": "CRM & Ürün (Taksonomi) Yapılandırması",
-        "card1_title": "Ürünler ve Modüller",
-        "card1_desc1": "Müşteri bilet açtığında gördüğü Ürün kartlarını buradan yönetirsiniz. En önemli kısım <b>Kategoriler ve Anahtar Kelimelerdir.</b>",
-        "card1_rule_label": "Taksonomi Kuralı:",
-        "card1_rule_desc": "Kategorilere (Örn: Model Çökmesi) sadece ürün özellikleri (Duvar, Kiriş) değil, müşteri semptomlarını da (kasıyor, siyah ekran, kapanıyor) yazın. AI bu anahtar kelimeleri okuyarak bileti doğru takıma (Triage) yönlendirir.",
-        "card2_title": "Müşteri ve Ekip Yönetimi",
-        "card2_desc": "Sol panonun <b>SİSTEM</b> menüsü altından Müşterileri onaylayabilir ve Destek Ekiplerini (Departmanları) oluşturabilirsiniz. Biletlerin otomatik atanabilmesi için SLA kurallarını (Kaç saatte yanıt verilecek, mesai saati dışında dursun mu?) Ekip Yönetimi sekmesinden ayarlamayı unutmayın."
+        "title": "CRM & Product (Taxonomy) Configuration",
+        "card1_title": "Products and Modules",
+        "card1_desc1": "Manage the Product cards that customers see when opening a ticket here. The most important part is <b>Categories and Keywords.</b>",
+        "card1_rule_label": "Taxonomy Rule:",
+        "card1_rule_desc": "Write not only product features (Wall, Beam) but also customer symptoms (lagging, black screen, closing) in the categories (e.g., Model Crash). AI reads these keywords and directs the ticket to the correct team (Triage).",
+        "card2_title": "Customer and Team Management",
+        "card2_desc": "You can approve Customers and create Support Teams (Departments) under the <b>SYSTEM</b> menu of the left panel. Don't forget to set SLA rules from the Team Management tab (how many hours to respond, should it stop outside working hours?) for automatic ticket assignment."
       },
       "section4": {
-        "title": "Duyuru Yönetimi (Announcements)",
-        "desc": "Sistem üzerinden müşterilerinize e-posta ile toplu veya hedeflenmiş duyurular (kampanya, bakım vb.) gönderme süreci 4 adımdan oluşur:",
-        "step1_title": "Adım 1: Şablon Hazırlama",
-        "step1_desc": "Tekrar kullanabileceğiniz e-posta içeriklerini 'Şablon Kütüphanesi' (Templates) sekmesinde tasarlar ve kaydedersiniz.",
-        "step2_title": "Adım 2: Duyuru Oluşturma ve Şablon Seçimi",
-        "step2_desc": "'Duyuru Oluştur' sekmesinde yeni bir içerik yazabilir veya üstteki menüden bir şablonu (Apply) içeriğe uygulayabilirsiniz.",
-        "step3_title": "Adım 3: Hedef Kitle Seçimi",
-        "step3_desc": "Sağ taraftaki filtreleri kullanarak duyurunun hangi sektör veya şirkete gideceğini belirlersiniz. Sistem size ulaşılacak kişi sayısını anında gösterir.",
-        "step4_title": "Adım 4: Taslağı Kaydet ve Yayınla",
-        "step4_desc": "'Taslağı Protokolle' butonuna bastığınızda duyurunuz taslak (Draft) olarak kaydedilir. Henüz kimseye e-posta gitmez. İlgili duyuruyu 'Gönderim Geçmişi' (History) sekmesinden kontrol edip 'Yayınla' (Broadcast) ikonuna tıklayarak asıl e-postaları seçilen kitleye gönderebilirsiniz.",
-        "tip_title": "İpucu:",
-        "tip_desc": "Onaylanmamış (Draft) durumdaki taslaklarınızı, göndermeden önce mutlaka preview (önizleme) modunda test etmelisiniz."
+        "title": "Announcement Management",
+        "desc": "The process of sending bulk or targeted announcements (campaigns, maintenance, etc.) to your customers via email through the system consists of 4 steps:",
+        "step1_title": "Step 1: Template Preparation",
+        "step1_desc": "Design and save email content that you can reuse in the 'Templates' tab.",
+        "step2_title": "Step 2: Announcement Creation and Template Selection",
+        "step2_desc": "You can write new content in the 'Create Announcement' tab or apply a template (Apply) from the top menu.",
+        "step3_title": "Step 3: Audience Selection",
+        "step3_desc": "Using the filters on the right, determine which industry or company the announcement will be sent to. The system instantly shows you the number of people to be reached.",
+        "step4_title": "Step 4: Save Draft and Publish",
+        "step4_desc": "When you press the 'Protocol Draft' button, your announcement is saved as a Draft. No emails are sent yet. Check the relevant announcement from the 'History' tab and click the 'Broadcast' icon to send the actual emails to the selected audience.",
+        "tip_title": "Tip:",
+        "tip_desc": "You must test your Draft announcements in preview mode before sending."
       }
     }
   },
