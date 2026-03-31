@@ -105,9 +105,9 @@ async function main() {
 
     try {
         await prisma.crmConnection.upsert({
-            where: { provider: 'DYNAMICS365' },
+            where: { provider: 'DYNAMICS_365' },
             create: {
-                provider: 'DYNAMICS365',
+                provider: 'DYNAMICS_365',
                 instanceUrl: 'https://marketingaluplan.crm4.dynamics.com/',
                 tenantId: '0902521f-1c17-498d-99e7-17770cf5bb5f',
                 clientId: 'aab421de-0e21-41e3-ab9b-908c2c24b2f9',
