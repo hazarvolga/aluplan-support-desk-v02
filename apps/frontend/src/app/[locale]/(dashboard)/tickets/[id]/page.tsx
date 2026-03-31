@@ -163,7 +163,26 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             }
         };
 
+        const handleAttachmentAdded = (data: { messageId: string, attachment: any }) => {
+            setTicket((prev: any) => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    messages: prev.messages.map((m: any) => {
+                        if (m.id === data.messageId) {
+                            return {
+                                ...m,
+                                attachments: [...(m.attachments || []), data.attachment]
+                            };
+                        }
+                        return m;
+                    })
+                };
+            });
+        };
+
         socket.on('ticket:new_message', handleNewMessage);
+        socket.on('ticket:attachment_added', handleAttachmentAdded);
         socket.on('ticket:typing', handleTyping);
         socket.on('ticket:updated', handleTicketUpdated);
         socket.on('ticket:presence', handlePresence);
@@ -171,6 +190,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         return () => {
             socket.emit('ticket:leave', id);
             socket.off('ticket:new_message', handleNewMessage);
+            socket.off('ticket:attachment_added', handleAttachmentAdded);
             socket.off('ticket:typing', handleTyping);
             socket.off('ticket:updated', handleTicketUpdated);
             socket.off('ticket:presence', handlePresence);

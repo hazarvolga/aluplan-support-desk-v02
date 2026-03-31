@@ -277,6 +277,11 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         });
     }
 
+    @OnEvent('attachment.created', { async: true })
+    emitAttachmentAdded(payload: { ticketId: string, messageId: string, attachment: any }) {
+        this.server.to(`ticket:${payload.ticketId}`).emit('ticket:attachment_added', payload);
+    }
+
     emitBulkUpdate(ticketIds: string[]) {
         this.server
             .to('role:admin')

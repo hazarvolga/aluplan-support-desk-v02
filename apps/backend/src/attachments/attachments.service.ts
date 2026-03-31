@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class AttachmentsService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly eventEmitter: EventEmitter2
+    ) { }
 
     async create(data: {
         messageId: string;
@@ -16,18 +20,25 @@ export class AttachmentsService {
             data,
         });
 
-        if (hotinfoSnapshot) {
-            const message = await this.prisma.ticketMessage.findUnique({
-                where: { id: data.messageId },
-                select: { ticketId: true }
-            });
-            if (message?.ticketId) {
+        const message = await this.prisma.ticketMessage.findUnique({
+            where: { id: data.messageId },
+            select: { ticketId: true }
+        });
+
+        if (message?.ticketId) {
+            if (hotinfoSnapshot) {
                 await this.prisma.ticket.update({
                     where: { id: message.ticketId },
                     data: { hotinfoSnapshot }
                 });
                 await this.prisma.$queryRaw`SELECT 1`; // trigger
             }
+
+            this.eventEmitter.emit('attachment.created', {
+                ticketId: message.ticketId,
+                messageId: data.messageId,
+                attachment,
+            });
         }
 
         return attachment;
