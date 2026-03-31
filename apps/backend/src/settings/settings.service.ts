@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../utils/crypto.service';
 import { UpsertSettingDto } from './dto/upsert-setting.dto';
+import { BulkUpsertSettingDto } from './dto/bulk-upsert-setting.dto';
 
 @Injectable()
 export class SettingsService {
@@ -27,35 +28,24 @@ export class SettingsService {
         }
 
         let finalValue = dto.value;
-
         if (dto.isSecret) {
             finalValue = this.crypto.encrypt(dto.value);
         }
 
-        const existing = await this.prisma.setting.findUnique({
-            where: { key: dto.key }
+        const setting = await this.prisma.setting.upsert({
+            where: { key: dto.key },
+            update: {
+                value: finalValue,
+                isSecret: dto.isSecret ?? false,
+                updatedBy: userId,
+            },
+            create: {
+                key: dto.key,
+                value: finalValue,
+                isSecret: dto.isSecret ?? false,
+                updatedBy: userId,
+            },
         });
-
-        let setting;
-        if (existing) {
-            setting = await this.prisma.setting.update({
-                where: { id: existing.id },
-                data: {
-                    value: finalValue,
-                    isSecret: dto.isSecret ?? false,
-                    updatedBy: userId,
-                }
-            });
-        } else {
-            setting = await this.prisma.setting.create({
-                data: {
-                    key: dto.key,
-                    value: finalValue,
-                    isSecret: dto.isSecret ?? false,
-                    updatedBy: userId,
-                }
-            });
-        }
 
         // Update cache
         this.cache.set(dto.key, dto.value); // Store plaintext in cache for internal use
@@ -210,6 +200,59 @@ export class SettingsService {
             }
             return { ...s, value };
         });
+    }
+
+    async bulkUpsert(dto: BulkUpsertSettingDto, userId?: string) {
+        // Run validations first
+        for (const item of dto.settings) {
+            if (item.key.startsWith('ai.')) {
+                await this.validateAiSetting(item.key, item.value);
+            }
+        }
+
+        // Use a transaction for all upserts
+        const results = await this.prisma.$transaction(
+            dto.settings.map((item) => {
+                let finalValue = item.value;
+                const isSecret = item.isSecret ?? false;
+
+                // Handle masked secrets
+                if (item.value === '********') {
+                    // This is a bit tricky in a transaction because we need the existing value
+                    // But in a bulk save, usually the user didn't change this, so we skip it
+                    return this.prisma.setting.findUnique({ where: { key: item.key } });
+                }
+
+                if (isSecret) {
+                    finalValue = this.crypto.encrypt(item.value);
+                }
+
+                return this.prisma.setting.upsert({
+                    where: { key: item.key },
+                    update: {
+                        value: finalValue,
+                        isSecret,
+                        updatedBy: userId,
+                    },
+                    create: {
+                        key: item.key,
+                        value: finalValue,
+                        isSecret,
+                        updatedBy: userId,
+                    },
+                });
+            })
+        );
+
+        // Update caches after success
+        for (const item of dto.settings) {
+            if (item.value !== '********') {
+                this.cache.set(item.key, item.value);
+                this.secretCache.set(item.key, item.isSecret ?? false);
+            }
+        }
+
+        return results;
     }
 
     async delete(key: string) {

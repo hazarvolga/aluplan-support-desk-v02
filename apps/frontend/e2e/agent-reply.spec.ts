@@ -5,17 +5,7 @@ import { test, expect, Page } from '@playwright/test';
  * Targets ticket detail page interaction: sending a message/reply as an agent.
  */
 
-/**
- * Reusable helper: Login as admin and navigate to dashboard
- */
-async function loginAsAdmin(page: Page) {
-    await page.goto('/tr/login');
-    await page.waitForSelector('[data-testid="login-email"]', { timeout: 120000 });
-    await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
-    await page.getByTestId('login-password').fill('Vol1872017');
-    await page.getByTestId('login-submit').click();
-    await page.waitForURL(/.*\/dashboard/, { timeout: 120000 });
-}
+import { loginAsAdmin } from './helpers/auth';
 
 test.describe('Agent Reply Flow', () => {
 

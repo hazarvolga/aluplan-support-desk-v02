@@ -5,16 +5,7 @@ import { test, expect, Page } from '@playwright/test';
  * Refactored for stability and locale-awareness.
  */
 
-async function loginAsAdmin(page: Page) {
-    await page.goto('/tr/login');
-    // Use data-testid for stability
-    await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
-    await page.getByTestId('login-password').fill('Vol1872017');
-    await page.getByTestId('login-submit').click();
-
-    // Wait for redirect to dashboard
-    await page.waitForURL(/.*\/dashboard/, { timeout: 120000 });
-}
+import { loginAsAdmin } from './helpers/auth';
 
 test.describe('Create Ticket Flow', () => {
 

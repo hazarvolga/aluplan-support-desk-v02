@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { SettingsService } from './settings.service';
 import { UpsertSettingDto } from './dto/upsert-setting.dto';
+import { BulkUpsertSettingDto } from './dto/bulk-upsert-setting.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
@@ -14,6 +15,12 @@ export class SettingsController {
     @Roles('ADMIN', 'SUPERUSER')
     upsert(@Body() dto: UpsertSettingDto, @Request() req: any) {
         return this.settingsService.upsert(dto, req.user.id);
+    }
+
+    @Post('bulk')
+    @Roles('ADMIN', 'SUPERUSER')
+    bulkUpsert(@Body() dto: BulkUpsertSettingDto, @Request() req: any) {
+        return this.settingsService.bulkUpsert(dto, req.user.id);
     }
 
     @Get()

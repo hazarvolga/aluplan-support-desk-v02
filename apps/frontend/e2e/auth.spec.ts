@@ -47,18 +47,9 @@ test.describe('Authentication Flow', () => {
     });
 
     test('should redirect to dashboard on valid credentials', async ({ page }) => {
-        // Arrange
-        await page.goto('/tr/login');
-        await page.waitForSelector('[data-testid="login-email"]', { timeout: 120000 });
-
-        // Act
-        await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
-        await page.getByTestId('login-password').fill('Vol1872017');
-        await page.getByTestId('login-submit').click();
-
-        // Assert - wait for redirect (smart routing might go to /profile or /dashboard)
-        await page.waitForURL(/.*\/(dashboard|profile)/, { timeout: 120000 });
-        expect(page.url()).toMatch(/.*\/(dashboard|profile)/);
+        const { loginAsAdmin } = require('./helpers/auth');
+        await loginAsAdmin(page);
+        expect(page.url()).toMatch(/.*\/dashboard/);
     });
 
     test('should display system requirements accordion', async ({ page }) => {

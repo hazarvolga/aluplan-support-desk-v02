@@ -427,6 +427,7 @@ export const api = {
         list: (decrypt = false) => request<any[]>(`/settings${decrypt ? '?decrypt=true' : ''}`),
         get: (key: string) => request<any>(`/settings/${key}`),
         upsert: (body: any) => request<any>('/settings', { method: 'POST', body: JSON.stringify(body) }),
+        bulkUpsert: (body: { settings: any[] }) => request<any>('/settings/bulk', { method: 'POST', body: JSON.stringify(body) }),
         delete: (key: string) => request<any>(`/settings/${key}`, { method: 'DELETE' }),
     },
     sla: {

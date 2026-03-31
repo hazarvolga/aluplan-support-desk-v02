@@ -210,15 +210,18 @@ export default function AdminSettingsPage() {
                 'whatsapp.verify_token',
             ];
 
-            const promises = keys
+            const batch = keys
                 .map(key => {
                     const value = getSetting(key);
                     const isSecret = secretKeys.includes(key);
                     return { key, value, isSecret };
                 })
-                .filter(item => item.value !== '' && item.value !== '********')
-                .map(payload => api.settings.upsert(payload));
-            await Promise.all(promises);
+                .filter(item => item.value !== '' && item.value !== '********');
+
+            if (batch.length > 0) {
+                await api.settings.bulkUpsert({ settings: batch });
+            }
+
             toast({
                 title: t('toasts.success'),
                 description: t('toasts.save_success'),

@@ -8,7 +8,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     private readonly logger = new Logger(PrismaService.name);
 
     constructor() {
-        const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+        const pool = new Pool({
+            connectionString: process.env.DATABASE_URL,
+            max: 100, // Increased to handle concurrent upserts from dashboard
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 10000,
+        });
         const adapter = new PrismaPg(pool as any);
         super({ adapter, errorFormat: 'pretty' });
     }

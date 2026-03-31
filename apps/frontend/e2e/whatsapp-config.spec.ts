@@ -1,17 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from './helpers/auth';
 
 test.describe('WhatsApp Configuration UI', () => {
 
     test('should allow admin to access WhatsApp settings', async ({ page }) => {
         // 1. Navigation and Login
-        await page.goto('/tr/login');
-
-        await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
-        await page.getByTestId('login-password').fill('Vol1872017');
-        await page.getByTestId('login-submit').click();
-
-        // Wait for dashboard load
-        await page.waitForURL('**/dashboard', { timeout: 60000 });
+        await loginAsAdmin(page);
 
         // 2. Goto Settings
         await page.goto('/tr/admin/settings');
