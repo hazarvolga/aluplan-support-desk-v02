@@ -154,6 +154,15 @@ export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
         consumer
             .apply(CsrfMiddleware)
+            .exclude(
+                { path: 'api/v1/auth/login', method: (1 as any) }, // 1 is RequestMethod.POST
+                { path: 'api/v1/auth/lookup', method: (1 as any) },
+                { path: 'api/v1/auth/forgot-password', method: (1 as any) },
+                { path: 'api/v1/auth/reset-password', method: (1 as any) },
+                { path: 'api/v1/omni-channel/webhook', method: (1 as any) },
+                { path: 'api/v1/whatsapp/webhook', method: (1 as any) },
+                { path: 'api/v1/webhooks/(.*)', method: (1 as any) },
+            )
             .forRoutes('*');
     }
 }
