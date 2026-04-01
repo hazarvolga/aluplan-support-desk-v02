@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TicketsService } from './tickets.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlaService } from './sla.service';
-import { PiiMaskingService } from './pii-masking.service';
+import { PiiMaskingService } from '../common/services/pii-masking.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiQueryService } from '../ai/ai-query.service';
 import { RedisService } from '../redis/redis.service';

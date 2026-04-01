@@ -199,6 +199,13 @@ export class TicketsController {
     }
 
     // ─── DELETE ─────────────────────────────────
+    @Delete('bulk')
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'SENIOR_AGENT')
+    @ApiOperation({ summary: 'Bulk delete multiple tickets' })
+    async bulkRemove(@Body() body: { ticketIds: string[] }, @Request() req: any) {
+        return this.ticketsService.bulkRemove(body.ticketIds, req.user.sub);
+    }
+
     @Delete(':id')
     @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'SENIOR_AGENT')
     @ApiOperation({ summary: 'Delete a ticket (Hard delete)' })

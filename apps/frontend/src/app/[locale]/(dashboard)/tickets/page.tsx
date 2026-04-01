@@ -123,6 +123,21 @@ export default function TicketsPage() {
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (!confirm(t('bulk.delete_confirm', { count: selectedIds.length }) || `Are you sure you want to delete ${selectedIds.length} tickets?`)) return;
+        setBulkLoading(true);
+        try {
+            await api.tickets.bulkDelete(selectedIds);
+            toast.success(t('bulk.delete_success', { count: selectedIds.length }) || `${selectedIds.length} tickets deleted.`);
+            setSelectedIds([]);
+            load();
+        } catch (err: any) {
+            toast.error(err.message);
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
     const handleDelete = async (e: React.MouseEvent, id: string, number: string) => {
         e.stopPropagation();
         if (!confirm(t('delete_confirm_desc'))) return;
@@ -231,6 +246,14 @@ export default function TicketsPage() {
                                 >
                                     <CheckCircle2 className="h-4 w-4 text-emerald-500 mr-2" />
                                     {t('bulk.resolve_all')}
+                                </Button>
+                                <Button
+                                    onClick={handleBulkDelete}
+                                    disabled={bulkLoading}
+                                    className="h-10 px-5 bg-white/5 border border-white/10 text-[10px] font-bold uppercase hover:bg-rose-500/10 hover:border-rose-500/30 text-rose-400 transition-all"
+                                >
+                                    <Trash2 className="h-4 w-4 text-rose-500 mr-2" />
+                                    {t('bulk.delete_selected') || 'Delete Selected'}
                                 </Button>
                                 <Button
                                     variant="ghost"

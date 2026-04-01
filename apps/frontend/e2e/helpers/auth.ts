@@ -42,7 +42,7 @@ export async function loginAsAdmin(page: Page) {
                 }
                 console.log(`⚠️ Login attempt ${attempt} failed with error visible. Retrying...`);
             }
-        } catch (e) {
+        } catch (e: any) {
             console.log(`⚠️ Login attempt ${attempt} failed: ${e.message}. Retrying...`);
         }
 

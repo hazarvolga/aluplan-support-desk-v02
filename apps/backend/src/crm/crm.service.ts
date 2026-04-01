@@ -76,6 +76,8 @@ function buildSyncDetails(
     };
 }
 
+import { PiiMaskingService } from '../common/services/pii-masking.service';
+
 @Injectable()
 export class CrmService {
     private readonly logger = new Logger(CrmService.name);
@@ -86,6 +88,7 @@ export class CrmService {
         private prisma: PrismaService,
         private dynamics365: Dynamics365Adapter,
         private crypto: CryptoService,
+        private piiMasking: PiiMaskingService,
     ) {
         // Register available adapters
         this.adapters.set(CrmProvider.DYNAMICS_365, dynamics365);
@@ -432,6 +435,19 @@ export class CrmService {
         });
 
         if (!account) throw new NotFoundException('Şirket kaydı bulunamadı.');
+
+        // Mask PII in returned customers (SEC-002)
+        if (account.customers) {
+            account.customers = account.customers.map(customer => ({
+                ...customer,
+                phoneNumber: this.piiMasking.maskSensitiveData(customer.phoneNumber || ''),
+                user: customer.user ? {
+                    ...customer.user,
+                    email: this.piiMasking.maskSensitiveData(customer.user.email || '')
+                } : null
+            })) as any;
+        }
+
         return account;
     }
 

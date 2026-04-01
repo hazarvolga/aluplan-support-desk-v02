@@ -428,7 +428,7 @@
       "priority_label": "KRITIKALITÄTSSTUFE",
       "open_date": "ERSTELLUNGSDATUM",
       "assignee_label": "ZUGEWIESENER_EXPERTE",
-      "hotfix_data": "HOTFIX_TELEMETRIE_DATEN",
+      "hotfix_data": "HOTINFO_TELEMETRIE_DATEN",
       "security_warning": "SICHERHEITSWARNUNG",
       "security_warning_desc": "Alle Korrespondenz und geteilten Daten werden gemäß den Aluplan-Qualitätsstandards aufgezeichnet."
     },

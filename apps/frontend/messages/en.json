@@ -428,7 +428,7 @@
       "priority_label": "CRITICALITY_LEVEL",
       "open_date": "OPEN_DATE",
       "assignee_label": "ASSIGNED_EXPERT",
-      "hotfix_data": "HOTFIX_TELEMETRY_DATA",
+      "hotfix_data": "HOTINFO_TELEMETRY_DATA",
       "security_warning": "SECURITY_WARNING",
       "security_warning_desc": "All correspondence and shared data are recorded for Aluplan quality standards."
     },

@@ -241,6 +241,7 @@ export const api = {
         getSlaStats: () => request<any>('/tickets/sla/stats'),
         bulkUpdate: (body: { ticketIds: string[]; status?: string; priority?: string; assignedTo?: string }) =>
             request<any>('/tickets/bulk', { method: 'PATCH', body: JSON.stringify(body) }),
+        bulkDelete: (ids: string[]) => request<any>('/tickets/bulk', { method: 'DELETE', body: JSON.stringify({ ticketIds: ids }) }),
         delete: (id: string) => request<any>(`/tickets/${id}`, { method: 'DELETE' }),
     },
     ai: {
@@ -281,6 +282,7 @@ export const api = {
             method: 'POST',
             body: JSON.stringify({ provider }),
         }),
+        testStorage: () => request<any>('/ai/test-storage', { method: 'POST' }),
         getCopilotDraft: (ticketId: string) => request<{ draft: string; model: string }>(`/ai/copilot/draft/${ticketId}`),
         getMetrics: (channel?: string) => request<{
             global: {

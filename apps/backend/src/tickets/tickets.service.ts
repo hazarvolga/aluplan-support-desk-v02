@@ -10,7 +10,7 @@ import {
 import { RedisService } from '../redis/redis.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlaService } from './sla.service';
-import { PiiMaskingService } from './pii-masking.service';
+import { PiiMaskingService } from '../common/services/pii-masking.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { AddMessageDto } from './dto/add-message.dto';
@@ -618,5 +618,16 @@ export class TicketsService {
         this.logger.warn(`🗑️ Ticket ${ticket.ticketNumber} deleted by Admin ${actorId}`);
 
         return { success: true, message: `Ticket ${ticket.ticketNumber} deleted.` };
+    }
+
+    async bulkRemove(ticketIds: string[], actorId: string) {
+        const result = await this.prisma.ticket.updateMany({
+            where: { id: { in: ticketIds } },
+            data: { deletedAt: new Date() }
+        });
+
+        this.logger.warn(`🗑️ Bulk deleted ${result.count} tickets by Admin ${actorId}`);
+
+        return { success: true, count: result.count };
     }
 }

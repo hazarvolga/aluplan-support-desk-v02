@@ -1,44 +1,14 @@
-import { plainToInstance } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, validateSync } from 'class-validator';
-
-enum Environment {
-    Development = 'development',
-    Production = 'production',
-    Test = 'test',
-    Provision = 'provision',
-}
-
-class EnvironmentVariables {
-    @IsEnum(Environment)
-    NODE_ENV: Environment;
-
-    @IsNumber()
-    PORT: number;
-
-    @IsString()
-    DATABASE_URL: string;
-
-    @IsString()
-    @IsOptional()
-    REDIS_HOST: string = 'localhost';
-
-    @IsNumber()
-    @IsOptional()
-    REDIS_PORT: number = 6379;
-}
+import { envSchema } from './env-validation.schema';
 
 export function validate(config: Record<string, unknown>) {
-    const validatedConfig = plainToInstance(
-        EnvironmentVariables,
-        config,
-        { enableImplicitConversion: true },
-    );
-    const errors = validateSync(validatedConfig, { skipMissingProperties: false });
+    const result = envSchema.safeParse(config);
 
-    if (errors.length > 0) {
-        throw new Error(errors.toString());
+    if (result.success === false) {
+        console.error('❌ Invalid environment variables:', result.error.format());
+        throw new Error('Invalid environment configuration');
     }
-    return validatedConfig;
+
+    return result.data;
 }
 
 export default () => {

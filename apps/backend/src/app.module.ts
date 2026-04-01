@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -42,6 +42,7 @@ import { AnnouncementTemplatesModule } from './announcement-templates/announceme
 import { EmailValidatorModule } from './email-validator/email-validator.module';
 import { CommonModule } from './common/common.module';
 import { LoggerModule } from 'nestjs-pino';
+import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 
 @Module({
     imports: [
@@ -140,6 +141,7 @@ import { LoggerModule } from 'nestjs-pino';
         AnnouncementTemplatesModule,
         EmailValidatorModule,
         CommonModule,
+        LoggerModule,
     ],
     providers: [
         {
@@ -148,4 +150,10 @@ import { LoggerModule } from 'nestjs-pino';
         },
     ],
 })
-export class AppModule { }
+export class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+        consumer
+            .apply(CsrfMiddleware)
+            .forRoutes('*');
+    }
+}

@@ -428,7 +428,7 @@
       "priority_label": "KRİTİKLİK_SEVİYESİ",
       "open_date": "AÇILIŞ_TARİHİ",
       "assignee_label": "ATANAN_UZMAN",
-      "hotfix_data": "HOTFIX_TELEMETRİ_VERİSİ",
+      "hotfix_data": "HOTINFO_TELEMETRİ_VERİSİ",
       "security_warning": "GÜVENLİK_UYARISI",
       "security_warning_desc": "Tüm yazışmalar ve paylaşılan veriler Aluplan kalite standartları gereği kayıt altına alınmaktadır."
     },

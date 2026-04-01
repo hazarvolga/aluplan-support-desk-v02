@@ -42,8 +42,8 @@ export class OmniChannelService {
         });
 
         try {
-            // Thread detection
-            const ticketMatch = subject.match(/\[#SUP-(\d+)\]/);
+            // Thread detection - Support both [#SUP-123] and [SUP-123] formats
+            const ticketMatch = subject.match(/\[#?SUP-(\d+)\]/i);
             let ticketId = null;
 
             if (ticketMatch) {
