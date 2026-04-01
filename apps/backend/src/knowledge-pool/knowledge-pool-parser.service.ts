@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { PDFParse } = require('pdf-parse');
 import * as csv from 'csv-parser';
 
 @Injectable()
@@ -29,11 +27,28 @@ export class KnowledgePoolParserService {
 
     async parsePdf(filePath: string): Promise<string> {
         this.logger.debug(`Starting PDF parsing for: ${filePath}`);
-        const dataBuffer = fs.readFileSync(filePath);
-        const parser = new PDFParse({ data: dataBuffer });
-        const data = await parser.getText();
-        this.logger.debug(`Completed PDF parsing for: ${filePath}. extracted length: ${data?.text?.length || 0}`);
-        return this.fixEncoding(data.text);
+        try {
+            const dataBuffer = fs.readFileSync(filePath);
+
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            let pdfParser = require('pdf-parse');
+            // Handle ESM default export in CJS require
+            if (typeof pdfParser !== 'function' && pdfParser.default) {
+                pdfParser = pdfParser.default;
+            }
+
+            if (typeof pdfParser !== 'function') {
+                this.logger.error(`PDF Parser is not a function. Type: ${typeof pdfParser}`);
+                return '';
+            }
+
+            const data = await pdfParser(dataBuffer);
+            this.logger.debug(`Completed PDF parsing for: ${filePath}. extracted length: ${data?.text?.length || 0}`);
+            return this.fixEncoding(data.text || '');
+        } catch (error: any) {
+            this.logger.error(`Failed to parse PDF ${filePath}: ${error.message}`);
+            return '';
+        }
     }
 
     async parseCsv(filePath: string): Promise<string> {

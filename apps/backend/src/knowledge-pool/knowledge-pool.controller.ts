@@ -12,7 +12,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { KnowledgeSourceType } from '@aluplan/database';
 import { StorageService } from '../common/services/storage.service';
 
-// Production Knowledge Base Stabilization Sync v1.0.2 - Triggering cache-bust clean build
+// Production Knowledge Base Stabilization Sync v1.0.3 - Final RAG Fixes (Multi-chunk + High-precision 1536 aligned)
 @ApiTags('Knowledge Pool')
 @Controller('knowledge-pool')
 @UseGuards(JwtAuthGuard, RbacGuard)

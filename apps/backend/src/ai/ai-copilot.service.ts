@@ -37,8 +37,16 @@ export class AiCopilotService {
         // Extract Hotinfo
         const hotinfoSnapshot = ticket.hotinfoSnapshot || ticket.creator?.customerProfile?.hotinfoData;
 
-        // Context from the initial AI search/RAG interaction
-        const kbContent = ticket.interaction?.responseGenerated || 'No specific knowledge base context found for this incident.';
+        // Perform a fresh search for the draft generator to get original chunks
+        const searchResponse = await this.embeddingService.search(
+            ticket.subject + '\n' + (ticket.description || ''),
+            5,
+            null,
+            true // drafts are for staff
+        );
+        const kbContent = searchResponse.results.length > 0
+            ? searchResponse.results.map(r => r.content).join('\n\n---\n\n')
+            : 'No specific knowledge base context found for this incident.';
 
         // Use Context Builder to include Hotinfo properly
         const context = await this.promptContextBuilder.buildContext({

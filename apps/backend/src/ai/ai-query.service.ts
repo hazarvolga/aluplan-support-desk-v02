@@ -170,12 +170,12 @@ export class AiQueryService {
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
                 userQuery,
-                kbContent: topResult.content,
+                kbContent: results.map(r => r.content).join('\n\n---\n\n'),
                 skipHotinfoProfile: true,
             });
             const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
-            const aiResult = await this.ai.reformat(finalPrompt, userQuery, topResult.content);
-            answer = aiResult?.response ?? topResult.content;
+            const aiResult = await this.ai.reformat(finalPrompt, userQuery, results.map(r => r.content).join('\n\n'));
+            answer = aiResult?.response ?? results[0].content;
 
             // Langfuse trace
             await this.langfuse.trace('query-support', userQuery, answer, {
@@ -330,13 +330,13 @@ export class AiQueryService {
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
                 userQuery,
-                kbContent: topResult.content,
+                kbContent: results.map(r => r.content).join('\n\n---\n\n'),
                 skipHotinfoProfile: true,
             });
             const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
             usedPrompt = finalPrompt;
 
-            const stream = this.ai.streamReformat(finalPrompt, userQuery, topResult.content);
+            const stream = this.ai.streamReformat(finalPrompt, userQuery, results.map(r => r.content).join('\n\n'));
             for await (const chunk of stream) {
                 fullAnswer += chunk;
                 yield { chunk };

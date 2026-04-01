@@ -70,7 +70,7 @@ export function smartChunk(text: string, options: ChunkerOptions = {}): ChunkRes
  */
 export function hierarchicalChunk(text: string, options: ChunkerOptions = {}): { parent: string, children: string[] }[] {
     const parentMax = parseInt(process.env.CHUNK_PARENT_MAX_TOKENS || '800', 10);
-    const childMax = parseInt(process.env.CHUNK_CHILD_MAX_TOKENS || '120', 10);
+    const childMax = parseInt(process.env.CHUNK_CHILD_MAX_TOKENS || '450', 10);
     const { maxTokens = parentMax, title = 'Bilinmeyen Döküman' } = options;
     const CHILD_SIZE = childMax;
 
