@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { hierarchicalChunk } from '../knowledge-base/utils/smart-chunker';
+import { RAG_CONFIG, getConfidenceBand } from '../config/rag.config';
 
 export interface SearchResult {
     articleId: string;
@@ -28,10 +29,10 @@ export interface SearchResponse {
 export class EmbeddingService {
     private readonly logger = new Logger(EmbeddingService.name);
 
-    private readonly SIMILARITY_THRESHOLD = parseFloat(process.env.SIMILARITY_THRESHOLD || '0.78');
-    private readonly LOW_CONFIDENCE_THRESHOLD = parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.72');
-    private readonly HIGH_THRESHOLD = 0.60;
-    private readonly MEDIUM_THRESHOLD = 0.45;
+    private readonly SIMILARITY_THRESHOLD = RAG_CONFIG.SIMILARITY.THRESHOLD;
+    private readonly LOW_CONFIDENCE_THRESHOLD = RAG_CONFIG.SIMILARITY.LOW_CONFIDENCE;
+    private readonly HIGH_THRESHOLD = RAG_CONFIG.SIMILARITY.HIGH;
+    private readonly MEDIUM_THRESHOLD = RAG_CONFIG.SIMILARITY.MEDIUM;
 
     constructor(
         private readonly prisma: PrismaService,
@@ -42,7 +43,7 @@ export class EmbeddingService {
      * Store embedding for a published article version using Hierarchical (Parent-Child) chunking.
      */
     async indexArticle(articleId: string, versionId: string, title: string, content: string): Promise<void> {
-        const parentMax = parseInt(process.env.CHUNK_PARENT_MAX_TOKENS || '800', 10);
+        const parentMax = RAG_CONFIG.CHUNKING.PARENT_MAX_TOKENS;
         const hierarchies = hierarchicalChunk(content, { title, maxTokens: parentMax });
 
         await this.prisma.$executeRaw`DELETE FROM knowledge_embeddings WHERE article_version_id = ${versionId}::uuid`;
@@ -155,7 +156,7 @@ export class EmbeddingService {
             title: row.title,
             content: row.content,
             similarity: Number(row.similarity),
-            confidence: (row.similarity >= this.HIGH_THRESHOLD ? 'HIGH' : row.similarity >= this.MEDIUM_THRESHOLD ? 'MEDIUM' : 'LOW') as 'HIGH' | 'MEDIUM' | 'LOW',
+            confidence: getConfidenceBand(row.similarity),
         }));
 
         const diagnostics: SearchDiagnostics = {
@@ -172,7 +173,7 @@ export class EmbeddingService {
     }
 
     async indexPoolContent(sourceId: string, content: string, metadata: any = {}): Promise<void> {
-        const parentMax = parseInt(process.env.CHUNK_PARENT_MAX_TOKENS || '800', 10);
+        const parentMax = RAG_CONFIG.CHUNKING.PARENT_MAX_TOKENS;
         const hierarchies = hierarchicalChunk(content, { maxTokens: parentMax });
 
         if (hierarchies.length === 0) return;

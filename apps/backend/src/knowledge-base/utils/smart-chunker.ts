@@ -69,8 +69,15 @@ export function smartChunk(text: string, options: ChunkerOptions = {}): ChunkRes
  * - Child: Small chunks for vector search (300-500 tokens/chars)
  */
 export function hierarchicalChunk(text: string, options: ChunkerOptions = {}): { parent: string, children: string[] }[] {
-    const parentMax = parseInt(process.env.CHUNK_PARENT_MAX_TOKENS || '800', 10);
-    const childMax = parseInt(process.env.CHUNK_CHILD_MAX_TOKENS || '450', 10);
+    // Import config dynamically to avoid circular deps at module level
+    let parentMax = 800;
+    let childMax = 450;
+    try {
+        const ragConfig = require('../config/rag.config').RAG_CONFIG;
+        parentMax = ragConfig.CHUNKING.PARENT_MAX_TOKENS;
+        childMax = ragConfig.CHUNKING.CHILD_MAX_TOKENS;
+    } catch { /* fallback to defaults */ }
+
     const { maxTokens = parentMax, title = 'Bilinmeyen Döküman' } = options;
     const CHILD_SIZE = childMax;
 
