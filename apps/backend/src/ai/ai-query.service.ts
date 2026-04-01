@@ -11,6 +11,8 @@ import { SettingsService } from '../settings/settings.service';
 import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
 import { createHash } from 'crypto';
+import { RAG_CONFIG } from '../config/rag.config';
+import { expandQueryWithSynonyms } from './utils/synonym-dictionary';
 
 // Confidence bands — LOW/HIGH/MEDIUM from schema, NO_MATCH is local
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -87,7 +89,7 @@ export class AiQueryService {
         // ... (cache logic)
         const isStaff = await this.isStaff(userId);
         const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
-        const cacheKey = `ai:query:cache:v3:${queryHash}`; // Updated cache version
+        const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
         const cached = await this.redis.get(cacheKey);
 
         if (cached) {
@@ -103,15 +105,22 @@ export class AiQueryService {
             this.logger.log(`🔍 AI Query Expanded with Hotinfo: Extracted Error [${h.errorTrace || 'None'}]`);
         }
 
-        // 1. Semantic search
-        const searchResponse: SearchResponse = await this.embeddingService.search(expandedQuery, 10, null, isStaff);
+        // 1. Synonym-based query expansion
+        const { expanded: synonymExpanded, matchedGroups } = expandQueryWithSynonyms(expandedQuery);
+        if (matchedGroups.length > 0) {
+            this.logger.log(`🔍 Synonym expansion matched: [${matchedGroups.join(', ')}]`);
+            expandedQuery = synonymExpanded;
+        }
+
+        // 2. Semantic search
+        const searchResponse: SearchResponse = await this.embeddingService.search(expandedQuery, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, null, isStaff);
         let results = searchResponse.results;
 
         // Re-ranking
         results = this.rerankResults(results);
 
         // Lowered floor for response generation
-        const LOW_CONFIDENCE_THRESHOLD = parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.62');
+        const LOW_CONFIDENCE_THRESHOLD = RAG_CONFIG.SIMILARITY.LOW_CONFIDENCE;
         if (searchResponse.diagnostics.topScore < LOW_CONFIDENCE_THRESHOLD || results.length === 0) {
             this.logger.warn(`🚫 No reliable context found(topScore = ${searchResponse.diagnostics.topScore.toFixed(3)}).Routing to human agent.`);
 
@@ -241,8 +250,8 @@ export class AiQueryService {
             suggestTicket,
         };
 
-        // Cache for 1 hour
-        await this.redis.set(cacheKey, JSON.stringify(finalResult), 3600);
+        // Cache with centralized TTL
+        await this.redis.set(cacheKey, JSON.stringify(finalResult), RAG_CONFIG.CACHE.DEFAULT_TTL);
 
         return finalResult;
     }
@@ -254,25 +263,23 @@ export class AiQueryService {
     private rerankResults(results: SearchResult[]): SearchResult[] {
         if (results.length === 0) return [];
 
-        const RERANK_ARTICLE = parseFloat(process.env.RERANK_MULTIPLIER_ARTICLE || '1.30');
-        const RERANK_DOCUMENT = parseFloat(process.env.RERANK_MULTIPLIER_DOCUMENT || '1.15');
-        const RERANK_URL = parseFloat(process.env.RERANK_MULTIPLIER_URL || '0.60');
+        const RERANK = RAG_CONFIG.RERANK;
         const RERANK_URL_HARD_FLOOR = parseFloat(process.env.RERANK_URL_HARD_FLOOR || '0.75');
 
         return results
             .map(res => {
                 let boost = 1.0;
 
-                if (res.sourceType === 'ARTICLE') boost *= RERANK_ARTICLE;
-                if (res.sourceType === 'DOCUMENT') boost *= RERANK_DOCUMENT;
-                if (res.sourceType === 'URL') boost *= RERANK_URL;
+                if (res.sourceType === 'ARTICLE') boost *= RERANK.ARTICLE;
+                if (res.sourceType === 'DOCUMENT') boost *= RERANK.DOCUMENT;
+                if (res.sourceType === 'URL') boost *= RERANK.URL;
+                if (res.sourceType === 'TICKET') boost *= RERANK.TICKET;
 
                 return {
                     ...res,
                     similarity: res.similarity * boost
                 };
             })
-            // CHANGE 3: Hard exclusion for URL sources below floor
             .filter(res => {
                 if (res.sourceType === 'URL' && res.similarity < RERANK_URL_HARD_FLOOR) {
                     return false;
@@ -280,7 +287,7 @@ export class AiQueryService {
                 return true;
             })
             .sort((a, b) => b.similarity - a.similarity)
-            .slice(0, 5);
+            .slice(0, RAG_CONFIG.SEARCH.DEFAULT_LIMIT);
     }
 
     async * streamQuery(userQuery: string, userId?: string | null, channel: CommunicationChannel = 'WEB', hotinfoContext?: any): AsyncGenerator<any, void, unknown> {
@@ -399,6 +406,48 @@ export class AiQueryService {
         // Staff are all roles except customer
         return user.role.name !== 'customer';
     }
+
+    /**
+     * Event-driven cache invalidation.
+     * Clears AI query caches when knowledge base content changes.
+     */
+    @OnEvent('article.published', { async: true })
+    @OnEvent('article.updated', { async: true })
+    async handleArticleChange(payload: { articleId?: string }) {
+        await this.invalidateQueryCaches('article change');
+    }
+
+    @OnEvent('knowledge-pool.synced', { async: true })
+    @OnEvent('knowledge-pool.source_processed', { async: true })
+    async handleKnowledgePoolChange(payload: { sourceId?: string }) {
+        await this.invalidateQueryCaches('knowledge pool sync');
+    }
+
+    private async invalidateQueryCaches(reason: string) {
+        try {
+            const client = this.redis.getClient();
+            const pattern = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:*`;
+            let cursor = '0';
+            let totalDeleted = 0;
+
+            // Use SCAN for production safety (non-blocking vs KEYS)
+            do {
+                const [nextCursor, keys] = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+                cursor = nextCursor;
+                if (keys.length > 0) {
+                    await client.del(...keys);
+                    totalDeleted += keys.length;
+                }
+            } while (cursor !== '0');
+
+            if (totalDeleted > 0) {
+                this.logger.log(`🗑️ Invalidated ${totalDeleted} AI query caches (reason: ${reason})`);
+            }
+        } catch (err) {
+            this.logger.warn(`⚠️ Cache invalidation failed: ${err}`);
+        }
+    }
+
     @OnEvent('ai.translate_message', { async: true })
     async handleTranslationRequest(payload: { ticketId: string; messageId: string; targetLanguage: string }) {
         try {
