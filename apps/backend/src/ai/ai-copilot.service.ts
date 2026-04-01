@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
+import { EmbeddingService } from './embedding.service';
 
 @Injectable()
 export class AiCopilotService {
@@ -11,6 +12,7 @@ export class AiCopilotService {
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
         private readonly promptContextBuilder: PromptContextBuilderService,
+        private readonly embeddingService: EmbeddingService,
     ) { }
 
     /**
