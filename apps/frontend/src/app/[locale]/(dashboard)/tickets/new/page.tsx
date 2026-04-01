@@ -477,6 +477,19 @@ export default function NewTicketPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Fallback button if AI fails or user just wants to bypass */}
+                {!aiAnswer && !isDiagnosing && (
+                    <div className="pt-8 text-center animate-in fade-in duration-1000">
+                        <Button
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-brand-400"
+                            onClick={() => setCurrentStep(3)}
+                        >
+                            {t('ai.no_create_ticket')}
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
     );

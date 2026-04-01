@@ -20,6 +20,7 @@ export const envSchema = z.object({
 
     // Security
     ENCRYPTION_KEY: z.string().min(32).max(64, "ENCRYPTION_KEY must be 64 characters (Hex) or 32 characters (Raw)"),
+    COOKIE_DOMAIN: z.string().optional(),
 
     // Frontend
     FRONTEND_URL: z.string().url().default('http://localhost:3000'),

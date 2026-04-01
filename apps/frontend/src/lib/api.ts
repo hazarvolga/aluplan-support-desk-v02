@@ -21,7 +21,9 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-    const csrfToken = typeof window !== 'undefined' ? document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1] : null;
+    const csrfToken = typeof window !== 'undefined'
+        ? document.cookie.split('; ').find(row => row.trim().startsWith('XSRF-TOKEN='))?.split('=')[1]
+        : null;
 
     const headers: any = {
         ...options?.headers,
