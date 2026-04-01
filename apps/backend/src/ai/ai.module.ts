@@ -17,10 +17,12 @@ import { TrustScoreCalculator } from './utils/trust-score.calculator';
 import { TicketClusteringService } from './ticket-clustering.service';
 import { AiReportingService } from './ai-reporting.service';
 import { RagObservabilityService } from './rag-observability.service';
+import { RagMaintenanceService } from './rag-maintenance.service';
+import { KnowledgePoolModule } from '../knowledge-pool/knowledge-pool.module';
 import { EmailModule } from '../email/email.module';
 
 @Module({
-    imports: [SettingsModule, forwardRef(() => EmailModule)],
+    imports: [SettingsModule, forwardRef(() => EmailModule), forwardRef(() => KnowledgePoolModule)],
     controllers: [AiController],
     providers: [
         AiService,
@@ -39,7 +41,8 @@ import { EmailModule } from '../email/email.module';
         TicketClusteringService,
         AiReportingService,
         RagObservabilityService,
+        RagMaintenanceService,
     ],
-    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService, PromptsService, LangfuseService, LlmApiService, TrustScoreCalculator, TicketClusteringService, AiReportingService, RagObservabilityService],
+    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService, PromptsService, LangfuseService, LlmApiService, TrustScoreCalculator, TicketClusteringService, AiReportingService, RagObservabilityService, RagMaintenanceService],
 })
 export class AiModule { }

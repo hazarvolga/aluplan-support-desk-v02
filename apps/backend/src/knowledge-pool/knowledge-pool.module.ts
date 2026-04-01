@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { KnowledgePoolService } from './knowledge-pool.service';
 import { KnowledgePoolController } from './knowledge-pool.controller';
@@ -12,7 +12,7 @@ import { CrawlService } from './crawl.service';
 @Module({
     imports: [
         PrismaModule,
-        AiModule,
+        forwardRef(() => AiModule),
         BullModule.registerQueue({
             name: 'knowledge-sync',
         }),
