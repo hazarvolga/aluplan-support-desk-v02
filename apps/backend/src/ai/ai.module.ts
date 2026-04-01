@@ -16,6 +16,7 @@ import { LangfuseService } from './langfuse.service';
 import { TrustScoreCalculator } from './utils/trust-score.calculator';
 import { TicketClusteringService } from './ticket-clustering.service';
 import { AiReportingService } from './ai-reporting.service';
+import { RagObservabilityService } from './rag-observability.service';
 import { EmailModule } from '../email/email.module';
 
 @Module({
@@ -36,8 +37,9 @@ import { EmailModule } from '../email/email.module';
         LlmApiService,
         TrustScoreCalculator,
         TicketClusteringService,
-        AiReportingService
+        AiReportingService,
+        RagObservabilityService,
     ],
-    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService, PromptsService, LangfuseService, LlmApiService, TrustScoreCalculator, TicketClusteringService, AiReportingService],
+    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService, PromptsService, LangfuseService, LlmApiService, TrustScoreCalculator, TicketClusteringService, AiReportingService, RagObservabilityService],
 })
 export class AiModule { }

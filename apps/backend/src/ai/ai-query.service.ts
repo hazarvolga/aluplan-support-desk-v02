@@ -13,6 +13,7 @@ import { RedisService } from '../redis/redis.service';
 import { createHash } from 'crypto';
 import { RAG_CONFIG } from '../config/rag.config';
 import { expandQueryWithSynonyms } from './utils/synonym-dictionary';
+import { RagObservabilityService } from './rag-observability.service';
 
 // Confidence bands — LOW/HIGH/MEDIUM from schema, NO_MATCH is local
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -80,13 +81,14 @@ export class AiQueryService {
         private readonly settings: SettingsService,
         private readonly langfuse: LangfuseService,
         private readonly redis: RedisService,
+        private readonly ragObs: RagObservabilityService,
     ) {
         this.highThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_HIGH', '0.85'));
         this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.70'));
     }
 
     async query(userQuery: string, userId?: string | null, channel: CommunicationChannel = 'WEB', hotinfoContext?: any): Promise<AiQueryResult> {
-        // ... (cache logic)
+        const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
         const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
         const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
@@ -95,6 +97,7 @@ export class AiQueryService {
         if (cached) {
             const result = JSON.parse(cached);
             this.logger.log(`🎯 AI Query Cache Hit: ${userQuery.slice(0, 40)}...`);
+            this.ragObs.recordQuery(Date.now() - startTime, true);
             return result;
         }
 
@@ -252,6 +255,8 @@ export class AiQueryService {
 
         // Cache with centralized TTL
         await this.redis.set(cacheKey, JSON.stringify(finalResult), RAG_CONFIG.CACHE.DEFAULT_TTL);
+
+        this.ragObs.recordQuery(Date.now() - startTime, false);
 
         return finalResult;
     }
