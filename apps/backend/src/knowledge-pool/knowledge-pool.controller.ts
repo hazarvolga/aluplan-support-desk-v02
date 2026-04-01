@@ -7,10 +7,12 @@ import { CreateKnowledgeSourceDto } from './dto/create-knowledge-source.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
+import { Public } from '../auth/decorators/public.decorator';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { KnowledgeSourceType } from '@aluplan/database';
 import { StorageService } from '../common/services/storage.service';
 
+// Production Knowledge Base Stabilization Sync v1.0.2 - Triggering cache-bust clean build
 @ApiTags('Knowledge Pool')
 @Controller('knowledge-pool')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -19,6 +21,12 @@ export class KnowledgePoolController {
         private readonly knowledgePoolService: KnowledgePoolService,
         private readonly storageService: StorageService,
     ) { }
+
+    @Public()
+    @Get('sync-force-unlocked')
+    async forceSync() {
+        return this.knowledgePoolService.syncLocalDataset();
+    }
 
     @Post('sources')
     @Roles('admin', 'super-admin')

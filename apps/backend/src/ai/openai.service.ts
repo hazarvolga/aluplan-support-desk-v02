@@ -46,6 +46,7 @@ export class OpenAiService implements AiProvider {
                 body: JSON.stringify({
                     model,
                     input: text,
+                    dimensions: 1536,
                 }),
                 signal: AbortSignal.timeout(60000),
             });
