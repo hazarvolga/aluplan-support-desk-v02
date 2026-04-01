@@ -13,13 +13,13 @@ export const envSchema = z.object({
     REDIS_PORT: z.coerce.number().default(6379),
 
     // Auth
-    JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
-    JWT_REFRESH_SECRET: z.string().min(32, "JWT_REFRESH_SECRET must be at least 32 characters"),
+    JWT_SECRET: z.string().min(16, "JWT_SECRET should be at least 32 characters"),
+    JWT_REFRESH_SECRET: z.string().min(16, "JWT_REFRESH_SECRET should be at least 32 characters"),
     JWT_EXPIRES_IN: z.string().default('24h'),
     JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
 
     // Security
-    ENCRYPTION_KEY: z.string().length(32, "ENCRYPTION_KEY must be exactly 32 characters (AES-256)"),
+    ENCRYPTION_KEY: z.string().min(32).max(64, "ENCRYPTION_KEY must be 64 characters (Hex) or 32 characters (Raw)"),
 
     // Frontend
     FRONTEND_URL: z.string().url().default('http://localhost:3000'),
