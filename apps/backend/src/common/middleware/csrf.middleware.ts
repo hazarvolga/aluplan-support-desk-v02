@@ -30,29 +30,25 @@ export class CsrfMiddleware implements NestMiddleware {
 
     use(req: Request, res: Response, next: NextFunction) {
         // Detailed logging for debugging CSRF failures in production
-        const path = req.path || req.originalUrl || req.url;
+        // In NestJS with global prefix, req.path might be just '/' for a prefix-matched route
+        // req.originalUrl is the full path including prefix
+        const fullPath = req.originalUrl || req.url || '/';
         const method = req.method;
         const hasToken = !!req.headers['x-xsrf-token'];
 
         // Internal exclusion list to bypass CSRF for public endpoints and webhooks
         const isPublic =
-            path.includes('/auth/login') ||
-            path.includes('/auth/lookup') ||
-            path.includes('/auth/forgot-password') ||
-            path.includes('/auth/reset-password') ||
-            path.includes('/omni-channel/webhook') ||
-            path.includes('/whatsapp/webhook') ||
-            path.includes('/crm/webhooks') ||
-            path.includes('/webhooks/');
+            fullPath.includes('/auth/') ||
+            fullPath.includes('/webhook') ||
+            fullPath.includes('/webhooks/');
 
         if (isPublic && method === 'POST') {
-            // Optional: console.log(`[CSRF] Bypassing ${method} ${path}`);
             return next();
         }
 
         this.handler(req, res, (err) => {
             if (err) {
-                console.error(`[CSRF Error] Failed for ${method} ${path}. Token present: ${hasToken}. URL: ${req.url}, Original: ${req.originalUrl}`);
+                console.error(`[CSRF Error] Failed for ${method} ${fullPath}. Token present: ${hasToken}. URL: ${req.url}, Original: ${req.originalUrl}, Path: ${req.path}`);
                 return next(err);
             }
 
