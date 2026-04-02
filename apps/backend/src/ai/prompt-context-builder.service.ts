@@ -96,14 +96,19 @@ export class PromptContextBuilderService {
             content: `[3. Mevcut Sorgu]\n${userQuery}\n`,
         });
 
-        // 4. System Rules
+        // 4. System Rules (Domain-Specific)
         sections.push({
             name: 'SYSTEM_RULES',
             priority: P.SYSTEM_RULES,
             content: `[4. Sistem Kuralları]
 - Yanıtların profesyonel, yapıcı ve çözüm odaklı olmalıdır.
 - Kurum kimliğini (Aluplan Destek) koru.
-- Bilmediğin konularda uydurma, destek talebi oluşturmalarını öner.
+- Bilgi kaynağında menü yolu veya buton adı varsa, bunları AYNEN yaz (örn: "Allmenu → Hizmetler → Lisans Ayarları").
+- Çözüm adımlarını MUTLAKA numaralı liste halinde sun.
+- "Kontrol edin" gibi belirsiz ifadeler yerine, tam olarak NEREYI ve NASIL kontrol edeceklerini belirt.
+- Bozuk/çince/tanınmayan karakter kalıntılarını yanıta EKLEMEYİN.
+- Donanım bilgileri (GPU, CPU, RAM) sadece performans/çökme sorularında kullanılsın; lisans/kurulum gibi yazılımsal konularda dahil etmeyin.
+- Bilmediğin konularda uydurma. Kaynak yetersizse en yakın prosedürü sun ve destek talebi oluşturmalarını öner.
 `,
         });
 
