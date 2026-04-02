@@ -43,6 +43,7 @@ export default () => {
             usePathStyle: process.env.STORAGE_USE_PATH_STYLE ? process.env.STORAGE_USE_PATH_STYLE === 'true' : true,
             localPath: process.env.STORAGE_LOCAL_PATH || './uploads',
         },
+        cookieDomain: process.env.COOKIE_DOMAIN,
     };
 
     if (isProduction) {
