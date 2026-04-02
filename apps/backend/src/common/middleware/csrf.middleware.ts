@@ -5,7 +5,14 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CsrfMiddleware implements NestMiddleware {
-    constructor(private configService: ConfigService) { }
+    constructor(private configService: ConfigService) {
+        const domain = this.configService.get<string>('COOKIE_DOMAIN');
+        if (domain) {
+            console.log(`[CSRF Middleware] Initialized with Domain: ${domain}`);
+        } else {
+            console.warn(`[CSRF Middleware] Initialized WITHOUT Domain (COOKIE_DOMAIN not set)`);
+        }
+    }
 
     private handler = csurf({
         cookie: {
@@ -22,24 +29,30 @@ export class CsrfMiddleware implements NestMiddleware {
     });
 
     use(req: Request, res: Response, next: NextFunction) {
-        // Internal exclusion list to bypass CSRF for public endpoints and webhooks
-        // This is more robust than NestJS exclude() which can be flaky with global prefixes
-        const isPublic =
-            req.url.includes('/auth/login') ||
-            req.url.includes('/auth/lookup') ||
-            req.url.includes('/auth/forgot-password') ||
-            req.url.includes('/auth/reset-password') ||
-            req.url.includes('/omni-channel/webhook') ||
-            req.url.includes('/whatsapp/webhook') ||
-            req.url.includes('/crm/webhooks') ||
-            req.url.includes('/webhooks/');
+        // Detailed logging for debugging CSRF failures in production
+        const path = req.path || req.originalUrl || req.url;
+        const method = req.method;
+        const hasToken = !!req.headers['x-xsrf-token'];
 
-        if (isPublic && req.method === 'POST') {
+        // Internal exclusion list to bypass CSRF for public endpoints and webhooks
+        const isPublic =
+            path.includes('/auth/login') ||
+            path.includes('/auth/lookup') ||
+            path.includes('/auth/forgot-password') ||
+            path.includes('/auth/reset-password') ||
+            path.includes('/omni-channel/webhook') ||
+            path.includes('/whatsapp/webhook') ||
+            path.includes('/crm/webhooks') ||
+            path.includes('/webhooks/');
+
+        if (isPublic && method === 'POST') {
+            // Optional: console.log(`[CSRF] Bypassing ${method} ${path}`);
             return next();
         }
 
         this.handler(req, res, (err) => {
             if (err) {
+                console.error(`[CSRF Error] Failed for ${method} ${path}. Token present: ${hasToken}. URL: ${req.url}, Original: ${req.originalUrl}`);
                 return next(err);
             }
 
