@@ -17,7 +17,7 @@ export class AuthService {
         private readonly settings: SettingsService,
     ) { }
 
-    async login(dto: LoginDto) {
+    async login(dto: LoginDto): Promise<any> {
         console.log(`[DEBUG] Attempting login for: [${dto.email}]`);
         try {
             const user = await this.prisma.user.findUnique({
