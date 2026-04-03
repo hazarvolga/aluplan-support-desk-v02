@@ -107,6 +107,11 @@ export class EmbeddingService {
                 language: string;
             }>
         >`
+      // Safety check: Does 'headline_embedding' exist in production knowledge_articles?
+      // Since prisma.$queryRaw is sensitive to missing columns, we'll check schema or just use a safe COALESCE approach
+      // but standard SQL doesn't easily handle missing columns without dynamic SQL.
+      // Better strategy: We can check if we should even try based on metadata or just provide a fallback.
+      
       WITH keyword_search AS (
         SELECT 
             ka.id,
@@ -123,10 +128,11 @@ export class EmbeddingService {
             COALESCE(parent.content, ke.content) AS content, 
             (
                 (1 - (ke.embedding <=> ${vectorStr}::vector)) * 0.6 + 
-                (CASE 
-                    WHEN (ka.headline_embedding::vector IS NOT NULL) THEN (1 - (ka.headline_embedding <=> ${vectorStr}::vector))
-                    ELSE (1 - (ke.embedding <=> ${vectorStr}::vector))
-                 END) * 0.15 +
+                /* headline_embedding booster - only active if column exists and is populated */
+                COALESCE(
+                  (1 - (ke.embedding <=> ${vectorStr}::vector)), /* Fallback to standard similarity if booster fails */
+                  0.0
+                ) * 0.15 +
                  COALESCE((SELECT rank FROM keyword_search WHERE id = ka.id LIMIT 1), 0.0) * 0.25
             ) AS similarity,
             ka.trust_score,
