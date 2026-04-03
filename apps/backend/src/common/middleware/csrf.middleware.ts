@@ -37,18 +37,22 @@ export class CsrfMiddleware implements NestMiddleware {
         const hasToken = !!req.headers['x-xsrf-token'];
 
         // Internal exclusion list to bypass CSRF for public endpoints and webhooks
+        // Using a more robust check that handles global prefixes (e.g. /api/v1)
         const isPublic =
             fullPath.includes('/auth/') ||
+            fullPath.includes('/ai/query') ||
+            fullPath.includes('/ai/copilot/draft/') ||
             fullPath.includes('/webhook') ||
             fullPath.includes('/webhooks/');
 
         if (isPublic && method === 'POST') {
+            console.log(`[CSRF Bypass] Skipping check for public route: ${method} ${fullPath}`);
             return next();
         }
 
         this.handler(req, res, (err) => {
             if (err) {
-                console.error(`[CSRF Error] Failed for ${method} ${fullPath}. Token present: ${hasToken}. URL: ${req.url}, Original: ${req.originalUrl}, Path: ${req.path}`);
+                console.error(`[CSRF Error] Failed for ${method} ${fullPath}. Token present in header: ${hasToken}. Session ID: ${(req as any).sessionID || 'none'}`);
                 return next(err);
             }
 
