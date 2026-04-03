@@ -37,18 +37,27 @@ export class AiCopilotService {
         if (!ticket) throw new NotFoundException('Ticket not found');
 
         // Extract Hotinfo
-        const hotinfoSnapshot = ticket.hotinfoSnapshot || ticket.creator?.customerProfile?.hotinfoData;
+        const hotinfoSnapshot = (ticket.hotinfoSnapshot || ticket.creator?.customerProfile?.hotinfoData) as any;
 
-        // Perform a fresh search for the draft generator to get original chunks
+        // Conditional Hotinfo for search query to avoid retrieval pollution
+        const searchQuery = ticket.subject + '\n' + (ticket.description || '');
+        const isHardwareQuery = /çökme|crash|donma|freeze|yavaş|slow|performans|hata|error|gpu|driver|sürücü|ram|bellek/i.test(searchQuery);
+
+        let expandedSearchQuery = searchQuery;
+        if (hotinfoSnapshot && isHardwareQuery && typeof hotinfoSnapshot === 'object') {
+            expandedSearchQuery += `\n[Hotinfo]: ${hotinfoSnapshot.osVersion || ''} ${hotinfoSnapshot.gpu || ''} ${hotinfoSnapshot.errorTrace || ''}`;
+        }
+
+        // Perform a fresh search for the draft generator
         const searchResponse = await this.embeddingService.search(
-            ticket.subject + '\n' + (ticket.description || ''),
+            expandedSearchQuery,
             5,
             null,
             true // drafts are for staff
         );
         const kbContent = searchResponse.results.length > 0
             ? searchResponse.results.map(r => r.content).join('\n\n---\n\n')
-            : 'No specific knowledge base context found for this incident.';
+            : 'No specific knowledge base context found.';
 
         // Use Context Builder to include Hotinfo properly
         const context = await this.promptContextBuilder.buildContext({
@@ -64,6 +73,7 @@ export class AiCopilotService {
             .reverse()
             .join('\n');
 
+        const userLanguage = (ticket.interaction as any)?.userLanguage || 'Turkish';
         const prompt = `Task: Prepare a response draft like a professional customer support representative.
 Use the following "KNOWLEDGE SOURCE AND CONTEXT" and "CONVERSATION HISTORY" to write an empathetic and technically accurate response to help the customer.
 
@@ -74,13 +84,17 @@ CONVERSATION HISTORY:
 ${history}
 
 RULES:
-1. The response must be professional and solution-oriented.
-2. [CRITICAL] USE ONLY APPROVED TECHNICAL INFORMATION FROM THE KNOWLEDGE SOURCE.
-3. Do not start with greetings like "Hello", "Dear ...", only write the body of the message.
-4. Do not add an agent signature.
-5. Provide the response in the same language used by the customer in the conversation history (Turkish, English, or German).
-6. [PROACTIVE CLARIFICATION]: If the user's issue is related to technical errors, performance, exporting, installations, or crashes, YOU MUST CHECK the [MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)] section. If missing ("Bulunamadı"), proactively ask for the "_hotinfo_.hxl" file. If present, use it to accurately address hardware or driver issues. DO NOT ask the user to provide the "_hotinfo_.hxl" file if it is already present.
-7. [STRICT NO HALLUCINATION]: If the EXACT solution (including menu paths, export settings, or software behavior) is NOT explicitly stated in the KNOWLEDGE SOURCE, you MUST NOT invent or guess it using your general knowledge (e.g., do not guess AutoCAD or Allplan menus). Instead, explicitly state: "Veritabanımızda bu konuyla ilgili kesin teknik çözüm bulunamadığı için konuyu uzman mühendislerimize aktarıyorum." and ask for any necessary elaboration. DO NOT INVENT ANY MENU PATHS.
+1. QUERY INTENT: Mentally classify the query (LICENSE, INSTALLATION, PERFORMANCE, MODELING).
+   - If LICENSE/INSTALLATION: Prioritize procedural steps from the source.
+2. SOURCE COMPLIANCE: Use ONLY information from the source.
+   - [CRITICAL] If the source contains a menu path (e.g. "Allmenu -> ..."), you MUST include it EXACTLY.
+   - Do NOT summarize into vague advice like "kontrol edin". Explain EXACTLY what/where to check.
+3. STEP-BY-STEP: Present procedures as numbered lists.
+4. UNAVAILABLE INFO: 
+   - If a partial match exists, present the closest procedure and add: "Not: Tam eşleşme bulunamadı, ancak bu adımlar yardımcı olabilir."
+   - ONLY if there is absolutely NO related info, use: "Veritabanımızda bu konuyla ilgili kesin teknik çözüm bulunamadığı için konuyu uzman mühendislerimize aktarıyorum."
+5. TONE: Professional, empathetic, solution-oriented. Do not include greetings or signatures.
+6. LANG: Use the same language as the customer (${userLanguage}).
 
 RESPONSE DRAFT:`;
 
