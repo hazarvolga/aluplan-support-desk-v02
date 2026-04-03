@@ -19,57 +19,64 @@ export class AuthService {
 
     async login(dto: LoginDto) {
         console.log(`[DEBUG] Attempting login for: [${dto.email}]`);
-        const user = await this.prisma.user.findUnique({
-            where: { email: dto.email },
-        });
-        if (!user) console.log(`[DEBUG] User NOT found in DB for email: [${dto.email}]`);
+        try {
+            const user = await this.prisma.user.findUnique({
+                where: { email: dto.email },
+            });
 
-        if (!user || user.deletedAt) {
-            throw new UnauthorizedException('Invalid credentials');
-        }
+            if (!user) {
+                console.log(`[DEBUG] Login failed: User NOT found in DB for email: [${dto.email}]`);
+                throw new UnauthorizedException('Invalid credentials');
+            }
 
-        if (user.status !== 'ACTIVE') {
-            throw new UnauthorizedException('Account is not active');
-        }
+            if (user.deletedAt) {
+                console.log(`[DEBUG] Login failed: User [${dto.email}] is SOFT-DELETED`);
+                throw new UnauthorizedException('Invalid credentials');
+            }
 
-        const passwordValid = await bcrypt.compare(dto.password, user.passwordHash);
-        if (!passwordValid) {
-            throw new UnauthorizedException('Invalid credentials');
-        }
+            if (user.status !== 'ACTIVE') {
+                console.log(`[DEBUG] Login failed: User [${dto.email}] has status: [${user.status}]`);
+                throw new UnauthorizedException('Account is not active');
+            }
 
-        const roleWithPerms = user.roleId ? await this.prisma.role.findUnique({
-            where: { id: user.roleId },
-            include: { permissions: { include: { permission: true } } }
-        }) : null;
+            console.log(`[DEBUG] Verifying password for: [${dto.email}]`);
+            const passwordValid = await bcrypt.compare(dto.password, user.passwordHash);
+            if (!passwordValid) {
+                console.log(`[DEBUG] Login failed: Password mismatch for user: [${dto.email}]`);
+                throw new UnauthorizedException('Invalid credentials');
+            }
 
-        const role = roleWithPerms?.name || 'CUSTOMER';
-        const rolePermissions = roleWithPerms?.permissions.map(p => p.permission.name) || [];
-        const permissions = rolePermissions.length > 0 ? rolePermissions : this.getPermissionsForRole(role);
+            console.log(`[DEBUG] Password valid. Retrieving role/permissions for: [${dto.email}] (roleId: ${user.roleId})`);
+            const roleWithPerms = user.roleId ? await this.prisma.role.findUnique({
+                where: { id: user.roleId },
+                include: { permissions: { include: { permission: true } } }
+            }) : null;
 
-        /* 
-        // MFA logic temporarily disabled for local stability
-        if (user.mfaEnabled) {
+            const role = roleWithPerms?.name || 'CUSTOMER';
+            const rolePermissions = roleWithPerms?.permissions.map(p => p.permission.name) || [];
+            const permissions = rolePermissions.length > 0 ? rolePermissions : this.getPermissionsForRole(role);
+
+            console.log(`[DEBUG] Generating tokens for: [${dto.email}] with role: [${role}] and [${permissions.length}] permissions`);
+            const tokens = await this.generateTokens(user.id, user.email, user.fullName, role, permissions);
+
+            console.log(`[DEBUG] Updating refresh token hash for: [${dto.email}]`);
+            await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
+
+            console.log(`[DEBUG] Login SUCCESS for: [${dto.email}]`);
             return {
-                mfa_required: true,
-                userId: user.id,
-                email: user.email,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    fullName: user.fullName,
+                    avatarUrl: user.avatarUrl,
+                    role: roleWithPerms || { name: role, permissions: permissions.map(p => ({ permission: { name: p } })) },
+                },
+                ...tokens,
             };
+        } catch (error) {
+            console.error(`[CRITICAL] Login Exception for [${dto.email}]:`, error);
+            throw error;
         }
-        */
-
-        const tokens = await this.generateTokens(user.id, user.email, user.fullName, role, permissions);
-        await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
-
-        return {
-            user: {
-                id: user.id,
-                email: user.email,
-                fullName: user.fullName,
-                avatarUrl: user.avatarUrl,
-                role: roleWithPerms || { name: role, permissions: permissions.map(p => ({ permission: { name: p } })) },
-            },
-            ...tokens,
-        };
     }
 
     async refreshTokens(userId: string, refreshToken: string) {
