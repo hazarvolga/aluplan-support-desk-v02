@@ -5,18 +5,43 @@
         {
             "id": "QA_001",
             "category": "Allplan 2026 / PBC",
+            "language": "tr",
+            "question": "PBC nedir ve nasıl çalışır?",
+            "variations": [
+                "Priority-Based Connections nasıl aktifleştirilir?",
+                "Özel nesnelerin yerel yapı elemanlarıyla etkileşimi",
+                "How does PBC work in Allplan 2026?",
+                "PBC Modu"
+            ],
             "short_answer": "PBC (Priority-Based Connections), özel nesnelerin yerel yapı elemanlarıyla otomatik etkileşime girmesini sağlar. Elemanların 'Priority' değerlerini kontrol ederek yüksek olanın diğerini kesmesini sağlayabilirsiniz.",
             "long_answer_markdown_ref": "support_articles/allplan_2026_pbc_interaction.md"
         },
         {
             "id": "QA_002",
             "category": "BIM / IFC",
+            "language": "tr",
+            "question": "IFC veri kaybı nasıl önlenir?",
+            "variations": [
+                "Attribute Mapping .cfg yapılandırması",
+                "IFC export ayarları",
+                "IFC transfer data loss",
+                "Nitelik eşleme dosyası"
+            ],
             "short_answer": "Veri kaybını önlemek için IFC dışa aktarım ayarlarında 'Attribute Mapping' (.cfg) dosyasını doğru yapılandırmalısınız.",
             "long_answer_markdown_ref": "support_articles/ifc_attribute_mapping_data_loss.md"
         },
         {
             "id": "QA_003",
             "category": "Abonelik / Lisans",
+            "language": "tr",
+            "question": "Lisans transferi ve aktivasyon işlemleri",
+            "variations": [
+                "Lisans transfer işlemi yapamıyorum",
+                "Lisans iadesi nasıl yapılır?",
+                "CodeMeter lisans hatası",
+                "License transfer failed",
+                "Product key aktivasyonu"
+            ],
             "short_answer": "Abonelikler otomatik yenilenir; iptal için dönem sonundan 3 ay önce bildirim yapılmalıdır. Lisans hataları için CodeMeter servislerini kontrol edin.",
             "long_answer_markdown_ref": "support_articles/subscription_management_faq.md"
         },

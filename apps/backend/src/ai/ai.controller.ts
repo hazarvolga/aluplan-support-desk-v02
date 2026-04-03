@@ -150,11 +150,13 @@ export class AiController {
 
     @Post('interactions/:id/feedback')
     @ApiOperation({ summary: 'Submit rating/feedback for an AI interaction' })
-    submitFeedback(
+    async submitFeedback(
         @Param('id') interactionId: string,
         @Body() dto: FeedbackDto,
         @Request() req: any,
     ) {
+        // Feedback logic can live in either AiQueryService or AiService depending on preference.
+        // We will bridge it to AiQueryService as it handles the interaction store.
         return this.aiQueryService.submitFeedback(
             interactionId,
             req.user.sub,
@@ -165,7 +167,7 @@ export class AiController {
 
     @Post('interactions/:id/telemetry')
     @ApiOperation({ summary: 'Submit acceptance/edit telemetry for an AI interaction' })
-    submitTelemetry(
+    async submitTelemetry(
         @Param('id') interactionId: string,
         @Body() dto: AiTelemetryDto,
     ) {

@@ -133,8 +133,11 @@ export class AiQueryService {
         const searchResponse: SearchResponse = await this.embeddingService.search(expandedQuery, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, null, isStaff);
         let results = searchResponse.results;
 
-        // Re-ranking
+        // Heuristic Re-ranking
         results = this.rerankResults(results);
+
+        // Advanced LLM Re-ranking (Cross-Encoder)
+        results = await this.rankResultsWithLLM(userQuery, results);
 
         // Lowered floor for response generation
         const LOW_CONFIDENCE_THRESHOLD = RAG_CONFIG.SIMILARITY.LOW_CONFIDENCE;
@@ -273,6 +276,55 @@ export class AiQueryService {
         this.ragObs.recordQuery(Date.now() - startTime, false);
 
         return finalResult;
+    }
+
+    private async rankResultsWithLLM(query: string, results: SearchResult[]): Promise<SearchResult[]> {
+        if (results.length <= 1) return results;
+
+        try {
+            // Take top 8 candidates for re-ranking to manage cost/latency
+            const candidates = results.slice(0, 8);
+            const contextForRanker = candidates.map((r, i) => `ID: ${i}\nTITLE: ${r.title}\nCONTENT: ${r.content.substring(0, 300)}...`).join('\n\n');
+
+            const rankerPrompt = `You are a precision ranking agent.
+Given the user query below and a list of internal knowledge results, rank each result by its actual helpfulness in answering the query exactly.
+Assign a score from 0 to 100 for each result ID.
+
+USER QUERY: "${query}"
+
+RESULTS TO RANK:
+${contextForRanker}
+
+Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"id": 1, "score": 20}]}`;
+
+            const response = await this.ai.generate(rankerPrompt, 15000);
+            if (!response) return results;
+
+            // Simple extract JSON in case AI wraps it
+            const jsonStr = response.match(/\{.*\}/s)?.[0];
+            if (!jsonStr) return results;
+
+            const parsed = JSON.parse(jsonStr);
+            const rankings: Array<{ id: number; score: number }> = parsed.rankings;
+
+            // Merge LLM scores into original results
+            const updatedResults = candidates.map((res, i) => {
+                const rank = rankings.find(rk => rk.id === i);
+                const llmScore = rank ? rank.score / 100 : 0.5; // fallback to mid-score
+                // Final score: 40% original hybrid, 60% LLM judgment
+                return {
+                    ...res,
+                    similarity: (res.similarity * 0.4) + (llmScore * 0.6)
+                };
+            });
+
+            // Re-sort and add back filtered results
+            return [...updatedResults, ...results.slice(8)].sort((a, b) => b.similarity - a.similarity);
+
+        } catch (error) {
+            this.logger.warn(`⚠️ LLM Re-ranking failed, falling back to hybrid scores: ${error.message}`);
+            return results;
+        }
     }
 
     /**

@@ -90,8 +90,12 @@ export class EmbeddingService {
 
         const modelName = await this.ai.getActiveModelName();
         const vectorStr = JSON.stringify(embResult.embedding);
-        const cleanQuery = query.replace(/['"\\;]/g, ''); // basic SQL injection protection for text search
+        const cleanQuery = query.replace(/['"\\;]/g, '');
 
+        // Hybrid Arama: 
+        // 1. Semantic (Vector) -> %60
+        // 2. Keyword (TSVector/BM25 lite) -> %25
+        // 3. Headline Match -> %15
         const rows = await this.prisma.$queryRaw<
             Array<{
                 article_id: string;
@@ -103,23 +107,26 @@ export class EmbeddingService {
                 language: string;
             }>
         >`
-      WITH combined_search AS (
+      WITH keyword_search AS (
+        SELECT 
+            ka.id,
+            ts_rank_cd(to_tsvector('simple', ka.title || ' ' || ka.content), websearch_to_tsquery('simple', ${cleanQuery})) as rank
+        FROM knowledge_articles ka
+        WHERE to_tsvector('simple', ka.title || ' ' || ka.content) @@ websearch_to_tsquery('simple', ${cleanQuery})
+      ),
+      combined_search AS (
         SELECT 
             ka.id AS article_id, 
             'ARTICLE' AS source_type, 
             ka.title, 
             COALESCE(parent.content, ke.content) AS content, 
-            -- Hybrid weighted similarity: Semantic (70%) + Headline (20%) + Fuzzy Keyword (10%)
             (
-                (1 - (ke.embedding <=> ${vectorStr}::vector)) * 0.7 + 
+                (1 - (ke.embedding <=> ${vectorStr}::vector)) * 0.6 + 
                 (CASE 
                     WHEN (ka.headline_embedding::vector IS NOT NULL) THEN (1 - (ka.headline_embedding <=> ${vectorStr}::vector))
                     ELSE (1 - (ke.embedding <=> ${vectorStr}::vector))
-                 END) * 0.2 +
-                 (CASE 
-                    WHEN (ka.title ILIKE '%' || ${cleanQuery} || '%') THEN 0.1
-                    ELSE 0.0
-                 END)
+                 END) * 0.15 +
+                 COALESCE((SELECT rank FROM keyword_search WHERE id = ka.id LIMIT 1), 0.0) * 0.25
             ) AS similarity,
             ka.trust_score,
             ka.language
@@ -131,8 +138,8 @@ export class EmbeddingService {
           AND ke.model_name = ${modelName}
           AND (
               (1 - (ke.embedding <=> ${vectorStr}::vector)) > ${this.SIMILARITY_THRESHOLD}
-              OR (ka.headline_embedding::vector IS NOT NULL AND (1 - (ka.headline_embedding <=> ${vectorStr}::vector)) > 0.6)
-              OR (ka.title ILIKE '%' || ${cleanQuery} || '%')
+              OR EXISTS (SELECT 1 FROM keyword_search WHERE id = ka.id)
+              OR ka.title ILIKE '%' || ${cleanQuery} || '%'
           )
           AND ke.parent_id IS NOT NULL
         
@@ -161,7 +168,7 @@ export class EmbeddingService {
       SELECT * 
       FROM combined_search 
       ORDER BY (similarity * (trust_score::float)) DESC 
-      LIMIT ${limit}
+      LIMIT ${limit * 2} -- Fetch more for Re-ranking
     `;
 
         const results = rows.map((row) => ({
