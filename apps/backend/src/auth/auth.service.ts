@@ -266,12 +266,24 @@ export class AuthService {
             }
         }
 
-        await this.prisma.user.updateMany({
-            where: { email: 'hazarvolga@gmail.com' },
-            data: { roleId: adminRole.id }
-        });
+        const user = await this.prisma.user.findUnique({ where: { email: 'hazarvolga@gmail.com' } });
+        if (user) {
+            await this.prisma.user.update({
+                where: { id: user.id },
+                data: { roleId: adminRole.id, deletedAt: null, status: 'ACTIVE' }
+            });
+        }
 
-        return { success: true, message: 'hazarvolga@gmail.com is now officially an ADMIN. Please logout and login again.' };
+        // Restore the other troubled user as well
+        const user2 = await this.prisma.user.findFirst({ where: { email: 'droneracingturkey@gmail.com' } });
+        if (user2) {
+            await this.prisma.user.update({
+                where: { id: user2.id },
+                data: { deletedAt: null, status: 'ACTIVE' }
+            });
+        }
+
+        return { success: true, message: 'Admin restored and droneracingturkey@gmail.com un-deleted. Please logout and login again.' };
     }
 
     async getProfile(userId: string) {
