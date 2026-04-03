@@ -4,99 +4,112 @@ export interface ChunkResult {
 }
 
 export interface ChunkerOptions {
-    maxTokens?: number; // rough estimate (characters or tokens depending on logic)
+    maxTokens?: number;
     overlap?: number;
-    title?: string; // used for context injection
+    title?: string;
 }
 
 /**
- * A simple smart chunker that attempts to split a Markdown document into meaningful pieces.
- * - It splits by double newlines to keep paragraphs/headers together.
- * - If a chunk exceeds maxTokens, it tries to split further.
- * - Adds an overlap of previous text to maintain context.
- * - Injects the general 'title' at the start of every chunk.
+ * Intelligent splitter that respects Markdown boundaries
  */
-export function smartChunk(text: string, options: ChunkerOptions = {}): ChunkResult[] {
-    const { maxTokens = 1000, overlap = 200, title = 'Bilinmeyen Döküman' } = options;
+function splitConservingMarkdown(text: string, maxSize: number): string[] {
+    if (text.length <= maxSize) return [text];
 
-    // Fallback if text is empty
-    if (!text || text.trim() === '') {
-        return [];
-    }
+    const chunks: string[] = [];
+    let remaining = text;
 
-    const sentences = text.split('\n\n'); // simplest semantic split point
-    const chunks: ChunkResult[] = [];
-
-    let currentChunk = '';
-    let sequence = 1;
-
-    for (const sentence of sentences) {
-        if ((currentChunk.length + sentence.length) > maxTokens && currentChunk.length > 0) {
-            // Push current chunk
-            chunks.push({
-                content: `[Kaynak: ${title}]\n\n${currentChunk.trim()}`,
-                sequence: sequence++
-            });
-
-            // Create overlap: take the last `overlap` characters of the currentChunk
-            let overlapText = currentChunk.slice(-overlap);
-            // try to make overlap start at a clean word boundary
-            const firstSpace = overlapText.indexOf(' ');
-            if (firstSpace !== -1 && firstSpace < overlap / 2) {
-                overlapText = overlapText.substring(firstSpace).trim();
-            }
-            // start new chunk with overlap + next sentence
-            currentChunk = overlapText + '\n\n' + sentence;
-        } else {
-            currentChunk += (currentChunk ? '\n\n' : '') + sentence;
+    while (remaining.length > 0) {
+        if (remaining.length <= maxSize) {
+            chunks.push(remaining);
+            break;
         }
-    }
 
-    // Push the last remaining chunk
-    if (currentChunk.trim().length > 0) {
-        chunks.push({
-            content: `[Kaynak: ${title}]\n\n${currentChunk.trim()}`,
-            sequence: sequence++
-        });
+        let splitIdx = -1;
+        const sub = remaining.substring(0, maxSize);
+
+        // 1. Split at code block end
+        const codeCloseIdx = sub.lastIndexOf('```');
+        if (codeCloseIdx > maxSize * 0.7) splitIdx = codeCloseIdx + 3;
+
+        // 2. Split at paragraph
+        if (splitIdx === -1) {
+            const pSplit = sub.lastIndexOf('\n\n');
+            if (pSplit > maxSize * 0.4) splitIdx = pSplit;
+        }
+
+        // 3. Split at list item or line
+        if (splitIdx === -1) {
+            const nSplit = sub.lastIndexOf('\n');
+            if (nSplit > maxSize * 0.6) splitIdx = nSplit;
+        }
+
+        // 4. Split at sentence
+        if (splitIdx === -1) {
+            const sSplit = sub.lastIndexOf('. ');
+            if (sSplit > maxSize * 0.6) splitIdx = sSplit + 1;
+        }
+
+        if (splitIdx === -1) splitIdx = maxSize;
+
+        const chunk = remaining.substring(0, splitIdx).trim();
+        if (chunk) chunks.push(chunk);
+        remaining = remaining.substring(splitIdx).trim();
     }
 
     return chunks;
 }
 
 /**
- * Hierarchical (Parent-Child) chunking for better RAG quality.
- * - Parent: Large context for LLM (1500-2000 tokens/chars)
- * - Child: Small chunks for vector search (300-500 tokens/chars)
+ * Legacy API support with improved internal logic
+ */
+export function smartChunk(text: string, options: ChunkerOptions = {}): ChunkResult[] {
+    const { maxTokens = 1000, title = 'Bilinmeyen Döküman' } = options;
+    if (!text?.trim()) return [];
+
+    const rawChunks = splitConservingMarkdown(text, maxTokens);
+    return rawChunks.map((content, i) => ({
+        content: `[Kaynak: ${title}]\n\n${content}`,
+        sequence: i + 1
+    }));
+}
+
+/**
+ * Hierarchical (Parent-Child) semantic chunking
  */
 export function hierarchicalChunk(text: string, options: ChunkerOptions = {}): { parent: string, children: string[] }[] {
-    // Import config dynamically to avoid circular deps at module level
-    let parentMax = 800;
-    let childMax = 450;
+    let parentMax = 1200; // Increased for better context per GAP analysis
+    let childMax = 256;   // Optimized for precise vector search per GAP analysis
+
     try {
-        const ragConfig = require('../config/rag.config').RAG_CONFIG;
+        const ragConfig = require('../../config/rag.config').RAG_CONFIG;
         parentMax = ragConfig.CHUNKING.PARENT_MAX_TOKENS;
         childMax = ragConfig.CHUNKING.CHILD_MAX_TOKENS;
-    } catch { /* fallback to defaults */ }
+    } catch { /* use defaults */ }
 
-    const { maxTokens = parentMax, title = 'Bilinmeyen Döküman' } = options;
-    const CHILD_SIZE = childMax;
+    const { title = 'Bilinmeyen Döküman' } = options;
 
-    // 1. Create large Parent chunks
-    const parents = smartChunk(text, { maxTokens, title });
+    // 1. Split by Markdown Headers to keep sections atomic
+    const sections = text.split(/(?=^#{1,4}\s)/m);
+    const result: { parent: string, children: string[] }[] = [];
 
-    return parents.map(p => {
-        // 2. Further split each parent into smaller Children
-        // We use the same smartChunk logic but with smaller size and no title prefix for children
-        // to keep them "clean" for embedding vector distance.
-        const children = smartChunk(p.content.replace(`[Kaynak: ${title}]\n\n`, ''), {
-            maxTokens: CHILD_SIZE,
-            overlap: 100,
-            title: ''
-        });
+    for (const section of sections) {
+        if (!section.trim()) continue;
 
-        return {
-            parent: p.content,
-            children: children.map(c => c.content)
-        };
-    });
+        // Ensure section fits in parent chunks
+        const pChunks = splitConservingMarkdown(section, parentMax);
+
+        for (const pContent of pChunks) {
+            const parent = `[Kaynak: ${title}]\n\n${pContent}`;
+
+            // Create smaller children from this specific parent
+            const cChunks = splitConservingMarkdown(pContent, childMax);
+
+            result.push({
+                parent,
+                children: cChunks
+            });
+        }
+    }
+
+    return result;
 }

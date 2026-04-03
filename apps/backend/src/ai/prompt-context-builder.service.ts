@@ -97,19 +97,19 @@ export class PromptContextBuilderService {
         });
 
         // 4. System Rules (Domain-Specific)
+        const systemRulesLines = [
+            'Yanıtların profesyonel, yapici ve cozum odakli olmalidir.',
+            'Kurum kimligini (Aluplan Destek) koru.',
+            'Bilgi kaynağında menu yolları veya buton adları varsa, bunları EKSİKSİZ ve KAYNAKTAKI DILDE ver.',
+            'Çince, Japonca veya tanınmayan karakter kalıntılarını (Örn: 了解) yanıta EKLEME.',
+            'KULLANICI SISTEM BILGILERI (Hotinfo) mevcutsa, yanıtı bu verilere göre özelleştir (Örn: Versiyon 2026 ise 2026 prosedürlerini ver, GPU eskiyse sürücü güncellemesi öner).',
+            'Hata kodları yakalandığında "ERROR_LOG_PATTERNS" veri kümesine öncelik ver.',
+            'Kaynaklarda tam metin eşleşmesi olmasa da en yakın prosedürü öner, tamamen cevapsız bırakma.'
+        ];
         sections.push({
             name: 'SYSTEM_RULES',
             priority: P.SYSTEM_RULES,
-            content: `[4. Sistem Kuralları]
-- Yanıtların profesyonel, yapıcı ve çözüm odaklı olmalıdır.
-- Kurum kimliğini (Aluplan Destek) koru.
-- Bilgi kaynağında menü yolu veya buton adı varsa, bunları AYNEN yaz (örn: "Allmenu → Hizmetler → Lisans Ayarları").
-- Çözüm adımlarını MUTLAKA numaralı liste halinde sun.
-- "Kontrol edin" gibi belirsiz ifadeler yerine, tam olarak NEREYI ve NASIL kontrol edeceklerini belirt.
-- Bozuk/çince/tanınmayan karakter kalıntılarını yanıta EKLEMEYİN.
-- Donanım bilgileri (GPU, CPU, RAM) sadece performans/çökme sorularında kullanılsın; lisans/kurulum gibi yazılımsal konularda dahil etmeyin.
-- Bilmediğin konularda uydurma. Kaynak yetersizse en yakın prosedürü sun ve destek talebi oluşturmalarını öner.
-`,
+            content: `[4. Sistem Kuralları]\n` + systemRulesLines.map(line => `- ${line}`).join('\n'),
         });
 
         // 5. Related Macros (limit exposure to conserve budget)

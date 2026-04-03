@@ -90,6 +90,7 @@ export class EmbeddingService {
 
         const modelName = await this.ai.getActiveModelName();
         const vectorStr = JSON.stringify(embResult.embedding);
+        const cleanQuery = query.replace(/['"\\;]/g, ''); // basic SQL injection protection for text search
 
         const rows = await this.prisma.$queryRaw<
             Array<{
@@ -108,13 +109,17 @@ export class EmbeddingService {
             'ARTICLE' AS source_type, 
             ka.title, 
             COALESCE(parent.content, ke.content) AS content, 
-            -- Weighted similarity: 70% content match + 30% title match
+            -- Hybrid weighted similarity: Semantic (70%) + Headline (20%) + Fuzzy Keyword (10%)
             (
                 (1 - (ke.embedding <=> ${vectorStr}::vector)) * 0.7 + 
                 (CASE 
                     WHEN (ka.headline_embedding::vector IS NOT NULL) THEN (1 - (ka.headline_embedding <=> ${vectorStr}::vector))
                     ELSE (1 - (ke.embedding <=> ${vectorStr}::vector))
-                 END) * 0.3
+                 END) * 0.2 +
+                 (CASE 
+                    WHEN (ka.title ILIKE '%' || ${cleanQuery} || '%') THEN 0.1
+                    ELSE 0.0
+                 END)
             ) AS similarity,
             ka.trust_score,
             ka.language
@@ -127,6 +132,7 @@ export class EmbeddingService {
           AND (
               (1 - (ke.embedding <=> ${vectorStr}::vector)) > ${this.SIMILARITY_THRESHOLD}
               OR (ka.headline_embedding::vector IS NOT NULL AND (1 - (ka.headline_embedding <=> ${vectorStr}::vector)) > 0.6)
+              OR (ka.title ILIKE '%' || ${cleanQuery} || '%')
           )
           AND ke.parent_id IS NOT NULL
         

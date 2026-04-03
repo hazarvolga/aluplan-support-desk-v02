@@ -45,8 +45,8 @@ export class PromptsService {
             } else if (name === 'SYSTEM_PROMPT_SUPPORT') {
                 // FORCE UPDATE: Auto-heal the DB prompt when it's outdated
                 // Check for the new intent classification rule as version marker
-                const isOutdated = !exists.content.includes('QUERY INTENT CLASSIFICATION');
-                if (isOutdated) {
+                // Auto-heal: If DB prompt is stale (missing REASONING PROCESS tag), overwrite it
+                if (!exists.content.includes('REASONING PROCESS')) {
                     this.logger.warn(`⚠️ Prompt '${name}' in DB is outdated. Auto-healing with latest version.`);
                     await this.prisma.promptTemplate.update({
                         where: { id: exists.id },
