@@ -110,9 +110,10 @@ export class EmbeddingService {
       WITH keyword_search AS (
         SELECT 
             ka.id,
-            ts_rank_cd(to_tsvector('simple', ka.title || ' ' || ka.content), websearch_to_tsquery('simple', ${cleanQuery})) as rank
+            ts_rank_cd(to_tsvector('simple', ka.title || ' ' || kav.content_plain), websearch_to_tsquery('simple', ${cleanQuery})) as rank
         FROM knowledge_articles ka
-        WHERE to_tsvector('simple', ka.title || ' ' || ka.content) @@ websearch_to_tsquery('simple', ${cleanQuery})
+        JOIN knowledge_article_versions kav ON ka.id = kav.article_id AND ka.current_version = kav.version
+        WHERE to_tsvector('simple', ka.title || ' ' || kav.content_plain) @@ websearch_to_tsquery('simple', ${cleanQuery})
       ),
       combined_search AS (
         SELECT 
