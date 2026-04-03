@@ -111,6 +111,16 @@ export class AuthService {
         });
 
         if (user) {
+            // Check if user was soft-deleted
+            if (user.deletedAt) {
+                console.log(`[DEBUG] lookupEmail: User ${email} found but SOFT-DELETED (deletedAt: ${user.deletedAt})`);
+                return { action: 'DELETED', companyName: null };
+            }
+            // Check if user is not active (PENDING, SUSPENDED, etc.)
+            if (user.status !== 'ACTIVE') {
+                console.log(`[DEBUG] lookupEmail: User ${email} found but status is ${user.status}`);
+                return { action: 'INACTIVE', status: user.status, companyName: null };
+            }
             return { action: 'CLAIM' };
         }
 
