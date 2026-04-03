@@ -9,15 +9,15 @@ export const RAG_CONFIG = {
     /** Similarity thresholds for vector search */
     SIMILARITY: {
         /** Minimum score to include in results (env-overridable) */
-        THRESHOLD: parseFloat(process.env.SIMILARITY_THRESHOLD || '0.35'),
+        THRESHOLD: parseFloat(process.env.SIMILARITY_THRESHOLD || '0.25'),
         /** Below this score, confidence is LOW (env-overridable) */
         LOW_CONFIDENCE: parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.30'),
         /** Score >= this → HIGH confidence */
         HIGH: 0.60,
         /** Score >= this → MEDIUM confidence */
-        MEDIUM: 0.45,
+        MEDIUM: 0.40,
         /** Absolute floor — never return below this */
-        FLOOR: 0.20,
+        FLOOR: 0.15,
     },
 
     /** Hierarchical chunking parameters */
@@ -53,7 +53,7 @@ export const RAG_CONFIG = {
         /** Default TTL for AI query cache in seconds */
         DEFAULT_TTL: parseInt(process.env.AI_CACHE_TTL || '300', 10),
         /** Cache key version — bump to invalidate all caches */
-        VERSION: 'v4',
+        VERSION: 'v5',
     },
 
     /** Re-ranking boost factors by source type */

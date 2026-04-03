@@ -108,7 +108,14 @@ export class EmbeddingService {
             'ARTICLE' AS source_type, 
             ka.title, 
             COALESCE(parent.content, ke.content) AS content, 
-            1 - (ke.embedding <=> ${vectorStr}::vector) AS similarity,
+            -- Weighted similarity: 70% content match + 30% title match
+            (
+                (1 - (ke.embedding <=> ${vectorStr}::vector)) * 0.7 + 
+                (CASE 
+                    WHEN (ka.headline_embedding::vector IS NOT NULL) THEN (1 - (ka.headline_embedding <=> ${vectorStr}::vector))
+                    ELSE (1 - (ke.embedding <=> ${vectorStr}::vector))
+                 END) * 0.3
+            ) AS similarity,
             ka.trust_score,
             ka.language
         FROM knowledge_embeddings ke
@@ -117,7 +124,10 @@ export class EmbeddingService {
         WHERE ka.status = 'PUBLISHED' 
           AND (${includeInternal} = true OR ka.is_internal = false)
           AND ke.model_name = ${modelName}
-          AND 1 - (ke.embedding <=> ${vectorStr}::vector) > ${this.SIMILARITY_THRESHOLD}
+          AND (
+              (1 - (ke.embedding <=> ${vectorStr}::vector)) > ${this.SIMILARITY_THRESHOLD}
+              OR (ka.headline_embedding::vector IS NOT NULL AND (1 - (ka.headline_embedding <=> ${vectorStr}::vector)) > 0.6)
+          )
           AND ke.parent_id IS NOT NULL
         
         UNION ALL
@@ -164,7 +174,7 @@ export class EmbeddingService {
             thresholdUsed: this.SIMILARITY_THRESHOLD,
         };
 
-        this.logger.log(`📊 Search diagnostics: topScore=${diagnostics.topScore.toFixed(3)}, passed=${diagnostics.passedThreshold}, threshold=${diagnostics.thresholdUsed}, model=${diagnostics.queryEmbeddingModel}`);
+        this.logger.log(`📊 Search diagnostics: topScore = ${diagnostics.topScore.toFixed(3)}, passed = ${diagnostics.passedThreshold}, threshold = ${diagnostics.thresholdUsed}, model = ${diagnostics.queryEmbeddingModel} `);
 
         return { results, diagnostics };
     }
@@ -181,7 +191,7 @@ export class EmbeddingService {
         const hierarchies = hierarchicalChunk(content, { maxTokens: parentMax });
         const modelName = await this.ai.getActiveModelName();
 
-        await this.prisma.$executeRaw`DELETE FROM knowledge_pool_embeddings WHERE source_id = ${sourceId}::uuid`;
+        await this.prisma.$executeRaw`DELETE FROM knowledge_pool_embeddings WHERE source_id = ${sourceId}:: uuid`;
 
         for (const h of hierarchies) {
             const parentId = crypto.randomUUID();
@@ -189,25 +199,25 @@ export class EmbeddingService {
             if (!parentEmb) continue;
 
             await this.prisma.$executeRaw`
-                INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, model_name)
-                VALUES (${parentId}::uuid, ${sourceId}::uuid, NULL,
-                        ${JSON.stringify(parentEmb)}::vector, ${h.parent}, ${JSON.stringify({ ...metadata, hash: contentHash, total_children: h.children.length })}::jsonb, ${modelName})
+                INSERT INTO knowledge_pool_embeddings(id, source_id, parent_id, embedding, content, metadata, model_name)
+        VALUES(${parentId}:: uuid, ${sourceId}:: uuid, NULL,
+            ${JSON.stringify(parentEmb)}:: vector, ${h.parent}, ${JSON.stringify({ ...metadata, hash: contentHash, total_children: h.children.length })}:: jsonb, ${modelName})
             `;
 
             for (const childContent of h.children) {
                 const childEmb = await this.ai.embed(childContent);
                 if (childEmb) {
                     await this.prisma.$executeRaw`
-                        INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, model_name)
-                        VALUES (gen_random_uuid(), ${sourceId}::uuid, ${parentId}::uuid,
-                                ${JSON.stringify(childEmb)}::vector, ${childContent}, ${JSON.stringify(metadata)}::jsonb, ${modelName})
+                        INSERT INTO knowledge_pool_embeddings(id, source_id, parent_id, embedding, content, metadata, model_name)
+        VALUES(gen_random_uuid(), ${sourceId}:: uuid, ${parentId}:: uuid,
+            ${JSON.stringify(childEmb)}:: vector, ${childContent}, ${JSON.stringify(metadata)}:: jsonb, ${modelName})
                     `;
                 }
             }
             await new Promise(resolve => setTimeout(resolve, 300));
         }
 
-        this.logger.log(`📐 Indexed ${hierarchies.length} hierarchies for pool source ${sourceId}`);
+        this.logger.log(`📐 Indexed ${hierarchies.length} hierarchies for pool source ${sourceId} `);
     }
 
     async indexTicket(ticketId: string, content: string): Promise<void> {
@@ -215,9 +225,9 @@ export class EmbeddingService {
         if (!result) return;
 
         await this.prisma.$executeRaw`
-      INSERT INTO ticket_embeddings (id, ticket_id, embedding, model_name)
-      VALUES (gen_random_uuid(), ${ticketId}::uuid, ${JSON.stringify(result.embedding)}::vector, ${result.model})
-    `;
+      INSERT INTO ticket_embeddings(id, ticket_id, embedding, model_name)
+        VALUES(gen_random_uuid(), ${ticketId}:: uuid, ${JSON.stringify(result.embedding)}:: vector, ${result.model})
+            `;
     }
 
     async searchTickets(query: string, limit = 3): Promise<Array<{ ticketId: string; subject: string; similarity: number }>> {
@@ -231,7 +241,7 @@ export class EmbeddingService {
       JOIN tickets t ON t.id = te.ticket_id
       WHERE 1 - (te.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
       ORDER BY similarity DESC LIMIT ${limit}
-    `;
+        `;
 
         return rows.map((r) => ({ ticketId: r.ticket_id, subject: r.subject, similarity: Number(r.similarity) }));
     }
