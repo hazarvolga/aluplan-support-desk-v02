@@ -667,6 +667,7 @@
       "last_transfer_none": "KEINE",
       "system_status": "Systemstatus",
       "trigger_sync": "Übertragung auslösen",
+      "progress": "Synchronisierungsfortschritt",
       "edit_settings": "EINSTELLUNGEN BEARBEITEN",
       "mapping": {
         "account_title": "KONTEN-ZUORDNUNG",
@@ -719,7 +720,8 @@
             "status": "Status",
             "system_id": "System ID (CRM)",
             "contractStatus": "Vertragsstatus",
-            "subscriptionModel": "Abonnementmodell"
+            "subscriptionModel": "Abonnementmodell",
+            "companyName": "Zugeordnetes Unternehmen"
           }
         }
       }
@@ -1419,7 +1421,9 @@
   "notifications": {
     "new_ticket_title": "🎟️ Neues Ticket erstellt!",
     "new_ticket_desc": "{name} hat ein neues Support-Ticket eröffnet: \"{subject}\"",
-    "view_action": "Ansehen"
+    "view_action": "Ansehen",
+    "system_alert_title": "System-Alarm",
+    "system_alert_desc": "Es liegt eine kritische Systemmeldung vor, die Ihre Aufmerksamkeit erfordert."
   },
   "admin": {
     "products": {

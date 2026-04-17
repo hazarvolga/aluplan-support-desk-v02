@@ -667,12 +667,41 @@
       "last_transfer_none": "NONE",
       "system_status": "System Status",
       "trigger_sync": "Trigger Transfer",
+      "progress": "Sync Progress",
       "edit_settings": "EDIT SETTINGS",
       "mapping": {
         "account_title": "ACCOUNT MAPPING",
         "contact_title": "CONTACT MAPPING",
         "description": "Define which CRM fields correspond to which data in our system.",
         "warning": "Incorrect mapping may lead to data synchronization inconsistencies. Check the CRM schema before making changes.",
+        "fields": {
+          "account": {
+            "customerNo": "Account No / Customer No",
+            "name": "Company Name",
+            "industry": "Industry",
+            "website": "Website",
+            "address": "Address",
+            "crm_verification": "CRM Verification Status",
+            "system_id": "System (CRM) ID",
+            "email": "Main Email",
+            "phone": "Main Phone"
+          },
+          "contact": {
+            "customerNo": "Customer No",
+            "fullName": "Full Name",
+            "email": "Email",
+            "jobTitle": "Job Title",
+            "companyName": "Assigned Company",
+            "phoneNumber": "Phone Number",
+            "contractStatus": "Contract Status",
+            "subscriptionModel": "Subscription Model",
+            "industry": "Industry",
+            "status": "Overall Status",
+            "system_id": "System (CRM) ID",
+            "firstName": "First Name",
+            "lastName": "Last Name"
+          }
+        },
         "custom_fields": "Custom Fields",
         "add_field": "Add Field",
         "field_label": "Display Label",
@@ -694,34 +723,7 @@
         "badge_mapped": "MAPPED",
         "search_crm_fields": "Search CRM fields...",
         "field_not_found": "Field not found.",
-        "sample_data": "Sample Data:",
-        "fields": {
-          "account": {
-            "name": "Company Name / Title",
-            "industry": "Industry",
-            "website": "Website",
-            "address": "Address",
-            "customerNo": "Customer Number",
-            "crm_verification": "CRM Verification",
-            "system_id": "System ID (CRM)",
-            "email": "Main Email",
-            "phone": "Main Phone"
-          },
-          "contact": {
-            "firstName": "First Name",
-            "lastName": "Last Name",
-            "email": "Email",
-            "phoneNumber": "Phone Number",
-            "jobTitle": "Job Title / Position",
-            "industry": "Industry",
-            "customerNo": "Customer Number",
-            "fullName": "Full Name",
-            "status": "Status",
-            "system_id": "System ID (CRM)",
-            "contractStatus": "Contract Status",
-            "subscriptionModel": "Subscription Model"
-          }
-        }
+        "sample_data": "Sample Data:"
       }
     },
     "history": {
@@ -1419,7 +1421,9 @@
   "notifications": {
     "new_ticket_title": "🎟️ New Ticket Created!",
     "new_ticket_desc": "{name} opened a new support ticket: \"{subject}\"",
-    "view_action": "View"
+    "view_action": "View",
+    "system_alert_title": "🚨 AI Auto-Fallback Triggered",
+    "system_alert_desc": "Primary model ({primary}) failed or timed out. System automatically switched to {fallback} provider."
   },
   "admin": {
     "products": {

@@ -12,7 +12,8 @@
         "lint": "turbo lint",
         "typecheck": "turbo typecheck",
         "db:generate": "turbo db:generate",
-        "db:migrate": "turbo db:migrate"
+        "db:migrate": "turbo db:migrate",
+        "i18n:check": "pnpm --filter @aluplan/frontend i18n:check"
     },
     "devDependencies": {
         "@types/handlebars": "^4.1.0",

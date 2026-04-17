@@ -667,12 +667,41 @@
       "last_transfer_none": "YOK",
       "system_status": "Sistem Durumu",
       "trigger_sync": "Transferi Tetikle",
+      "progress": "İşlem Durumu",
       "edit_settings": "AYARLARI DÜZENLE",
       "mapping": {
         "account_title": "HESAP EŞLEŞTİRME",
         "contact_title": "MÜŞTERİ EŞLEŞTİRME",
         "description": "CRM üzerindeki hangi alanın sistemimizdeki hangi veriye karşılık geleceğini tanımlayın.",
         "warning": "Yanlış eşleştirme, veri senkronizasyonunda tutarsızlıklara neden olabilir. Değişiklik yapmadan önce CRM şemasını kontrol edin.",
+        "fields": {
+          "account": {
+            "customerNo": "Hesap No / Müşteri No",
+            "name": "Şirket Adı",
+            "industry": "Sektör",
+            "website": "Web Sitesi",
+            "address": "Adres",
+            "crm_verification": "CRM Doğrulama Durumu",
+            "system_id": "Sistem (CRM) Kimliği",
+            "email": "Genel E-posta",
+            "phone": "Genel Telefon"
+          },
+          "contact": {
+            "customerNo": "Müşteri No",
+            "fullName": "Ad Soyad",
+            "email": "E-posta",
+            "jobTitle": "Unvan / Pozisyon",
+            "companyName": "Bağlı Olduğu Şirket",
+            "phoneNumber": "Telefon",
+            "contractStatus": "Sözleşme Durumu",
+            "subscriptionModel": "Abonelik Modeli",
+            "industry": "İlgili Sektör",
+            "status": "Genel Durum",
+            "system_id": "Sistem (CRM) Kimliği",
+            "firstName": "Ad",
+            "lastName": "Soyad"
+          }
+        },
         "custom_fields": "Özel Alanlar",
         "add_field": "Alan Ekle",
         "field_label": "Görünen Ad",
@@ -694,34 +723,7 @@
         "badge_mapped": "EŞLEŞMİŞ",
         "search_crm_fields": "CRM alanlarında ara...",
         "field_not_found": "Alan bulunamadı.",
-        "sample_data": "Örnek Veri:",
-        "fields": {
-          "account": {
-            "name": "Şirket Adı / Ünvan",
-            "industry": "Sektör",
-            "website": "Web Sitesi",
-            "address": "Adres",
-            "customerNo": "Müşteri Numarası",
-            "crm_verification": "CRM Doğrulaması",
-            "system_id": "Sistem ID (CRM)",
-            "email": "Genel E-posta",
-            "phone": "Genel Telefon"
-          },
-          "contact": {
-            "firstName": "Ad",
-            "lastName": "Soyad",
-            "email": "E-posta",
-            "phoneNumber": "Telefon",
-            "jobTitle": "Görev / Ünvan",
-            "industry": "Sektör",
-            "customerNo": "Müşteri Numarası",
-            "fullName": "Ad Soyad",
-            "status": "Durum",
-            "system_id": "Sistem ID (CRM)",
-            "contractStatus": "Sözleşme Durumu",
-            "subscriptionModel": "Abonelik Modeli"
-          }
-        }
+        "sample_data": "Örnek Veri:"
       }
     },
     "history": {
@@ -1419,7 +1421,9 @@
   "notifications": {
     "new_ticket_title": "🎟️ Yeni Ticket Oluşturuldu!",
     "new_ticket_desc": "{name} yeni bir destek talebi açtı: \"{subject}\"",
-    "view_action": "İncele"
+    "view_action": "İncele",
+    "system_alert_title": "🚨 AI Geri Dönüş Tüzüğü Tetiklendi",
+    "system_alert_desc": "Birincil model ({primary}) yanıt vermedi veya hata verdi. Sistem otomatik olarak {fallback} modelini devreye aldı."
   },
   "admin": {
     "products": {
