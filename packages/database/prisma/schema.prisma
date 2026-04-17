@@ -1,8 +1,8 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions", "driverAdapters"]
-  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
   output          = "../client"
+  previewFeatures = ["driverAdapters", "postgresqlExtensions"]
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -239,8 +239,8 @@ model CustomerProfile {
   tags              String[]          @default([])
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
-  deletedAt         DateTime?         @map("deleted_at")
   subscriptionModel String?           @map("subscription_model") @db.VarChar(100)
+  deletedAt         DateTime?         @map("deleted_at")
   announcementLogs  AnnouncementLog[]
   account           CrmAccount?       @relation(fields: [accountId], references: [id])
   user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -257,11 +257,11 @@ model CrmAccount {
   industry          String?           @db.VarChar(255)
   website           String?           @db.VarChar(255)
   address           String?
-  accountNumber     String?           @map("account_number") @db.VarChar(255)
   externalAccountId String?           @unique @map("external_account_id") @db.VarChar(255)
   crmVerified       Boolean           @default(false) @map("crm_verified")
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
+  account_number    String?           @db.VarChar(255)
   customers         CustomerProfile[]
 
   @@map("crm_accounts")
@@ -414,6 +414,7 @@ model KnowledgeArticleVersion {
   @@map("knowledge_article_versions")
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model KnowledgeEmbedding {
   id                   String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   articleId            String                  @map("article_id") @db.Uuid
@@ -429,6 +430,7 @@ model KnowledgeEmbedding {
   articleVersion       KnowledgeArticleVersion @relation(fields: [articleVersionId], references: [id], onDelete: Cascade)
 
   @@index([articleId], map: "idx_ke_article")
+  @@index([embedding], map: "knowledge_embeddings_vector_hnsw_idx")
   @@map("knowledge_embeddings")
 }
 
@@ -747,17 +749,16 @@ model KnowledgeSourceSyncLog {
 model KnowledgePoolEmbedding {
   id        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sourceId  String                @map("source_id") @db.Uuid
-  parentId  String?               @map("parent_id") @db.Uuid
   embedding Unsupported("vector")
   content   String
   metadata  Json?
   modelName String                @map("model_name") @db.VarChar(100)
   createdAt DateTime              @default(now()) @map("created_at")
+  parentId  String?               @map("parent_id") @db.Uuid
   source    KnowledgeSource       @relation(fields: [sourceId], references: [id], onDelete: Cascade)
-  parent    KnowledgePoolEmbedding? @relation("KpeHierarchy", fields: [parentId], references: [id])
-  children  KnowledgePoolEmbedding[] @relation("KpeHierarchy")
 
   @@index([sourceId], map: "idx_kpe_source")
+  @@index([embedding], map: "knowledge_pool_embeddings_vector_hnsw_idx")
   @@map("knowledge_pool_embeddings")
 }
 
@@ -778,12 +779,15 @@ model Product {
 }
 
 model ProductCategory {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId String   @map("product_id") @db.Uuid
-  name      String
-  keywords  String[] @default([])
-  isActive  Boolean  @default(true) @map("is_active")
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId  String    @map("product_id") @db.Uuid
+  name       String
+  keywords   String[]  @default([])
+  isActive   Boolean   @default(true) @map("is_active")
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId], map: "idx_product_categories_product")
   @@map("product_categories")
