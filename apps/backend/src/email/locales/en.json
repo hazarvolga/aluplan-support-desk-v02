@@ -1,0 +1,96 @@
+{
+    "common": {
+        "hello": "Hello",
+        "view_ticket": "View Ticket",
+        "go_to_ticket": "Go to Ticket",
+        "reset_password": "Reset Password",
+        "verify_email": "Verify Email",
+        "accept_invitation": "Accept Invitation",
+        "customer": "Customer",
+        "agent": "Agent",
+        "subject": "Subject",
+        "priority": "Priority",
+        "ticket_id": "Number",
+        "status": "Status",
+        "old_status": "Old Status",
+        "new_status": "New Status",
+        "sla_status": "SLA Status",
+        "category": "Category",
+        "type": "Type",
+        "created_at": "Created At",
+        "time_remaining": "Time Remaining",
+        "minutes": "minutes",
+        "date": "Date",
+        "device": "Device",
+        "location": "Location",
+        "automated_reply_title": "🤖 AI Suggestion",
+        "automated_reply_subtitle": "AI has generated a draft reply for this support ticket.",
+        "inspect_reply": "Inspect & Send",
+        "unsubscribe_info": "If you don't want to receive these emails click {unsubscribe_url}.",
+        "rate_experience": "Rate Your Experience",
+        "link_expires_in": "Link validity period:"
+    },
+    "ticket_created": {
+        "title": "Request Received",
+        "description": "Your support request has been successfully created. Our team will review it and get back to you as soon as possible.",
+        "description_short": "Your support request has been received and forwarded to our team."
+    },
+    "ticket_assigned": {
+        "title": "Ticket Responsibility",
+        "description": "A new support ticket has been added to your worklist."
+    },
+    "ticket_updated": {
+        "title": "New Message",
+        "description": "has a new update on ticket number:",
+        "latest_message_summary": "Latest Message"
+    },
+    "ticket_status": {
+        "title": "Status Updated",
+        "changed_to": "New ticket status:"
+    },
+    "ticket_closed": {
+        "title": "Ticket Closed",
+        "description": "Your support request has been successfully resolved and closed."
+    },
+    "ticket_reopened": {
+        "title": "Ticket Reopened",
+        "description": "Your closed ticket has been re-opened for processing."
+    },
+    "security": {
+        "new_login_title": "⚠️ Security Alert: New Login",
+        "new_login_desc": "Your account was logged into from an unrecognized device or location.",
+        "not_me": "It wasn't Me",
+        "2fa_title": "Your Verification Code",
+        "2fa_desc": "Use the following verification code to log in.",
+        "2fa_expire": "This code is valid for 10 minutes."
+    },
+    "account": {
+        "pw_reset_title": "Password Reset",
+        "pw_reset_desc": "You requested a password reset for your account.",
+        "pw_reset_notice": "If you did not make this request, please ignore it.",
+        "verify_email_title": "Email Verification",
+        "verify_email_desc": "Please verify your email to complete the registration process.",
+        "verify_button": "Verify",
+        "invite_title": "You're Invited to Aluplan",
+        "invite_desc": "invited you to join the support team."
+    },
+    "sla": {
+        "warning_title": "⚠️ SLA Approaching",
+        "warning_desc": "A ticket's response time is about to expire.",
+        "breached_title": "🚨 SLA Breach",
+        "breached_desc": "A ticket's target resolution time has been exceeded. Immediate action required.",
+        "breached": "BREACHED",
+        "take_action": "Review Ticket",
+        "breach_type": "Breach Type",
+        "target_date": "Target Date"
+    },
+    "staff_alerts": {
+        "new_ticket": {
+            "title": "New Support Ticket",
+            "description": "A new support ticket has been received. Please review the details.",
+            "customer_info": "Customer Information",
+            "company": "Company",
+            "action_link": "View in Admin Panel"
+        }
+    }
+}

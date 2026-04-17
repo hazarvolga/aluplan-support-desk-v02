@@ -120,10 +120,43 @@ export class AutomationService {
                 ticketNumber: ticket.ticketNumber,
                 subject: ticket.subject,
                 priority: ticket.priority,
+                createdAt: new Date(ticket.createdAt).toLocaleString(),
+                ticketUrl: `${process.env.FRONTEND_URL}/tickets/${ticket.id}`
             }).catch(err => {
                 this.logger.error(`Failed to send creation email for ${ticket.ticketNumber}: ${err.message}`);
                 fs.writeFileSync('/tmp/mail_error.txt', err.stack || err.message);
             });
+        }
+
+        // --- NEW: Notify Staff Members (Admin/Agent) ---
+        try {
+            const staff = await this.prisma.user.findMany({
+                where: {
+                    role: { name: { in: ['admin', 'super-admin', 'agent'] } },
+                    status: 'ACTIVE'
+                },
+                select: { email: true }
+            });
+
+            const staffEmails = staff.map(s => s.email).filter(Boolean).join(',');
+
+            if (staffEmails) {
+                this.emailService.sendNewTicketToStaff(staffEmails, {
+                    ticketNumber: ticket.ticketNumber,
+                    subject: ticket.subject,
+                    priority: ticket.priority,
+                    ticketPriority: ticket.priority,
+                    ticketPriorityLow: ticket.priority.toLowerCase(),
+                    ticketStatus: ticket.status,
+                    customerName: ticket.creator?.fullName || 'Müşteri',
+                    customerEmail: ticket.creator?.email || '-',
+                    customerCompany: (ticket as any).creator?.customerProfile?.companyName || '-',
+                    createdAt: new Date(ticket.createdAt).toLocaleString(),
+                    ticketUrl: `${process.env.FRONTEND_URL}/admin/tickets/${ticket.id}`
+                }).catch(err => this.logger.error(`Failed to notify staff for ${ticket.ticketNumber}: ${err.message}`));
+            }
+        } catch (error) {
+            this.logger.error(`Failed to fetch staff for notification: ${error.message}`);
         }
 
         this.evaluateRules(ticket.id, 'TICKET_CREATED', ticket);

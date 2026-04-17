@@ -165,6 +165,16 @@ export class EmailService implements OnModuleInit {
         });
     }
 
+    async sendNewTicketToStaff(recipientEmails: string, data: any) {
+        await this.enqueueEmail({
+            template: 'staff-alert-new-ticket',
+            to: recipientEmails,
+            subject: `🚨 [YENİ TALEP] ${data.ticketNumber}: ${data.subject}`,
+            priority: 1,
+            data: data
+        });
+    }
+
     async sendTicketAssigned(data: any) {
         await this.enqueueEmail({
             template: 'ticket-assigned',

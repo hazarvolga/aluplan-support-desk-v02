@@ -83,5 +83,14 @@
         "take_action": "Bileti İncele",
         "breach_type": "İhlal Türü",
         "target_date": "Hedef Tarih"
+    },
+    "staff_alerts": {
+        "new_ticket": {
+            "title": "Yeni Destek Talebi",
+            "description": "Sisteme yeni bir destek talebi düştü. Lütfen detayları inceleyiniz.",
+            "customer_info": "Müşteri Bilgileri",
+            "company": "Şirket",
+            "action_link": "Admin Panelinde Görüntüle"
+        }
     }
 }

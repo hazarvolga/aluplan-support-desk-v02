@@ -1,0 +1,50 @@
+<!-- Header & Intro -->
+<mj-section background-color="#FFFFFF" padding="25px 20px">
+  <mj-column>
+    <mj-text font-size="22px" font-weight="700" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#E11D48{{/if}}" align="center">
+      {{t.staff_alerts.new_ticket.title}}
+    </mj-text>
+    <mj-text font-size="16px" color="#555555" align="center">
+      {{t.staff_alerts.new_ticket.description}}
+    </mj-text>
+  </mj-column>
+</mj-section>
+
+<!-- Ticket Details -->
+<mj-section background-color="#F8FAFC" padding="20px 20px">
+  <mj-column>
+    <mj-text font-size="16px" font-weight="600" color="#1E293B">
+      {{t.common.ticket_id}} #{{ticketId}} – {{ticketSubject}}
+    </mj-text>
+    
+    <mj-divider border-width="1px" border-color="#E2E8F0" />
+    
+    <mj-text font-size="15px" font-weight="600" color="#64748B" padding-top="10px">
+      {{t.staff_alerts.new_ticket.customer_info}}
+    </mj-text>
+    <mj-text line-height="1.5">
+      <strong>{{customerName}}</strong> ({{customerEmail}})<br/>
+      {{#if customerCompany}}
+      {{t.staff_alerts.new_ticket.company}}: {{customerCompany}}
+      {{/if}}
+    </mj-text>
+
+    <mj-text font-size="15px" font-weight="600" color="#64748B" padding-top="15px">
+      {{t.common.status}} & {{t.common.priority}}
+    </mj-text>
+    <mj-text>
+      • {{t.common.priority}}: <span class="status-{{ticketPriorityLow}}">{{ticketPriority}}</span><br/>
+      • {{t.common.status}}: <strong>{{ticketStatus}}</strong><br/>
+      • {{t.common.date}}: {{createdAt}}
+    </mj-text>
+  </mj-column>
+</mj-section>
+
+<!-- Action Buttons -->
+<mj-section background-color="#FFFFFF" padding="25px 20px">
+  <mj-column width="100%">
+    <mj-button href="{{ticketUrl}}" background-color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0F172A{{/if}}" color="white">
+      {{t.staff_alerts.new_ticket.action_link}}
+    </mj-button>
+  </mj-column>
+</mj-section>
