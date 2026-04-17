@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SettingsService } from '../settings/settings.service';
 import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
@@ -20,6 +21,7 @@ export class AiService implements AiProvider {
         private readonly openai: OpenAiService,
         private readonly custom: GenericOpenAiService,
         private readonly llmapi: LlmApiService,
+        private readonly eventEmitter: EventEmitter2,
     ) { }
 
     private async isCircuitClosed(): Promise<boolean> {
@@ -92,6 +94,12 @@ export class AiService implements AiProvider {
 
                 if (pName === primaryName && fallbackName && fallbackName !== primaryName) {
                     this.logger.error(`🚨 SYSTEM ALERT: Primary AI Model (${primaryName}) failed. Auto-Fallback to (${fallbackName}) triggered. Error: ${err}`);
+                    this.eventEmitter.emit('system.ai_fallback', {
+                        primaryProvider: primaryName,
+                        fallbackProvider: fallbackName,
+                        task,
+                        error: err instanceof Error ? err.message : String(err)
+                    });
                 }
             }
         }
@@ -247,6 +255,13 @@ export class AiService implements AiProvider {
 
                 if (pName === primaryName && fallbackName && fallbackName !== primaryName) {
                     this.logger.error(`🚨 SYSTEM ALERT: Primary AI Model (${primaryName}) failed during stream. Auto-Fallback to (${fallbackName}) triggered. Error: ${err}`);
+                    this.eventEmitter.emit('system.ai_fallback', {
+                        primaryProvider: primaryName,
+                        fallbackProvider: fallbackName,
+                        task,
+                        isStreaming: true,
+                        error: err instanceof Error ? err.message : String(err)
+                    });
                 } else {
                     yield 'AI yanıtı oluşturulurken bir hata oluştu.';
                 }

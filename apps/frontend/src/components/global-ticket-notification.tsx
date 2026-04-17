@@ -33,12 +33,24 @@ export function GlobalTicketNotification() {
                 });
             };
 
+            const handleAiFallback = (data: any) => {
+                console.log('🚨 [GlobalTicketNotification] AI Fallback triggered!', data);
+                toast({
+                    title: t('system_alert_title'),
+                    description: t('system_alert_desc', { primary: data.primaryProvider, fallback: data.fallbackProvider }),
+                    variant: 'destructive',
+                    duration: 8000,
+                });
+            };
+
             socket.on('connect', () => console.log('🟢 [GlobalTicketNotification] Socket connected:', socket.id));
             socket.on('ticket:created', handleNewTicket);
+            socket.on('system:ai_fallback', handleAiFallback);
 
             return () => {
                 socket.off('connect');
                 socket.off('ticket:created', handleNewTicket);
+                socket.off('system:ai_fallback', handleAiFallback);
             };
         } catch (err) {
             console.warn('[GlobalTicketNotification] Socket init failed:', err);

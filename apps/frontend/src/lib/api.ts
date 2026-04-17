@@ -132,7 +132,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
             } else {
                 errStr = `Error Detail Missing (Status ${res.status})`;
             }
-            console.error(`API Error [${res.status}]:`, errBody);
+            // Suppress noisy 401 logs for auth-check endpoints (handled gracefully by AuthProvider)
+            if (!(res.status === 401 && path.includes('/auth/me'))) {
+                console.error(`API Error [${res.status}]:`, errBody);
+            }
         } catch (e) {
             try {
                 const text = await res.clone().text();

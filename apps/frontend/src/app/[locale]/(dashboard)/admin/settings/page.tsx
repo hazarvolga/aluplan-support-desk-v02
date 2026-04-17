@@ -404,14 +404,26 @@ export default function AdminSettingsPage() {
                                             <>
                                                 <div className="flex flex-col items-center">
                                                     <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Primary</span>
-                                                    <Badge variant="outline" className={`text-[10px] ${aiHealth?.providers?.[aiHealth?.chatProvider]?.available ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/20' : 'bg-red-500/15 text-red-500 border-red-500/20'}`}>
+                                                    <Badge variant="outline" className={`text-[10px] relative ${aiHealth?.providers?.[aiHealth?.chatProvider]?.available ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/20' : 'bg-red-500/15 text-red-500 border-red-500/20'}`}>
+                                                        {aiHealth?.providers?.[aiHealth?.chatProvider]?.available && (
+                                                            <span className="absolute -left-1 -top-1 flex h-2 w-2">
+                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                                            </span>
+                                                        )}
                                                         {aiHealth?.providers?.[aiHealth?.chatProvider]?.available ? 'ONLINE' : 'DOWN'}
                                                     </Badge>
                                                 </div>
                                                 <div className="h-6 w-px bg-border"></div>
                                                 <div className="flex flex-col items-center">
                                                     <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Fallback</span>
-                                                    <Badge variant="outline" className={`text-[10px] ${getSetting('ai.fallback_provider') && getSetting('ai.fallback_provider') !== 'none' ? (aiHealth?.providers?.[getSetting('ai.fallback_provider')]?.available ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/20' : 'bg-red-500/15 text-red-500 border-red-500/20') : 'bg-muted text-muted-foreground border-border'}`}>
+                                                    <Badge variant="outline" className={`text-[10px] relative ${getSetting('ai.fallback_provider') && getSetting('ai.fallback_provider') !== 'none' ? (aiHealth?.providers?.[getSetting('ai.fallback_provider')]?.available ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/20' : 'bg-red-500/15 text-red-500 border-red-500/20') : 'bg-muted text-muted-foreground border-border'}`}>
+                                                        {getSetting('ai.fallback_provider') && getSetting('ai.fallback_provider') !== 'none' && aiHealth?.providers?.[getSetting('ai.fallback_provider')]?.available && (
+                                                            <span className="absolute -left-1 -top-1 flex h-2 w-2">
+                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                                            </span>
+                                                        )}
                                                         {!getSetting('ai.fallback_provider') || getSetting('ai.fallback_provider') === 'none' ? 'OFF' : (aiHealth?.providers?.[getSetting('ai.fallback_provider')]?.available ? 'STANDBY' : 'DOWN')}
                                                     </Badge>
                                                 </div>

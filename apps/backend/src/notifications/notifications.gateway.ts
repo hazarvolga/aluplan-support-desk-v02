@@ -289,4 +289,38 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             .to('role:team-lead')
             .emit('tickets:bulk_updated', { ticketIds });
     }
+
+    @OnEvent('system.ai_fallback', { async: true })
+    async handleAiFallback(payload: { primaryProvider: string, fallbackProvider: string, task: string, error: string }) {
+        this.logger.warn(`⚠️ AI Fallback Triggered: ${payload.primaryProvider} -> ${payload.fallbackProvider} (Task: ${payload.task}). Error: ${payload.error}`);
+
+        // 1. Create persistent notifications for admins/agents
+        const admins = await this.prisma.user.findMany({
+            where: {
+                role: {
+                    name: { in: ['admin', 'super-admin', 'department-manager'] }
+                }
+            },
+            select: { id: true }
+        });
+
+        const userIds = admins.map(a => a.id);
+        if (userIds.length > 0) {
+            await this.prisma.notification.createMany({
+                data: userIds.map(userId => ({
+                    userId,
+                    title: 'AI Auto-Fallback Triggered',
+                    message: `Primary AI (${payload.primaryProvider}) failed. Switched to ${payload.fallbackProvider} for task: ${payload.task}. Error: ${payload.error}`,
+                    type: 'SYSTEM_ALERT',
+                    link: '/admin/settings?tab=ai'
+                }))
+            });
+        }
+
+        // 2. Broadcast to connected admins/agents via WebSocket
+        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').emit('system:ai_fallback', {
+            ...payload,
+            timestamp: Date.now()
+        });
+    }
 }
