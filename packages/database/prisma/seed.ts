@@ -4,7 +4,7 @@ import { resolve } from 'path';
 // Load root .env
 config({ path: resolve(__dirname, '../../../.env') });
 
-import { PrismaClient, TicketPriority } from '@prisma/client';
+import { PrismaClient, TicketPriority } from '../client';
 import * as bcrypt from 'bcrypt';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
