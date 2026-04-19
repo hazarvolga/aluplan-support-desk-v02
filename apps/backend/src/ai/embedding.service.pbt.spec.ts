@@ -36,6 +36,7 @@ describe('EmbeddingService — Property-Based Tests', () => {
                 return 1;
             }),
             $queryRaw: jest.fn().mockResolvedValue([]),
+            knowledgePoolEmbedding: { findFirst: jest.fn() },
         };
 
         const module: TestingModule = await Test.createTestingModule({

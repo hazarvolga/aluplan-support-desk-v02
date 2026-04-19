@@ -58,7 +58,7 @@ const mockTx = {
     user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
     role: { findUnique: jest.fn(), findFirst: jest.fn() },
     crmAccount: { findUnique: jest.fn() },
-    customerProfile: { upsert: jest.fn() },
+    customerProfile: { upsert: jest.fn(), findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
 };
 
 const mockPrisma = {
@@ -177,8 +177,8 @@ describe('Dynamics365Adapter', () => {
 
             expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({ customerNo: 'C300001' }),
-                    create: expect.objectContaining({ customerNo: 'C300001' }),
+                    update: expect.objectContaining({ account_number: 'C300001' }),
+                    create: expect.objectContaining({ account_number: 'C300001' }),
                 }),
             );
         });
@@ -192,7 +192,7 @@ describe('Dynamics365Adapter', () => {
 
             expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({ customerNo: null }),
+                    update: expect.objectContaining({ account_number: null }),
                 }),
             );
         });
@@ -284,25 +284,30 @@ describe('Dynamics365Adapter', () => {
             // jest.clearAllMocks() resets $transaction — re-define it here
             mockPrisma.$transaction = jest.fn((cb: any) => cb(mockTx));
 
+            mockPrisma.role.findFirst.mockResolvedValue({ id: 'role-customer' });
+            mockPrisma.role.create.mockResolvedValue({ id: 'role-customer' });
             mockTx.user.findUnique.mockResolvedValue(null);
+            mockTx.user.update.mockResolvedValue({});
             mockTx.role.findUnique.mockResolvedValue({ id: 'role-customer', name: 'customer' });
             mockTx.user.create.mockResolvedValue({ id: 'user-1', email: 'ali@aluplan.com' });
             mockTx.crmAccount.findUnique.mockResolvedValue({ id: 'db-acc-1', industry: 'Manufacturing' });
-            mockTx.customerProfile.upsert.mockResolvedValue({});
+            mockTx.customerProfile.findUnique.mockResolvedValue(null);
+            mockTx.customerProfile.create.mockResolvedValue({});
+            mockTx.customerProfile.update.mockResolvedValue({});
         });
 
-        it('should skip contacts without email and add to skippedRecords', async () => {
+        it('should generate a placeholder email for contact with null emailaddress1', async () => {
             const contact = buildContact({ emailaddress1: null });
             mockedAxios.get = jest.fn().mockResolvedValue({ data: { value: [contact] }, status: 200 });
 
             const result = await adapter.syncContacts(buildConfig());
 
-            expect(result.skippedRecords).toHaveLength(1);
-            expect(result.skippedRecords![0]).toMatchObject({
-                externalId: 'con-uuid-1',
-                reason: 'missing_email',
-            });
-            expect(result.successCount).toBe(0);
+            expect(result.successCount).toBe(1);
+            expect(mockTx.user.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.objectContaining({ email: 'no-email-con-uuid-1@internal.aluplan' }),
+                }),
+            );
         });
 
         it('should add to skippedLinks when parent account not found in DB', async () => {
@@ -319,11 +324,7 @@ describe('Dynamics365Adapter', () => {
                 missingAccountExternalId: 'acc-uuid-1',
             });
             // Contact should still be saved (with accountId = null)
-            expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    update: expect.objectContaining({ accountId: undefined }),
-                }),
-            );
+            expect(mockTx.customerProfile.create).toHaveBeenCalled();
         });
 
         it('should save contact with linked accountId when account exists', async () => {
@@ -335,9 +336,9 @@ describe('Dynamics365Adapter', () => {
 
             expect(result.successCount).toBe(1);
             expect(result.skippedLinks).toHaveLength(0);
-            expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
+            expect(mockTx.customerProfile.create).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({ accountId: 'db-acc-1' }),
+                    data: expect.objectContaining({ account: { connect: { id: 'db-acc-1' } } }),
                 }),
             );
         });
@@ -351,9 +352,9 @@ describe('Dynamics365Adapter', () => {
 
             await adapter.syncContacts(buildConfig());
 
-            expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
+            expect(mockTx.customerProfile.create).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({ contractStatus: 'Aktif' }),
+                    data: expect.objectContaining({ contractStatus: 'Aktif' }),
                 }),
             );
         });
@@ -386,8 +387,8 @@ describe('Dynamics365Adapter', () => {
             const result = await adapter.syncContacts(buildConfig());
 
             expect(result.totalRecords).toBe(3);
-            expect(result.successCount).toBe(2);
-            expect(result.skippedRecords).toHaveLength(1);
+            expect(result.successCount).toBe(3);
+            expect(result.skippedRecords).toHaveLength(0);
         });
 
         it('should return ERROR status when API call fails', async () => {
@@ -404,9 +405,9 @@ describe('Dynamics365Adapter', () => {
 
             await adapter.syncContacts(buildConfig());
 
-            expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
+            expect(mockTx.customerProfile.create).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({ customerNo: 'C300001' }),
+                    data: expect.objectContaining({ customerNo: 'C300001-con-u' }),
                 }),
             );
         });
@@ -423,9 +424,9 @@ describe('Dynamics365Adapter', () => {
 
             await adapter.syncContacts(buildConfig());
 
-            expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
+            expect(mockTx.customerProfile.create).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({
+                    data: expect.objectContaining({
                         customerNo: expect.stringMatching(/^DYN-/),
                     }),
                 }),

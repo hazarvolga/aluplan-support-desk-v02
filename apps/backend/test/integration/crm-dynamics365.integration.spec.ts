@@ -39,14 +39,15 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 // ─── Mock Prisma ──────────────────────────────────────────────────────────────
 
 const mockTx = {
-    user: { findUnique: jest.fn(), create: jest.fn() },
-    role: { findUnique: jest.fn() },
+    user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
+    role: { findUnique: jest.fn(), findFirst: jest.fn() },
     crmAccount: { findUnique: jest.fn() },
-    customerProfile: { upsert: jest.fn() },
+    customerProfile: { upsert: jest.fn(), findUnique: jest.fn(), update: jest.fn(), create: jest.fn() },
 };
 
 const mockPrisma = {
     crmAccount: { upsert: jest.fn() },
+    role: { findFirst: jest.fn(), create: jest.fn() },
     $transaction: jest.fn((cb: any) => cb(mockTx)),
 };
 
@@ -82,11 +83,17 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
 
         // Default tx mocks
         mockPrisma.$transaction = jest.fn((cb: any) => cb(mockTx));
+        mockPrisma.role.findFirst.mockResolvedValue({ id: 'role-cust', name: 'customer' });
+        mockPrisma.role.create.mockResolvedValue({ id: 'role-cust', name: 'customer' });
         mockTx.user.findUnique.mockResolvedValue(null);
+        mockTx.user.update.mockResolvedValue({});
         mockTx.role.findUnique.mockResolvedValue({ id: 'role-cust', name: 'customer' });
         mockTx.user.create.mockResolvedValue({ id: 'user-new', email: 'test@test.com' });
         mockTx.crmAccount.findUnique.mockResolvedValue({ id: 'db-acc-1', industry: 'Manufacturing' });
         mockTx.customerProfile.upsert.mockResolvedValue({});
+        mockTx.customerProfile.findUnique.mockResolvedValue(null);
+        mockTx.customerProfile.update.mockResolvedValue({});
+        mockTx.customerProfile.create.mockResolvedValue({});
         mockPrisma.crmAccount.upsert.mockResolvedValue({});
     });
 
@@ -179,8 +186,8 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
 
             expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({ customerNo: 'C300042' }),
-                    create: expect.objectContaining({ customerNo: 'C300042' }),
+                    update: expect.objectContaining({ account_number: 'C300042' }),
+                    create: expect.objectContaining({ account_number: 'C300042' }),
                 }),
             );
         });
@@ -194,7 +201,7 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
 
             expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({ customerNo: null }),
+                    update: expect.objectContaining({ account_number: null }),
                 }),
             );
         });
@@ -339,9 +346,9 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
 
             await adapter.syncContacts(BASE_CONFIG);
 
-            expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
+            expect(mockTx.customerProfile.create).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({ contractStatus: 'Aktif' }),
+                    data: expect.objectContaining({ contractStatus: 'Aktif' }),
                 }),
             );
         });
@@ -352,9 +359,9 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
 
             await adapter.syncContacts(BASE_CONFIG);
 
-            expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
+            expect(mockTx.customerProfile.create).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({ industry: 'Manufacturing' }),
+                    data: expect.objectContaining({ industry: 'Manufacturing' }),
                 }),
             );
         });
@@ -365,22 +372,25 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
 
             await adapter.syncContacts(BASE_CONFIG);
 
-            expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
+            expect(mockTx.customerProfile.create).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({ customerNo: 'C300001' }),
+                    data: expect.objectContaining({ customerNo: 'C300001-c1d2e' }),
                 }),
             );
         });
 
-        it('should skip contact with null emailaddress1', async () => {
-            const contact = buildD365Contact({ emailaddress1: null });
+        it('should generate a placeholder email for contact with null emailaddress1', async () => {
+            const contact = buildD365Contact({ contactid: 'ctx-123', emailaddress1: null });
             mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365ContactsResponse([contact]) });
 
             const result = await adapter.syncContacts(BASE_CONFIG);
 
-            expect(result.skippedRecords).toHaveLength(1);
-            expect(result.skippedRecords![0].reason).toBe('missing_email');
-            expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+            expect(result.successCount).toBe(1);
+            expect(mockTx.user.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.objectContaining({ email: 'no-email-ctx-123@internal.aluplan', status: 'INACTIVE' })
+                })
+            );
         });
 
         it('should add to skippedLinks when parentcustomerid_account not in DB', async () => {
@@ -420,10 +430,10 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
 
             await adapter.syncContacts(BASE_CONFIG);
 
-            expect(mockTx.customerProfile.upsert).toHaveBeenCalledWith(
+            expect(mockTx.customerProfile.create).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({
-                        customerNo: expect.stringMatching(/^DYN-[a-f0-9]{8}$/),
+                    data: expect.objectContaining({
+                        customerNo: expect.stringMatching(/^DYN-[a-f0-9\-]{10}$/),
                     }),
                 }),
             );

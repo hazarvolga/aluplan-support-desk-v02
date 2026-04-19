@@ -35,7 +35,8 @@ export default function AnnouncementsPage() {
     // Form State for Announcement
     const [title, setTitle] = useState('');
     const [subject, setSubject] = useState('');
-    const [contentHtml, setContentHtml] = useState(t('editor.default_content'));
+    // Render literal string bypassing intl rich text node parsing
+    const [contentHtml, setContentHtml] = useState(t.raw('editor.default_content'));
     const [criteria, setCriteria] = useState({
         industries: [] as string[],
         statuses: [] as string[],

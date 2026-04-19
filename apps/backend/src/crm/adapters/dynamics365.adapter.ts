@@ -289,7 +289,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
                         // 2. Eğer o yoksa hesap numarasını (Account Number) baz alalım ama çakışmayı önlemek için contact fragment ekleyelim
                         // 3. O da yoksa contactId'den türetelim.
                         const mappedNo = this.resolveField(contact, 'customerNo', mappings, 'new_customerid');
-                        const accountNum = accountInfo?.accountNumber;
+                        let accountNum = accountInfo?.account_number
+                            || contact.parentcustomerid_account?.accountnumber;
 
                         let clientNo: string;
                         if (mappedNo && mappedNo !== '-') {

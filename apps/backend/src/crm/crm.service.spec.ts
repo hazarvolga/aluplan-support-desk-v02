@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { Dynamics365Adapter } from './adapters/dynamics365.adapter';
 import { CryptoService } from '../utils/crypto.service';
+import { PiiMaskingService } from '../common/services/pii-masking.service';
 import { SyncStatus, CrmProvider } from '@aluplan/database';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
@@ -76,6 +77,7 @@ describe('CrmService', () => {
                 { provide: Dynamics365Adapter, useValue: mockAdapter },
                 { provide: CryptoService, useValue: mockCrypto },
                 { provide: getQueueToken('crm-sync'), useValue: mockQueue },
+                { provide: PiiMaskingService, useValue: { maskSensitiveData: jest.fn(val => val) } },
             ],
         }).compile();
 

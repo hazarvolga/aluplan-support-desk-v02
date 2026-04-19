@@ -121,7 +121,7 @@ describe('AiQueryService', () => {
             mockRedisService.get.mockResolvedValue(JSON.stringify(cached));
 
             // Act
-            const result = await service.query('test query');
+            const result = await service.query({ userQuery: 'test query' });
 
             // Assert
             expect(result.answer).toBe('cached answer');
@@ -139,7 +139,7 @@ describe('AiQueryService', () => {
             });
 
             // Act
-            const result = await service.query('unknown question', null);
+            const result = await service.query({ userQuery: 'unknown question', userId: null });
 
             // Assert
             expect(result.confidence).toBe('NO_MATCH');
@@ -164,7 +164,7 @@ describe('AiQueryService', () => {
             mockAiService.reformat.mockResolvedValue({ response: 'Formatted AI answer' });
 
             // Act
-            const result = await service.query('how to install?', null);
+            const result = await service.query({ userQuery: 'how to install?', userId: null });
 
             // Assert
             expect(result.confidence).toBe('HIGH');
@@ -188,7 +188,7 @@ describe('AiQueryService', () => {
             mockAiService.reformat.mockResolvedValue({ response: 'Medium answer' });
 
             // Act
-            const result = await service.query('partial match question', null);
+            const result = await service.query({ userQuery: 'partial match question', userId: null });
 
             // Assert
             expect(result.confidence).toBe('MEDIUM');

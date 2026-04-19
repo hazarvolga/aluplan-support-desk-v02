@@ -79,6 +79,7 @@ export class FaqService {
                 'Aşağıdaki destek bileti konuşmasından temel Soru ve Cevap çiftini çıkar. Yanıtı SADECE JSON formatında ver: { "question": "...", "answer": "..." }',
                 `Konu: ${ticket.subject}\n\nKonuşma:\n${conversation}`,
                 'FAQ Extraction',
+                undefined,
                 'faq_extraction'
             );
 

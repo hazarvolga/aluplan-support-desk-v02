@@ -22,7 +22,8 @@ import {
     Eye,
     EyeOff,
     Terminal,
-    Search
+    Search,
+    Cloud
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -54,6 +55,10 @@ export function AiSettings() {
     const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434');
     const [ollamaModel, setOllamaModel] = useState('llama3');
 
+    const [vertexProjectId, setVertexProjectId] = useState('');
+    const [vertexCredentials, setVertexCredentials] = useState('');
+    const [vertexModel, setVertexModel] = useState('gemini-1.5-pro-preview-0409');
+
     // Specialized mappings
     const [specializedCategorization, setSpecializedCategorization] = useState('global');
     const [specializedSummarization, setSpecializedSummarization] = useState('global');
@@ -83,6 +88,11 @@ export function AiSettings() {
             setOllamaUrl(findValue('ai.ollama.url') || 'http://localhost:11434');
             setOllamaModel(findValue('ai.ollama.chat_model') || 'llama3');
 
+            // Vertex Map
+            setVertexProjectId(findValue('ai.vertex.project_id'));
+            setVertexCredentials(findValue('ai.vertex.credentials_json'));
+            setVertexModel(findValue('ai.vertex.chat_model') || 'gemini-1.5-pro-preview-0409');
+
             // Specialized
             setSpecializedCategorization(findValue('ai.specialized.categorization_provider') || 'global');
             setSpecializedSummarization(findValue('ai.specialized.summarization_provider') || 'global');
@@ -104,7 +114,7 @@ export function AiSettings() {
     const handleTest = async (provider: string) => {
         setTesting(provider);
         try {
-            const result = await api.post('/ai/test-connection', { provider });
+            const result = await api.post('/ai/test-connection', { provider: provider.toLowerCase() });
             if (result.success) {
                 toast.success(t('toasts.test_success', { provider }));
                 loadData(); // Refresh health status
@@ -134,6 +144,10 @@ export function AiSettings() {
             } else if (provider === 'Ollama') {
                 updates.push(api.settings.upsert({ key: 'ai.ollama.url', value: ollamaUrl }));
                 updates.push(api.settings.upsert({ key: 'ai.ollama.chat_model', value: ollamaModel }));
+            } else if (provider === 'Vertex') {
+                updates.push(api.settings.upsert({ key: 'ai.vertex.project_id', value: vertexProjectId }));
+                updates.push(api.settings.upsert({ key: 'ai.vertex.credentials_json', value: vertexCredentials, isSecret: true }));
+                updates.push(api.settings.upsert({ key: 'ai.vertex.chat_model', value: vertexModel }));
             } else if (provider === 'Specialized') {
                 updates.push(api.settings.upsert({ key: 'ai.specialized.categorization_provider', value: specializedCategorization }));
                 updates.push(api.settings.upsert({ key: 'ai.specialized.summarization_provider', value: specializedSummarization }));
@@ -332,6 +346,17 @@ export function AiSettings() {
                     setKeyValue={setOllamaUrl}
                     modelValue={ollamaModel}
                     setModelValue={setOllamaModel}
+                    secret={false}
+                />
+                <ProviderCard
+                    name="Vertex"
+                    icon={Cloud}
+                    color="blue"
+                    keyLabel="GCP Project ID"
+                    keyValue={vertexProjectId}
+                    setKeyValue={setVertexProjectId}
+                    modelValue={vertexModel}
+                    setModelValue={setVertexModel}
                     secret={false}
                 />
             </div>

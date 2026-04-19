@@ -44,6 +44,11 @@ export default () => {
             localPath: process.env.STORAGE_LOCAL_PATH || './uploads',
         },
         cookieDomain: process.env.COOKIE_DOMAIN,
+        gcp: {
+            projectId: process.env.GCP_PROJECT_ID,
+            region: process.env.GCP_REGION || 'europe-west4',
+            credentialsPath: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+        },
     };
 
     if (isProduction) {

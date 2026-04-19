@@ -28,6 +28,10 @@ export class AiQueryDto {
     @ApiPropertyOptional()
     @IsOptional()
     hotinfoContext?: any;
+
+    @ApiPropertyOptional({ type: 'array', items: { type: 'object' } })
+    @IsOptional()
+    attachments?: any[];
 }
 
 export class FeedbackDto {
@@ -76,7 +80,13 @@ export class AiController {
     @ApiOperation({ summary: 'Ask a question — semantic search + AI reformat pipeline' })
     @HttpCode(HttpStatus.OK)
     query(@Body() dto: AiQueryDto, @Request() req: any) {
-        return this.aiQueryService.query(dto.query, req.user.sub, 'WEB', dto.hotinfoContext);
+        return this.aiQueryService.query({
+            userQuery: dto.query,
+            userId: req.user.sub,
+            channel: 'WEB',
+            hotinfoContext: dto.hotinfoContext,
+            attachments: dto.attachments
+        });
     }
 
     @Get('metrics')
@@ -136,7 +146,13 @@ export class AiController {
         return new Observable((subscriber) => {
             (async () => {
                 try {
-                    const stream = this.aiQueryService.streamQuery(query, req.user?.sub);
+                    // Note: query parameters don't easily support attachments, 
+                    // for attachments we usually recommend sticking to POST /query or 
+                    // implement a separate stream endpoint that accepts POST.
+                    const stream = this.aiQueryService.streamQuery({
+                        userQuery: query,
+                        userId: req.user?.sub
+                    });
                     for await (const object of stream) {
                         subscriber.next({ data: object } as MessageEvent);
                     }

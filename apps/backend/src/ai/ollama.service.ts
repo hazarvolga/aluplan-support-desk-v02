@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
-import { AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
+import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
 
 @Injectable()
 export class OllamaService implements AiProvider {
@@ -56,17 +56,30 @@ export class OllamaService implements AiProvider {
         }
     }
 
-    async generate(prompt: string, timeout = 60_000): Promise<string | null> {
+    private mapParts(prompt: string | AiPart[]): { text: string, images?: string[] } {
+        if (typeof prompt === 'string') return { text: prompt };
+        let text = '';
+        const images: string[] = [];
+        for (const p of prompt) {
+            if (p.text) text += p.text;
+            if (p.inlineData?.data) images.push(p.inlineData.data);
+        }
+        return { text, images: images.length > 0 ? images : undefined };
+    }
+
+    async generate(prompt: string | AiPart[], timeout = 60_000): Promise<string | null> {
         try {
             const baseUrl = await this.getBaseUrl();
             const chatModel = await this.getChatModel();
+            const { text, images } = this.mapParts(prompt);
 
             const response = await fetch(`${baseUrl}/api/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: chatModel,
-                    prompt,
+                    prompt: text,
+                    images,
                     stream: false,
                     options: { temperature: 0.2 },
                 }),
@@ -85,10 +98,11 @@ export class OllamaService implements AiProvider {
     /**
      * Reformat approved KB article content into a clear, context-aware answer.
      */
-    async reformat(systemPrompt: string, userQuery: string, kbContent: string): Promise<ChatResult | null> {
+    async reformat(systemPrompt: string, userQuery: string, kbContent: string, attachments?: AiPart[]): Promise<ChatResult | null> {
         try {
             const baseUrl = await this.getBaseUrl();
             const chatModel = await this.getChatModel();
+            const { text: attachmentText, images } = attachments ? this.mapParts(attachments) : { text: '', images: undefined };
 
             const response = await fetch(`${baseUrl}/api/chat`, {
                 method: 'POST',
@@ -98,15 +112,20 @@ export class OllamaService implements AiProvider {
                     messages: [
                         { role: 'system', content: systemPrompt },
                         {
-                            role: 'user', content: `KULLANICI SORUSU:
+                            role: 'user',
+                            content: `KULLANICI SORUSU:
 ${userQuery}
+
+${attachmentText}
 
 ---
 
 ONAYLI BİLGİ KAYNAĞI:
 ${kbContent}
 
-Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan soruyu yanıtla. Metni birebir kopyalama.` }
+Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan soruyu yanıtla. Metni birebir kopyalama.`,
+                            images
+                        }
                     ],
                     stream: false,
                     options: { temperature: 0.1, top_p: 0.9 },
@@ -123,10 +142,11 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
         }
     }
 
-    async *streamReformat(systemPrompt: string, userQuery: string, kbContent: string): AsyncGenerator<string, void, unknown> {
+    async *streamReformat(systemPrompt: string, userQuery: string, kbContent: string, attachments?: AiPart[]): AsyncGenerator<string, void, unknown> {
         try {
             const baseUrl = await this.getBaseUrl();
             const chatModel = await this.getChatModel();
+            const { text: attachmentText, images } = attachments ? this.mapParts(attachments) : { text: '', images: undefined };
 
             const response = await fetch(`${baseUrl}/api/chat`, {
                 method: 'POST',
@@ -136,15 +156,20 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
                     messages: [
                         { role: 'system', content: systemPrompt },
                         {
-                            role: 'user', content: `KULLANICI SORUSU:
+                            role: 'user',
+                            content: `KULLANICI SORUSU:
 ${userQuery}
+
+${attachmentText}
 
 ---
 
 ONAYLI BİLGİ KAYNAĞI:
 ${kbContent}
 
-Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan soruyu yanıtla. Metni birebir kopyalama.` }
+Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan soruyu yanıtla. Metni birebir kopyalama.`,
+                            images
+                        }
                     ],
                     stream: true,
                     options: { temperature: 0.1, top_p: 0.9 },

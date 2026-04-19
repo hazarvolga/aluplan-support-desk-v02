@@ -484,6 +484,7 @@ export class CrmService {
                 website: data.websiteurl,
                 address: data.address1_composite,
                 industry: industryFormatted,
+                account_number: data.accountnumber || null,
                 crmVerified: true,
             },
             create: {
@@ -492,6 +493,7 @@ export class CrmService {
                 website: data.websiteurl,
                 address: data.address1_composite,
                 industry: industryFormatted,
+                account_number: data.accountnumber || null,
                 crmVerified: true,
             },
         });

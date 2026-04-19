@@ -20,9 +20,19 @@ import { RagObservabilityService } from './rag-observability.service';
 import { RagMaintenanceService } from './rag-maintenance.service';
 import { KnowledgePoolModule } from '../knowledge-pool/knowledge-pool.module';
 import { EmailModule } from '../email/email.module';
+import { VertexAiService } from './vertex-ai.service';
+
+import { BullModule } from '@nestjs/bullmq';
+import { DocumentAiService } from './document-ai.service';
+import { DocumentParsingProcessor } from './document-parsing.processor';
 
 @Module({
-    imports: [SettingsModule, forwardRef(() => EmailModule), forwardRef(() => KnowledgePoolModule)],
+    imports: [
+        SettingsModule,
+        forwardRef(() => EmailModule),
+        forwardRef(() => KnowledgePoolModule),
+        BullModule.registerQueue({ name: 'document-parsing' }),
+    ],
     controllers: [AiController],
     providers: [
         AiService,
@@ -42,7 +52,26 @@ import { EmailModule } from '../email/email.module';
         AiReportingService,
         RagObservabilityService,
         RagMaintenanceService,
+        VertexAiService,
+        DocumentAiService,
+        DocumentParsingProcessor,
     ],
-    exports: [AiService, EmbeddingService, AiQueryService, AiCopilotService, PromptContextBuilderService, PromptsService, LangfuseService, LlmApiService, TrustScoreCalculator, TicketClusteringService, AiReportingService, RagObservabilityService, RagMaintenanceService],
+    exports: [
+        AiService,
+        EmbeddingService,
+        AiQueryService,
+        AiCopilotService,
+        PromptContextBuilderService,
+        PromptsService,
+        LangfuseService,
+        LlmApiService,
+        TrustScoreCalculator,
+        TicketClusteringService,
+        AiReportingService,
+        RagObservabilityService,
+        RagMaintenanceService,
+        VertexAiService,
+        DocumentAiService,
+    ],
 })
 export class AiModule { }

@@ -6,8 +6,8 @@ import { AssignmentStrategy, SystemRole, AgentStatus } from '@aluplan/database';
 
 const mockPrismaService = {
     department: { findMany: jest.fn(), findUnique: jest.fn() },
-    team: { findMany: jest.fn(), create: jest.fn(), findUnique: jest.fn() },
-    teamMember: { upsert: jest.fn(), delete: jest.fn() },
+    team: { findMany: jest.fn(), create: jest.fn(), findUnique: jest.fn(), findFirst: jest.fn() },
+    teamMember: { upsert: jest.fn(), delete: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
     user: { findUnique: jest.fn(), update: jest.fn() },
     skill: { findMany: jest.fn() },
     agentSkill: { upsert: jest.fn() }

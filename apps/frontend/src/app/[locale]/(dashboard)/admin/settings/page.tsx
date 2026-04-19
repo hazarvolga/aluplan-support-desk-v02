@@ -178,6 +178,8 @@ export default function AdminSettingsPage() {
                         checkFields('OpenAI', ['ai.openai.api_key', 'ai.openai.chat_model', 'ai.openai.embed_model']);
                     } else if (p === 'ollama') {
                         checkFields('Ollama', ['ai.ollama.url', 'ai.ollama.chat_model', 'ai.ollama.embed_model']);
+                    } else if (p === 'vertex') {
+                        checkFields('Google Vertex AI', ['ai.vertex.project_id', 'ai.vertex.chat_model']);
                     } else if (['xai', 'deepseek', 'groq', 'custom', 'llmapi'].includes(p)) {
                         const models = {
                             xai: ['ai.xai.api_key', 'ai.xai.chat_model'],
@@ -202,6 +204,7 @@ export default function AdminSettingsPage() {
                 'ai.deepseek.api_key',
                 'ai.groq.api_key',
                 'ai.custom.api_key',
+                'ai.vertex.credentials_json',
                 'email.resend.api_key',
                 'email.smtp.pass',
                 'email.gmail.client_secret',
@@ -224,7 +227,7 @@ export default function AdminSettingsPage() {
 
             toast({
                 title: t('toasts.success'),
-                description: t('toasts.save_success'),
+                description: t('toasts.save_success', { key: 'Settings' }),
             });
         } catch (error: any) {
             toast({
@@ -449,6 +452,7 @@ export default function AdminSettingsPage() {
                                                     <SelectContent>
                                                         <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
                                                         <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
+                                                        <SelectItem value="vertex">Google Vertex AI</SelectItem>
                                                         <SelectItem value="xai">{t('ai.providers.xai')}</SelectItem>
                                                         <SelectItem value="groq">{t('ai.providers.groq')}</SelectItem>
                                                         <SelectItem value="deepseek">{t('ai.providers.deepseek')}</SelectItem>
@@ -464,6 +468,7 @@ export default function AdminSettingsPage() {
                                                     <SelectContent>
                                                         <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
                                                         <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
+                                                        <SelectItem value="vertex">Google Vertex AI</SelectItem>
                                                         <SelectItem value="groq">{t('ai.providers.groq_no_embed')}</SelectItem>
                                                         <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
                                                         <SelectItem value="custom">{t('ai.providers.custom_info')}</SelectItem>
@@ -486,6 +491,7 @@ export default function AdminSettingsPage() {
                                                         <SelectItem value="none">-- Devre Dışı --</SelectItem>
                                                         <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
                                                         <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
+                                                        <SelectItem value="vertex">Google Vertex AI</SelectItem>
                                                         <SelectItem value="xai">{t('ai.providers.xai')}</SelectItem>
                                                         <SelectItem value="groq">{t('ai.providers.groq')}</SelectItem>
                                                         <SelectItem value="deepseek">{t('ai.providers.deepseek')}</SelectItem>
@@ -502,6 +508,7 @@ export default function AdminSettingsPage() {
                                                         <SelectItem value="none">-- Devre Dışı --</SelectItem>
                                                         <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
                                                         <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
+                                                        <SelectItem value="vertex">Google Vertex AI</SelectItem>
                                                         <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
                                                         <SelectItem value="custom">{t('ai.providers.custom_info')}</SelectItem>
                                                     </SelectContent>
@@ -573,6 +580,47 @@ export default function AdminSettingsPage() {
                                                 <div className="space-y-2">
                                                     <Label className="text-xs">{t('ai.openai.embed_model')}</Label>
                                                     <Input value={getSetting('ai.openai.embed_model')} onChange={e => updateValue('ai.openai.embed_model', e.target.value)} placeholder="text-embedding-3-small" className="bg-black/50 h-8 text-sm" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {([getSetting('ai.chat_provider'), getSetting('ai.embed_provider'), getSetting('ai.fallback_provider'), getSetting('ai.embed_fallback_provider')].includes('vertex')) && (
+                                        /* Vertex AI Ayarları */
+                                        <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-blue-500/40 bg-blue-500/5`}>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
+                                                    <Database className="h-4 w-4 text-blue-500" /> Google Vertex AI
+                                                </h3>
+                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3 border-blue-500/20 text-blue-500 hover:bg-blue-500/10" onClick={async () => {
+                                                    try {
+                                                        const res = await api.ai.testConnection('vertex');
+                                                        toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || 'Google Vertex AI entegrasyonu başarılı.', variant: res.success ? 'default' : 'destructive' });
+                                                    } catch (e: any) {
+                                                        toast({ title: t('toasts.connection_error'), description: 'Vertex Endpoint ulaşılamıyor', variant: 'destructive' });
+                                                    }
+                                                }}>{t('ai.test_btn')}</Button>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">GCP Project ID</Label>
+                                                <Input value={getSetting('ai.vertex.project_id')} onChange={e => updateValue('ai.vertex.project_id', e.target.value)} placeholder="project-id-12345" className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">Google Service Account JSON (Credentials)</Label>
+                                                <Input type="password" value={getSetting('ai.vertex.credentials_json')} onChange={e => updateValue('ai.vertex.credentials_json', e.target.value)} placeholder='{"type": "service_account", ...}' className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">Vertex Data Store ID (Hybrid Search)</Label>
+                                                <Input value={getSetting('ai.vertex.data_store_id')} onChange={e => updateValue('ai.vertex.data_store_id', e.target.value)} placeholder="manuals-ds-12345" className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Chat Model</Label>
+                                                    <Input value={getSetting('ai.vertex.chat_model')} onChange={e => updateValue('ai.vertex.chat_model', e.target.value)} placeholder="gemini-1.5-pro-preview-0409" className="bg-black/50 h-8 text-sm" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Embed Model</Label>
+                                                    <Input value={getSetting('ai.vertex.embed_model')} onChange={e => updateValue('ai.vertex.embed_model', e.target.value)} placeholder="text-multilingual-embedding-002" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                             </div>
                                         </div>

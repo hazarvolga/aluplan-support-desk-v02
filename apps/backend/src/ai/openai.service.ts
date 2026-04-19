@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
-import { AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
+import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
 
 @Injectable()
 export class OpenAiService implements AiProvider {
@@ -60,12 +60,27 @@ export class OpenAiService implements AiProvider {
         }
     }
 
-    async generate(prompt: string, timeout = 30_000): Promise<string | null> {
+    private mapParts(prompt: string | AiPart[]): any {
+        if (typeof prompt === 'string') return prompt;
+        return prompt.map(p => {
+            if (p.inlineData) {
+                return {
+                    type: 'image_url',
+                    image_url: { url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}` }
+                };
+            }
+            return { type: 'text', text: p.text || '' };
+        });
+    }
+
+    async generate(prompt: string | AiPart[], timeout = 30_000): Promise<string | null> {
         const apiKey = await this.getApiKey();
         if (!apiKey) return null;
 
         try {
             const model = await this.getModel();
+            const content = this.mapParts(prompt);
+
             const response = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -74,7 +89,7 @@ export class OpenAiService implements AiProvider {
                 },
                 body: JSON.stringify({
                     model,
-                    messages: [{ role: 'user', content: prompt }],
+                    messages: [{ role: 'user', content }],
                     temperature: 0.2,
                 }),
                 signal: AbortSignal.timeout(timeout),
@@ -89,12 +104,30 @@ export class OpenAiService implements AiProvider {
         }
     }
 
-    async reformat(systemPrompt: string, userQuery: string, kbContent: string): Promise<ChatResult | null> {
+    async reformat(systemPrompt: string, userQuery: string, kbContent: string, attachments?: AiPart[]): Promise<ChatResult | null> {
         const apiKey = await this.getApiKey();
         if (!apiKey) return null;
 
         try {
             const model = await this.getModel();
+
+            const userContent: any[] = [
+                { type: 'text', text: `KULLANICI SORUSU:\n${userQuery}` }
+            ];
+
+            if (attachments && attachments.length > 0) {
+                userContent.push(...this.mapParts(attachments) as any[]);
+            }
+
+            userContent.push({
+                type: 'text', text: `\n\n---
+                
+ONAYLI BİLGİ KAYNAĞI:
+${kbContent}
+
+Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan soruyu yanıtla. Metni birebir kopyalama.`
+            });
+
             const response = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -105,16 +138,7 @@ export class OpenAiService implements AiProvider {
                     model,
                     messages: [
                         { role: 'system', content: systemPrompt },
-                        {
-                            role: 'user', content: `KULLANICI SORUSU:
-${userQuery}
-
----
-
-ONAYLI BİLGİ KAYNAĞI:
-${kbContent}
-
-Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan soruyu yanıtla. Metni birebir kopyalama.` }
+                        { role: 'user', content: userContent }
                     ],
                     temperature: 0.1,
                 }),

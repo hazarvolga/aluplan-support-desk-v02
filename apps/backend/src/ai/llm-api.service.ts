@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
-import { AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
+import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
 
 @Injectable()
 export class LlmApiService implements AiProvider {
@@ -88,7 +88,7 @@ export class LlmApiService implements AiProvider {
         }
     }
 
-    async generate(prompt: string, timeout = 30_000): Promise<string | null> {
+    async generate(prompt: string | AiPart[], timeout = 30_000): Promise<string | null> {
         const apiKey = await this.getApiKey();
         const baseUrl = await this.getBaseUrl();
         if (!apiKey) return null;
@@ -96,6 +96,11 @@ export class LlmApiService implements AiProvider {
         try {
             const model = await this.getChatModel();
             this.logger.debug(`📡 LLMAPI Generate Request to ${baseUrl}/chat/completions`);
+
+            // Check if prompt is multimodal. For now LLMAPI might only handle text unless we map it.
+            // We'll treat it as text-only for now but match the signature.
+            const content = typeof prompt === 'string' ? prompt : prompt.map(p => p.text).join('\n');
+
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {
@@ -104,7 +109,7 @@ export class LlmApiService implements AiProvider {
                 },
                 body: JSON.stringify({
                     model,
-                    messages: [{ role: 'user', content: prompt }],
+                    messages: [{ role: 'user', content }],
                     temperature: 0.2,
                 }),
                 signal: AbortSignal.timeout(timeout),
@@ -123,13 +128,16 @@ export class LlmApiService implements AiProvider {
         }
     }
 
-    async reformat(systemPrompt: string, userQuery: string, kbContent: string): Promise<ChatResult | null> {
+    async reformat(systemPrompt: string, userQuery: string, kbContent: string, attachments?: AiPart[]): Promise<ChatResult | null> {
         const apiKey = await this.getApiKey();
         const baseUrl = await this.getBaseUrl();
         if (!apiKey) return null;
 
         try {
             const model = await this.getChatModel();
+
+            // Handle potential attachments by merging them into prompt as text for LLMAPI (if it doesn't support vision yet)
+            const attachmentStrings = attachments?.map(p => p.text).filter(Boolean).join('\n') || '';
 
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
@@ -144,6 +152,8 @@ export class LlmApiService implements AiProvider {
                         {
                             role: 'user', content: `KULLANICI SORUSU:
 ${userQuery}
+
+${attachmentStrings}
 
 ---
 
@@ -167,7 +177,7 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
         }
     }
 
-    async *streamReformat(systemPrompt: string, userQuery: string, kbContent: string): AsyncGenerator<string, void, unknown> {
+    async *streamReformat(systemPrompt: string, userQuery: string, kbContent: string, attachments?: AiPart[]): AsyncGenerator<string, void, unknown> {
         const apiKey = await this.getApiKey();
         const baseUrl = await this.getBaseUrl();
         if (!apiKey) {
@@ -177,6 +187,7 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
 
         try {
             const model = await this.getChatModel();
+            const attachmentStrings = attachments?.map(p => p.text).filter(Boolean).join('\n') || '';
 
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
@@ -191,6 +202,8 @@ Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan so
                         {
                             role: 'user', content: `KULLANICI SORUSU:
 ${userQuery}
+
+${attachmentStrings}
 
 ---
 

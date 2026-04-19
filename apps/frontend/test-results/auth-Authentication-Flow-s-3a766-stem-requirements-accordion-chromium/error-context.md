@@ -1,0 +1,65 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img "Aluplan Logo" [ref=e6]
+          - heading "Operasyonel Destek Geçidi" [level=1] [ref=e7]:
+            - img [ref=e8]
+            - text: Operasyonel Destek Geçidi
+        - generic [ref=e10]:
+          - generic [ref=e11]:
+            - button "TR" [ref=e12] [cursor=pointer]
+            - button "EN" [ref=e13] [cursor=pointer]
+            - button "DE" [ref=e14] [cursor=pointer]
+          - generic [ref=e17]: "SİSTEM_DURUMU: AKTİF"
+      - heading "SİSTEM_YAYINI // GÜNCEL_BİLDİRİMLER" [level=2] [ref=e19]
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - paragraph [ref=e23]: Aktif DB Düğümleri
+            - paragraph [ref=e24]: 1,402
+          - generic [ref=e25]:
+            - paragraph [ref=e26]: Hizmet Süresi (SLA)
+            - paragraph [ref=e27]: 99.99%
+        - generic [ref=e28]:
+          - generic [ref=e29]: Sertifikalı Altyapı
+          - img "Allplan Partner" [ref=e30]
+    - generic [ref=e31]:
+      - generic [ref=e32]:
+        - img [ref=e34]
+        - heading "ERİŞİM KAPISI" [level=2] [ref=e37]
+        - paragraph [ref=e38]: Telemetri okuma/yazma ve destek modülü erişimi için kimlik doğrulaması gereklidir.
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - generic [ref=e41] [cursor=pointer]:
+            - img [ref=e42]
+            - text: GİRİŞ YAP
+          - link "ERİŞİM_TALEBİ" [ref=e45] [cursor=pointer]:
+            - /url: /register
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - text: KİMLİK_BELİRTECİ [EPÖSTA]
+            - textbox "operator@aluplan.com" [ref=e48]
+          - generic [ref=e49]:
+            - generic [ref=e50]:
+              - generic [ref=e51]: DOĞRULAMA_ANAHTARI [ŞİFRE]
+              - generic [ref=e52] [cursor=pointer]: ANAHTAR_KURTAR?
+            - textbox "••••••••" [ref=e53]
+          - button "OTURUMU BAŞLAT" [ref=e54] [cursor=pointer]:
+            - generic [ref=e55]: OTURUMU BAŞLAT
+            - img [ref=e56]
+          - link "Hesabınız yok mu? Kayıt Ol" [ref=e60] [cursor=pointer]:
+            - /url: /register
+        - generic [ref=e61]:
+          - img [ref=e62]
+          - text: Bağlantılar Aluplan Sec-Net üzerinden izlenmektedir
+  - region "Notifications (F8)":
+    - list
+  - alert [ref=e64]
+  - button "Open Next.js Dev Tools" [ref=e70] [cursor=pointer]:
+    - img [ref=e71]
+```

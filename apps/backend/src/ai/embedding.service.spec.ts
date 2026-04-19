@@ -20,6 +20,9 @@ describe('EmbeddingService', () => {
             knowledgeArticle: {
                 findMany: jest.fn(),
             },
+            knowledgePoolEmbedding: {
+                findFirst: jest.fn(),
+            }
         };
 
         mockAiService = {

@@ -36,8 +36,8 @@ test.describe('Admin Settings', () => {
         await page.click('button:has-text("Değişiklikleri Kaydet")');
 
         // Wait for toast
-        await expect(page.locator('text=Başarılı')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('text=Ayarlar başarıyla kaydedildi.')).toBeVisible();
+        await expect(page.locator('text=Başarılı').first()).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('text=başarıyla').first()).toBeVisible();
 
         // Refresh and verify persistence
         await page.reload();

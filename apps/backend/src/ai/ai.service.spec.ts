@@ -5,6 +5,8 @@ import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
+import { VertexAiService } from './vertex-ai.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('AiService', () => {
     let service: AiService;
@@ -39,6 +41,8 @@ describe('AiService', () => {
                 { provide: OpenAiService, useValue: mockOtherProviders },
                 { provide: GenericOpenAiService, useValue: mockOtherProviders },
                 { provide: LlmApiService, useValue: mockOtherProviders },
+                { provide: VertexAiService, useValue: mockOtherProviders },
+                { provide: EventEmitter2, useValue: { emit: jest.fn() } },
             ],
         }).compile();
 

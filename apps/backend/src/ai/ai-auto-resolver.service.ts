@@ -28,7 +28,12 @@ export class AiAutoResolverService {
             this.logger.log(`🤖 Attempting auto-resolution for ticket ${ticket.ticketNumber}`);
 
             const channelStr: any = ticket.channel || 'WEB';
-            const result = await this.aiQueryService.query(queryText, ticket.userId ?? undefined, channelStr, ticket.hotinfoSnapshot);
+            const result = await this.aiQueryService.query({
+                userQuery: queryText,
+                userId: ticket.userId ?? undefined,
+                channel: channelStr,
+                hotinfoContext: ticket.hotinfoSnapshot
+            });
 
             if (result.confidence === 'HIGH' && result.answer) {
                 this.logger.log(`✍️ Creating Draft for ticket ${ticket.ticketNumber} with HIGH confidence AI response.`);

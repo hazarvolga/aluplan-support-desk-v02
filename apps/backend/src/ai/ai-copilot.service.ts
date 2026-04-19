@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
+import { AiPart } from './interfaces/ai-provider.interface';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { EmbeddingService } from './embedding.service';
 
@@ -25,7 +26,10 @@ export class AiCopilotService {
                 messages: {
                     orderBy: { createdAt: 'desc' },
                     take: 10,
-                    include: { sender: { select: { fullName: true } } }
+                    include: {
+                        sender: { select: { fullName: true } },
+                        attachments: true
+                    }
                 },
                 interaction: true,
                 creator: {
@@ -99,8 +103,24 @@ RULES:
 RESPONSE DRAFT:`;
 
 
-        this.logger.log(`🤖 Generating AI draft for ticket ${ticket.ticketNumber}...`);
-        const response = await this.ai.generate(prompt, 60_000);
+        this.logger.log(`🤖 Generating AI vision-augmented draft for ticket ${ticket.ticketNumber}...`);
+
+        // Collect all image attachments from recent messages
+        const aiParts: AiPart[] = [];
+        for (const msg of ticket.messages) {
+            for (const att of msg.attachments || []) {
+                if (att.mimeType?.startsWith('image/')) {
+                    aiParts.push({
+                        fileData: {
+                            mimeType: att.mimeType,
+                            fileUri: att.url // This should be the R2 public/signed URL
+                        }
+                    });
+                }
+            }
+        }
+
+        const response = await this.ai.generate(prompt, 60_000, aiParts);
 
         return {
             draft: response || 'Draft could not be generated. Please check AI settings in the Admin panel.',

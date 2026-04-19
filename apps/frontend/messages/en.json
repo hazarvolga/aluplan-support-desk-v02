@@ -585,6 +585,8 @@
     "search": {
       "placeholder": "Search customer or company..."
     },
+    "externalAccountId": "External ID",
+    "externalId": "External ID",
     "labels": {
       "status": "Status",
       "active": "ACTIVE",
@@ -807,6 +809,7 @@
       "security": "Security & API"
     },
     "toasts": {
+      "success": "Success",
       "save_success": "{key} successfully updated.",
       "save_error": "Error: {message}",
       "load_error": "Data could not be loaded: {message}",
@@ -2047,7 +2050,7 @@
         "subject_label": "Email Subject Line",
         "subject_placeholder": "Subject that will appear to customer",
         "content_label": "Rich Text Content",
-        "default_content": "<p>Hello {{customer.name}}!</p><p>Announcement content will go here...</p>",
+        "default_content": "<p>Hello [customer.name]!</p><p>Announcement content will go here...</p>",
         "preview": "Preview",
         "save_draft": "Protocol Draft"
       },
@@ -3446,7 +3449,7 @@
       "subject_label": "Email Subject Line",
       "subject_placeholder": "Subject that will appear to customer",
       "content_label": "Rich Text Content",
-      "default_content": "<p>Hello {{customer.name}}!</p><p>Announcement content will go here...</p>",
+      "default_content": "<p>Hello [customer.name]!</p><p>Announcement content will go here...</p>",
       "preview": "Preview",
       "save_draft": "Protocol Draft"
     },

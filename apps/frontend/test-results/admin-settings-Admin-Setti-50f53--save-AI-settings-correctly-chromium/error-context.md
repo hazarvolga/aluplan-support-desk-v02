@@ -1,0 +1,279 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - img [ref=e8]
+          - generic [ref=e12]:
+            - generic [ref=e13]: Aluplan
+            - generic [ref=e14]: Destek Masası
+        - navigation [ref=e15]:
+          - link "Kontrol Paneli" [ref=e16] [cursor=pointer]:
+            - /url: /tr/dashboard
+            - generic [ref=e17]:
+              - img [ref=e18]
+              - generic [ref=e23]: Kontrol Paneli
+          - link "Destek Talepleri" [ref=e24] [cursor=pointer]:
+            - /url: /tr/tickets
+            - generic [ref=e25]:
+              - img [ref=e26]
+              - generic [ref=e28]: Destek Talepleri
+          - generic [ref=e29]:
+            - heading "BİLGİ BANKASI" [level=4] [ref=e30]
+            - generic [ref=e31]:
+              - link "Makaleler" [ref=e32] [cursor=pointer]:
+                - /url: /tr/knowledge-base
+                - generic [ref=e33]:
+                  - img [ref=e34]
+                  - generic [ref=e36]: Makaleler
+              - link "YZE Onayları" [ref=e37] [cursor=pointer]:
+                - /url: /tr/kb-approvals
+                - generic [ref=e38]:
+                  - img [ref=e39]
+                  - generic [ref=e43]: YZE Onayları
+          - generic [ref=e44]:
+            - heading "BİLGİ HAVUZU" [level=4] [ref=e45]
+            - generic [ref=e46]:
+              - link "Veri Kaynakları" [ref=e47] [cursor=pointer]:
+                - /url: /tr/knowledge-pool
+                - generic [ref=e48]:
+                  - img [ref=e49]
+                  - generic [ref=e53]: Veri Kaynakları
+              - link "Öğrenme Döngüsü" [ref=e54] [cursor=pointer]:
+                - /url: /tr/faq-learning
+                - generic [ref=e55]:
+                  - img [ref=e56]
+                  - generic [ref=e66]: Öğrenme Döngüsü
+              - link "Sistem Topolojisi" [ref=e67] [cursor=pointer]:
+                - /url: /tr/system-topology
+                - generic [ref=e68]:
+                  - img [ref=e69]
+                  - generic [ref=e71]: Sistem Topolojisi
+          - generic [ref=e72]:
+            - heading "SİSTEM" [level=4] [ref=e73]
+            - generic [ref=e74]:
+              - link "YZE Yapılandırması" [ref=e75] [cursor=pointer]:
+                - /url: /tr/ai
+                - generic [ref=e76]:
+                  - img [ref=e77]
+                  - generic [ref=e80]: YZE Yapılandırması
+              - link "Müşteriler" [ref=e81] [cursor=pointer]:
+                - /url: /tr/customers
+                - generic [ref=e82]:
+                  - img [ref=e83]
+                  - generic [ref=e88]: Müşteriler
+              - link "CRM Yönetimi" [ref=e89] [cursor=pointer]:
+                - /url: /tr/customers/crm
+                - generic [ref=e90]:
+                  - img [ref=e91]
+                  - generic [ref=e94]: CRM Yönetimi
+              - link "Ürünler ve Modüller" [ref=e95] [cursor=pointer]:
+                - /url: /tr/products
+                - generic [ref=e96]:
+                  - img [ref=e97]
+                  - generic [ref=e101]: Ürünler ve Modüller
+              - link "Destek Ekiplerim" [ref=e102] [cursor=pointer]:
+                - /url: /tr/teams
+                - generic [ref=e103]:
+                  - img [ref=e104]
+                  - generic [ref=e109]: Destek Ekiplerim
+              - link "Duyurular" [ref=e110] [cursor=pointer]:
+                - /url: /tr/admin/announcements
+                - generic [ref=e111]:
+                  - img [ref=e112]
+                  - generic [ref=e115]: Duyurular
+              - link "E-postalar" [ref=e116] [cursor=pointer]:
+                - /url: /tr/admin/emails
+                - generic [ref=e117]:
+                  - img [ref=e118]
+                  - generic [ref=e121]: E-postalar
+              - link "YZE Sağlığı ve Telemetri" [ref=e122] [cursor=pointer]:
+                - /url: /tr/admin/ai-health
+                - generic [ref=e123]:
+                  - img [ref=e124]
+                  - generic [ref=e126]: YZE Sağlığı ve Telemetri
+              - link "E-posta Doğrulama" [ref=e127] [cursor=pointer]:
+                - /url: /tr/admin/email-validation
+                - generic [ref=e128]:
+                  - img [ref=e129]
+                  - generic [ref=e133]: E-posta Doğrulama
+              - link "Kullanıcı Yönetimi" [ref=e134] [cursor=pointer]:
+                - /url: /tr/users
+                - generic [ref=e135]:
+                  - img [ref=e136]
+                  - generic [ref=e139]: Kullanıcı Yönetimi
+              - link "Ayarlar" [ref=e140] [cursor=pointer]:
+                - /url: /tr/admin/settings
+                - generic [ref=e141]:
+                  - img [ref=e142]
+                  - generic [ref=e145]: Ayarlar
+          - link "Yardım ve Destek" [ref=e146] [cursor=pointer]:
+            - /url: /tr/help
+            - generic [ref=e147]:
+              - img [ref=e148]
+              - generic [ref=e151]: Yardım ve Destek
+          - link "Profilim" [ref=e152] [cursor=pointer]:
+            - /url: /tr/profile
+            - generic [ref=e153]:
+              - img [ref=e154]
+              - generic [ref=e157]: Profilim
+        - generic [ref=e158]:
+          - generic [ref=e159]:
+            - button "TR" [ref=e160] [cursor=pointer]
+            - button "EN" [ref=e161] [cursor=pointer]
+            - button "DE" [ref=e162] [cursor=pointer]
+          - button "Güvenli Çıkış" [ref=e163] [cursor=pointer]:
+            - img [ref=e164]
+            - generic [ref=e167]: Güvenli Çıkış
+    - main [ref=e168]:
+      - generic [ref=e170]:
+        - generic [ref=e171]:
+          - heading "Sistem Ayarları" [level=1] [ref=e172]
+          - paragraph [ref=e173]: Platform genelindeki yapılandırmaları ve entegrasyonları yönetin.
+        - generic [ref=e174]:
+          - tablist [ref=e175]:
+            - tab "Genel" [ref=e176] [cursor=pointer]:
+              - img [ref=e177]
+              - text: Genel
+            - tab "YZE" [active] [selected] [ref=e180] [cursor=pointer]:
+              - img [ref=e181]
+              - text: YZE
+            - tab "E-posta" [ref=e184] [cursor=pointer]:
+              - img [ref=e185]
+              - text: E-posta
+            - tab "WhatsApp" [ref=e188] [cursor=pointer]:
+              - img [ref=e189]
+              - text: WhatsApp
+            - tab "SLA" [ref=e191] [cursor=pointer]:
+              - img [ref=e192]
+              - text: SLA
+            - tab "Markalama" [ref=e195] [cursor=pointer]:
+              - img [ref=e196]
+              - text: Markalama
+            - tab "Sistem Gereksinimleri" [ref=e202] [cursor=pointer]: Sistem Gereksinimleri
+          - tabpanel "YZE" [ref=e205]:
+            - generic [ref=e206]:
+              - generic [ref=e207]:
+                - heading "AI Sağlık & Performans Paneli" [level=3] [ref=e208]:
+                  - img [ref=e209]
+                  - text: AI Sağlık & Performans Paneli
+                - generic [ref=e212]:
+                  - button "S3 Bağlantısı Testi" [ref=e213] [cursor=pointer]:
+                    - img [ref=e214]
+                    - text: S3 Bağlantısı Testi
+                  - button "Haftalık Raporu Şimdi Gönder" [ref=e217] [cursor=pointer]:
+                    - img [ref=e218]
+                    - text: Haftalık Raporu Şimdi Gönder
+              - generic [ref=e221]:
+                - generic [ref=e223]:
+                  - generic [ref=e224]:
+                    - paragraph [ref=e225]: Toplam İstek
+                    - img [ref=e226]
+                  - generic [ref=e228]: "0"
+                - generic [ref=e230]:
+                  - generic [ref=e231]:
+                    - paragraph [ref=e232]: Toplam Token
+                    - img [ref=e233]
+                  - generic [ref=e236]: "0"
+                - generic [ref=e238]:
+                  - generic [ref=e239]:
+                    - paragraph [ref=e240]: Yaklaşık Maliyet
+                    - img [ref=e241]
+                  - generic [ref=e246]: $0.0000
+                - generic [ref=e248]:
+                  - generic [ref=e249]:
+                    - paragraph [ref=e250]: Aktif Modeller
+                    - img [ref=e251]
+                  - generic [ref=e254]: Bilinmiyor
+              - generic [ref=e255]:
+                - generic [ref=e256]:
+                  - generic [ref=e257]:
+                    - heading "Performans Trendleri (Son 7 Gün)" [level=3] [ref=e258]:
+                      - img [ref=e259]
+                      - text: Performans Trendleri (Son 7 Gün)
+                    - paragraph [ref=e262]: AI doğruluğu ve savuşturma oranlarının zaman içindeki değişimi.
+                  - generic [ref=e264]: Trend analizi için yeterli veri henüz toplanmadı.
+                - generic [ref=e265]:
+                  - generic [ref=e266]:
+                    - heading "Bilgi Havuzu Boşlukları" [level=3] [ref=e267]:
+                      - img [ref=e268]
+                      - text: Bilgi Havuzu Boşlukları
+                    - paragraph [ref=e270]: Cevaplanamayan en popüler kullanıcı soruları.
+                  - generic [ref=e272]: Belirgin bir bilgi boşluğu tespit edilmedi.
+            - generic [ref=e273]:
+              - generic [ref=e274]:
+                - heading "Yapay Zeka Entegrasyonu" [level=3] [ref=e275]
+                - paragraph [ref=e276]: Grok (xAI), DeepSeek, OpenAI veya Ollama servislerini yapılandırın.
+              - generic [ref=e277]:
+                - generic [ref=e278]:
+                  - generic [ref=e279]:
+                    - generic [ref=e280]:
+                      - img [ref=e281]
+                      - heading "Auto-Fallback & Live Routing" [level=3] [ref=e284]
+                    - paragraph [ref=e285]: Ana AI modeli çöktüğünde veya hız limitine takıldığında, konuşmalar ve işlemler hataya düşmeden otomatik olarak belirlediğiniz 'Fallback' (Yedek) modeline devredilir.
+                  - generic [ref=e286]:
+                    - generic [ref=e287]:
+                      - generic [ref=e288]: Primary
+                      - generic [ref=e289]: DOWN
+                    - generic [ref=e291]:
+                      - generic [ref=e292]: Fallback
+                      - generic [ref=e293]: "OFF"
+                - generic [ref=e295]:
+                  - generic [ref=e296]:
+                    - generic [ref=e297]:
+                      - heading "1. Primary AI" [level=4] [ref=e298]
+                      - generic [ref=e299]: ACTIVE
+                    - generic [ref=e300]:
+                      - text: Varsayılan Sohbet Sağlayıcısı
+                      - combobox [ref=e301] [cursor=pointer]:
+                        - generic: OpenAI (Bulut - Önerilen)
+                        - img [ref=e302]
+                    - generic [ref=e304]:
+                      - text: Varsayılan Vektörleştirme Sağlayıcısı
+                      - combobox [ref=e305] [cursor=pointer]:
+                        - generic: OpenAI (Bulut - Önerilen)
+                        - img [ref=e306]
+                  - generic [ref=e308]:
+                    - generic [ref=e309]:
+                      - heading "2. Fallback AI" [level=4] [ref=e310]
+                      - generic [ref=e311]: STANDBY
+                    - generic [ref=e312]:
+                      - generic [ref=e313]:
+                        - img [ref=e314]
+                        - text: FALLBACK CHAT
+                      - combobox [ref=e317] [cursor=pointer]:
+                        - generic: "-- Devre Dışı --"
+                        - img [ref=e318]
+                    - generic [ref=e320]:
+                      - generic [ref=e321]:
+                        - img [ref=e322]
+                        - text: FALLBACK EMBED
+                      - combobox [ref=e326] [cursor=pointer]:
+                        - generic: "-- Devre Dışı --"
+                        - img [ref=e327]
+                - generic [ref=e330]:
+                  - generic [ref=e331]:
+                    - heading "OpenAI (Bulut)" [level=3] [ref=e332]:
+                      - img [ref=e333]
+                      - text: OpenAI (Bulut)
+                    - button "Bağlantıyı Test Et" [ref=e336] [cursor=pointer]
+                  - generic [ref=e337]:
+                    - text: API Anahtarı
+                    - textbox "sk-..." [ref=e338]: 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
+                  - generic [ref=e339]:
+                    - generic [ref=e340]:
+                      - text: Sohbet Modeli
+                      - textbox "gpt-4o-mini" [ref=e341]
+                    - generic [ref=e342]:
+                      - text: Vektör Modeli
+                      - textbox "text-embedding-3-small" [ref=e343]
+                - button "Değişiklikleri Kaydet" [ref=e345] [cursor=pointer]
+  - region "Notifications (F8)":
+    - list
+  - alert [ref=e346]
+  - button "Open Next.js Dev Tools" [ref=e352] [cursor=pointer]:
+    - img [ref=e353]
+```

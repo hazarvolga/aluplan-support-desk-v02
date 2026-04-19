@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
-import { AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
+import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
 
 @Injectable()
 export class GenericOpenAiService implements AiProvider {
@@ -119,7 +119,7 @@ export class GenericOpenAiService implements AiProvider {
         }
     }
 
-    async generate(prompt: string, timeout = 30_000): Promise<string | null> {
+    async generate(prompt: string | AiPart[], timeout = 30_000): Promise<string | null> {
         const baseUrl = await this.getBaseUrl();
         const apiKey = await this.getApiKey();
         const model = await this.getModel();
@@ -129,6 +129,10 @@ export class GenericOpenAiService implements AiProvider {
         try {
             this.validateApiKey(baseUrl, apiKey);
 
+            // Generic OpenAI handles content as string usually, but multi-part content is becoming standard.
+            // For now we'll pass text-only from parts to stay safe with older standard providers.
+            const content = typeof prompt === 'string' ? prompt : prompt.map(p => p.text).join('\n');
+
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {
@@ -137,7 +141,7 @@ export class GenericOpenAiService implements AiProvider {
                 },
                 body: JSON.stringify({
                     model,
-                    messages: [{ role: 'user', content: prompt }],
+                    messages: [{ role: 'user', content }],
                     temperature: 0.2,
                 }),
                 signal: AbortSignal.timeout(timeout),
@@ -162,7 +166,7 @@ export class GenericOpenAiService implements AiProvider {
         }
     }
 
-    async reformat(systemPrompt: string, userQuery: string, kbContent: string): Promise<ChatResult | null> {
+    async reformat(systemPrompt: string, userQuery: string, kbContent: string, attachments?: AiPart[]): Promise<ChatResult | null> {
         const baseUrl = await this.getBaseUrl();
         const apiKey = await this.getApiKey();
         const model = await this.getModel();
@@ -171,6 +175,8 @@ export class GenericOpenAiService implements AiProvider {
 
         try {
             this.validateApiKey(baseUrl, apiKey);
+
+            const attachmentStrings = attachments?.map(p => p.text).filter(Boolean).join('\n') || '';
 
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
@@ -185,6 +191,8 @@ export class GenericOpenAiService implements AiProvider {
                         {
                             role: 'user', content: `KULLANICI SORUSU:
 ${userQuery}
+
+${attachmentStrings}
 
 ---
 

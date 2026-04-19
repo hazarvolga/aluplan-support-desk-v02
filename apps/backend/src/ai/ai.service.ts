@@ -5,7 +5,8 @@ import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
-import { AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
+import { VertexAiService } from './vertex-ai.service';
+import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
 
 @Injectable()
 export class AiService implements AiProvider {
@@ -21,6 +22,7 @@ export class AiService implements AiProvider {
         private readonly openai: OpenAiService,
         private readonly custom: GenericOpenAiService,
         private readonly llmapi: LlmApiService,
+        private readonly vertex: VertexAiService,
         private readonly eventEmitter: EventEmitter2,
     ) { }
 
@@ -108,8 +110,9 @@ export class AiService implements AiProvider {
         throw lastError || new Error('All AI providers failed');
     }
 
-    private async getProviderByName(providerName: string | null): Promise<AiProvider | null> {
+    public async getProviderByName(providerName: string | null): Promise<AiProvider | null> {
         if (providerName === 'openai') return this.openai;
+        if (providerName === 'vertex') return this.vertex;
         if (providerName === 'custom' || providerName === 'xai' || providerName === 'deepseek' || providerName === 'groq') {
             this.custom.setProvider(providerName as any);
             return this.custom;
@@ -177,8 +180,13 @@ export class AiService implements AiProvider {
         });
     }
 
-    async generate(prompt: string, timeout?: number): Promise<string | null> {
+    async generate(prompt: string | AiPart[], timeout?: number, attachments?: AiPart[]): Promise<string | null> {
         return this.executeWithFallback('chat', 'general', async (provider) => {
+            // If attachments are provided and prompt is a string, combine them
+            if (attachments && attachments.length > 0 && typeof prompt === 'string') {
+                const parts: AiPart[] = [{ text: prompt }, ...attachments];
+                return provider.generate(parts, timeout);
+            }
             return provider.generate(prompt, timeout);
         });
     }
@@ -206,14 +214,14 @@ export class AiService implements AiProvider {
         return (await this.settings.getValue('ai.chat_provider')) || 'ollama';
     }
 
-    async reformat(systemPrompt: string, userQuery: string, sourceContext: string, task: string = 'reformatting'): Promise<{ response: string; model: string } | null> {
+    async reformat(systemPrompt: string, userQuery: string, sourceContext: string, attachments?: AiPart[], task: string = 'reformatting'): Promise<{ response: string; model: string } | null> {
         return this.executeWithFallback('chat', task, async (provider) => {
-            const result = await provider.reformat(systemPrompt, userQuery, sourceContext);
+            const result = await provider.reformat(systemPrompt, userQuery, sourceContext, attachments);
             return result?.response ? result : null;
         });
     }
 
-    async *streamReformat(systemPrompt: string, userQuery: string, sourceContext: string, task: string = 'reformatting'): AsyncGenerator<string, void, unknown> {
+    async *streamReformat(systemPrompt: string, userQuery: string, sourceContext: string, attachments?: AiPart[], task: string = 'reformatting'): AsyncGenerator<string, void, unknown> {
         if (!await this.isCircuitClosed()) {
             yield 'AI servisi şu anda devre dışı (Circuit Breaker).';
             return;
@@ -231,13 +239,13 @@ export class AiService implements AiProvider {
                 let yieldedAnything = false;
 
                 if (provider.streamReformat) {
-                    const generator = provider.streamReformat(systemPrompt, userQuery, sourceContext);
+                    const generator = provider.streamReformat(systemPrompt, userQuery, sourceContext, attachments);
                     for await (const chunk of generator) {
                         yieldedAnything = true;
                         yield chunk;
                     }
                 } else {
-                    const result = await provider.reformat(systemPrompt, userQuery, sourceContext);
+                    const result = await provider.reformat(systemPrompt, userQuery, sourceContext, attachments);
                     if (result?.response) {
                         yield result.response;
                         yieldedAnything = true;
@@ -327,6 +335,7 @@ ${content}
                 case 'ollama': return await this.ollama.testConnection();
                 case 'openai': return await this.openai.testConnection();
                 case 'llmapi': return await this.llmapi.testConnection();
+                case 'vertex': return await this.vertex.testConnection();
                 case 'xai':
                     this.custom.setProvider('xai');
                     return await this.custom.testConnection();

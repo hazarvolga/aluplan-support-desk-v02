@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
+import { AiPart } from './interfaces/ai-provider.interface';
 import { EmbeddingService, SearchResult, SearchResponse } from './embedding.service';
 import { Prisma, TicketMessage, CommunicationChannel } from '@aluplan/database';
 import { ConfigService } from '@nestjs/config';
@@ -17,6 +18,14 @@ import { RagObservabilityService } from './rag-observability.service';
 
 // Confidence bands — LOW/HIGH/MEDIUM from schema, NO_MATCH is local
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
+
+export interface AiQueryOptions {
+    userQuery: string;
+    userId?: string | null;
+    channel?: CommunicationChannel;
+    hotinfoContext?: any;
+    attachments?: any[];
+}
 
 export interface AiQueryResult {
     query: string;
@@ -95,7 +104,8 @@ export class AiQueryService {
         this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.70'));
     }
 
-    async query(userQuery: string, userId?: string | null, channel: CommunicationChannel = 'WEB', hotinfoContext?: any): Promise<AiQueryResult> {
+    async query(options: AiQueryOptions): Promise<AiQueryResult> {
+        const { userQuery, userId, channel = 'WEB', hotinfoContext, attachments } = options;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
         const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
@@ -132,6 +142,21 @@ export class AiQueryService {
         // 2. Semantic search
         const searchResponse: SearchResponse = await this.embeddingService.search(expandedQuery, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, null, isStaff);
         let results = searchResponse.results;
+
+        // 3. Vertex AI Data Store Hybrid Merge
+        try {
+            const vertexSearch = await (this.ai as any).getProviderByName('vertex');
+            if (vertexSearch && typeof vertexSearch.searchDataStore === 'function') {
+                const vertexResults = await vertexSearch.searchDataStore(userQuery);
+                if (vertexResults && vertexResults.length > 0) {
+                    // Prepend Vertex results with supreme priority
+                    results = [...vertexResults, ...results];
+                    this.logger.log(`🔗 Hybrid Merge: Extracted ${vertexResults.length} precise chunks from Vertex Data Store`);
+                }
+            }
+        } catch (e) {
+            this.logger.warn(`⚠️ Vertex Hybrid Merge skipped: ${e.message}`);
+        }
 
         // Heuristic Re-ranking
         results = this.rerankResults(results);
@@ -199,11 +224,23 @@ export class AiQueryService {
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
                 userQuery,
-                kbContent: results.map(r => r.content).join('\n\n---\n\n'),
+                kbContent: results.slice(0, 10).map(r => r.content).join('\n\n---\n\n'),
                 skipHotinfoProfile: true,
             });
             const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
-            const aiResult = await this.ai.reformat(finalPrompt, userQuery, results.map(r => r.content).join('\n\n'));
+
+            // Map attachments to AiPart format
+            const aiParts: AiPart[] = attachments?.map(att => {
+                if (att.url) {
+                    return { fileData: { mimeType: att.mimeType || 'image/png', fileUri: att.url } };
+                }
+                if (att.data) {
+                    return { inlineData: { mimeType: att.mimeType || 'image/png', data: att.data } };
+                }
+                return { text: att.text || '' };
+            }).filter(p => !!p.fileData || !!p.inlineData || !!p.text) || [];
+
+            const aiResult = await this.ai.reformat(finalPrompt, userQuery, results.slice(0, 10).map(r => r.content).join('\n\n'), aiParts);
             answer = aiResult?.response ?? results[0].content;
 
             // Langfuse trace
@@ -361,7 +398,8 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             .slice(0, RAG_CONFIG.SEARCH.DEFAULT_LIMIT);
     }
 
-    async * streamQuery(userQuery: string, userId?: string | null, channel: CommunicationChannel = 'WEB', hotinfoContext?: any): AsyncGenerator<any, void, unknown> {
+    async * streamQuery(options: AiQueryOptions): AsyncGenerator<any, void, unknown> {
+        const { userQuery, userId, channel = 'WEB', hotinfoContext, attachments } = options;
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
         const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
@@ -410,13 +448,19 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
                 userQuery,
-                kbContent: results.map(r => r.content).join('\n\n---\n\n'),
+                kbContent: results.slice(0, 10).map(r => r.content).join('\n\n---\n\n'),
                 skipHotinfoProfile: true,
             });
             const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
             usedPrompt = finalPrompt;
 
-            const stream = this.ai.streamReformat(finalPrompt, userQuery, results.map(r => r.content).join('\n\n'));
+            const aiParts: AiPart[] = attachments?.map(att => {
+                if (att.url) return { fileData: { mimeType: att.mimeType || 'image/png', fileUri: att.url } };
+                if (att.data) return { inlineData: { mimeType: att.mimeType || 'image/png', data: att.data } };
+                return { text: att.text || '' };
+            }).filter(p => !!p.fileData || !!p.inlineData || !!p.text) || [];
+
+            const stream = this.ai.streamReformat(finalPrompt, userQuery, results.slice(0, 10).map(r => r.content).join('\n\n'), aiParts);
             for await (const chunk of stream) {
                 fullAnswer += chunk;
                 yield { chunk };

@@ -138,7 +138,7 @@ describe('AiQueryService', () => {
             // Mock user role
             mockPrismaService.user.findUnique.mockResolvedValue({ role: 'USER' });
 
-            const result = await service.query(customerQuery, 'session-123');
+            const result = await service.query({ userQuery: customerQuery, userId: 'session-123' });
 
             expect(result.answer).toContain('Here is how to create a roof');
             expect(result.confidence).toBe('HIGH');
@@ -173,7 +173,7 @@ describe('AiQueryService', () => {
             mockPrismaService.user.findUnique.mockResolvedValue({ role: 'USER' });
 
             // Even though it found something, threshold logic should reject it.
-            const result = await service.query(customerQuery, 'session-456');
+            const result = await service.query({ userQuery: customerQuery, userId: 'session-456' });
 
             expect(result.answer).toContain('Bu konu mevcut bilgi kaynağında yer almıyor');
             expect(result.confidence).toBe('NO_MATCH');

@@ -75,7 +75,7 @@ describe('AiQueryService.streamQuery() — Property-Based Tests', () => {
                     });
 
                     const chunks: any[] = [];
-                    for await (const chunk of service.streamQuery('test query')) {
+                    for await (const chunk of service.streamQuery({ userQuery: 'test query' })) {
                         chunks.push(chunk);
                     }
 
@@ -95,7 +95,7 @@ describe('AiQueryService.streamQuery() — Property-Based Tests', () => {
         });
 
         const chunks: any[] = [];
-        for await (const chunk of service.streamQuery('test query')) {
+        for await (const chunk of service.streamQuery({ userQuery: 'test query' })) {
             chunks.push(chunk);
         }
 
@@ -116,7 +116,7 @@ describe('AiQueryService.streamQuery() — Property-Based Tests', () => {
                     });
 
                     const chunks: any[] = [];
-                    for await (const chunk of service.streamQuery('test query')) {
+                    for await (const chunk of service.streamQuery({ userQuery: 'test query' })) {
                         chunks.push(chunk);
                     }
 

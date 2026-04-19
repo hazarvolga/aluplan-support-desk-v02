@@ -18,7 +18,8 @@ export class SettingsService {
     async upsert(dto: UpsertSettingDto, userId?: string) {
         // AI Validation Logic
         if (dto.key.startsWith('ai.')) {
-            await this.validateAiSetting(dto.key, dto.value);
+            const context = new Map([[dto.key, dto.value]]);
+            await this.validateAiSetting(dto.key, dto.value, context);
         }
 
         // Guard: Do not overwrite existing secrets with the masked placeholder
@@ -54,51 +55,63 @@ export class SettingsService {
         return setting;
     }
 
-    private async validateAiSetting(key: string, value: string) {
+    private async validateAiSetting(key: string, value: string, context?: Map<string, string>) {
+        const getVal = async (k: string) => context?.get(k) ?? await this.getValue(k);
+
         // 1. If key is a provider switch, check if its models are configured
         if (key === 'ai.chat_provider' || key === 'ai.embed_provider' || key.startsWith('ai.specialized.')) {
             const providerToValidate = value;
 
             if (providerToValidate === 'ollama') {
-                const url = await this.getValue('ai.ollama.url');
-                const chatModel = await this.getValue('ai.ollama.chat_model');
-                const embedModel = await this.getValue('ai.ollama.embed_model');
+                const url = await getVal('ai.ollama.url');
+                const chatModel = await getVal('ai.ollama.chat_model');
+                const embedModel = await getVal('ai.ollama.embed_model');
                 if (!url || !chatModel || !embedModel) {
                     throw new Error(`Ollama yapılandırması eksik (URL, Chat Model veya Embed Model).`);
                 }
             }
             if (providerToValidate === 'openai') {
-                const apiKey = await this.getValue('ai.openai.api_key');
-                const chatModel = await this.getValue('ai.openai.chat_model');
-                const embedModel = await this.getValue('ai.openai.embed_model');
+                const apiKey = await getVal('ai.openai.api_key');
+                const chatModel = await getVal('ai.openai.chat_model');
+                const embedModel = await getVal('ai.openai.embed_model');
                 if (!apiKey || !chatModel || !embedModel) {
                     throw new Error(`OpenAI yapılandırması eksik (API Key, Chat Model veya Embed Model).`);
                 }
             }
             if (providerToValidate === 'anthropic') {
-                const apiKey = await this.getValue('ai.anthropic.api_key');
-                const chatModel = await this.getValue('ai.anthropic.chat_model');
+                const apiKey = await getVal('ai.anthropic.api_key');
+                const chatModel = await getVal('ai.anthropic.chat_model');
                 if (!apiKey || !chatModel) {
                     throw new Error(`Anthropic yapılandırması eksik (API Key veya Chat Model).`);
                 }
             }
             if (providerToValidate === 'gemini') {
-                const apiKey = await this.getValue('ai.gemini.api_key');
-                const chatModel = await this.getValue('ai.gemini.chat_model');
+                const apiKey = await getVal('ai.gemini.api_key');
+                const chatModel = await getVal('ai.gemini.chat_model');
                 if (!apiKey || !chatModel) {
                     throw new Error(`Gemini yapılandırması eksik (API Key veya Chat Model).`);
+                }
+            }
+            if (providerToValidate === 'vertex') {
+                const projectId = await getVal('ai.vertex.project_id');
+                const chatModel = await getVal('ai.vertex.chat_model');
+                // credentials_json is optional if using ADC, but project_id is required in our UI flow
+                if (!projectId || !chatModel) {
+                    throw new Error(`Google Vertex AI yapılandırması eksik (GCP Project ID veya Chat Model).`);
                 }
             }
         }
 
         // 2. If key is a model field being emptied, check if it's the active provider or used in specialized mappings
-        if (key.endsWith('.chat_model') || key.endsWith('.embed_model') || key.endsWith('.api_key')) {
-            if (!value || value.trim() === '') {
+        if (key.endsWith('.chat_model') || key.endsWith('.embed_model') || key.endsWith('.api_key') || key.endsWith('.project_id') || key.endsWith('.credentials_json')) {
+            if (!value || value.trim() === '' || value === '********') {
+                if (value === '********') return; // Valid masked secret
+
                 const parts = key.split('.');
                 const providerName = parts[1]; // e.g. 'openai' from 'ai.openai.chat_model'
 
-                const currentChat = await this.getValue('ai.chat_provider');
-                const currentEmbed = await this.getValue('ai.embed_provider');
+                const currentChat = await getVal('ai.chat_provider');
+                const currentEmbed = await getVal('ai.embed_provider');
 
                 // Also check specialized mappings
                 const specializedKeys = [
@@ -111,7 +124,7 @@ export class SettingsService {
 
                 let isUsedInSpecialized = false;
                 for (const sKey of specializedKeys) {
-                    if (await this.getValue(sKey) === providerName) {
+                    if (await getVal(sKey) === providerName) {
                         isUsedInSpecialized = true;
                         break;
                     }
@@ -203,10 +216,11 @@ export class SettingsService {
     }
 
     async bulkUpsert(dto: BulkUpsertSettingDto, userId?: string) {
-        // Run validations first
+        // Run validations first with full context of this request
+        const context = new Map<string, string>(dto.settings.map(s => [s.key, s.value]));
         for (const item of dto.settings) {
             if (item.key.startsWith('ai.')) {
-                await this.validateAiSetting(item.key, item.value);
+                await this.validateAiSetting(item.key, item.value, context);
             }
         }
 

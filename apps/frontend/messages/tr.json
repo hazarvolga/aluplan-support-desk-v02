@@ -585,6 +585,8 @@
     "search": {
       "placeholder": "Müşteri veya şirket ara..."
     },
+    "externalAccountId": "Harici ID",
+    "externalId": "Harici ID",
     "labels": {
       "status": "Durum",
       "active": "AKTİF",
@@ -807,6 +809,7 @@
       "security": "Güvenlik & API"
     },
     "toasts": {
+      "success": "Başarılı",
       "save_success": "{key} başarıyla güncellendi.",
       "save_error": "Hata: {message}",
       "load_error": "Veriler yüklenemedi: {message}",
@@ -2047,7 +2050,7 @@
         "subject_label": "E-Posta Konu Başlığı",
         "subject_placeholder": "Müşteriye görünecek konu başlığı",
         "content_label": "Zengin Metin İçeriği",
-        "default_content": "<p>Merhaba {{customer.name}}!</p><p>Duyuru içeriği buraya gelecek...</p>",
+        "default_content": "<p>Merhaba [customer.name]!</p><p>Duyuru içeriği buraya gelecek...</p>",
         "preview": "Önizleme",
         "save_draft": "Taslağı Protokolle"
       },
@@ -2751,6 +2754,7 @@
         }
       },
       "toasts": {
+        "success": "Başarılı",
         "save_success": "{key} başarıyla güncellendi.",
         "save_error": "Hata: {message}",
         "load_error": "Veriler yüklenemedi: {message}",
@@ -3446,7 +3450,7 @@
       "subject_label": "E-Posta Konu Başlığı",
       "subject_placeholder": "Müşteriye görünecek konu başlığı",
       "content_label": "Zengin Metin İçeriği",
-      "default_content": "<p>Merhaba {{customer.name}}!</p><p>Duyuru içeriği buraya gelecek...</p>",
+      "default_content": "<p>Merhaba [customer.name]!</p><p>Duyuru içeriği buraya gelecek...</p>",
       "preview": "Önizleme",
       "save_draft": "Taslağı Protokolle"
     },

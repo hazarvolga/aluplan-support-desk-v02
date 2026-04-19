@@ -43,7 +43,12 @@ export const envSchema = z.object({
     ANTHROPIC_API_KEY: z.string().optional(),
     GEMINI_API_KEY: z.string().optional(),
 
-    EMBED_PROVIDER: z.enum(['OPENAI', 'LOCAL', 'MOCK']).default('OPENAI'),
+    // GCP & Vertex AI
+    GCP_PROJECT_ID: z.string().optional(),
+    GCP_REGION: z.string().default('europe-west4'),
+    GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
+
+    EMBED_PROVIDER: z.enum(['OPENAI', 'VERTEX', 'LOCAL', 'MOCK']).default('OPENAI'),
     CHAT_PROVIDER: z.enum(['GROQ', 'OPENAI', 'ANTHROPIC', 'GEMINI', 'MOCK']).default('GROQ'),
 
     // Email
