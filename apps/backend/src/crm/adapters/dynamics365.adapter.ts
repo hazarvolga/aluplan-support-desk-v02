@@ -73,7 +73,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             website,
                             address,
                             industry,
-                            accountNumber,
+                            account_number: accountNumber,
                             crmVerified: true,
                         },
                         create: {
@@ -82,7 +82,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             website,
                             address,
                             industry,
-                            accountNumber,
+                            account_number: accountNumber,
                             crmVerified: true,
                         },
                     });

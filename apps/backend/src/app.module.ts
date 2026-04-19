@@ -28,11 +28,11 @@ import { ProductsModule } from './products/products.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { ReportsModule } from './reports/reports.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { RedisModule } from './redis/redis.module';
 
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { TeamsModule } from './teams/teams.module';
 import { BrandingModule } from './branding/branding.module';
@@ -103,7 +103,7 @@ import { CsrfMiddleware } from './common/middleware/csrf.middleware';
                     {
                         name: 'default',
                         ttl: 60000,
-                        limit: 10,
+                        limit: 60,
                     },
                 ],
                 storage: new ThrottlerStorageRedisService(config.get<string>('redis.url')),
@@ -147,6 +147,10 @@ import { CsrfMiddleware } from './common/middleware/csrf.middleware';
         {
             provide: APP_INTERCEPTOR,
             useClass: AuditLogInterceptor,
+        },
+        {
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard,
         },
     ],
 })

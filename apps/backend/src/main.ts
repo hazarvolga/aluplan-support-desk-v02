@@ -111,9 +111,9 @@ async function bootstrap() {
     // CSRF & Security Middlewares
     app.use(cookieParser());
 
-    // Payload Limit increase for massive CSV JSON arrays
-    app.use(json({ limit: '50mb' }));
-    app.use(urlencoded({ extended: true, limit: '50mb' }));
+    // Payload Limit restriction
+    app.use(json({ limit: '10mb' }));
+    app.use(urlencoded({ extended: true, limit: '10mb' }));
 
     // Note: csurf middleware has been completely removed.
     // The application uses stateless JWTs passed via the Authorization header
@@ -123,6 +123,7 @@ async function bootstrap() {
 
     const allowedOrigins = [
         'http://localhost:3000',
+        'http://127.0.0.1:3000',
         'https://allplan.net.tr',
         'https://api.allplan.net.tr',
         ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []),
@@ -135,7 +136,7 @@ async function bootstrap() {
             // If no origin (like mobile apps or curl requests), allow it
             if (!origin) return callback(null, true);
 
-            if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+            if (allowedOrigins.indexOf(origin) !== -1) {
                 callback(null, true);
             } else {
                 logger.warn(`CORS blocked for origin: ${origin}`);
