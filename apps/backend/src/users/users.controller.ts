@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -23,7 +23,12 @@ export class UsersController {
 
     @Get(':id')
     @ApiOperation({ summary: 'Get user by id' })
-    findOne(@Param('id') id: string) {
+    findOne(@Param('id') id: string, @Req() req: any) {
+        // Security check: Only admins can see other users, regular users can only see themselves
+        const requesterRole = (typeof req.user.role === 'string' ? req.user.role : req.user.role?.name)?.toUpperCase();
+        if (req.user.sub !== id && requesterRole !== 'ADMIN' && requesterRole !== 'SUPER-ADMIN') {
+            throw new ForbiddenException('You do not have permission to view this profile');
+        }
         return this.usersService.findOne(id);
     }
 

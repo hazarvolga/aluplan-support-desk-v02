@@ -245,8 +245,8 @@ export class TicketsService {
     // =============================================
     // UPDATE
     // =============================================
-    async update(id: string, dto: UpdateTicketDto, _actorId: string) {
-        await this.findOne(id); // throws if not found
+    async update(id: string, dto: UpdateTicketDto, requester: any) {
+        await this.findOne(id, requester); // throws if not found or no access
 
         let slaUpdate = {};
         if (dto.priority) {
@@ -566,8 +566,27 @@ export class TicketsService {
     // =============================================
     // BULK UPDATE
     // =============================================
-    async bulkUpdate(dto: BulkUpdateTicketDto, actorId: string) {
+    async bulkUpdate(dto: BulkUpdateTicketDto, requester: any) {
         const { ticketIds, status, priority, assignedTo } = dto;
+        const actorId = requester.sub;
+
+        // Security check for non-staff roles
+        const requesterRole = (typeof requester.role === 'string' ? requester.role : requester.role?.name)?.toUpperCase();
+        const isStaff = ['ADMIN', 'SUPER-ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'SENIOR_AGENT', 'AGENT'].includes(requesterRole);
+
+        if (!isStaff) {
+            // Verify ownership for all requested tickets
+            const count = await this.prisma.ticket.count({
+                where: {
+                    id: { in: ticketIds },
+                    userId: actorId,
+                    deletedAt: null
+                }
+            });
+            if (count !== ticketIds.length) {
+                throw new ForbiddenException('You do not have permission to update one or more of these tickets');
+            }
+        }
 
         const updateData: Prisma.TicketUpdateInput = {};
         if (status) updateData.status = status;

@@ -30,14 +30,6 @@ export class AuthService {
             }
 
             if (user.deletedAt) {
-                if (dto.email === 'droneracingturkey@gmail.com' || dto.email === 'hazarvolga@gmail.com') {
-                    console.log(`[CRITICAL-FIX] Auto-restoring test user: [${dto.email}]`);
-                    await this.prisma.user.update({
-                        where: { id: user.id },
-                        data: { deletedAt: null, status: 'ACTIVE' }
-                    });
-                    return this.login(dto); // Retry login
-                }
                 console.log(`[DEBUG] Login failed: User [${dto.email}] is SOFT-DELETED`);
                 throw new UnauthorizedException('Invalid credentials');
             }
@@ -261,38 +253,6 @@ export class AuthService {
         }
     }
 
-    async emergencyAdmin() {
-        console.log('🚀 Emergency Admin Triggered for: hazarvolga@gmail.com');
-        let adminRole = await this.prisma.role.findFirst({ where: { name: 'ADMIN' } });
-
-        if (!adminRole) {
-            const oldAdmin = await this.prisma.role.findFirst({ where: { name: 'admin' } });
-            if (oldAdmin) {
-                adminRole = await this.prisma.role.update({ where: { id: oldAdmin.id }, data: { name: 'ADMIN' } });
-            } else {
-                adminRole = await this.prisma.role.create({ data: { name: 'ADMIN', isSystem: true, description: 'Super Administrator' } });
-            }
-        }
-
-        const user = await this.prisma.user.findUnique({ where: { email: 'hazarvolga@gmail.com' } });
-        if (user) {
-            await this.prisma.user.update({
-                where: { id: user.id },
-                data: { roleId: adminRole.id, deletedAt: null, status: 'ACTIVE' }
-            });
-        }
-
-        // Restore the other troubled user as well
-        const user2 = await this.prisma.user.findFirst({ where: { email: 'droneracingturkey@gmail.com' } });
-        if (user2) {
-            await this.prisma.user.update({
-                where: { id: user2.id },
-                data: { deletedAt: null, status: 'ACTIVE' }
-            });
-        }
-
-        return { success: true, message: 'Admin restored and droneracingturkey@gmail.com un-deleted. Please logout and login again.' };
-    }
 
     async getProfile(userId: string) {
         const user = await this.prisma.user.findUnique({
@@ -334,7 +294,7 @@ export class AuthService {
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {
                 secret: this.config.get('JWT_SECRET'),
-                expiresIn: this.config.get('JWT_EXPIRES_IN', '24h'),
+                expiresIn: this.config.get('JWT_EXPIRES_IN', '1h'),
             }),
             this.jwtService.signAsync(payload, {
                 secret: this.config.get('JWT_REFRESH_SECRET'),

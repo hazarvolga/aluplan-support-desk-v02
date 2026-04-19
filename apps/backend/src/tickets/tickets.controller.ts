@@ -91,7 +91,7 @@ export class TicketsController {
     @RequirePermissions('ticket:update')
     @ApiOperation({ summary: 'Update ticket fields' })
     async update(@Param('id') id: string, @Body() dto: UpdateTicketDto, @Request() req: any) {
-        const updated = await this.ticketsService.update(id, dto, req.user.sub);
+        const updated = await this.ticketsService.update(id, dto, req.user);
         this.notificationsGateway.emitTicketUpdated(updated);
         return updated;
     }
@@ -100,7 +100,7 @@ export class TicketsController {
     @RequirePermissions('ticket:update')
     @ApiOperation({ summary: 'Bulk update multiple tickets' })
     async bulkUpdate(@Body() dto: BulkUpdateTicketDto, @Request() req: any) {
-        const result = await this.ticketsService.bulkUpdate(dto, req.user.sub);
+        const result = await this.ticketsService.bulkUpdate(dto, req.user);
         this.notificationsGateway.emitBulkUpdate(dto.ticketIds);
         return result;
     }

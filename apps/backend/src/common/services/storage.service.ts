@@ -11,6 +11,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import sanitize from 'sanitize-filename';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
@@ -25,7 +26,7 @@ export class StorageService implements OnModuleInit {
         const storageConfig = this.configService.get('storage');
         this.storageType = storageConfig.type || 'LOCAL';
         this.bucket = storageConfig.bucket;
-        this.localPath = storageConfig.localPath || './uploads';
+        this.localPath = path.resolve(storageConfig.localPath || './uploads');
         this.publicEndpoint = storageConfig.publicEndpoint;
 
         if (this.storageType === 'S3') {
@@ -72,7 +73,9 @@ export class StorageService implements OnModuleInit {
     }
 
     async uploadFile(file: Express.Multer.File, folder: string): Promise<string> {
-        const key = `${folder}/${Date.now()}-${file.originalname}`;
+        const sanitizedFolder = folder.split('/').map(s => sanitize(s)).join('/');
+        const sanitizedName = sanitize(file.originalname);
+        const key = `${sanitizedFolder}/${Date.now()}-${sanitizedName}`;
 
         if (this.storageType === 'S3' && this.s3Client) {
             await this.s3Client.send(

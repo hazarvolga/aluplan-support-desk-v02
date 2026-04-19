@@ -10,6 +10,9 @@ import {
     ParseFilePipe,
     MaxFileSizeValidator,
     FileTypeValidator,
+    HttpStatus,
+    Request,
+    ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -19,6 +22,7 @@ import { RequirePermissions } from '../rbac/decorators/rbac.decorators';
 import { StorageService } from '../common/services/storage.service';
 import { Response } from 'express';
 import { HotinfoParserService } from '../customers/hotinfo-parser.service';
+import { TicketsService } from '../tickets/tickets.service';
 
 @Controller('attachments')
 @UseGuards(RbacGuard)
@@ -27,6 +31,7 @@ export class AttachmentsController {
         private readonly attachmentsService: AttachmentsService,
         private readonly storageService: StorageService,
         private readonly hotinfoParser: HotinfoParserService,
+        private readonly ticketsService: TicketsService,
     ) { }
 
     @Post('upload/:messageId')
@@ -42,6 +47,7 @@ export class AttachmentsController {
             new ParseFilePipe({
                 validators: [
                     new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
+                    new FileTypeValidator({ fileType: /^(image\/|application\/pdf|text\/|application\/zip|application\/x-zip-compressed|application\/octet-stream)/ }),
                 ],
             }),
         )
@@ -89,8 +95,15 @@ export class AttachmentsController {
 
     @Get(':id/download')
     @RequirePermissions('ticket:read')
-    async download(@Param('id') id: string, @Res() res: Response) {
+    async download(@Param('id') id: string, @Request() req: any, @Res() res: Response) {
         const attachment = await this.attachmentsService.findOne(id);
+
+        // Security Resolve: Find the message and ticket to check ownership
+        const message = await this.attachmentsService.findMessageByAttachment(id);
+        if (!message) throw new ForbiddenException('Invalid attachment context');
+
+        // This will throw ForbiddenException if requester has no access to the ticket
+        await this.ticketsService.findOne(message.ticketId, req.user);
 
         // Generate a presigned URL from MinIO/S3
         const downloadUrl = await this.storageService.getDownloadUrl(attachment.url);
