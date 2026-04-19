@@ -42,7 +42,6 @@ import { AnnouncementTemplatesModule } from './announcement-templates/announceme
 import { EmailValidatorModule } from './email-validator/email-validator.module';
 import { CommonModule } from './common/common.module';
 import { LoggerModule } from 'nestjs-pino';
-import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 
 @Module({
     imports: [
