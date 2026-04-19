@@ -154,10 +154,4 @@ import { CsrfMiddleware } from './common/middleware/csrf.middleware';
         },
     ],
 })
-export class AppModule implements NestModule {
-    configure(consumer: MiddlewareConsumer) {
-        consumer
-            .apply(CsrfMiddleware)
-            .forRoutes('*');
-    }
-}
+export class AppModule { }
