@@ -98,8 +98,12 @@ async function main() {
         // --- 5. Mandatory Settings ---
         console.log('⚙️ Enforcing mandatory settings...');
         const mandatorySettings = [
-            { key: 'ai_provider', value: 'openai' },
-            { key: 'ai_model', value: 'text-embedding-3-small' }
+            { key: 'ai.chat_provider', value: 'openai' },
+            { key: 'ai.active_provider', value: 'openai' },
+            { key: 'ai.embed_provider', value: 'openai' },
+            { key: 'ai.openai.chat_model', value: 'gpt-4o-mini' },
+            { key: 'ai.openai.embed_model', value: 'text-embedding-3-small' },
+            { key: 'ai.fallback_provider', value: 'openai' }
         ];
 
         for (const setting of mandatorySettings) {
