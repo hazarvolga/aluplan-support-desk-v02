@@ -78,14 +78,20 @@ export class StorageService implements OnModuleInit {
         const key = `${sanitizedFolder}/${Date.now()}-${sanitizedName}`;
 
         if (this.storageType === 'S3' && this.s3Client) {
-            await this.s3Client.send(
-                new PutObjectCommand({
-                    Bucket: this.bucket,
-                    Key: key,
-                    Body: file.buffer,
-                    ContentType: file.mimetype,
-                }),
-            );
+            try {
+                await this.s3Client.send(
+                    new PutObjectCommand({
+                        Bucket: this.bucket,
+                        Key: key,
+                        Body: file.buffer,
+                        ContentType: file.mimetype,
+                    }),
+                );
+            } catch (error: any) {
+                this.logger.error(`S3 Upload Failed: [Bucket: ${this.bucket}] [Key: ${key}] [Endpoint: ${this.configService.get('storage.endpoint')}]`);
+                this.logger.error(`Error Details: ${error.message}${error.$metadata ? ` (Status: ${error.$metadata.httpStatusCode})` : ''}`);
+                throw error;
+            }
         } else {
             const filePath = path.join(this.localPath, key);
             await fs.ensureDir(path.dirname(filePath));

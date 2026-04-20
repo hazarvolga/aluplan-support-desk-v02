@@ -444,6 +444,25 @@ export class TicketsService {
             include: { sender: { select: { id: true, fullName: true, avatarUrl: true } } },
         });
 
+        // Support UI-based attachments if provided in the DTO
+        if (dto.attachments && dto.attachments.length > 0) {
+            for (const attach of dto.attachments) {
+                try {
+                    await this.prisma.attachment.create({
+                        data: {
+                            messageId: message.id,
+                            fileName: attach.fileName,
+                            fileSize: attach.fileSize,
+                            mimeType: attach.mimeType,
+                            url: attach.url,
+                        }
+                    });
+                } catch (err) {
+                    console.error(`[TicketsService] Failed to link attachment ${attach.fileName}: ${err.message}`);
+                }
+            }
+        }
+
         // If ticket was PENDING_CUSTOMER and a customer replied → reopen
         if (ticket.status === TicketStatus.PENDING_CUSTOMER && ticket.userId === senderId) {
             await this.prisma.ticket.update({

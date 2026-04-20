@@ -99,7 +99,7 @@ export class EmailProcessor extends WorkerHost {
 
       const result = await this.provider.send({
         to,
-        subject: compiled.subject || subject,
+        subject: subject || compiled.subject,
         html: compiled.html,
         text: compiled.text
       });

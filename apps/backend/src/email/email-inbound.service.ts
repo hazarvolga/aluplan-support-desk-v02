@@ -6,6 +6,9 @@ import { TicketsService } from '../tickets/tickets.service';
 import { _SIMPLE_MAP_CONFIG, SimpleImapConfig } from './interfaces/imap.interface';
 import imaps from 'imap-simple';
 import { simpleParser } from 'mailparser';
+import { CommunicationChannel } from '@aluplan/database';
+import { StorageService } from '../common/services/storage.service';
+import { PiiMaskingService } from '../common/services/pii-masking.service';
 
 @Injectable()
 export class EmailInboundService implements OnModuleInit {
@@ -17,6 +20,8 @@ export class EmailInboundService implements OnModuleInit {
         private settings: SettingsService,
         @Inject(forwardRef(() => TicketsService))
         private ticketsService: TicketsService,
+        private storage: StorageService,
+        private piiMaskingService: PiiMaskingService,
     ) { }
 
     onModuleInit() {
@@ -135,11 +140,37 @@ export class EmailInboundService implements OnModuleInit {
                     const senderId = sender?.id || ticket.userId;
                     const role = sender?.role?.name || 'customer';
 
-                    await this.ticketsService.addMessage(ticket.id, {
+                    const message = await this.ticketsService.addMessage(ticket.id, {
                         message: body,
                         isInternal: false,
+                        channel: CommunicationChannel.EMAIL,
                     }, senderId!, role);
                     ticketId = ticket.id;
+
+                    // Handle attachments for threaded message
+                    if (mail.attachments && mail.attachments.length > 0) {
+                        for (const attachment of mail.attachments) {
+                            try {
+                                const key = await this.storage.uploadFile({
+                                    buffer: attachment.content,
+                                    originalname: attachment.filename || 'unnamed-file',
+                                    mimetype: attachment.contentType
+                                } as any, `tickets/${ticket.id}/messages/${message.id}`);
+
+                                await this.prisma.attachment.create({
+                                    data: {
+                                        messageId: message.id,
+                                        fileName: attachment.filename || 'unnamed-file',
+                                        fileSize: attachment.size,
+                                        mimeType: attachment.contentType,
+                                        url: key,
+                                    }
+                                });
+                            } catch (err) {
+                                this.logger.error(`Failed to process attachment ${attachment.filename} for ticket ${ticket.id}: ${err.message}`);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -172,6 +203,39 @@ export class EmailInboundService implements OnModuleInit {
                     priority: 'MEDIUM' as any,
                 }, user.id);
                 ticketId = newTicket.id;
+                const message = await this.prisma.ticketMessage.create({
+                    data: {
+                        ticketId: ticketId,
+                        senderId: user.id,
+                        message: this.piiMaskingService.maskSensitiveData(mail.text || mail.html || '(No content)'),
+                        channel: CommunicationChannel.EMAIL,
+                    },
+                });
+
+                // Handle attachments
+                if (mail.attachments && mail.attachments.length > 0) {
+                    for (const attachment of mail.attachments) {
+                        try {
+                            const key = await this.storage.uploadFile({
+                                buffer: attachment.content,
+                                originalname: attachment.filename || 'unnamed-file',
+                                mimetype: attachment.contentType
+                            } as any, `tickets/${ticketId}/messages/${message.id}`);
+
+                            await this.prisma.attachment.create({
+                                data: {
+                                    messageId: message.id,
+                                    fileName: attachment.filename || 'unnamed-file',
+                                    fileSize: attachment.size,
+                                    mimeType: attachment.contentType,
+                                    url: key,
+                                }
+                            });
+                        } catch (err) {
+                            this.logger.error(`Failed to process attachment ${attachment.filename}: ${err.message}`);
+                        }
+                    }
+                }
             }
 
             await this.prisma.inboundEmailLog.update({

@@ -17,11 +17,13 @@ import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 import { StorageService } from '../common/services/storage.service';
 import { Response } from 'express';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('branding')
 export class BrandingController {
     constructor(private readonly storageService: StorageService) { }
 
+    @Public()
     @Get('assets/*')
     async getAsset(@Param('0') key: string, @Res() res: Response) {
         // Creates a fresh presigned URL valid for 1 hour and redirects the user securely

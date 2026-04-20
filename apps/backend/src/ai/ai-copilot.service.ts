@@ -129,12 +129,19 @@ RESPONSE DRAFT:`;
             }
         }
 
-        const response = await this.ai.generate(prompt, 60_000, aiParts);
-
-        return {
-            draft: response || 'Draft could not be generated. Please check AI settings in the Admin panel.',
-            model: 'dynamic'
-        };
+        try {
+            const response = await this.ai.generate(prompt, 60_000, aiParts);
+            return {
+                draft: response || 'Draft could not be generated. Please check AI settings in the Admin panel.',
+                model: 'dynamic'
+            };
+        } catch (error) {
+            this.logger.error(`Failed to generate AI Copilot draft: ${error.message}`);
+            return {
+                draft: `AI_ERROR: Taslak oluşturulamadı. (Hata: ${error.message || 'Bilinmeyen Hata'}). Lütfen API anahtarlarınızı kontrol edin veya servis durumunu admin panelinden sorgulayın.`,
+                model: 'dynamic'
+            };
+        }
 
     }
 }
