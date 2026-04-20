@@ -11,7 +11,7 @@ export class ProductsService {
 
     async findAllProducts() {
         return this.prisma.product.findMany({
-            where: { deletedAt: null },
+            where: {},
             include: { categories: true },
             orderBy: { createdAt: 'asc' },
         });
@@ -19,7 +19,7 @@ export class ProductsService {
 
     async getProduct(id: string) {
         const product = await this.prisma.product.findFirst({
-            where: { id, deletedAt: null },
+            where: { id },
             include: { categories: true },
         });
         if (!product) throw new NotFoundException('Product not found');

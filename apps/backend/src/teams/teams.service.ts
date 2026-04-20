@@ -9,7 +9,7 @@ export class TeamsService {
     // DEPARTMENTS
     async getDepartments() {
         return this.prisma.department.findMany({
-            where: { isArchived: false, deletedAt: null },
+            where: { isArchived: false },
             include: {
                 teams: {
                     include: {
@@ -25,7 +25,7 @@ export class TeamsService {
 
     async getDepartment(id: string) {
         const dept = await this.prisma.department.findFirst({
-            where: { id, deletedAt: null },
+            where: { id },
             include: {
                 teams: {
                     include: {
@@ -42,7 +42,7 @@ export class TeamsService {
     // TEAMS
     async getTeams() {
         return this.prisma.team.findMany({
-            where: { isArchived: false, deletedAt: null },
+            where: { isArchived: false },
             include: {
                 department: true,
                 members: {
@@ -100,7 +100,7 @@ export class TeamsService {
 
     async getTeam(id: string) {
         const team = await this.prisma.team.findFirst({
-            where: { id, deletedAt: null },
+            where: { id },
             include: {
                 department: true,
                 members: {
