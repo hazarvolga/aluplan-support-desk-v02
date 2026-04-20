@@ -180,6 +180,10 @@ export default function AdminSettingsPage() {
                         checkFields('Ollama', ['ai.ollama.url', 'ai.ollama.chat_model', 'ai.ollama.embed_model']);
                     } else if (p === 'vertex') {
                         checkFields('Google Vertex AI', ['ai.vertex.project_id', 'ai.vertex.chat_model']);
+                    } else if (p === 'anthropic') {
+                        checkFields('Anthropic', ['ai.anthropic.api_key', 'ai.anthropic.chat_model']);
+                    } else if (p === 'gemini') {
+                        checkFields('Google Gemini', ['ai.gemini.api_key', 'ai.gemini.chat_model']);
                     } else if (['xai', 'deepseek', 'groq', 'custom', 'llmapi'].includes(p)) {
                         const models = {
                             xai: ['ai.xai.api_key', 'ai.xai.chat_model'],
@@ -862,7 +866,16 @@ export default function AdminSettingsPage() {
                                             'ai.custom.url',
                                             'ai.custom.api_key',
                                             'ai.custom.chat_model',
-                                            'ai.custom.embed_model'
+                                            'ai.custom.embed_model',
+                                            'ai.vertex.project_id',
+                                            'ai.vertex.credentials_json',
+                                            'ai.vertex.data_store_id',
+                                            'ai.vertex.chat_model',
+                                            'ai.vertex.embed_model',
+                                            'ai.anthropic.api_key',
+                                            'ai.anthropic.chat_model',
+                                            'ai.gemini.api_key',
+                                            'ai.gemini.chat_model'
                                         ])}
                                         disabled={saving}
                                         className="h-10 px-8 font-bold"
