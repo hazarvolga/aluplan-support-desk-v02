@@ -266,6 +266,53 @@ export default function RegisterPage() {
                                 </div>
                             )}
 
+                            {/* STEP 2: DELETED ACCOUNT STATE */}
+                            {step === 2 && lookupResult?.action === 'DELETED' && (
+                                <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-5 pt-2">
+                                    <div className="p-5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center shadow-inner">
+                                        <Loader2 className="h-10 w-10 text-amber-400 mx-auto mb-3" />
+                                        <h3 className="text-lg font-medium text-white mb-2">{t('deleted_title')}</h3>
+                                        <p className="text-sm text-slate-300 leading-relaxed">
+                                            {t('deleted_desc')}
+                                        </p>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        className="w-full bg-amber-600 hover:bg-amber-500 text-white h-11"
+                                        onClick={() => { setLookupResult({ ...lookupResult, action: 'NEW' }); }}
+                                    >
+                                        {t('deleted_btn')}
+                                    </Button>
+                                    <Button type="button" variant="ghost" className="w-full text-slate-400 hover:text-white h-11" onClick={() => { setStep(1); setLookupResult(null); }}>
+                                        {t('different_email')}
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* STEP 2: INACTIVE ACCOUNT STATE */}
+                            {step === 2 && lookupResult?.action === 'INACTIVE' && (
+                                <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-5 pt-2">
+                                    <div className="p-5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center shadow-inner">
+                                        <CheckCircle2 className="h-10 w-10 text-blue-400 mx-auto mb-3" />
+                                        <h3 className="text-lg font-medium text-white mb-2">{t('inactive_title')}</h3>
+                                        <p className="text-sm text-slate-300 leading-relaxed">
+                                            {t('inactive_desc')}
+                                        </p>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        className="w-full bg-blue-600 hover:bg-blue-500 text-white h-11"
+                                        onClick={handleForgotPassword}
+                                        disabled={loading}
+                                    >
+                                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('inactive_btn')}
+                                    </Button>
+                                    <Button type="button" variant="ghost" className="w-full text-slate-400 hover:text-white h-11" onClick={() => { setStep(1); setLookupResult(null); }}>
+                                        {t('different_email')}
+                                    </Button>
+                                </div>
+                            )}
+
                             {/* STEP 2: NEW OR MATCHED COMPANY STATE */}
                             {step === 2 && (lookupResult?.action === 'NEW' || lookupResult?.action === 'NEW_MATCHED_COMPANY') && (
                                 <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-5 pt-2">

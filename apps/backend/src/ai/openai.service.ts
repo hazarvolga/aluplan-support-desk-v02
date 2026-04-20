@@ -31,13 +31,32 @@ export class OpenAiService implements AiProvider {
         return 'openai';
     }
 
+    private async fetchWithRetry(url: string, options: RequestInit, retries = 3, backoff = 1000): Promise<Response> {
+        try {
+            const response = await fetch(url, options);
+            if (response.status === 429 && retries > 0) {
+                this.logger.warn(`⚠️ OpenAI Rate Limit (429) hit. Retrying in ${backoff}ms... (${retries} retries left)`);
+                await new Promise(resolve => setTimeout(resolve, backoff));
+                return this.fetchWithRetry(url, options, retries - 1, backoff * 2);
+            }
+            return response;
+        } catch (error: any) {
+            if (retries > 0 && (error.name === 'AbortError' || error.name === 'TimeoutError' || error.message.includes('fetch failed'))) {
+                this.logger.warn(`⚠️ OpenAI Fetch failed: ${error.message}. Retrying in ${backoff}ms...`);
+                await new Promise(resolve => setTimeout(resolve, backoff));
+                return this.fetchWithRetry(url, options, retries - 1, backoff * 2);
+            }
+            throw error;
+        }
+    }
+
     async embed(text: string): Promise<EmbeddingResult | null> {
         const apiKey = await this.getApiKey();
         if (!apiKey) return null;
 
         try {
             const model = await this.getEmbedModel();
-            const response = await fetch('https://api.openai.com/v1/embeddings', {
+            const response = await this.fetchWithRetry('https://api.openai.com/v1/embeddings', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -81,7 +100,7 @@ export class OpenAiService implements AiProvider {
             const model = await this.getModel();
             const content = this.mapParts(prompt);
 
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            const response = await this.fetchWithRetry('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -128,7 +147,7 @@ ${kbContent}
 Yukarıdaki bilgi kaynağına dayanarak teknik bir dille özetle ve doğrudan soruyu yanıtla. Metni birebir kopyalama.`
             });
 
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            const response = await this.fetchWithRetry('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -192,7 +211,7 @@ SONUÇ (YALNIZCA KELİME):`;
         if (!apiKey) return null;
         try {
             const model = await this.getModel();
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            const response = await this.fetchWithRetry('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

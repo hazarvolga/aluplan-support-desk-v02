@@ -109,7 +109,7 @@ export class CustomersService {
             where: { email: dto.email },
         });
 
-        if (existingEmail) {
+        if (existingEmail && !existingEmail.deletedAt && existingEmail.status === 'ACTIVE') {
             throw new ConflictException('Bu e-posta adresi sistemde zaten kayıtlı.');
         }
 
@@ -159,14 +159,57 @@ export class CustomersService {
                 isAllplanUser: isAllplan,
             };
 
-            // Create User with nested CustomerProfile
-            const user = await prisma.user.create({
+            // Check if user exists (for reactivation)
+            const existingUser = await prisma.user.findUnique({
+                where: { email: dto.email },
+                include: { customerProfile: true }
+            });
+
+            if (existingUser) {
+                return prisma.user.update({
+                    where: { id: existingUser.id },
+                    data: {
+                        fullName,
+                        passwordHash,
+                        status: 'INACTIVE',
+                        deletedAt: null,
+                        roleId: customerRole?.id,
+                        customerProfile: {
+                            upsert: {
+                                update: {
+                                    firstName: dto.firstName,
+                                    lastName: dto.lastName,
+                                    customerNo: finalCustomerNo as string,
+                                    companyName: dto.company,
+                                    phoneNumber: dto.phone,
+                                    crmVerified: !!dto.customerNo,
+                                    hotinfoData: hotinfoData,
+                                    deletedAt: null,
+                                },
+                                create: {
+                                    firstName: dto.firstName,
+                                    lastName: dto.lastName,
+                                    customerNo: finalCustomerNo as string,
+                                    companyName: dto.company,
+                                    phoneNumber: dto.phone,
+                                    crmVerified: !!dto.customerNo,
+                                    hotinfoData: hotinfoData,
+                                }
+                            }
+                        }
+                    },
+                    include: { customerProfile: true }
+                });
+            }
+
+            // Create new User with nested CustomerProfile
+            return prisma.user.create({
                 data: {
                     email: dto.email,
                     fullName,
                     passwordHash,
                     status: 'INACTIVE',
-                    roleId: customerRole?.id, // Explicitly assign the customer role ID
+                    roleId: customerRole?.id,
                     customerProfile: {
                         create: {
                             firstName: dto.firstName,
@@ -183,8 +226,6 @@ export class CustomersService {
                     customerProfile: true,
                 },
             });
-
-            return user;
         });
 
         // 5. Send welcome email with login details and verification link
