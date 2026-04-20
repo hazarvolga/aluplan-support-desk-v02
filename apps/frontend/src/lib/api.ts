@@ -462,6 +462,7 @@ export const api = {
         getContentBlocks: (name: string) => request<{ blocks: any[] }>(`/email/admin/templates/${name}/content`),
         saveContentBlocks: (name: string, blocks: any[]) => request<{ success: true }>(`/email/admin/templates/${name}/content`, { method: 'POST', body: JSON.stringify({ blocks }) }),
         verifyProvider: () => request<{ provider: string; available: boolean }>('/email/admin/provider/verify', { method: 'POST' }),
+        verifyImap: () => request<{ available: boolean; message: string }>('/email/admin/imap/verify', { method: 'POST' }),
         getGmailAuthUrl: () => request<{ url: string }>('/email/gmail/auth-url'),
     },
     announcements: {

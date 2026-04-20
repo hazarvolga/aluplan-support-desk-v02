@@ -8,6 +8,8 @@ import { SmtpProvider } from '../smtp.provider';
 import { GmailProvider } from '../gmail.provider';
 import { EmailProvider } from '../interfaces/email-provider.interface';
 import { TemplateService, EmailPayload } from '../email.templates';
+import { ConfigService } from '@nestjs/config';
+
 
 @Processor('email')
 export class EmailProcessor extends WorkerHost {
@@ -20,6 +22,7 @@ export class EmailProcessor extends WorkerHost {
     private readonly resend: ResendProvider,
     private readonly smtp: SmtpProvider,
     private readonly gmail: GmailProvider,
+    private readonly configService: ConfigService,
   ) {
     super();
   }
@@ -48,7 +51,7 @@ export class EmailProcessor extends WorkerHost {
       const [
         companyName, logoUrl, address, phone, email,
         linkedin, twitter, facebook, instagram, pinterest,
-        frontendUrl, activeProvider
+        frontendUrl, activeProvider, apiUrlSetting
       ] = await Promise.all([
         this.settings.getValue('branding.company_name'),
         this.settings.getValue('branding.logo_url'),
@@ -62,11 +65,25 @@ export class EmailProcessor extends WorkerHost {
         this.settings.getValue('branding.social_pinterest'),
         this.settings.getValue('general.frontend_url'),
         this.settings.getValue('email.active_provider'),
+        this.settings.getValue('general.api_url'),
       ]);
+
+      // Determine absolute base for API assets
+      const envApiUrl = this.configService.get('apiUrl');
+      const apiBaseUrl = apiUrlSetting || envApiUrl || frontendUrl || 'https://api.allplan.net.tr';
+      const cleanApiBase = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+
+      let absoluteLogoUrl = logoUrl || '/logo.png';
+      if (absoluteLogoUrl.startsWith('/')) {
+        // If it's a branding asset proxy or a local asset
+        const isProxyAsset = absoluteLogoUrl.startsWith('/api/v1/branding/assets');
+        const base = isProxyAsset ? cleanApiBase : (frontendUrl || cleanApiBase);
+        absoluteLogoUrl = `${base}${absoluteLogoUrl}`;
+      }
 
       const brandDefaults = {
         name: companyName || 'Aluplan',
-        logo_url: logoUrl || '/logo.png',
+        logo_url: absoluteLogoUrl,
         address: address || '',
         phone: phone || '',
         email: email || '',

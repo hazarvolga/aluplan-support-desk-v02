@@ -62,6 +62,22 @@ export class EmailInboundService implements OnModuleInit {
         }
     }
 
+    async verifyImap(): Promise<{ available: boolean; message: string }> {
+        const config = await this.getImapConfig();
+        if (!config) {
+            return { available: false, message: 'IMAP not configured' };
+        }
+
+        try {
+            const connection: any = await imaps.connect({ imap: config });
+            connection.end();
+            return { available: true, message: 'Connection successful' };
+        } catch (error: any) {
+            this.logger.error(`IMAP Verification Error: ${error.message}`);
+            return { available: false, message: error.message };
+        }
+    }
+
     private async getImapConfig(): Promise<SimpleImapConfig | null> {
         const host = await this.settings.getValue('email.imap.host');
         if (!host) return null;
@@ -133,15 +149,20 @@ export class EmailInboundService implements OnModuleInit {
 
                 if (!user) {
                     // Create skeleton profile for new inbound email sender
+                    const customerRole = await this.prisma.role.findFirst({
+                        where: { name: { equals: 'CUSTOMER', mode: 'insensitive' } }
+                    });
+
                     user = await this.prisma.user.create({
                         data: {
                             email: from,
                             fullName: from.split('@')[0], // Use email prefix as temporary name
                             passwordHash: 'inbound-only', // System account
-                            status: 'ACTIVE'
+                            status: 'ACTIVE',
+                            roleId: customerRole?.id
                         }
                     });
-                    this.logger.log(`Created skeleton user for inbound email: ${from}`);
+                    this.logger.log(`Created skeleton user for inbound email: ${from} (Role: ${customerRole?.name})`);
                 }
 
                 const newTicket = await this.ticketsService.create({

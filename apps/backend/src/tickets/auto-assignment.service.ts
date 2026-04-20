@@ -24,7 +24,10 @@ export class AutoAssignmentService {
             const agents = await this.prisma.user.findMany({
                 where: {
                     role: {
-                        name: { not: 'customer' }
+                        name: {
+                            not: 'customer',
+                            mode: 'insensitive'
+                        }
                     },
                     status: 'ACTIVE'
                 },

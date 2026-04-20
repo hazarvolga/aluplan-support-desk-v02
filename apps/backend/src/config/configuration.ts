@@ -23,6 +23,7 @@ export default () => {
     const config = {
         nodeEnv: process.env.NODE_ENV || 'development',
         port: parseInt(process.env.PORT || '4000', 10),
+        apiUrl: process.env.API_URL,
         database: {
             url: process.env.DATABASE_URL,
         },

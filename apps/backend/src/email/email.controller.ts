@@ -12,6 +12,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 
+import { EmailInboundService } from './email-inbound.service';
+
+
 @Controller('email')
 export class EmailController {
   private readonly logger = new Logger(EmailController.name);
@@ -24,7 +27,15 @@ export class EmailController {
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
     private readonly gmailProvider: GmailProvider,
+    private readonly emailInboundService: EmailInboundService,
   ) { }
+
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequirePermissions('settings:read')
+  @Post('admin/imap/verify')
+  async verifyImap() {
+    return this.emailInboundService.verifyImap();
+  }
 
   @Public()
   @Get('track/:logId')

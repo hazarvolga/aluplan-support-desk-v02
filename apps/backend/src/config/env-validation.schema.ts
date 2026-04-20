@@ -24,6 +24,7 @@ export const envSchema = z.object({
 
     // Frontend
     FRONTEND_URL: z.string().url().default('http://localhost:3000'),
+    API_URL: z.string().url().optional(),
     ALLOWED_ORIGINS: z.string().optional(),
 
     // Storage

@@ -47,6 +47,7 @@ export default function AdminSettingsPage() {
     const [saving, setSaving] = useState(false);
     const [settings, setSettings] = useState<any[]>([]);
     const [gmailAuthorizing, setGmailAuthorizing] = useState(false);
+    const [imapTesting, setImapTesting] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [aiHealth, setAiHealth] = useState<any>(null);
 
@@ -1072,6 +1073,91 @@ export default function AdminSettingsPage() {
                                             </p>
                                         </div>
                                     )}
+                                    <div className="pt-4 border-t space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="font-medium text-blue-500 uppercase tracking-wider text-[11px] font-bold">{t('email_forms.imap_title')}</h3>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-7 text-xs px-3 bg-blue-500/5 border-blue-500/20 hover:bg-blue-500/10"
+                                                disabled={imapTesting}
+                                                onClick={async () => {
+                                                    try {
+                                                        setImapTesting(true);
+                                                        const res = await api.email.verifyImap();
+                                                        toast({
+                                                            title: res.available ? tc('success_title') : tc('error_title'),
+                                                            description: res.message,
+                                                            variant: res.available ? 'default' : 'destructive'
+                                                        });
+                                                    } catch (err: any) {
+                                                        toast({ title: tc('error_title'), description: err.message, variant: 'destructive' });
+                                                    } finally {
+                                                        setImapTesting(false);
+                                                    }
+                                                }}
+                                            >
+                                                {imapTesting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Monitor className="h-3.5 w-3.5 mr-1.5" />}
+                                                {t('email.test_connection_btn')}
+                                            </Button>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground -mt-2">
+                                            {t('email_forms.imap_desc')}
+                                        </p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/10 border-border/40">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t('email_forms.host')}</Label>
+                                                <Input
+                                                    value={getSetting('email.imap.host')}
+                                                    onChange={e => updateValue('email.imap.host', e.target.value)}
+                                                    placeholder="imap.gmail.com"
+                                                    className="h-8 text-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t('email_forms.port')}</Label>
+                                                <Input
+                                                    value={getSetting('email.imap.port')}
+                                                    onChange={e => updateValue('email.imap.port', e.target.value)}
+                                                    placeholder="993"
+                                                    className="h-8 text-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t('email_forms.user')}</Label>
+                                                <Input
+                                                    value={getSetting('email.imap.user')}
+                                                    onChange={e => updateValue('email.imap.user', e.target.value)}
+                                                    placeholder="support@aluplan.com"
+                                                    className="h-8 text-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t('email_forms.pass')}</Label>
+                                                <Input
+                                                    type="password"
+                                                    value={getSetting('email.imap.pass')}
+                                                    onChange={e => updateValue('email.imap.pass', e.target.value)}
+                                                    placeholder="••••••••"
+                                                    className="h-8 text-sm"
+                                                />
+                                            </div>
+                                            <div className="flex items-center space-x-2 pt-2 col-span-1 md:col-span-2">
+                                                <div className="flex items-center space-x-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="imap-tls"
+                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 bg-background"
+                                                        checked={getSetting('email.imap.tls') !== 'false'}
+                                                        onChange={e => updateValue('email.imap.tls', e.target.checked ? 'true' : 'false')}
+                                                    />
+                                                    <Label htmlFor="imap-tls" className="text-xs font-medium cursor-pointer">
+                                                        SSL / TLS Senkronizasyonu
+                                                    </Label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-3">
@@ -1081,6 +1167,7 @@ export default function AdminSettingsPage() {
                                             'email.active_provider', 'email.from_address',
                                             'email.resend.api_key', 'email.smtp.host', 'email.smtp.port', 'email.smtp.user', 'email.smtp.pass',
                                             'email.gmail.email', 'email.gmail.client_id', 'email.gmail.client_secret',
+                                            'email.imap.host', 'email.imap.port', 'email.imap.user', 'email.imap.pass', 'email.imap.tls',
                                         ])}
                                         disabled={saving}
                                     >
