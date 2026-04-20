@@ -143,7 +143,8 @@ export class AiQueryService {
         const searchResponse: SearchResponse = await this.embeddingService.search(expandedQuery, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, null, isStaff);
         let results = searchResponse.results;
 
-        // 3. Vertex AI Data Store Hybrid Merge
+        /* 
+        // 3. Vertex AI Data Store Hybrid Merge (DEACTIVATED FOR COST OPTIMIZATION)
         try {
             const vertexSearch = await (this.ai as any).getProviderByName('vertex');
             if (vertexSearch && typeof vertexSearch.searchDataStore === 'function') {
@@ -157,6 +158,7 @@ export class AiQueryService {
         } catch (e) {
             this.logger.warn(`⚠️ Vertex Hybrid Merge skipped: ${e.message}`);
         }
+        */
 
         // Heuristic Re-ranking
         results = this.rerankResults(results);

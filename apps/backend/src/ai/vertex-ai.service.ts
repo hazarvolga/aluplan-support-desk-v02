@@ -59,7 +59,7 @@ export class VertexAiService implements AiProvider {
     }
 
     private async getChatModel(): Promise<string> {
-        return (await this.settings.getValue('ai.vertex.chat_model')) || 'gemini-1.5-pro-preview-0409';
+        return (await this.settings.getValue('ai.vertex.chat_model')) || 'gemini-1.5-flash-002';
     }
 
     private async getEmbedModel(): Promise<string> {
