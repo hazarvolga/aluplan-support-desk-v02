@@ -1,0 +1,107 @@
+
+11  ## BÖLÜM 1: OPEN BIM VE VERİ YÖNETİMİNDE UZMANLIK
+12  
+13  Allplan, yazılım bağımsız işbirliğini destekleyen **Open BIM** felsefesinin merkezinde yer alır. Profesyonel bir iş akışı, modelin geometrisinden (LoG) çok, içerdiği bilgiye (LoI) odaklanır. Veri kalitesini yönetmek, BIM yöneticisinin en kritik görevidir.
+14  
+15  ### 1.1. IFC Veri Alışverişi ve Nitelik Eşleme (Attribute Mapping)
+16  
+17  IFC (Industry Foundation Classes) formatında veri alışverişi, Allplan'ın en kritik işlevlerinden biridir. Veri kalitesini sağlamak için nitelik eşlemesi hayati önem taşır.
+18  
+19  #### 1.1.1. IFC Dışa Aktarım İş Akışı (Adım Adım)
+20  
+21  1.  **Model Hazırlığı (LoD/LoI Kontrolü):**
+22      *   Dışa aktarılacak çizim dosyalarını (Drawing Files) ve bina yapısını (Building Structure) kontrol edin. Yalnızca ilgili katmanların (Layer) görünür olduğundan emin olun.
+23      *   Model bileşenlerinin (örneğin, duvarlar, döşemeler) doğru **IFC Sınıfı** (IfcWall, IfcSlab vb.) ve gerekli **Niteliklere** (Malzeme, Yangın Dayanımı vb.) sahip olduğunu doğrulayın.
+24  
+25  2.  **Dışa Aktarım Ayarları:**
+26      *   `Dosya > Dışa Aktar > IFC Verisi` yolunu izleyin. Gelen iletişim kutusunda `Gelişmiş Ayarlar (Advanced)` sekmesine geçin.
+27      *   **Dosya Türü:** Hedef yazılıma göre **IFC 4.3** (tercih edilen) veya **IFC 2x3** formatını seçin.
+28  
+29  3.  **Değişim Profili (Exchange Profile) Seçimi:**
+30      *   İlgili değişim profilini seçin. Bu profiller, Allplan'ın hangi geometri türlerini (örneğin, Brep, SweptSolid) kullanacağını ve hangi IFC versiyonuna uyacağını belirler. Ofis standardınıza uygun özel bir profil oluşturmak için `Farklı Kaydet...` seçeneğini kullanın.
+31  
+32  4.  **Nitelik Eşleme (Attribute Assignment) Detayları:** Bu, veri kalitesini doğrudan etkileyen en kritik adımdır.
+33  
+34  #### Yaygın IFC Pset'leri ve Allplan Karşılıkları
+35  
+36  
+37  
+38  #### Örnek Uygulama: Duvar Performans Verilerinin Aktarımı
+39  
+40  Bu örnek, bir duvarın teknik performans verilerinin (U-Değeri, Yangın Dayanımı) Allplan'dan IFC formatına nasıl doğru bir şekilde aktarıldığını göstermektedir.
+41  
+42  | Adım | Allplan Arayüzünde Yapılan İşlem | IFC Dışa Aktarımında Sonuç |
+43  | :--- | :--- | :--- |
+44  | **1. Allplan Nitelik Ataması** | Allplan'da bir duvar elemanını seçin. `Nitelikler` penceresinde, `Yangın Dayanımı` niteliğini **"F90"** ve `U-Değeri` niteliğini **"0.25 W/m²K"** olarak atayın. | Model, Allplan'ın yerel veri yapısında bu bilgileri tutar. |
+45  | **2. Nitelik Eşleme Kuralı Tanımlama** | `Allplan'dan IFC'ye Dönüşüm Yönü` penceresinde, `IfcWall` nesnesi için aşağıdaki kuralı tanımlayın:<br> - Allplan Nitelik: `Yangın Dayanımı` -> IFC Pset: `Pset_FireRating`, Nitelik: `FireRating`<br> - Allplan Nitelik: `U-Değeri` -> IFC Pset: `Pset_ThermalTransmittance`, Nitelik: `UValue` | Bu kural, Allplan niteliğini IFC standardına uygun Pset'lere eşler. |
+46  | **3. IFC Dışa Aktarımı** | Dışa aktarımı gerçekleştirin ve IFC dosyasını bir IFC görüntüleyicide açın. | IFC dosyasında, duvar nesnesinin altında artık iki yeni Property Set (Pset) görünür:<br> - **Pset_FireRating:** `FireRating` = "F90"<br> - **Pset_ThermalTransmittance:** `UValue` = "0.25 W/m²K" |
+47  | **4. Doğrulama** | IFC görüntüleyicideki bu veriler, alıcı yazılım tarafından doğrudan okunabilir ve enerji analizi veya güvenlik kontrolü gibi amaçlar için kullanılabilir. | Veri kaybı veya yanlış yorumlama olmadan, modelin geometrik olmayan performansa dayalı verileri başarılı bir şekilde aktarılmıştır. |
+48  
+49  #### 1.1.2. Pset Eşleme Stratejilerinin Verimlilik Karşılaştırması
+50  
+51  IFC dışa aktarımında kullanılan Nitelik Eşleme stratejisi, dosya boyutu, aktarım süresi ve veri kalitesi üzerinde doğrudan etkiye sahiptir. Profesyonel BIM iş akışlarında, amaca yönelik en verimli stratejinin seçilmesi kritik öneme sahiptir.
+52  
+53  | Strateji | Açıklama | Dosya Boyutu/Hızı | Veri Kalitesi/Amaca Uygunluk | Kullanım Senaryosu |
+54  | :--- | :--- | :--- | :--- | :--- |
+55  | **1. Tam Aktarım (Default)** | Tüm Allplan niteliklerini ve standart Pset'leri (Pset_Common, Pset_Material vb.) aktarır. `Yalnızca Atanan Nitelikleri Aktar` seçeneği kapalıdır. | **Yüksek Dosya Boyutu**, **Yavaş Aktarım** | **Düşük:** Gereksiz veri kirliliği yaratır, hedef yazılımın işleme süresini uzatır. | Genel amaçlı arşivleme veya ilk model paylaşımı (Tavsiye Edilmez). |
+56  | **2. Amaca Yönelik Filtreleme (Önerilen)** | Yalnızca BIM gereksinimlerine (örneğin, metraj için Pset_QuantityTakeOff) ve hedef yazılımın ihtiyacına göre belirlenen nitelikleri aktarır. `Yalnızca Atanan Nitelikleri Aktar` seçeneği açıktır. | **Düşük Dosya Boyutu**, **Hızlı Aktarım** | **Yüksek:** Veri kirliliğini önler, veri alışverişi anlaşmasına (EIR) tam uyum sağlar. | Maliyetlendirme (5D), Çakışma Kontrolü, Enerji Analizi. |
+57  | **3. Özel Pset Kullanımı** | Allplan'daki kullanıcı tanımlı nitelikleri (User-defined Attributes) kullanarak IFC'de özel Pset'ler (`Pset_MYPROJECT_Wall`) oluşturur. | **Orta Dosya Boyutu** | **Çok Yüksek:** Proje veya firma özelindeki tüm bilgileri standart dışı olsa bile aktarır. | Tesis Yönetimi (FM) için çok spesifik veri gereksinimleri. |
+58  
+59  **Teknik Sonuç:** Profesyonel BIM iş akışlarında **Amaca Yönelik Filtreleme** stratejisi, dosya verimliliği ve veri kalitesi açısından en uygun yaklaşımdır. Bu, Allplan'da doğru Nitelik Eşleme kurallarının tanımlanmasını ve `Yalnızca Atanan Nitelikleri Aktar` seçeneğinin zorunlu tutulmasını gerektirir.
+
+#### 1.1.3. Pset Eşleme Stratejilerinin Uygulama Zorlukları ve En İyi Uygulamalar
+
+Gerçek dünya projelerinde, Pset eşleme stratejilerinin uygulanması sırasında karşılaşılan yaygın zorluklar ve bu zorlukları aşmak için izlenmesi gereken profesyonel yöntemler aşağıda listelenmiştir.
+
+##### Ortak Zorluklar (Challenges)
+
+1.  **Nitelik Tutarsızlığı:** Farklı disiplinlerin (Mimari, Yapısal, MEP) aynı nesne için farklı Allplan nitelik adları kullanması. Örneğin, bir ekip "Malzeme Adı" kullanırken, diğeri "Yapısal Malzeme" kullanabilir. Bu, eşleme kuralı oluşturmayı imkansız hale getirir.
+2.  **IFC Sınıflandırma Hataları:** Allplan'da doğru IFC sınıfının atanmaması (örneğin, bir kapı yerine genel bir `IfcBuildingElementProxy` olarak dışa aktarılması), ilgili Pset'lerin (örneğin, `Pset_DoorCommon`) nesneye eklenememesine neden olur.
+3.  **Veri Fazlalığı (Over-Modeling):** Tüm niteliklerin aktarılmaya çalışılması ("Tam Aktarım" stratejisi), IFC dosyasının gereksiz yere şişmesine ve alıcı yazılımda performans sorunlarına yol açmasına neden olur.
+4.  **Sürüm Uyumsuzluğu:** Allplan'ın farklı sürümleri arasında veya hedef yazılımın IFC sürüm gereksinimleri (IFC2x3 vs. IFC4) arasındaki uyumsuzluklar.
+
+##### En İyi Uygulamalar (Best Practices)
+
+1.  **Proje Başlangıcında Standartlaşma:** Proje başlamadan önce, **Nitelik Şablonları (Attribute Templates)** oluşturularak tüm disiplinlerin aynı nitelik adlarını, formatlarını ve değer aralıklarını kullanması zorunlu kılınmalıdır.
+2.  **IFC Sınıfı Doğrulaması:** Modelleme sırasında Allplan'ın `Bina Yapısı (Building Structure)` penceresinde her elemanın doğru IFC sınıfına sahip olduğu düzenli olarak kontrol edilmelidir.
+3.  **Amaca Yönelik Profil Oluşturma:** Her BIM kullanım amacı (örneğin, 4D Planlama, 5D Maliyetlendirme, Enerji Analizi) için ayrı ve optimize edilmiş bir Nitelik Eşleme Profili (`.cfg` dosyası) oluşturulmalı ve bu profiller proje ekibiyle paylaşılmalıdır.
+4.  **IDS Kullanımı:** Mümkün olduğunda, zorunlu veri gereksinimlerini (LoI) tanımlamak ve modelin bu gereksinimlere uygunluğunu otomatik olarak kontrol etmek için **IDS (Information Delivery Specification)** dosyaları kullanılmalıdır.
+5.  **Düzenli Test ve Doğrulama:** Dışa aktarılan IFC dosyaları, Bimplus veya Solibri gibi bağımsız bir IFC görüntüleyici/denetleyici yazılımında düzenli olarak test edilmeli ve alıcı yazılımın beklentilerini karşıladığı doğrulanmalıdır.
+
+#### 1.1.4. IDS (Information Delivery Specification) Uygulaması
+60  
+61  #### 1.1.3. IDS (Information Delivery Specification) Uygulaması
+62  
+63  Aşağıdaki tablo, IFC dışa aktarımında en sık kullanılan Property Set'leri (Pset) ve bunların Allplan'daki tipik nitelik karşılıklarını (standart veya kullanıcı tanımlı) göstermektedir. Bu eşlemeler, `Allplan'dan IFC'ye Dönüşüm Yönü` iletişim kutusunda tanımlanır.
+64  
+65  
+66  
+67  
+68  #### 1.1.2. Pset Eşleme Stratejilerinin Verimlilik Karşılaştırması
+69  
+70  IFC dışa aktarımında kullanılan Nitelik Eşleme stratejisi, dosya boyutu, aktarım süresi ve veri kalitesi üzerinde doğrudan etkiye sahiptir. Profesyonel BIM iş akışlarında, amaca yönelik en verimli stratejinin seçilmesi kritik öneme sahiptir.
+71  
+72  | Strateji | Açıklama | Dosya Boyutu/Hızı | Veri Kalitesi/Amaca Uygunluk | Kullanım Senaryosu |
+73  | :--- | :--- | :--- | :--- | :--- |
+74  | **1. Tam Aktarım (Default)** | Tüm Allplan niteliklerini ve standart Pset'leri (Pset_Common, Pset_Material vb.) aktarır. `Yalnızca Atanan Nitelikleri Aktar` seçeneği kapalıdır. | **Yüksek Dosya Boyutu**, **Yavaş Aktarım** | **Düşük:** Gereksiz veri kirliliği yaratır, hedef yazılımın işleme süresini uzatır. | Genel amaçlı arşivleme veya ilk model paylaşımı (Tavsiye Edilmez). |
+75  | **2. Amaca Yönelik Filtreleme (Önerilen)** | Yalnızca BIM gereksinimlerine (örneğin, metraj için Pset_QuantityTakeOff) ve hedef yazılımın ihtiyacına göre belirlenen nitelikleri aktarır. `Yalnızca Atanan Nitelikleri Aktar` seçeneği açıktır. | **Düşük Dosya Boyutu**, **Hızlı Aktarım** | **Yüksek:** Veri kirliliğini önler, veri alışverişi anlaşmasına (EIR) tam uyum sağlar. | Maliyetlendirme (5D), Çakışma Kontrolü, Enerji Analizi. |
+76  | **3. Özel Pset Kullanımı** | Allplan'daki kullanıcı tanımlı nitelikleri (User-defined Attributes) kullanarak IFC'de özel Pset'ler (`Pset_MYPROJECT_Wall`) oluşturur. | **Orta Dosya Boyutu** | **Çok Yüksek:** Proje veya firma özelindeki tüm bilgileri standart dışı olsa bile aktarır. | Tesis Yönetimi (FM) için çok spesifik veri gereksinimleri. |
+77  
+78  **Teknik Sonuç:** Profesyonel BIM iş akışlarında **Amaca Yönelik Filtreleme** stratejisi, dosya verimliliği ve veri kalitesi açısından en uygun yaklaşımdır. Bu, Allplan'da doğru Nitelik Eşleme kurallarının tanımlanmasını ve `Yalnızca Atanan Nitelikleri Aktar` seçeneğinin zorunlu tutulmasını gerektirir.
+79  
+80  
+81  
+82  
+83  
+84  
+85  
+86  Allplan 2026 ve sonraki sürümler, BIM modelinin belirli bilgi gereksinimlerine (IDS) uygunluğunu kontrol etmeyi ve gerekli nitelikleri içe aktarmayı destekler.
+87  
+88  *   **IDS İş Akışı:** Projeniz için tanımlanmış bir IDS dosyası **(.json formatında)** varsa, Allplan bu dosyayı kullanarak modeldeki bileşenlerin (örneğin, bir duvarın yangın dayanımı niteliği) eksik veya yanlış olup olmadığını kontrol edebilir.
+89  *   **Teknik Uygulama:** IDS, Allplan'daki **Nitelik Yöneticisi** ile entegre çalışır. IDS dosyasında tanımlanan zorunlu nitelikler, modelleme sırasında bileşenlere atanması gereken alanları ve bunların kabul edilebilir değer aralıklarını (örneğin, `Malzeme` niteliği için sadece "Beton", "Çelik" veya "Ahşap" değerlerinin kabul edilmesi) tanımlar.
+90  
+91  ### 1.2. BCF ve Çakışma Yönetimi (Issue Management)
+92  
+93  BCF (BIM Collaboration Format), model tabanlı iletişim ve sorun yönetimi için kullanılan, yazılımdan bağımsız bir standarttır.
+94  
+95  *   **Bimplus Entegrasyonu:** Allplan, **Bimplus** platformu üzerinden BCF 2.0 ve 2.1 formatlarını destekler. Bu, modeldeki bir çakışmanın veya sorunun (Issue) doğrudan Bimplus'a aktarılmasını, ilgili kişiye atanmasını ve çözüm sonrası durumunun takip edilmesini sağlar.

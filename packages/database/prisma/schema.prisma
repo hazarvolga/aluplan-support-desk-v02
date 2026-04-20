@@ -68,7 +68,6 @@ model Department {
   isArchived  Boolean     @default(false) @map("is_archived")
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
-  deletedAt   DateTime?   @map("deleted_at")
   slaPolicies SlaPolicy[]
   teams       Team[]
   tickets     Ticket[]
@@ -87,7 +86,6 @@ model Team {
   assignmentStrategy    AssignmentStrategy @default(MANUAL) @map("assignment_strategy")
   createdAt             DateTime           @default(now()) @map("created_at")
   updatedAt             DateTime           @updatedAt @map("updated_at")
-  deletedAt             DateTime?          @map("deleted_at")
   members               TeamMember[]
   department            Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 

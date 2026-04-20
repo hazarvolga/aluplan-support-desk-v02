@@ -1,0 +1,393 @@
+# ALLPLAN BIM KAPSAMLI KULLANICI KLAVUZU
+
+## GİRİŞ SEVİYESİ BİLGİLER
+
+### Allplan BIM Nedir?
+
+Allplan, Nemetschek grubuna ait, mimarlık, inşaat mühendisliği ve altyapı projeleri için geliştirilmiş kapsamlı bir Yapı Bilgi Modellemesi (BIM) yazılımıdır. Tasarımdan yapıma kadar tüm proje yaşam döngüsünü destekleyen bu güçlü platform, disiplinler arası işbirliğini kolaylaştırır ve proje verimliliğini artırır.
+
+### BIM Kavramı ve Allplan'ın Yeri
+
+Yapı Bilgi Modellemesi (Building Information Modeling - BIM), bir yapının fiziksel ve işlevsel özelliklerinin dijital olarak temsil edildiği bir süreçtir. Geleneksel iki boyutlu çizimlerden farklı olarak, BIM yaklaşımı yapıyı üç boyutlu bir model olarak oluşturur ve bu modele tüm proje bilgilerini entegre eder.
+
+Allplan, BIM ekosisteminde önemli bir konuma sahiptir çünkü sadece bir modelleme aracı değil, aynı zamanda tasarım, analiz, dokümantasyon, işbirliği ve yapım planlaması için komple bir çözümdür. Yazılım, openBIM standartlarını destekleyerek farklı yazılımlarla sorunsuz veri alışverişi sağlar.
+
+### Allplan'ın Temel Özellikleri ve Avantajları
+
+Allplan'ı diğer BIM yazılımlarından ayıran temel özellikler şunlardır:
+
+**Esneklik**: Tamamen iki boyutlu çizimden tam nesne yönelimli üç boyutlu BIM metodolojisine kadar her türlü iş akışını destekler. Kullanıcılar, kendi çalışma tarzlarına göre programı kullanabilir ve ihtiyaçlarına göre iki boyut ile üç boyut arasında geçiş yapabilirler.
+
+**Disiplinler Arası Çözüm**: Mimari tasarımdan yapısal mühendisliğe, MEP (mekanik, elektrik, tesisat) mühendisliğinden inşaat sahası planlamasına kadar tüm disiplinleri tek bir platformda birleştirir. Bu yaklaşım, farklı disiplinler arasındaki koordinasyonu önemli ölçüde geliştirir.
+
+**Yapıdan Yapıma Yaklaşım**: Allplan, kavramsal tasarımdan detaylı yapım planlarına kadar tüm aşamaları destekleyen tek BIM çözümüdür. Yapısal analiz iş akışları ve gelişmiş detaylandırma fonksiyonlarıyla birlikte, inşaat sahası planlama araçları da içerir.
+
+**Bulut Tabanlı İşbirliği**: Allplan Cloud servisleri ve Bimplus entegrasyonu sayesinde ekipler gerçek zamanlı olarak işbirliği yapabilir, projeleri paylaşabilir ve dokümantasyonu merkezi olarak yönetebilirler.
+
+**Üstün Donatı Modelleme**: Özellikle betonarme yapılar için sektörün en gelişmiş donatı modelleme ve detaylandırma araçlarını sunar. Üç boyutlu donatı yerleşimi, otomatik metraj çıkarımı ve detaylı donatı çizimleri konusunda rakipsizdir.
+
+**Yüksek Detay Seviyesi**: Allplan, diğer birçok BIM yazılımına göre çok daha yüksek detay seviyesinde (LOD) modelleme yapmanıza olanak tanır. Bu özellik, imalat ve yapım aşamaları için kritik öneme sahiptir.
+
+### Sistem Gereksinimleri
+
+Allplan 2025'i sorunsuz çalıştırmak için bilgisayarınızın aşağıdaki minimum ve önerilen sistem gereksinimlerini karşılaması gerekir:
+
+**Minimum Gereksinimler**: İşlemci olarak Intel veya AMD Ryzen işlemci, sekiz gigabayt RAM bellek, yirmi gigabayt boş sabit disk alanı ve OpenGL 4.2 uyumlu dört gigabayt RAM'e sahip ekran kartı gereklidir. Ekran çözünürlüğü en az 1920x1080 piksel olmalıdır.
+
+**Önerilen Sistem**: En iyi performans için Intel Core i5, i7 veya i9 ya da AMD Ryzen 5, 7 veya 9 işlemci kullanılması önerilir. Otuz iki gigabayt RAM, SSD depolama birimi ve Vulkan 1.2 veya OpenGL 4.5 uyumlu on altı gigabayt veya daha fazla RAM'e sahip profesyonel bir ekran kartı ideal çalışma ortamını sağlar. 4K çözünürlüğe kadar ekran desteği mevcuttur.
+
+**Desteklenen İşletim Sistemleri**: Windows 11 (sürüm 24H2), Windows 10 (sürüm 21H2 veya sonrası), Windows Server 2025, Windows Server 2022 ve Windows Server 2019 işletim sistemlerinde çalışır. Mac bilgisayarlarda Parallels veya Boot Camp ile kullanılabilir ancak performans farklılıkları olabilir.
+
+**İnternet Bağlantısı**: Bulut servisleri ve işbirliği özellikleri için kararlı bir internet bağlantısı gereklidir. Minimum on megabit yükleme ve yirmi megabit indirme hızı önerilirken, elli megabit yükleme ve yüz megabit indirme hızı optimal performans için tercih edilmelidir.
+
+### Kurulum Süreci
+
+Allplan'ın kurulumu birkaç adımda tamamlanır:
+
+**Lisans ve İndirme**: İlk olarak Allplan lisansınızı satın almanız veya deneme sürümünü indirmeniz gerekir. Allplan resmi web sitesinden veya yetkili distribütörlerden lisans temin edebilirsiniz. On dört günlük ücretsiz deneme sürümü mevcuttur.
+
+**Kurulum Dosyasını Çalıştırma**: İndirilen kurulum dosyasını yönetici yetkisiyle çalıştırın. Kurulum sihirbazı sizi adım adım yönlendirecektir.
+
+**Bileşen Seçimi**: Kurulum sırasında hangi modülleri ve özellikleri yüklemek istediğinizi seçebilirsiniz. Mimari modül, mühendislik modülü, civil engineering (altyapı) modülü ve ek araçlar arasından ihtiyacınıza göre seçim yapabilirsiniz.
+
+**Ülke ve Standart Ayarları**: Kullanacağınız ülke standartlarını seçin. Türkiye için Türk standartlarını, birim sistemlerini ve yerel gereksinimleri seçebilirsiniz. Program Türkçe dil desteği sunmaktadır.
+
+**Lisans Aktivasyonu**: Kurulum tamamlandıktan sonra programı ilk kez açtığınızda lisans anahtarınızı girmeniz veya Allplan hesabınızla giriş yapmanız gerekecektir.
+
+**İlk Yapılandırma**: Kurulumdan sonra Allplan sizden çalışma ortamını yapılandırmanızı isteyecektir. Proje klasörü konumu, varsayılan ayarlar ve şablon dosyalarını bu aşamada belirleyebilirsiniz.
+
+### Arayüz Tanıtımı ve Temel Navigasyon
+
+Allplan'ın kullanıcı arayüzü modern bir tasarıma sahiptir ve verimli çalışma için optimize edilmiştir. Arayüzü anlamak, programı etkili kullanmanın ilk adımıdır.
+
+**Ana Ekran Bileşenleri**: Allplan açıldığında karşınıza gelen ana ekran birkaç temel bölümden oluşur. En üstte menü çubuğu bulunur ve burada Dosya, Düzenle, Görünüm, Oluştur gibi ana menülere erişebilirsiniz. Menü çubuğunun altında hızlı erişim araç çubuğu yer alır.
+
+**Palet Sistemi**: Allplan'ın güçlü palet sistemi, araçlara ve fonksiyonlara hızlı erişim sağlar. Sol tarafta genellikle modül paletleri bulunur. Bu paletler Mimari, Mühendislik, Modelleme, Donatı gibi kategorilere ayrılmıştır. Her paletin içinde ilgili araçlar düzenli bir şekilde gruplandırılmıştır.
+
+**Çizim Penceresi**: Ekranın merkezi kısmında çizim pencereniz bulunur. Burada iki boyutlu çizimlerinizi yapabilir veya üç boyutlu modelinizi görebilirsiniz. Çizim penceresinde fare tekerleği ile yakınlaştırma ve uzaklaştırma yapabilir, orta fare tuşuna basılı tutarak görünümü kaydırabilirsiniz.
+
+**Özellikler Paleti**: Sağ tarafta genellikle Özellikler paleti yer alır. Seçtiğiniz herhangi bir nesnenin özelliklerini buradan görüntüleyebilir ve düzenleyebilirsiniz. Bu palet, parametrik tasarım için çok önemlidir çünkü nesnelerin tüm parametrelerini burada değiştirebilirsiniz.
+
+**Navigasyon Araçları**: Üç boyutlu görünümde gezinmek için çeşitli araçlar mevcuttur. Görünüm küpü sayesinde standart görünümler (önden, arkadan, üstten, izometrik) arasında hızlıca geçiş yapabilirsiniz. Dinamik görünüm modu ile modeli serbestçe döndürebilir, yakınlaştırabilir ve kaydırabilirsiniz.
+
+**Katman Yönetimi**: Allplan güçlü bir katman sistemine sahiptir. Katman yöneticisi ile farklı yapı elemanlarını, disiplinleri veya proje aşamalarını ayrı katmanlarda organize edebilirsiniz. Katmanların görünürlüğünü, rengini ve özelliklerini kontrol edebilirsiniz.
+
+**Proje Yapısı**: Sol alt köşede genellikle proje yapısı ağacı bulunur. Burada projenizin organizasyonunu görebilirsiniz. Projeler, binalar, katlar ve dosyalar hiyerarşik bir yapıda düzenlenir. Bu yapı, büyük projelerde düzeni korumanıza yardımcı olur.
+
+**Durum Çubuğu**: Ekranın en altında durum çubuğu yer alır. Buradan koordinat bilgilerini, aktif katman bilgisini, yakalama modlarını ve diğer önemli bilgileri görebilirsiniz.
+
+### İlk Proje Oluşturma Adımları
+
+İlk Allplan projenizi oluşturmak için şu adımları izleyin:
+
+**Yeni Proje Başlatma**: Dosya menüsünden Yeni Proje'yi seçin veya başlangıç ekranındaki Yeni Proje düğmesine tıklayın. Açılan pencerede projenize bir isim verin ve proje klasörünün konumunu belirleyin.
+
+**Proje Özellikleri**: Proje ayarları penceresinde projenizin genel özelliklerini tanımlayın. Proje adı, müşteri bilgileri, proje numarası ve açıklama gibi bilgileri girin. Bu bilgiler daha sonra raporlarda ve çizimlerde kullanılabilir.
+
+**Bina Yapısı Oluşturma**: Allplan'da her proje bir bina yapısı içerir. Bina yapısı, binaları, katları ve yapı elemanlarını organize etmenize yardımcı olur. Yeni bir bina ekleyin ve katları tanımlayın. Her kat için kat yüksekliğini ve diğer parametreleri belirleyin.
+
+**Çalışma Ortamı Seçimi**: Allplan farklı çalışma ortamları sunar. Mimari tasarım, yapısal mühendislik veya altyapı projesi gibi proje tipinize uygun ortamı seçin. Her ortam, ilgili araçları ve şablonları otomatik olarak yükler.
+
+**İlk Elemanları Çizme**: Çizim penceresinde basit geometrik elemanlarla başlayabilirsiniz. Örneğin bir duvar çizmek için Mimari paletinden Duvar aracını seçin, özellikler paletinde duvar kalınlığını ve yüksekliğini ayarlayın, ardından çizim penceresinde duvarın başlangıç ve bitiş noktalarını tıklayın.
+
+**Görünüm Kontrolleri**: Çizdiğiniz elemanları farklı açılardan görmek için görünüm araçlarını kullanın. İki boyutlu plan görünümünden üç boyutlu perspektif görünümüne geçiş yaparak tasarımınızı kontrol edin.
+
+**Kaydetme**: Düzenli aralıklarla çalışmanızı kaydedin. Dosya menüsünden Kaydet'i seçin veya Ctrl+S kısayolunu kullanın. Allplan otomatik yedekleme özelliğine sahiptir ancak manuel kaydetme alışkanlığı önemlidir.
+
+## DETAYLI ÖZELLİK AÇIKLAMALARI
+
+### Mimari Tasarım Modülü ve Araçları
+
+Allplan'ın mimari modülü, kavramsal tasarımdan detaylı yapım projelerine kadar tüm mimari çalışmaları destekleyen kapsamlı araçlar sunar.
+
+**Duvar Tasarımı**: Allplan'da duvarlar akıllı parametrik nesnelerdir. Tek katmanlı veya çok katmanlı duvarlar oluşturabilirsiniz. Duvar özellikleri paletinde kalınlık, yükseklik, malzeme, yalıtım katmanları ve kaplama detaylarını tanımlayabilirsiniz. Duvarlar otomatik olarak kesişim noktalarında birleşir ve köşeler akıllı bir şekilde çözümlenir. Eğri duvarlar, eğimli duvarlar ve özel profilli duvarlar da oluşturabilirsiniz.
+
+**Kapı ve Pencere Sistemleri**: Allplan 2025 yüksek performanslı yeni kapı ve pencere nesneleri sunar. Bu yeni modeller, eski SmartPart nesnelerinin yerini almıştır ve çok daha hızlı ve detaylıdır. Kapı ve pencere kütüphanesinden standart elemanları seçebilir veya özel kapı ve pencereler tasarlayabilirsiniz. Her eleman tam parametriktir, yani boyutlarını, rengini, malzemesini ve detaylarını istediğiniz zaman değiştirebilirsiniz. Döner kapılar, çift kanatlı pencereler ve özel tasarımlar için gelişmiş seçenekler mevcuttur.
+
+**Döşeme ve Tavan Sistemleri**: Döşeme elemanları yatay yapı elemanlarını temsil eder. Çok katmanlı döşeme sistemleri oluşturabilir, her katmanın kalınlığını ve malzemesini ayrı ayrı tanımlayabilirsiniz. Allplan 2025'te yeni Tavan Sistemleri aracı, asma tavanların modellenmesini ve yönetimini hızlandırır. Bu araç, aydınlatma, duman dedektörleri ve havalandırma sistemleri gibi tavan servislerinin koordinasyonunu ve görselleştirilmesini kolaylaştırır.
+
+**Çatı Tasarımı**: Çatı modülü, karmaşık çatı geometrilerini kolayca oluşturmanıza olanak tanır. Beşik çatı, kırma çatı, dört yönlü çatı ve özel çatı formları için otomatik araçlar mevcuttur. Çatı eğimini, saçak uzantılarını, oluk detaylarını ve çatı kaplama malzemelerini tanımlayabilirsiniz. Çatı penceresi, baca ve diğer çatı elemanlarını ekleyebilirsiniz.
+
+**Merdiven ve Rampa**: Merdiven tasarımı için gelişmiş araçlar sunar. Düz merdiven, döner merdiven, spiral merdiven ve özel merdiven tipleri oluşturabilirsiniz. Her basamağın boyutları, korkuluk detayları ve sahanlık özellikleri tam kontrol altındadır. Rampalar için eğim hesaplamaları ve erişilebilirlik standartlarına uygunluk kontrolleri yapılabilir.
+
+**Oda ve Alan Yönetimi**: Odalar ve alanlar, mimari tasarımda önemli bilgi taşıyıcılarıdır. Allplan'da her oda bir nesne olarak tanımlanır ve oda numarası, ismi, döşeme tipi, tavan yüksekliği gibi bilgileri içerir. Alan hesaplamaları otomatik olarak yapılır ve değişikliklerde güncellenir. Oda etiketleri ve alan tabloları otomatik olarak oluşturulabilir.
+
+### İnşaat Mühendisliği Özellikleri
+
+Allplan, inşaat mühendisleri için sektörün en güçlü araçlarından birine sahiptir, özellikle betonarme yapıların tasarımı ve detaylandırılmasında.
+
+**Yapısal Elemanlar**: Kolon, kiriş, perde ve döşeme gibi yapısal elemanlar özel araçlarla oluşturulur. Her eleman yapısal özelliklerini taşır ve analiz yazılımlarına aktarılabilir. Elemanlar arasındaki bağlantılar ve düğüm noktaları otomatik olarak tanımlanır.
+
+**Donatı Modelleme**: Allplan'ın en güçlü özelliklerinden biri üç boyutlu donatı modellemesidir. Betonarme yapılardaki her demir çubuğunu üç boyutlu olarak modelleyebilirsiniz. Donatı şekilleri geniş bir kütüphaneden seçilebilir veya özel şekiller oluşturulabilir. Her donatı elemanı çapı, kalitesi, pozisyonu ve yerleşim bilgilerini içerir.
+
+**Otomatik Donatı Yerleşimi**: Allplan, standarttaki donatı kurallarına göre otomatik donatı yerleşimi yapabilir. Örneğin bir kiriş veya kolon için kesit boyutlarını ve yük durumunu tanımladığınızda, program otomatik olarak ana donatıyı ve etriyeleri yerleştirebilir. Allplan 2025'te serbest form donatı aracı, herhangi bir yüzey boyunca otomatik olarak donatı yerleştirmenize olanak tanır, böylece her çubuğu tek tek modellemenize gerek kalmaz.
+
+**Donatı Detayları ve Çizimler**: Üç boyutlu donatı modelinden otomatik olarak iki boyutlu donatı çizimleri üretilir. Kesitler, detaylar ve donatı planları programın otomatik araçlarıyla oluşturulur. Donatı tabloları, pozlar ve bükum listeleri otomatik olarak oluşturulur ve güncel tutulur.
+
+**Kalıp Planları**: Kalıp tasarımı ve planlaması için özel araçlar mevcuttur. Allplan 2025 kalıp yönetimi için yeni bir grafiksel kullanıcı arayüzü sunar. Kullanıcılar kalıp için mevcut elemanları kolayca seçebilir ve seçimi kaldırabilir, bu da planlama sürecinde kontrol ve hassasiyeti artırır. BIM2form eklentisi, Peri Maximo kalıp sistemini içererek otomatik kalıp duvar elemanı atamasını kolaylaştırır.
+
+**Prekast Beton**: Prekast eleman tasarımı ve üretimi için gelişmiş araçlar sunar. Duvar panelleri, kiriş elemanları ve diğer prekast bileşenler parametrik olarak tasarlanabilir. Üretim makinelerine doğrudan veri aktarımı yapılabilir.
+
+### Altyapı Projeleri İçin Özel Araçlar
+
+Allplan Civil Edition köprü ve tüm türdeki altyapı yapılarının tasarımını mümkün kılar.
+
+**Köprü Tasarımı**: Allplan Bridge modülü, kapsamlı köprü tasarım yetenekleri sunar. Basit kiriş köprülerden karmaşık kablolu köprülere kadar çeşitli köprü tipleri modellenebilir. Parametrik yaklaşım, köprü geometrisinde hızlı değişiklikler yapmanıza olanak tanır. Allplan 2025'te öngerilmeli kiriş köprüleri için tamamen yeni bir tasarımdan yapıma iş akışı sunulur ve otomatik süreçler etkinleştirilir.
+
+**Arazi Modelleme**: Dijital arazi modelleri oluşturabilir ve üzerinde çalışabilirsiniz. Topoğrafik veriler içe aktarılabilir ve arazi yüzeyleri oluşturulabilir. Eğim analizi, kesit alma ve hacim hesaplamaları yapılabilir.
+
+**Yol ve Karayolu Tasarımı**: Yol geometrisi, düşey ve yatay kurvalar, şerit düzenlemeleri ve kavşak tasarımları için özel araçlar mevcuttur. Yol kesitleri parametrik olarak tanımlanır ve yol boyunca uygulanır.
+
+**Tünel Mühendisliği**: Tünel geometrisi, lining (kaplama) tasarımı ve tünel destekleme sistemleri için araçlar sunar. Karmaşık tünel kesitleri ve geçiş bölgeleri modellenebilir.
+
+**Kazı ve Hafriyat Planlama**: Allplan 2025 kazı modelleyicisinde geliştirmeler sunar. Kullanıcılar küçük kazılar için bile toprak katmanları ve bireysel raporlar oluşturabilir. Kazı hacimleri, şevler ve destekleme sistemleri detaylı olarak planlanabilir.
+
+### Üç Boyutlu Modelleme Yetenekleri
+
+Allplan, Parasolid geometri çekirdeğini kullanarak güçlü üç boyutlu modelleme yetenekleri sunar.
+
+**Katı Modelleme**: Temel geometrik şekiller (küp, silindir, küre, koni) ile başlayarak karmaşık katı modeller oluşturabilirsiniz. Boolean işlemleri (birleştirme, çıkarma, kesişim) ile farklı katı cisimleri birleştirebilir veya ayırabilirsiniz.
+
+**Yüzey Modelleme**: NURBS tabanlı yüzey modelleme, organik ve karmaşık formların oluşturulmasına olanak tanır. Yüzey loft, sweep ve extrude işlemleri ile sofistike geometriler üretebilirsiniz.
+
+**Serbest Form Modelleme**: Mimari açıdan zorlayıcı yapılar, eğrisel köprü elemanları veya özel formlar için serbest form modelleme araçları kullanılır. Parasolid çekirdeği, hassasiyet ve performanstan ödün vermeden hacimsel ve yüzeysel modellerin oluşturulmasında yüksek serbestlik sağlar.
+
+**Parametrik Modelleme**: PythonParts ile kendi parametrik nesnelerinizi oluşturabilirsiniz. Python programlama dilini kullanarak özel yapı elemanları, donatı şekilleri veya tekrar eden tasarım elemanları geliştirebilirsiniz. Bu nesneler tamamen parametriktir ve birkaç tıklama ile değiştirilebilir.
+
+**Modifikasyon Araçları**: Modeller üzerinde çeşitli düzenleme işlemleri yapabilirsiniz. Döndürme, taşıma, ölçekleme, aynalama, dizi oluşturma gibi standart CAD işlemlerinin yanı sıra, kenar yuvarlama, pah kırma, kabuk oluşturma gibi gelişmiş modifikasyon araçları da mevcuttur.
+
+### İki Boyutlu Çizim ve Dokümantasyon
+
+Allplan, gelişmiş bir BIM aracı olmasının yanı sıra, güçlü iki boyutlu çizim yeteneklerine de sahiptir.
+
+**Temel Çizim Araçları**: Çizgi, daire, yay, dikdörtgen, çokgen gibi temel geometrik elemanları çizmek için tam donanımlı araçlar sunar. Hassas ölçülendirme ve nokta yakalama özellikleri ile doğru çizimler oluşturabilirsiniz.
+
+**Boyutlandırma**: Otomatik ve manuel boyutlandırma araçları mevcuttur. Lineer ölçüler, açısal ölçüler, yarıçap ve çap ölçüleri ekleyebilirsiniz. Ölçü stilleri özelleştirilebilir ve standartlara uygun hale getirilebilir. Allplan 2025'te metin liderleri kapsamlı bir şekilde revize edilmiştir, özellikle aynı yerde birçok bilginin görüntülenmesi gerektiğinde faydalıdır.
+
+**Yazı ve Açıklama**: Teknik çizimler için yazı ve açıklama araçları mevcuttur. Farklı yazı stilleri, boyutları ve yönlendirmeleri kullanabilirsiniz. Akıllı etiketler, model bilgilerini otomatik olarak gösterebilir.
+
+**Şablonlar ve Çerçeveler**: Teknik resim çerçeveleri, pafta düzenleri ve şablon dosyaları ile çalışabilirsiniz. Kendi standartlarınıza uygun şablonlar oluşturabilir ve projelerinizde tutarlılık sağlayabilirsiniz.
+
+**Kesit ve Görünüm**: Üç boyutlu modellerden otomatik olarak iki boyutlu kesitler ve görünümler oluşturabilirsiniz. Kesit düzlemleri tanımlayın ve program otomatik olarak kesit çizimini üretsin. Bu kesitler model değiştiğinde otomatik olarak güncellenir.
+
+**Çıktı ve Baskı**: Çizimlerinizi farklı ölçeklerde ve formatlarda yazdırabilirsiniz. PDF çıktısı, çok sayfalı baskı ve toplu çıktı alma özellikleri mevcuttur. Özel olarak dikkat çeken bir özellik, üç boyutlu modelinizi doğrudan üç boyutlu PDF olarak dışa aktarabilmenizdir, böylece proje paydaşları Adobe Acrobat Reader ile üç boyutlu modeli görüntüleyebilir.
+
+### BIM Nesneleri ve Kütüphane Yönetimi
+
+Allplan zengin bir nesne kütüphanesine sahiptir ve kendi nesnelerinizi oluşturmanıza olanak tanır.
+
+**Standart Nesne Kütüphaneleri**: Mimari elemanlar, mobilyalar, tesisat ekipmanları, elektrik elemanları, peyzaj elemanları ve daha birçok kategori için hazır nesneler mevcuttur. Bu nesneler farklı detay seviyelerinde (LOD) ve çeşitli dosya formatlarında sunulur.
+
+**SmartParts**: SmartParts, parametrik akıllı nesnelerdir. Boyutları, malzemeleri ve diğer özellikleri değiştirilebilen bu nesneler, tasarım esnekliği sağlar. Kendi SmartParts'larınızı oluşturabilir veya mevcut olanları özelleştirebilirsiniz.
+
+**PythonParts**: Python programlama dilini kullanarak tamamen özel parametrik nesneler oluşturabilirsiniz. PythonParts'lar kendi iş akışlarına, özellik paletlerine ve kullanıcı arayüzlerine sahip olabilir. Tekrar eden tasarım görevlerini otomatikleştirmek için idealdir.
+
+**Content Connector**: Allplan 2025'te geliştirilmiş Content Connector, Cadenas'ın kapsamlı 3DFindit platformunun entegrasyonunu sunar. Bu sayede milyonlarca üretici bileşenine ve BIM nesnesine doğrudan Allplan içinden erişebilirsiniz.
+
+**Kütüphane Yönetimi**: Kendi nesne kütüphanenizi organize edebilir ve yönetebilirsiniz. Nesneleri kategorilere ayırabilir, arama ve filtreleme yapabilir, favori nesneler listesi oluşturabilirsiniz. Kütüphaneler proje bazında veya firma genelinde paylaşılabilir.
+
+### Parametrik Tasarım Araçları
+
+Parametrik tasarım, tasarım elemanlarının parametrelerle kontrol edilmesini ve değişikliklerin otomatik olarak yayılmasını sağlar.
+
+**Nesne Parametreleri**: Allplan'daki her nesne bir dizi parametre ile tanımlanır. Bir duvarın kalınlığını değiştirdiğinizde, bu duvarla bağlantılı tüm elemanlar (kapılar, pencereler, döşemeler) otomatik olarak güncellenir.
+
+**İlişkisel Geometri**: Nesneler arasında geometrik ilişkiler kurabilirsiniz. Örneğin, bir kolonun konumu bir aks sistemine bağlıysa, aksı taşıdığınızda kolon da otomatik olarak taşınır.
+
+**Formüller ve Kısıtlamalar**: Boyutlar arasında matematiksel ilişkiler tanımlayabilirsiniz. Örneğin, bir pencere genişliğini oda genişliğinin yarısı olarak tanımlayabilirsiniz, böylece oda boyutu değiştiğinde pencere de otomatik olarak yeniden boyutlandırılır.
+
+**Varyant Tasarımı**: Parametrik yaklaşım, bir tasarımın birçok varyantını hızlıca oluşturmanıza olanak tanır. Temel parametreleri değiştirerek farklı tasarım seçeneklerini kolayca karşılaştırabilirsiniz.
+
+### Görselleştirme ve Render Özellikleri
+
+Allplan, tasarımlarınızı görselleştirmek için çeşitli araçlar sunar.
+
+**Gerçek Zamanlı Görselleştirme**: OpenGL tabanlı gerçek zamanlı görüntüleme, modelinizi farklı açılardan anında görebilmenizi sağlar. Gölgeleme, gölge ve temel malzeme görselleştirmesi gerçek zamanlı olarak hesaplanır.
+
+**Malzeme ve Doku**: Yapı elemanlarına gerçekçi malzemeler atayabilirsiniz. Geniş malzeme kütüphanesinden seçim yapabilir veya kendi malzemelerinizi oluşturabilirsiniz. Dokular, yansımalar ve diğer görsel özellikler tanımlanabilir.
+
+**Işıklandırma**: Sanal ışık kaynakları ekleyebilirsiniz. Nokta ışık, spot ışık, yön ışığı ve ortam aydınlatması seçenekleri mevcuttur. Güneş simülasyonu ile belirli tarih ve saatlerdeki doğal aydınlatmayı görebilirsiniz.
+
+**AI Visualizer**: Allplan 2025'in öne çıkan özelliklerinden biri yapay zeka destekli AI Visualizer'dır. Bu araç, yapay zekanın gücünü kullanarak saniyeler içinde çarpıcı görselleştirmeler oluşturmanıza olanak tanır. Farklı mimari stilleri hızlıca keşfedebilir, malzeme ve dokularla deneyler yapabilir veya tamamen yeni manzaralar yaratabilirsiniz. AI Visualizer hem dış cephe hem de iç mekan tasarımları için mükemmel sonuçlar verir. Düşük çözünürlüklü bir görüntüyü yüksek çözünürlüklü bir başyapıta dönüştürebilir. "Sadece metin" modu ile vizyonunuzu kelimelerle tanımlayabilir ve yapay zeka bunu görselleştirir.
+
+**Render Motorları**: Yüksek kaliteli render için farklı render motorları kullanılabilir. Ray tracing ile fotorealistik görüntüler elde edebilirsiniz. Render ayarları (çözünürlük, ışık kalitesi, gölge detayı) ihtiyacınıza göre ayarlanabilir.
+
+**Lumion Entegrasyonu**: Allplan, Lumion ile gerçek zamanlı senkronizasyon sunar. Bu entegrasyon, konseptlerin müşterilere daha çekici ve başarılı sunumlarını destekler.
+
+**Animasyon**: Kamera yolları tanımlayarak animasyonlar oluşturabilirsiniz. Model etrafında sanal bir tur yapan videolar üretebilirsiniz. Animasyon parametreleri (hız, zaman, görüş açısı) kontrol edilebilir.
+
+### İşbirliği Araçları ve Bimplus Entegrasyonu
+
+Modern BIM süreçlerinde ekip işbirliği kritik öneme sahiptir ve Allplan bu konuda güçlü çözümler sunar.
+
+**Bimplus Platformu**: Bimplus, Allplan'ın bulut tabanlı işbirliği platformudur. Proje verilerini bulutta saklayabilir, ekip üyeleriyle paylaşabilir ve gerçek zamanlı işbirliği yapabilirsiniz. Farklı konumlardaki ekip üyeleri aynı proje üzerinde eşzamanlı çalışabilir.
+
+**Allplan Share**: Allplan Share, Bimplus üzerinden proje yönetimi ve işbirliği için özel olarak tasarlanmış bir servistir. Yerel proje klasörü yerine bulut tabanlı çalışma imkanı sunar. Proje güncellemeleri otomatik olarak senkronize edilir ve tüm ekip üyeleri en güncel versiyona erişir.
+
+**Model Koordinasyonu**: Farklı disiplinlerden gelen modeller Bimplus'ta birleştirilebilir ve koordine edilebilir. Mimari, yapısal ve MEP modellerinin çakışma kontrolü yapılabilir, sorunlar tespit edilebilir ve çözümler geliştirilebilir.
+
+**Doküman Yönetimi**: Bimplus, kapsamlı doküman yönetimi özellikleri sunar. Çizimler, raporlar, fotoğraflar ve diğer proje dokümanları merkezi bir yerde saklanır. Versiyon kontrolü, erişim yönetimi ve onay iş akışları tanımlanabilir.
+
+**Bluebeam Entegrasyonu**: Allplan 2025 ve Bimplus'ın birleşimi, Bluebeam ile yeni bir iş akışı sunarak inşaat ekipleri arasında kusursuz işbirliği sağlar. Bu entegrasyon, Bluebeam Studio'dan Bimplus'ın doküman yönetimine herhangi bir dokümanın zahmetsizce aktarılmasını sağlar.
+
+**Mobil Erişim**: Bimplus mobil uygulamaları ile proje bilgilerine tablet veya akıllı telefondan erişebilirsiniz. Şantiyede model görüntüleme, fotoğraf ekleme ve durum güncelleme gibi işlemler yapabilirsiniz.
+
+**Yorum ve Not**: Ekip üyeleri model üzerinde yorum ve notlar ekleyebilir. Belirli elemanlar veya konumlar işaretlenebilir ve tartışmalar başlatılabilir. Bu özellik, sorun çözme ve karar verme süreçlerini hızlandırır.
+
+### IFC Formatı ve Diğer Yazılımlarla Uyumluluk
+
+OpenBIM yaklaşımının temelinde farklı yazılımlar arasında sorunsuz veri alışverişi yatar.
+
+**IFC Standardı**: Industry Foundation Classes (IFC), BIM verisi için uluslararası bir standarttır. Allplan, IFC 2x3 ve IFC4 formatlarını tam olarak destekler. IFC4 Referans Görünümü için BuildingSMART sertifikasına sahiptir.
+
+**IFC Dışa Aktarım**: Allplan modelinizi IFC formatında dışa aktarabilirsiniz. Dışa aktarım ayarlarında hangi elemanların ve bilgilerin aktarılacağını kontrol edebilirsiniz. Farklı IFC şemaları (Coordination View, Reference View) arasında seçim yapabilirsiniz.
+
+**IFC İçe Aktarım**: Diğer BIM yazılımlarından gelen IFC dosyalarını Allplan'a aktarabilirsiniz. İçe aktarım sırasında elemanların nasıl eşleştirileceğini, katmanların nasıl organize edileceğini kontrol edebilirsiniz.
+
+**IDS Desteği**: Allplan 2025, buildingSMART tarafından yeni standart IDS'yi (Information Delivery Specification) destekler. Bu teknik önizleme ile, model özellikleri için tanımlanmış kuralların ve gereksinimlerin değerlendirilmesi gerçekleştirilebilir, bu da dijital modeller için doğru bilginin teslimatını hızlandırır ve otomatikleştirir.
+
+**DWG ve DXF**: AutoCAD ve diğer CAD yazılımlarıyla uyumluluk için DWG ve DXF formatları desteklenir. İki boyutlu çizimler ve üç boyutlu modeller bu formatlarda içe ve dışa aktarılabilir. Katman eşleştirme, birim dönüşümü ve stil dönüşümü özellikleri mevcuttur.
+
+**DGN Format**: Bentley MicroStation ile uyumluluk için DGN formatı desteklenir.
+
+**SAF Formatı**: Structural Analysis Format (SAF), yapısal analiz verilerinin işlenmesinde devrim yaratmaktadır. Yapısal analiz için özel olarak tasarlanan SAF, tüm ilgili bilgileri kolayca okunabilir bir formatta sağlar ve Excel'de görüntülenebilir. Allplan 2025'te SAF formatındaki model verileri doğrudan Bimplus'a içe aktarılabilir.
+
+**AutoConverter**: AutoConverter, Bimplus aracılığıyla Allplan Cloud'da barındırılan bir servistir. Üç boyutlu geometrik modellerden yapısal analiz modelleri oluşturabilir, bunları çok çeşitli yapısal analiz çözümlerine aktarabilir ve analitik modelleri yönetilen bir ortama geri getirebilir. Geliştirilmiş AutoConverter artık hem düzlem içi hem de düzlem dışı eğri kirişlerin işlenmesini destekler.
+
+**Excel Entegrasyonu**: Miktar verileri, malzeme listeleri ve raporlar Excel formatında dışa aktarılabilir. Excel'de düzenleme yapılabilir ve veriler Allplan'a geri aktarılabilir.
+
+**Diğer Formatlar**: PDF, resim formatları (JPG, PNG, TIFF, BMP), nokta bulutu formatları (LAS, E57), VRML ve daha birçok format desteklenir. Toplamda otuzdan fazla dosya formatı ile veri alışverişi yapılabilir.
+
+### Analiz Araçları
+
+Allplan, tasarım sürecinde çeşitli analizler yapmanıza olanak tanır.
+
+**Çakışma Tespiti**: Farklı disiplinlerden gelen modeller birleştirildiğinde çakışmalar oluşabilir. Allplan'ın çakışma tespit aracı, bu sorunları otomatik olarak bulur. Örneğin, bir havalandırma kanalının bir kiriş ile çakışması tespit edilir ve raporlanır.
+
+**Enerji Analizi**: Binanın enerji performansını değerlendirmek için araçlar mevcuttur. Yapı kabuğu özellikleri, yalıtım değerleri ve sistem verimlilikleri analiz edilir. Enerji sertifikasyonu için gerekli veriler üretilir.
+
+**Yük Analizi**: Yapısal analiz yazılımlarıyla entegrasyon sayesinde yük analizi yapılabilir. Kendi ağırlık, hareketli yük, rüzgar yükü ve deprem yükleri tanımlanabilir.
+
+**Miktar Hesaplama**: Model üzerinden otomatik miktar çıkarımı yapılır. Beton hacimleri, demir ağırlıkları, duvar alanları, sıva alanları gibi tüm yapı miktarları otomatik olarak hesaplanır. Bu veriler maliyet tahmini ve ihale hazırlığı için kullanılır.
+
+**Güneş Analizi**: Binanın güneşlenme durumu analiz edilebilir. Belirli tarih ve saatlerde gölge durumu görselleştirilir. Bu analiz, enerji performansı ve konfor açısından önemlidir.
+
+### Miktar Çıkarımı ve Raporlama
+
+Doğru ve güncel miktar bilgisi, proje yönetimi için kritik öneme sahiptir.
+
+**Otomatik Miktar Çıkarımı**: Allplan, üç boyutlu modelden otomatik olarak miktar bilgilerini çıkarır. Her yapı elemanı hacim, alan, ağırlık gibi bilgileri içerir. Model değiştiğinde miktarlar otomatik olarak güncellenir.
+
+**Miktar Tabloları**: Çeşitli miktar tabloları oluşturabilirsiniz. Malzeme bazında, kat bazında veya eleman tipi bazında gruplandırılmış tablolar üretilebilir. Tablo formatları özelleştirilebilir.
+
+**Donatı Metrajı**: Betonarme yapılarda donatı metrajı özel bir önem taşır. Allplan, her donatı çubuğunun uzunluğunu, ağırlığını ve adedini otomatik olarak hesaplar. Poz numaraları, çap bilgileri ve bükum şekilleri detaylı tablolarda sunulur.
+
+**Maliyet Tahmini**: Miktar bilgileri birim fiyatlarla birleştirilerek maliyet tahminleri yapılabilir. Fiyat kütüphaneleri kullanılabilir veya özel fiyat listeleri oluşturulabilir. Allplan kullanıcıları, Excel ile geliştirdikleri sistemlerle üçüncü taraf fiyat kitapları ile modeli senkronize ederek dakikalar içinde maliyet tahmini elde edebilirler.
+
+**Özel Raporlar**: Raporlar tamamen özelleştirilebilir. Hangi bilgilerin, hangi formatta ve hangi düzende gösterileceğini kontrol edebilirsiniz. Firma logosu, proje bilgileri ve özel başlıklar ekleyebilirsiniz.
+
+**Excel Entegrasyonu**: Raporlar Excel'e aktarılabilir, burada daha fazla işlem yapılabilir ve Excel'den Allplan'a geri yüklenebilir. Bu çift yönlü entegrasyon, mevcut iş süreçlerinizi destekler.
+
+### Kalite Kontrol ve Çakışma Tespiti
+
+BIM süreçlerinde model kalitesi ve koordinasyon çok önemlidir.
+
+**Model Doğrulama**: Allplan, modelin tutarlılığını kontrol eden araçlar sunar. Eksik bilgiler, hatalı bağlantılar veya geometrik hatalar tespit edilir ve raporlanır.
+
+**IDS Doğrulama**: Information Delivery Specification ile tanımlanan kuralların modelde karşılanıp karşılanmadığı kontrol edilebilir. Örneğin, tüm duvarların yangın dayanım sınıfı bilgisine sahip olup olmadığı otomatik olarak kontrol edilir.
+
+**Çakışma Kontrolü**: Farklı disiplinler arasında çakışma kontrolü yapılır. Sert çakışmalar (elemanların fiziksel olarak çakışması) ve yumuşak çakışmalar (güvenlik mesafelerinin ihlali) tespit edilir.
+
+**Solibri Entegrasyonu**: Allplan, Solibri ile gerçek zamanlı BIM işbirliği sunar. Solibri, kalite kontrol ve kural tabanlı model denetimi için özel bir yazılımdır. Allplan modeli Solibri'ye aktarılabilir, kontroller yapılabilir ve sorunlar Allplan'da düzeltilebilir.
+
+**Veri Doğrulayıcı**: Allplan 2025'te prekast elemanlar için Veri Doğrulayıcı, her açıklığa bir makronun dahil edildiğinden ve fikstürlerin prekast eleman içinde doğru şekilde konumlandırıldığından emin olur.
+
+### Revizyon ve Versiyon Yönetimi
+
+Proje sürecinde değişiklikler kaçınılmazdır ve bu değişikliklerin yönetimi önemlidir.
+
+**Versiyon Kontrolü**: Allplan, proje versiyonlarını yönetmenize olanak tanır. Belirli aşamalarda proje anlık görüntüleri alabilir, farklı versiyonları karşılaştırabilirsiniz.
+
+**Değişiklik Takibi**: Modeldemodelde yapılan değişiklikleri takip edebilirsiniz. Hangi elemanın ne zaman, kim tarafından değiştirildiği kaydedilir. Bu bilgi, ekip koordinasyonu ve sorumluluk takibi için önemlidir.
+
+**Karşılaştırma**: İki farklı model versiyonunu karşılaştırabilirsiniz. Eklenen, silinen veya değiştirilen elemanlar görsel olarak vurgulanır. Bu özellik, revizyonların etkilerini anlamak için kullanışlıdır.
+
+**Yedekleme**: Allplan otomatik yedekleme özellikleri sunar. Belirli aralıklarla proje otomatik olarak yedeklenir. Veri kaybı durumunda eski versiyonlara geri dönebilirsiniz.
+
+**Bimplus Versiyon Yönetimi**: Bimplus platformu bulutta kapsamlı versiyon yönetimi sağlar. Her değişiklik kaydedilir ve geçmiş versiyonlara erişilebilir.
+
+## İŞ AKIŞLARI VE UYGULAMALI BİLGİLER
+
+### Tipik Bir Proje Yaşam Döngüsü
+
+Allplan kullanarak bir projeyi nasıl baştan sona yönetebileceğinizi anlayalım:
+
+**Ön Tasarım ve Konsept**: Proje konsept aşamasında başlar. Mimari tasarımcılar temel hacim çalışmaları yapar, alan programını oluşturur ve ilk tasarım fikirlerini geliştirir. Bu aşamada detay seviyesi düşüktür ancak temel kararlar alınır. AI Visualizer gibi araçlar bu aşamada hızlı görselleştirmeler için kullanılır.
+
+**Tasarım Geliştirme**: Konsept onaylandıktan sonra tasarım geliştirilir. Duvarlar, döşemeler, çatı gibi yapı elemanları detaylandırılır. Kapı ve pencere konumları belirlenir. Farklı disiplinler (mimari, yapısal, MEP) çalışmaya başlar ve modeller koordine edilir.
+
+**Detay Projeleri**: Bu aşamada yüksek detay seviyesine ulaşılır. Yapısal elemanlar tam olarak boyutlandırılır, donatı detayları eklenir, tüm yapım detayları modellenir. Teknik spesifikasyonlar tamamlanır.
+
+**Ruhsat Projeleri**: Yerel mevzuata uygun ruhsat projeleri hazırlanır. Gerekli çizimler ve dokümanlar modellerden üretilir. Plan notları, detaylar ve hesaplamalar eklenir.
+
+**Uygulama ve Yapım**: Yapım aşamasında imalatçılar ve müteahhitler detaylı bilgilere ihtiyaç duyar. Kalıp planları, donatı detayları, montaj çizimleri üretilir. Şantiyede model tablet veya mobil cihazlardan görüntülenebilir.
+
+**İşletme ve Bakım**: Proje tamamlandıktan sonra As-built (yapıldığı gibi) modeli oluşturulur. Bu model tesis yönetimi için kullanılır. Bakım planlaması, alan yönetimi ve gelecekteki renovasyon çalışmaları için referans olur.
+
+### Ekip Çalışması ve Koordinasyon
+
+Modern BIM projeleri ekip çalışması gerektirir:
+
+**Rol Tanımları**: Her ekip üyesinin rolü ve sorumlulukları net olarak tanımlanmalıdır. Mimari tasarımcı, yapı mühendisi, MEP mühendisi, miktarcı gibi roller belirlenmelidir.
+
+**Model Bölümleme**: Büyük projelerde model mantıksal bölümlere ayrılır. Her disiplin kendi modelini oluşturur. Bu modeller düzenli olarak birleştirilir ve koordine edilir.
+
+**Koordinasyon Toplantıları**: Düzenli koordinasyon toplantılarında modeller gözden geçirilir, çakışmalar tartışılır ve çözümler geliştirilir. Bimplus platformu bu toplantılarda ekran paylaşımı ve uzaktan işbirliği için kullanılır.
+
+**İletişim Protokolleri**: Ekip üyeleri arasında standart iletişim protokolleri oluşturulmalıdır. Değişiklik talepleri nasıl iletilecek, onaylar nasıl alınacak, sorunlar nasıl raporlanacak gibi kurallar belirlenmelidir.
+
+**Veri Paylaşım Standartları**: Dosya adlandırma konvansiyonları, klasör yapısı ve veri paylaşım formatları standardize edilmelidir. IFC değişimi için hangi şemanın kullanılacağı, ne sıklıkla model güncellemelerinin paylaşılacağı gibi konular netleştirilmelidir.
+
+### En İyi Uygulamalar ve İpuçları
+
+Allplan'ı en verimli şekilde kullanmak için bazı öneriler:
+
+**Proje Şablonları Kullanın**: Her proje için sıfırdan başlamak yerine, firma standartlarınızı içeren şablon dosyalar hazırlayın. Katman yapısı, çizim stilleri, nesne kütüphaneleri önceden tanımlanmış olsun.
+
+**Katman Disiplini**: Katman sistemini düzenli kullanın. Her eleman tipini uygun katmana yerleştirin. Katman adlandırma için standart bir sistem geliştirin. Disiplinler arası koordinasyon için katman yapısını diğer ekip üyeleriyle paylaşın.
+
+**Düzenli Kaydetme**: Sık sık kaydetme alışkanlığı edinin. Büyük değişiklikler yapmadan önce projenin yedeğini alın. Otomatik yedekleme ayarlarını kontrol edin.
+
+**Model Organizasyonu**: Modelinizi mantıksal bir şekilde organize edin. Bina yapısını doğru kullanın. Katlar, binalar ve yapı elemanlarını hiyerarşik olarak düzenleyin.
+
+**Referans Yöneticisi**: Allplan 2025'te yeni Referans Yöneticisi, belirli bir projede kullanılan referans dokümanların etkili bir şekilde görüntülenmesini ve yönetimini sağlar. Farklı referans doküman türlerinin ve konumlarının sorunsuz tanımlanmasını mümkün kılar.
+
+**Parametrik Yaklaşım**: Mümkün olduğunca parametrik nesneler kullanın. Sabit boyutlar yerine ilişkisel boyutlar tanımlayın. Bu yaklaşım değişiklikleri çok daha kolay hale getirir.
+
+**Performans Optimizasyonu**: Büyük projelerde performans önemlidir. Görünüm alanını sınırlayın, kullanmadığınız katmanları gizleyin, karmaşık nesneleri basitleştirilmiş versiyonlarla temsil edin.
+
+**Kısayol Tuşları**: Sık kullandığınız komutlar için kısayol tuşları öğrenin ve özelleştirin. Bu küçük optimizasyon uzun vadede büyük zaman tasarrufu sağlar.
+
+**Eğitim ve Öğrenme**: Allplan'ın sunduğu çevrimiçi eğitim kaynaklarından yararlanın. Allplan Connect platformunda tutorial videolar, dokümantasyon ve topluluk forumları mevcuttur.
+
+### Sık Karşılaşılan Sorunlar ve Çözümleri
+
+**Performans Sorunları**: Eğer program yavaş çalışıyorsa, grafik kartı sürücülerinizi güncelleyin, gereksiz arka plan programlarını kapatın, proje dosyalarını yerel SSD'ye taşıyın.
+
+**Çakışma Sorunları**: Disiplinler arası çakışmalar normaldir. Düzenli çakışma kontrolleri yapın ve sorunları erken tespit edin. Koordinasyon için tolerans değerlerini makul seçin.
+
+**Veri Aktarım Sorunları**: IFC veya DWG aktarımında sorun yaşıyorsanız, aktarım ayarlarını kontrol edin. Birim uyumsuzluğu sık karşılaşılan bir sorundur. Hedef yazılımın hangi IFC şemasını desteklediğini öğrenin.
+
+**Lisans Sorunları**: Lisans sunucusuyla bağlantı kesilirse, ağ ayarlarınızı kontrol edin. Güvenlik duvarının Allplan'ı engellememesinden emin olun.
+
+## SONUÇ
+
+Allplan BIM, mimarlık, inşaat mühendisliği ve altyapı projeleri için kapsamlı ve güçlü bir çözümdür. Bu kılavuzda Allplan'ın temel özelliklerinden gelişmiş yeteneklerine kadar geniş bir yelpazede bilgi sunduk. 
+
+Yazılımı etkili kullanmanın anahtarı pratiktir. Bu kılavuzdaki bilgileri uygulayarak, Allplan'da yetkinlik kazanabilir ve projelerinizde verimliliği artırabilirsiniz. BIM yaklaşımı ve Allplan'ın sunduğu araçlar, tasarım kalitesini yükseltirken, zaman ve maliyet tasarrufu sağlar.
+
+Allplan'ın Türkiye distribütörleri ve yetkili eğitim merkezleri, daha detaylı eğitimler ve teknik destek sunmaktadır. Yazılımın tüm potansiyelinden faydalanmak için bu kaynaklardan yararlanmanız önerilir.
+
+---
+
+*Bu kılavuz Allplan 2025 sürümü baz alınarak hazırlanmıştır. Yazılım sürekli geliştirildiği için yeni sürümlerde ek özellikler ve iyileştirmeler bulunabilir.*

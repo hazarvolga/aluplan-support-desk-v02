@@ -1,0 +1,142 @@
+
+10	
+11	## BÖLÜM 1: OPEN BIM VE VERİ YÖNETİMİNDE UZMANLIK
+12	
+13	Allplan, yazılım bağımsız işbirliğini destekleyen **Open BIM** felsefesinin merkezinde yer alır. Profesyonel bir iş akışı, modelin geometrisinden (LoG) çok, içerdiği bilgiye (LoI) odaklanır. Veri kalitesini yönetmek, BIM yöneticisinin en kritik görevidir.
+14	
+15	### 1.1. IFC Veri Alışverişi ve Nitelik Eşleme (Attribute Mapping)
+16	
+17	IFC (Industry Foundation Classes) formatında veri alışverişi, Allplan'ın en kritik işlevlerinden biridir. Veri kalitesini sağlamak için nitelik eşlemesi hayati önem taşır.
+18	
+19	#### 1.1.1. IFC Dışa Aktarım İş Akışı (Adım Adım)
+20	
+21	1.  **Model Hazırlığı (LoD/LoI Kontrolü):**
+22	    *   Dışa aktarılacak çizim dosyalarını (Drawing Files) ve bina yapısını (Building Structure) kontrol edin. Yalnızca ilgili katmanların (Layer) görünür olduğundan emin olun.
+23	    *   Model bileşenlerinin (örneğin, duvarlar, döşemeler) doğru **IFC Sınıfı** (IfcWall, IfcSlab vb.) ve gerekli **Niteliklere** (Malzeme, Yangın Dayanımı vb.) sahip olduğunu doğrulayın.
+24	
+25	2.  **Dışa Aktarım Ayarları:**
+26	    *   `Dosya > Dışa Aktar > IFC Verisi` yolunu izleyin. Gelen iletişim kutusunda `Gelişmiş Ayarlar (Advanced)` sekmesine geçin.
+27	    *   **Dosya Türü:** Hedef yazılıma göre **IFC 4.3** (tercih edilen) veya **IFC 2x3** formatını seçin.
+28	
+29	3.  **Değişim Profili (Exchange Profile) Seçimi:**
+30	    *   İlgili değişim profilini seçin. Bu profiller, Allplan'ın hangi geometri türlerini (örneğin, Brep, SweptSolid) kullanacağını ve hangi IFC versiyonuna uyacağını belirler. Ofis standardınıza uygun özel bir profil oluşturmak için `Farklı Kaydet...` seçeneğini kullanın.
+31	
+32	4.  **Nitelik Eşleme (Attribute Assignment) Detayları:** Bu, veri kalitesini doğrudan etkileyen en kritik adımdır.
+33	    *   `Nitelik Eşleme` alanında mevcut bir atamayı seçin veya `Yeni...` butonu ile yeni bir atama **(.cfg dosyası)** oluşturun.
+34	    *   `Düzenle` butonuna tıklayarak **"Allplan'dan IFC'ye Dönüşüm Yönü"** iletişim kutusunu açın.
+35	    *   **Eşleme Kuralları:** Bu pencerede, Allplan'daki standart ve kullanıcı tanımlı niteliklerin (User-defined Attributes) hangi IFC özellik kümelerine (Property Sets - **Pset**) ve hangi IFC nesnelerine (IfcWall, IfcBeam vb.) eşleneceğini tanımlayın.
+36	    *   **Kullanım Önerisi:** Yalnızca gerekli nitelikleri aktarmak ve dosya boyutunu küçültmek için `Yalnızca Atanan Nitelikleri Aktar` seçeneğini işaretleyin.
+37	
+38	#### Örnek Senaryo: Maliyetlendirme için IFC Dışa Aktarımı - Nitelik Eşleme Detayları
+39	
+40	Bu senaryo, BIM modelini bir maliyetlendirme yazılımına aktarmak için yalnızca metraj ve maliyetle ilgili verileri içeren optimize edilmiş bir IFC dosyası oluşturulmasını hedefler.
+41	
+42	| Adım | Teknik Uygulama | Amaç |
+43	| :--- | :--- | :--- |
+44	| **1. Nitelik Eşleme Profili Oluşturma** | `IFC Dışa Aktarım Ayarları`nda `Yeni...` seçeneği ile **"Maliyetlendirme_IFC"** adında yeni bir `.cfg` dosyası oluşturun. | Standart dışa aktarım profilini değiştirmeden, amaca özel bir kural seti tanımlamak. |
+45	| **2. Eşleme Kuralı Tanımlama (Detaylı)** | `Allplan'dan IFC'ye Dönüşüm Yönü` penceresinde, tüm IFC nesneleri için (IfcWall, IfcSlab, IfcColumn vb.) aşağıdaki eşlemeleri tanımlayın:<br><br>**A. Metraj Verileri (Pset_QuantityTakeOff):**<br>- Allplan Nitelik: `Hacim` -> IFC Pset: `Pset_QuantityTakeOff`, Nitelik: `GrossVolume`<br>- Allplan Nitelik: `Alan` -> IFC Pset: `Pset_QuantityTakeOff`, Nitelik: `GrossArea`<br><br>**B. Maliyet Verileri (Pset_Cost):**<br>- Allplan Nitelik: `Maliyet Kodu (User-defined)` -> IFC Pset: `Pset_Cost`, Nitelik: `CostCode`<br>- Allplan Nitelik: `Birim Fiyat (User-defined)` -> IFC Pset: `Pset_Cost`, Nitelik: `UnitCost`<br><br>**C. Temel Kimlik:**<br>- Allplan Nitelik: `Malzeme` -> IFC Pset: `Pset_Material`, Nitelik: `MaterialName` | Maliyetlendirme yazılımının ihtiyaç duyduğu temel metraj ve maliyet verilerini IFC standardına uygun Pset'ler altında dışa aktarmak. Bu, metrajın doğru hesaplanması ve maliyet kodlarının otomatik atanması için kritiktir. |
+46	| **3. Filtreleme ve Kapsam Belirleme** | `Dışa Aktarım Ayarları`nda, `Sadece Atanan Nitelikleri Aktar` seçeneğini işaretleyin. Ayrıca, dışa aktarılacak çizim dosyaları listesinden yalnızca **Yapısal Model** ve **Mimari Kabuk** dosyalarını seçin. | Gereksiz geometrik detayları (örneğin, mobilya, peyzaj) ve alakasız nitelikleri dışlayarak dosya boyutunu optimize etmek ve veri kirliliğini önlemek. |
+47	| **4. Geometri Tipi** | Geometri tipi olarak `Brep` (Boundary Representation) yerine `SweptSolid` (Süpürülmüş Katı) ve `ExtrudedArea` (Ekstrüde Edilmiş Alan) gibi daha hafif geometri temsillerini tercih edin. | Dosyanın daha hızlı açılmasını ve maliyetlendirme yazılımında daha hızlı işlenmesini sağlamak. |
+48	
+49	Bu senaryo, profesyonel BIM iş akışlarında IFC dışa aktarımının basit bir dosya kaydetme işleminden öte, amaca yönelik bir **veri filtrasyonu** ve **kalite kontrolü** süreci olduğunu göstermektedir.
+50	
+51	
+52	
+53	| Adım | Teknik Uygulama | Amaç |
+54	| :--- | :--- | :--- |
+55	| **1. Nitelik Eşleme Profili Oluşturma** | `IFC Dışa Aktarım Ayarları`nda `Yeni...` seçeneği ile **"Maliyetlendirme_IFC"** adında yeni bir `.cfg` dosyası oluşturun. | Standart dışa aktarım profilini değiştirmeden, amaca özel bir kural seti tanımlamak. |
+56	| **2. Eşleme Kuralı Tanımlama** | `Allplan'dan IFC'ye Dönüşüm Yönü` penceresinde, tüm IFC nesneleri için (IfcWall, IfcSlab, IfcColumn):<br> Allplan Nitelikleri: `Malzeme`, `Hacim`, `Alan`, `Maliyet Kodu (User-defined)`<br> IFC Pset: `Pset_QuantityTakeOff` ve `Pset_Cost` olarak eşleyin. | Maliyetlendirme yazılımının ihtiyaç duyduğu temel metraj ve maliyet verilerini IFC standardına uygun Pset'ler altında dışa aktarmak. |
+57	| **3. Filtreleme ve Kapsam Belirleme** | `Dışa Aktarım Ayarları`nda, `Sadece Atanan Nitelikleri Aktar` seçeneğini işaretleyin. Ayrıca, dışa aktarılacak çizim dosyaları listesinden yalnızca **Yapısal Model** ve **Mimari Kabuk** dosyalarını seçin. | Gereksiz geometrik detayları (örneğin, mobilya, peyzaj) ve alakasız nitelikleri dışlayarak dosya boyutunu optimize etmek. |
+58	| **4. Geometri Tipi** | Geometri tipi olarak `Brep` (Boundary Representation) yerine `SweptSolid` (Süpürülmüş Katı) ve `ExtrudedArea` (Ekstrüde Edilmiş Alan) gibi daha hafif geometri temsillerini tercih edin. | Dosyanın daha hızlı açılmasını ve maliyetlendirme yazılımında daha hızlı işlenmesini sağlamak. |
+59	
+60	Bu senaryo, profesyonel BIM iş akışlarında IFC dışa aktarımının basit bir dosya kaydetme işleminden öte, amaca yönelik bir **veri filtrasyonu** ve **kalite kontrolü** süreci olduğunu göstermektedir.
+61	
+62	#### 1.1.2. IDS (Information Delivery Specification) Uygulaması
+63	
+64	Allplan 2026 ve sonraki sürümler, BIM modelinin belirli bilgi gereksinimlerine (IDS) uygunluğunu kontrol etmeyi ve gerekli nitelikleri içe aktarmayı destekler.
+65	
+66	*   **IDS İş Akışı:** Projeniz için tanımlanmış bir IDS dosyası **(.json formatında)** varsa, Allplan bu dosyayı kullanarak modeldeki bileşenlerin (örneğin, bir duvarın yangın dayanımı niteliği) eksik veya yanlış olup olmadığını kontrol edebilir.
+67	*   **Teknik Uygulama:** IDS, Allplan'daki **Nitelik Yöneticisi** ile entegre çalışır. IDS dosyasında tanımlanan zorunlu nitelikler, modelleme sırasında bileşenlere atanması gereken alanları ve bunların kabul edilebilir değer aralıklarını (örneğin, `Malzeme` niteliği için sadece "Beton", "Çelik" veya "Ahşap" değerlerinin kabul edilmesi) tanımlar.
+68	
+69	### 1.2. BCF ve Çakışma Yönetimi (Issue Management)
+70	
+71	BCF (BIM Collaboration Format), model tabanlı iletişim ve sorun yönetimi için kullanılan, yazılımdan bağımsız bir standarttır.
+72	
+73	*   **Bimplus Entegrasyonu:** Allplan, **Bimplus** platformu üzerinden BCF 2.0 ve 2.1 formatlarını destekler. Bu, modeldeki bir çakışmanın veya sorunun (Issue) doğrudan Bimplus'a aktarılmasını, ilgili kişiye atanmasını ve çözüm sonrası durumunun takip edilmesini sağlar.
+74	
+75	*   **Adım Adım Çakışma Çözümü İş Akışı:**
+76	    1.  **Çakışma Tespiti (Clash Detection):** Modelde `Kontrol Et > Çakışma Tespiti` komutunu çalıştırın. Çakışma raporunu inceleyin.
+77	    2.  **BCF Sorunu Oluşturma:** Tespit edilen çakışmayı seçin ve `Issue Manager` (Sorun Yöneticisi) aracılığıyla yeni bir BCF sorunu oluşturun.
+78	        *   **Gerekli Bilgiler:** Sorunun konumunu, ekran görüntüsünü (modelin o anki görünümünü yakalar), sorumlusunu (Assignee), önceliğini (Priority) ve teknik açıklamasını ekleyin.
+79	    3.  **Bimplus Senkronizasyonu:** Sorunu Bimplus'taki ilgili projeye senkronize edin. Bu, sorunun diğer disiplinlerin yazılımlarında (örneğin, Revit, Tekla) BCF eklentisi aracılığıyla açılabilmesini sağlar.
+80	    4.  **Geri Bildirim ve Düzeltme:** İlgili disiplin, sorunu kendi yazılımında açar. BCF dosyası, sorunun tam 3D konumunu ve kamera açısını otomatik olarak getirir. Düzeltme yapıldıktan sonra durumu Bimplus'ta **"Çözüldü"** olarak işaretler.
+81	    5.  **Allplan Güncellemesi ve Doğrulama:** Allplan kullanıcısı, Bimplus'tan güncel BCF durumunu çekerek modelin güncellendiğini doğrular ve sorunu **"Kapatıldı"** olarak işaretler.
+82	
+83	---
+84	
+85	## BÖLÜM 2: İLERİ MODELLEME VE DETAYLANDIRMA TEKNİKLERİ
+86	
+87	### 2.1. Yapısal Detaylandırma: Donatı Modellemesi
+88	
+89	Allplan, karmaşık donatı detaylandırmasını otomatikleştiren güçlü araçlara sahiptir.
+90	
+91	#### 2.1.1. Çubuk Donatı Detaylandırma İş Akışı
+92	
+93	1.  **Kesit Oluşturma:** Donatısı yapılacak yapısal elemanın (kiriş, kolon, perde) ilgili yerinden **2D Kesit** alın.
+94	2.  **Donatı Yerleşimi:** `Mühendislik > Donatı` sekmesinden `Çubuk Donatı` komutunu seçin.
+95	    *   **Çap ve Çelik Sınıfı:** Gerekli donatı çapını ve çelik sınıfını (örneğin, B500C) belirleyin.
+96	    *   **Beton Örtüsü:** Kesit görünüşte, donatıyı yerleştirmeden önce doğru **beton örtüsü (Concrete Cover)** miktarını tanımlayın.
+97	    *   **Yerleştirme:** Donatıyı serbestçe çizin veya otomatik yerleştirme seçeneklerini kullanın.
+98	3.  **Donatı Yerleşimi (Placement):** Donatıyı bir alana yerleştirmek için `Donatı Yerleşimi` komutunu kullanın. Yerleştirme tipini (`Tekil`, `Düzgün Aralık`, `Değişken Aralık`) ve başlangıç/bitiş mesafelerini teknik çizim standartlarına uygun olarak ayarlayın.
+99	4.  **Donatı Raporu (Bending Schedule):** Donatı modellemesi tamamlandığında, `Raporlar` (Reports) aracını kullanarak otomatik olarak **Donatı Listesi (Bending Schedule)**, **Metraj** ve **Kesme/Bükme Şemaları** oluşturun.
+100	
+101	#### 2.1.2. Kolon Donatısı Otomasyonu
+102	
+103	Tekrarlanan yapısal elemanlar için PythonParts ile otomasyon kullanılır.
+104	
+105	*   **ALLTO PythonParts Örneği:** Harici olarak geliştirilen (veya Python API ile oluşturulan) **Kolon Donatısı PythonPart**'ı, kolon geometrisini ve yükleme koşullarını girdi olarak alır.
+106	*   **Adımlar:**
+107	    1.  Kolonu seçin.
+108	    2.  PythonPart'ı çalıştırın.
+109	    3.  Gelen iletişim kutusunda **Ana Donatı Çapı**, **Etriye Çapı**, **Etriye Aralığı** ve **Bindirme Boyu (Overlap Length)** gibi parametreleri girin.
+110	    4.  PythonPart, bu parametrelere göre 3D donatıyı otomatik olarak yerleştirir, bindirme boylarını hesaplar ve gerekli kesitleri oluşturur.
+111	
+112	### 2.2. Çelik Yapı Detaylandırma ve Entegrasyon
+113	
+114	Allplan, çelik yapı detaylandırmasında **SDS2** ile entegrasyon sunar.
+115	
+116	*   **Akıllı Bağlantılar:** Allplan'da modellenen çelik elemanlar (kiriş, kolon) için **SDS2** entegrasyonu sayesinde, bağlantı noktalarında otomatik olarak akıllı, çakışmasız ve mühendislik hesaplarına dayalı **cıvatalı veya kaynaklı bağlantılar** tasarlanır.
+117	*   **İş Akışı:**
+118	    1.  Allplan'da çelik yapı modelini oluşturun.
+119	    2.  Modeli SDS2'ye aktarın.
+120	    3.  SDS2, bağlantıları otomatik tasarlar ve detaylandırır.
+121	    4.  Detaylandırılmış model, imalat (fabrication) için gerekli tüm bilgileri (NC dosyaları) içerir.
+122	
+123	### 2.3. Mimari Modelleme: PythonPart ve Visual Scripting
+124	
+125	Parametrik nesneler oluşturmak ve tekrarlayan görevleri otomatikleştirmek için kullanılır.
+126	
+127	#### 2.3.1. PythonPart Geliştirme Ortamı
+128	
+129	*   **Kurulum:** Python API, Allplan ile birlikte gelir. Geliştirme için **Visual Studio Code** gibi bir IDE kullanılır.
+130	*   **Başlangıç:** Allplan içinde `PythonPart CreateVisualStudioCodeWorkspace` komutu çalıştırılarak hızlıca bir geliştirme ortamı oluşturulur.
+131	*   **Temel Yapı:** Bir PythonPart, bir nesnenin geometrisini ve niteliklerini tanımlayan Python kodundan oluşur. Bu kod, kullanıcı arayüzü (UI) üzerinden girilen parametrelerle nesneyi dinamik olarak oluşturur.
+132	
+133	#### 2.3.2. Visual Scripting (Görsel Betikleme)
+134	
+135	Kod yazma bilgisi olmayan kullanıcıların parametrik nesneler oluşturması için görsel bir araçtır.
+136	
+137	*   **İş Akışı:**
+138	    1.  `Visual Scripting` modülünü açın.
+139	    2.  Geometri, matematik ve BIM işlevlerini temsil eden **düğümleri (nodes)** bir araya getirin.
+140	    3.  Düğümleri birbirine bağlayarak bir veri akışı oluşturun.
+141	    4.  Örneğin, bir pencere bileşeni oluşturmak için `Genişlik`, `Yükseklik` ve `Kasa Kalınlığı` gibi parametre düğümlerini, `Kutu Oluştur` (Create Box) ve `Pencere Bileşeni Oluştur` (Create Window Component) gibi geometri düğümleriyle birleştirin.
+142	    5.  Oluşturulan betiği bir **Akıllı Nesne** olarak kaydedin.
+143	
+144	---
+145	
+146	## BÖLÜM 3: ALTYAPI, ARAZİ VE OTOMASYON
+147	
+148	### 3.1. Parametrik Yol Tasarımı
+149	
+150	(Content truncated due to size limit. Use page ranges or line ranges to read remaining content)
