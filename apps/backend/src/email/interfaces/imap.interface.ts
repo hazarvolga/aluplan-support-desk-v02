@@ -5,6 +5,7 @@ export interface SimpleImapConfig {
     port: number;
     tls: boolean;
     authTimeout?: number;
+    tlsOptions?: any;
 }
 
 export const _SIMPLE_MAP_CONFIG = 'SIMPLE_MAP_CONFIG';

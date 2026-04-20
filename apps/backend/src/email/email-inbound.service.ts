@@ -89,6 +89,7 @@ export class EmailInboundService implements OnModuleInit {
             password: (await this.settings.getValue('email.imap.pass')) ?? '',
             tls: (await this.settings.getValue('email.imap.tls')) !== 'false',
             authTimeout: 10000,
+            tlsOptions: { rejectUnauthorized: false }
         };
     }
 
