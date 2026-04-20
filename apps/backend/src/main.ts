@@ -4,12 +4,12 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
-import * as compression from 'compression';
+import compression from 'compression';
 import { json, urlencoded } from 'express';
 import * as net from 'net';
 import { Request, Response, NextFunction } from 'express';
-import * as cookieParser from 'cookie-parser';
-import * as csurf from 'csurf';
+import cookieParser from 'cookie-parser';
+import csurf from 'csurf';
 import { AppModule } from './app.module';
 
 async function checkConnection(host: string, port: number, timeout = 3000): Promise<boolean> {

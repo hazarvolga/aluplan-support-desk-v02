@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { TicketsService } from '../tickets/tickets.service';
 import { _SIMPLE_MAP_CONFIG, SimpleImapConfig } from './interfaces/imap.interface';
-import * as imaps from 'imap-simple';
+import imaps from 'imap-simple';
 import { simpleParser } from 'mailparser';
 
 @Injectable()

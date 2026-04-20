@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { google } from 'googleapis';
-import * as nodemailer from 'nodemailer';
+import nodemailer from 'nodemailer';
 import { SettingsService } from '../settings/settings.service';
 import { EmailProvider, SendEmailOptions } from './interfaces/email-provider.interface';
 
