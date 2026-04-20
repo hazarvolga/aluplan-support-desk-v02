@@ -11,7 +11,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as sanitize from 'sanitize-filename';
+import sanitize from 'sanitize-filename';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
