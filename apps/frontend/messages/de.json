@@ -436,7 +436,8 @@
       "assignee_label": "ATANAN_UZMAN",
       "hotfix_data": "HOTINFO_TELEMETRIE_DATEN",
       "security_warning": "SICHERHEITSWARNUNG",
-      "security_warning_desc": "Alle Korrespondenz und geteilten Daten werden gemäß den Aluplan-Qualitätsstandards aufgezeichnet."
+      "security_warning_desc": "Alle Korrespondenz und geteilten Daten werden gemäß den Aluplan-Qualitätsstandards aufgezeichnet.",
+      "initial_attachments": "TICKET_ANHÄNGE"
     },
     "new": {
       "title": "Neue Support-Anfrage",

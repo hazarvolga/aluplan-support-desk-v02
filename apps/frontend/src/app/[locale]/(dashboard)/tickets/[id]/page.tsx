@@ -601,6 +601,25 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                         </div>
                                         <div className="bg-muted/30 border border-border/50 p-3 text-[12px] leading-relaxed tracking-tight text-foreground font-medium shadow-sm">
                                             {ticket.description}
+
+                                            {/* Show attachments from the first message here if it's the description duplicate */}
+                                            {ticket.messages?.[0]?.attachments?.length > 0 && (
+                                                <div className="mt-3 pt-2 border-t border-border/20 space-y-1">
+                                                    <p className="text-[9px] uppercase font-bold text-muted-foreground/60 mb-1">{t('initial_attachments') || 'Bilet Ekleri'}</p>
+                                                    {ticket.messages[0].attachments.map((file: any) => (
+                                                        <a
+                                                            key={file.id}
+                                                            href={api.attachments.getDownloadUrl(file.id)}
+                                                            target="_blank"
+                                                            className="flex items-center gap-2 bg-black/20 p-1.5 hover:bg-black/40 transition-none text-[10px] font-mono border border-border/20"
+                                                        >
+                                                            <Paperclip className="h-3 w-3 opacity-60" />
+                                                            <span className="flex-1 truncate uppercase">{file.fileName}</span>
+                                                            <Download className="h-3 w-3 opacity-60" />
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
