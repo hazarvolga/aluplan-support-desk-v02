@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SettingsService } from '../settings/settings.service';
 import { OllamaService } from './ollama.service';
@@ -107,7 +107,8 @@ export class AiService implements AiProvider {
         }
 
         this.logger.error(`🚨 SYSTEM ALERT: All AI providers failed for task (${task}).`);
-        throw lastError || new Error('All AI providers failed');
+        if (lastError instanceof InternalServerErrorException) throw lastError;
+        throw new InternalServerErrorException(lastError?.message || 'All AI providers failed');
     }
 
     public async getProviderByName(providerName: string | null): Promise<AiProvider | null> {

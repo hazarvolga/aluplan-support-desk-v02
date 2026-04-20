@@ -4,6 +4,7 @@ import { AiService } from './ai.service';
 import { AiPart } from './interfaces/ai-provider.interface';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { EmbeddingService } from './embedding.service';
+import { StorageService } from '../common/services/storage.service';
 
 @Injectable()
 export class AiCopilotService {
@@ -14,6 +15,7 @@ export class AiCopilotService {
         private readonly ai: AiService,
         private readonly promptContextBuilder: PromptContextBuilderService,
         private readonly embeddingService: EmbeddingService,
+        private readonly storage: StorageService,
     ) { }
 
     /**
@@ -105,17 +107,24 @@ RESPONSE DRAFT:`;
 
         this.logger.log(`🤖 Generating AI vision-augmented draft for ticket ${ticket.ticketNumber}...`);
 
-        // Collect all image attachments from recent messages
+        // Collect all image attachments from recent messages and convert to base64 for Vision
         const aiParts: AiPart[] = [];
         for (const msg of ticket.messages) {
             for (const att of msg.attachments || []) {
                 if (att.mimeType?.startsWith('image/')) {
-                    aiParts.push({
-                        fileData: {
-                            mimeType: att.mimeType,
-                            fileUri: att.url // This should be the R2 public/signed URL
+                    try {
+                        const fileBuffer = await this.storage.getFile(att.key);
+                        if (fileBuffer) {
+                            aiParts.push({
+                                inlineData: {
+                                    mimeType: att.mimeType,
+                                    data: fileBuffer.toString('base64')
+                                }
+                            });
                         }
-                    });
+                    } catch (e) {
+                        this.logger.warn(`Failed to process attachment ${att.key} for AI Vision: ${e.message}`);
+                    }
                 }
             }
         }

@@ -151,8 +151,11 @@ export class VertexAiService implements AiProvider {
             if (p.inlineData) {
                 return { inlineData: p.inlineData };
             }
+            if (p.fileData) {
+                return { fileData: { mimeType: p.fileData.mimeType, fileUri: p.fileData.fileUri } };
+            }
             if (p.fileUri) {
-                return { fileData: { mimeType: 'image/jpeg', fileUri: p.fileUri } }; // Default image/jpeg or detect
+                return { fileData: { mimeType: 'image/jpeg', fileUri: p.fileUri } };
             }
             return { text: p.text || '' };
         });
@@ -178,8 +181,8 @@ export class VertexAiService implements AiProvider {
 
             return result.response?.candidates?.[0]?.content?.parts?.[0]?.text || null;
         } catch (err: any) {
-            this.logger.warn(`⚠️ Vertex AI generate failed: ${err.message}`);
-            return null;
+            this.logger.error(`❌ Vertex AI generate failed: ${err.message}`, err.stack);
+            throw new Error(`Vertex AI generate error: ${err.message}`);
         }
     }
 
