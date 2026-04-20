@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
 import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
 import { VertexAI } from '@google-cloud/vertexai';
+import { GoogleAuth } from 'google-auth-library';
 
 @Injectable()
 export class VertexAiService implements AiProvider {
@@ -77,7 +78,6 @@ export class VertexAiService implements AiProvider {
         const { projectId: project, location, authOptions } = await this.getCredentials();
         let accessToken = null;
         try {
-            const { GoogleAuth } = require('google-auth-library');
             const auth = new GoogleAuth(authOptions);
             const client = await auth.getClient();
             accessToken = (await client.getAccessToken()).token;
@@ -135,7 +135,6 @@ export class VertexAiService implements AiProvider {
 
     private async discoverProjectId(): Promise<string | null> {
         try {
-            const { GoogleAuth } = require('google-auth-library');
             const auth = new GoogleAuth({ scopes: 'https://www.googleapis.com/auth/cloud-platform' });
             return await auth.getProjectId();
         } catch {
@@ -309,11 +308,11 @@ ${text}`;
 
         let accessToken = null;
         try {
-            const { GoogleAuth } = require('google-auth-library');
+            const { GoogleAuth } = await import('google-auth-library');
             const auth = new GoogleAuth(authOptions);
             const client = await auth.getClient();
             accessToken = (await client.getAccessToken()).token;
-        } catch (e) {
+        } catch (e: any) {
             this.logger.error(`GCP Auth Failed for Data Store: ${e.message}`);
             return [];
         }
