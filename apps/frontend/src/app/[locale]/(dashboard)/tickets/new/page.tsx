@@ -186,15 +186,23 @@ export default function NewTicketPage() {
                 isInternal: false
             });
 
+            toast.success(t('toasts.success'));
+
+            // Try uploading attachments in parallel or sequence, but don't block basic success
             if (files.length > 0) {
-                for (const file of files) {
-                    await api.attachments.upload(message.id, file);
+                try {
+                    for (const file of files) {
+                        await api.attachments.upload(message.id, file);
+                    }
+                } catch (uploadError) {
+                    console.error('Attachment upload failed', uploadError);
+                    toast.error(t('toasts.upload_error') || 'Some attachments could not be uploaded');
                 }
             }
 
-            toast.success(t('toasts.success'));
             router.push(`/${locale}/tickets/${ticket.id}`);
         } catch (error: any) {
+            console.error('Ticket creation failed', error);
             toast.error(error.message || ct('error'));
         } finally {
             setLoading(false);
