@@ -113,7 +113,7 @@ RESPONSE DRAFT:`;
             for (const att of msg.attachments || []) {
                 if (att.mimeType?.startsWith('image/')) {
                     try {
-                        const fileBuffer = await this.storage.getFile(att.key);
+                        const fileBuffer = await this.storage.getFile(att.url);
                         if (fileBuffer) {
                             aiParts.push({
                                 inlineData: {
@@ -123,7 +123,7 @@ RESPONSE DRAFT:`;
                             });
                         }
                     } catch (e) {
-                        this.logger.warn(`Failed to process attachment ${att.key} for AI Vision: ${e.message}`);
+                        this.logger.warn(`Failed to process attachment ${att.url} for AI Vision: ${e.message}`);
                     }
                 }
             }

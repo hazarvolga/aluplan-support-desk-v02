@@ -118,6 +118,29 @@ export class StorageService implements OnModuleInit {
         }
     }
 
+    async getFile(key: string): Promise<Buffer | null> {
+        try {
+            if (this.storageType === 'S3' && this.s3Client) {
+                const command = new GetObjectCommand({
+                    Bucket: this.bucket,
+                    Key: key,
+                });
+                const response = await this.s3Client.send(command);
+                const byteArray = await response.Body?.transformToByteArray();
+                return byteArray ? Buffer.from(byteArray) : null;
+            } else {
+                const filePath = path.join(this.localPath, key);
+                if (await fs.pathExists(filePath)) {
+                    return fs.readFile(filePath);
+                }
+                return null;
+            }
+        } catch (e) {
+            this.logger.error(`Failed to get file [${key}]: ${e.message}`);
+            return null;
+        }
+    }
+
     async deleteFile(key: string): Promise<void> {
         if (this.storageType === 'S3' && this.s3Client) {
             await this.s3Client.send(
