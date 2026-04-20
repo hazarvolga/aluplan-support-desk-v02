@@ -769,7 +769,6 @@ model Product {
   isActive         Boolean           @default(true) @map("is_active")
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
-  deletedAt        DateTime?         @map("deleted_at")
   aiInteractions   AiInteraction[]
   knowledgeSources KnowledgeSource[]
   categories       ProductCategory[]
@@ -784,9 +783,6 @@ model ProductCategory {
   name      String
   keywords  String[]  @default([])
   isActive  Boolean   @default(true) @map("is_active")
-  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
-  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
   product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId], map: "idx_product_categories_product")
