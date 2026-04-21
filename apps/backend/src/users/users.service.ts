@@ -7,14 +7,22 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 export class UsersService {
     constructor(private prisma: PrismaService) { }
 
-    async create(dto: { email: string; password: string; fullName: string; roleName?: string }) {
+    async create(dto: { email: string; password: string; fullName: string; roles?: string[] }) {
         const existing = await this.prisma.user.findUnique({ where: { email: dto.email }, include: { role: true } });
         const passwordHash = await bcrypt.hash(dto.password, 10);
 
         if (existing) {
             // Allow upgrading an existing user (e.g., from CUSTOMER synced via CRM)
-            if (dto.roleName && dto.roleName !== 'CUSTOMER' && existing.role?.name === 'CUSTOMER') {
-                const newRole = await this.prisma.role.findUnique({ where: { name: dto.roleName } });
+            const roleName = dto.roles?.[0];
+            if (roleName && roleName.toUpperCase() !== 'CUSTOMER' && existing.role?.name === 'CUSTOMER') {
+                const newRole = await this.prisma.role.findFirst({
+                    where: {
+                        name: {
+                            equals: roleName,
+                            mode: 'insensitive'
+                        }
+                    }
+                });
                 if (newRole) {
                     const updated = await this.prisma.user.update({
                         where: { id: existing.id },
@@ -31,7 +39,18 @@ export class UsersService {
             throw new ConflictException('Bu e-posta adresi zaten kayıtlı.');
         }
 
-        const role = dto.roleName ? await this.prisma.role.findUnique({ where: { name: dto.roleName } }) : null;
+        let roleId: string | null = null;
+        if (dto.roles && dto.roles.length > 0) {
+            const role = await this.prisma.role.findFirst({
+                where: {
+                    name: {
+                        equals: dto.roles[0],
+                        mode: 'insensitive'
+                    }
+                }
+            });
+            roleId = role?.id || null;
+        }
 
         const user = await this.prisma.user.create({
             data: {
@@ -39,7 +58,7 @@ export class UsersService {
                 fullName: dto.fullName,
                 passwordHash,
                 status: 'ACTIVE',
-                roleId: role?.id,
+                roleId,
             },
         });
 
@@ -153,6 +172,26 @@ export class UsersService {
     }
 
     async update(id: string, data: any) {
+        // Intercept 'roles' array from DTO and map to 'roleId'
+        if (data.roles && Array.isArray(data.roles) && data.roles.length > 0) {
+            const roleName = data.roles[0];
+            const role = await this.prisma.role.findFirst({
+                where: {
+                    name: {
+                        equals: roleName,
+                        mode: 'insensitive'
+                    }
+                }
+            });
+
+            if (role) {
+                data.roleId = role.id;
+            }
+
+            // Remove the problematic roles field that Prisma doesn't know about
+            delete data.roles;
+        }
+
         return this.prisma.user.update({
             where: { id },
             data,
