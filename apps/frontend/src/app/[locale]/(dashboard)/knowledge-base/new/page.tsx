@@ -2,14 +2,21 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Save, Loader2, BookOpen } from 'lucide-react';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { ArrowLeft, Save, Loader2, BookOpen, Tag, Layout } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function NewKnowledgeBaseArticlePage() {
@@ -17,8 +24,22 @@ export default function NewKnowledgeBaseArticlePage() {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [tags, setTags] = useState('');
+    const [categoryId, setCategoryId] = useState<string>('');
+    const [categories, setCategories] = useState<any[]>([]);
     const [isInternal, setIsInternal] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const data = await api.kb.listCategories();
+                setCategories(data);
+            } catch (error) {
+                console.error('Failed to fetch categories:', error);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const handleSave = async () => {
         if (!title.trim() || !content.trim()) {
@@ -35,13 +56,14 @@ export default function NewKnowledgeBaseArticlePage() {
                 content,
                 tags: tagsArray,
                 isInternal,
-                status: 'PUBLISHED' // Or DRAFT depending on your workflow
+                categoryId: categoryId || undefined,
+                status: 'PUBLISHED' // Handled by backend now
             });
 
             toast.success('Makale başarıyla Bilgi Bankasına eklendi.');
             router.push('/knowledge-base');
         } catch (error) {
-            toast.error('Makale oluşturulurken hata oluştu.');
+            toast.error('Makale oluşturulurken hata oluştu: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
         } finally {
             setLoading(false);
         }
@@ -67,31 +89,58 @@ export default function NewKnowledgeBaseArticlePage() {
                     <CardTitle className="text-lg">Makale İçeriği</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Makale Başlığı</label>
-                        <Input
-                            placeholder="Örn: Parola Nasıl Sıfırlanır?"
-                            className="text-lg font-medium px-4 py-6 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                <Layout className="h-4 w-4" />
+                                Makale Başlığı
+                            </label>
+                            <Input
+                                placeholder="Örn: Parola Nasıl Sıfırlanır?"
+                                className="text-lg font-medium px-4 py-6 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                <Layout className="h-4 w-4" />
+                                Kategori
+                            </label>
+                            <Select value={categoryId} onValueChange={setCategoryId}>
+                                <SelectTrigger className="w-full h-[52px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
+                                    <SelectValue placeholder="Kategori Seçin" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Makale Gövdesi</label>
                         <Textarea
                             placeholder="Makalenin içeriğini buraya yazın... (Markdown desteklenir)"
-                            className="min-h-[300px] resize-y bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 font-mono text-sm leading-relaxed"
+                            className="min-h-[300px] resize-y bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 font-mono text-sm leading-relaxed text-slate-900 dark:text-slate-100"
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Etiketler (Virgülle Ayırın)</label>
+                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <Tag className="h-4 w-4" />
+                            Etiketler (Virgülle Ayırın)
+                        </label>
                         <Input
                             placeholder="örn: güvenlik, parola, hesap"
-                            className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                            className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                             value={tags}
                             onChange={(e) => setTags(e.target.value)}
                         />
@@ -114,7 +163,7 @@ export default function NewKnowledgeBaseArticlePage() {
                     </div>
 
                     <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-white/5">
-                        <Button variant="outline" onClick={() => router.back()} disabled={loading}>İptal</Button>
+                        <Button variant="outline" onClick={() => router.back()} disabled={loading} className="text-slate-700 dark:text-slate-300">İptal</Button>
                         <Button onClick={handleSave} disabled={loading} className="bg-brand-600 hover:bg-brand-700 text-white min-w-[120px]">
                             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                             Kaydet ve Yayınla

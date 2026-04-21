@@ -118,7 +118,7 @@ export class KnowledgeBaseService {
                 slug,
                 tags: dto.tags ?? [],
                 language: dto.language ?? 'tr',
-                status: 'DRAFT',
+                status: (dto as any).status || 'DRAFT',
                 isInternal: dto.isInternal ?? false,
                 createdBy,
                 categoryId: dto.categoryId,

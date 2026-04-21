@@ -33,6 +33,11 @@ export class CreateArticleDto {
     @IsBoolean()
     @IsOptional()
     isInternal?: boolean;
+
+    @ApiPropertyOptional({ enum: ['DRAFT', 'PUBLISHED'], default: 'DRAFT' })
+    @IsString()
+    @IsOptional()
+    status?: string;
 }
 
 export class UpdateArticleDto {
