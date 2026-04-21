@@ -11,15 +11,15 @@ COPY . .
 RUN rm -rf packages/database/client packages/database/generated
 # Perform full build in builder stage
 RUN pnpm install --frozen-lockfile && \
-    pnpm --filter @aluplan/database db:generate && \
-    pnpm --filter @aluplan/backend build
+    NODE_OPTIONS="--max-old-space-size=2048" pnpm --filter @aluplan/database db:generate && \
+    NODE_OPTIONS="--max-old-space-size=2048" pnpm --filter @aluplan/backend build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 RUN apk add --no-cache openssl fontconfig postgresql-client && \
     npm install -g pnpm@9.15.4 && \
-    npm install -g prisma@7.5.0
+    npm install -g prisma@7.4.2
 
 # 1. Copy entire workspace (metadata + source needed for pnpm install)
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
