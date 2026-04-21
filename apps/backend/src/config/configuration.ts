@@ -60,6 +60,8 @@ export default () => {
         - REDIS_HOST: ${config.redis.host}
         - REDIS_PORT: ${config.redis.port}
         - STORAGE_ENDPOINT: ${config.storage.endpoint}
+        - STORAGE_PUBLIC: ${config.storage.publicEndpoint}
+        - STORAGE_PATH_STYLE: ${config.storage.usePathStyle}
         - STORAGE_REGION: ${config.storage.region}`);
 
         if (config.storage.type === 'S3') {

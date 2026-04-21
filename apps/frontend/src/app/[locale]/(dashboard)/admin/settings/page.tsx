@@ -329,7 +329,7 @@ export default function AdminSettingsPage() {
             </div>
 
             <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 lg:w-[840px]">
+                <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-8 lg:w-[1000px]">
                     <TabsTrigger value="general" className="flex items-center gap-2">
                         <Globe className="h-4 w-4" /> {t('tabs.general')}
                     </TabsTrigger>
@@ -350,6 +350,9 @@ export default function AdminSettingsPage() {
                     </TabsTrigger>
                     <TabsTrigger value="requirements" className="flex items-center gap-2">
                         <Monitor className="h-4 w-4" /> {t('tabs.requirements')}
+                    </TabsTrigger>
+                    <TabsTrigger value="storage" className="flex items-center gap-2">
+                        <Database className="h-4 w-4" /> {t('tabs.storage')}
                     </TabsTrigger>
                 </TabsList>
 
@@ -1590,6 +1593,102 @@ export default function AdminSettingsPage() {
 
                     <TabsContent value="requirements">
                         <SystemRequirementsForm />
+                    </TabsContent>
+
+                    <TabsContent value="storage">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>{t('storage.title')}</CardTitle>
+                                <CardDescription>{t('storage.desc')}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>{t('storage.endpoint')}</Label>
+                                        <Input
+                                            value={getSetting('storage.endpoint')}
+                                            onChange={e => updateValue('storage.endpoint', e.target.value)}
+                                            placeholder={t('storage.endpoint_placeholder')}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>{t('storage.region')}</Label>
+                                        <Input
+                                            value={getSetting('storage.region')}
+                                            onChange={e => updateValue('storage.region', e.target.value)}
+                                            placeholder={t('storage.region_placeholder')}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>{t('storage.bucket')}</Label>
+                                        <Input
+                                            value={getSetting('storage.bucket')}
+                                            onChange={e => updateValue('storage.bucket', e.target.value)}
+                                            placeholder={t('storage.bucket_placeholder')}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>{t('storage.access_key')}</Label>
+                                        <Input
+                                            value={getSetting('storage.access_key')}
+                                            onChange={e => updateValue('storage.access_key', e.target.value)}
+                                            placeholder={t('storage.access_key_placeholder')}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>{t('storage.secret_key')}</Label>
+                                        <Input
+                                            type="password"
+                                            value={getSetting('storage.secret_key')}
+                                            onChange={e => updateValue('storage.secret_key', e.target.value)}
+                                            placeholder={t('storage.secret_key_placeholder')}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-4 justify-end pt-4 border-t mt-6">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={async () => {
+                                            try {
+                                                const config = {
+                                                    endpoint: getSetting('storage.endpoint'),
+                                                    region: getSetting('storage.region'),
+                                                    bucket: getSetting('storage.bucket'),
+                                                    accessKey: getSetting('storage.access_key'),
+                                                    secretKey: getSetting('storage.secret_key'),
+                                                };
+                                                const res = await api.settings.testStorage(config);
+                                                toast({
+                                                    title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'),
+                                                    description: res.message + (res.details?.advice ? `\n\n\${res.details.advice}` : ''),
+                                                    variant: res.success ? 'default' : 'destructive'
+                                                });
+                                            } catch (error: any) {
+                                                toast({
+                                                    title: t('toasts.connection_error'),
+                                                    description: error.message,
+                                                    variant: 'destructive'
+                                                });
+                                            }
+                                        }}
+                                    >
+                                        <Database className="w-4 h-4 mr-2" />
+                                        {t('storage.test_btn')}
+                                    </Button>
+                                    <Button
+                                        onClick={() => handleSave(['storage.endpoint', 'storage.region', 'storage.bucket', 'storage.access_key', 'storage.secret_key'])}
+                                        disabled={saving}
+                                    >
+                                        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        {t('general.save_btn') || t('save') || 'Kaydet'}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
                 </div>
             </Tabs>

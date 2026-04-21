@@ -436,6 +436,8 @@ export const api = {
         upsert: (body: any) => request<any>('/settings', { method: 'POST', body: JSON.stringify(body) }),
         bulkUpsert: (body: { settings: any[] }) => request<any>('/settings/bulk', { method: 'POST', body: JSON.stringify(body) }),
         delete: (key: string) => request<any>(`/settings/${key}`, { method: 'DELETE' }),
+        testStorage: (config: { endpoint: string, region: string, accessKey: string, secretKey: string, bucket: string }) =>
+            request<any>('/settings/test-storage', { method: 'POST', body: JSON.stringify(config) }),
     },
     sla: {
         list: () => request<any[]>('/tickets/sla/policies'),

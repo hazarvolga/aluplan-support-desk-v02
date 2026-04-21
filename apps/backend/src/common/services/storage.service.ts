@@ -12,35 +12,61 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import sanitize from 'sanitize-filename';
+import { SettingsService } from '../../settings/settings.service';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
     private readonly logger = new Logger(StorageService.name);
-    private s3Client: S3Client | null = null;
-    private readonly bucket: string;
     private readonly storageType: 'S3' | 'LOCAL';
     private readonly localPath: string;
     private readonly publicEndpoint: string;
 
-    constructor(private readonly configService: ConfigService) {
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly settingsService: SettingsService
+    ) {
         const storageConfig = this.configService.get('storage');
         this.storageType = storageConfig.type || 'LOCAL';
-        this.bucket = storageConfig.bucket;
         this.localPath = path.resolve(storageConfig.localPath || './uploads');
         this.publicEndpoint = storageConfig.publicEndpoint;
+    }
 
-        if (this.storageType === 'S3') {
-            this.logger.log(`Initializing S3 Storage with endpoint: ${storageConfig.endpoint}`);
-            this.s3Client = new S3Client({
-                endpoint: storageConfig.endpoint,
-                region: storageConfig.region,
-                credentials: {
-                    accessKeyId: storageConfig.accessKey,
-                    secretAccessKey: storageConfig.secretKey,
-                },
-                forcePathStyle: storageConfig.usePathStyle,
-            });
+    private async getS3Config() {
+        const endpoint = await this.settingsService.get('storage.endpoint') || this.configService.get('storage.endpoint');
+        const regionStr = await this.settingsService.get('storage.region') || this.configService.get('storage.region');
+        const accessKey = await this.settingsService.get('storage.access_key') || this.configService.get('storage.accessKey');
+        const secretKey = await this.settingsService.get('storage.secret_key', true) || this.configService.get('storage.secretKey');
+        const dbBucket = await this.settingsService.get('storage.bucket');
+        const bucket = dbBucket || this.configService.get('storage.bucket');
+
+        return { endpoint, regionStr, accessKey, secretKey, bucket };
+    }
+
+    private async getS3Client(): Promise<{ client: S3Client | null, bucket: string, endpoint: string }> {
+        if (this.storageType !== 'S3') return { client: null, bucket: '', endpoint: '' };
+
+        const { endpoint, regionStr, accessKey, secretKey, bucket } = await this.getS3Config();
+
+        if (!endpoint || !accessKey || !secretKey || !bucket) {
+            this.logger.warn('S3 Storage is enabled but missing required credentials in DB or ENV.');
+            return { client: null, bucket: '', endpoint: '' };
         }
+
+        const isR2 = endpoint.includes('cloudflarestorage.com');
+        const region = regionStr || (isR2 ? 'auto' : 'us-east-1');
+        const forcePathStyle = isR2 ? false : (this.configService.get('storage.usePathStyle') ?? true);
+
+        const client = new S3Client({
+            endpoint,
+            region,
+            credentials: {
+                accessKeyId: accessKey,
+                secretAccessKey: secretKey,
+            },
+            forcePathStyle,
+        });
+
+        return { client, bucket, endpoint };
     }
 
     async onModuleInit() {
@@ -53,16 +79,17 @@ export class StorageService implements OnModuleInit {
     }
 
     private async ensureBucketExists() {
-        if (!this.s3Client) return;
+        const { client, bucket } = await this.getS3Client();
+        if (!client) return;
         try {
-            await this.s3Client.send(new HeadBucketCommand({ Bucket: this.bucket }));
-            this.logger.log(`Storage bucket "${this.bucket}" is ready.`);
+            await client.send(new HeadBucketCommand({ Bucket: bucket }));
+            this.logger.log(`Storage bucket "${bucket}" is ready.`);
         } catch (error) {
             if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
-                this.logger.warn(`Bucket "${this.bucket}" not found. Creating...`);
+                this.logger.warn(`Bucket "${bucket}" not found. Creating...`);
                 try {
-                    await this.s3Client.send(new CreateBucketCommand({ Bucket: this.bucket }));
-                    this.logger.log(`Bucket "${this.bucket}" created successfully.`);
+                    await client.send(new CreateBucketCommand({ Bucket: bucket }));
+                    this.logger.log(`Bucket "${bucket}" created successfully.`);
                 } catch (createError) {
                     this.logger.error(`Failed to create bucket: ${createError.message}`);
                 }
@@ -77,18 +104,20 @@ export class StorageService implements OnModuleInit {
         const sanitizedName = sanitize(file.originalname);
         const key = `${sanitizedFolder}/${Date.now()}-${sanitizedName}`;
 
-        if (this.storageType === 'S3' && this.s3Client) {
+        const { client, bucket, endpoint } = await this.getS3Client();
+
+        if (this.storageType === 'S3' && client) {
             try {
-                await this.s3Client.send(
+                await client.send(
                     new PutObjectCommand({
-                        Bucket: this.bucket,
+                        Bucket: bucket,
                         Key: key,
                         Body: file.buffer,
                         ContentType: file.mimetype,
                     }),
                 );
             } catch (error: any) {
-                this.logger.error(`S3 Upload Failed: [Bucket: ${this.bucket}] [Key: ${key}] [Endpoint: ${this.configService.get('storage.endpoint')}]`);
+                this.logger.error(`S3 Upload Failed: [Bucket: ${bucket}] [Key: ${key}] [Endpoint: ${endpoint}]`);
                 this.logger.error(`Error Details: ${error.message}${error.$metadata ? ` (Status: ${error.$metadata.httpStatusCode})` : ''}`);
                 throw error;
             }
@@ -102,15 +131,17 @@ export class StorageService implements OnModuleInit {
     }
 
     async getDownloadUrl(key: string): Promise<string> {
-        if (this.storageType === 'S3' && this.s3Client) {
+        const { client, bucket } = await this.getS3Client();
+
+        if (this.storageType === 'S3' && client) {
             const command = new GetObjectCommand({
-                Bucket: this.bucket,
+                Bucket: bucket,
                 Key: key,
             });
             // Presigned URL valid for 1 hour
-            const url = await getSignedUrl(this.s3Client as any, command as any, { expiresIn: 3600 });
+            const url = await getSignedUrl(client as any, command as any, { expiresIn: 3600 });
 
-            const internalEndpoint = this.configService.get('storage.endpoint');
+            const internalEndpoint = (await this.getS3Config()).endpoint;
             if (this.publicEndpoint && internalEndpoint && this.publicEndpoint !== internalEndpoint) {
                 return url.replace(internalEndpoint, this.publicEndpoint);
             }
@@ -126,12 +157,13 @@ export class StorageService implements OnModuleInit {
 
     async getFile(key: string): Promise<Buffer | null> {
         try {
-            if (this.storageType === 'S3' && this.s3Client) {
+            const { client, bucket } = await this.getS3Client();
+            if (this.storageType === 'S3' && client) {
                 const command = new GetObjectCommand({
-                    Bucket: this.bucket,
+                    Bucket: bucket,
                     Key: key,
                 });
-                const response = await this.s3Client.send(command);
+                const response = await client.send(command);
                 const byteArray = await response.Body?.transformToByteArray();
                 return byteArray ? Buffer.from(byteArray) : null;
             } else {
@@ -148,10 +180,11 @@ export class StorageService implements OnModuleInit {
     }
 
     async deleteFile(key: string): Promise<void> {
-        if (this.storageType === 'S3' && this.s3Client) {
-            await this.s3Client.send(
+        const { client, bucket } = await this.getS3Client();
+        if (this.storageType === 'S3' && client) {
+            await client.send(
                 new DeleteObjectCommand({
-                    Bucket: this.bucket,
+                    Bucket: bucket,
                     Key: key,
                 }),
             );
@@ -168,38 +201,75 @@ export class StorageService implements OnModuleInit {
             return { success: true, message: 'Local storage is active and ready.' };
         }
 
-        if (!this.s3Client) {
-            return { success: false, message: 'S3 Client not initialized. Check your credentials.' };
+        const { client, bucket, endpoint } = await this.getS3Client();
+
+        if (!client) {
+            return { success: false, message: 'S3 Client not initialized. Check your credentials in settings or environment.' };
         }
 
         try {
             // 1. Try to list bucket (lightweight check)
-            await this.s3Client.send(new HeadBucketCommand({ Bucket: this.bucket }));
+            await client.send(new HeadBucketCommand({ Bucket: bucket }));
             return {
                 success: true,
-                message: `Successfully connected to Minio/S3. Bucket "${this.bucket}" is accessible.`,
+                message: `Successfully connected to Minio/S3/R2. Bucket "${bucket}" is accessible.`,
             };
         } catch (error: any) {
-            const host = this.configService.get('storage.endpoint').split('//')[1]?.split(':')[0];
+            const host = endpoint?.split('//')[1]?.split(':')[0] || 'unknown';
             let errorMsg = error.message;
-            let advice = 'Check if Minio is running and reachabe.';
+            let advice = 'Check if storage endpoint is running and reachabe.';
 
             if (error.code === 'ENOTFOUND' || error.name === 'UnknownError' || error.message.includes('getaddrinfo')) {
                 errorMsg = `DNS Resolution Failed: Cannot find host "${host}"`;
-                advice = `Ensure the backend container is in the same Docker network as Minio. Try using "http://172.17.0.1:9000" (Docker Gateway) in .env if the internal name fails.`;
-            } else if (error.$metadata?.httpStatusCode === 403) {
-                errorMsg = 'Permission Denied (403)';
-                advice = 'Check your ACCESS_KEY and SECRET_KEY.';
+                advice = `Ensure the backend container is in the same Docker network as Minio. Try using "http://172.17.0.1:9000" (Docker Gateway) in .env if the internal name fails, or check if Cloudflare R2 URL is correct.`;
+            } else if (error.$metadata?.httpStatusCode === 403 || error.$metadata?.httpStatusCode === 401) {
+                errorMsg = `Permission Denied (${error.$metadata?.httpStatusCode})`;
+                advice = 'Check your Access Key and Secret Key for validity and correctness.';
             }
 
             return {
                 success: false,
                 message: errorMsg,
                 details: {
-                    endpoint: this.configService.get('storage.endpoint'),
-                    bucket: this.bucket,
+                    endpoint: endpoint,
+                    bucket: bucket,
                     advice: advice,
                     originalError: error.name || error.code
+                }
+            };
+        }
+    }
+
+    async testCustomConnection(config: { endpoint: string, region: string, accessKey: string, secretKey: string, bucket: string }): Promise<{ success: boolean; message: string; details?: any }> {
+        const isR2 = config.endpoint.includes('cloudflarestorage.com');
+        const region = config.region || (isR2 ? 'auto' : 'us-east-1');
+        const forcePathStyle = isR2 ? false : (this.configService.get('storage.usePathStyle') ?? true);
+
+        try {
+            const client = new S3Client({
+                endpoint: config.endpoint,
+                region,
+                credentials: {
+                    accessKeyId: config.accessKey,
+                    secretAccessKey: config.secretKey,
+                },
+                forcePathStyle,
+                maxAttempts: 2
+            });
+
+            await client.send(new HeadBucketCommand({ Bucket: config.bucket }));
+            return {
+                success: true,
+                message: `Successfully connected to storage. Bucket "${config.bucket}" is accessible.`,
+            };
+        } catch (error: any) {
+            return {
+                success: false,
+                message: `Connection failed: ${error.message}`,
+                details: {
+                    statusCode: error.$metadata?.httpStatusCode,
+                    name: error.name,
+                    advice: error.$metadata?.httpStatusCode === 403 || error.$metadata?.httpStatusCode === 401 ? 'Check your Access Key and Secret Key.' : 'Check endpoint URL and network connectivity.'
                 }
             };
         }

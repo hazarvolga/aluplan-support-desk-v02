@@ -17,7 +17,7 @@ RUN pnpm install --frozen-lockfile && \
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-RUN apk add --no-cache openssl fontconfig && \
+RUN apk add --no-cache openssl fontconfig postgresql-client && \
     npm install -g pnpm@9.15.4 && \
     npm install -g prisma@7.5.0
 

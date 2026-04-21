@@ -5,11 +5,15 @@ import { BulkUpsertSettingDto } from './dto/bulk-upsert-setting.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
+import { StorageService } from '../common/services/storage.service';
 
 @Controller('settings')
 @UseGuards(JwtAuthGuard, RbacGuard)
 export class SettingsController {
-    constructor(private readonly settingsService: SettingsService) { }
+    constructor(
+        private readonly settingsService: SettingsService,
+        private readonly storageService: StorageService
+    ) { }
 
     @Post()
     @Roles('ADMIN', 'SUPERUSER')
@@ -21,6 +25,12 @@ export class SettingsController {
     @Roles('ADMIN', 'SUPERUSER')
     bulkUpsert(@Body() dto: BulkUpsertSettingDto, @Request() req: any) {
         return this.settingsService.bulkUpsert(dto, req.user.id);
+    }
+
+    @Post('test-storage')
+    @Roles('ADMIN', 'SUPERUSER')
+    async testStorageConnection(@Body() config: { endpoint: string, region: string, accessKey: string, secretKey: string, bucket: string }) {
+        return this.storageService.testCustomConnection(config);
     }
 
     @Get()

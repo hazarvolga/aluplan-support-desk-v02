@@ -76,20 +76,22 @@ export class AttachmentsController {
             }
         }
 
-        // If storage failed BUT we have no hotinfo, we MUST throw now
-        if (uploadError && !parsedHotinfo) {
-            throw uploadError;
-        }
-
+        // We CREATE the record regardless of S3 state to ensure visibility in UI
         const attachment = await this.attachmentsService.create({
             messageId,
             fileName: file.originalname,
             fileSize: file.size,
             mimeType: file.mimetype,
-            url: storageKey || `FAILED_UPLOAD_${Date.now()}`, // Fallback key if storage failed but we want to save metadata
+            url: storageKey || `FAILED_STORAGE_UPLOAD_${Date.now()}`,
         }, parsedHotinfo);
 
-        // If storage failed but we saved hotinfo, we return a partial success indicator or the attachment
+        // If storage failed AND we have no hotinfo fallback, we inform the user it didn't save to cloud
+        if (uploadError && !parsedHotinfo) {
+            // Note: We return the attachment object so the meta-data is saved.
+            // The agent will see the file record but won't be able to download it.
+            this.logger.warn(`Attachment ${attachment.id} created but physical file upload failed.`);
+        }
+
         return attachment;
     }
 

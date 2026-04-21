@@ -853,14 +853,16 @@
       "generic_fail_hint": "Servis şu anda ulaşılamaz durumda."
     },
     "storage": {
-      "title": "Bulut Depolama (R2)",
-      "desc": "Cloudflare R2 nesne depolama yapılandırması.",
+      "title": "Bulut Depolama (S3 / R2)",
+      "desc": "Dosya yüklemeleri için S3 uyumlu depo ayarları (Cloudflare R2, AWS S3, MinIO vb.).",
       "access_key": "Access Key ID",
       "secret_key": "Secret Access Key",
       "endpoint": "Endpoint URL",
+      "region": "Bölge (Region)",
       "bucket": "Bucket Adı",
       "save_success": "Depolama ayarları kaydedildi.",
-      "save_error": "Kaydetme hatası: {message}"
+      "save_error": "Kaydetme hatası: {message}",
+      "test_btn": "Bağlantıyı Test Et"
     },
     "crm": {
       "title": "Dynamics 365 CRM",
