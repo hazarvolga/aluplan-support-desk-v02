@@ -32,12 +32,12 @@ export class StorageService implements OnModuleInit {
     }
 
     private async getS3Config() {
-        const endpoint = await this.settingsService.getValue('storage.endpoint') || this.configService.get('storage.endpoint');
-        const regionStr = await this.settingsService.getValue('storage.region') || this.configService.get('storage.region');
-        const accessKey = await this.settingsService.getValue('storage.access_key') || this.configService.get('storage.accessKey');
-        const secretKey = await this.settingsService.getValue('storage.secret_key') || this.configService.get('storage.secretKey');
+        const endpoint = (await this.settingsService.getValue('storage.endpoint') || this.configService.get('storage.endpoint') || '').trim();
+        const regionStr = (await this.settingsService.getValue('storage.region') || this.configService.get('storage.region') || '').trim();
+        const accessKey = (await this.settingsService.getValue('storage.access_key') || this.configService.get('storage.accessKey') || '').trim();
+        const secretKey = (await this.settingsService.getValue('storage.secret_key') || this.configService.get('storage.secretKey') || '').trim();
         const dbBucket = await this.settingsService.getValue('storage.bucket');
-        const bucket = dbBucket || this.configService.get('storage.bucket');
+        const bucket = (dbBucket || this.configService.get('storage.bucket') || '').trim();
 
         return { endpoint, regionStr, accessKey, secretKey, bucket };
     }
@@ -241,17 +241,27 @@ export class StorageService implements OnModuleInit {
     }
 
     async testCustomConnection(config: { endpoint: string, region: string, accessKey: string, secretKey: string, bucket: string }): Promise<{ success: boolean; message: string; details?: any }> {
-        const isR2 = config.endpoint.includes('cloudflarestorage.com');
-        const region = config.region || (isR2 ? 'auto' : 'us-east-1');
+        const endpoint = (config.endpoint || '').trim();
+        const accessKey = (config.accessKey || '').trim();
+        let secretKey = (config.secretKey || '').trim();
+        const bucket = (config.bucket || '').trim();
+
+        if (secretKey === '********') {
+            const dbSecret = await this.settingsService.getValue('storage.secret_key') || this.configService.get('storage.secretKey') || '';
+            secretKey = dbSecret.trim();
+        }
+
+        const isR2 = endpoint.includes('cloudflarestorage.com');
+        const region = (config.region || '').trim() || (isR2 ? 'auto' : 'us-east-1');
         const forcePathStyle = isR2 ? true : (this.configService.get('storage.usePathStyle') ?? true);
 
         try {
             const client = new S3Client({
-                endpoint: config.endpoint,
+                endpoint,
                 region,
                 credentials: {
-                    accessKeyId: config.accessKey,
-                    secretAccessKey: config.secretKey,
+                    accessKeyId: accessKey,
+                    secretAccessKey: secretKey,
                 },
                 forcePathStyle,
                 maxAttempts: 2
