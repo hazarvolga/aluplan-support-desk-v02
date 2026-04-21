@@ -250,7 +250,7 @@ export const api = {
         delete: (id: string) => request<any>(`/tickets/${id}`, { method: 'DELETE' }),
     },
     ai: {
-        query: (query: string, hotinfoContext?: any) =>
+        query: (query: string, hotinfoContext?: any, productId?: string | null) =>
             request<{
                 query: string;
                 answer: string | null;
@@ -260,7 +260,7 @@ export const api = {
                 suggestTicket: boolean;
             }>('/ai/query', {
                 method: 'POST',
-                body: JSON.stringify({ query, hotinfoContext }),
+                body: JSON.stringify({ query, hotinfoContext, productId }),
                 signal: typeof AbortSignal !== 'undefined' ? AbortSignal.timeout(45000) : undefined,
             }),
         search: (query: string, productId?: string | null, limit = 5) =>

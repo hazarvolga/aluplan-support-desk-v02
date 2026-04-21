@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsInt, Min, Max, IsOptional, MinLength } from 'class-validator';
+import { IsString, IsInt, Min, Max, IsOptional, MinLength, IsBoolean, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
@@ -17,7 +17,7 @@ import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 import { Public } from '../auth/decorators/public.decorator';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { IsBoolean } from 'class-validator';
+
 
 export class AiQueryDto {
     @ApiProperty({ example: 'Şifremi nasıl sıfırlarım?' })
@@ -32,6 +32,11 @@ export class AiQueryDto {
     @ApiPropertyOptional({ type: 'array', items: { type: 'object' } })
     @IsOptional()
     attachments?: any[];
+
+    @ApiPropertyOptional({ description: 'Specific product ID to scope the search' })
+    @IsOptional()
+    @IsUUID()
+    productId?: string;
 }
 
 export class FeedbackDto {
@@ -85,7 +90,8 @@ export class AiController {
             userId: req.user.sub,
             channel: 'WEB',
             hotinfoContext: dto.hotinfoContext,
-            attachments: dto.attachments
+            attachments: dto.attachments,
+            productId: dto.productId
         });
     }
 

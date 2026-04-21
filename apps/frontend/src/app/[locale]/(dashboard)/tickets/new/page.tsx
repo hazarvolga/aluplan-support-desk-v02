@@ -141,7 +141,9 @@ export default function NewTicketPage() {
             const context = isHotinfoConfirmed ? hotinfoData : null;
 
             // Switch to specialized query endpoint for conversational RAG
-            const queryPromise = api.ai.query(`${subject} ${description}`, context);
+            // Passing product context to focus search on relevant knowledge base
+            const pId = selectedProductId === 'general' || selectedProductId === '' ? null : selectedProductId;
+            const queryPromise = api.ai.query(`${subject} ${description}`, context, pId);
             const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('AI_TIMEOUT')), 15000)
             );

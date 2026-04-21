@@ -196,7 +196,10 @@ export class AiService implements AiProvider {
         const providerName = await this.settings.getValue('ai.chat_provider');
         if (providerName === 'ollama') return (await this.settings.getValue('ai.ollama.chat_model')) || 'llama3';
         if (providerName === 'openai') return (await this.settings.getValue('ai.openai.chat_model')) || 'gpt-4o-mini';
-        return 'unknown';
+        if (providerName === 'llmapi' || providerName === 'vertex') {
+            return (await this.settings.getValue(`ai.${providerName}.chat_model`)) || 'gemini-1.5-flash';
+        }
+        return (await this.settings.getValue(`ai.${providerName}.chat_model`)) || 'unknown';
     }
 
     private async getProvider(name: string): Promise<AiProvider> {

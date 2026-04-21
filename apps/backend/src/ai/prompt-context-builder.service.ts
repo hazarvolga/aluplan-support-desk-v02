@@ -92,18 +92,21 @@ export class PromptContextBuilderService {
             }
         }
 
-        // 3. Current Query
+        // 3. Active Query (The trigger for diagnosis)
         sections.push({
             name: 'USER_QUERY',
             priority: P.USER_QUERY,
-            content: `[3. Mevcut Sorgu]\n${userQuery}\n`,
+            content: `[ACTIVE QUERY - LAST USER MESSAGE]\n${userQuery}\n`,
         });
 
-        // 4. Message History (Crucial for Topic Shift & Context)
+        // 4. Message History (Past interactions)
         if (messages && messages.length > 0) {
-            const historyContent = `[MESSAGES (Chronological History)]\n` +
-                messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
-            sections.push({ name: 'MESSAGE_HISTORY', priority: P.RECENT_TICKETS + 5, content: historyContent });
+            const pastMessages = messages.slice(0, -1);
+            if (pastMessages.length > 0) {
+                const historyContent = `[CONVERSATION HISTORY - PAST MESSAGES]\n` +
+                    pastMessages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
+                sections.push({ name: 'MESSAGE_HISTORY', priority: P.RECENT_TICKETS + 5, content: historyContent });
+            }
         }
 
         // 5. Technical Diagnosis (New Decision Layer)

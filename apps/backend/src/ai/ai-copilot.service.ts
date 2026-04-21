@@ -5,6 +5,7 @@ import { AiPart } from './interfaces/ai-provider.interface';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { EmbeddingService } from './embedding.service';
 import { StorageService } from '../common/services/storage.service';
+import { AiDiagnosisService } from './ai-diagnosis.service';
 
 @Injectable()
 export class AiCopilotService {
@@ -16,6 +17,7 @@ export class AiCopilotService {
         private readonly promptContextBuilder: PromptContextBuilderService,
         private readonly embeddingService: EmbeddingService,
         private readonly storage: StorageService,
+        private readonly diagnosisService: AiDiagnosisService,
     ) { }
 
     /**
@@ -65,50 +67,63 @@ export class AiCopilotService {
             ? searchResponse.results.map(r => r.content).join('\n\n---\n\n')
             : 'No specific knowledge base context found.';
 
-        // Use Context Builder to include Hotinfo properly
+        // Conversation overview
+        const latestMessage = ticket.messages[0];
+        const diagnosis = await this.diagnosisService.analyze(ticket.subject + ' ' + (latestMessage?.message || ''));
+
+        // 4. Format messages for context builder (internal format)
+        const messages = ticket.messages
+            .reverse() // Chronological
+            .map(m => ({
+                role: m.sender?.fullName ? 'user' : 'assistant',
+                content: m.message
+            }));
+
+        // 5. Use Context Builder for unified, budget-aware context
         const context = await this.promptContextBuilder.buildContext({
             userId: ticket.userId || undefined,
-            userQuery: ticket.subject + '\n' + (ticket.description || ''),
+            userQuery: latestMessage?.message || ticket.description || '',
             kbContent,
-            hotinfoSnapshot
+            hotinfoSnapshot,
+            messages,
+            diagnosis
         });
 
-        // Conversation overview
-        const history = ticket.messages
-            .map(m => `${m.sender?.fullName || 'SYSTEM/AI'}: ${m.message}`)
-            .reverse()
-            .join('\n');
+        // 6. Prepare system prompt using the Master 7-Step engine
+        const systemPrompt = `
+You are a senior AI system designer and expert engineer powering ANN_TASLAK.
+Your task is to prepare a professional diagnostic response draft using the 7-STEP engine.
 
-        const userLanguage = (ticket.interaction as any)?.userLanguage || 'Turkish';
-        const prompt = `Task: Prepare a response draft like a professional customer support representative.
-Use the following "KNOWLEDGE SOURCE AND CONTEXT" and "CONVERSATION HISTORY" to write an empathetic and technically accurate response to help the customer.
+---
 
-KNOWLEDGE SOURCE AND CONTEXT:
+## STEP 1-5 (TEKNİK ANALİZ)
+- Analiz edilecek bağlam aşağıdadır: [CONVERSATION_CONTEXT]
+- Teknik Tanı: ${diagnosis.productName} (${diagnosis.matchedKeywords.join(', ')})
+
+## STEP 7 — OUTPUT
+Always output in 3 languages (TR, EN, DE) using strict headers:
+### 🇹🇷 Türkçe
+## 📌 Sorun Yorumu
+...
+## 🎯 En Olası Neden
+...
+## 🛠️ Çözüm Adımları
+...
+...
+`;
+
+        const prompt = `
+${systemPrompt}
+
+[CONVERSATION_CONTEXT]
 ${context}
-
-CONVERSATION HISTORY:
-${history}
-
-RULES:
-1. QUERY INTENT: Mentally classify the query (LICENSE, INSTALLATION, PERFORMANCE, MODELING).
-   - If LICENSE/INSTALLATION: Prioritize procedural steps from the source.
-2. SOURCE COMPLIANCE: Use ONLY information from the source.
-   - [CRITICAL] If the source contains a menu path (e.g. "Allmenu -> ..."), you MUST include it EXACTLY.
-   - Do NOT summarize into vague advice like "kontrol edin". Explain EXACTLY what/where to check.
-3. STEP-BY-STEP: Present procedures as numbered lists.
-4. UNAVAILABLE INFO: 
-   - If a partial match exists, present the closest procedure and add: "Not: Tam eşleşme bulunamadı, ancak bu adımlar yardımcı olabilir."
-   - ONLY if there is absolutely NO related info, use: "Veritabanımızda bu konuyla ilgili kesin teknik çözüm bulunamadığı için konuyu uzman mühendislerimize aktarıyorum."
-5. TONE: Professional, empathetic, solution-oriented. Do not include greetings or signatures.
-6. LANG: Use the same language as the customer (${userLanguage}).
 
 RESPONSE DRAFT:`;
 
-
-        this.logger.log(`🤖 Generating AI vision-augmented draft for ticket ${ticket.ticketNumber}...`);
-
-        // Collect all image attachments from recent messages and convert to base64 for Vision
+        // 6. Build attachments for Vision analysis
         const aiParts: AiPart[] = [];
+        this.logger.log(`🤖 Generating AI vision-augmented diagnostic draft for ticket ${ticket.ticketNumber}...`);
+
         for (const msg of ticket.messages) {
             for (const att of msg.attachments || []) {
                 if (att.mimeType?.startsWith('image/')) {

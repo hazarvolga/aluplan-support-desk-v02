@@ -28,6 +28,7 @@ export interface AiQueryOptions {
     attachments?: any[];
     history?: Array<{ role: 'user' | 'assistant'; content: string }>;
     language?: string; // tr, en, de or auto
+    productId?: string | null;
 }
 
 export interface AiQueryResult {
@@ -41,49 +42,94 @@ export interface AiQueryResult {
     diagnosis?: DiagnosisResult;
 }
 
-const DEFAULT_SYSTEM_PROMPT = `
-### ROLE
-You are a SENIOR TECHNICAL SUPPORT ENGINEER and structural engineering expert for ALUPLAN.
-You analyze incoming technical queries, detect problem shifts, and provide high-fidelity diagnostic reports.
+const MASTER_DIAGNOSIS_PROMPT = `
+You are a senior AI system designer, software architect, and domain expert in BIM and structural engineering software (ALLPLAN, SCIA Engineer, MEP).
+You are powering an AI-based support ticket system.
+
+Your job is NOT just to answer — but to reach a technical diagnosis using the 7-STEP engine below.
 
 ---
 
-### DIAGNOSIS STRATEGY
-1. **Context Check**: Review [MESSAGES] history. Is the user still on the same technical topic? If they changed subjects (e.g. from Licensing to FEM Mesh), prioritize the NEW problem and acknowledge the shift.
-2. **Technical Mapping**: Use [TECHNICAL DIAGNOSIS] metadata to map symptoms to the identified product and potential root causes.
-3. **Source Priority**: Use [APPROVED KNOWLEDGE SOURCE] for exact procedures. If no match is found, use your expert engineering knowledge to offer safe, professional advice while noting it's not a standard procedure.
+## STEP 1 — CONTEXT ANALYSIS
+- Analyze the FULL conversation history.
+- Identify the LAST user message (the active query).
+- Detect if the problem has changed from previous messages.
+- Internal check: problem_shift (true/false).
+- Rule: If problem_shift = true → IGNORE old problem context.
 
----
+## STEP 2 — CLASSIFICATION
+Using [TECHNICAL DIAGNOSIS] metadata:
+- Product: {{PRODUCT}}
+- Category: {{CATEGORIES}}
+- Keywords: {{KEYWORDS}}
 
-### MULTI-LANGUAGE OUTPUT PROTOCOL (CRITICAL)
-You must ALWAYS generate the technical diagnostic report in THREE languages using the exact markers below:
+## STEP 3 — PROBLEM TYPE DETECTION
+Map symptoms to a specific problem type (e.g., licensing_failure, fem_mesh_instability, crash_on_startup).
+
+## STEP 4 — ROOT CAUSE GENERATION
+Based on Product, Problem Type, and [ATTACHMENTS]:
+- If image attachments exist, ANALYZE THEM for error codes, UI messages, or visual anomalies.
+- Generate the MOST LIKELY causes for this specific engineering context.
+- Explain WHY it happens (technical depth required).
+
+## STEP 5 — PRIORITIZATION
+Sort causes by likelihood (1 = highest).
+
+## STEP 6 — RESPONSE GENERATION
+Generate a PROFESSIONAL, EXPERT-LEVEL diagnostic report.
+- Focus ONLY on the current problem.
+- Be technical (NOT generic).
+- Provide ordered troubleshooting steps.
+- Provide a validation checklist.
+
+## STEP 7 — OUTPUT (STRICT 3-LANGUAGE FORMAT)
+Output in Turkish, English, and German using EXACT markers:
 
 ### 🇹🇷 Türkçe
-[Detailed diagnostic report, root cause, and step-by-step resolution in Turkish]
+
+## 📌 Sorun Yorumu
+{{Current problem interpretation}}
+
+## 🔄 Problem Değişimi
+{{Only if shift = true: short explanation}}
+
+## 🎯 En Olası Neden
+{{Top cause + technical explanation}}
+
+## ⚠️ Kritik Kontroller (Öncelik Sırasıyla)
+1. {{Technical check}}
+
+## 🛠️ Çözüm Adımları
+1. {{Direct action}}
+
+## ✅ Doğrulama
+- {{Checklist to verify fix}}
+
+---
 
 ### 🇬🇧 English
-[Technical summary and resolution steps in English]
+
+## 📌 Problem Interpretation
+...
+
+## 🎯 Most Likely Cause
+...
+
+---
 
 ### 🇩🇪 Deutsch
-[Technisches Resümee und Lösungsschritte auf Deutsch]
+
+## 📌 Problemübersicht
+...
 
 ---
 
-### REPORT CONTENT STRUCTURE (For each language section)
-- **Problem Özeti / Summary**: What exactly is failing?
-- **Kök Neden / Root Cause**: Why is it failing based on diagnosis data?
-- **Çözüm Adımları / Troubleshooting**: Numbered, precise actions.
-- **Doğrulama / Validation**: How can the user check if it's fixed?
-
----
-
-### TONE & GUARDRAILS
-- Be professional, expert, and precise.
-- Use engineering terminology correctly.
-- Do NOT add a general intro/outro between language sections. Start directly with the markers.
-- If [HOTINFO] system data suggests a hardware bottleneck, emphasize this in the Root Cause.
+## HARD RULES
+- NEVER give generic support answers.
+- ALWAYS behave like a senior engineer.
+- Output ONLY Markdown.
+- ALWAYS include all 3 languages.
 `;
-
 
 @Injectable()
 export class AiQueryService {
@@ -144,7 +190,8 @@ export class AiQueryService {
         }
 
         // 2. Semantic search
-        const searchResponse: SearchResponse = await this.embeddingService.search(expandedQuery, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, null, isStaff);
+        // Use productId if provided explicitly or derived from diagnosis (if we moved diagnosis earlier- but we keep it product-agnostic for first pass intentionally)
+        const searchResponse: SearchResponse = await this.embeddingService.search(expandedQuery, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, options.productId, isStaff);
         let results = searchResponse.results;
 
         /* 
@@ -171,9 +218,11 @@ export class AiQueryService {
         results = await this.rankResultsWithLLM(userQuery, results);
 
         // Lowered floor for response generation
-        const LOW_CONFIDENCE_THRESHOLD = RAG_CONFIG.SIMILARITY.LOW_CONFIDENCE;
-        if (searchResponse.diagnostics.topScore < LOW_CONFIDENCE_THRESHOLD || results.length === 0) {
-            this.logger.warn(`🚫 No reliable context found(topScore = ${searchResponse.diagnostics.topScore.toFixed(3)}).Routing to human agent.`);
+        // Ensure threshold alignment: topScore must be >= search threshold to be valid
+        const FALLBACK_THRESHOLD = Math.min(RAG_CONFIG.SIMILARITY.THRESHOLD, 0.20);
+
+        if (searchResponse.diagnostics.topScore < FALLBACK_THRESHOLD || results.length === 0) {
+            this.logger.warn(`🚫 No reliable context found (topScore = ${searchResponse.diagnostics.topScore.toFixed(3)}, threshold = ${FALLBACK_THRESHOLD}). Routing to human agent.`);
 
             const providerName = await this.ai.getActiveProviderName();
             const modelName = await this.ai.getActiveModelName();
@@ -210,8 +259,8 @@ export class AiQueryService {
         const topResult = results[0] ?? null;
         let confidence: ConfidenceBand = 'NO_MATCH';
         let answer: string | null = null;
-        let diagnosis: DiagnosisResult | undefined;
         let translations: Record<string, string> | undefined;
+        let diagnosis: DiagnosisResult | undefined;
 
         if (topResult) {
             if (topResult.similarity >= this.highThreshold) confidence = 'HIGH';
@@ -220,22 +269,19 @@ export class AiQueryService {
         }
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
-            const systemPrompt = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', DEFAULT_SYSTEM_PROMPT);
-            let dynamicSystemPrompt = systemPrompt;
-
-            if (hotinfoContext) {
-                const h = hotinfoContext;
-                dynamicSystemPrompt += `\n\n4) USER SYSTEM PROFILE (HOTINFO):\nThe user's system details are attached. Always cross-reference the user's error/issue with their system profile to provide accurate solutions.\n`;
-                dynamicSystemPrompt += `- OS: ${h.osVersion || 'Unknown'}\n- GPU: ${h.gpu || 'Unknown'}\n- RAM: ${h.ram || 'Unknown'}\n- Version: ${h.allplanVersion || 'Unknown'}\n`;
-            }
-
             diagnosis = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content));
+
+            const systemPromptRaw = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', MASTER_DIAGNOSIS_PROMPT);
+            let dynamicSystemPrompt = systemPromptRaw
+                .replace('{{PRODUCT}}', diagnosis?.productName || 'General')
+                .replace('{{CATEGORIES}}', diagnosis?.categoryNames.join(', ') || 'N/A')
+                .replace('{{KEYWORDS}}', diagnosis?.matchedKeywords.join(', ') || 'N/A');
 
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
                 userQuery,
                 kbContent: results.slice(0, 10).map(r => r.content).join('\n\n---\n\n'),
-                skipHotinfoProfile: true,
+                hotinfoSnapshot: hotinfoContext,
                 messages: options.history,
                 diagnosis,
             });
@@ -253,6 +299,7 @@ export class AiQueryService {
             }).filter(p => !!p.fileData || !!p.inlineData || !!p.text) || [];
 
             const aiResult = await this.ai.reformat(finalPrompt, userQuery, results.slice(0, 10).map(r => r.content).join('\n\n'), aiParts);
+
             const rawAnswer = aiResult?.response ?? results[0].content;
 
             // Split response by languages (TR, EN, DE)
@@ -461,22 +508,26 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         }
 
         let usedPrompt = userQuery;
+        let diagnosis: DiagnosisResult | undefined;
+
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
-            const systemPrompt = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', DEFAULT_SYSTEM_PROMPT);
+            diagnosis = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content));
 
-            let dynamicSystemPrompt = systemPrompt;
-            if (hotinfoContext) {
-                const h = hotinfoContext;
-                dynamicSystemPrompt += `\n\n4) USER SYSTEM PROFILE (HOTINFO):\nThe user's system details are attached. Always cross-reference the user's error/issue with their system profile to provide accurate solutions. If you detect conflicting processes or specific errors, address them.\n`;
-                dynamicSystemPrompt += `- OS: ${h.osVersion || 'Unknown'}\n- GPU: ${h.gpu || 'Unknown'}\n- RAM: ${h.ram || 'Unknown'}\n- Allplan: ${h.allplanVersion || 'Unknown'}\n- Error Trace: ${h.errorTrace || 'None'}\n- Conflicting Processes: ${h.conflictingProcesses?.join(', ') || 'None'}\n`;
-            }
+            const systemPromptRaw = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', MASTER_DIAGNOSIS_PROMPT);
+            let dynamicSystemPrompt = systemPromptRaw
+                .replace('{{PRODUCT}}', diagnosis?.productName || 'General')
+                .replace('{{CATEGORIES}}', diagnosis?.categoryNames.join(', ') || 'N/A')
+                .replace('{{KEYWORDS}}', diagnosis?.matchedKeywords.join(', ') || 'N/A');
+
 
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
                 userQuery,
-                kbContent: results.slice(0, 10).map(r => r.content).join('\n\n---\n\n'),
-                skipHotinfoProfile: true,
+                kbContent: results.map(r => r.content).join('\n\n---\n\n'),
+                hotinfoSnapshot: hotinfoContext,
+                messages: options.history?.map(h => ({ role: h.role, content: h.content })),
+                diagnosis
             });
             const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
             usedPrompt = finalPrompt;
@@ -529,7 +580,10 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                 inputTokens,
                 outputTokens,
                 totalTokens,
-                estimatedCost
+                estimatedCost,
+                userContext: {
+                    diagnosis: diagnosis
+                } as any
             },
         });
 
@@ -547,8 +601,9 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         });
 
         if (!user || !user.role) return false;
-        // Staff are all roles except customer
-        return user.role.name !== 'customer';
+        // Case-insensitive role check to handle 'CUSTOMER' vs 'customer'
+        const roleName = user.role.name.toUpperCase();
+        return roleName !== 'CUSTOMER';
     }
 
     /**
