@@ -3,7 +3,7 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "build": "nest build && pnpm --filter @aluplan/database db:generate",
+        "build": "nest build",
         "prestart:prod": "cd ../../packages/database && npx prisma migrate deploy && pnpm run db:seed",
         "start": "node dist/main",
         "start:prod": "node dist/main",

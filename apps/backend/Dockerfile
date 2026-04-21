@@ -11,8 +11,8 @@ COPY . .
 RUN rm -rf packages/database/client packages/database/generated
 # Perform full build in builder stage
 RUN pnpm install --frozen-lockfile && \
-    NODE_OPTIONS="--max-old-space-size=2048" pnpm --filter @aluplan/database db:generate && \
-    NODE_OPTIONS="--max-old-space-size=2048" pnpm --filter @aluplan/backend build
+    NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/database db:generate && \
+    NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/backend build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
