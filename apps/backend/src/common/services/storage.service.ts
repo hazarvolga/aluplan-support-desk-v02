@@ -32,11 +32,11 @@ export class StorageService implements OnModuleInit {
     }
 
     private async getS3Config() {
-        const endpoint = await this.settingsService.get('storage.endpoint') || this.configService.get('storage.endpoint');
-        const regionStr = await this.settingsService.get('storage.region') || this.configService.get('storage.region');
-        const accessKey = await this.settingsService.get('storage.access_key') || this.configService.get('storage.accessKey');
-        const secretKey = await this.settingsService.get('storage.secret_key', true) || this.configService.get('storage.secretKey');
-        const dbBucket = await this.settingsService.get('storage.bucket');
+        const endpoint = await this.settingsService.getValue('storage.endpoint') || this.configService.get('storage.endpoint');
+        const regionStr = await this.settingsService.getValue('storage.region') || this.configService.get('storage.region');
+        const accessKey = await this.settingsService.getValue('storage.access_key') || this.configService.get('storage.accessKey');
+        const secretKey = await this.settingsService.getValue('storage.secret_key') || this.configService.get('storage.secretKey');
+        const dbBucket = await this.settingsService.getValue('storage.bucket');
         const bucket = dbBucket || this.configService.get('storage.bucket');
 
         return { endpoint, regionStr, accessKey, secretKey, bucket };
