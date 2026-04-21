@@ -2827,7 +2827,9 @@
       "meta": {
         "author": "AUTHOR",
         "update": "UPDATE",
-        "views": "VIEWS"
+        "views": "VIEWS",
+        "locale": "en-US",
+        "system": "SYSTEM"
       },
       "empty": {
         "no_records": "No articles found yet",

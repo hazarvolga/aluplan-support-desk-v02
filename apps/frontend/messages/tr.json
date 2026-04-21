@@ -2830,7 +2830,9 @@
       "meta": {
         "author": "YETKİLİ",
         "update": "GÜNCELLEME",
-        "views": "İZLENME"
+        "views": "İZLENME",
+        "locale": "tr-TR",
+        "system": "SİSTEM"
       },
       "empty": {
         "no_records": "Henüz makale bulunamadı",

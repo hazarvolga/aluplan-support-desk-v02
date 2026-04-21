@@ -129,7 +129,9 @@ export default function KnowledgeBasePage() {
                     </div>
                     <div>
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">{t('stats.published')}</span>
-                        <span className="text-lg font-bold text-white font-mono">{articles.filter(a => a.status === 'PUBLISHED').length.toString().padStart(3, '0')}</span>
+                        <span className="text-lg font-bold text-white font-mono">
+                            {(Array.isArray(articles) ? articles.filter(a => a?.status === 'PUBLISHED').length : 0).toString().padStart(3, '0')}
+                        </span>
                     </div>
                 </div>
                 <div className="glass-card p-4 flex items-center gap-4 border-amber-500/10">
@@ -226,7 +228,17 @@ export default function KnowledgeBasePage() {
                                                 </div>
                                                 <div className="flex items-center gap-1.5">
                                                     <Clock className="h-3 w-3" />
-                                                    <span>{t('meta.update')}: {new Date(a.updatedAt).toLocaleDateString(t('meta.locale'))}</span>
+                                                    <span>
+                                                        {t('meta.update')}: {(() => {
+                                                            try {
+                                                                const date = new Date(a.updatedAt);
+                                                                if (isNaN(date.getTime())) return '---';
+                                                                return date.toLocaleDateString(t('meta.locale') || 'tr-TR');
+                                                            } catch {
+                                                                return '---';
+                                                            }
+                                                        })()}
+                                                    </span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5">
                                                     <Eye className="h-3 w-3" />
