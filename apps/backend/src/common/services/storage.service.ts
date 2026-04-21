@@ -32,7 +32,7 @@ export class StorageService implements OnModuleInit {
     }
 
     private async getS3Config() {
-        const endpoint = (await this.settingsService.getValue('storage.endpoint') || this.configService.get('storage.endpoint') || '').trim();
+        const endpoint = (await this.settingsService.getValue('storage.endpoint') || this.configService.get('storage.endpoint') || '').trim().replace(/\/+$/, '');
         const regionStr = (await this.settingsService.getValue('storage.region') || this.configService.get('storage.region') || '').trim();
         const accessKey = (await this.settingsService.getValue('storage.access_key') || this.configService.get('storage.accessKey') || '').trim();
         const secretKey = (await this.settingsService.getValue('storage.secret_key') || this.configService.get('storage.secretKey') || '').trim();
@@ -241,7 +241,7 @@ export class StorageService implements OnModuleInit {
     }
 
     async testCustomConnection(config: { endpoint: string, region: string, accessKey: string, secretKey: string, bucket: string }): Promise<{ success: boolean; message: string; details?: any }> {
-        const endpoint = (config.endpoint || '').trim();
+        const endpoint = (config.endpoint || '').trim().replace(/\/+$/, '');
         const accessKey = (config.accessKey || '').trim();
         let secretKey = (config.secretKey || '').trim();
         const bucket = (config.bucket || '').trim();
