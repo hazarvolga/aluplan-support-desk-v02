@@ -400,6 +400,7 @@ export const api = {
     users: {
         list: (type?: 'agent' | 'customer') => request<any[]>(`/users${type ? `?type=${type}` : ''}`),
         get: (id: string) => request<any>(`/users/${id}`),
+        lookup: (email: string) => request<any>(`/users/lookup?email=${encodeURIComponent(email)}`),
         create: (body: any) => request<any>('/users', { method: 'POST', body: JSON.stringify(body) }),
         updateProfile: (body: any) => request<any>('/users/profile', { method: 'PATCH', body: JSON.stringify(body) }),
         update: (id: string, body: any) => request<any>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),

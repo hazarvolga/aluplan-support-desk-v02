@@ -21,6 +21,13 @@ export class UsersController {
         return this.usersService.findAll(type);
     }
 
+    @Roles('admin')
+    @Get('lookup')
+    @ApiOperation({ summary: 'Find user by email for promotion' })
+    lookup(@Query('email') email: string) {
+        return this.usersService.findByEmail(email);
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Get user by id' })
     findOne(@Param('id') id: string, @Req() req: any) {

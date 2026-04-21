@@ -86,7 +86,13 @@ export class UsersService {
     }
 
     async findByEmail(email: string) {
-        return this.prisma.user.findUnique({ where: { email } });
+        const user = await this.prisma.user.findUnique({
+            where: { email },
+            include: { role: true }
+        });
+        if (!user) return null;
+        const { passwordHash: _passwordHash, ...result } = user;
+        return result;
     }
 
     async updateProfile(userId: string, dto: UpdateProfileDto) {
