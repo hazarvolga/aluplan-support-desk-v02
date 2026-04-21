@@ -54,7 +54,7 @@ export class StorageService implements OnModuleInit {
 
         const isR2 = endpoint.includes('cloudflarestorage.com');
         const region = regionStr || (isR2 ? 'auto' : 'us-east-1');
-        const forcePathStyle = isR2 ? false : (this.configService.get('storage.usePathStyle') ?? true);
+        const forcePathStyle = isR2 ? true : (this.configService.get('storage.usePathStyle') ?? true);
 
         const client = new S3Client({
             endpoint,
@@ -243,7 +243,7 @@ export class StorageService implements OnModuleInit {
     async testCustomConnection(config: { endpoint: string, region: string, accessKey: string, secretKey: string, bucket: string }): Promise<{ success: boolean; message: string; details?: any }> {
         const isR2 = config.endpoint.includes('cloudflarestorage.com');
         const region = config.region || (isR2 ? 'auto' : 'us-east-1');
-        const forcePathStyle = isR2 ? false : (this.configService.get('storage.usePathStyle') ?? true);
+        const forcePathStyle = isR2 ? true : (this.configService.get('storage.usePathStyle') ?? true);
 
         try {
             const client = new S3Client({

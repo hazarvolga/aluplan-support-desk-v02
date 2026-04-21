@@ -1664,7 +1664,7 @@ export default function AdminSettingsPage() {
                                                 const res = await api.settings.testStorage(config);
                                                 toast({
                                                     title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'),
-                                                    description: res.message + (res.details?.advice ? `\n\n\${res.details.advice}` : ''),
+                                                    description: res.message + (res.details?.advice ? `\n\n${res.details.advice}` : ''),
                                                     variant: res.success ? 'default' : 'destructive'
                                                 });
                                             } catch (error: any) {
