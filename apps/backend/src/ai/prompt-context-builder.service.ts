@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RAG_CONFIG } from '../config/rag.config';
+import { DiagnosisResult } from './ai-diagnosis.service';
 
 export interface ContextOptions {
     userId?: string;
@@ -8,6 +9,8 @@ export interface ContextOptions {
     kbContent: string;
     hotinfoSnapshot?: any;
     skipHotinfoProfile?: boolean;
+    messages?: Array<{ role: string; content: string }>;
+    diagnosis?: DiagnosisResult;
 }
 
 interface ContextSection {
@@ -23,7 +26,7 @@ export class PromptContextBuilderService {
     constructor(private readonly prisma: PrismaService) { }
 
     async buildContext(options: ContextOptions): Promise<string> {
-        const { userId, userQuery, kbContent, hotinfoSnapshot } = options;
+        const { userId, userQuery, kbContent, hotinfoSnapshot, messages, diagnosis } = options;
         const sections: ContextSection[] = [];
         const P = RAG_CONFIG.CONTEXT.PRIORITIES;
 
@@ -96,7 +99,30 @@ export class PromptContextBuilderService {
             content: `[3. Mevcut Sorgu]\n${userQuery}\n`,
         });
 
-        // 4. System Rules (Domain-Specific)
+        // 4. Message History (Crucial for Topic Shift & Context)
+        if (messages && messages.length > 0) {
+            const historyContent = `[MESSAGES (Chronological History)]\n` +
+                messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
+            sections.push({ name: 'MESSAGE_HISTORY', priority: P.RECENT_TICKETS + 5, content: historyContent });
+        }
+
+        // 5. Technical Diagnosis (New Decision Layer)
+        if (diagnosis) {
+            let diagnosisContent = `[TECHNICAL DIAGNOSIS]\n`;
+            diagnosisContent += `- Detected Product: ${diagnosis.productName}\n`;
+            diagnosisContent += `- Matched Categories: ${diagnosis.categoryNames.join(', ') || 'N/A'}\n`;
+            diagnosisContent += `- Detected Keywords: ${diagnosis.matchedKeywords.join(', ') || 'N/A'}\n`;
+
+            if (diagnosis.suggestedCauses.length > 0) {
+                diagnosisContent += `- Potential Root Causes:\n`;
+                diagnosis.suggestedCauses.forEach(c => {
+                    diagnosisContent += `  * ${c.title} (Likelihood Priority: ${c.priority}): ${c.why}\n`;
+                });
+            }
+            sections.push({ name: 'DIAGNOSIS_ENGINE', priority: P.APPROVED_KNOWLEDGE_SOURCE - 1, content: diagnosisContent });
+        }
+
+        // 6. System Rules (Domain-Specific)
         const systemRulesLines = [
             'Yanıtların profesyonel, yapici ve cozum odakli olmalidir.',
             'Kurum kimligini (Aluplan Destek) koru.',

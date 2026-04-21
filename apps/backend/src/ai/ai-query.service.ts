@@ -11,10 +11,11 @@ import { PromptsService } from './prompts.service';
 import { SettingsService } from '../settings/settings.service';
 import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
-import { createHash } from 'crypto';
 import { RAG_CONFIG } from '../config/rag.config';
 import { expandQueryWithSynonyms } from './utils/synonym-dictionary';
 import { RagObservabilityService } from './rag-observability.service';
+import { AiDiagnosisService, DiagnosisResult } from './ai-diagnosis.service';
+import { createHash } from 'crypto';
 
 // Confidence bands — LOW/HIGH/MEDIUM from schema, NO_MATCH is local
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -25,6 +26,8 @@ export interface AiQueryOptions {
     channel?: CommunicationChannel;
     hotinfoContext?: any;
     attachments?: any[];
+    history?: Array<{ role: 'user' | 'assistant'; content: string }>;
+    language?: string; // tr, en, de or auto
 }
 
 export interface AiQueryResult {
@@ -34,52 +37,52 @@ export interface AiQueryResult {
     sources: Array<{ articleId: string; title: string; similarity: number }>;
     interactionId: string;
     suggestTicket: boolean;
+    translations?: Record<string, string>;
+    diagnosis?: DiagnosisResult;
 }
 
-const DEFAULT_SYSTEM_PROMPT = `ROLE:
-You are ALUPLAN DESTEK AI — an official elite technical support assistant for Allplan BIM software.
-You have expert-level technical knowledge, but you ONLY use the provided "APPROVED KNOWLEDGE SOURCE" to generate answers.
+const DEFAULT_SYSTEM_PROMPT = `
+### ROLE
+You are a SENIOR TECHNICAL SUPPORT ENGINEER and structural engineering expert for ALUPLAN.
+You analyze incoming technical queries, detect problem shifts, and provide high-fidelity diagnostic reports.
 
-REASONING PROCESS (Analyze this internaly before responding):
-1. IDENTIFY: Which specific Allplan module or feature is being asked about? (Modeling, IFC, Share, License, etc.)
-2. VERSION CHECK: Is the question about a specific version (2025, 2026)? Are there version-specific steps in the source?
-3. ERROR MATCH: Does the user provide an error code (e.g. 0x...) or specific symptoms? Match them to the source.
-4. SOURCE EVALUATION: Find the exact procedure in the source. Is it a full or partial match?
-5. HOTINFO CHECK: Review the provided user system info. Does it impact the solution (e.g. incompatible GPU, old OS)?
+---
 
-RULES:
-    - When the knowledge source contains a procedure or workflow, you MUST present it as NUMBERED STEPS.
-    - Each step should include the EXACT menu path, button name, or action.
-    - Do NOT summarize procedures into vague advice like "kontrol edin" — instead, explain EXACTLY what to check and WHERE.
-    - Example of BAD: "Lisans ayarlarınızı kontrol edin."
-    - Example of GOOD: "1. Allmenu → Hizmetler → Lisans Ayarları menüsünü açın.\n2. Mevcut lisansınızı seçin.\n3. 'Lisans geri ver' (Return License) butonuna tıklayın."
+### DIAGNOSIS STRATEGY
+1. **Context Check**: Review [MESSAGES] history. Is the user still on the same technical topic? If they changed subjects (e.g. from Licensing to FEM Mesh), prioritize the NEW problem and acknowledge the shift.
+2. **Technical Mapping**: Use [TECHNICAL DIAGNOSIS] metadata to map symptoms to the identified product and potential root causes.
+3. **Source Priority**: Use [APPROVED KNOWLEDGE SOURCE] for exact procedures. If no match is found, use your expert engineering knowledge to offer safe, professional advice while noting it's not a standard procedure.
 
-4) HANDLING UNAVAILABLE INFORMATION
-    If the user's exact problem is NOT fully solved by the knowledge source:
-    a) If a PARTIAL match exists (related topic found but not exact), present the closest procedure and add:
-       "Not: Tam eşleşme bulunamadı, ancak yukarıdaki adımlar sorununuza yardımcı olabilir. Sorun devam ederse destek talebi oluşturunuz."
-    b) If NO match exists at all and no HOTINFO is available:
-       -> Respond with: "Bu konu mevcut bilgi kaynağında yer almıyor. Sistem analizi için lütfen destek talebi oluşturun ve '_hotinf_.hxl' dosyanızı ekleyiniz."
-    c) If NO match exists but HOTINFO IS available and query is PERFORMANS-related:
-       -> Proceed with Rule 6 to diagnose hardware/software.
+---
 
-5) TONE AND STRUCTURE
-    - Do NOT use unnecessary greetings. Provide the solution directly.
-    - Use numbered steps for procedures.
-    - Maximum 10 sentences for the core answer.
-    - Do NOT use vague words (probably, usually, might).
-    - ALWAYS respond in the same language used by the user (Turkish, English, or German).
-    - Do NOT repeat user's system specs (GPU, CPU, RAM) unless the query is about PERFORMANS or CRASH.
+### MULTI-LANGUAGE OUTPUT PROTOCOL (CRITICAL)
+You must ALWAYS generate the technical diagnostic report in THREE languages using the exact markers below:
 
-6) HOTINFO DIAGNOSTICS (Only for PERFORMANS/CRASH queries)
-    - If a USER SYSTEM PROFILE (HOTINFO) is provided AND the query is about performance, crashes, or errors:
-      → Analyze it deeply for Conflicting Processes, Error Traces, low RAM/VRAM.
-      → Cross-reference findings with the user's specific issue.
-    - If the query is about LICENSE, INSTALLATION, or MODELING:
-      → Do NOT include hardware specs in your response. They are irrelevant.
+### 🇹🇷 Türkçe
+[Detailed diagnostic report, root cause, and step-by-step resolution in Turkish]
 
-GOAL:
-Provide users with fast, technically accurate, step-by-step solutions using ONLY the approved knowledge source. Prioritize actionable procedures over generic advice.`;
+### 🇬🇧 English
+[Technical summary and resolution steps in English]
+
+### 🇩🇪 Deutsch
+[Technisches Resümee und Lösungsschritte auf Deutsch]
+
+---
+
+### REPORT CONTENT STRUCTURE (For each language section)
+- **Problem Özeti / Summary**: What exactly is failing?
+- **Kök Neden / Root Cause**: Why is it failing based on diagnosis data?
+- **Çözüm Adımları / Troubleshooting**: Numbered, precise actions.
+- **Doğrulama / Validation**: How can the user check if it's fixed?
+
+---
+
+### TONE & GUARDRAILS
+- Be professional, expert, and precise.
+- Use engineering terminology correctly.
+- Do NOT add a general intro/outro between language sections. Start directly with the markers.
+- If [HOTINFO] system data suggests a hardware bottleneck, emphasize this in the Root Cause.
+`;
 
 
 @Injectable()
@@ -99,6 +102,7 @@ export class AiQueryService {
         private readonly langfuse: LangfuseService,
         private readonly redis: RedisService,
         private readonly ragObs: RagObservabilityService,
+        private readonly diagnosisService: AiDiagnosisService,
     ) {
         this.highThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_HIGH', '0.85'));
         this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.70'));
@@ -206,6 +210,8 @@ export class AiQueryService {
         const topResult = results[0] ?? null;
         let confidence: ConfidenceBand = 'NO_MATCH';
         let answer: string | null = null;
+        let diagnosis: DiagnosisResult | undefined;
+        let translations: Record<string, string> | undefined;
 
         if (topResult) {
             if (topResult.similarity >= this.highThreshold) confidence = 'HIGH';
@@ -215,19 +221,23 @@ export class AiQueryService {
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
             const systemPrompt = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', DEFAULT_SYSTEM_PROMPT);
-
             let dynamicSystemPrompt = systemPrompt;
+
             if (hotinfoContext) {
                 const h = hotinfoContext;
-                dynamicSystemPrompt += `\n\n4) USER SYSTEM PROFILE (HOTINFO):\nThe user's system details are attached. Always cross-reference the user's error/issue with their system profile to provide accurate solutions. If you detect conflicting processes or specific errors, address them.\n`;
-                dynamicSystemPrompt += `- OS: ${h.osVersion || 'Unknown'}\n- GPU: ${h.gpu || 'Unknown'}\n- RAM: ${h.ram || 'Unknown'}\n- Allplan: ${h.allplanVersion || 'Unknown'}\n- Error Trace: ${h.errorTrace || 'None'}\n- Conflicting Processes: ${h.conflictingProcesses?.join(', ') || 'None'}\n`;
+                dynamicSystemPrompt += `\n\n4) USER SYSTEM PROFILE (HOTINFO):\nThe user's system details are attached. Always cross-reference the user's error/issue with their system profile to provide accurate solutions.\n`;
+                dynamicSystemPrompt += `- OS: ${h.osVersion || 'Unknown'}\n- GPU: ${h.gpu || 'Unknown'}\n- RAM: ${h.ram || 'Unknown'}\n- Version: ${h.allplanVersion || 'Unknown'}\n`;
             }
+
+            diagnosis = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content));
 
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
                 userQuery,
                 kbContent: results.slice(0, 10).map(r => r.content).join('\n\n---\n\n'),
                 skipHotinfoProfile: true,
+                messages: options.history,
+                diagnosis,
             });
             const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
 
@@ -243,7 +253,16 @@ export class AiQueryService {
             }).filter(p => !!p.fileData || !!p.inlineData || !!p.text) || [];
 
             const aiResult = await this.ai.reformat(finalPrompt, userQuery, results.slice(0, 10).map(r => r.content).join('\n\n'), aiParts);
-            answer = aiResult?.response ?? results[0].content;
+            const rawAnswer = aiResult?.response ?? results[0].content;
+
+            // Split response by languages (TR, EN, DE)
+            const splitResponse = this.parseMultiLangResponse(rawAnswer, options.language || 'auto');
+            answer = splitResponse.main; // The active language content
+            translations = splitResponse.translations;
+
+            options.hotinfoContext = options.hotinfoContext || {}; // ensure for consistency below
+
+            // Interaction logging happens below
 
             // Langfuse trace
             await this.langfuse.trace('query-support', userQuery, answer, {
@@ -288,7 +307,11 @@ export class AiQueryService {
                 inputTokens,
                 outputTokens,
                 totalTokens,
-                estimatedCost
+                estimatedCost,
+                userContext: {
+                    translations,
+                    diagnosis
+                } as any
             }
         });
 
@@ -307,6 +330,8 @@ export class AiQueryService {
             })) : [],
             interactionId: interaction.id,
             suggestTicket,
+            translations,
+            diagnosis
         };
 
         // Cache with centralized TTL
@@ -565,6 +590,46 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         } catch (err) {
             this.logger.warn(`⚠️ Cache invalidation failed: ${err}`);
         }
+    }
+
+    /**
+     * Parses the multi-language response from the Master Prompt.
+     * Expects sections like "### 🇹🇷 Türkçe", "### 🇬🇧 English", "### 🇩🇪 Deutsch".
+     */
+    private parseMultiLangResponse(raw: string, requestedLang: string): { main: string; translations: Record<string, string> } {
+        const sections: Record<string, string> = {};
+
+        // Define marker patterns
+        const patterns = {
+            tr: /### 🇹🇷 Türkçe([\s\S]*?)(?=###|$)/i,
+            en: /### 🇬🇧 English([\s\S]*?)(?=###|$)/i,
+            de: /### 🇩🇪 Deutsch([\s\S]*?)(?=###|$)/i
+        };
+
+        for (const [lang, regex] of Object.entries(patterns)) {
+            const match = raw.match(regex);
+            if (match) {
+                sections[lang] = match[1].trim();
+            }
+        }
+
+        // Determine main language
+        let mainLang = requestedLang === 'auto' ? 'tr' : requestedLang; // default to 'tr' if auto for now
+        if (requestedLang === 'auto') {
+            // Very simple detection: if the query has no non-ascii, maybe it's EN? 
+            // In a better version we'd use a language detector.
+        }
+
+        const mainContent = sections[mainLang] || sections['tr'] || sections['en'] || raw;
+
+        const translations: Record<string, string> = {};
+        for (const [l, content] of Object.entries(sections)) {
+            if (l !== mainLang) {
+                translations[l] = content;
+            }
+        }
+
+        return { main: mainContent, translations };
     }
 
     @OnEvent('ai.translate_message', { async: true })

@@ -27,12 +27,23 @@ export class AiAutoResolverService {
             const queryText = `${ticket.subject}\n\n${ticket.description || ''}`;
             this.logger.log(`🤖 Attempting auto-resolution for ticket ${ticket.ticketNumber}`);
 
+            const messages = await this.prisma.ticketMessage.findMany({
+                where: { ticketId: ticket.id },
+                orderBy: { createdAt: 'asc' },
+                select: { senderId: true, message: true, isInternal: true }
+            });
+            const history = messages.map(m => ({
+                role: (m.senderId === ticket.userId ? 'user' : 'assistant') as 'user' | 'assistant',
+                content: m.message
+            }));
+
             const channelStr: any = ticket.channel || 'WEB';
             const result = await this.aiQueryService.query({
                 userQuery: queryText,
                 userId: ticket.userId ?? undefined,
                 channel: channelStr,
-                hotinfoContext: ticket.hotinfoSnapshot
+                hotinfoContext: ticket.hotinfoSnapshot,
+                history
             });
 
             if (result.confidence === 'HIGH' && result.answer) {
@@ -95,8 +106,50 @@ export class AiAutoResolverService {
                     });
                 }
             }
+
+            // --- CONVERSATION AWARE AUTO-REPLY DRAFT ---
+            // If the ticket is in a state where AI can assist
+            const activeStates: TicketStatus[] = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS, TicketStatus.PENDING_CUSTOMER];
+            if (activeStates.includes(ticket.status)) {
+                const messages = await this.prisma.ticketMessage.findMany({
+                    where: { ticketId: ticket.id },
+                    orderBy: { createdAt: 'asc' },
+                    take: 20,
+                    select: { senderId: true, message: true, isInternal: true }
+                });
+
+                const history = messages.map(m => ({
+                    role: (m.senderId === ticket.userId ? 'user' : 'assistant') as 'user' | 'assistant',
+                    content: m.message
+                }));
+
+                const result = await this.aiQueryService.query({
+                    userQuery: message.message,
+                    userId: ticket.userId ?? undefined,
+                    channel: (ticket.channel as any) || 'WEB',
+                    hotinfoContext: ticket.hotinfoSnapshot,
+                    history
+                });
+
+                if (result.answer) {
+                    await this.prisma.ticketMessage.create({
+                        data: {
+                            ticketId: ticket.id,
+                            senderId: null, // System AI
+                            message: `[AI CONTEXT-AWARE SUGGESTION]\n\n${result.answer}`,
+                            isInternal: true,
+                            metadata: {
+                                translations: result.translations,
+                                diagnosis: result.diagnosis
+                            } as any
+                        }
+                    });
+                    this.logger.log(`🤖 AI Suggestion created for message ${message.id} in ticket ${ticket.ticketNumber}`);
+                }
+            }
+
         } catch (e: any) {
-            this.logger.error(`❌ Failed to analyze sentiment for message ${message.id}`, e.stack);
+            this.logger.error(`❌ Failed to process message ${message.id}`, e.stack);
         }
     }
 

@@ -25,6 +25,7 @@ import { VertexAiService } from './vertex-ai.service';
 import { BullModule } from '@nestjs/bullmq';
 import { DocumentAiService } from './document-ai.service';
 import { DocumentParsingProcessor } from './document-parsing.processor';
+import { AiDiagnosisService } from './ai-diagnosis.service';
 
 @Module({
     imports: [
@@ -43,6 +44,7 @@ import { DocumentParsingProcessor } from './document-parsing.processor';
         AiQueryService,
         AiAutoResolverService,
         AiCopilotService,
+        AiDiagnosisService,
         PromptContextBuilderService,
         PromptsService,
         LangfuseService,
@@ -61,6 +63,7 @@ import { DocumentParsingProcessor } from './document-parsing.processor';
         EmbeddingService,
         AiQueryService,
         AiCopilotService,
+        AiDiagnosisService,
         PromptContextBuilderService,
         PromptsService,
         LangfuseService,
