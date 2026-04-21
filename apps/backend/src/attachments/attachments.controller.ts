@@ -13,6 +13,7 @@ import {
     HttpStatus,
     Request,
     ForbiddenException,
+    Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -27,6 +28,8 @@ import { TicketsService } from '../tickets/tickets.service';
 @Controller('attachments')
 @UseGuards(RbacGuard)
 export class AttachmentsController {
+    private readonly logger = new Logger(AttachmentsController.name);
+
     constructor(
         private readonly attachmentsService: AttachmentsService,
         private readonly storageService: StorageService,
