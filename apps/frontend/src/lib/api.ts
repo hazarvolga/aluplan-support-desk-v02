@@ -345,6 +345,7 @@ export const api = {
         }>('/ai/sources-stats'),
     },
     kb: {
+        listCategories: () => request<any[]>('/kb/categories'),
         list: (params?: Record<string, string>) => {
             const q = params ? '?' + new URLSearchParams(params).toString() : '';
             return request<any>(`/kb/articles${q}`);
