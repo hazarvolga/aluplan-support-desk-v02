@@ -19,7 +19,7 @@ export class FaqController {
     @ApiOperation({ summary: 'Get published FAQs (public widget endpoint)' })
     @ApiQuery({ name: 'language', required: false })
     getPublished(@Query('language') language = 'tr', @Request() req: any) {
-        const isStaff = req.user?.role !== 'customer';
+        const isStaff = req.user?.role?.toUpperCase() !== 'CUSTOMER';
         return this.faqService.getPublished(language, 50, isStaff);
     }
 

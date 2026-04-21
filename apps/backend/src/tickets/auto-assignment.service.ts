@@ -25,7 +25,7 @@ export class AutoAssignmentService {
                 where: {
                     role: {
                         name: {
-                            not: 'customer',
+                            not: 'CUSTOMER',
                             mode: 'insensitive'
                         }
                     },

@@ -138,7 +138,7 @@ export class EmailInboundService implements OnModuleInit {
                         include: { role: true }
                     });
                     const senderId = sender?.id || ticket.userId;
-                    const role = sender?.role?.name || 'customer';
+                    const role = sender?.role?.name || 'CUSTOMER';
 
                     const message = await this.ticketsService.addMessage(ticket.id, {
                         message: body,

@@ -277,7 +277,7 @@ export class AuthService {
             fullName: user.fullName,
             avatarUrl: user.avatarUrl,
             status: user.status,
-            role: user.role?.name || 'customer',
+            role: user.role?.name || 'CUSTOMER',
             customerProfile: user.customerProfile
         };
     }

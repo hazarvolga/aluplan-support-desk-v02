@@ -227,7 +227,7 @@ export class TicketsService {
         if (!ticket) throw new NotFoundException(`Ticket not found`);
 
         // ownership check for customers
-        if ((requester?.role === 'customer' || requester?.role === 'VIEWER') && ticket.userId !== requester.id) {
+        if ((requester?.role?.toUpperCase() === 'CUSTOMER' || requester?.role?.toUpperCase() === 'VIEWER') && ticket.userId !== requester.id) {
             throw new ForbiddenException('You do not have access to this ticket');
         }
 
@@ -346,7 +346,7 @@ export class TicketsService {
     // SLA STATS
     // =============================================
     async getSlaStats(user?: { sub: string, role: string }) {
-        const isCustomer = user?.role === 'customer' || user?.role === 'VIEWER';
+        const isCustomer = user?.role?.toUpperCase() === 'CUSTOMER' || user?.role?.toUpperCase() === 'VIEWER';
         const cacheKey = isCustomer && user?.sub ? `sla_stats_${user.sub}` : 'sla_stats_global';
 
         const cached = await this.redis.get(cacheKey);
@@ -487,11 +487,10 @@ export class TicketsService {
             const deptAgents = await this.prisma.user.findMany({
                 where: {
                     teamMembers: { some: { team: { departmentId: ticket.departmentId } } },
-                    role: { name: { not: 'customer' } }
+                    role: { name: { not: 'CUSTOMER' } }
                 },
                 select: { email: true }
             });
-
             if (deptAgents.length > 0) {
                 recipientEmail = deptAgents.map(a => a.email).join(',');
                 userName = 'Destek Ekibi';

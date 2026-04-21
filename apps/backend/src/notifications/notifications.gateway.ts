@@ -103,7 +103,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         if (!ticket) return { error: 'Ticket not found' };
 
         const isCreator = ticket.userId === client.data.userId;
-        const isAgent = client.data.role && client.data.role !== 'customer';
+        const isAgent = client.data.role && client.data.role.toUpperCase() !== 'CUSTOMER';
 
         if (!isCreator && !isAgent) {
             return { error: 'Unauthorized' };
@@ -179,7 +179,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         const potentialAgents = await this.prisma.user.findMany({
             where: {
                 role: {
-                    name: { not: 'customer' }
+                    name: { not: 'CUSTOMER' }
                 }
             },
             select: { id: true }

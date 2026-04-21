@@ -238,7 +238,7 @@ export class AiController {
     @ApiOperation({ summary: 'Semantic search Knowledge Pool + Articles with Product filtering' })
     @HttpCode(HttpStatus.OK)
     async search(@Body() dto: { query: string; productId?: string; limit?: number }, @Request() req: any) {
-        const isStaff = req.user?.role !== 'customer';
+        const isStaff = req.user?.role?.toUpperCase() !== 'CUSTOMER';
         const searchResponse = await this.embeddingService.search(dto.query, dto.limit ?? 5, dto.productId, isStaff);
 
         // Log as an interaction for traceability

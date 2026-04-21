@@ -49,7 +49,7 @@ export class KnowledgeBaseController {
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
     findAll(@Query() q: any, @Request() req: any): Promise<any> {
-        const isStaff = req.user?.role !== 'customer';
+        const isStaff = req.user?.role?.toUpperCase() !== 'CUSTOMER';
         return this.kbService.findAll({
             status: q.status,
             categoryId: q.categoryId,
@@ -107,7 +107,7 @@ export class KnowledgeBaseController {
     @ApiOperation({ summary: 'Keyword search in published articles' })
     @ApiQuery({ name: 'q', required: true })
     keywordSearch(@Query('q') query: string, @Request() req: any): Promise<any> {
-        const isStaff = req.user?.role !== 'customer';
+        const isStaff = req.user?.role?.toUpperCase() !== 'CUSTOMER';
         return this.kbService.keywordSearch(query, 10, isStaff);
     }
 
