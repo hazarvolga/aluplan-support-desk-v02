@@ -445,6 +445,18 @@ export default function AdminSettingsPage() {
                                     </div>
                                 </div>
 
+                                {/* AI Provider Switch Note */}
+                                <div className="mb-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 text-sm text-blue-400 flex items-start gap-3 animate-in slide-in-from-top-2 duration-700">
+                                    <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                                    <div className="space-y-1">
+                                        <p className="font-bold text-blue-200">AI Sağlayıcı Değişikliği Hakkında Önemli Not:</p>
+                                        <p className="leading-relaxed">
+                                            AI sağlayıcısını veya embedding (vektör) modelini değiştirdiğinizde, sistemin yeni vektör boyutlarına uyum sağlaması için tüm mevcut bilgileri yeniden "öğrenmesi" (re-index) gerekir.
+                                            Bu değişiklikten sonra <strong>Bilgi Havuzu</strong> sayfasındaki yeniden tarama işlemini başlatmayı unutmayınız.
+                                        </p>
+                                    </div>
+                                </div>
+
                                 <div className="space-y-6 pb-6 border-b border-border/40">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
                                         {/* Primary Providers */}

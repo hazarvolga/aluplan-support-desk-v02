@@ -65,7 +65,7 @@ export class OpenAiService implements AiProvider {
                 body: JSON.stringify({
                     model,
                     input: text,
-                    dimensions: 1536,
+                    dimensions: 1024,
                 }),
                 signal: AbortSignal.timeout(60000),
             });
@@ -74,8 +74,8 @@ export class OpenAiService implements AiProvider {
             const data = await response.json();
             return { embedding: data.data[0].embedding, model };
         } catch (err: any) {
-            this.logger.warn(`⚠️ OpenAI embed failed: ${err.message}`);
-            return null;
+            this.logger.error(`🚨 OpenAI embed EXCEPTION: ${err.message}`, err.stack);
+            throw err; // Throw instead of returning null to stop silent failure
         }
     }
 

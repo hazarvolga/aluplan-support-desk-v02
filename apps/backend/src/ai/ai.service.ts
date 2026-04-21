@@ -13,8 +13,8 @@ export class AiService implements AiProvider {
     private readonly logger = new Logger(AiService.name);
     private failureCount = 0;
     private circuitOpenUntil = 0;
-    private readonly FAILURE_THRESHOLD = 5;
-    private readonly COOLDOWN_MS = 60_000;
+    private readonly FAILURE_THRESHOLD = 50; // Increased for bulk operations
+    private readonly COOLDOWN_MS = 30_000;
 
     constructor(
         private readonly settings: SettingsService,

@@ -161,7 +161,7 @@ export class EmbeddingService {
         JOIN knowledge_sources ks ON kpe.source_id = ks.id
         LEFT JOIN knowledge_pool_embeddings parent_kpe ON kpe.parent_id = parent_kpe.id
         WHERE ks.status = 'ACTIVE' 
-          AND (${productId}::uuid IS NULL OR ks.product_id = ${productId}::uuid) 
+          AND (${productId}::uuid IS NULL OR ks.product_id = ${productId}::uuid OR ks.product_id IS NULL) 
           AND kpe.model_name = ${modelName}
           AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.SIMILARITY_THRESHOLD}
           AND kpe.parent_id IS NOT NULL
@@ -196,42 +196,59 @@ export class EmbeddingService {
     async indexPoolContent(sourceId: string, content: string, metadata: any = {}): Promise<void> {
         const parentMax = RAG_CONFIG.CHUNKING.PARENT_MAX_TOKENS;
         const contentHash = createHash('md5').update(content).digest('hex');
-
-        const existing = await this.prisma.knowledgePoolEmbedding.findFirst({
-            where: { sourceId, metadata: { path: ['hash'], equals: contentHash } }
-        });
-        if (existing) return;
-
-        const hierarchies = hierarchicalChunk(content, { maxTokens: parentMax });
         const modelName = await this.ai.getActiveModelName();
 
-        await this.prisma.$executeRaw`DELETE FROM knowledge_pool_embeddings WHERE source_id = ${sourceId}:: uuid`;
+        // [DEBUG] Log entry
+        this.logger.log(`🧬 Starting indexing for source ${sourceId}. Content length: ${content?.length}`);
 
+        // Use Unsafe for reliable type casting with variables
+        const deleted = await this.prisma.$executeRawUnsafe(
+            `DELETE FROM knowledge_pool_embeddings WHERE source_id = $1::uuid`,
+            sourceId
+        );
+        this.logger.log(`🗑️ Deleted ${deleted} existing chunks for source ${sourceId}`);
+
+        const hierarchies = hierarchicalChunk(content, { maxTokens: parentMax });
+        this.logger.log(`🧩 Chunker produced ${hierarchies.length} hierarchies for source ${sourceId}`);
+
+        let totalInserted = 0;
         for (const h of hierarchies) {
             const parentId = crypto.randomUUID();
             const parentEmb = await this.ai.embed(h.parent);
-            if (!parentEmb) continue;
+            if (!parentEmb) {
+                this.logger.warn(`⚠️ Parent embedding failed for source ${sourceId}`);
+                continue;
+            }
 
-            await this.prisma.$executeRaw`
-                INSERT INTO knowledge_pool_embeddings(id, source_id, parent_id, embedding, content, metadata, model_name)
-        VALUES(${parentId}:: uuid, ${sourceId}:: uuid, NULL,
-            ${JSON.stringify(parentEmb)}:: vector, ${h.parent}, ${JSON.stringify({ ...metadata, hash: contentHash, total_children: h.children.length })}:: jsonb, ${modelName})
-            `;
+            const parentVector = JSON.stringify(parentEmb.embedding);
+            const parentMeta = JSON.stringify({ ...metadata, hash: contentHash, total_children: h.children.length });
+
+            const res = await this.prisma.$executeRawUnsafe(
+                `INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, model_name)
+                 VALUES ($1::uuid, $2::uuid, NULL, $3::vector, $4, $5::jsonb, $6)`,
+                parentId, sourceId, parentVector, h.parent, parentMeta, modelName
+            );
+            this.logger.log(`✅ Parent Insert Res: ${res} | ID: ${parentId}`);
+            totalInserted++;
 
             for (const childContent of h.children) {
                 const childEmb = await this.ai.embed(childContent);
                 if (childEmb) {
-                    await this.prisma.$executeRaw`
-                        INSERT INTO knowledge_pool_embeddings(id, source_id, parent_id, embedding, content, metadata, model_name)
-        VALUES(gen_random_uuid(), ${sourceId}:: uuid, ${parentId}:: uuid,
-            ${JSON.stringify(childEmb)}:: vector, ${childContent}, ${JSON.stringify(metadata)}:: jsonb, ${modelName})
-                    `;
+                    const childVector = JSON.stringify(childEmb.embedding);
+                    const childMeta = JSON.stringify(metadata);
+                    const cRes = await this.prisma.$executeRawUnsafe(
+                        `INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, model_name)
+                         VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3::vector, $4, $5::jsonb, $6)`,
+                        sourceId, parentId, childVector, childContent, childMeta, modelName
+                    );
+                    this.logger.log(`✅ Child Insert Res: ${cRes}`);
+                    totalInserted++;
                 }
             }
             await new Promise(resolve => setTimeout(resolve, 300));
         }
 
-        this.logger.log(`📐 Indexed ${hierarchies.length} hierarchies for pool source ${sourceId} `);
+        this.logger.log(`📐 FINISHED: Indexed ${totalInserted} chunks for pool source ${sourceId}`);
     }
 
     async indexTicket(ticketId: string, content: string): Promise<void> {

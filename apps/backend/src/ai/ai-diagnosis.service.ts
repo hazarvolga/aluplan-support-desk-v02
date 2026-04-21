@@ -92,6 +92,15 @@ export class AiDiagnosisService {
             });
         }
 
+        if (lowerQuery.includes('kur') || lowerQuery.includes('install') || lowerQuery.includes('setup') || lowerQuery.includes('yükle') || lowerQuery.includes('yarıda')) {
+            causes.push({
+                id: 'installation_midway_failure',
+                title: 'Kurulum / Yükleme Hatası',
+                why: 'Kurulum paketi eksik inmiş olabilir, yönetici izinleri yetersizdir veya disk alanı dolmuştur.',
+                priority: 1
+            });
+        }
+
         // Product specific patterns (e.g. SCIA Engineer context from user's sample)
         if (product?.name === 'SCIA Engineer') {
             if (lowerQuery.includes('fem') || lowerQuery.includes('mesh')) {
