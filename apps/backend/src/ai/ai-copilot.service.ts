@@ -69,7 +69,11 @@ export class AiCopilotService {
 
         // Conversation overview
         const latestMessage = ticket.messages[0];
-        const diagnosis = await this.diagnosisService.analyze(ticket.subject + ' ' + (latestMessage?.message || ''));
+        const diagnosis = await this.diagnosisService.analyze(
+            ticket.subject + ' ' + (latestMessage?.message || ''),
+            [],
+            ticket.productId
+        );
 
         // 4. Format messages for context builder (internal format)
         const messages = ticket.messages
@@ -89,6 +93,8 @@ export class AiCopilotService {
             diagnosis
         });
 
+        const targetLanguage = ticket.creator?.language || 'tr';
+
         // 6. Prepare system prompt using the Master 7-Step engine
         const systemPrompt = `
 You are a senior AI system designer and expert engineer powering ANN_TASLAK.
@@ -99,16 +105,16 @@ Your task is to prepare a professional diagnostic response draft using the 7-STE
 ## STEP 1-5 (TEKNİK ANALİZ)
 - Analiz edilecek bağlam aşağıdadır: [CONVERSATION_CONTEXT]
 - Teknik Tanı: ${diagnosis.productName} (${diagnosis.matchedKeywords.join(', ')})
+- Multimodal: Eğer [ATTACHMENTS] (görsel) varsa, bunları hata kodları veya görsel anormallikler için dikkatle incele.
 
 ## STEP 7 — OUTPUT
-Always output in 3 languages (TR, EN, DE) using strict headers:
-### 🇹🇷 Türkçe
+Output ONLY in the following language: [${targetLanguage.toUpperCase()}]
+Use strict headers:
 ## 📌 Sorun Yorumu
 ...
 ## 🎯 En Olası Neden
 ...
 ## 🛠️ Çözüm Adımları
-...
 ...
 `;
 

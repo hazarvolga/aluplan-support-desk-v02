@@ -83,11 +83,9 @@ Generate a PROFESSIONAL, EXPERT-LEVEL diagnostic report.
 - Provide ordered troubleshooting steps.
 - Provide a validation checklist.
 
-## STEP 7 — OUTPUT (STRICT 3-LANGUAGE FORMAT)
-Output in Turkish, English, and German using EXACT markers:
-
-### 🇹🇷 Türkçe
-
+## STEP 7 — OUTPUT
+Output ONLY in the requested language: [{{LANGUAGE}}]
+Use strict headers:
 ## 📌 Sorun Yorumu
 {{Current problem interpretation}}
 
@@ -98,38 +96,20 @@ Output in Turkish, English, and German using EXACT markers:
 {{Top cause + technical explanation}}
 
 ## ⚠️ Kritik Kontroller (Öncelik Sırasıyla)
-1. {{Technical check}}
+{{Technical validation checklist}}
 
 ## 🛠️ Çözüm Adımları
-1. {{Direct action}}
+{{Step-by-step solution}}
 
 ## ✅ Doğrulama
-- {{Checklist to verify fix}}
-
----
-
-### 🇬🇧 English
-
-## 📌 Problem Interpretation
-...
-
-## 🎯 Most Likely Cause
-...
-
----
-
-### 🇩🇪 Deutsch
-
-## 📌 Problemübersicht
-...
-
----
+{{Checklist to verify fix}}
 
 ## HARD RULES
 - NEVER give generic support answers.
 - ALWAYS behave like a senior engineer.
 - Output ONLY Markdown.
-- ALWAYS include all 3 languages.
+- Output ONLY in the language specified in STEP 7.
+- Analyze image attachments first if they exist.
 `;
 
 @Injectable()
@@ -277,7 +257,8 @@ export class AiQueryService {
             let dynamicSystemPrompt = systemPromptRaw
                 .replace('{{PRODUCT}}', diagnosis?.productName || 'General')
                 .replace('{{CATEGORIES}}', diagnosis?.categoryNames.join(', ') || 'N/A')
-                .replace('{{KEYWORDS}}', diagnosis?.matchedKeywords.join(', ') || 'N/A');
+                .replace('{{KEYWORDS}}', diagnosis?.matchedKeywords.join(', ') || 'N/A')
+                .replace('{{LANGUAGE}}', options.language === 'tr' ? 'Turkish' : (options.language === 'de' ? 'German' : 'English'));
 
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
@@ -521,7 +502,8 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             let dynamicSystemPrompt = systemPromptRaw
                 .replace('{{PRODUCT}}', diagnosis?.productName || 'General')
                 .replace('{{CATEGORIES}}', diagnosis?.categoryNames.join(', ') || 'N/A')
-                .replace('{{KEYWORDS}}', diagnosis?.matchedKeywords.join(', ') || 'N/A');
+                .replace('{{KEYWORDS}}', diagnosis?.matchedKeywords.join(', ') || 'N/A')
+                .replace('{{LANGUAGE}}', options.language === 'tr' ? 'Turkish' : (options.language === 'de' ? 'German' : 'English'));
 
 
             const contextPrompt = await this.promptContextBuilder.buildContext({

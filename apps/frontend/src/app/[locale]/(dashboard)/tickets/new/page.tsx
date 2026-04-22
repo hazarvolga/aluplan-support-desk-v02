@@ -140,12 +140,24 @@ export default function NewTicketPage() {
             // Include confirmed hotinfo context for deep diagnostics
             const context = isHotinfoConfirmed ? hotinfoData : null;
 
+            // Handle current attachments for Multimodal vision analysis
+            const attachments = await Promise.all(
+                files.map(async (file) => {
+                    const base64 = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+                        reader.readAsDataURL(file);
+                    });
+                    return { data: base64, mimeType: file.type, fileName: file.name };
+                })
+            );
+
             // Switch to specialized query endpoint for conversational RAG
             // Passing product context to focus search on relevant knowledge base
             const pId = selectedProductId === 'general' || selectedProductId === '' ? null : selectedProductId;
-            const queryPromise = api.ai.query(`${subject} ${description}`, context, pId, locale);
+            const queryPromise = api.ai.query(`${subject} ${description}`, context, pId, locale, [], attachments);
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('AI_TIMEOUT')), 15000)
+                setTimeout(() => reject(new Error('AI_TIMEOUT')), 20000)
             );
 
             const response = await Promise.race([queryPromise, timeoutPromise]) as any;
