@@ -43,7 +43,7 @@ RUN cd packages/database && prisma generate --schema ./prisma/schema.prisma
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/apps/backend/src/email/templates ./apps/backend/src/email/templates
 COPY --from=builder /app/apps/backend/src/email/locales ./apps/backend/src/email/locales
-COPY --from=builder /app/dataset ./dataset/
+
 COPY --from=builder /app/apps/backend/scripts/deploy.sh ./deploy.sh
 COPY --from=builder /app/apps/backend/scripts/grant-admin.js ./apps/backend/scripts/grant-admin.js
 COPY --from=builder /app/apps/backend/scripts/fix-customer-roles.js ./apps/backend/scripts/fix-customer-roles.js
