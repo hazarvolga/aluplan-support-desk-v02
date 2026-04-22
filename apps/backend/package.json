@@ -76,6 +76,7 @@
         "jsonwebtoken": "^9.0.3",
         "langfuse": "^3.38.6",
         "mailparser": "^3.9.3",
+        "mammoth": "^1.12.0",
         "mime-types": "^3.0.2",
         "mjml": "^4.15.3",
         "multer": "^2.1.0",
@@ -101,6 +102,7 @@
         "socket.io": "^4.8.3",
         "turndown": "^7.2.2",
         "winston": "^3.19.0",
+        "xlsx": "^0.18.5",
         "zod": "^4.3.6"
     },
     "devDependencies": {

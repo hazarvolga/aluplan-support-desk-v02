@@ -43,6 +43,7 @@ const ADMIN_NAV = [
             { href: '/teams', icon: Users, labelKey: 'teams' },
             { href: '/admin/announcements', icon: Megaphone, labelKey: 'announcements' },
             { href: '/admin/emails', icon: Mail, labelKey: 'emails' },
+            { href: '/admin/ai-intelligence', icon: Brain, labelKey: 'ai_intelligence' },
             { href: '/admin/ai-health', icon: Activity, labelKey: 'ai_health' },
             { href: '/admin/email-validation', icon: MailCheck, labelKey: 'email_validation' },
 

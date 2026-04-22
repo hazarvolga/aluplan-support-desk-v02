@@ -2,9 +2,10 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
+import { getSocket } from '@/lib/socket';
 import {
     Bot,
     Send,
@@ -55,7 +56,37 @@ export default function AiPage() {
     const [files, setFiles] = useState<File[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(false);
+    const [streamingText, setStreamingText] = useState('');
+    const [activeJobId, setActiveJobId] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<Record<string, 'positive' | 'negative' | null>>({});
+
+    useEffect(() => {
+        const socket = getSocket();
+        socket.connect();
+
+        const handleChunk = (data: { jobId: string; chunk: string }) => {
+            setStreamingText(prev => prev + data.chunk);
+        };
+
+        const handleCompleted = (data: { jobId: string; result: any }) => {
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: data.result.answer || data.result.response || '',
+                result: data.result
+            }]);
+            setStreamingText('');
+            setActiveJobId(null);
+            setLoading(false);
+        };
+
+        socket.on('AI_CHUNK', handleChunk);
+        socket.on('AI_QUERY_COMPLETED', handleCompleted);
+
+        return () => {
+            socket.off('AI_CHUNK', handleChunk);
+            socket.off('AI_QUERY_COMPLETED', handleCompleted);
+        };
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -107,11 +138,17 @@ export default function AiPage() {
             const apiHistory = newMessages.map(m => ({ role: m.role, content: m.content }));
             const res = await api.ai.query(userMsg, null, null, locale as string, apiHistory, attachments);
 
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: res.answer || 'No response',
-                result: res
-            }]);
+            if (res.jobId) {
+                setActiveJobId(res.jobId);
+                // We keep loading true, socket will transition it
+            } else {
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: res.answer || 'No response',
+                    result: res
+                }]);
+                setLoading(false);
+            }
         } catch {
             setMessages(prev => [...prev, {
                 role: 'assistant',
@@ -234,10 +271,23 @@ export default function AiPage() {
 
                 {loading && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-                        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
-                            <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-                            <span className="text-xs text-muted-foreground font-medium italic">AI düşünüyor...</span>
-                        </div>
+                        {streamingText ? (
+                            <Card className="glass-card p-6 border-orange-500/10 relative overflow-hidden w-full max-w-[90%]">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('response.header')}</span>
+                                </div>
+                                <div className="text-white/90 leading-relaxed text-base font-medium italic border-l-2 border-orange-500/30 pl-4 py-1 bg-orange-500/[0.02] whitespace-pre-wrap">
+                                    {streamingText}
+                                    <span className="inline-block w-1.5 h-4 ml-1 bg-orange-500 animate-pulse align-middle" />
+                                </div>
+                            </Card>
+                        ) : (
+                            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                                <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                                <span className="text-xs text-muted-foreground font-medium italic">AI düşünüyor...</span>
+                            </div>
+                        )}
                     </motion.div>
                 )}
             </div>

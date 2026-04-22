@@ -343,6 +343,7 @@ export const api = {
             pendingFaqs: number;
             totalSources: number;
         }>('/ai/sources-stats'),
+        getIntelligence: (days = 30) => request<any>(`/ai/intelligence?days=${days}`),
     },
     kb: {
         listCategories: () => request<any[]>('/kb/categories'),

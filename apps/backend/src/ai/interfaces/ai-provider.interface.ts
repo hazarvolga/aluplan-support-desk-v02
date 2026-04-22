@@ -24,6 +24,7 @@ export interface AiPart {
 export interface AiProvider {
     embed(text: string): Promise<EmbeddingResult | null>;
     generate(prompt: string | AiPart[], timeout?: number): Promise<string | null>;
+    streamGenerate?(prompt: string | AiPart[], timeout?: number): AsyncGenerator<string, void, unknown>;
     reformat(systemPrompt: string, userQuery: string, kbContent: string, attachments?: AiPart[]): Promise<ChatResult | null>;
     streamReformat?(systemPrompt: string, userQuery: string, kbContent: string, attachments?: AiPart[]): AsyncGenerator<string, void, unknown>;
     suggestCategory(title: string, content: string, categories: string[]): Promise<string | null>;

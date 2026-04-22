@@ -123,6 +123,65 @@ export class OpenAiService implements AiProvider {
         }
     }
 
+    async *streamGenerate(prompt: string | AiPart[], timeout = 30_000): AsyncGenerator<string, void, unknown> {
+        const apiKey = await this.getApiKey();
+        if (!apiKey) {
+            yield 'API Key missing.';
+            return;
+        }
+
+        try {
+            const model = await this.getModel();
+            const content = this.mapParts(prompt);
+
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                    model,
+                    messages: [{ role: 'user', content }],
+                    temperature: 0.2,
+                    stream: true,
+                }),
+                signal: AbortSignal.timeout(timeout),
+            });
+
+            if (!response.ok) throw new Error(`OpenAI HTTP ${response.status}`);
+
+            const reader = response.body?.getReader();
+            if (!reader) return;
+
+            const decoder = new TextDecoder();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') break;
+                        try {
+                            const json = JSON.parse(data);
+                            const text = json.choices[0]?.delta?.content;
+                            if (text) yield text;
+                        } catch (e) {
+                            // Skip parse errors for non-json chunks
+                        }
+                    }
+                }
+            }
+        } catch (err: any) {
+            this.logger.warn(`⚠️ OpenAI streamGenerate failed: ${err.message}`);
+            yield 'OpenAI streaming error.';
+        }
+    }
+
     async reformat(systemPrompt: string, userQuery: string, kbContent: string, attachments?: AiPart[]): Promise<ChatResult | null> {
         const apiKey = await this.getApiKey();
         if (!apiKey) return null;

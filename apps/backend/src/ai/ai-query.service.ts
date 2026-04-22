@@ -4,7 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { AiPart } from './interfaces/ai-provider.interface';
 import { EmbeddingService, SearchResult, SearchResponse } from './embedding.service';
-import { Prisma, TicketMessage, CommunicationChannel } from '@aluplan/database';
+import { BullModule, InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { Prisma, TicketMessage, CommunicationChannel, ConfidenceBand } from '@aluplan/database';
 import { ConfigService } from '@nestjs/config';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { PromptsService } from './prompts.service';
@@ -17,8 +19,8 @@ import { RagObservabilityService } from './rag-observability.service';
 import { AiDiagnosisService, DiagnosisResult } from './ai-diagnosis.service';
 import { createHash } from 'crypto';
 
-// Confidence bands — LOW/HIGH/MEDIUM from schema, NO_MATCH is local
-export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
+// local type with NO_MATCH
+export type LocalConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
 
 export interface AiQueryOptions {
     userQuery: string;
@@ -29,12 +31,13 @@ export interface AiQueryOptions {
     history?: Array<{ role: 'user' | 'assistant'; content: string }>;
     language?: string; // tr, en, de or auto
     productId?: string | null;
+    wait?: boolean;
 }
 
 export interface AiQueryResult {
     query: string;
     answer: string | null;
-    confidence: ConfidenceBand;
+    confidence: LocalConfidenceBand;
     sources: Array<{ articleId: string; title: string; similarity: number }>;
     interactionId: string;
     suggestTicket: boolean;
@@ -42,7 +45,7 @@ export interface AiQueryResult {
     diagnosis?: DiagnosisResult;
 }
 
-const MASTER_DIAGNOSIS_PROMPT = `
+export const MASTER_DIAGNOSIS_PROMPT = `
 You are a senior AI system designer, software architect, and domain expert in BIM and structural engineering software (ALLPLAN, SCIA Engineer, MEP).
 You are powering an AI-based support ticket system.
 
@@ -67,8 +70,9 @@ Using [TECHNICAL DIAGNOSIS] metadata:
 Map symptoms to a specific problem type (e.g., licensing_failure, fem_mesh_instability, crash_on_startup).
 
 ## STEP 4 — ROOT CAUSE GENERATION
-Based on Product, Problem Type, and [ATTACHMENTS]:
-- If image attachments exist, ANALYZE THEM code for errors or UI messages.
+Based on Product, Problem Type, and [ATTACHMENTS] or [KULLANICI EKLERİ İÇERİĞİ]:
+- If image attachments exist, ANALYZE THEM for errors, UI messages, or structural cues.
+- If parsed document texts (PDF/DOCX/Logs) exist, EXTRACT technical clues, error stack traces, and configurations directly from the text.
 - If hardware query and [MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)] missing: ASK user for OS/GPU/RAM.
 - Generate the MOST LIKELY causes for this context.
 - Explain WHY it happens (technical depth required).
@@ -111,6 +115,7 @@ Use strict headers:
 - Output ONLY in the language specified in STEP 7.
 - Analyze image attachments first if they exist.
 `;
+import { DocumentParserService } from '../common/services/document-parser.service';
 
 @Injectable()
 export class AiQueryService {
@@ -130,16 +135,20 @@ export class AiQueryService {
         private readonly redis: RedisService,
         private readonly ragObs: RagObservabilityService,
         private readonly diagnosisService: AiDiagnosisService,
+        private readonly documentParser: DocumentParserService,
+        @InjectQueue('ai-query-processing') private readonly aiQueue: Queue,
     ) {
         this.highThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_HIGH', '0.85'));
         this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.70'));
     }
 
-    async query(options: AiQueryOptions): Promise<AiQueryResult> {
-        const { userQuery, userId, channel = 'WEB', hotinfoContext, attachments } = options;
+    async query(options: AiQueryOptions): Promise<any> {
+        const { userQuery, userId, channel = 'WEB', hotinfoContext, wait = true } = options;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
         const lang = options.language || 'tr';
+
+        // 1. Precise unique cache key
         const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
         const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
         const cached = await this.redis.get(cacheKey);
@@ -151,10 +160,72 @@ export class AiQueryService {
             return result;
         }
 
+        // 2. Decide Execution Mode
+        // If not forcing wait, and it's a web channel, push to queue
+        if (!wait && channel === 'WEB') {
+            const jobId = `ai-query-${Date.now()}-${userId || 'guest'}`;
+            await this.aiQueue.add('process-query', { options, jobId }, {
+                jobId,
+                removeOnComplete: true,
+                attempts: 2
+            });
+            this.logger.log(`🚀 AI Query Enqueued: ${jobId}`);
+            return { jobId, status: 'PENDING' };
+        }
+
+        // Otherwise process directly
+        return this.queryInternal(options);
+    }
+
+    /**
+     * The actual core logic for RAG + Diagnosis + Generation.
+     * Exported as public for the Processor to call, but prefixed with internal for clarity.
+     */
+    async queryInternal(options: AiQueryOptions): Promise<AiQueryResult> {
+        const { userQuery, userId, channel = 'WEB', hotinfoContext, attachments } = options;
+        const startTime = Date.now();
+        const isStaff = await this.isStaff(userId);
+        const lang = options.language || 'tr';
+
+        // Setup cache key for later saving
+        const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
+        const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
+
         let expandedQuery = userQuery;
+
+        // Parse Document Attachments
+        let parsedDocumentTexts = '';
+        const aiParts: AiPart[] = [];
+        if (attachments && attachments.length > 0) {
+            for (const att of attachments) {
+                if (att.mimeType?.startsWith('image/')) {
+                    if (att.url) {
+                        aiParts.push({ fileData: { mimeType: att.mimeType || 'image/png', fileUri: att.url } });
+                    } else if (att.data) {
+                        aiParts.push({ inlineData: { mimeType: att.mimeType || 'image/png', data: att.data } });
+                    }
+                } else if (att.data) {
+                    // Try parsing non-image base64 directly
+                    try {
+                        const buffer = Buffer.from(att.data, 'base64');
+                        const parsedText = await this.documentParser.extractText(att.mimeType || 'application/octet-stream', buffer);
+                        if (parsedText) {
+                            parsedDocumentTexts += `\n[EK DÖKÜMAN: ${att.fileName || 'Dosya'}]\n${parsedText}\n[DÖKÜMAN SONU]\n`;
+                        }
+                    } catch (e) {
+                        this.logger.warn(`Failed to parse inline document attachment: ${e.message}`);
+                    }
+                }
+            }
+        }
+
+        // Append parsed docs to the expanded query so they participate in search & diagnosis
+        if (parsedDocumentTexts) {
+            expandedQuery += `\n\n[KULLANICI EKLERİ İÇERİĞİ]:\n${parsedDocumentTexts}`;
+        }
+
         // Only inject Hotinfo into search query for PERFORMANS/CRASH queries
-        // For LISANS/KURULUM/MODELLEME, Hotinfo pollutes retrieval with irrelevant hardware terms
-        const isHardwareQuery = /çökme|crash|donma|freeze|yavaş|slow|performans|hata|error|gpu|driver|sürücü|ram|bellek/i.test(userQuery);
+        const isHardwareQuery = /çökme|crash|donma|freeze|yavaş|slow|performans|hata|error|gpu|driver|sürücü|ram|bellek/i.test(expandedQuery);
         if (hotinfoContext && isHardwareQuery) {
             const h = hotinfoContext;
             expandedQuery += `\n[Hotinfo Sistem Özeti]: İşletim Sistemi: ${h.osVersion || ''}, Ekran Kartı: ${h.gpu || ''}, Hata: ${h.errorTrace || ''}, Çakışan İşlemler: ${h.conflictingProcesses?.join(', ') || ''}`;
@@ -230,7 +301,7 @@ export class AiQueryService {
             return {
                 query: userQuery,
                 answer: 'Bu konu mevcut bilgi kaynağında yer almıyor. Sistem analizi için lütfen destek talebi oluşturun ve \'_hotinf_.hxl\' dosyanızı ekleyiniz.',
-                confidence: 'NO_MATCH' as ConfidenceBand,
+                confidence: 'NO_MATCH' as LocalConfidenceBand,
                 sources: [],
                 interactionId: interaction.id,
                 suggestTicket: true,
@@ -239,7 +310,7 @@ export class AiQueryService {
 
         // 2. Determine confidence band
         const topResult = results[0] ?? null;
-        let confidence: ConfidenceBand = 'NO_MATCH';
+        let confidence: LocalConfidenceBand = 'NO_MATCH';
         let answer: string | null = null;
         let translations: Record<string, string> | undefined;
         let diagnosis: DiagnosisResult | undefined;
@@ -251,7 +322,7 @@ export class AiQueryService {
         }
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
-            diagnosis = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content), options.productId);
+            diagnosis = await this.diagnosisService.analyze(expandedQuery, options.history?.map(h => h.content), options.productId);
 
             const systemPromptRaw = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', MASTER_DIAGNOSIS_PROMPT);
             let dynamicSystemPrompt = systemPromptRaw
@@ -268,18 +339,8 @@ export class AiQueryService {
                 messages: options.history,
                 diagnosis,
             });
+            // aiParts is already prepared at the beginning of the query func
             const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
-
-            // Map attachments to AiPart format
-            const aiParts: AiPart[] = attachments?.map(att => {
-                if (att.url) {
-                    return { fileData: { mimeType: att.mimeType || 'image/png', fileUri: att.url } };
-                }
-                if (att.data) {
-                    return { inlineData: { mimeType: att.mimeType || 'image/png', data: att.data } };
-                }
-                return { text: att.text || '' };
-            }).filter(p => !!p.fileData || !!p.inlineData || !!p.text) || [];
 
             const aiResult = await this.ai.reformat(finalPrompt, userQuery, results.slice(0, 10).map(r => r.content).join('\n\n'), aiParts);
 
@@ -317,7 +378,7 @@ export class AiQueryService {
         // R-R1: If top trust_score < 0.4, suggest ticket (Confidence LOW or NO_MATCH usually implies this)
         // We also check the actual similarity * trust_score if possible, but status-based confidence is the current implementation.
         const topTrustScore = results[0]?.similarity || 0; // Simplified trust score check
-        const suggestTicket = confidence === 'NO_MATCH' || confidence === 'LOW' || topTrustScore < 0.4;
+        const suggestTicket = (confidence as LocalConfidenceBand) === 'NO_MATCH' || confidence === 'LOW' || topTrustScore < 0.4;
 
         const providerName = await this.ai.getActiveProviderName();
         const modelName = await this.ai.getActiveModelName();
@@ -482,7 +543,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         const results = searchResponse.results;
         const topResult = results[0] ?? null;
 
-        let confidence: ConfidenceBand = 'NO_MATCH';
+        let confidence: LocalConfidenceBand = 'NO_MATCH';
         let fullAnswer = '';
 
         if (topResult) {
@@ -575,7 +636,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         // Cache for 1 hour
         await this.redis.set(cacheKey, fullAnswer, 3600);
 
-        yield { done: true, interactionId: interaction.id, suggestTicket: confidence === 'LOW' || confidence === 'NO_MATCH' };
+        yield { done: true, interactionId: interaction.id, suggestTicket: (confidence as LocalConfidenceBand) === 'LOW' || confidence === 'NO_MATCH' };
     }
 
     private async isStaff(userId?: string | null): Promise<boolean> {
@@ -726,7 +787,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         rating: number,
         comment?: string,
     ) {
-        return this.prisma.interactionFeedback.create({
+        const feedback = await this.prisma.interactionFeedback.create({
             data: {
                 interactionId,
                 userId,
@@ -735,6 +796,22 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                 isHelpful: rating >= 4,
             },
         });
+
+        // 3. Automate Knowledge Gap (Step 3 of Phase 30)
+        // If user gives 1 or 2 stars, automatically push to TrainingQueue for review
+        if (rating <= 2) {
+            await this.prisma.trainingQueue.upsert({
+                where: { feedbackId: feedback.id },
+                update: {},
+                create: {
+                    interactionId,
+                    feedbackId: feedback.id,
+                    status: 'PENDING'
+                }
+            });
+        }
+
+        return feedback;
     }
 
     async submitTelemetry(interactionId: string, accepted: boolean, editedResponse?: string) {
@@ -1046,7 +1123,14 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
                 createdAt: { gte: sevenDaysAgo },
                 OR: [
                     { confidenceBand: 'LOW' },
-                    { confidenceBand: null }
+                    { confidenceBand: null },
+                    {
+                        feedbacks: {
+                            some: {
+                                rating: { lte: 2 }
+                            }
+                        }
+                    }
                 ]
             },
             _count: { id: true },
@@ -1093,6 +1177,167 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
             },
             pendingFaqs,
             totalSources: filesCount + articlesCount + urlsCount + learnedCount
+        };
+    }
+
+    /**
+     * Get Advanced Strategic Intelligence Metrics (Phase 29)
+     */
+    async getIntelligenceMetrics(days: number = 30) {
+        const now = new Date();
+        const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+        const stats = await this.prisma.$queryRaw<any[]>`
+            SELECT 
+                COUNT(id)::int as total_interactions,
+                COUNT(CASE WHEN (user_context->'diagnosis'->>'isProblemShift')::boolean = true THEN 1 END)::int as problem_shifts,
+                COUNT(CASE WHEN user_context->'diagnosis'->'matchedKeywords' @@ '$' THEN 1 END)::int as metadata_informed,
+                AVG((user_context->'diagnosis'->>'confidenceScore')::float) as avg_diagnosis_score,
+                COUNT(CASE WHEN confidence_band = 'HIGH' THEN 1 END)::int as high_confidence,
+                COUNT(CASE WHEN confidence_band = 'MEDIUM' THEN 1 END)::int as medium_confidence,
+                COUNT(CASE WHEN confidence_band = 'LOW' THEN 1 END)::int as low_confidence,
+                COUNT(CASE WHEN confidence_band IS NULL THEN 1 END)::int as no_match
+            FROM ai_interactions
+            WHERE created_at >= ${startDate}
+        `;
+
+        const distribution = [
+            { label: 'High Confidence', value: stats[0].high_confidence, color: '#10b981' },
+            { label: 'Medium Confidence', value: stats[0].medium_confidence, color: '#f59e0b' },
+            { label: 'Low Confidence', value: stats[0].low_confidence, color: '#ef4444' },
+            { label: 'No Match', value: stats[0].no_match, color: '#6b7280' },
+        ];
+
+        return {
+            period: `${days}d`,
+            summary: stats[0],
+            confidenceDistribution: distribution,
+            shiftRate: stats[0].total_interactions > 0
+                ? (stats[0].problem_shifts / stats[0].total_interactions) * 100
+                : 0,
+        };
+    }
+
+    async *queryInternalStream(options: AiQueryOptions): AsyncGenerator<string, void, unknown> {
+        const { context, diagnosis, results, topResult, userId, channel, userQuery } = await this.prepareQueryContext(options);
+        const generator = this.ai.streamGenerate(context, 60_000);
+
+        let fullAnswer = '';
+        for await (const chunk of generator) {
+            fullAnswer += chunk;
+            yield chunk;
+        }
+
+        // Save interaction at the end
+        if (fullAnswer) {
+            const inputTokens = Math.ceil(userQuery.length / 4);
+            const outputTokens = Math.ceil(fullAnswer.length / 4);
+            await this.prisma.aiInteraction.create({
+                data: {
+                    userId: userId || undefined,
+                    channel: channel || CommunicationChannel.WEB,
+                    userQuery,
+                    responseGenerated: fullAnswer,
+                    confidenceBand: this.mapConfidence(results[0]?.similarity),
+                    autoAnswered: (results[0]?.similarity || 0) > 0.4,
+                    similarityScore: topResult?.similarity,
+                    matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
+                    provider: await this.ai.getActiveProviderName(),
+                    model: await this.ai.getActiveModelName(),
+                    inputTokens,
+                    outputTokens,
+                    totalTokens: inputTokens + outputTokens,
+                    estimatedCost: (inputTokens * 0.00000015) + (outputTokens * 0.0000006),
+                    userContext: { diagnosis } as any
+                }
+            });
+        }
+    }
+
+    private mapConfidence(similarity?: number): ConfidenceBand | null {
+        if (!similarity || similarity < 0.2) return null;
+        if (similarity >= this.highThreshold) return 'HIGH' as any;
+        if (similarity >= this.mediumThreshold) return 'MEDIUM' as any;
+        return 'LOW' as any;
+    }
+
+    private async prepareQueryContext(options: AiQueryOptions) {
+        const { userQuery, userId, hotinfoContext, attachments, history, productId } = options;
+        const isStaff = await this.isStaff(userId);
+        const lang = options.language || 'tr';
+
+        const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
+        const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
+
+        let expandedQuery = userQuery;
+        let parsedDocs = '';
+        const aiParts: AiPart[] = [];
+
+        if (attachments) {
+            for (const att of attachments) {
+                if (att.mimeType?.startsWith('image/')) {
+                    if (att.url) aiParts.push({ fileData: { mimeType: att.mimeType, fileUri: att.url } });
+                    else if (att.data) aiParts.push({ inlineData: { mimeType: att.mimeType, data: att.data } });
+                } else if (att.data) {
+                    try {
+                        const buffer = Buffer.from(att.data, 'base64');
+                        const text = await this.documentParser.extractText(att.mimeType || 'application/octet-stream', buffer);
+                        if (text) parsedDocs += `\n[EK DÖKÜMAN: ${att.fileName}]\n${text}\n[DÖKÜMAN SONU]\n`;
+                    } catch (e) {
+                        this.logger.warn(`Failed to parse doc: ${e.message}`);
+                    }
+                }
+            }
+        }
+
+        if (parsedDocs) expandedQuery += `\n\n[KULLANICI EKLERİ İÇERİĞİ]:\n${parsedDocs}`;
+
+        const isHardware = /çökme|crash|donma|freeze|yavaş|slow|performans|hata|error|gpu|driver|sürücü|ram|bellek/i.test(expandedQuery);
+        if (hotinfoContext && isHardware) {
+            const h = hotinfoContext;
+            expandedQuery += `\n[Hotinfo]: OS: ${h.osVersion || ''}, GPU: ${h.gpu || ''}, Error: ${h.errorTrace || ''}`;
+        }
+
+        const { expanded } = expandQueryWithSynonyms(expandedQuery);
+        const searchResponse = await this.embeddingService.search(expanded, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, productId, isStaff);
+        let results = searchResponse.results;
+
+        if (results.length > 1) {
+            results = await this.rankResultsWithLLM(expanded, results);
+        }
+
+        const topResult = results[0];
+        const kbContent = results.length > 0 ? results.map(r => r.content).join('\n\n---\n\n') : 'No specific knowledge found.';
+
+        const historyTexts = history?.map(h => h.content) || [];
+        const diagnosis = await this.diagnosisService.analyze(userQuery, historyTexts, productId);
+
+        const context = await this.promptContextBuilder.buildContext({
+            userId: userId || undefined,
+            userQuery,
+            kbContent,
+            hotinfoSnapshot: hotinfoContext,
+            messages: history,
+            diagnosis
+        });
+
+        const systemPromptRaw = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', MASTER_DIAGNOSIS_PROMPT);
+        const systemPrompt = systemPromptRaw
+            .replace('{{PRODUCT}}', diagnosis?.productName || 'General')
+            .replace('{{CATEGORIES}}', diagnosis?.categoryNames.join(', ') || 'N/A')
+            .replace('{{KEYWORDS}}', diagnosis?.matchedKeywords.join(', ') || 'N/A')
+            .replace('{{LANGUAGE}}', lang === 'tr' ? 'Turkish' : (lang === 'de' ? 'German' : 'English'));
+
+        return {
+            context: `${systemPrompt}\n\n[CONTEXT]\n${context}\n${parsedDocs}`,
+            diagnosis,
+            results,
+            topResult,
+            isStaff,
+            cacheKey,
+            userId: userId || undefined,
+            channel: options.channel,
+            userQuery
         };
     }
 }

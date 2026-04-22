@@ -26,13 +26,17 @@ import { BullModule } from '@nestjs/bullmq';
 import { DocumentAiService } from './document-ai.service';
 import { DocumentParsingProcessor } from './document-parsing.processor';
 import { AiDiagnosisService } from './ai-diagnosis.service';
+import { AiQueryProcessor } from './ai-query.processor';
 
 @Module({
     imports: [
         SettingsModule,
         forwardRef(() => EmailModule),
         forwardRef(() => KnowledgePoolModule),
-        BullModule.registerQueue({ name: 'document-parsing' }),
+        BullModule.registerQueue(
+            { name: 'document-parsing' },
+            { name: 'ai-query-processing' }
+        ),
     ],
     controllers: [AiController],
     providers: [
@@ -57,6 +61,7 @@ import { AiDiagnosisService } from './ai-diagnosis.service';
         VertexAiService,
         DocumentAiService,
         DocumentParsingProcessor,
+        AiQueryProcessor,
     ],
     exports: [
         AiService,

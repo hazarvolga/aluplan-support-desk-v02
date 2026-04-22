@@ -306,6 +306,7 @@
       "announcements": "Ankündigungen",
       "emails": "E-Mails",
       "ai_health": "KI-Gesundheit & Telemetrie",
+      "ai_intelligence": "KI-Intelligenz & Analyse",
       "email_validation": "E-Mail-Validierung",
       "users": "Benutzerverwaltung",
       "settings": "Einstellungen",
@@ -1588,6 +1589,22 @@
         "rag_accuracy": "RAG-Genauigkeit (Hohes Vertrauen)",
         "deflection_rate": "Savuşturma-Rate (Deflection)",
         "token_label": "Token"
+      }
+    },
+    "ai_intelligence": {
+      "title": "KI STRATEGISCHE INTELLIGENZ",
+      "subtitle": "Technische Leistung, Themenabweichungen und Dateneffizienzanalyse.",
+      "cards": {
+        "total_interactions": "Gesamtanalysen",
+        "problem_shifts": "Themendriften",
+        "avg_confidence": "Durschn. Vertrauen",
+        "metadata_impact": "HXL-Auswirkungsrate"
+      },
+      "dashboard": {
+        "title": "Strategisches Intelligenz-Board",
+        "accuracy_funnel": "Genauigkeitshierarchie",
+        "drift_analysis": "Drift-Analyse",
+        "context_roi": "Kontexteffizienz (ROI)"
       }
     },
     "email_validation": {

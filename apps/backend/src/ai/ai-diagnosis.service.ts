@@ -20,12 +20,12 @@ export class AiDiagnosisService {
      * Performs a technical diagnosis analysis based on user query and system metadata.
      */
     async analyze(query: string, history?: string[], productId?: string | null): Promise<DiagnosisResult> {
-        this.logger.log(`🔍 Diagnosing query: "${query}" (Product ID Filter: ${productId || 'None'})`);
+        this.logger.log(`🔍 Diagnosing query: "${query}" (History Size: ${history?.length || 0})`);
 
         let matchedProduct: any = null;
         let products: any[] = [];
 
-        // 1. Fetch products (either one specific or all for heuristic matching)
+        // 1. Fetch products
         if (productId && productId !== 'general') {
             const p = await this.prisma.product.findUnique({
                 where: { id: productId },
@@ -62,18 +62,28 @@ export class AiDiagnosisService {
                 }
             }
 
-            // Only perform primary product matching if we haven't already fixed it via productId
             if (!matchedProduct && (productMatch || categoryMatchCount > 0)) {
-                // Heuristic: Prefer the product that has explicit name match or most category keyword matches
                 if (!matchedProduct || productMatch) {
                     matchedProduct = product;
                 }
             }
         }
 
-        // 3. Generate "Suggested Causes" based on patterns
-        // Note: In a production scale, this could be a dynamic lookup in a "DiagnosticLibrary" table.
-        // For now, we derive it from the matched product and common technical keywords.
+        // 3. Detect Problem Shift
+        let isProblemShift = false;
+        if (history && history.length > 0 && detectedKeywords.length > 0) {
+            const historyText = history.join(' ').toLowerCase();
+            // Check if current keywords were present in history
+            const contextOverlap = detectedKeywords.filter(k => historyText.includes(k.toLowerCase()));
+
+            // If we have strong current keywords but NONE were in history, it's likely a shift
+            if (contextOverlap.length === 0 && detectedKeywords.length >= 2) {
+                isProblemShift = true;
+                this.logger.warn(`🚀 Problem shift detected! New keywords: [${detectedKeywords.join(', ')}] not found in history.`);
+            }
+        }
+
+        // 4. Generate "Suggested Causes"
         const suggestedCauses = await this.mapCauses(matchedProduct, lowerQuery);
 
         return {
@@ -82,6 +92,7 @@ export class AiDiagnosisService {
             categoryNames: [...new Set(matchedCategories)],
             matchedKeywords: [...new Set(detectedKeywords)],
             suggestedCauses,
+            isProblemShift
         };
     }
 

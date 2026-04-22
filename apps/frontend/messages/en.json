@@ -306,6 +306,7 @@
       "announcements": "Announcements",
       "emails": "Emails",
       "ai_health": "AI Health & Telemetry",
+      "ai_intelligence": "AI Intelligence & Insights",
       "email_validation": "Email Validation",
       "users": "User Management",
       "settings": "Settings",
@@ -1591,6 +1592,22 @@
         "rag_accuracy": "RAG Accuracy (High Confidence)",
         "deflection_rate": "Deflection Rate",
         "token_label": "Tokens"
+      }
+    },
+    "ai_intelligence": {
+      "title": "AI STRATEGIC INTELLIGENCE",
+      "subtitle": "Technical performance, subject drifts and data efficiency analysis.",
+      "cards": {
+        "total_interactions": "Total Analysis",
+        "problem_shifts": "Subject Drifts",
+        "avg_confidence": "Avg Confidence",
+        "metadata_impact": "HXL Impact Rate"
+      },
+      "dashboard": {
+        "title": "Strategic Intelligence Board",
+        "accuracy_funnel": "Accuracy Hierarchy",
+        "drift_analysis": "Drift Analysis",
+        "context_roi": "Context Efficiency (ROI)"
       }
     },
     "email_validation": {

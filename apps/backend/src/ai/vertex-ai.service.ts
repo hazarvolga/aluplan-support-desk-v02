@@ -185,6 +185,36 @@ export class VertexAiService implements AiProvider {
         }
     }
 
+    async *streamGenerate(prompt: string | AiPart[], timeout = 30_000): AsyncGenerator<string, void, unknown> {
+        const client = await this.initClient();
+        if (!client) {
+            yield 'Vertex AI initialization failed.';
+            return;
+        }
+
+        try {
+            const modelName = await this.getChatModel();
+            const generativeModel = client.getGenerativeModel({
+                model: modelName,
+                generationConfig: { temperature: 0.2 },
+            });
+
+            const parts = this.mapParts(prompt);
+
+            // Note: timeout not explicitly supported by SDK streams, handled by consumer or internally if needed
+            const streamingResp = await generativeModel.generateContentStream({ contents: [{ role: 'user', parts }] });
+
+            for await (const item of streamingResp.stream) {
+                if (item.candidates && item.candidates[0] && item.candidates[0].content.parts[0].text) {
+                    yield item.candidates[0].content.parts[0].text;
+                }
+            }
+        } catch (err: any) {
+            this.logger.warn(`⚠️ Vertex AI streamGenerate failed: ${err.message}`);
+            yield 'Vertex AI streaming error.';
+        }
+    }
+
     async reformat(systemPrompt: string, userQuery: string, kbContent: string, attachments?: AiPart[]): Promise<ChatResult | null> {
         const client = await this.initClient();
         if (!client) return null;

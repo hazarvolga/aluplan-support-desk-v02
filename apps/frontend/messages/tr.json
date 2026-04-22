@@ -306,6 +306,7 @@
       "announcements": "Duyurular",
       "emails": "E-postalar",
       "ai_health": "YZE Sağlığı ve Telemetri",
+      "ai_intelligence": "YZE Zekası ve Analitik",
       "email_validation": "E-posta Doğrulama",
       "users": "Kullanıcı Yönetimi",
       "settings": "Ayarlar",
@@ -1593,6 +1594,22 @@
         "rag_accuracy": "RAG Doğruluğu (Yüksek Güven)",
         "deflection_rate": "Talep Savuşturma (Deflection)",
         "token_label": "Token"
+      }
+    },
+    "ai_intelligence": {
+      "title": "AI STRATEJİK ZEKA",
+      "subtitle": "Yapay zekanın teknik performansı, konu sapmaları ve veri verimliliği analizi.",
+      "cards": {
+        "total_interactions": "Toplam Analiz",
+        "problem_shifts": "Konu Sapmaları",
+        "avg_confidence": "Ort. Güven Skoru",
+        "metadata_impact": "HXL Katkı Oranı"
+      },
+      "dashboard": {
+        "title": "Stratejik Zeka Paneli",
+        "accuracy_funnel": "İsabet Hiyerarşisi",
+        "drift_analysis": "Konu Değişimi (Drift)",
+        "context_roi": "Bağlam Verimliliği (ROI)"
       }
     },
     "email_validation": {

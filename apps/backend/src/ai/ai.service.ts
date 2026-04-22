@@ -192,6 +192,59 @@ export class AiService implements AiProvider {
         });
     }
 
+    async *streamGenerate(prompt: string | AiPart[], timeout?: number, attachments?: AiPart[]): AsyncGenerator<string, void, unknown> {
+        if (!await this.isCircuitClosed()) {
+            yield 'AI servisi şu anda devre dışı (Circuit Breaker).';
+            return;
+        }
+
+        const task = 'general';
+        const primaryName = await this.getProviderForTask(task);
+        const fallbackName = await this.settings.getValue('ai.fallback_provider');
+
+        const providersToTry = [primaryName];
+        if (fallbackName && fallbackName !== primaryName) providersToTry.push(fallbackName);
+
+        for (const pName of providersToTry) {
+            try {
+                const provider = await this.getProvider(pName);
+                let yieldedAnything = false;
+
+                // Combine prompt with attachments for streaming if needed
+                let combinedPrompt = prompt;
+                if (attachments && attachments.length > 0 && typeof prompt === 'string') {
+                    combinedPrompt = [{ text: prompt }, ...attachments];
+                }
+
+                if (provider.streamGenerate) {
+                    const generator = provider.streamGenerate(combinedPrompt, timeout);
+                    for await (const chunk of generator) {
+                        yieldedAnything = true;
+                        yield chunk;
+                    }
+                } else {
+                    const result = await provider.generate(combinedPrompt, timeout);
+                    if (result) {
+                        yield result;
+                        yieldedAnything = true;
+                    }
+                }
+
+                if (yieldedAnything) {
+                    this.recordSuccess();
+                    return;
+                }
+            } catch (err) {
+                this.recordFailure();
+                this.logger.warn(`⚠️ API Error on Provider [${pName}] during streamGenerate: ${err}`);
+
+                if (pName === primaryName && fallbackName && fallbackName !== primaryName) {
+                    this.logger.error(`🚨 SYSTEM ALERT: Primary AI Model (${primaryName}) failed during streamGenerate. Auto-Fallback to (${fallbackName}) triggered.`);
+                }
+            }
+        }
+    }
+
     async getActiveModelName(): Promise<string> {
         const providerName = await this.settings.getValue('ai.chat_provider');
         if (providerName === 'ollama') return (await this.settings.getValue('ai.ollama.chat_model')) || 'llama3';

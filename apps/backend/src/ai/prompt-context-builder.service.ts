@@ -103,7 +103,11 @@ export class PromptContextBuilderService {
         if (messages && messages.length > 0) {
             const pastMessages = messages.slice(0, -1);
             if (pastMessages.length > 0) {
-                const historyContent = `[CONVERSATION HISTORY - PAST MESSAGES]\n` +
+                let historyPrefix = diagnosis?.isProblemShift
+                    ? `### [📢 ÖNEMLİ: KONU DEĞİŞİKLİĞİ] - Aşağıdaki geçmiş mesajlar FARKLI bir konu ile ilgilidir ve teşhis için DİKKATE ALINMAMALIDIR.\n`
+                    : '';
+
+                const historyContent = `[CONVERSATION HISTORY - PAST MESSAGES]\n${historyPrefix}` +
                     pastMessages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
                 sections.push({ name: 'MESSAGE_HISTORY', priority: P.RECENT_TICKETS + 5, content: historyContent });
             }
@@ -115,6 +119,7 @@ export class PromptContextBuilderService {
             diagnosisContent += `- Detected Product: ${diagnosis.productName}\n`;
             diagnosisContent += `- Matched Categories: ${diagnosis.categoryNames.join(', ') || 'N/A'}\n`;
             diagnosisContent += `- Detected Keywords: ${diagnosis.matchedKeywords.join(', ') || 'N/A'}\n`;
+            diagnosisContent += `- Subject Change Detected (Problem Shift): ${diagnosis.isProblemShift ? 'YES' : 'NO'}\n`;
 
             if (diagnosis.suggestedCauses.length > 0) {
                 diagnosisContent += `- Potential Root Causes:\n`;

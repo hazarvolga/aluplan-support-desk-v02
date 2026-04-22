@@ -13,6 +13,8 @@ import { AiService } from './ai.service';
 import { AiCopilotService } from './ai-copilot.service';
 import { AiReportingService } from './ai-reporting.service';
 import { StorageService } from '../common/services/storage.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 import { Public } from '../auth/decorators/public.decorator';
@@ -81,6 +83,7 @@ export class AiController {
         private readonly _ollama: OllamaService,
         private readonly aiReportingService: AiReportingService,
         private readonly storageService: StorageService,
+        @InjectQueue('ai-query-processing') private readonly aiQueue: Queue,
     ) { }
 
     @Post('test-storage')
@@ -93,7 +96,7 @@ export class AiController {
     @Post('query')
     @ApiOperation({ summary: 'Ask a question — semantic search + AI reformat pipeline' })
     @HttpCode(HttpStatus.OK)
-    query(@Body() dto: AiQueryDto, @Request() req: any) {
+    query(@Body() dto: AiQueryDto, @Request() req: any, @Query('wait') wait?: string) {
         return this.aiQueryService.query({
             userQuery: dto.query,
             userId: req.user.sub,
@@ -102,8 +105,26 @@ export class AiController {
             attachments: dto.attachments,
             productId: dto.productId,
             language: dto.language,
-            history: dto.history
+            history: dto.history,
+            wait: wait !== undefined ? wait === 'true' : false, // Default to async for WEB (non-blocking)
         });
+    }
+
+    @Public()
+    @Get('status/:jobId')
+    @ApiOperation({ summary: 'Check the status of a background AI job' })
+    async getJobStatus(@Param('jobId') jobId: string) {
+        const job = await this.aiQueue.getJob(jobId);
+        if (!job) return { status: 'NOT_FOUND' };
+
+        const state = await job.getState();
+        return {
+            id: job.id,
+            status: state.toUpperCase(),
+            progress: job.progress,
+            result: job.returnvalue,
+            error: job.failedReason
+        };
     }
 
     @Get('metrics')
@@ -118,6 +139,13 @@ export class AiController {
     @ApiOperation({ summary: 'Get detailed AI health & deflection metrics' })
     async getHealth() {
         return this.aiQueryService.getHealthMetrics();
+    }
+
+    @Get('intelligence')
+    @Roles('ADMIN', 'SUPERUSER')
+    @ApiOperation({ summary: 'Get strategic AI intelligence (Shifts/ROI/Accuracy)' })
+    async getIntelligence(@Query('days') days?: string) {
+        return this.aiQueryService.getIntelligenceMetrics(days ? parseInt(days, 10) : 30);
     }
 
     @Get('health-trends')

@@ -323,4 +323,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             timestamp: Date.now()
         });
     }
+
+    sendToUser(userId: string, event: string, payload: any) {
+        this.server.to(`user:${userId}`).emit(event, payload);
+    }
 }
