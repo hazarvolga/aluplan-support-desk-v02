@@ -79,12 +79,21 @@ export class AiCopilotService {
         );
 
         // 4. Format messages for context builder (internal format)
+        // Using slice() before reverse() to avoid mutating the original array
         const messages = ticket.messages
+            .slice()
             .reverse() // Chronological
-            .map(m => ({
-                role: m.sender?.fullName ? 'user' : 'assistant',
-                content: m.message
-            }));
+            .map(m => {
+                let contentStr = m.message;
+                if (m.attachments && m.attachments.length > 0) {
+                    const fileNames = m.attachments.map(a => a.fileName).join(', ');
+                    contentStr += `\n[EK: Bu mesajda { ${fileNames} } adlı görsel/dosya kullanıcının sisteminden iletilmiştir ve görsel input olarak verilmiştir. LÜTFEN BAKIYOR OLDUĞUN GÖRSELLERİ BU MESAJ BAĞLAMINDA DEĞERLENDİR.]`;
+                }
+                return {
+                    role: m.sender?.fullName ? 'user' : 'assistant',
+                    content: contentStr
+                };
+            });
 
         // 5. Use Context Builder for unified, budget-aware context
         const context = await this.promptContextBuilder.buildContext({
@@ -108,7 +117,8 @@ Your task is to prepare a professional diagnostic response draft using the 7-STE
 ## STEP 1-5 (TEKNİK ANALİZ)
 - Analiz edilecek bağlam aşağıdadır: [CONVERSATION_CONTEXT]
 - Teknik Tanı: ${diagnosis.productName} (${diagnosis.matchedKeywords.join(', ')})
-- Multimodal: Eğer [ATTACHMENTS] (görsel) varsa, bunları hata kodları veya görsel anormallikler için dikkatle incele.
+- Multimodal ÖNEMLİ: Eğer [EK: ...] ile bir görsel/dosya gönderilmişse, sana iletilen görsel input'lara MUTLAKA BAK. Görüntüdeki arayüzü, hata mesajlarını veya seçenekleri dikkatle incele.
+- YANITINDA: "Ekran görüntüsünde görüldüğü üzere..." gibi ifadelerle görseli analiz ettiğini KANITLA. Görmezden GELME!
 
 ## STEP 7 — OUTPUT
 Output ONLY in the following language: [${targetLanguage.toUpperCase()}]

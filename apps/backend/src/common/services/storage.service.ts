@@ -119,7 +119,10 @@ export class StorageService implements OnModuleInit {
             } catch (error: any) {
                 this.logger.error(`S3 Upload Failed: [Bucket: ${bucket}] [Key: ${key}] [Endpoint: ${endpoint}]`);
                 this.logger.error(`Error Details: ${error.message}${error.$metadata ? ` (Status: ${error.$metadata.httpStatusCode})` : ''}`);
-                throw error;
+                this.logger.warn(`Falling back to local storage for key ${key} due to S3 failure.`);
+                const filePath = path.join(this.localPath, key);
+                await fs.ensureDir(path.dirname(filePath));
+                await fs.writeFile(filePath, file.buffer);
             }
         } else {
             const filePath = path.join(this.localPath, key);
