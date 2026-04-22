@@ -158,7 +158,8 @@ export class AiQueryService {
         const { userQuery, userId, channel = 'WEB', hotinfoContext, attachments } = options;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
-        const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
+        const lang = options.language || 'tr';
+        const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
         const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
         const cached = await this.redis.get(cacheKey);
 
@@ -476,8 +477,9 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         const { userQuery, userId, channel = 'WEB', hotinfoContext, attachments } = options;
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
-        const queryHash = createHash('sha256').update(userQuery + isStaff + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
-        const cacheKey = `ai: query: stream_cache:${queryHash} `;
+        const lang = options.language || 'tr';
+        const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
+        const cacheKey = `ai:query:stream_cache:${queryHash}`;
         const cached = await this.redis.get(cacheKey);
 
         if (cached) {
@@ -650,33 +652,41 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
     /**
      * Parses the multi-language response from the Master Prompt.
      * Expects sections like "### 🇹🇷 Türkçe", "### 🇬🇧 English", "### 🇩🇪 Deutsch".
+     * Resilient against horizontal rules (---) and emoji variations.
      */
     private parseMultiLangResponse(raw: string, requestedLang: string): { main: string; translations: Record<string, string> } {
         const sections: Record<string, string> = {};
 
-        // Define marker patterns
+        // Define flexible marker patterns that stop at the next section header or horizontal rule
         const patterns = {
-            tr: /### 🇹🇷 Türkçe([\s\S]*?)(?=###|$)/i,
-            en: /### 🇬🇧 English([\s\S]*?)(?=###|$)/i,
-            de: /### 🇩🇪 Deutsch([\s\S]*?)(?=###|$)/i
+            tr: /###\s*(?:🇹🇷|)\s*(?:Türkçe|Turkish)([\s\S]*?)(?=(?:###|---|$))/i,
+            en: /###\s*(?:🇬🇧|)\s*English([\s\S]*?)(?=(?:###|---|$))/i,
+            de: /###\s*(?:🇩🇪|)\s*(?:Deutsch|German)([\s\S]*?)(?=(?:###|---|$))/i
         };
 
+        let foundAny = false;
         for (const [lang, regex] of Object.entries(patterns)) {
             const match = raw.match(regex);
-            if (match) {
+            if (match && match[1].trim()) {
+                // Strip noise and horizontal rules
                 sections[lang] = match[1].trim();
+                foundAny = true;
             }
         }
 
-        // Determine main language
-        let mainLang = requestedLang === 'auto' ? 'tr' : requestedLang; // default to 'tr' if auto for now
-        if (requestedLang === 'auto') {
-            // Very simple detection: if the query has no non-ascii, maybe it's EN? 
-            // In a better version we'd use a language detector.
+        // If parser failed to find any structured sections, return raw as main
+        if (!foundAny) {
+            this.logger.warn(`⚠️ parseMultiLangResponse: Failed to detect structured language sections in raw output. Returning raw.`);
+            return { main: raw.trim(), translations: {} };
         }
 
+        // Determine main language
+        const mainLang = requestedLang === 'auto' ? 'tr' : (requestedLang?.toLowerCase() || 'tr');
+
+        // Extract main content with fallback cascade
         const mainContent = sections[mainLang] || sections['tr'] || sections['en'] || raw;
 
+        // Populate translations for non-requested languages
         const translations: Record<string, string> = {};
         for (const [l, content] of Object.entries(sections)) {
             if (l !== mainLang) {

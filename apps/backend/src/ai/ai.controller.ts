@@ -37,6 +37,11 @@ export class AiQueryDto {
     @IsOptional()
     @IsUUID()
     productId?: string;
+
+    @ApiPropertyOptional({ description: 'Requested language (tr, en, de)', example: 'tr' })
+    @IsOptional()
+    @IsString()
+    language?: string;
 }
 
 export class FeedbackDto {
@@ -91,7 +96,8 @@ export class AiController {
             channel: 'WEB',
             hotinfoContext: dto.hotinfoContext,
             attachments: dto.attachments,
-            productId: dto.productId
+            productId: dto.productId,
+            language: dto.language
         });
     }
 
@@ -148,7 +154,7 @@ export class AiController {
     @Get('query/stream')
     @ApiOperation({ summary: 'Stream AI response via SSE' })
     @Sse()
-    streamQuery(@Query('q') query: string, @Request() req: any): Observable<MessageEvent> {
+    streamQuery(@Query('q') query: string, @Query('lang') lang: string, @Request() req: any): Observable<MessageEvent> {
         return new Observable((subscriber) => {
             (async () => {
                 try {
@@ -157,7 +163,8 @@ export class AiController {
                     // implement a separate stream endpoint that accepts POST.
                     const stream = this.aiQueryService.streamQuery({
                         userQuery: query,
-                        userId: req.user?.sub
+                        userId: req.user?.sub,
+                        language: lang
                     });
                     for await (const object of stream) {
                         subscriber.next({ data: object } as MessageEvent);

@@ -250,7 +250,7 @@ export const api = {
         delete: (id: string) => request<any>(`/tickets/${id}`, { method: 'DELETE' }),
     },
     ai: {
-        query: (query: string, hotinfoContext?: any, productId?: string | null) =>
+        query: (query: string, hotinfoContext?: any, productId?: string | null, language?: string) =>
             request<{
                 query: string;
                 answer: string | null;
@@ -260,16 +260,16 @@ export const api = {
                 suggestTicket: boolean;
             }>('/ai/query', {
                 method: 'POST',
-                body: JSON.stringify({ query, hotinfoContext, productId }),
+                body: JSON.stringify({ query, hotinfoContext, productId, language }),
                 signal: typeof AbortSignal !== 'undefined' ? AbortSignal.timeout(45000) : undefined,
             }),
-        search: (query: string, productId?: string | null, limit = 5) =>
+        search: (query: string, productId?: string | null, limit = 5, language?: string) =>
             request<{
                 results: any[];
                 interactionId: string;
             }>('/ai/search', {
                 method: 'POST',
-                body: JSON.stringify({ query, productId, limit }),
+                body: JSON.stringify({ query, productId, limit, language }),
             }),
         feedback: (interactionId: string, rating: number, comment?: string) =>
             request<any>(`/ai/interactions/${interactionId}/feedback`, {

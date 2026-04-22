@@ -143,7 +143,7 @@ export default function NewTicketPage() {
             // Switch to specialized query endpoint for conversational RAG
             // Passing product context to focus search on relevant knowledge base
             const pId = selectedProductId === 'general' || selectedProductId === '' ? null : selectedProductId;
-            const queryPromise = api.ai.query(`${subject} ${description}`, context, pId);
+            const queryPromise = api.ai.query(`${subject} ${description}`, context, pId, locale);
             const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('AI_TIMEOUT')), 15000)
             );

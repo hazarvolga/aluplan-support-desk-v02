@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import {
     Bot,
@@ -41,6 +42,7 @@ const CONFIDENCE_COLORS: Record<string, string> = {
 
 export default function AiPage() {
     const t = useTranslations('ai');
+    const { locale } = useParams();
     const [query, setQuery] = useState('');
     const [result, setResult] = useState<QueryResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -53,7 +55,7 @@ export default function AiPage() {
         setResult(null);
         setFeedback(null);
         try {
-            const res = await api.ai.query(query);
+            const res = await api.ai.query(query, null, null, locale as string);
             setResult(res);
         } catch { /* handled */ }
         setLoading(false);
