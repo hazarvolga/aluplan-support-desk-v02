@@ -19,19 +19,33 @@ export class AiDiagnosisService {
     /**
      * Performs a technical diagnosis analysis based on user query and system metadata.
      */
-    async analyze(query: string, history?: string[]): Promise<DiagnosisResult> {
-        this.logger.log(`🔍 Diagnosing query: "${query}"`);
-
-        // 1. Fetch dynamic products and categories from DB
-        const products = await this.prisma.product.findMany({
-            where: { isActive: true },
-            include: { categories: { where: { isActive: true } } },
-        });
+    async analyze(query: string, history?: string[], productId?: string | null): Promise<DiagnosisResult> {
+        this.logger.log(`🔍 Diagnosing query: "${query}" (Product ID Filter: ${productId || 'None'})`);
 
         let matchedProduct: any = null;
+        let products: any[] = [];
+
+        // 1. Fetch products (either one specific or all for heuristic matching)
+        if (productId && productId !== 'general') {
+            const p = await this.prisma.product.findUnique({
+                where: { id: productId },
+                include: { categories: { where: { isActive: true } } },
+            });
+            if (p) {
+                matchedProduct = p;
+                products = [p];
+            }
+        }
+
+        if (!matchedProduct) {
+            products = await this.prisma.product.findMany({
+                where: { isActive: true },
+                include: { categories: { where: { isActive: true } } },
+            });
+        }
+
         const matchedCategories: string[] = [];
         const detectedKeywords: string[] = [];
-
         const lowerQuery = query.toLowerCase();
 
         // 2. keyword-based classification
@@ -40,7 +54,7 @@ export class AiDiagnosisService {
             let categoryMatchCount = 0;
 
             for (const cat of product.categories) {
-                const overlappingKeywords = cat.keywords.filter(k => lowerQuery.includes(k.toLowerCase()));
+                const overlappingKeywords = cat.keywords.filter((k: string) => lowerQuery.includes(k.toLowerCase()));
                 if (overlappingKeywords.length > 0) {
                     matchedCategories.push(cat.name);
                     detectedKeywords.push(...overlappingKeywords);
@@ -48,7 +62,8 @@ export class AiDiagnosisService {
                 }
             }
 
-            if (productMatch || categoryMatchCount > 0) {
+            // Only perform primary product matching if we haven't already fixed it via productId
+            if (!matchedProduct && (productMatch || categoryMatchCount > 0)) {
                 // Heuristic: Prefer the product that has explicit name match or most category keyword matches
                 if (!matchedProduct || productMatch) {
                     matchedProduct = product;

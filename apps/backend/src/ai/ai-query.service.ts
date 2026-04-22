@@ -68,8 +68,9 @@ Map symptoms to a specific problem type (e.g., licensing_failure, fem_mesh_insta
 
 ## STEP 4 — ROOT CAUSE GENERATION
 Based on Product, Problem Type, and [ATTACHMENTS]:
-- If image attachments exist, ANALYZE THEM for error codes, UI messages, or visual anomalies.
-- Generate the MOST LIKELY causes for this specific engineering context.
+- If image attachments exist, ANALYZE THEM code for errors or UI messages.
+- If hardware query and [MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)] missing: ASK user for OS/GPU/RAM.
+- Generate the MOST LIKELY causes for this context.
 - Explain WHY it happens (technical depth required).
 
 ## STEP 5 — PRIORITIZATION
@@ -270,7 +271,7 @@ export class AiQueryService {
         }
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
-            diagnosis = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content));
+            diagnosis = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content), options.productId);
 
             const systemPromptRaw = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', MASTER_DIAGNOSIS_PROMPT);
             let dynamicSystemPrompt = systemPromptRaw
@@ -514,7 +515,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
-            diagnosis = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content));
+            diagnosis = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content), options.productId);
 
             const systemPromptRaw = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', MASTER_DIAGNOSIS_PROMPT);
             let dynamicSystemPrompt = systemPromptRaw
