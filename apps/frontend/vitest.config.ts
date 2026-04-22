@@ -7,10 +7,11 @@ export default defineConfig({
     test: {
         environment: 'jsdom',
         globals: true,
-        setupFiles: ['./src/test/setup.ts'],
+        setupFiles: ['./src/test/setup.tsx'],
         testTimeout: 20000,
         alias: {
             '@': path.resolve(__dirname, './src'),
+            'next/navigation': path.resolve(__dirname, 'node_modules/next/navigation.js'),
         },
         exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
         coverage: {
@@ -21,6 +22,11 @@ export default defineConfig({
                 functions: 80,
                 branches: 80,
                 statements: 80,
+            },
+        },
+        server: {
+            deps: {
+                inline: [/next-intl/],
             },
         },
     },

@@ -1,67 +1,46 @@
 import { test, expect } from '@playwright/test';
+import { LoginPage } from './pages/LoginPage';
+import { DashboardPage } from './pages/DashboardPage';
 
-/**
- * E2E Authentication Flow Tests
- * Based on actual DOM from apps/frontend/src/app/[locale]/page.tsx
- * 
- * Key selectors:
- * - Email: placeholder="operator@aluplan.com" / type="email"
- * - Password: type="password"
- * - Submit button text: "OTURUMU_BAŞLAT"
- * - Error container: border-rose-500/30 div
- */
 test.describe('Authentication Flow', () => {
 
     test('should load login page with correct elements', async ({ page }) => {
-        // Arrange
-        await page.goto('/tr/login');
-        await page.waitForSelector('[data-testid="login-email"]', { timeout: 120000 });
+        const loginPage = new LoginPage(page);
+        await loginPage.navigateTo('/tr/login');
 
-        // Assert - email input
-        await expect(page.getByTestId('login-email')).toBeVisible();
-
-        // Assert - password input
-        await expect(page.getByTestId('login-password')).toBeVisible();
-
-        // Assert - submit button
-        await expect(page.getByTestId('login-submit')).toBeVisible();
+        await expect(loginPage.emailInput).toBeVisible();
+        await expect(loginPage.passwordInput).toBeVisible();
+        await expect(loginPage.submitButton).toBeVisible();
     });
 
     test('should show error message on invalid credentials', async ({ page }) => {
-        // Arrange
-        await page.goto('/tr/login');
-        await page.waitForSelector('[data-testid="login-email"]', { timeout: 120000 });
+        const loginPage = new LoginPage(page);
+        await loginPage.navigateTo('/tr/login');
 
-        // Act
-        await page.getByTestId('login-email').fill('invalid@example.com');
-        await page.getByTestId('login-password').fill('wrongpassword123');
-        await page.getByTestId('login-submit').click();
+        await loginPage.login('invalid@example.com', 'wrongpassword123');
 
-        // Assert - error box appears with red styling
-        const errorBox = page.locator('.border-rose-500\\/30').or(
-            page.locator('[class*="rose"]').filter({ hasText: /AUTH_FAILURE|Credentials|Unauthorized/i })
-        );
-
-        // Wait for async error handling
-        await expect(page.getByTestId('error-message')).toBeVisible({ timeout: 10000 });
+        await expect(loginPage.getErrorMessage()).toBeVisible({ timeout: 10000 });
     });
 
     test('should redirect to dashboard on valid credentials', async ({ page }) => {
-        const { loginAsAdmin } = require('./helpers/auth');
-        await loginAsAdmin(page);
-        expect(page.url()).toMatch(/.*\/dashboard/);
+        const loginPage = new LoginPage(page);
+        const dashboardPage = new DashboardPage(page);
+
+        await loginPage.navigateTo('/tr/login');
+        // Note: Real login would require seeded data, we use the logic flow here
+        // as configured in the project's existing tests.
+        const email = 'e2e-test@aluplan.com';
+        const password = 'pass123';
+
+        await loginPage.loginWithRetry(email, password);
+        expect(await dashboardPage.isAtDashboard()).toBe(true);
     });
 
     test('should display system requirements accordion', async ({ page }) => {
-        // Arrange
-        await page.goto('/tr/login');
+        const loginPage = new LoginPage(page);
+        await loginPage.navigateTo('/tr/login');
 
-        // Assert - Requirement accordion elements should be visible
-        const accordion = page.getByTestId('requirement-accordion');
-        await expect(accordion).toBeVisible({ timeout: 120000 });
-
-        // Check for specific software titles from seed (e.g., ALLPLAN 2026)
-        // We use a regex for flexibility across locales if needed, but since seed has it:
+        await expect(loginPage.requirementAccordion).toBeVisible({ timeout: 120000 });
         await expect(page.getByText(/ALLPLAN 2026/i)).toBeVisible();
     });
 });

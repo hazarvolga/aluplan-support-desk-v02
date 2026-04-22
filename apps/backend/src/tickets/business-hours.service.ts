@@ -17,13 +17,31 @@ export class BusinessHoursService {
 
     constructor(private readonly prisma: PrismaService) { }
 
+    private cachedBusinessHours: any[] | null = null;
+    private cachedHolidays: any[] | null = null;
+    private lastCacheUpdate: number = 0;
+    private readonly CACHE_TTL = 300000; // 5 minutes
+
     /**
      * Calculates a deadline date by adding business hours to a starting date,
      * skipping weekends, holidays, and non-working hours.
+     * Uses a short-term cache for config to prevent N+1 bottlenecks.
      */
     async calculateDeadline(from: Date, hoursToAdd: number): Promise<Date> {
-        const businessHours = await this.prisma.businessHours.findMany();
-        const holidays = await this.prisma.holiday.findMany();
+        const now = Date.now();
+        if (!this.cachedBusinessHours || !this.cachedHolidays || (now - this.lastCacheUpdate > this.CACHE_TTL)) {
+            const [bh, h] = await Promise.all([
+                this.prisma.businessHours.findMany(),
+                this.prisma.holiday.findMany(),
+            ]);
+            this.cachedBusinessHours = bh;
+            this.cachedHolidays = h;
+            this.lastCacheUpdate = now;
+            this.logger.debug('✨ Business hours and holidays cache refreshed');
+        }
+
+        const businessHours = this.cachedBusinessHours;
+        const holidays = this.cachedHolidays;
 
         let current = new Date(from);
         let minutesLeft = hoursToAdd * 60;

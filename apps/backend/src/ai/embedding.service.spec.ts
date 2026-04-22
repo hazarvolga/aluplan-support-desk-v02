@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EmbeddingService, SearchResponse } from './embedding.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('EmbeddingService', () => {
     let service: EmbeddingService;
@@ -16,6 +17,7 @@ describe('EmbeddingService', () => {
     beforeEach(async () => {
         mockPrismaService = {
             $executeRaw: jest.fn().mockResolvedValue(1),
+            $executeRawUnsafe: jest.fn().mockResolvedValue(1),
             $queryRaw: jest.fn(),
             knowledgeArticle: {
                 findMany: jest.fn(),
@@ -27,6 +29,11 @@ describe('EmbeddingService', () => {
 
         mockAiService = {
             embed: jest.fn(),
+            getActiveModelName: jest.fn().mockResolvedValue('nomic-embed-text'),
+        };
+
+        const mockEventEmitter = {
+            emit: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -34,6 +41,7 @@ describe('EmbeddingService', () => {
                 EmbeddingService,
                 { provide: PrismaService, useValue: mockPrismaService },
                 { provide: AiService, useValue: mockAiService },
+                { provide: EventEmitter2, useValue: mockEventEmitter },
             ],
         }).compile();
 

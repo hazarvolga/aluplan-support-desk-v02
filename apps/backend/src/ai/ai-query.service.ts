@@ -116,13 +116,11 @@ Use strict headers:
 - Analyze image attachments first if they exist.
 `;
 import { DocumentParserService } from '../common/services/document-parser.service';
+import { MetricsService } from '../metrics/metrics.service';
 
 @Injectable()
 export class AiQueryService {
     private readonly logger = new Logger(AiQueryService.name);
-    private readonly highThreshold: number;
-    private readonly mediumThreshold: number;
-
     constructor(
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
@@ -137,10 +135,8 @@ export class AiQueryService {
         private readonly diagnosisService: AiDiagnosisService,
         private readonly documentParser: DocumentParserService,
         @InjectQueue('ai-query-processing') private readonly aiQueue: Queue,
-    ) {
-        this.highThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_HIGH', '0.85'));
-        this.mediumThreshold = parseFloat(config.get('SIMILARITY_THRESHOLD_MEDIUM', '0.70'));
-    }
+        private readonly metrics: MetricsService,
+    ) { }
 
     async query(options: AiQueryOptions): Promise<any> {
         const { userQuery, userId, channel = 'WEB', hotinfoContext, wait = true } = options;
@@ -155,10 +151,12 @@ export class AiQueryService {
 
         if (cached) {
             const result = JSON.parse(cached);
-            this.logger.log(`🎯 AI Query Cache Hit: ${userQuery.slice(0, 40)}...`);
-            this.ragObs.recordQuery(Date.now() - startTime, true);
+            this.metrics.recordCacheOp('AI_QUERY', 'HIT');
+            this.logger.log(`⚡ [Cache Hit] interactionId=${result.interactionId} (v5)`);
             return result;
         }
+
+        this.metrics.recordCacheOp('AI_QUERY', 'MISS');
 
         // 2. Decide Execution Mode
         // If not forcing wait, and it's a web channel, push to queue
@@ -271,8 +269,8 @@ export class AiQueryService {
         results = await this.rankResultsWithLLM(userQuery, results);
 
         // Lowered floor for response generation
-        // Ensure threshold alignment: topScore must be >= search threshold to be valid
-        const FALLBACK_THRESHOLD = Math.min(RAG_CONFIG.SIMILARITY.THRESHOLD, 0.20);
+        // Ensure threshold alignment: topScore must be >= search floor to be valid
+        const FALLBACK_THRESHOLD = RAG_CONFIG.SIMILARITY.FLOOR;
 
         if (searchResponse.diagnostics.topScore < FALLBACK_THRESHOLD || results.length === 0) {
             this.logger.warn(`🚫 No reliable context found (topScore = ${searchResponse.diagnostics.topScore.toFixed(3)}, threshold = ${FALLBACK_THRESHOLD}). Routing to human agent.`);
@@ -316,9 +314,7 @@ export class AiQueryService {
         let diagnosis: DiagnosisResult | undefined;
 
         if (topResult) {
-            if (topResult.similarity >= this.highThreshold) confidence = 'HIGH';
-            else if (topResult.similarity >= this.mediumThreshold) confidence = 'MEDIUM';
-            else confidence = 'LOW';
+            confidence = topResult.confidence as LocalConfidenceBand;
         }
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
@@ -501,6 +497,14 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                 if (res.sourceType === 'URL') boost *= RERANK.URL;
                 if (res.sourceType === 'TICKET') boost *= RERANK.TICKET;
 
+                // Recency Boost: Up to 15% curve for content updated within the last 30 days
+                if (res.updatedAt) {
+                    const daysOld = (Date.now() - new Date(res.updatedAt).getTime()) / (1000 * 3600 * 24);
+                    if (daysOld <= 30) {
+                        boost *= (1 + 0.15 * (1 - daysOld / 30));
+                    }
+                }
+
                 return {
                     ...res,
                     similarity: res.similarity * boost
@@ -547,9 +551,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         let fullAnswer = '';
 
         if (topResult) {
-            if (topResult.similarity >= this.highThreshold) confidence = 'HIGH';
-            else if (topResult.similarity >= this.mediumThreshold) confidence = 'MEDIUM';
-            else if (topResult.similarity >= 0.62) confidence = 'LOW'; // Match query() floor
+            confidence = topResult.confidence as LocalConfidenceBand;
         }
 
         let usedPrompt = userQuery;
@@ -1256,8 +1258,8 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
 
     private mapConfidence(similarity?: number): ConfidenceBand | null {
         if (!similarity || similarity < 0.2) return null;
-        if (similarity >= this.highThreshold) return 'HIGH' as any;
-        if (similarity >= this.mediumThreshold) return 'MEDIUM' as any;
+        if (similarity >= RAG_CONFIG.SIMILARITY.HIGH) return 'HIGH' as any;
+        if (similarity >= RAG_CONFIG.SIMILARITY.MEDIUM) return 'MEDIUM' as any;
         return 'LOW' as any;
     }
 

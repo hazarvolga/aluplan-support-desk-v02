@@ -5,7 +5,7 @@ import {
 import { Observable } from 'rxjs';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { IsString, IsInt, Min, Max, IsOptional, MinLength, IsBoolean, IsUUID } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
 import { OllamaService } from './ollama.service';
@@ -18,7 +18,7 @@ import { Queue } from 'bullmq';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 import { Public } from '../auth/decorators/public.decorator';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 
 
 export class AiQueryDto {
@@ -94,7 +94,9 @@ export class AiController {
     }
 
     @Post('query')
+    @Throttle({ default: { limit: 10, ttl: 60000 } }) // Limit complex AI inference
     @ApiOperation({ summary: 'Ask a question — semantic search + AI reformat pipeline' })
+    @ApiResponse({ status: 200, description: 'RAG Pipeline execution completed with an AI-generated response.' })
     @HttpCode(HttpStatus.OK)
     query(@Body() dto: AiQueryDto, @Request() req: any, @Query('wait') wait?: string) {
         return this.aiQueryService.query({
@@ -185,7 +187,9 @@ export class AiController {
     }
 
     @Get('query/stream')
+    @Throttle({ default: { limit: 10, ttl: 60000 } })
     @ApiOperation({ summary: 'Stream AI response via SSE' })
+    @ApiResponse({ status: 200, description: 'Server-Sent Events (SSE) stream established.' })
     @Sse()
     streamQuery(@Query('q') query: string, @Query('lang') lang: string, @Request() req: any): Observable<MessageEvent> {
         return new Observable((subscriber) => {
@@ -281,7 +285,9 @@ export class AiController {
     }
 
     @Post('search')
+    @Throttle({ default: { limit: 20, ttl: 60000 } }) // Pure semantic search is cheaper
     @ApiOperation({ summary: 'Semantic search Knowledge Pool + Articles with Product filtering' })
+    @ApiResponse({ status: 200, description: 'Vector similarity search executed successfully.' })
     @HttpCode(HttpStatus.OK)
     async search(@Body() dto: { query: string; productId?: string; limit?: number }, @Request() req: any) {
         const isStaff = req.user?.role?.toUpperCase() !== 'CUSTOMER';

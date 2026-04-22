@@ -4,6 +4,7 @@ import { AiService } from './ai.service';
 import { hierarchicalChunk } from '../knowledge-base/utils/smart-chunker';
 import { RAG_CONFIG, getConfidenceBand } from '../config/rag.config';
 import { createHash } from 'crypto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 export interface SearchResult {
     articleId: string;
@@ -12,6 +13,7 @@ export interface SearchResult {
     content: string;
     similarity: number;
     confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+    updatedAt?: Date;
 }
 
 export interface SearchDiagnostics {
@@ -38,6 +40,7 @@ export class EmbeddingService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
+        private readonly eventEmitter: EventEmitter2,
     ) { }
 
     /**
@@ -76,6 +79,7 @@ export class EmbeddingService {
         }
 
         this.logger.log(`📐 Indexed ${hierarchies.length} hierarchies for article ${articleId}`);
+        this.eventEmitter.emit('article.published', { articleId });
     }
 
     /**
@@ -105,6 +109,7 @@ export class EmbeddingService {
                 similarity: number;
                 trust_score: number;
                 language: string;
+                updated_at: Date;
             }>
         >`
       WITH keyword_search AS (
@@ -130,7 +135,8 @@ export class EmbeddingService {
                  COALESCE((SELECT rank FROM keyword_search WHERE id = ka.id LIMIT 1), 0.0) * 0.25
             ) AS similarity,
             ka.trust_score,
-            ka.language
+            ka.language,
+            ka.updated_at
         FROM knowledge_embeddings ke
         JOIN knowledge_articles ka ON ka.id = ke.article_id
         LEFT JOIN knowledge_embeddings parent ON ke.parent_id = parent.id
@@ -156,7 +162,8 @@ export class EmbeddingService {
             COALESCE(parent_kpe.content, kpe.content) AS content,
             1 - (kpe.embedding <=> ${vectorStr}::vector) AS similarity,
             ks.trust_score,
-            ks.language
+            ks.language,
+            ks.updated_at
         FROM knowledge_pool_embeddings kpe
         JOIN knowledge_sources ks ON kpe.source_id = ks.id
         LEFT JOIN knowledge_pool_embeddings parent_kpe ON kpe.parent_id = parent_kpe.id
@@ -179,6 +186,7 @@ export class EmbeddingService {
             content: row.content,
             similarity: Number(row.similarity),
             confidence: getConfidenceBand(row.similarity),
+            updatedAt: row.updated_at,
         }));
 
         const diagnostics: SearchDiagnostics = {
@@ -249,6 +257,7 @@ export class EmbeddingService {
         }
 
         this.logger.log(`📐 FINISHED: Indexed ${totalInserted} chunks for pool source ${sourceId}`);
+        this.eventEmitter.emit('knowledge-pool.synced', { sourceId });
     }
 
     async indexTicket(ticketId: string, content: string): Promise<void> {

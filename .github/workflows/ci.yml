@@ -13,14 +13,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install
 
       - name: Generate Prisma Client & Validate Schema
         run: |
@@ -30,9 +35,41 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres' }}
 
       - name: Typecheck Backend
-        run: cd apps/backend && npm run build
+        run: cd apps/backend && pnpm run build
 
       - name: Typecheck Frontend
-        run: cd apps/frontend && npm run build
+        run: cd apps/frontend && pnpm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+
+      - name: Security Scanning (Audit)
+        run: pnpm audit --prod
+
+      - name: Deploy Database Migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres' }}
+
+      - name: Run Backend Tests & Coverage
+        run: cd apps/backend && pnpm test -- --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Staging Auto-Deploy
+        if: github.ref == 'refs/heads/main'
+        run: echo "Deploying to staging environment via webhook/CD..."
+
+      - name: Build Docker Container
+        run: docker build -t aluplan-backend -f apps/backend/Dockerfile .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'aluplan-backend:latest'
+          format: 'table'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'

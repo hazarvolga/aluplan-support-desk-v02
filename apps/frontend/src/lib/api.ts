@@ -1,4 +1,6 @@
-const CLIENT_API = (typeof process !== 'undefined' && process.env ? process.env.NEXT_PUBLIC_API_URL : undefined) ?? 'http://localhost:4000/api/v1';
+import { env } from './env';
+
+const CLIENT_API = env.apiUrl;
 const SERVER_API = (typeof process !== 'undefined' && process.env ? process.env.NEXT_INTERNAL_API_URL : undefined) ?? CLIENT_API;
 
 const getApiUrl = () => {
@@ -26,6 +28,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         : null;
 
     const headers: any = {
+        'X-Requested-With': 'XMLHttpRequest',
         ...options?.headers,
     };
 

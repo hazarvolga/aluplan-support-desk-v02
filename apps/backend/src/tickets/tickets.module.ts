@@ -2,7 +2,6 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TicketsController } from './tickets.controller';
 import { TicketsService } from './tickets.service';
 import { SlaService } from './sla.service';
-import { PiiMaskingService } from '../common/services/pii-masking.service';
 import { RuleEngineService } from './rule-engine.service';
 import { AutoAssignmentService } from './auto-assignment.service';
 import { BusinessHoursService } from './business-hours.service';

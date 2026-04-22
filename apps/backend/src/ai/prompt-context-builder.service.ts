@@ -159,39 +159,55 @@ export class PromptContextBuilderService {
     }
 
     /**
-     * Assemble context sections respecting the total character budget.
+     * Assemble context sections respecting both character and token budgets.
      * Higher-priority sections are included first; lower-priority ones are truncated or dropped.
      */
     private assembleWithBudget(sections: ContextSection[]): string {
         const maxChars = RAG_CONFIG.CONTEXT.MAX_CONTEXT_CHARS;
+        const maxTokens = RAG_CONFIG.CONTEXT.MAX_CONTEXT_TOKENS;
+        const CHARS_PER_TOKEN = 4; // Statistical heuristic for technical English/Turkish
 
         // Sort by priority DESC (highest first)
         const sorted = [...sections].sort((a, b) => b.priority - a.priority);
 
         let totalChars = 0;
+        let totalTokens = 0;
         const included: string[] = [];
 
         for (const section of sorted) {
-            const remaining = maxChars - totalChars;
-            if (remaining <= 0) {
+            const sectionChars = section.content.length;
+            const sectionTokens = Math.ceil(sectionChars / CHARS_PER_TOKEN);
+
+            const remainingChars = maxChars - totalChars;
+            const remainingTokens = maxTokens - totalTokens;
+
+            if (remainingChars <= 200 || remainingTokens <= 50) {
                 this.logger.warn(`⚠️ Context budget exhausted. Dropping section: ${section.name} (priority=${section.priority})`);
                 break;
             }
 
-            if (section.content.length <= remaining) {
+            if (sectionChars <= remainingChars && sectionTokens <= remainingTokens) {
                 included.push(section.content);
-                totalChars += section.content.length;
+                totalChars += sectionChars;
+                totalTokens += sectionTokens;
             } else {
-                // Truncate this section to fit remaining budget
-                const truncated = section.content.substring(0, remaining - 50) + '\n... [truncated due to context budget]\n';
-                included.push(truncated);
-                totalChars += truncated.length;
-                this.logger.warn(`⚠️ Truncated section: ${section.name} (${section.content.length} → ${truncated.length} chars)`);
+                // Truncate this section to fit whatever remains of the budget
+                const charsToTake = Math.min(remainingChars, remainingTokens * CHARS_PER_TOKEN) - 100;
+
+                if (charsToTake > 100) {
+                    const truncated = section.content.substring(0, charsToTake) + '\n... [truncated due to context budget]\n';
+                    included.push(truncated);
+                    totalChars += truncated.length;
+                    totalTokens += Math.ceil(truncated.length / CHARS_PER_TOKEN);
+                    this.logger.warn(`⚠️ Truncated section: ${section.name} (${sectionChars} -> ${truncated.length} chars)`);
+                } else {
+                    this.logger.warn(`⚠️ Section ${section.name} too small to truncate effectively. Dropping.`);
+                }
                 break;
             }
         }
 
-        this.logger.debug(`📊 Context assembled: ${included.length}/${sections.length} sections, ${totalChars}/${maxChars} chars`);
+        this.logger.log(`📊 Context assembled: ${included.length}/${sections.length} sections, ~${totalTokens}/${maxTokens} tokens (${totalChars} chars)`);
         return included.join('\n');
     }
 }

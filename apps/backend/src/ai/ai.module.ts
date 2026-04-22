@@ -36,8 +36,14 @@ import { AiQueryProcessor } from './ai-query.processor';
         forwardRef(() => KnowledgePoolModule),
         NotificationsModule,
         BullModule.registerQueue(
-            { name: 'document-parsing' },
-            { name: 'ai-query-processing' }
+            {
+                name: 'document-parsing',
+                defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 5000 }, removeOnComplete: 100, removeOnFail: 500 }
+            },
+            {
+                name: 'ai-query-processing',
+                defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 1000 }, removeOnComplete: 100, removeOnFail: 500 }
+            }
         ),
     ],
     controllers: [AiController],

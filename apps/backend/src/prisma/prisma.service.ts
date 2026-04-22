@@ -1,21 +1,26 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Inject } from '@nestjs/common';
 import { PrismaClient } from '@aluplan/database';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import { MetricsService } from '../metrics/metrics.service';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(PrismaService.name);
+    private pool: Pool;
+    private poolInterval: NodeJS.Timeout;
 
-    constructor() {
-        const pool = new Pool({
+    constructor(private readonly metrics: MetricsService) {
+        const poolInstance = new Pool({
             connectionString: process.env.DATABASE_URL,
             max: 100, // Increased to handle concurrent upserts from dashboard
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 10000,
         });
-        const adapter = new PrismaPg(pool as any);
+
+        const adapter = new PrismaPg(poolInstance as any);
         super({ adapter, errorFormat: 'pretty' });
+        this.pool = poolInstance;
     }
 
     async onModuleInit() {
@@ -62,6 +67,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         }
         this.logger.log('✅ Database connected');
 
+        // Start Prometheus pool metrics collection
+        this.poolInterval = setInterval(() => {
+            this.metrics.setDbPoolConnections(this.pool.totalCount);
+        }, 10000);
+
         // Emergency Repair: Restore hazarvolga@gmail.com to ADMIN role if needed
         try {
             const adminRole = await this.role.findFirst({ where: { name: 'ADMIN' } });
@@ -81,6 +91,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
 
     async onModuleDestroy() {
+        if (this.poolInterval) clearInterval(this.poolInterval);
         await this.$disconnect();
     }
 }

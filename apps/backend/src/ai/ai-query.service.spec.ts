@@ -9,6 +9,8 @@ import { PromptsService } from './prompts.service';
 import { SettingsService } from '../settings/settings.service';
 import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
+import { RagObservabilityService } from './rag-observability.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('AiQueryService', () => {
     let service: AiQueryService;
@@ -82,6 +84,14 @@ describe('AiQueryService', () => {
         trace: jest.fn().mockResolvedValue(undefined),
     };
 
+    const mockRagObservabilityService = {
+        recordQuery: jest.fn(),
+    };
+
+    const mockEventEmitter = {
+        emit: jest.fn(),
+    };
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -95,6 +105,8 @@ describe('AiQueryService', () => {
                 { provide: SettingsService, useValue: mockSettingsService },
                 { provide: LangfuseService, useValue: mockLangfuseService },
                 { provide: RedisService, useValue: mockRedisService },
+                { provide: RagObservabilityService, useValue: mockRagObservabilityService },
+                { provide: EventEmitter2, useValue: mockEventEmitter },
             ],
         }).compile();
 

@@ -1,7 +1,11 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
+import bundleAnalyzer from '@next/bundle-analyzer';
 
 const withNextIntl = createNextIntlPlugin();
+const withBundleAnalyzer = bundleAnalyzer({
+    enabled: process.env.ANALYZE === 'true',
+});
 
 const nextConfig: NextConfig = {
     output: 'standalone',
@@ -13,6 +17,7 @@ const nextConfig: NextConfig = {
     },
     experimental: {
         typedRoutes: false,
+        optimizePackageImports: ['lucide-react', 'date-fns', 'recharts'],
     },
     async headers() {
         return [
@@ -52,7 +57,7 @@ const nextConfig: NextConfig = {
 
 import { withSentryConfig } from '@sentry/nextjs';
 
-export default withSentryConfig(withNextIntl(nextConfig), {
+export default withSentryConfig(withBundleAnalyzer(withNextIntl(nextConfig)), {
     // For all available options, see:
     // https://github.com/getsentry/sentry-webpack-plugin#options
 

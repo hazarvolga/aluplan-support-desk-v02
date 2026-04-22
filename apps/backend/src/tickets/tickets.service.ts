@@ -445,21 +445,22 @@ export class TicketsService {
         });
 
         // Support UI-based attachments if provided in the DTO
+        // Support UI-based attachments using batch creation to prevent N+1 queries
         if (dto.attachments && dto.attachments.length > 0) {
-            for (const attach of dto.attachments) {
-                try {
-                    await this.prisma.attachment.create({
-                        data: {
-                            messageId: message.id,
-                            fileName: attach.fileName,
-                            fileSize: attach.fileSize,
-                            mimeType: attach.mimeType,
-                            url: attach.url,
-                        }
-                    });
-                } catch (err) {
-                    console.error(`[TicketsService] Failed to link attachment ${attach.fileName}: ${err.message}`);
-                }
+            try {
+                const attachmentData = dto.attachments.map(attach => ({
+                    messageId: message.id,
+                    fileName: attach.fileName,
+                    fileSize: attach.fileSize,
+                    mimeType: attach.mimeType,
+                    url: attach.url,
+                }));
+                await this.prisma.attachment.createMany({
+                    data: attachmentData,
+                    skipDuplicates: true
+                });
+            } catch (err) {
+                console.error(`[TicketsService] Failed to link batch attachments: ${err.message}`);
             }
         }
 
@@ -611,14 +612,22 @@ export class TicketsService {
         if (priority) updateData.priority = priority;
         if (assignedTo) updateData.assignee = { connect: { id: assignedTo } };
 
-        // If priority changes, we must recalculate SLAs individually
+        // If priority changes, we must recalculate SLAs individually (Optimized for N+1)
         if (priority) {
+            // 1. Fetch all required tickets in a single batch
+            const tickets = await this.prisma.ticket.findMany({
+                where: { id: { in: ticketIds } },
+                select: { id: true, departmentId: true }
+            });
+
             await this.prisma.$transaction(async (tx) => {
-                for (const id of ticketIds) {
-                    const ticket = await tx.ticket.findUnique({ where: { id } });
-                    const deadlines = await this.slaService.calculateDeadlines(priority, ticket?.departmentId as string);
+                for (const ticket of tickets) {
+                    // We call SLA service for calculation logic. Since we optimized 
+                    // BusinessHoursService cache, the O(N*M) pressure is gone.
+                    const deadlines = await this.slaService.calculateDeadlines(priority, ticket.departmentId as string);
+
                     await tx.ticket.update({
-                        where: { id },
+                        where: { id: ticket.id },
                         data: {
                             ...updateData,
                             slaResponseDue: deadlines.slaResponseDue,

@@ -76,7 +76,11 @@ export default function TicketsPage() {
     const [bulkLoading, setBulkLoading] = useState(false);
     const { user } = useAuth();
 
-    const isAdmin = user?.role === 'ADMIN' || user?.role === 'DEPARTMENT_MANAGER' || user?.role === 'TEAM_LEAD' || user?.role === 'SENIOR_AGENT';
+    const isAdmin = (() => {
+        const r = (user?.role as any)?.name || user?.role || (user?.roles && user.roles[0]);
+        const role = (typeof r === 'string' ? r : '').toUpperCase();
+        return role === 'ADMIN' || role === 'DEPARTMENT_MANAGER' || role === 'TEAM_LEAD' || role === 'SENIOR_AGENT';
+    })();
 
     const load = async () => {
         setLoading(true);

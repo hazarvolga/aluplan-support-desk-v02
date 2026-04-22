@@ -143,8 +143,10 @@ export class KnowledgeBaseService {
     // ─── UPDATE (creates new version) ───────────────────────
     async update(id: string, dto: UpdateArticleDto, userId: string): Promise<any> {
         const article = await this.findOne(id);
+        const hasMetadataChange = !!(dto.title || dto.categoryId || dto.tags || dto.isInternal !== undefined);
+        const hasContentChange = !!dto.content;
 
-        if (dto.title || dto.categoryId || dto.tags) {
+        if (hasMetadataChange || (hasContentChange && article.status === 'PUBLISHED')) {
             await this.prisma.knowledgeArticle.update({
                 where: { id },
                 data: {
@@ -157,17 +159,18 @@ export class KnowledgeBaseService {
             });
         }
 
-        if (dto.content) {
+        if (hasContentChange) {
+            const content = dto.content as string;
             const latestVersion = article.versions[0];
             const nextNum = (latestVersion?.version ?? 0) + 1;
-            const plain = dto.content.replace(/[#*`_~>\[\]()-]/g, ' ').replace(/\s+/g, ' ').trim();
+            const plain = content.replace(/[#*`_~>\[\]()-]/g, ' ').replace(/\s+/g, ' ').trim();
 
             await this.prisma.knowledgeArticleVersion.create({
                 data: {
                     articleId: id,
                     version: nextNum,
                     title: dto.title ?? article.title,
-                    content: dto.content,
+                    content,
                     contentPlain: plain,
                     changeSummary: dto.changeSummary ?? `v${nextNum}`,
                     createdBy: userId,

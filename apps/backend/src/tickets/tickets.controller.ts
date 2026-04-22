@@ -2,7 +2,7 @@ import {
     Controller, Get, Post, Patch, Param, Body,
     Request, Query, UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
@@ -29,6 +29,8 @@ export class TicketsController {
     @Post()
     @RequirePermissions('ticket:create')
     @ApiOperation({ summary: 'Open a new support ticket' })
+    @ApiResponse({ status: 201, description: 'The ticket has been successfully created.' })
+    @ApiResponse({ status: 400, description: 'Bad Request. Invalid DTO.' })
     async create(@Body() dto: CreateTicketDto, @Request() req: any) {
         const ticket = await this.ticketsService.create(dto, req.user.sub);
         this.notificationsGateway.emitTicketCreated(ticket);
@@ -39,6 +41,7 @@ export class TicketsController {
     @Get()
     @RequirePermissions('ticket:read')
     @ApiOperation({ summary: 'List tickets with filters' })
+    @ApiResponse({ status: 200, description: 'A paginated list of tickets.' })
     @ApiQuery({ name: 'status', required: false, enum: TicketStatus })
     @ApiQuery({ name: 'priority', required: false, enum: TicketPriority })
     @ApiQuery({ name: 'assignedTo', required: false })
@@ -74,6 +77,9 @@ export class TicketsController {
     @Get(':id')
     @RequirePermissions('ticket:read')
     @ApiOperation({ summary: 'Get ticket by id' })
+    @ApiParam({ name: 'id', required: true, description: 'The UUID of the ticket' })
+    @ApiResponse({ status: 200, description: 'The requested ticket object.' })
+    @ApiResponse({ status: 404, description: 'Ticket not found.' })
     findOne(@Param('id') id: string, @Request() req: any) {
         return this.ticketsService.findOne(id, { id: req.user.sub, role: req.user.role });
     }
@@ -82,6 +88,9 @@ export class TicketsController {
     @Get('by-number/:number')
     @RequirePermissions('ticket:read')
     @ApiOperation({ summary: 'Get ticket by number (e.g. SUP-00001)' })
+    @ApiParam({ name: 'number', required: true, description: 'Unique ticket number identifier' })
+    @ApiResponse({ status: 200, description: 'The requested ticket object.' })
+    @ApiResponse({ status: 404, description: 'Ticket not found.' })
     findByNumber(@Param('number') number: string, @Request() req: any) {
         return this.ticketsService.findByNumber(number, { id: req.user.sub, role: req.user.role });
     }
@@ -90,6 +99,8 @@ export class TicketsController {
     @Patch(':id')
     @RequirePermissions('ticket:update')
     @ApiOperation({ summary: 'Update ticket fields' })
+    @ApiParam({ name: 'id', required: true, description: 'The UUID of the ticket' })
+    @ApiResponse({ status: 200, description: 'The ticket was successfully updated.' })
     async update(@Param('id') id: string, @Body() dto: UpdateTicketDto, @Request() req: any) {
         const updated = await this.ticketsService.update(id, dto, req.user);
         this.notificationsGateway.emitTicketUpdated(updated);
@@ -99,6 +110,7 @@ export class TicketsController {
     @Patch('bulk')
     @RequirePermissions('ticket:update')
     @ApiOperation({ summary: 'Bulk update multiple tickets' })
+    @ApiResponse({ status: 200, description: 'The tickets were successfully updated.' })
     async bulkUpdate(@Body() dto: BulkUpdateTicketDto, @Request() req: any) {
         const result = await this.ticketsService.bulkUpdate(dto, req.user);
         this.notificationsGateway.emitBulkUpdate(dto.ticketIds);
@@ -109,6 +121,9 @@ export class TicketsController {
     @Patch(':id/status/:status')
     @RequirePermissions('ticket:update')
     @ApiOperation({ summary: 'Transition ticket status (state machine)' })
+    @ApiParam({ name: 'id', required: true, description: 'The UUID of the ticket' })
+    @ApiParam({ name: 'status', required: true, enum: TicketStatus, description: 'The newly requested status' })
+    @ApiResponse({ status: 200, description: 'The status transition was successful.' })
     async transition(
         @Param('id') id: string,
         @Param('status') status: TicketStatus,
@@ -188,6 +203,8 @@ export class TicketsController {
     @Post(':id/messages')
     @RequirePermissions('ticket:update')
     @ApiOperation({ summary: 'Add a message or internal note to a ticket' })
+    @ApiParam({ name: 'id', required: true, description: 'The UUID of the ticket' })
+    @ApiResponse({ status: 201, description: 'Message created and appended to ticket.' })
     async addMessage(
         @Param('id') id: string,
         @Body() dto: AddMessageDto,

@@ -11,13 +11,13 @@ export const RAG_CONFIG = {
         /** Minimum score to include in results (env-overridable) */
         THRESHOLD: parseFloat(process.env.SIMILARITY_THRESHOLD || '0.25'),
         /** Below this score, confidence is LOW (env-overridable) */
-        LOW_CONFIDENCE: parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.30'),
+        LOW_CONFIDENCE: parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.62'),
         /** Score >= this → HIGH confidence */
-        HIGH: 0.60,
+        HIGH: 0.85,
         /** Score >= this → MEDIUM confidence */
-        MEDIUM: 0.40,
+        MEDIUM: 0.70,
         /** Absolute floor — never return below this */
-        FLOOR: 0.15,
+        FLOOR: 0.55,
     },
 
     /** Hierarchical chunking parameters */
@@ -34,6 +34,8 @@ export const RAG_CONFIG = {
     CONTEXT: {
         /** Maximum characters to send as context to LLM */
         MAX_CONTEXT_CHARS: parseInt(process.env.MAX_CONTEXT_CHARS || '12000', 10),
+        /** Approximate token limit (character proxy: 4 chars/token) */
+        MAX_CONTEXT_TOKENS: 4000,
         /** Characters reserved for LLM response generation */
         RESPONSE_RESERVE_CHARS: 3000,
         /** Priority weights for context sections (higher = more important, kept first) */

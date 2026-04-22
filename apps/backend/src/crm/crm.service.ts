@@ -102,6 +102,11 @@ export class CrmService {
         return adapter;
     }
 
+    private maskSecret(val: string | null | undefined): string | null {
+        if (!val) return null;
+        return '********';
+    }
+
     async getAllConnections() {
         const connections = await this.prisma.crmConnection.findMany({
             include: {
@@ -111,11 +116,11 @@ export class CrmService {
             }
         });
 
-        // Mask secrets for the UI (Security Fix)
+        // Use standard masking utility (Security Fix)
         return connections.map(conn => ({
             ...conn,
-            clientSecret: conn.clientSecret ? '********' : null,
-            webhookSecret: conn.webhookSecret ? '********' : null
+            clientSecret: this.maskSecret(conn.clientSecret),
+            webhookSecret: this.maskSecret(conn.webhookSecret)
         }));
     }
 

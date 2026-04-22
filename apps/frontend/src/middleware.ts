@@ -1,10 +1,11 @@
 import { routing } from './i18n/routing';
 import createMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
 
 const intlMiddleware = createMiddleware(routing);
 
-export default function middleware(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Check if the route is a dashboard route (protected)
@@ -16,20 +17,43 @@ export default function middleware(request: NextRequest) {
         pathname.startsWith(`/${locale}/teams`) ||
         pathname.startsWith(`/${locale}/settings`) ||
         pathname.startsWith(`/${locale}/reports`) ||
-        pathname.startsWith(`/${locale}/profile`)
+        pathname.startsWith(`/${locale}/profile`) ||
+        pathname.startsWith(`/${locale}/admin`) ||
+        pathname.startsWith(`/${locale}/ai`) ||
+        pathname.startsWith(`/${locale}/faq`) ||
+        pathname.startsWith(`/${locale}/faq-learning`) ||
+        pathname.startsWith(`/${locale}/knowledge-base`) ||
+        pathname.startsWith(`/${locale}/knowledge-pool`) ||
+        pathname.startsWith(`/${locale}/kb-approvals`) ||
+        pathname.startsWith(`/${locale}/products`) ||
+        pathname.startsWith(`/${locale}/users`) ||
+        pathname.startsWith(`/${locale}/my-tickets`) ||
+        pathname.startsWith(`/${locale}/system-topology`) ||
+        pathname.startsWith(`/${locale}/help`)
     );
 
     let response: NextResponse;
 
     if (isDashboardRoute) {
         const token = request.cookies.get('access_token')?.value;
+        const locale = routing.locales.find(l => pathname.startsWith(`/${l}/`)) || routing.defaultLocale;
+        const loginUrl = new URL(`/${locale}/login`, request.url);
 
         if (!token) {
-            const locale = routing.locales.find(l => pathname.startsWith(`/${l}/`)) || routing.defaultLocale;
-            const loginUrl = new URL(`/${locale}/login`, request.url);
             response = NextResponse.redirect(loginUrl);
         } else {
-            response = intlMiddleware(request);
+            try {
+                // Ensure secret matches Next.js / Backend shared env or fallback
+                const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-fallback-key-for-dev-only');
+                // Validates signature and standard claims (like `exp`) automatically
+                await jwtVerify(token, secret);
+
+                response = intlMiddleware(request);
+            } catch (error) {
+                // Token is invalid or expired
+                response = NextResponse.redirect(loginUrl);
+                // To safely overwrite the cookie, we could delete it, but redirecting to login usually drops it or forces a new auth
+            }
         }
     } else {
         response = intlMiddleware(request);

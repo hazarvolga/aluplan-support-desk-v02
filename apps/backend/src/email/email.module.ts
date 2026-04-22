@@ -17,6 +17,7 @@ import { PreferencesController } from './preferences.controller';
     imports: [
         BullModule.registerQueue({
             name: 'email',
+            defaultJobOptions: { attempts: 5, backoff: { type: 'exponential', delay: 3000 }, removeOnComplete: 1000, removeOnFail: 5000 },
         }),
         SettingsModule,
         forwardRef(() => TicketsModule),

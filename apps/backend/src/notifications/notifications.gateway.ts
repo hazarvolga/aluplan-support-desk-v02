@@ -17,7 +17,18 @@ import { RedisService } from '../redis/redis.service';
 import { EmailService } from '../email/email.service';
 
 @WebSocketGateway({
-    cors: { origin: '*', credentials: true },
+    cors: {
+        origin: (origin: string, callback: (err: Error | null, allowed?: boolean) => void) => {
+            // Allow connections without origin (e.g., server-side, mobile apps)
+            if (!origin) return callback(null, true);
+            // In production, restrict to configured frontend URL
+            const allowed = process.env.FRONTEND_URL
+                ? origin === process.env.FRONTEND_URL
+                : true;
+            callback(null, allowed);
+        },
+        credentials: true,
+    },
     namespace: '/ws',
 })
 export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -56,6 +67,14 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             // Join role room for targeted notifications (lowercase for consistency)
             if (payload.role) {
                 await client.join(`role:${payload.role.toLowerCase()}`);
+
+                // Track active users in role-specific Redis Sets for ultra-fast targeting (GAP-PERF-002)
+                if (payload.role) {
+                    const redis = this.redisService.getClient();
+                    const roleKey = `ws:active:role:${payload.role.toLowerCase()}`;
+                    await redis.sadd(roleKey, payload.sub);
+                    await redis.expire(roleKey, 86400); // 24h safety
+                }
             }
             await client.join(`user:${payload.sub}`);
         } catch {
@@ -77,6 +96,11 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
                 await this.updatePresence(ticketId);
             }
             await redis.del(userTicketsKey);
+
+            if (client.data.role) {
+                const roleKey = `ws:active:role:${client.data.role.toLowerCase()}`;
+                await redis.srem(roleKey, userId);
+            }
         }
 
         this.logger.log(`❌ Client disconnected: ${userId} (total: ${this.connectedClients})`);
@@ -175,27 +199,29 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         // Broadcast to relevant roles (Admin, Managers, Team Leads, Agents)
         this.server.to('role:admin').to('role:super-admin').to('role:department-manager').to('role:team-lead').to('role:agent').emit('ticket:created', payload);
         this.logger.log(`✔️ Broadcast completed for ${ticket.ticketNumber}. Payload: ${JSON.stringify(payload)}`);
-        // Background: Create persistent notifications (keeping it simple for now, but querying non-customers)
-        const potentialAgents = await this.prisma.user.findMany({
-            where: {
-                role: {
-                    name: { not: 'CUSTOMER' }
-                }
-            },
-            select: { id: true }
-        });
-        const userIds = potentialAgents.map(a => a.id);
+        // Background: Create persistent notifications (optimized via granular Redis role sets)
+        try {
+            const redis = this.redisService.getClient();
+            const relevantRoles = ['admin', 'super-admin', 'department-manager', 'team-lead', 'agent'];
 
-        if (userIds.length > 0) {
-            this.prisma.notification.createMany({
-                data: userIds.map(userId => ({
-                    userId,
-                    title: 'New Ticket',
-                    message: `Ticket #${ticket.ticketNumber} created: ${ticket.subject}`,
-                    type: 'TICKET_CREATED',
-                    link: `/tickets/${ticket.id}`
-                }))
-            }).catch(e => this.logger.error('Failed to create persistent notifications', e));
+            // Fetch all active agents across relevant roles
+            const setsToFetch = relevantRoles.map(r => `ws:active:role:${r}`);
+            const activeAgentIds = await redis.sunion(...setsToFetch);
+
+            if (activeAgentIds.length > 0) {
+                await this.prisma.notification.createMany({
+                    data: activeAgentIds.map(userId => ({
+                        userId,
+                        title: 'New Ticket',
+                        message: `Ticket #${ticket.ticketNumber} created: ${ticket.subject}`,
+                        type: 'TICKET_CREATED',
+                        link: `/tickets/${ticket.id}`
+                    })),
+                    skipDuplicates: true // Defensive check for overlapping roles
+                });
+            }
+        } catch (e) {
+            this.logger.error('Failed to create persistent notifications via Redis cached agent sets', e);
         }
     }
 

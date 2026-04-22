@@ -81,19 +81,6 @@ export class KnowledgeBaseController {
         return this.kbService.update(id, dto, req.user.sub);
     }
 
-    @Post('articles/:id/submit')
-    @RequirePermissions('kb:submit_review')
-    @ApiOperation({ summary: 'Submit article for review' })
-    submitForReview(@Param('id') id: string): Promise<any> {
-        return this.kbService.submitForReview(id);
-    }
-
-    @Post('articles/:id/review')
-    @RequirePermissions('kb:approve')
-    @ApiOperation({ summary: 'Approve or reject article (reviewer only)' })
-    review(@Param('id') id: string, @Body() dto: ReviewArticleDto, @Request() req: any): Promise<any> {
-        return this.kbService.review(id, dto, req.user.sub);
-    }
 
     @Patch('articles/:id/archive')
     @RequirePermissions('kb:delete')

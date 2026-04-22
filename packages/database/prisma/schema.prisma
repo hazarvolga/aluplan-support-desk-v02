@@ -59,7 +59,7 @@ model User {
 model Department {
   id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String      @db.VarChar(100)
-  slug        String      @unique @db.VarChar(100)
+  slug        String      @db.VarChar(100)
   description String?
   color       String?     @db.VarChar(7)
   icon        String?     @db.VarChar(50)
@@ -68,6 +68,7 @@ model Department {
   isArchived  Boolean     @default(false) @map("is_archived")
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
+  deletedAt   DateTime?   @map("deleted_at")
   slaPolicies SlaPolicy[]
   teams       Team[]
   tickets     Ticket[]
@@ -79,13 +80,14 @@ model Team {
   id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   departmentId          String             @map("department_id") @db.Uuid
   name                  String             @db.VarChar(100)
-  slug                  String             @unique @db.VarChar(100)
+  slug                  String             @db.VarChar(100)
   description           String?
   isArchived            Boolean            @default(false) @map("is_archived")
   autoAssignmentEnabled Boolean            @default(false) @map("auto_assignment_enabled")
   assignmentStrategy    AssignmentStrategy @default(MANUAL) @map("assignment_strategy")
   createdAt             DateTime           @default(now()) @map("created_at")
   updatedAt             DateTime           @updatedAt @map("updated_at")
+  deletedAt             DateTime?          @map("deleted_at")
   members               TeamMember[]
   department            Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 
@@ -267,7 +269,7 @@ model CrmAccount {
 
 model CrmConnection {
   id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider      CrmProvider  @unique
+  provider      CrmProvider
   tenantId      String?      @map("tenant_id") @db.VarChar(255)
   clientId      String?      @map("client_id") @db.VarChar(255)
   clientSecret  String?      @map("client_secret")
@@ -279,6 +281,7 @@ model CrmConnection {
   syncStatus    SyncStatus   @default(IDLE) @map("sync_status")
   createdAt     DateTime     @default(now()) @map("created_at")
   updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
   syncLogs      CrmSyncLog[]
 
   @@map("crm_connections")
@@ -345,7 +348,7 @@ model KnowledgeArticle {
   id             String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   categoryId     String?                   @map("category_id") @db.Uuid
   title          String
-  slug           String                    @unique @db.VarChar(255)
+  slug           String                    @db.VarChar(255)
   status         ArticleStatus             @default(DRAFT)
   approved       Boolean                   @default(false)
   approvedBy     String?                   @map("approved_by") @db.Uuid
@@ -467,6 +470,7 @@ model AiInteraction {
   @@index([sessionId], map: "idx_ai_session")
   @@index([matchedArticleId], map: "idx_ai_article")
   @@index([createdAt(sort: Desc)], map: "idx_ai_created")
+  @@index([createdAt(sort: Desc), confidenceBand], map: "idx_ai_interactions_created_confidence")
   @@index([userContext], map: "idx_ai_context", type: Gin)
   @@map("ai_interactions")
 }
@@ -554,6 +558,8 @@ model Ticket {
   @@index([priority], map: "idx_tickets_priority")
   @@index([isSlaBreached], map: "idx_tickets_sla")
   @@index([createdAt], map: "idx_tickets_created_at")
+  @@index([status, createdAt], map: "idx_tickets_status_created_at")
+  @@index([assignedTo, status], map: "idx_tickets_assigned_status")
   @@index([departmentId], map: "idx_tickets_department")
   @@index([hotinfoSnapshot], map: "idx_tickets_hotinfo", type: Gin)
   @@map("tickets")
@@ -768,6 +774,7 @@ model Product {
   isActive         Boolean           @default(true) @map("is_active")
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
+  deletedAt        DateTime?         @map("deleted_at")
   aiInteractions   AiInteraction[]
   knowledgeSources KnowledgeSource[]
   categories       ProductCategory[]
@@ -782,6 +789,7 @@ model ProductCategory {
   name      String
   keywords  String[]  @default([])
   isActive  Boolean   @default(true) @map("is_active")
+  deletedAt DateTime? @map("deleted_at")
   product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId], map: "idx_product_categories_product")

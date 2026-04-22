@@ -76,16 +76,7 @@ async function bootstrap() {
     const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
     const nodeEnv = configService.get<string>('NODE_ENV', 'development');
 
-    // Strict Production Validation
-    if (nodeEnv === 'production') {
-        const requiredVars = ['DATABASE_URL', 'REDIS_URL', 'JWT_SECRET', 'ENCRYPTION_KEY', 'FRONTEND_URL'];
-        for (const v of requiredVars) {
-            if (!configService.get(v)) {
-                logger.error(`❌ CRITICAL: Missing required production environment variable: ${v}`);
-                process.exit(1);
-            }
-        }
-    }
+    // Manual production validation removed in favor of Zod validateEnv()
 
     // Security Hardening
     app.use(helmet({
@@ -93,10 +84,10 @@ async function bootstrap() {
         contentSecurityPolicy: configService.get('NODE_ENV') === 'production' ? {
             directives: {
                 defaultSrc: ["'self'"],
-                scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+                scriptSrc: ["'self'"], // Removed 'unsafe-inline' and 'unsafe-eval'
                 styleSrc: ["'self'", "'unsafe-inline'"],
                 imgSrc: ["'self'", "data:", "https:"],
-                connectSrc: ["'self'", "https:", "http:"],
+                connectSrc: ["'self'", "https://api.allplan.net.tr"], // Restrict endpoints
                 frameSrc: ["'self'"],
             }
         } : false,
@@ -109,6 +100,21 @@ async function bootstrap() {
     app.use(compression());
 
     // CSRF & Security Middlewares
+    app.use((req: Request, res: Response, next: NextFunction) => {
+        if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+            const requestedWith = req.headers['x-requested-with'];
+            if (!requestedWith || requestedWith !== 'XMLHttpRequest') {
+                logger.warn(`CSRF validation failed: Missing X-Requested-With header from origin: ${req.headers.origin}`);
+                return res.status(403).json({
+                    statusCode: 403,
+                    message: 'CSRF validation failed: Missing X-Requested-With header',
+                    error: 'Forbidden'
+                });
+            }
+        }
+        next();
+    });
+
     app.use(cookieParser());
 
     // Payload Limit restriction
@@ -133,8 +139,14 @@ async function bootstrap() {
     // CORS
     app.enableCors({
         origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-            // If no origin (like mobile apps or curl requests), allow it
-            if (!origin) return callback(null, true);
+            // Production'da !origin izin vermiyoruz (SSRF bypass mitigation)
+            if (!origin) {
+                if (nodeEnv === 'production') {
+                    logger.warn(`CORS blocked for missing origin request`);
+                    return callback(new Error('Not allowed by CORS (Missing Origin)'));
+                }
+                return callback(null, true);
+            }
 
             if (allowedOrigins.indexOf(origin) !== -1) {
                 callback(null, true);
@@ -171,18 +183,33 @@ async function bootstrap() {
     app.useGlobalFilters(new GlobalExceptionFilter({ httpAdapter }, errorLogger));
 
 
-    // Swagger (only in development)
-    if (configService.get('NODE_ENV') !== 'production') {
-        const config = new DocumentBuilder()
-            .setTitle('Aluplan Support Desk API')
-            .setDescription('Controlled Knowledge Automation Engine')
-            .setVersion('1.0')
-            .addBearerAuth()
-            .build();
-        const document = SwaggerModule.createDocument(app, config);
-        SwaggerModule.setup('api/docs', app, document);
-        logger.log(`📖 Swagger: http://localhost:${port}/api/docs`);
+    // GAP-08: Swagger Production Constraints & Export
+    const swaggerConfig = new DocumentBuilder()
+        .setTitle('Aluplan Support Desk API')
+        .setDescription('Controlled Knowledge Automation Engine')
+        .setVersion('1.0')
+        .addBearerAuth()
+        .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+
+    // Save OpenAPI JSON spec for external tools/API Gateways
+    require('fs').writeFileSync('./openapi.json', JSON.stringify(document));
+
+    if (configService.get('NODE_ENV') === 'production') {
+        const swaggerPassword = configService.get('SWAGGER_PASSWORD', 'admin1234!');
+        app.use(['/api/docs', '/api/docs-json'], (req: Request, res: Response, next: NextFunction) => {
+            const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+            const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+            if (login === 'admin' && password === swaggerPassword) return next();
+            res.set('WWW-Authenticate', 'Basic realm="Aluplan API"');
+            res.status(401).send('Authentication required');
+        });
     }
+
+    SwaggerModule.setup('api/docs', app, document, {
+        jsonDocumentUrl: 'api/docs-json',
+    });
+    logger.log(`📖 Swagger: http://localhost:${port}/api/docs`);
 
     await app.listen(port, '0.0.0.0');
     logger.log(`🚀 Backend running on http://localhost:${port}/api/v1`);

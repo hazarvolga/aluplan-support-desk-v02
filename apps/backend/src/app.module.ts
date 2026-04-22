@@ -42,6 +42,8 @@ import { AnnouncementTemplatesModule } from './announcement-templates/announceme
 import { EmailValidatorModule } from './email-validator/email-validator.module';
 import { CommonModule } from './common/common.module';
 import { LoggerModule } from 'nestjs-pino';
+import { MetricsModule } from './metrics/metrics.module';
+import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
 
 @Module({
     imports: [
@@ -141,11 +143,16 @@ import { LoggerModule } from 'nestjs-pino';
         EmailValidatorModule,
         CommonModule,
         LoggerModule,
+        MetricsModule,
     ],
     providers: [
         {
             provide: APP_INTERCEPTOR,
             useClass: AuditLogInterceptor,
+        },
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: MetricsInterceptor,
         },
         {
             provide: APP_GUARD,

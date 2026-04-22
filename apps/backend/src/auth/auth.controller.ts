@@ -1,4 +1,5 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Request, Query } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -14,6 +15,7 @@ export class AuthController {
 
     @Public()
     @Post('login')
+    @Throttle({ default: { limit: 5, ttl: 60000 } }) // Bruteforce prevention (5 req / 1 min)
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Login with email and password' })
     login(@Body() dto: LoginDto) {
@@ -48,6 +50,7 @@ export class AuthController {
 
     @Public()
     @Post('forgot-password')
+    @Throttle({ default: { limit: 3, ttl: 60000 } }) // Rate limit to prevent email spam
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Request a password reset email' })
     forgotPassword(@Body('email') email: string) {
@@ -56,6 +59,7 @@ export class AuthController {
 
     @Public()
     @Post('reset-password')
+    @Throttle({ default: { limit: 5, ttl: 60000 } }) // Bruteforce prevention
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Reset a forgotten password using token' })
     resetPassword(@Body() dto: ResetPasswordDto) {

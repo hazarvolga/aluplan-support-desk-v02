@@ -13,6 +13,7 @@ import { CrmWebhookController } from './webhooks/crm-webhook.controller';
         PrismaModule,
         BullModule.registerQueue({
             name: 'crm-sync',
+            defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 2000 }, removeOnComplete: 50, removeOnFail: 200 },
         }),
     ],
     controllers: [CrmController, CrmWebhookController],

@@ -5,7 +5,7 @@ export function validate(config: Record<string, unknown>) {
 
     if (result.success === false) {
         console.error('❌ Invalid environment variables:', result.error.format());
-        throw new Error('Invalid environment configuration');
+        process.exit(1);
     }
 
     return result.data;

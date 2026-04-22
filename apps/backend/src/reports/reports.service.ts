@@ -37,19 +37,22 @@ export class ReportsService {
             _avg: { satisfactionScore: true } // Assuming CSAT is collected
         });
 
-        // Resolve user profiles
-        const results = await Promise.all(resolvedStats.map(async (stat) => {
+        // 2. Resolve user profiles in bulk
+        const agentIds = resolvedStats.map(s => s.assignedTo).filter(id => !!id) as string[];
+        const agents = await this.prisma.user.findMany({
+            where: { id: { in: agentIds } },
+            select: { id: true, fullName: true, email: true }
+        });
+
+        const results = resolvedStats.map((stat) => {
             if (!stat.assignedTo) return null;
-            const user = await this.prisma.user.findUnique({
-                where: { id: stat.assignedTo },
-                select: { id: true, fullName: true, email: true }
-            });
+            const user = agents.find(a => a.id === stat.assignedTo);
             return {
-                agent: user,
+                agent: user || { id: stat.assignedTo, fullName: 'Unknown', email: '' },
                 ticketsResolved: stat._count.id,
                 averageCsat: stat._avg.satisfactionScore ? stat._avg.satisfactionScore.toFixed(2) : null
             };
-        }));
+        });
 
         return results.filter(Boolean);
     }
