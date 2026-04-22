@@ -135,3 +135,8 @@ patch_builder.py
 patch_providers.py
 parse_sql.js
 RAG-Knowledge-Base/
+.archive/
+dataset/
+dataset.zip
+.agent/
+.next/
