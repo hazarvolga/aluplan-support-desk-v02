@@ -47,8 +47,12 @@ export class AiCopilotService {
         // Extract Hotinfo
         const hotinfoSnapshot = (ticket.hotinfoSnapshot || ticket.creator?.customerProfile?.hotinfoData) as any;
 
+        // Identify latest message (descending order, so index 0 is newest)
+        const latestMessage = ticket.messages[0];
+
         // Conditional Hotinfo for search query to avoid retrieval pollution
-        const searchQuery = ticket.subject + '\n' + (ticket.description || '');
+        // Using subject, description, AND the newest message to properly track context shifts
+        const searchQuery = ticket.subject + '\n' + (ticket.description || '') + '\n' + (latestMessage?.message || '');
         const isHardwareQuery = /çökme|crash|donma|freeze|yavaş|slow|performans|hata|error|gpu|driver|sürücü|ram|bellek/i.test(searchQuery);
 
         let expandedSearchQuery = searchQuery;
@@ -60,7 +64,7 @@ export class AiCopilotService {
         const searchResponse = await this.embeddingService.search(
             expandedSearchQuery,
             5,
-            null,
+            ticket.productId, // <-- Added productId to fix Search leakage
             true // drafts are for staff
         );
         const kbContent = searchResponse.results.length > 0
@@ -68,7 +72,6 @@ export class AiCopilotService {
             : 'No specific knowledge base context found.';
 
         // Conversation overview
-        const latestMessage = ticket.messages[0];
         const diagnosis = await this.diagnosisService.analyze(
             ticket.subject + ' ' + (latestMessage?.message || ''),
             [],

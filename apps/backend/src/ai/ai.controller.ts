@@ -42,6 +42,10 @@ export class AiQueryDto {
     @IsOptional()
     @IsString()
     language?: string;
+
+    @ApiPropertyOptional({ type: 'array', items: { type: 'object' } })
+    @IsOptional()
+    history?: any[];
 }
 
 export class FeedbackDto {
@@ -97,7 +101,8 @@ export class AiController {
             hotinfoContext: dto.hotinfoContext,
             attachments: dto.attachments,
             productId: dto.productId,
-            language: dto.language
+            language: dto.language,
+            history: dto.history
         });
     }
 
