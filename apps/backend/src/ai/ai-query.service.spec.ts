@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { AiQueryService, AiQueryResult, ConfidenceBand } from './ai-query.service';
+import { AiQueryService, AiQueryResult } from './ai-query.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { EmbeddingService } from './embedding.service';
