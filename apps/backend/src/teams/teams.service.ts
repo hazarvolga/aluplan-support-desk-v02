@@ -81,7 +81,7 @@ export class TeamsService {
     }) {
         // Ensure slug uniqueness — append suffix if taken
         let slug = data.slug;
-        const existing = await this.prisma.team.findUnique({ where: { slug } });
+        const existing = await this.prisma.team.findFirst({ where: { slug } });
         if (existing) {
             slug = `${slug}-${Date.now().toString(36)}`;
         }

@@ -18,7 +18,7 @@ export class CrmWebhookGuard implements CanActivate {
             throw new UnauthorizedException('Missing x-api-key header');
         }
 
-        const connection = await this.prisma.crmConnection.findUnique({
+        const connection = await this.prisma.crmConnection.findFirst({
             where: { provider: CrmProvider.DYNAMICS_365 }
         });
 

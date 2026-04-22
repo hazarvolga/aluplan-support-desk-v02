@@ -104,24 +104,21 @@ async function main() {
     const d365Secret = encrypt('J0n8Q~bkkepIW0RBeqe9pt~NT-GG6GcNp72Vda9u');
 
     try {
-        await prisma.crmConnection.upsert({
-            where: { provider: 'DYNAMICS_365' },
-            create: {
-                provider: 'DYNAMICS_365',
-                instanceUrl: 'https://marketingaluplan.crm4.dynamics.com/',
-                tenantId: '0902521f-1c17-498d-99e7-17770cf5bb5f',
-                clientId: 'aab421de-0e21-41e3-ab9b-908c2c24b2f9',
-                clientSecret: d365Secret,
-                isActive: true
-            },
-            update: {
-                instanceUrl: 'https://marketingaluplan.crm4.dynamics.com/',
-                tenantId: '0902521f-1c17-498d-99e7-17770cf5bb5f',
-                clientId: 'aab421de-0e21-41e3-ab9b-908c2c24b2f9',
-                clientSecret: d365Secret,
-                isActive: true
-            }
+        const existingCrm = await prisma.crmConnection.findFirst({
+            where: { provider: 'DYNAMICS_365' }
         });
+        const d365Data = {
+            instanceUrl: 'https://marketingaluplan.crm4.dynamics.com/',
+            tenantId: '0902521f-1c17-498d-99e7-17770cf5bb5f',
+            clientId: 'aab421de-0e21-41e3-ab9b-908c2c24b2f9',
+            clientSecret: d365Secret,
+            isActive: true
+        };
+        if (existingCrm) {
+            await prisma.crmConnection.update({ where: { id: existingCrm.id }, data: d365Data });
+        } else {
+            await prisma.crmConnection.create({ data: { provider: 'DYNAMICS_365', ...d365Data } });
+        }
 
         // Ensure API key is also stored if accessed via Settings
         await prisma.setting.upsert({

@@ -128,7 +128,7 @@ export class CrmService {
         const { provider, ...config } = dto;
 
         // Fetch existing to handle masked secrets
-        const existing = await this.prisma.crmConnection.findUnique({
+        const existing = await this.prisma.crmConnection.findFirst({
             where: { provider: provider as CrmProvider }
         });
 
@@ -154,14 +154,18 @@ export class CrmService {
             webhookSecret: config.webhookSecret ? this.crypto.encrypt(config.webhookSecret) : null
         };
 
-        return this.prisma.crmConnection.upsert({
-            where: { provider: provider as CrmProvider },
-            update: {
-                ...encryptedConfig,
-                isActive: true,
-                syncStatus: SyncStatus.IDLE
-            },
-            create: {
+        if (existing) {
+            return this.prisma.crmConnection.update({
+                where: { id: existing.id },
+                data: {
+                    ...encryptedConfig,
+                    isActive: true,
+                    syncStatus: SyncStatus.IDLE
+                }
+            });
+        }
+        return this.prisma.crmConnection.create({
+            data: {
                 provider,
                 ...encryptedConfig,
                 isActive: true,
