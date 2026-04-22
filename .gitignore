@@ -134,3 +134,4 @@ patch_ollama.ts
 patch_builder.py
 patch_providers.py
 parse_sql.js
+RAG-Knowledge-Base/
