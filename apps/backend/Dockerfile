@@ -31,6 +31,7 @@ RUN pnpm install --prod --frozen-lockfile
 
 # 3. Copy database package source files (NOT the generated client)
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
+COPY --from=builder /app/packages/database/scripts ./packages/database/scripts
 COPY --from=builder /app/packages/database/prisma.config.ts ./packages/database/
 COPY --from=builder /app/packages/database/prisma.config.js ./packages/database/
 COPY --from=builder /app/packages/database/index.js /app/packages/database/index.d.ts ./packages/database/

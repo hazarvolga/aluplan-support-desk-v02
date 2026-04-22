@@ -21,6 +21,7 @@ import { RagMaintenanceService } from './rag-maintenance.service';
 import { KnowledgePoolModule } from '../knowledge-pool/knowledge-pool.module';
 import { EmailModule } from '../email/email.module';
 import { VertexAiService } from './vertex-ai.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 import { BullModule } from '@nestjs/bullmq';
 import { DocumentAiService } from './document-ai.service';
@@ -33,6 +34,7 @@ import { AiQueryProcessor } from './ai-query.processor';
         SettingsModule,
         forwardRef(() => EmailModule),
         forwardRef(() => KnowledgePoolModule),
+        NotificationsModule,
         BullModule.registerQueue(
             { name: 'document-parsing' },
             { name: 'ai-query-processing' }
