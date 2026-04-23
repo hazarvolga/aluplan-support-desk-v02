@@ -98,8 +98,8 @@ export class EmailService implements OnModuleInit {
                 payload.template,
                 { ...payload, logRef: draftLog.id },
                 {
-                    priority: payload.priority || 3,
-                    delay: payload.delay || 0,
+                    priority: payload.priority ?? 3,
+                    delay: payload.delay ?? 0,
                     jobId: payload.jobId,
                     attempts: 5, // Increased attempts for enterprise reliability
                     backoff: { type: 'exponential', delay: 2000 } // More generous backoff
