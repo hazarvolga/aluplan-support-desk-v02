@@ -50,7 +50,7 @@ export class BrandingController {
         )
         file: Express.Multer.File,
     ) {
-        // Upload to S3/MinIO in specific taxonomy folder
+        // Upload to S3/R2 in specific taxonomy folder
         const key = await this.storageService.uploadFile(file, 'brand/logos');
 
         // Return the dynamic proxy endpoint instead of raw expiring S3 url

@@ -39,7 +39,7 @@ export class KnowledgePoolController {
     @Roles('admin', 'super-admin')
     @UseInterceptors(
         FileInterceptor('file', {
-            storage: memoryStorage(), // Use memory storage so we can stream to MinIO
+            storage: memoryStorage(), // Use memory storage so we can stream to R2/S3
         }),
     )
     @ApiOperation({ summary: 'Upload a knowledge file (PDF, TXT, CSV, MD)' })
@@ -78,7 +78,7 @@ export class KnowledgePoolController {
 
         const type = this.determineTypeFromExt(ext);
 
-        // Upload to MinIO/S3 and get storage key
+        // Upload to R2/S3 and get storage key
         const storageKey = await this.storageService.uploadFile(file, 'knowledge-pool');
         file = { ...file, path: storageKey } as Express.Multer.File;
 

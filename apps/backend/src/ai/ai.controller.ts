@@ -87,7 +87,7 @@ export class AiController {
 
     @Post('test-storage')
     @Roles('ADMIN', 'SUPERUSER')
-    @ApiOperation({ summary: 'Test S3/Minio storage connectivity' })
+    @ApiOperation({ summary: 'Test S3/R2 storage connectivity' })
     async testStorage() {
         return this.storageService.testConnection();
     }

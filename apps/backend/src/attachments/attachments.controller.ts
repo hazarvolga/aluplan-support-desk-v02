@@ -41,7 +41,7 @@ export class AttachmentsController {
     @RequirePermissions('ticket:update')
     @UseInterceptors(
         FileInterceptor('file', {
-            storage: memoryStorage(), // Use memory storage so we can stream to MinIO
+            storage: memoryStorage(), // Use memory storage so we can stream to R2/S3
         }),
     )
     async uploadFile(
@@ -110,7 +110,7 @@ export class AttachmentsController {
         // This will throw ForbiddenException if requester has no access to the ticket
         await this.ticketsService.findOne(message.ticketId, req.user);
 
-        // Generate a presigned URL from MinIO/S3
+        // Generate a presigned URL from R2/S3
         const downloadUrl = await this.storageService.getDownloadUrl(attachment.url);
 
         // Redirect to the presigned URL

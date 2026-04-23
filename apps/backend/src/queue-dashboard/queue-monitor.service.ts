@@ -1,24 +1,24 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+import { Queue, QueueEvents } from 'bullmq';
 
 /**
  * QueueMonitorService — BullMQ health and DLQ monitoring.
  *
- * Attaches event listeners to critical queues to log stalled jobs,
- * failed jobs (for DLQ visibility), and completion metrics.
- * Extend this service to add alerting (PagerDuty, Slack, etc.)
+ * Uses QueueEvents (separate Redis connection) to listen for
+ * stalled, failed, and completed events across critical queues.
  */
 @Injectable()
-export class QueueMonitorService implements OnModuleInit {
+export class QueueMonitorService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(QueueMonitorService.name);
+    private readonly queueEvents: QueueEvents[] = [];
 
     constructor(
         @InjectQueue('ai-query-processing') private readonly aiQueue: Queue,
         @InjectQueue('email') private readonly emailQueue: Queue,
         @InjectQueue('crm-sync') private readonly crmQueue: Queue,
         @InjectQueue('document-parsing') private readonly docQueue: Queue,
-    ) {}
+    ) { }
 
     onModuleInit() {
         this.monitorQueue(this.aiQueue, 'ai-query-processing');
@@ -27,21 +27,37 @@ export class QueueMonitorService implements OnModuleInit {
         this.monitorQueue(this.docQueue, 'document-parsing');
     }
 
+    async onModuleDestroy() {
+        for (const qe of this.queueEvents) {
+            await qe.close();
+        }
+    }
+
     private monitorQueue(queue: Queue, name: string) {
-        const events = queue.events;
-        if (!events) return;
+        try {
+            const queueEvents = new QueueEvents(name, {
+                connection: (queue as any).opts?.connection ?? {
+                    host: process.env.REDIS_HOST ?? 'localhost',
+                    port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
+                },
+            });
 
-        events.on('stalled', ({ jobId }) => {
-            this.logger.warn(`[${name}] Job stalled: ${jobId}`);
-        });
+            this.queueEvents.push(queueEvents);
 
-        events.on('failed', ({ jobId, failedReason }) => {
-            this.logger.error(`[${name}] Job failed: ${jobId} — ${failedReason}`);
-        });
+            queueEvents.on('stalled', ({ jobId }: { jobId: string }) => {
+                this.logger.warn(`[${name}] Job stalled: ${jobId}`);
+            });
 
-        events.on('completed', ({ jobId, returnvalue }) => {
-            this.logger.debug(`[${name}] Job completed: ${jobId}`);
-        });
+            queueEvents.on('failed', ({ jobId, failedReason }: { jobId: string; failedReason: string }) => {
+                this.logger.error(`[${name}] Job failed: ${jobId} — ${failedReason}`);
+            });
+
+            queueEvents.on('completed', ({ jobId }: { jobId: string }) => {
+                this.logger.debug(`[${name}] Job completed: ${jobId}`);
+            });
+        } catch (err: any) {
+            this.logger.error(`[${name}] Failed to attach QueueEvents: ${err.message}`);
+        }
     }
 
     /**
@@ -49,7 +65,7 @@ export class QueueMonitorService implements OnModuleInit {
      */
     async getFailedJobs(queueName: 'ai-query-processing' | 'email' | 'crm-sync' | 'document-parsing', count = 50) {
         const queue = this.getQueueByName(queueName);
-        return queue.getFailed(count, 0);
+        return queue.getFailed(0, count);
     }
 
     private getQueueByName(name: string): Queue {
