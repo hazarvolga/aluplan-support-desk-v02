@@ -1,0 +1,47 @@
+version: 2
+updates:
+  # JavaScript/TypeScript dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      nestjs:
+        patterns: ["@nestjs/*", "nestjs-*"]
+      react-next:
+        patterns: ["react*", "next*", "@next/*"]
+      prisma:
+        patterns: ["prisma", "@prisma/*"]
+      testing:
+        patterns: ["jest*", "vitest*", "@testing-library/*", "playwright*"]
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+
+  # Docker base images
+  - package-ecosystem: "docker"
+    directory: "/apps/backend"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/apps/frontend"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "ci"

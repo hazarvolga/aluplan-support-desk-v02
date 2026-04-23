@@ -74,6 +74,19 @@ import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
                     pinoHttp: {
                         level: isProd ? 'info' : 'debug',
                         transport,
+                        // GAP-15: PII redaction — prevent sensitive data from leaking into logs
+                        redact: {
+                            paths: [
+                                'req.headers.authorization',
+                                'req.headers.cookie',
+                                'req.body.password',
+                                'req.body.newPassword',
+                                'req.body.email',
+                                'req.body.clientSecret',
+                                'req.body.webhookSecret',
+                            ],
+                            censor: '***REDACTED***',
+                        },
                     },
                 };
             },

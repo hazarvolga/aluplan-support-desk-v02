@@ -30,8 +30,9 @@ export class HealthController {
     @ApiOperation({ summary: 'Health check' })
     check() {
         return this.health.check([
-            () => this.memory.checkHeap('memory_heap', 150 * 1024 * 1024),
-            () => this.memory.checkRSS('memory_rss', 150 * 1024 * 1024),
+            // GAP-13: Realistic memory thresholds for NestJS + Prisma + RAG pipeline
+            () => this.memory.checkHeap('memory_heap', 512 * 1024 * 1024),  // 512MB
+            () => this.memory.checkRSS('memory_rss', 1024 * 1024 * 1024),   // 1GB
             () => this.disk.checkStorage('storage', { path: '/', thresholdPercent: 0.9 }),
             async () => {
                 try {

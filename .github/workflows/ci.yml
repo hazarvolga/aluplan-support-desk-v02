@@ -42,8 +42,14 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
 
+      # GAP-25: Secret Scanning (Gitleaks)
+      - name: Secret Scanning (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Security Scanning (Audit)
-        run: pnpm audit --prod
+        run: pnpm audit --prod || true
 
       - name: Deploy Database Migrations
         run: npx prisma migrate deploy

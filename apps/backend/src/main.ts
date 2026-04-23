@@ -1,7 +1,9 @@
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { HttpAdapterHost } from '@nestjs/core';
 import * as crypto from 'crypto';
+import * as fs from 'fs';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
@@ -10,8 +12,10 @@ import { json, urlencoded } from 'express';
 import * as net from 'net';
 import { Request, Response, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
-import csurf from 'csurf';
 import { AppModule } from './app.module';
+import { Logger as PinoLogger } from 'nestjs-pino';
+import { ErrorLoggerService } from './common/services/error-logger.service';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function checkConnection(host: string, port: number, timeout = 3000): Promise<boolean> {
     return new Promise((resolve) => {
@@ -68,8 +72,9 @@ async function bootstrap() {
         bufferLogs: true,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Logger: PinoLogger } = require('nestjs-pino');
+    // GAP-03: Graceful shutdown — drain BullMQ jobs and close connections on SIGTERM
+    app.enableShutdownHooks();
+
     app.useLogger(app.get(PinoLogger));
 
     const configService = app.get(ConfigService);
@@ -193,15 +198,10 @@ async function bootstrap() {
         }),
     );
 
-    // Global Exception Filter
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { httpAdapter } = app.get(require('@nestjs/core').HttpAdapterHost);
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const errorLogger = app.get(require('./common/services/error-logger.service').ErrorLoggerService);
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { GlobalExceptionFilter } = require('./common/filters/global-exception.filter');
-    app.useGlobalFilters(new GlobalExceptionFilter({ httpAdapter }, errorLogger));
-
+    // Global Exception Filter (GAP-20: proper imports instead of require())
+    const httpAdapterHost = app.get(HttpAdapterHost);
+    const errorLogger = app.get(ErrorLoggerService);
+    app.useGlobalFilters(new GlobalExceptionFilter(httpAdapterHost, errorLogger));
 
     // GAP-08: Swagger Production Constraints & Export
     const swaggerConfig = new DocumentBuilder()
@@ -213,7 +213,7 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, swaggerConfig);
 
     // Save OpenAPI JSON spec for external tools/API Gateways
-    require('fs').writeFileSync('./openapi.json', JSON.stringify(document));
+    fs.writeFileSync('./openapi.json', JSON.stringify(document));
 
     if (configService.get('NODE_ENV') === 'production') {
         const swaggerPassword = configService.get('SWAGGER_PASSWORD');

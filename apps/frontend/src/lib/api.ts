@@ -39,10 +39,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         headers['Content-Type'] = 'application/json';
     }
 
-    if (path.includes('preview')) {
-        console.log('[DEBUG_API] Preview Request Payload:', options?.body);
-    }
-
     const fetchOptions: RequestInit = {
         ...options,
         headers,
@@ -394,9 +390,9 @@ export const api = {
                 body: formData,
             });
         },
+        // GAP-04: Use cookie-based auth instead of localStorage
         getDownloadUrl: (id: string) => {
-            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-            return `${getApiUrl()}/attachments/${id}/download${token ? `?token=${token}` : ''}`;
+            return `${getApiUrl()}/attachments/${id}/download`;
         },
     },
     customers: {
