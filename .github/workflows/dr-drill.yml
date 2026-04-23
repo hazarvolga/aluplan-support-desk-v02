@@ -1,0 +1,45 @@
+name: Disaster Recovery Drill
+
+on:
+  schedule:
+    - cron: '0 3 1 */3 *' # Every 3 months (quarterly)
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  dr-drill:
+    name: Quarterly DR Drill
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client curl
+
+      - name: Run DR Drill Script
+        env:
+          BACKUP_URL: ${{ secrets.DR_BACKUP_URL }}
+        run: |
+          chmod +x scripts/dr-drill.sh
+          ./scripts/dr-drill.sh "$BACKUP_URL" || true
+
+      - name: Upload DR Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dr-drill-report
+          path: /tmp/dr-report.txt
+
+      - name: Notify Slack
+        if: always()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -f /tmp/dr-report.txt ]; then
+            REPORT=$(cat /tmp/dr-report.txt | sed 's/"/\\"/g')
+            curl -X POST "$SLACK_WEBHOOK" \
+              -H "Content-Type: application/json" \
+              -d "{\"text\":\"📋 DR Drill Report\\n$REPORT\"}"
+          fi

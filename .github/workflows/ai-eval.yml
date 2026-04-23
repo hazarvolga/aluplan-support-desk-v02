@@ -1,0 +1,41 @@
+name: AI Evaluation (promptfoo)
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Every day at 3 AM UTC
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  evaluate:
+    name: AI Pipeline Quality Evaluation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install promptfoo
+        run: npm install -g promptfoo
+
+      - name: Run Evaluation
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          cd scripts/ai-eval
+          npx promptfoo eval --config promptfooconfig.ts --output results.json
+
+      - name: Upload Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-eval-results
+          path: scripts/ai-eval/results.json
+
+      - name: Check Thresholds
+        run: |
+          cd scripts/ai-eval
+          npx promptfoo eval --config promptfooconfig.ts --threshold 0.7
