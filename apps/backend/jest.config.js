@@ -12,6 +12,19 @@ module.exports = {
         "^@aluplan/database$": "<rootDir>/../../packages/database"
     },
     setupFiles: ["<rootDir>/test/setup.ts"],
-    collectCoverageFrom: ["src/**/*.(t|j)s"],
-    coverageDirectory: "./coverage"
+    collectCoverageFrom: [
+        "src/**/*.(t|j)s",
+        "!src/**/*.module.ts",
+        "!src/main.ts",
+        "!src/**/*.d.ts",
+    ],
+    coverageDirectory: "./coverage",
+    coverageThreshold: {
+        global: {
+            branches: 20,
+            functions: 25,
+            lines: 35,
+            statements: 35,
+        },
+    },
 };

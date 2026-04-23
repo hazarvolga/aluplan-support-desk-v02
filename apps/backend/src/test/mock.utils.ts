@@ -137,14 +137,38 @@ export const mockS3Service = {
 export const mockRedisService = {
     get: jest.fn(),
     set: jest.fn(),
+    del: jest.fn(),
+    delPattern: jest.fn().mockResolvedValue(0),
+    getHealthInfo: jest.fn().mockResolvedValue({}),
     getClient: jest.fn(() => ({
-        get: jest.fn(),
-        set: jest.fn(),
-        incr: jest.fn(),
-        incrby: jest.fn(),
-        incrbyfloat: jest.fn(),
-        expire: jest.fn(),
-        del: jest.fn(),
-        eval: jest.fn(),
+        get: jest.fn().mockResolvedValue(null),
+        set: jest.fn().mockResolvedValue('OK'),
+        incr: jest.fn().mockResolvedValue(1),
+        incrby: jest.fn().mockResolvedValue(1),
+        incrbyfloat: jest.fn().mockResolvedValue(1.0),
+        expire: jest.fn().mockResolvedValue(1),
+        del: jest.fn().mockResolvedValue(1),
+        eval: jest.fn().mockResolvedValue(0),
+        scan: jest.fn().mockResolvedValue(['0', []]),
+        publish: jest.fn().mockResolvedValue(1),
     })),
+};
+
+export const mockEventEmitter = {
+    emit: jest.fn().mockReturnValue(true),
+    on: jest.fn(),
+};
+
+export const mockJwtService = {
+    sign: jest.fn().mockReturnValue('mock-jwt-token'),
+    verify: jest.fn().mockReturnValue({ sub: 'user-id', role: 'ADMIN' }),
+};
+
+export const mockMailService = {
+    send: jest.fn().mockResolvedValue(true),
+};
+
+export const mockStorageService = {
+    upload: jest.fn().mockResolvedValue('https://example.com/file.pdf'),
+    getUrl: jest.fn().mockReturnValue('https://example.com/file.pdf'),
 };
