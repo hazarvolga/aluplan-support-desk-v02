@@ -1,6 +1,6 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import TicketsPage from './page';
+import TicketsClient from './TicketsClient';
 import { useAuth } from '@/components/auth/role-guard';
 import { server } from '@/test/setup';
 import { http, HttpResponse } from 'msw';
@@ -19,18 +19,21 @@ describe('TicketsPage', () => {
         vi.stubGlobal('confirm', vi.fn(() => true));
     });
 
-    it('renders loading state initially', () => {
+    it('renders empty state when no tickets', () => {
         (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
-        render(<TicketsPage />);
-        expect(screen.getByText(/table.loading/i)).toBeDefined();
+        render(<TicketsClient initialTickets={[]} initialTotal={0} />);
+        expect(screen.getByText(/table.empty/i)).toBeDefined();
     });
 
     it('renders tickets list after loading', async () => {
         (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
 
-        render(<TicketsPage />);
+        const tickets = [
+            { id: 't1', ticketNumber: 'SUP-00001', subject: 'Test ticket', status: 'OPEN', priority: 'MEDIUM', channel: 'WEB', createdAt: new Date().toISOString() }
+        ];
+        render(<TicketsClient initialTickets={tickets} initialTotal={1} />);
 
-        // Use findBy to wait for the ticket subject from handlers.ts
+        // Use findBy to wait for the ticket subject
         const ticket = await screen.findByText(/Test ticket/i);
         expect(ticket).toBeDefined();
     });
@@ -40,7 +43,10 @@ describe('TicketsPage', () => {
             user: { role: 'ADMIN', fullName: 'Admin' }
         });
 
-        render(<TicketsPage />);
+        const tickets = [
+            { id: 't1', ticketNumber: 'SUP-00001', subject: 'Test ticket', status: 'OPEN', priority: 'MEDIUM', channel: 'WEB', createdAt: new Date().toISOString() }
+        ];
+        render(<TicketsClient initialTickets={tickets} initialTotal={1} />);
 
         await waitFor(() => {
             expect(screen.queryByText(/table.loading/i)).toBeNull();
@@ -71,7 +77,10 @@ describe('TicketsPage', () => {
     it('updates list when filter changes', async () => {
         (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
 
-        render(<TicketsPage />);
+        const tickets = [
+            { id: 't1', ticketNumber: 'SUP-00001', subject: 'Test ticket', status: 'OPEN', priority: 'MEDIUM', channel: 'WEB', createdAt: new Date().toISOString() }
+        ];
+        render(<TicketsClient initialTickets={tickets} initialTotal={1} />);
 
         await waitFor(() => {
             expect(screen.queryByText(/table.loading/i)).toBeNull();
@@ -91,14 +100,7 @@ describe('TicketsPage', () => {
     it('handles empty state', async () => {
         (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
 
-        // Override MSW for empty list
-        server.use(
-            http.get(`${API_BASE}/tickets`, () => {
-                return HttpResponse.json({ data: [], total: 0 });
-            })
-        );
-
-        render(<TicketsPage />);
+        render(<TicketsClient initialTickets={[]} initialTotal={0} />);
 
         await waitFor(() => {
             expect(screen.getByText(/table.empty/i)).toBeDefined();
