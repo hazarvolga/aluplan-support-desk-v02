@@ -29,7 +29,7 @@ export class KnowledgePoolProcessor extends WorkerHost {
         let TurndownConstructor: any;
         try {
             // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const TurndownLib = require('turndown');
+            const TurndownLib: any = await import('turndown');
             TurndownConstructor = typeof TurndownLib === 'function' ? TurndownLib : (TurndownLib.default || TurndownLib);
         } catch (e) {
             this.logger.error(`🚨 Turndown library LOAD FAILURE: ${e.message}`);

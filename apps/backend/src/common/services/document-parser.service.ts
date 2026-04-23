@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const pdfParse = require('pdf-parse');
+
 import * as mammoth from 'mammoth';
 import * as xlsx from 'xlsx';
 
@@ -18,7 +18,9 @@ export class DocumentParserService {
             let extractedText = '';
 
             if (mimeType === 'application/pdf') {
-                const data = await pdfParse(buffer);
+                let pdfParseLib: any = await import('pdf-parse');
+                pdfParseLib = typeof pdfParseLib !== 'function' && pdfParseLib.default ? pdfParseLib.default : pdfParseLib;
+                const data = await pdfParseLib(buffer);
                 extractedText = data.text;
             } else if (
                 mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||

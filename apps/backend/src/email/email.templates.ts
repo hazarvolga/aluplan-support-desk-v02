@@ -3,8 +3,9 @@ import * as path from 'path';
 // Robust MJML import to handle ESM/CJS interop crashes
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const mjmlModule = require('mjml');
-const mjml2html = typeof mjmlModule === 'function' ? mjmlModule : (mjmlModule.default || mjmlModule);
+
+import mjmlModule from 'mjml';
+const mjml2html = typeof mjmlModule === 'function' ? mjmlModule : ((mjmlModule as any).default || mjmlModule);
 import * as Handlebars from 'handlebars';
 import { convert } from 'html-to-text';
 import { BaseEmailSchema } from './contracts/base.contract';

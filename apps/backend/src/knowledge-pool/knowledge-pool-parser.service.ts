@@ -31,7 +31,7 @@ export class KnowledgePoolParserService {
             const dataBuffer = fs.readFileSync(filePath);
 
             // eslint-disable-next-line @typescript-eslint/no-require-imports
-            let pdfParser = require('pdf-parse');
+            let pdfParser: any = await import('pdf-parse');
             // Handle ESM default export in CJS require
             if (typeof pdfParser !== 'function' && pdfParser.default) {
                 pdfParser = pdfParser.default;

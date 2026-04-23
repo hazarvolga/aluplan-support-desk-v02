@@ -32,7 +32,8 @@ async function bootstrap() {
         const allPoolSources = await prisma.knowledgeSource.findMany();
         const activePoolSources = allPoolSources.filter((s: any) => s.status !== 'ARCHIVED');
 
-        const { hierarchicalChunk } = require('../src/knowledge-base/utils/smart-chunker');
+        const smartChunker = await import('../src/knowledge-base/utils/smart-chunker');
+        const hierarchicalChunk = smartChunker.hierarchicalChunk;
 
         let poolCount = 0;
         let chunkTotal = 0;

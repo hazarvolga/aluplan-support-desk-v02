@@ -8,6 +8,30 @@ const intlMiddleware = createMiddleware(routing);
 export default async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
+    const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+    const cspHeader = `
+      default-src 'self';
+      script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ''};
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' blob: data: https:;
+      font-src 'self';
+      object-src 'none';
+      base-uri 'none';
+      form-action 'self';
+      frame-ancestors 'none';
+      upgrade-insecure-requests;
+    `.replace(/\s{2,}/g, ' ').trim();
+
+    request.headers.set('x-nonce', nonce);
+    request.headers.set('Content-Security-Policy', cspHeader);
+
+    // Set headers on response
+    const applyCsp = (res: NextResponse) => {
+        res.headers.set('x-nonce', nonce);
+        res.headers.set('Content-Security-Policy', cspHeader);
+        return res;
+    };
+
     // Check if the route is a dashboard route (protected)
     // Matches patterns like /tr/dashboard, /en/settings, etc.
     const isDashboardRoute = routing.locales.some(locale =>
@@ -40,7 +64,7 @@ export default async function middleware(request: NextRequest) {
         const loginUrl = new URL(`/${locale}/login`, request.url);
 
         if (!token) {
-            response = NextResponse.redirect(loginUrl);
+            response = applyCsp(NextResponse.redirect(loginUrl));
         } else {
             try {
                 if (!process.env.JWT_SECRET) {
@@ -50,15 +74,15 @@ export default async function middleware(request: NextRequest) {
                 // Validates signature and standard claims (like `exp`) automatically
                 await jwtVerify(token, secret);
 
-                response = intlMiddleware(request);
+                response = applyCsp(intlMiddleware(request));
             } catch (error) {
                 // Token is invalid or expired
-                response = NextResponse.redirect(loginUrl);
+                response = applyCsp(NextResponse.redirect(loginUrl));
                 // To safely overwrite the cookie, we could delete it, but redirecting to login usually drops it or forces a new auth
             }
         }
     } else {
-        response = intlMiddleware(request);
+        response = applyCsp(intlMiddleware(request));
     }
 
     // Security Headers

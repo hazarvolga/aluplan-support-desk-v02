@@ -1,5 +1,6 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { SentryModule } from '@sentry/nestjs/setup';
+import { default as Redis } from 'ioredis';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
@@ -102,12 +103,10 @@ import { QueueDashboardModule } from './queue-dashboard/queue-dashboard.module';
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: (config: ConfigService) => {
-                // eslint-disable-next-line @typescript-eslint/no-require-imports
-                const IORedis = require('ioredis');
-                const connection = new IORedis(config.get<string>('redis.url'), {
+                const connection = new Redis(config.get<string>('redis.url') as string, {
                     maxRetriesPerRequest: null,
                 });
-                return { connection };
+                return { connection: connection as any };
             },
         }),
         ThrottlerModule.forRootAsync({

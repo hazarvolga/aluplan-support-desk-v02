@@ -13,7 +13,8 @@
         "test:unit:cov": "vitest run --coverage",
         "test:e2e": "playwright test",
         "test:e2e:ui": "playwright test --ui",
-        "i18n:check": "node scripts/check-i18n.js"
+        "i18n:check": "node scripts/check-i18n.js",
+        "analyze": "cross-env ANALYZE=true next build"
     },
     "dependencies": {
         "@hookform/resolvers": "^5.2.2",
