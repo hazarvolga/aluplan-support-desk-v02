@@ -187,7 +187,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                 setCustomers(data);
                 setSelectedIds([]);
             })
-            .catch(console.error)
+            .catch((err: any) => { if (process.env.NODE_ENV === 'development') console.error(err); })
             .finally(() => setLoading(false));
     };
 
@@ -196,7 +196,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         api.crm
             .getAccounts()
             .then(setAccounts)
-            .catch(console.error)
+            .catch((err: any) => { if (process.env.NODE_ENV === 'development') console.error(err); })
             .finally(() => setAccountsLoading(false));
     };
 
@@ -211,7 +211,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                     loadLogs(conns[0].id);
                 }
             })
-            .catch(console.error)
+            .catch((err: any) => { if (process.env.NODE_ENV === 'development') console.error(err); })
             .finally(() => setConnectionsLoading(false));
     };
 
@@ -247,7 +247,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         api.crm
             .getLogs(connectionId)
             .then(setLogs)
-            .catch(console.error)
+            .catch((err: any) => { if (process.env.NODE_ENV === 'development') console.error(err); })
             .finally(() => setLogsLoading(false));
     };
 
@@ -329,7 +329,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                 setSelectedIds([]);
             }
         } catch (error: any) {
-            console.error(error);
+            if (process.env.NODE_ENV === 'development') console.error(error);
             toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('toasts.bulk_update_error', { message: error.message || tc('unknown') }) });
         } finally {
             setDeleting(false);

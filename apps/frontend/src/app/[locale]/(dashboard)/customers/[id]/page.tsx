@@ -48,7 +48,7 @@ export default function CustomerProfilePage() {
                 }
             })
             .catch(err => {
-                console.error(err);
+                if (process.env.NODE_ENV === 'development') console.error(err);
                 toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('accounts.not_found') });
                 router.push('/customers');
             })
@@ -67,7 +67,7 @@ export default function CustomerProfilePage() {
             toast({ title: '✅ ' + tc('success_title'), description: t('toasts.update_success') });
             window.location.reload(); // Quick refresh to catch top layout items
         } catch (error: any) {
-            console.error(error);
+            if (process.env.NODE_ENV === 'development') console.error(error);
             toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message || t('toasts.update_error') });
         } finally {
             setSaving(false);
@@ -80,22 +80,19 @@ export default function CustomerProfilePage() {
             const result = await api.customers.resetPassword(id);
             toast({ title: '🔑 ' + t('labels.reset_password'), description: `${tc('success_title')}: ${result.email}` });
         } catch (error: any) {
-            console.error(error);
+            if (process.env.NODE_ENV === 'development') console.error(error);
             toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message || t('toasts.password_reset_error') });
         }
     };
 
     const handleDownloadHotinfo = async () => {
         try {
-            const token = localStorage.getItem('access_token');
             const url = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/customers/${id}/hotinfo/download`;
 
             toast({ title: '📥 İndiriliyor', description: 'Hotinfo dosyası hazırlanıyor...' });
 
             const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                credentials: 'include'
             });
 
             if (!response.ok) throw new Error('İndirme başarısız oldu');
@@ -116,7 +113,7 @@ export default function CustomerProfilePage() {
             a.click();
             a.remove();
         } catch (error: any) {
-            console.error(error);
+            if (process.env.NODE_ENV === 'development') console.error(error);
             toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('toasts.download_error') });
         }
     };

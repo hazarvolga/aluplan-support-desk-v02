@@ -123,7 +123,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
             const definitions = await api.crm.getFieldDefinitions();
             setFieldDefinitions(definitions);
         } catch (error) {
-            console.error('Failed to load CRM data', error);
+            if (process.env.NODE_ENV === 'development') console.error('Failed to load CRM data', error);
         } finally {
             setLoading(false);
         }
@@ -134,7 +134,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
             const syncLogs = await api.crm.getLogs(id);
             setLogs(syncLogs);
         } catch (error) {
-            console.error('Failed to load logs', error);
+            if (process.env.NODE_ENV === 'development') console.error('Failed to load logs', error);
         }
     };
 
@@ -143,7 +143,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
             const data = await api.crm.getDiscoveryData(id);
             setDiscoveryData(data);
         } catch (error) {
-            console.error('Failed to load discovery data', error);
+            if (process.env.NODE_ENV === 'development') console.error('Failed to load discovery data', error);
         }
     };
 
@@ -173,7 +173,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
             toast({ title: '🔄 ' + t('crm.sync_btn'), description: t('toasts.sync_started') });
             loadData();
         } catch (error) {
-            console.error('Sync failed', error);
+            if (process.env.NODE_ENV === 'development') console.error('Sync failed', error);
         } finally {
             setSyncing(false);
         }

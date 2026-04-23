@@ -28,6 +28,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
     const headers: any = {
         'X-Requested-With': 'XMLHttpRequest',
+        'X-Request-Id': (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
         ...options?.headers,
     };
 

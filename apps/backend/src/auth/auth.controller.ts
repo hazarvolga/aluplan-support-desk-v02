@@ -7,6 +7,8 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RefreshGuard } from './guards/refresh.guard';
 import { Public } from './decorators/public.decorator';
+import { RbacGuard } from '../rbac/rbac.guard';
+import { Roles } from '../rbac/decorators/rbac.decorators';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @ApiTags('Auth')
@@ -81,13 +83,25 @@ export class AuthController {
     @ApiOperation({ summary: 'Logout' })
     @ApiResponse({ status: 204, description: 'Logout successful. Cookies cleared.' })
     async logout(@Request() req: any, @Res({ passthrough: true }) res: Response) {
-        const result = await this.authService.logout(req.user.sub);
+        const result = await this.authService.logout(req.user.sub, req.user.jti);
 
         const isProd = process.env.NODE_ENV === 'production';
         res.clearCookie('access_token', { path: '/', sameSite: 'lax', secure: isProd });
         res.clearCookie('refresh_token', { path: '/api/v1/auth/refresh', sameSite: 'lax', secure: isProd });
 
         return result;
+    }
+
+    @UseGuards(JwtAuthGuard, RbacGuard)
+    @Roles('ADMIN')
+    @Post('admin/force-logout')
+    @HttpCode(HttpStatus.OK)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Force logout a user — invalidates all active sessions (Admin only)' })
+    @ApiResponse({ status: 200, description: 'All sessions invalidated successfully.' })
+    @ApiResponse({ status: 403, description: 'Forbidden — requires ADMIN role.' })
+    async adminForceLogout(@Body('userId') userId: string) {
+        return this.authService.forceLogout(userId);
     }
 
     @Public()

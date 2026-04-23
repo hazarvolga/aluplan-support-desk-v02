@@ -52,6 +52,7 @@ const mockConfigService = {
 const mockRedisService = {
     get: jest.fn(),
     set: jest.fn(),
+    getClient: jest.fn(() => ({ get: jest.fn().mockResolvedValue(null), mget: jest.fn().mockResolvedValue([]) })),
 };
 
 const mockSettingsService = {

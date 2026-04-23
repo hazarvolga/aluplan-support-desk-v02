@@ -88,6 +88,8 @@ async function bootstrap() {
     // Security Hardening
     app.use(helmet({
         crossOriginResourcePolicy: { policy: "cross-origin" },
+        crossOriginOpenerPolicy: { policy: "same-origin" },
+        crossOriginEmbedderPolicy: { policy: "require-corp" },
         contentSecurityPolicy: configService.get('NODE_ENV') === 'production' ? {
             directives: {
                 defaultSrc: ["'self'"],

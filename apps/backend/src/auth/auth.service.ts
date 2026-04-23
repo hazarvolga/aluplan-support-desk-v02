@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
@@ -6,47 +6,50 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { EmailService } from '../email/email.service';
 import { SettingsService } from '../settings/settings.service';
+import { RedisService } from '../redis/redis.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly jwtService: JwtService,
         private readonly config: ConfigService,
         private readonly emailService: EmailService,
         private readonly settings: SettingsService,
+        private readonly redisService: RedisService,
     ) { }
 
     async login(dto: LoginDto): Promise<any> {
-        console.log(`[DEBUG] Attempting login for: [${dto.email}]`);
+        this.logger.debug(`Attempting login for user ID resolution (email masked)`);
         try {
             const user = await this.prisma.user.findUnique({
                 where: { email: dto.email },
             });
 
             if (!user) {
-                console.log(`[DEBUG] Login failed: User NOT found in DB for email: [${dto.email}]`);
+                this.logger.warn(`Login failed: User NOT found in DB`);
                 throw new UnauthorizedException('Invalid credentials');
             }
 
             if (user.deletedAt) {
-                console.log(`[DEBUG] Login failed: User [${dto.email}] is SOFT-DELETED`);
+                this.logger.warn(`Login failed: User is SOFT-DELETED`);
                 throw new UnauthorizedException('Invalid credentials');
             }
 
             if (user.status !== 'ACTIVE') {
-                console.log(`[DEBUG] Login failed: User [${dto.email}] has status: [${user.status}]`);
+                this.logger.warn(`Login failed: User has status: [${user.status}]`);
                 throw new UnauthorizedException('Account is not active');
             }
 
-            console.log(`[DEBUG] Verifying password for: [${dto.email}]`);
             const passwordValid = await bcrypt.compare(dto.password, user.passwordHash);
             if (!passwordValid) {
-                console.log(`[DEBUG] Login failed: Password mismatch for user: [${dto.email}]`);
+                this.logger.warn(`Login failed: Password mismatch`);
                 throw new UnauthorizedException('Invalid credentials');
             }
 
-            console.log(`[DEBUG] Password valid. Retrieving role/permissions for: [${dto.email}] (roleId: ${user.roleId})`);
             const roleWithPerms = user.roleId ? await this.prisma.role.findUnique({
                 where: { id: user.roleId },
                 include: { permissions: { include: { permission: true } } }
@@ -56,13 +59,11 @@ export class AuthService {
             const rolePermissions = roleWithPerms?.permissions.map(p => p.permission.name) || [];
             const permissions = rolePermissions.length > 0 ? rolePermissions : this.getPermissionsForRole(role);
 
-            console.log(`[DEBUG] Generating tokens for: [${dto.email}] with role: [${role}] and [${permissions.length}] permissions`);
             const tokens = await this.generateTokens(user.id, user.email, user.fullName, role, permissions);
 
-            console.log(`[DEBUG] Updating refresh token hash for: [${dto.email}]`);
             await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
 
-            console.log(`[DEBUG] Login SUCCESS for: [${dto.email}]`);
+            this.logger.log(`Login SUCCESS for user ID: ${user.id}`);
             return {
                 user: {
                     id: user.id,
@@ -74,7 +75,7 @@ export class AuthService {
                 ...tokens,
             };
         } catch (error) {
-            console.error(`[CRITICAL] Login Exception for [${dto.email}]:`, error);
+            this.logger.error(`[CRITICAL] Login Exception:`, error);
             throw error;
         }
     }
@@ -104,12 +105,38 @@ export class AuthService {
         return tokens;
     }
 
-    async logout(userId: string) {
+    async logout(userId: string, jti?: string) {
         await this.prisma.user.updateMany({
             where: { id: userId, refreshTokenHash: { not: null } },
             data: { refreshTokenHash: null }
         });
+
+        if (jti) {
+            // Blacklist the token for its remaining max life (15 mins)
+            await this.redisService.set(`jwt:blacklist:${jti}`, 'revoked', 15 * 60);
+        }
+
         return { success: true };
+    }
+
+    async forceLogout(userId: string) {
+        // 1. Clear all refresh tokens — prevents token refresh
+        await this.prisma.user.updateMany({
+            where: { id: userId },
+            data: { refreshTokenHash: null }
+        });
+
+        // 2. Mark all existing sessions as invalidated via Redis
+        // Any JWT issued before this timestamp will be rejected by JwtStrategy
+        await this.redisService.set(
+            `user:${userId}:force_logout_at`,
+            Date.now().toString(),
+            15 * 60 // 15 min TTL — matches max JWT lifetime
+        );
+
+        this.logger.warn(`🔒 Admin force-logout executed for user ${userId}`);
+
+        return { success: true, message: 'All sessions invalidated', userId };
     }
 
     async lookupEmail(email: string) {
@@ -120,12 +147,12 @@ export class AuthService {
         if (user) {
             // Check if user was soft-deleted
             if (user.deletedAt) {
-                console.log(`[DEBUG] lookupEmail: User ${email} found but SOFT-DELETED (deletedAt: ${user.deletedAt})`);
+                this.logger.debug(`lookupEmail: User found but SOFT-DELETED`);
                 return { action: 'DELETED', companyName: null };
             }
             // Check if user is not active (PENDING, SUSPENDED, etc.)
             if (user.status !== 'ACTIVE') {
-                console.log(`[DEBUG] lookupEmail: User ${email} found but status is ${user.status}`);
+                this.logger.debug(`lookupEmail: User found but status is ${user.status}`);
                 return { action: 'INACTIVE', status: user.status, companyName: null };
             }
             return { action: 'CLAIM' };
@@ -289,7 +316,8 @@ export class AuthService {
         role: string,
         permissions: string[],
     ) {
-        const payload = { sub: userId, email, fullName, role, permissions };
+        const jti = crypto.randomUUID();
+        const payload = { sub: userId, email, fullName, role, permissions, jti };
 
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {

@@ -76,7 +76,7 @@ export class AiService implements AiProvider {
                 const provider = await this.getProvider(pName);
                 const breaker = this.getBreaker(pName);
 
-                let result;
+                let result: T | null | undefined = undefined;
                 if (isOverride) {
                     result = await operation(provider);
                 } else {
@@ -84,7 +84,7 @@ export class AiService implements AiProvider {
                 }
 
                 if (result !== null && result !== undefined) {
-                    return result;
+                    return result as T;
                 } else {
                     lastError = new Error('Provider returned null');
                 }

@@ -92,16 +92,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Re-sync if path changes and we have a token but no user (handles cross-page navigation)
     useEffect(() => {
-        const token = localStorage.getItem('access_token');
-        if (token && !user) {
+        if (!user && !loading) {
             fetchUser();
         }
-    }, [pathname, user]);
+    }, [pathname]);
 
     useEffect(() => {
         if (!loading && user) {
             const cleanPath = stripLocale(pathname);
-            console.log('[RoleGuard Trace] AuthProvider checking redirect. cleanPath:', cleanPath, 'User Role:', user?.role);
             if (cleanPath === '/' || cleanPath.startsWith('/login')) {
                 const userRoleName = (user?.role as any)?.name || user?.role || (user?.roles && user.roles[0]) || 'viewer';
                 const userRole = (typeof userRoleName === 'string' ? userRoleName : 'viewer').toLowerCase();

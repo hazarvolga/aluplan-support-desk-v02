@@ -12,10 +12,12 @@ import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
 import { CrawlService } from './crawl.service';
 import { hierarchicalChunk } from '../knowledge-base/utils/smart-chunker';
 import { AiService } from '../ai/ai.service';
+import { OnModuleInit } from '@nestjs/common';
+
 @Processor('knowledge-sync')
-export class KnowledgePoolProcessor extends WorkerHost {
+export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
     private readonly logger = new Logger(KnowledgePoolProcessor.name);
-    private readonly turndown: any;
+    private turndown: any;
 
     constructor(
         private readonly prisma: PrismaService,
@@ -25,11 +27,13 @@ export class KnowledgePoolProcessor extends WorkerHost {
         private readonly aiService: AiService,
     ) {
         super();
+    }
 
+    async onModuleInit() {
         let TurndownConstructor: any;
         try {
             // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const TurndownLib: any = await import('turndown');
+            const TurndownLib: any = await require('turndown');
             TurndownConstructor = typeof TurndownLib === 'function' ? TurndownLib : (TurndownLib.default || TurndownLib);
         } catch (e) {
             this.logger.error(`🚨 Turndown library LOAD FAILURE: ${e.message}`);

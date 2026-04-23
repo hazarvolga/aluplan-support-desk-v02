@@ -35,6 +35,7 @@ import { RedisModule } from './redis/redis.module';
 
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import * as crypto from 'crypto';
 import { TeamsModule } from './teams/teams.module';
 import { BrandingModule } from './branding/branding.module';
 import { CrmModule } from './crm/crm.module';
@@ -76,6 +77,7 @@ import { QueueDashboardModule } from './queue-dashboard/queue-dashboard.module';
                     pinoHttp: {
                         level: isProd ? 'info' : 'debug',
                         transport,
+                        genReqId: (req) => req.headers['x-request-id'] || req.id || crypto.randomUUID(),
                         // GAP-15: PII redaction — prevent sensitive data from leaking into logs
                         redact: {
                             paths: [
@@ -106,7 +108,15 @@ import { QueueDashboardModule } from './queue-dashboard/queue-dashboard.module';
                 const connection = new Redis(config.get<string>('redis.url') as string, {
                     maxRetriesPerRequest: null,
                 });
-                return { connection: connection as any };
+                return {
+                    connection: connection as any,
+                    defaultJobOptions: {
+                        attempts: 3,
+                        backoff: { type: 'exponential', delay: 5000 },
+                        removeOnComplete: { count: 100 },
+                        removeOnFail: false, // GAP-11: DLQ Setup — retain failed jobs for inspection
+                    }
+                };
             },
         }),
         ThrottlerModule.forRootAsync({

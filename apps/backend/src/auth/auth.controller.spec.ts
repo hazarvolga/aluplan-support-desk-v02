@@ -12,6 +12,7 @@ describe('AuthController', () => {
         login: jest.fn(),
         refreshTokens: jest.fn(),
         logout: jest.fn(),
+        forceLogout: jest.fn(),
         lookupEmail: jest.fn(),
         forgotPassword: jest.fn(),
         resetPassword: jest.fn(),
@@ -73,9 +74,9 @@ describe('AuthController', () => {
     });
 
     describe('logout', () => {
-        it('should call authService.logout with user id', async () => {
+        it('should call authService.logout with user id and jti', async () => {
             // Arrange
-            const req = { user: { sub: 'user1' } };
+            const req = { user: { sub: 'user1', jti: 'jti-abc' } };
             mockAuthService.logout.mockResolvedValue({ success: true });
 
             // Act
@@ -83,7 +84,7 @@ describe('AuthController', () => {
             const result = await controller.logout(req, mockRes);
 
             // Assert
-            expect(mockAuthService.logout).toHaveBeenCalledWith('user1');
+            expect(mockAuthService.logout).toHaveBeenCalledWith('user1', 'jti-abc');
             expect(result).toEqual({ success: true });
             expect(mockRes.clearCookie).toHaveBeenCalledWith('access_token', expect.any(Object));
         });
@@ -147,6 +148,21 @@ describe('AuthController', () => {
             // Assert
             expect(mockAuthService.getProfile).toHaveBeenCalledWith('user1');
             expect(result).toEqual(expectedProfile);
+        });
+    });
+
+    describe('adminForceLogout', () => {
+        it('should call authService.forceLogout with userId', async () => {
+            // Arrange
+            const userId = 'user-to-kick';
+            mockAuthService.forceLogout.mockResolvedValue({ success: true, message: 'All sessions invalidated', userId });
+
+            // Act
+            const result = await controller.adminForceLogout(userId);
+
+            // Assert
+            expect(mockAuthService.forceLogout).toHaveBeenCalledWith(userId);
+            expect(result).toEqual({ success: true, message: 'All sessions invalidated', userId });
         });
     });
 });

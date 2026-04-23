@@ -16,7 +16,6 @@ export function GlobalTicketNotification() {
             socket.connect();
 
             const handleNewTicket = (ticket: any) => {
-                console.log('📢 [GlobalTicketNotification] Received ticket:created event!', ticket);
                 toast({
                     title: t('new_ticket_title'),
                     description: t('new_ticket_desc', { name: ticket.creatorName || 'Bir müşteri', subject: ticket.subject }),
@@ -34,7 +33,6 @@ export function GlobalTicketNotification() {
             };
 
             const handleAiFallback = (data: any) => {
-                console.log('🚨 [GlobalTicketNotification] AI Fallback triggered!', data);
                 toast({
                     title: t('system_alert_title'),
                     description: t('system_alert_desc', { primary: data.primaryProvider, fallback: data.fallbackProvider }),
@@ -43,7 +41,6 @@ export function GlobalTicketNotification() {
                 });
             };
 
-            socket.on('connect', () => console.log('🟢 [GlobalTicketNotification] Socket connected:', socket.id));
             socket.on('ticket:created', handleNewTicket);
             socket.on('system:ai_fallback', handleAiFallback);
 
@@ -53,7 +50,13 @@ export function GlobalTicketNotification() {
                 socket.off('system:ai_fallback', handleAiFallback);
             };
         } catch (err) {
-            console.warn('[GlobalTicketNotification] Socket init failed:', err);
+            // Socket initialization failures are silently ignored in production
+            // to prevent console noise. Development debugging should use
+            // the browser's Network tab or backend logs.
+            if (process.env.NODE_ENV === 'development') {
+                // eslint-disable-next-line no-console
+                console.warn('[GlobalTicketNotification] Socket init failed:', err);
+            }
         }
     }, [toast]);
 

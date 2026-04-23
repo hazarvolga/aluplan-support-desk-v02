@@ -5,7 +5,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '../email/email.service';
 import { SettingsService } from '../settings/settings.service';
-import { mockPrismaService, mockConfigService } from '../test/mock.utils';
+import { mockPrismaService, mockConfigService, mockRedisService } from '../test/mock.utils';
+import { RedisService } from '../redis/redis.service';
 import * as bcrypt from 'bcryptjs';
 import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
 
@@ -17,6 +18,7 @@ describe('AuthService', () => {
     let jwt: any;
     let email: any;
     let settings: any;
+    let redis: any;
 
     const mockJwtService = {
         sign: jest.fn(),
@@ -42,6 +44,7 @@ describe('AuthService', () => {
                 { provide: ConfigService, useValue: mockConfigService },
                 { provide: EmailService, useValue: mockEmailService },
                 { provide: SettingsService, useValue: mockSettingsService },
+                { provide: RedisService, useValue: mockRedisService },
             ],
         }).compile();
 
@@ -50,6 +53,7 @@ describe('AuthService', () => {
         jwt = module.get<JwtService>(JwtService);
         email = module.get<EmailService>(EmailService);
         settings = module.get<SettingsService>(SettingsService);
+        redis = module.get<RedisService>(RedisService);
 
         jest.clearAllMocks();
     });
@@ -180,6 +184,62 @@ describe('AuthService', () => {
                 where: { id: '1' },
                 data: { passwordHash: 'new-password-hash', refreshTokenHash: null }
             });
+        });
+    });
+
+    describe('logout', () => {
+        it('should clear refresh token and blacklist jti', async () => {
+            // Arrange
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
+            redis.set.mockResolvedValue('OK');
+
+            // Act
+            const result = await service.logout('user-1', 'jti-123');
+
+            // Assert
+            expect(result.success).toBe(true);
+            expect(prisma.user.updateMany).toHaveBeenCalledWith({
+                where: { id: 'user-1', refreshTokenHash: { not: null } },
+                data: { refreshTokenHash: null }
+            });
+            expect(redis.set).toHaveBeenCalledWith('jwt:blacklist:jti-123', 'revoked', 15 * 60);
+        });
+
+        it('should clear refresh token without jti', async () => {
+            // Arrange
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
+
+            // Act
+            const result = await service.logout('user-1');
+
+            // Assert
+            expect(result.success).toBe(true);
+            expect(prisma.user.updateMany).toHaveBeenCalled();
+            expect(redis.set).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('forceLogout', () => {
+        it('should invalidate all sessions for a user', async () => {
+            // Arrange
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
+            redis.set.mockResolvedValue('OK');
+
+            // Act
+            const result = await service.forceLogout('user-1');
+
+            // Assert
+            expect(result.success).toBe(true);
+            expect(result.userId).toBe('user-1');
+            expect(prisma.user.updateMany).toHaveBeenCalledWith({
+                where: { id: 'user-1' },
+                data: { refreshTokenHash: null }
+            });
+            expect(redis.set).toHaveBeenCalledWith(
+                expect.stringContaining('user:user-1:force_logout_at'),
+                expect.any(String),
+                15 * 60
+            );
         });
     });
 });

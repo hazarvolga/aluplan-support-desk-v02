@@ -58,14 +58,14 @@ export default function ProductsPage() {
                 // Assuming standard REST, I'll use generic fetch for updates if `api.products` isn't fully built out.
                 await fetch(`${api.getBaseUrl()}/products/${editingProduct.id}`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: productName, description: productDescription })
                 });
                 toast.success(t('toasts.product_updated'));
             } else {
                 await fetch(`${api.getBaseUrl()}/products`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: productName, description: productDescription })
                 });
                 toast.success(t('toasts.product_added'));
@@ -81,8 +81,7 @@ export default function ProductsPage() {
         if (!confirm(t('confirms.delete_product'))) return;
         try {
             await fetch(`${api.getBaseUrl()}/products/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+                method: 'DELETE'
             });
             toast.success(t('toasts.product_deleted'));
             fetchProducts();
@@ -98,14 +97,14 @@ export default function ProductsPage() {
             if (editingCategory) {
                 await fetch(`${api.getBaseUrl()}/products/categories/${editingCategory.id}`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: categoryName, keywords: keywordsArray })
                 });
                 toast.success(t('toasts.category_updated'));
             } else {
                 await fetch(`${api.getBaseUrl()}/products/${activeProductId}/categories`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: categoryName, keywords: keywordsArray })
                 });
                 toast.success(t('toasts.category_added'));
@@ -121,8 +120,7 @@ export default function ProductsPage() {
         if (!confirm(t('confirms.delete_category'))) return;
         try {
             await fetch(`${api.getBaseUrl()}/products/categories/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+                method: 'DELETE'
             });
             toast.success(t('toasts.category_deleted'));
             fetchProducts();

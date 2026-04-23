@@ -14,6 +14,7 @@ export const mockPrismaService: Record<string, any> = {
     ticket: { findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
     aiInteraction: { create: jest.fn(), update: jest.fn() },
     customerProfile: { findUnique: jest.fn() },
+    crmConnection: { findFirst: jest.fn(), upsert: jest.fn() },
     // raw queries
     $queryRaw: jest.fn(),
     $executeRaw: jest.fn(),

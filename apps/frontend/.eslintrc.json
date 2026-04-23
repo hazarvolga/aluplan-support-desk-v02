@@ -4,12 +4,23 @@
     "next/typescript"
   ],
   "rules": {
-    "@typescript-eslint/no-explicit-any": "off",
-    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unused-vars": "warn",
     "react/no-unescaped-entities": "off",
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-empty-object-type": "off",
     "react-hooks/exhaustive-deps": "off",
-    "@next/next/no-img-element": "off"
+    "@next/next/no-img-element": "off",
+    "no-restricted-globals": [
+      "error",
+      {
+        "name": "localStorage",
+        "message": "Use HttpOnly cookies via the api.ts wrapper instead of localStorage for security (XSS prevention)."
+      },
+      {
+        "name": "sessionStorage",
+        "message": "Use HttpOnly cookies via the api.ts wrapper instead of sessionStorage for security (XSS prevention)."
+      }
+    ]
   }
 }

@@ -5,6 +5,7 @@ export const mockPrismaService: any = {
         findMany: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
         delete: jest.fn(),
     },
     tenant: {
@@ -111,4 +112,16 @@ export const mockAiService = {
 export const mockS3Service = {
     uploadFile: jest.fn(),
     getFileUrl: jest.fn(),
+};
+
+export const mockRedisService = {
+    get: jest.fn(),
+    set: jest.fn(),
+    getClient: jest.fn(() => ({
+        get: jest.fn(),
+        set: jest.fn(),
+        incrby: jest.fn(),
+        expire: jest.fn(),
+        del: jest.fn(),
+    })),
 };

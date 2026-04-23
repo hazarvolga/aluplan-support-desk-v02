@@ -99,10 +99,15 @@ export function CommandMenu() {
                         <PlusCircle className="mr-2 h-4 w-4" />
                         <span>{t("items.new_ticket")}</span>
                     </CommandItem>
-                    <CommandItem onSelect={() => runCommand(() => {
-                        localStorage.removeItem("token");
-                        router.push("/auth/login");
-                    })}>
+                    <CommandItem onSelect={async () => {
+                        try {
+                            const { api } = await import('@/lib/api');
+                            await api.auth.logout();
+                        } catch (e) {
+                            console.error('Logout error', e);
+                        }
+                        router.push("/login");
+                    }}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>{t("items.logout")}</span>
                     </CommandItem>

@@ -29,7 +29,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: pnpm install
       - name: Pnpm Audit
-        run: pnpm audit --prod || true
+        run: pnpm audit --prod --audit-level high
 
   typecheck-and-build:
     name: Build (Backend & Frontend)
@@ -52,6 +52,13 @@ jobs:
         run: cd apps/frontend && pnpm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+      - name: Analyze Frontend Bundle
+        run: cd apps/frontend && pnpm run analyze
+      - name: Upload Bundle Analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analysis
+          path: apps/frontend/.next/analyze/
 
   testing:
     name: Tests & Coverage
@@ -76,6 +83,31 @@ jobs:
         with:
            token: ${{ secrets.CODECOV_TOKEN }}
 
+  e2e:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    needs: typecheck-and-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - name: Run E2E Tests
+        run: cd apps/frontend && npx playwright test
+      - name: Upload E2E Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/frontend/playwright-report/
+
   docker-build:
     name: Docker Build & Scan
     runs-on: ubuntu-latest
@@ -92,3 +124,25 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [testing, e2e, docker-build]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger Coolify Staging Webhook
+        env:
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_STAGING_WEBHOOK }}
+        run: |
+          if [ -z "$COOLIFY_WEBHOOK" ]; then
+            echo "⚠️ COOLIFY_STAGING_WEBHOOK not set. Skipping staging deploy."
+            echo "To enable: Coolify → Project → Webhook → Add to GitHub Secrets"
+            exit 0
+          fi
+          curl -X POST "$COOLIFY_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d '{"branch":"main","commit":"'"${{ github.sha }}"'"}' \
+            --fail-with-body || echo "Webhook failed — check Coolify staging stack"
+          echo "✅ Staging deployment triggered for commit ${{ github.sha }}"
+

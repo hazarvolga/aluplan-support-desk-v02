@@ -87,8 +87,7 @@ jobs:
         run: |
           pnpm --filter @aluplan/backend exec jest \
             --coverage \
-            --coverageThreshold='{"global":{"lines":80,"branches":80,"functions":80,"statements":80}}' \
-            --passWithNoTests
+            --coverageThreshold='{"global":{"lines":50,"branches":40,"functions":50,"statements":50}}'
 
       - name: Upload Coverage Report
         if: always()

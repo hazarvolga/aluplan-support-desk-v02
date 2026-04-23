@@ -144,6 +144,26 @@ export class AiQueryService {
         const isStaff = await this.isStaff(userId);
         const lang = options.language || 'tr';
 
+        // --- GAP-05: AI Quota & Budget Check ---
+        const today = new Date().toISOString().split('T')[0];
+        const globalCostKey = `ai:quota:global:cost:${today}`;
+        const userQueryKey = `ai:quota:user:${userId || 'guest'}:count:${today}`;
+        const client = this.redis.getClient();
+
+        const globalCost = parseFloat(await client.get(globalCostKey) || '0');
+        const userQueries = parseInt(await client.get(userQueryKey) || '0', 10);
+        const globalCap = parseFloat(this.config.get('AI_GLOBAL_DAILY_CAP', '50.0'));
+        const userQuota = parseInt(this.config.get('AI_USER_DAILY_QUOTA', '50'), 10);
+
+        if (globalCost >= globalCap) {
+            this.logger.error(`🚨 Global AI Budget Cap Exceeded ($${globalCost})`);
+            throw new Error('Ai hizmeti geçici olarak sınırlandırılmıştır. (Bütçe aşımı)');
+        }
+        if (!isStaff && userQueries >= userQuota) {
+            throw new Error('Günlük maksimum akıllı asistan kullanım kotasına ulaştınız.');
+        }
+        // --- END QUOTA CHECK ---
+
         // 1. Precise unique cache key
         const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
         const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
@@ -407,6 +427,20 @@ export class AiQueryService {
                 } as any
             }
         });
+
+        // --- GAP-05: Increment Quota Counters ---
+        const today = new Date().toISOString().split('T')[0];
+        const globalCostKey = `ai:quota:global:cost:${today}`;
+        const userQueryKey = `ai:quota:user:${userId || 'guest'}:count:${today}`;
+        const rClient = this.redis.getClient();
+
+        await Promise.all([
+            rClient.incrbyfloat(globalCostKey, estimatedCost).catch(() => { }),
+            rClient.incr(userQueryKey).catch(() => { }),
+            rClient.expire(globalCostKey, 86400).catch(() => { }),
+            rClient.expire(userQueryKey, 86400).catch(() => { })
+        ]);
+        // --- END INCREMENT ---
 
         this.logger.log(
             `🤖 AI Query: "${userQuery.slice(0, 60)}" → ${confidence} (${topResult?.similarity?.toFixed(3) ?? 'n/a'})[Src: ${topResult?.sourceType}]`,
@@ -691,6 +725,20 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                 } as any
             },
         });
+
+        // --- GAP-05: Increment Quota Counters (Stream) ---
+        const today = new Date().toISOString().split('T')[0];
+        const globalCostKey = `ai:quota:global:cost:${today}`;
+        const userQueryKey = `ai:quota:user:${userId || 'guest'}:count:${today}`;
+        const rClient = this.redis.getClient();
+
+        await Promise.all([
+            rClient.incrbyfloat(globalCostKey, estimatedCost).catch(() => { }),
+            rClient.incr(userQueryKey).catch(() => { }),
+            rClient.expire(globalCostKey, 86400).catch(() => { }),
+            rClient.expire(userQueryKey, 86400).catch(() => { })
+        ]);
+        // --- END INCREMENT ---
 
         // Cache for 1 hour
         await this.redis.set(cacheKey, fullAnswer, 3600);
