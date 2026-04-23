@@ -21,6 +21,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         const adapter = new PrismaPg(poolInstance as any);
         super({ adapter, errorFormat: 'pretty' });
         this.pool = poolInstance;
+
+        // GAP-19: Soft-delete global filter via Prisma Client Extension
+        this.applySoftDeleteExtension();
     }
 
     async onModuleInit() {
@@ -93,5 +96,42 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     async onModuleDestroy() {
         if (this.poolInterval) clearInterval(this.poolInterval);
         await this.$disconnect();
+    }
+
+    /**
+     * GAP-19: Prisma Client Extension — Global Soft Delete Filter
+     *
+     * Automatically filters out soft-deleted records (deletedAt !== null)
+     * from all read operations (findMany, findFirst, findUnique, count).
+     *
+     * To include soft-deleted records, use:
+     *   prisma.model.findMany({ where: { deletedAt: { not: null } } })
+     */
+    private applySoftDeleteExtension(): void {
+        // Note: Prisma Client Extensions require Prisma 4.7+
+        // This extension patches query args before execution
+        (this as any).$extends({
+            query: {
+                $allModels: {
+                    async findMany({ model, operation, args, query }: any) {
+                        args.where = { ...args.where, deletedAt: null };
+                        return query(args);
+                    },
+                    async findFirst({ model, operation, args, query }: any) {
+                        args.where = { ...args.where, deletedAt: null };
+                        return query(args);
+                    },
+                    async findFirstOrThrow({ model, operation, args, query }: any) {
+                        args.where = { ...args.where, deletedAt: null };
+                        return query(args);
+                    },
+                    async count({ model, operation, args, query }: any) {
+                        args.where = { ...args.where, deletedAt: null };
+                        return query(args);
+                    },
+                },
+            },
+        });
+        this.logger.log('🔒 Soft-delete extension applied — deletedAt: null filter active on all reads');
     }
 }

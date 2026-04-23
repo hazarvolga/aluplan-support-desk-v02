@@ -1,0 +1,40 @@
+{
+  "dashboard": {
+    "title": "PostgreSQL pg_stat_statements Monitoring",
+    "panels": [
+      {
+        "title": "Top 20 Slowest Queries (mean_exec_time)",
+        "type": "table",
+        "targets": [
+          {
+            "rawSql": "SELECT query, calls, ROUND(mean_exec_time::numeric, 2) AS mean_ms, ROUND(total_exec_time::numeric, 2) AS total_ms FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 20",
+            "format": "table"
+          }
+        ],
+        "gridPos": { "h": 12, "w": 24, "x": 0, "y": 0 }
+      },
+      {
+        "title": "Queries Over 500ms (Last Hour)",
+        "type": "graph",
+        "targets": [
+          {
+            "rawSql": "SELECT query, calls FROM pg_stat_statements WHERE mean_exec_time > 500 ORDER BY calls DESC LIMIT 10",
+            "format": "time_series"
+          }
+        ],
+        "gridPos": { "h": 10, "w": 12, "x": 0, "y": 12 }
+      },
+      {
+        "title": "Most Called Queries",
+        "type": "graph",
+        "targets": [
+          {
+            "rawSql": "SELECT query, calls FROM pg_stat_statements ORDER BY calls DESC LIMIT 10",
+            "format": "time_series"
+          }
+        ],
+        "gridPos": { "h": 10, "w": 12, "x": 12, "y": 12 }
+      }
+    ]
+  }
+}
