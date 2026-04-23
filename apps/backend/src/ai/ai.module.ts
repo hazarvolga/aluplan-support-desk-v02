@@ -34,6 +34,7 @@ import { AiProviderRegistry } from './ai-provider-registry.service';
 import { AiProviderRouter } from './ai-provider-router.service';
 import { EmbeddingNormalizer } from './embedding-normalizer.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
+import { AiBudgetMonitor } from './ai-budget-monitor.service';
 
 @Module({
     imports: [
@@ -62,6 +63,7 @@ import { AiSemanticCache } from './ai-semantic-cache.service';
         AiProviderRouter,
         EmbeddingNormalizer,
         AiSemanticCache,
+        AiBudgetMonitor,
         OpenAiService,
         GenericOpenAiService,
         OllamaService,
@@ -90,6 +92,7 @@ import { AiSemanticCache } from './ai-semantic-cache.service';
         AiProviderRouter,
         EmbeddingNormalizer,
         AiSemanticCache,
+        AiBudgetMonitor,
         EmbeddingService,
         AiQueryService,
         AiCopilotService,
