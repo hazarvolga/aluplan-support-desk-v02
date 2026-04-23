@@ -36,7 +36,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             const models = [
                 'users', 'departments', 'teams', 'customer_profiles',
                 'knowledge_articles', 'tickets', 'ticket_messages',
-                'attachments', 'categories', 'products'
+                'attachments', 'categories', 'products', 'product_categories', 'crm_connections'
             ];
 
             for (const table of models) {
