@@ -114,7 +114,7 @@ import { QueueDashboardModule } from './queue-dashboard/queue-dashboard.module';
                         attempts: 3,
                         backoff: { type: 'exponential', delay: 5000 },
                         removeOnComplete: { count: 100 },
-                        removeOnFail: false, // GAP-11: DLQ Setup — retain failed jobs for inspection
+                        removeOnFail: { count: 500 }, // DLQ: retain last 500 failed jobs
                     }
                 };
             },

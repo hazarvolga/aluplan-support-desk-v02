@@ -7,6 +7,7 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost } from '@nestjs/core';
+import { QueueMonitorService } from './queue-monitor.service';
 
 /**
  * GAP-12: Bull Board Monitoring UI
@@ -22,6 +23,8 @@ import { HttpAdapterHost } from '@nestjs/core';
             { name: 'email' },
         ),
     ],
+    providers: [QueueMonitorService],
+    exports: [QueueMonitorService],
 })
 export class QueueDashboardModule implements OnModuleInit {
     private readonly logger = new Logger(QueueDashboardModule.name);

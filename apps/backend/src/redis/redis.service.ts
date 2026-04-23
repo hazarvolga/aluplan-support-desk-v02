@@ -53,11 +53,26 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         await this.client.del(key);
     }
 
-    /** Pattern-based cache invalidation (e.g., 'kb:article:*') */
-    async delPattern(pattern: string): Promise<number> {
-        const keys = await this.client.keys(pattern);
-        if (keys.length === 0) return 0;
-        return this.client.del(...keys);
+    /**
+     * Pattern-based cache invalidation using SCAN (non-blocking).
+     * Iterates Redis keyspace in batches to avoid blocking the server.
+     */
+    async delPattern(pattern: string, batchSize = 100): Promise<number> {
+        let cursor = '0';
+        let totalDeleted = 0;
+
+        do {
+            const result = await this.client.scan(cursor, 'MATCH', pattern, 'COUNT', batchSize);
+            cursor = result[0];
+            const keys = result[1];
+
+            if (keys.length > 0) {
+                const deleted = await this.client.del(...keys);
+                totalDeleted += deleted;
+            }
+        } while (cursor !== '0');
+
+        return totalDeleted;
     }
 
     /** Pub/Sub publish helper */
