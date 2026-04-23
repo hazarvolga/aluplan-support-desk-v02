@@ -1,12 +1,14 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+import { createPool, Pool } from 'generic-pool';
 import { REDIS_TTL, RedisTTLKey } from '../config/redis.config';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(RedisService.name);
     private client: Redis;
+    private pool: Pool<Redis>;
 
     constructor(private readonly config: ConfigService) { }
 
@@ -26,9 +28,48 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         this.client.on('ready', () => this.logger.log('✅ Redis ready'));
         this.client.on('error', (err) => this.logger.error('❌ Redis error', err.stack));
         this.client.on('reconnecting', (ms: number) => this.logger.warn(`🔄 Redis reconnecting in ${ms}ms`));
+
+        // Connection pool for concurrent operations (e.g., bulk cache invalidation)
+        this.pool = createPool(
+            {
+                create: async () => {
+                    const conn = new Redis(url, {
+                        retryStrategy: (times) => Math.min(times * 100, 3000),
+                        maxRetriesPerRequest: 2,
+                        connectTimeout: 5000,
+                        lazyConnect: true,
+                    });
+                    return conn;
+                },
+                destroy: async (conn: Redis) => {
+                    await conn.quit();
+                },
+                validate: async (conn: Redis) => {
+                    try {
+                        await conn.ping();
+                        return true;
+                    } catch {
+                        return false;
+                    }
+                },
+            },
+            {
+                min: 2,
+                max: 10,
+                acquireTimeoutMillis: 5000,
+                idleTimeoutMillis: 30000,
+                evictionRunIntervalMillis: 60000,
+            }
+        );
+
+        this.pool.on('factoryCreateError', (err) => {
+            this.logger.error('Redis pool factory create error', err.message);
+        });
     }
 
-    onModuleDestroy() {
+    async onModuleDestroy() {
+        await this.pool.drain();
+        await this.pool.clear();
         this.client.quit().catch(() => this.client.disconnect());
     }
 
@@ -56,6 +97,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     /**
      * Pattern-based cache invalidation using SCAN (non-blocking).
      * Iterates Redis keyspace in batches to avoid blocking the server.
+     * Uses connection pool for parallel batch processing.
      */
     async delPattern(pattern: string, batchSize = 100): Promise<number> {
         let cursor = '0';
@@ -104,6 +146,16 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         } catch {
             return { memoryUsedMB: 0, connectedClients: 0, hitRate: 0 };
         }
+    }
+
+    /** Get a connection from the pool for high-concurrency operations */
+    async acquire(): Promise<Redis> {
+        return this.pool.acquire();
+    }
+
+    /** Release a connection back to the pool */
+    async release(conn: Redis): Promise<void> {
+        return this.pool.release(conn);
     }
 
     getClient(): Redis {

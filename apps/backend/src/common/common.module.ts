@@ -8,6 +8,7 @@ import { DatabaseBackupService } from './services/database-backup.service';
 import { DocumentParserService } from './services/document-parser.service';
 import { TicketOwnerGuard } from './guards/ticket-owner.guard';
 import { TeamScopeGuard } from './guards/team-scope.guard';
+import { AlertingService } from './services/alerting.service';
 
 @Global()
 @Module({
@@ -20,6 +21,7 @@ import { TeamScopeGuard } from './guards/team-scope.guard';
         DocumentParserService,
         TicketOwnerGuard,
         TeamScopeGuard,
+        AlertingService,
     ],
     controllers: [StorageController],
     exports: [
@@ -30,6 +32,7 @@ import { TeamScopeGuard } from './guards/team-scope.guard';
         DocumentParserService,
         TicketOwnerGuard,
         TeamScopeGuard,
+        AlertingService,
     ],
 })
 export class CommonModule { }
