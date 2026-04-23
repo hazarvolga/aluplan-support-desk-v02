@@ -163,51 +163,55 @@ export class PromptContextBuilderService {
      * Higher-priority sections are included first; lower-priority ones are truncated or dropped.
      */
     private assembleWithBudget(sections: ContextSection[]): string {
-        const maxChars = RAG_CONFIG.CONTEXT.MAX_CONTEXT_CHARS;
-        const maxTokens = RAG_CONFIG.CONTEXT.MAX_CONTEXT_TOKENS;
-        const CHARS_PER_TOKEN = 4; // Statistical heuristic for technical English/Turkish
+        const C = RAG_CONFIG.CONTEXT;
+        const maxTokens = C.MAX_CONTEXT_TOKENS;
+        const CHARS_PER_TOKEN = 3.8; // Refined heuristic for technical multilingual text
+
+        // Deduct reserves from the total budget
+        const availableTokens = maxTokens - C.SYSTEM_RESERVE_TOKENS - C.HISTORY_RESERVE_TOKENS;
 
         // Sort by priority DESC (highest first)
         const sorted = [...sections].sort((a, b) => b.priority - a.priority);
 
-        let totalChars = 0;
-        let totalTokens = 0;
+        let currentTokens = 0;
         const included: string[] = [];
 
         for (const section of sorted) {
-            const sectionChars = section.content.length;
-            const sectionTokens = Math.ceil(sectionChars / CHARS_PER_TOKEN);
+            const sectionTokens = Math.ceil(section.content.length / CHARS_PER_TOKEN);
 
-            const remainingChars = maxChars - totalChars;
-            const remainingTokens = maxTokens - totalTokens;
-
-            if (remainingChars <= 200 || remainingTokens <= 50) {
-                this.logger.warn(`⚠️ Context budget exhausted. Dropping section: ${section.name} (priority=${section.priority})`);
-                break;
+            // Special handling for the Knowledge Source (can take its own specific max)
+            if (section.name === 'APPROVED_KNOWLEDGE_SOURCE' && sectionTokens > C.DOCUMENT_CONTEXT_MAX_TOKENS) {
+                const charsToKeep = Math.floor(C.DOCUMENT_CONTEXT_MAX_TOKENS * CHARS_PER_TOKEN);
+                const truncatedKB = section.content.substring(0, charsToKeep) + '\n... [KB Truncated to fit Budget]\n';
+                included.push(truncatedKB);
+                currentTokens += C.DOCUMENT_CONTEXT_MAX_TOKENS;
+                this.logger.debug(`✂️ KB Content capped at ${C.DOCUMENT_CONTEXT_MAX_TOKENS} tokens`);
+                continue;
             }
 
-            if (sectionChars <= remainingChars && sectionTokens <= remainingTokens) {
+            if (currentTokens + sectionTokens <= availableTokens) {
                 included.push(section.content);
-                totalChars += sectionChars;
-                totalTokens += sectionTokens;
+                currentTokens += sectionTokens;
             } else {
-                // Truncate this section to fit whatever remains of the budget
-                const charsToTake = Math.min(remainingChars, remainingTokens * CHARS_PER_TOKEN) - 100;
+                // Section doesn't fit, try to partially include if it's high priority
+                const remainingTokensForSection = availableTokens - currentTokens;
 
-                if (charsToTake > 100) {
-                    const truncated = section.content.substring(0, charsToTake) + '\n... [truncated due to context budget]\n';
+                if (remainingTokensForSection > 100 && section.priority >= 5) {
+                    const charsToKeep = Math.floor(remainingTokensForSection * CHARS_PER_TOKEN) - 100;
+                    const truncated = section.content.substring(0, charsToKeep) + '\n... [section truncated]\n';
                     included.push(truncated);
-                    totalChars += truncated.length;
-                    totalTokens += Math.ceil(truncated.length / CHARS_PER_TOKEN);
-                    this.logger.warn(`⚠️ Truncated section: ${section.name} (${sectionChars} -> ${truncated.length} chars)`);
+                    currentTokens += remainingTokensForSection;
+                    this.logger.warn(`⚠️ High-priority section ${section.name} fits only partially. Truncated.`);
                 } else {
-                    this.logger.warn(`⚠️ Section ${section.name} too small to truncate effectively. Dropping.`);
+                    this.logger.warn(`🚫 Section ${section.name} dropped due to token budget (${sectionTokens} tokens surplus)`);
                 }
-                break;
+
+                // Once we start dropping or truncating significant portions, we stop to avoid context poisoning
+                if (currentTokens >= availableTokens * 0.95) break;
             }
         }
 
-        this.logger.log(`📊 Context assembled: ${included.length}/${sections.length} sections, ~${totalTokens}/${maxTokens} tokens (${totalChars} chars)`);
+        this.logger.log(`📊 Context Budget: ~${currentTokens}/${maxTokens} tokens used (${included.length}/${sections.length} sections)`);
         return included.join('\n');
     }
 }

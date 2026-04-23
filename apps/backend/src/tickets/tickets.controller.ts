@@ -225,7 +225,7 @@ export class TicketsController {
 
     @Delete(':id')
     @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'SENIOR_AGENT')
-    @ApiOperation({ summary: 'Delete a ticket (Hard delete)' })
+    @ApiOperation({ summary: 'Soft delete a ticket' })
     async remove(@Param('id') id: string, @Request() req: any) {
         return this.ticketsService.remove(id, req.user.sub);
     }

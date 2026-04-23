@@ -1,3 +1,5 @@
+import { RAG_CONFIG } from '../../config/rag.config';
+
 export interface ChunkResult {
     content: string;
     sequence: number;
@@ -7,11 +9,12 @@ export interface ChunkerOptions {
     maxTokens?: number;
     overlap?: number;
     title?: string;
+    docType?: 'TECHNICAL' | 'GENERAL' | 'LEGAL';
 }
 
 /**
  * Intelligent splitter that respects Markdown boundaries and technical context.
- * Uses a character-to-token proxy (4 chars/token).
+ * Uses a character-to-token proxy.
  */
 function splitConservingMarkdown(text: string, maxTokens: number, overlapTokens: number = 0): string[] {
     const CHARS_PER_TOKEN = 4;
@@ -97,18 +100,19 @@ export function smartChunk(text: string, options: ChunkerOptions = {}): ChunkRes
  * Hierarchical (Parent-Child) semantic chunking
  */
 export function hierarchicalChunk(text: string, options: ChunkerOptions = {}): { parent: string, children: string[] }[] {
-    let parentMax = 1200; // Increased for better context per GAP analysis
-    let childMax = 256;   // Optimized for precise vector search per GAP analysis
-    let overlapAllowed = 100;
+    let parentMax = RAG_CONFIG.CHUNKING.PARENT_MAX_TOKENS;
+    let childMax = RAG_CONFIG.CHUNKING.CHILD_MAX_TOKENS;
+    let overlapAllowed = RAG_CONFIG.CHUNKING.OVERLAP_TOKENS;
 
-    try {
-        const ragConfig = require('../../config/rag.config').RAG_CONFIG;
-        parentMax = ragConfig.CHUNKING.PARENT_MAX_TOKENS;
-        childMax = ragConfig.CHUNKING.CHILD_MAX_TOKENS;
-        overlapAllowed = ragConfig.CHUNKING.OVERLAP_TOKENS;
-    } catch { /* use defaults */ }
+    const { docType = 'GENERAL', title = 'Bilinmeyen Döküman' } = options;
 
-    const { title = 'Bilinmeyen Döküman' } = options;
+    // Dynamically adjust chunk sizes based on document type
+    if (docType === 'TECHNICAL') {
+        parentMax = Math.floor(parentMax * 1.5); // Technical docs benefit from larger context
+        childMax = Math.floor(childMax * 1.2);
+    } else if (docType === 'LEGAL') {
+        parentMax = Math.floor(parentMax * 2.0); // Legal docs need very large context
+    }
 
     // 1. Split by Markdown Headers to keep sections atomic
     const sections = text.split(/(?=^#{1,4}\s)/m);

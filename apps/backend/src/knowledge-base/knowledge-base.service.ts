@@ -57,6 +57,7 @@ export class KnowledgeBaseService {
         const { status, categoryId, search, page = 1, limit = 20, includeInternal = false } = params;
 
         const where: any = {
+            deletedAt: null,
             // Exclude bulk-imported reference documents (seeded from Bilgi Bankası).
             // These are AI retrieval sources, not admin-authored KB articles.
             isAutoImported: false,
@@ -95,8 +96,8 @@ export class KnowledgeBaseService {
     }
 
     async findOne(id: string): Promise<any> {
-        const article = await this.prisma.knowledgeArticle.findUnique({
-            where: { id },
+        const article = await this.prisma.knowledgeArticle.findFirst({
+            where: { id, deletedAt: null },
             include: {
                 creator: { select: { id: true, fullName: true, avatarUrl: true } },
                 category: true,
@@ -241,10 +242,19 @@ export class KnowledgeBaseService {
         });
     }
 
+    async remove(id: string): Promise<any> {
+        await this.findOne(id);
+        return this.prisma.knowledgeArticle.update({
+            where: { id },
+            data: { deletedAt: new Date() },
+        });
+    }
+
     // ─── KEYWORD SEARCH ─────────────────────────────────────
     async keywordSearch(query: string, limit = 10, includeInternal = false): Promise<any> {
         const where: any = {
             status: 'PUBLISHED',
+            deletedAt: null,
             OR: [
                 { title: { contains: query, mode: 'insensitive' } },
                 { tags: { has: query } },

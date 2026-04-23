@@ -10,12 +10,14 @@ export const RAG_CONFIG = {
     SIMILARITY: {
         /** Minimum score to include in results (env-overridable) */
         THRESHOLD: parseFloat(process.env.SIMILARITY_THRESHOLD || '0.25'),
-        /** Below this score, confidence is LOW (env-overridable) */
-        LOW_CONFIDENCE: parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.62'),
+        /** Near duplicate detection */
+        EXACT: 0.95,
         /** Score >= this → HIGH confidence */
         HIGH: 0.85,
         /** Score >= this → MEDIUM confidence */
         MEDIUM: 0.70,
+        /** Below this score, confidence is LOW (env-overridable) */
+        LOW: parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.62'),
         /** Absolute floor — never return below this */
         FLOOR: 0.55,
     },
@@ -23,11 +25,13 @@ export const RAG_CONFIG = {
     /** Hierarchical chunking parameters */
     CHUNKING: {
         /** Parent chunk max size (characters) — used for LLM context */
-        PARENT_MAX_TOKENS: parseInt(process.env.CHUNK_PARENT_MAX_TOKENS || '800', 10),
+        PARENT_MAX_TOKENS: parseInt(process.env.CHUNK_PARENT_MAX_TOKENS || '1000', 10),
         /** Child chunk max size (characters) — used for vector search */
-        CHILD_MAX_TOKENS: parseInt(process.env.CHUNK_CHILD_MAX_TOKENS || '450', 10),
+        CHILD_MAX_TOKENS: parseInt(process.env.CHUNK_CHILD_MAX_TOKENS || '500', 10),
         /** Overlap between chunks to prevent information loss */
-        OVERLAP_TOKENS: parseInt(process.env.CHUNK_OVERLAP_TOKENS || '100', 10),
+        OVERLAP_TOKENS: parseInt(process.env.CHUNK_OVERLAP_TOKENS || '200', 10),
+        /** Absolute minimum chunk size to prevent fragmentation */
+        MIN_CHUNK_SIZE: 100,
     },
 
     /** Context window budget for prompt construction */
@@ -35,9 +39,15 @@ export const RAG_CONFIG = {
         /** Maximum characters to send as context to LLM */
         MAX_CONTEXT_CHARS: parseInt(process.env.MAX_CONTEXT_CHARS || '12000', 10),
         /** Approximate token limit (character proxy: 4 chars/token) */
-        MAX_CONTEXT_TOKENS: 4000,
+        MAX_CONTEXT_TOKENS: 4096,
         /** Characters reserved for LLM response generation */
         RESPONSE_RESERVE_CHARS: 3000,
+        /** Reserved tokens for system prompt */
+        SYSTEM_RESERVE_TOKENS: 512,
+        /** Reserved tokens for conversation history */
+        HISTORY_RESERVE_TOKENS: 1024,
+        /** Maximum tokens allowed for document context */
+        DOCUMENT_CONTEXT_MAX_TOKENS: 2048,
         /** Priority weights for context sections (higher = more important, kept first) */
         PRIORITIES: {
             APPROVED_KNOWLEDGE_SOURCE: 10,
@@ -53,17 +63,28 @@ export const RAG_CONFIG = {
     /** Cache configuration */
     CACHE: {
         /** Default TTL for AI query cache in seconds */
-        DEFAULT_TTL: parseInt(process.env.AI_CACHE_TTL || '300', 10),
+        DEFAULT_TTL: parseInt(process.env.AI_CACHE_TTL || '3600', 10), // Increased to 1 hour
         /** Cache key version — bump to invalidate all caches */
-        VERSION: 'v5',
+        VERSION: 'v6',
     },
 
-    /** Re-ranking boost factors by source type */
+    /** Re-ranking boost factors and weights */
     RERANK: {
-        ARTICLE: 1.30,
-        DOCUMENT: 1.15,
-        URL: 0.60,
-        TICKET: 0.50,
+        /** Source type multipliers */
+        FACTORS: {
+            ARTICLE: 1.30,
+            DOCUMENT: 1.15,
+            URL: 0.60,
+            TICKET: 0.50,
+        },
+        /** Multi-factor ranking weights */
+        WEIGHTS: {
+            SEMANTIC: 0.70,
+            RECENCY: 0.15,
+            RATING: 0.15,
+        },
+        /** Decay constant for recency boost (days) */
+        RECENCY_DECAY_DAYS: 30,
     },
 
     /** Search defaults */
@@ -71,7 +92,7 @@ export const RAG_CONFIG = {
         /** Default number of results to return */
         DEFAULT_LIMIT: 5,
         /** Max results to fetch before re-ranking */
-        PRE_RERANK_LIMIT: 15,
+        PRE_RERANK_LIMIT: 20,
     },
 } as const;
 

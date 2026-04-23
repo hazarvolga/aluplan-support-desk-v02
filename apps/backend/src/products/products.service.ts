@@ -11,16 +11,16 @@ export class ProductsService {
 
     async findAllProducts() {
         return this.prisma.product.findMany({
-            where: {},
-            include: { categories: true },
+            where: { deletedAt: null },
+            include: { categories: { where: { deletedAt: null } } },
             orderBy: { createdAt: 'asc' },
         });
     }
 
     async getProduct(id: string) {
         const product = await this.prisma.product.findFirst({
-            where: { id },
-            include: { categories: true },
+            where: { id, deletedAt: null },
+            include: { categories: { where: { deletedAt: null } } },
         });
         if (!product) throw new NotFoundException('Product not found');
         return product;
@@ -37,7 +37,7 @@ export class ProductsService {
         });
     }
 
-    async updateCategory(categoryId: string, data: { name?: string; keywords?: string[] }) {
+    async updateCategory(categoryId: string, data: { name?: string; keywords?: string[]; isArchived?: boolean }) {
         return this.prisma.productCategory.update({
             where: { id: categoryId },
             data,
@@ -45,7 +45,10 @@ export class ProductsService {
     }
 
     async deleteCategory(categoryId: string) {
-        return this.prisma.productCategory.delete({ where: { id: categoryId } });
+        return this.prisma.productCategory.update({
+            where: { id: categoryId },
+            data: { deletedAt: new Date() },
+        });
     }
 
     async restoreAllplanFaqs() {

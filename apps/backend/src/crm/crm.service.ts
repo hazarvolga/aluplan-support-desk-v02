@@ -109,6 +109,7 @@ export class CrmService {
 
     async getAllConnections() {
         const connections = await this.prisma.crmConnection.findMany({
+            where: { deletedAt: null },
             include: {
                 _count: {
                     select: { syncLogs: true }
@@ -129,7 +130,7 @@ export class CrmService {
 
         // Fetch existing to handle masked secrets
         const existing = await this.prisma.crmConnection.findFirst({
-            where: { provider: provider as CrmProvider }
+            where: { provider: provider as CrmProvider, deletedAt: null }
         });
 
         if (config.clientSecret === '********' && existing?.clientSecret) {
@@ -175,8 +176,8 @@ export class CrmService {
     }
 
     async verifyConnectionById(id: string) {
-        const connection = await this.prisma.crmConnection.findUnique({
-            where: { id }
+        const connection = await this.prisma.crmConnection.findFirst({
+            where: { id, deletedAt: null }
         });
 
         if (!connection) throw new NotFoundException('CRM bağlantısı bulunamadı.');
@@ -198,8 +199,8 @@ export class CrmService {
     }
 
     async triggerSync(id: string) {
-        const connection = await this.prisma.crmConnection.findUnique({
-            where: { id }
+        const connection = await this.prisma.crmConnection.findFirst({
+            where: { id, deletedAt: null }
         });
 
         if (!connection) throw new NotFoundException('CRM bağlantısı bulunamadı.');

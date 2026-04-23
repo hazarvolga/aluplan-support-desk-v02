@@ -33,7 +33,7 @@ export class EmbeddingService {
     private readonly logger = new Logger(EmbeddingService.name);
 
     private readonly SIMILARITY_THRESHOLD = RAG_CONFIG.SIMILARITY.THRESHOLD;
-    private readonly LOW_CONFIDENCE_THRESHOLD = RAG_CONFIG.SIMILARITY.LOW_CONFIDENCE;
+    private readonly LOW_THRESHOLD = RAG_CONFIG.SIMILARITY.LOW;
     private readonly HIGH_THRESHOLD = RAG_CONFIG.SIMILARITY.HIGH;
     private readonly MEDIUM_THRESHOLD = RAG_CONFIG.SIMILARITY.MEDIUM;
 

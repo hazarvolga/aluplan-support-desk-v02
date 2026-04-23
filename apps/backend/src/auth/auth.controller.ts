@@ -1,7 +1,7 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Request, Query, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -19,6 +19,8 @@ export class AuthController {
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Login with email and password' })
+    @ApiResponse({ status: 200, description: 'Login successful. Returns tokens and sets HttpOnly cookies.' })
+    @ApiResponse({ status: 401, description: 'Invalid credentials.' })
     async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
         const tokens = await this.authService.login(dto);
 
@@ -47,6 +49,8 @@ export class AuthController {
     @Post('refresh')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Refresh access token' })
+    @ApiResponse({ status: 200, description: 'Tokens refreshed successfully.' })
+    @ApiResponse({ status: 401, description: 'Invalid or expired refresh token.' })
     async refresh(@Request() req: any, @Res({ passthrough: true }) res: Response) {
         const tokens = await this.authService.refreshTokens(req.user.sub, req.user.refreshToken);
 
@@ -75,6 +79,7 @@ export class AuthController {
     @HttpCode(HttpStatus.NO_CONTENT)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Logout' })
+    @ApiResponse({ status: 204, description: 'Logout successful. Cookies cleared.' })
     async logout(@Request() req: any, @Res({ passthrough: true }) res: Response) {
         const result = await this.authService.logout(req.user.sub);
 

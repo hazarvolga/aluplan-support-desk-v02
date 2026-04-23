@@ -1,8 +1,8 @@
 import {
     Controller, Get, Post, Patch, Param, Body,
-    Query, Request, UseGuards,
+    Query, Request, UseGuards, Delete
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { CreateArticleDto, UpdateArticleDto, ReviewArticleDto, SubmitFeedbackDto } from './dto/article.dto';
 import { RbacGuard } from '../rbac/rbac.guard';
@@ -62,7 +62,10 @@ export class KnowledgeBaseController {
 
     @Get('articles/:id')
     @RequirePermissions('kb:read')
-    @ApiOperation({ summary: 'Get article detail (all versions)' })
+    @ApiOperation({ summary: 'Get article detail' })
+    @ApiParam({ name: 'id', description: 'Article UUID' })
+    @ApiResponse({ status: 200, description: 'Return article with versions' })
+    @ApiResponse({ status: 404, description: 'Article not found' })
     findOne(@Param('id') id: string): Promise<any> {
         return this.kbService.findOne(id);
     }
@@ -70,23 +73,36 @@ export class KnowledgeBaseController {
     @Post('articles')
     @RequirePermissions('kb:create')
     @ApiOperation({ summary: 'Create new article (starts as DRAFT)' })
+    @ApiResponse({ status: 201, description: 'Article created successfully' })
     create(@Body() dto: CreateArticleDto, @Request() req: any): Promise<any> {
         return this.kbService.create(dto, req.user.sub);
     }
 
     @Patch('articles/:id')
     @RequirePermissions('kb:update')
-    @ApiOperation({ summary: 'Update article (creates new version if content changes)' })
+    @ApiOperation({ summary: 'Update article' })
+    @ApiParam({ name: 'id', description: 'Article UUID' })
+    @ApiResponse({ status: 200, description: 'Returns updated article with new version' })
     update(@Param('id') id: string, @Body() dto: UpdateArticleDto, @Request() req: any): Promise<any> {
         return this.kbService.update(id, dto, req.user.sub);
     }
 
-
     @Patch('articles/:id/archive')
     @RequirePermissions('kb:delete')
     @ApiOperation({ summary: 'Archive an article' })
+    @ApiParam({ name: 'id', description: 'Article UUID' })
+    @ApiResponse({ status: 200, description: 'Article status changed to ARCHIVED' })
     archive(@Param('id') id: string): Promise<any> {
         return this.kbService.archive(id);
+    }
+
+    @Delete('articles/:id')
+    @RequirePermissions('kb:delete')
+    @ApiOperation({ summary: 'Soft delete an article' })
+    @ApiParam({ name: 'id', description: 'Article UUID' })
+    @ApiResponse({ status: 200, description: 'Article marked as deleted' })
+    remove(@Param('id') id: string): Promise<any> {
+        return this.kbService.remove(id);
     }
 
     @Get('search')

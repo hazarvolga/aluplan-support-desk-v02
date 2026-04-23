@@ -189,6 +189,11 @@ export class AiQueryService {
         const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
         const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
 
+        // Phase 3: Immediate Adaptive Analysis for Thresholding
+        const diagnosisForThreshold = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content), options.productId);
+        const adaptiveThreshold = this.calculateAdaptiveThreshold(userQuery, diagnosisForThreshold);
+        this.logger.debug(`🎯 Adaptive threshold calculated: ${adaptiveThreshold.toFixed(3)} (Query: "${userQuery.slice(0, 30)}...")`);
+
         let expandedQuery = userQuery;
 
         // Parse Document Attachments
@@ -270,7 +275,7 @@ export class AiQueryService {
 
         // Lowered floor for response generation
         // Ensure threshold alignment: topScore must be >= search floor to be valid
-        const FALLBACK_THRESHOLD = RAG_CONFIG.SIMILARITY.FLOOR;
+        const FALLBACK_THRESHOLD = adaptiveThreshold;
 
         if (searchResponse.diagnostics.topScore < FALLBACK_THRESHOLD || results.length === 0) {
             this.logger.warn(`🚫 No reliable context found (topScore = ${searchResponse.diagnostics.topScore.toFixed(3)}, threshold = ${FALLBACK_THRESHOLD}). Routing to human agent.`);
@@ -318,7 +323,8 @@ export class AiQueryService {
         }
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
-            diagnosis = await this.diagnosisService.analyze(expandedQuery, options.history?.map(h => h.content), options.productId);
+            // Re-use already completed diagnosis
+            diagnosis = diagnosisForThreshold;
 
             const systemPromptRaw = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', MASTER_DIAGNOSIS_PROMPT);
             let dynamicSystemPrompt = systemPromptRaw
@@ -485,29 +491,43 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
     private rerankResults(results: SearchResult[]): SearchResult[] {
         if (results.length === 0) return [];
 
-        const RERANK = RAG_CONFIG.RERANK;
+        const RERANK = RAG_CONFIG.RERANK.FACTORS;
+        const WEIGHTS = RAG_CONFIG.RERANK.WEIGHTS;
         const RERANK_URL_HARD_FLOOR = parseFloat(process.env.RERANK_URL_HARD_FLOOR || '0.75');
 
         return results
             .map(res => {
-                let boost = 1.0;
+                let sourceBoost = 1.0;
 
-                if (res.sourceType === 'ARTICLE') boost *= RERANK.ARTICLE;
-                if (res.sourceType === 'DOCUMENT') boost *= RERANK.DOCUMENT;
-                if (res.sourceType === 'URL') boost *= RERANK.URL;
-                if (res.sourceType === 'TICKET') boost *= RERANK.TICKET;
+                if (res.sourceType === 'ARTICLE') sourceBoost *= RERANK.ARTICLE;
+                if (res.sourceType === 'DOCUMENT') sourceBoost *= RERANK.DOCUMENT;
+                if (res.sourceType === 'URL') sourceBoost *= RERANK.URL;
+                if (res.sourceType === 'TICKET') sourceBoost *= RERANK.TICKET;
 
-                // Recency Boost: Up to 15% curve for content updated within the last 30 days
+                // 1. Semantic Component (Weighted)
+                const semanticScore = res.similarity * sourceBoost;
+
+                // 2. Recency Component (Weighted)
+                let recencyScore = 0.5; // Neutral
                 if (res.updatedAt) {
                     const daysOld = (Date.now() - new Date(res.updatedAt).getTime()) / (1000 * 3600 * 24);
-                    if (daysOld <= 30) {
-                        boost *= (1 + 0.15 * (1 - daysOld / 30));
-                    }
+                    const decay = RAG_CONFIG.RERANK.RECENCY_DECAY_DAYS;
+                    // Linear decay from 1.0 to 0.0 over 30 days
+                    recencyScore = Math.max(0, 1 - (daysOld / decay));
                 }
+
+                // 3. Rating Component (Placeholder for future implementation)
+                const ratingScore = 0.7; // Default "trusted" score
+
+                // Combined Multi-Factor Score
+                const finalSimilarity =
+                    (semanticScore * WEIGHTS.SEMANTIC) +
+                    (recencyScore * WEIGHTS.RECENCY) +
+                    (ratingScore * WEIGHTS.RATING);
 
                 return {
                     ...res,
-                    similarity: res.similarity * boost
+                    similarity: finalSimilarity
                 };
             })
             .filter(res => {
@@ -535,6 +555,11 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             return;
         }
 
+        // Phase 3: Adaptive Analysis for Thresholding
+        const diagnosisForThreshold = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content), options.productId);
+        const adaptiveThreshold = this.calculateAdaptiveThreshold(userQuery, diagnosisForThreshold);
+        this.logger.debug(`🎯 [Streaming] Adaptive threshold calculated: ${adaptiveThreshold.toFixed(3)}`);
+
         let expandedQuery = userQuery;
         // Conditional Hotinfo expansion (same logic as query())
         const isHardwareQuery = /çökme|crash|donma|freeze|yavaş|slow|performans|hata|error|gpu|driver|sürücü|ram|bellek/i.test(userQuery);
@@ -543,12 +568,44 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             expandedQuery += `\n[Hotinfo Sistem Özeti]: İşletim Sistemi: ${h.osVersion || ''}, Ekran Kartı: ${h.gpu || ''}, Hata: ${h.errorTrace || ''}, Çakışan İşlemler: ${h.conflictingProcesses?.join(', ') || ''}`;
         }
 
-        const searchResponse = await this.embeddingService.search(expandedQuery, 5, null, isStaff);
-        const results = searchResponse.results;
+        const searchResponse = await this.embeddingService.search(expandedQuery, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, null, isStaff);
+        let results = searchResponse.results;
+
+        // Apply Re-ranking
+        results = this.rerankResults(results);
+        results = await this.rankResultsWithLLM(userQuery, results);
+
         const topResult = results[0] ?? null;
 
         let confidence: LocalConfidenceBand = 'NO_MATCH';
         let fullAnswer = '';
+
+        const FALLBACK_THRESHOLD = adaptiveThreshold;
+
+        // If no results pass the floor, yield no matches early
+        if (searchResponse.diagnostics.topScore < FALLBACK_THRESHOLD || results.length === 0) {
+            fullAnswer = 'Bu konu mevcut bilgi kaynağında yer almıyor. Sistem analizi için lütfen destek talebi oluşturun ve \'_hotinf_.hxl\' dosyanızı ekleyiniz.';
+            yield { chunk: fullAnswer };
+
+            // Interaction logging for NO_MATCH stream
+            const providerName = await this.ai.getActiveProviderName();
+            const modelName = await this.ai.getActiveModelName();
+            const interaction = await this.prisma.aiInteraction.create({
+                data: {
+                    userId,
+                    userQuery,
+                    responseGenerated: fullAnswer,
+                    confidenceBand: null,
+                    autoAnswered: false,
+                    similarityScore: searchResponse.diagnostics.topScore,
+                    provider: providerName,
+                    model: modelName,
+                    inputTokens: 0, outputTokens: 0, totalTokens: 0, estimatedCost: 0
+                }
+            });
+            yield { done: true, interactionId: interaction.id, suggestTicket: true };
+            return;
+        }
 
         if (topResult) {
             confidence = topResult.confidence as LocalConfidenceBand;
@@ -558,8 +615,8 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         let diagnosis: DiagnosisResult | undefined;
 
 
-        if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
-            diagnosis = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content), options.productId);
+        if (topResult) {
+            diagnosis = diagnosisForThreshold;
 
             const systemPromptRaw = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', MASTER_DIAGNOSIS_PROMPT);
             let dynamicSystemPrompt = systemPromptRaw
@@ -572,7 +629,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
                 userQuery,
-                kbContent: results.map(r => r.content).join('\n\n---\n\n'),
+                kbContent: results.slice(0, 10).map(r => r.content).join('\n\n---\n\n'),
                 hotinfoSnapshot: hotinfoContext,
                 messages: options.history?.map(h => ({ role: h.role, content: h.content })),
                 diagnosis
@@ -781,6 +838,29 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                 targetLanguage: targetLang
             });
         }
+    }
+
+    /**
+     * Dynamically calculates the similarity threshold based on query complexity.
+     */
+    private calculateAdaptiveThreshold(query: string, diagnosis?: DiagnosisResult): number {
+        let threshold = RAG_CONFIG.SIMILARITY.FLOOR;
+
+        // 1. Technical Depth Adjustment
+        if (diagnosis && (diagnosis.categoryNames.includes('Technical') || diagnosis.matchedKeywords.length > 3)) {
+            // High technical density might warrant lower floor to be more helpful with sparse but specific matches
+            threshold -= 0.05;
+        }
+
+        // 2. Query Length Adjustment (Short queries are ambiguous, requiring higher precision)
+        if (query.length < 15) {
+            threshold += 0.08;
+        }
+
+        // 3. User Context Adjustment (Staff queries can be more permissive)
+        // Note: isStaff is checked in the caller but we could also pass it here
+
+        return Math.max(0.45, Math.min(0.80, threshold));
     }
 
     async submitFeedback(

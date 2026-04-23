@@ -5,7 +5,7 @@ import {
 import { Observable } from 'rxjs';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { IsString, IsInt, Min, Max, IsOptional, MinLength, IsBoolean, IsUUID } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
 import { OllamaService } from './ollama.service';
@@ -97,6 +97,8 @@ export class AiController {
     @Throttle({ default: { limit: 10, ttl: 60000 } }) // Limit complex AI inference
     @ApiOperation({ summary: 'Ask a question — semantic search + AI reformat pipeline' })
     @ApiResponse({ status: 200, description: 'RAG Pipeline execution completed with an AI-generated response.' })
+    @ApiResponse({ status: 429, description: 'Rate limit exceeded for AI inference.' })
+    @ApiQuery({ name: 'wait', required: false, type: Boolean, description: 'Wait for full response instead of background job' })
     @HttpCode(HttpStatus.OK)
     query(@Body() dto: AiQueryDto, @Request() req: any, @Query('wait') wait?: string) {
         return this.aiQueryService.query({
@@ -115,6 +117,8 @@ export class AiController {
     @Public()
     @Get('status/:jobId')
     @ApiOperation({ summary: 'Check the status of a background AI job' })
+    @ApiParam({ name: 'jobId', description: 'The unique ID of the AI query job' })
+    @ApiResponse({ status: 200, description: 'Job status retrieved.' })
     async getJobStatus(@Param('jobId') jobId: string) {
         const job = await this.aiQueue.getJob(jobId);
         if (!job) return { status: 'NOT_FOUND' };
@@ -146,20 +150,26 @@ export class AiController {
     @Get('intelligence')
     @Roles('ADMIN', 'SUPERUSER')
     @ApiOperation({ summary: 'Get strategic AI intelligence (Shifts/ROI/Accuracy)' })
+    @ApiQuery({ name: 'days', required: false, type: Number, description: 'Time range in days' })
+    @ApiResponse({ status: 200, description: 'Strategic metrics retrieved.' })
     async getIntelligence(@Query('days') days?: string) {
         return this.aiQueryService.getIntelligenceMetrics(days ? parseInt(days, 10) : 30);
     }
 
     @Get('health-trends')
     @Roles('ADMIN', 'SUPERUSER')
-    @ApiOperation({ summary: 'Get AI health time-series trends (deflection and accuracy over time)' })
+    @ApiOperation({ summary: 'Get AI health time-series trends' })
+    @ApiQuery({ name: 'days', required: false, type: Number, description: 'Time range in days' })
+    @ApiResponse({ status: 200, description: 'Time-series trends retrieved.' })
     async getHealthTrends(@Query('days') days?: string) {
         return this.aiQueryService.getHealthTrends(days ? parseInt(days, 10) : 7);
     }
 
     @Get('knowledge-gaps')
     @Roles('ADMIN', 'SUPERUSER')
-    @ApiOperation({ summary: 'Identify top knowledge gaps (most frequent unanswered queries)' })
+    @ApiOperation({ summary: 'Identify top knowledge gaps' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max number of gaps to return' })
+    @ApiResponse({ status: 200, description: 'Unanswered patterns identified.' })
     async getKnowledgeGaps(@Query('limit') limit?: string) {
         return this.aiQueryService.getKnowledgeGaps(limit ? parseInt(limit, 10) : 5);
     }
@@ -189,6 +199,8 @@ export class AiController {
     @Get('query/stream')
     @Throttle({ default: { limit: 10, ttl: 60000 } })
     @ApiOperation({ summary: 'Stream AI response via SSE' })
+    @ApiQuery({ name: 'q', required: true, description: 'User question' })
+    @ApiQuery({ name: 'lang', required: false, description: 'Target language' })
     @ApiResponse({ status: 200, description: 'Server-Sent Events (SSE) stream established.' })
     @Sse()
     streamQuery(@Query('q') query: string, @Query('lang') lang: string, @Request() req: any): Observable<MessageEvent> {
@@ -216,6 +228,8 @@ export class AiController {
 
     @Post('interactions/:id/feedback')
     @ApiOperation({ summary: 'Submit rating/feedback for an AI interaction' })
+    @ApiParam({ name: 'id', description: 'Interaction UUID' })
+    @ApiResponse({ status: 201, description: 'Feedback stored successfully.' })
     async submitFeedback(
         @Param('id') interactionId: string,
         @Body() dto: FeedbackDto,
