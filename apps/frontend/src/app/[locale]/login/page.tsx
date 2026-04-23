@@ -30,11 +30,7 @@ export default function LoginPage() {
         setError('');
         setLoading(true);
         try {
-            const { access_token } = await api.auth.login(email, password);
-            localStorage.setItem('access_token', access_token);
-
-            // Set cookie for middleware route protection
-            document.cookie = `access_token=${access_token}; path=/; max-age=86400; SameSite=Lax`;
+            const user = await api.auth.login(email, password);
 
             // Check user profile for smart routing
             try {

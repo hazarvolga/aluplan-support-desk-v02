@@ -48,28 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
 
     const fetchUser = async () => {
-        const token = localStorage.getItem('access_token');
         const cleanPath = stripLocale(pathname);
-        if (!token) {
-            setUser(null);
-            setLoading(false);
-            // Only redirect to login if user is on a protected route
-            const isPublicRoute =
-                cleanPath === '/' ||
-                cleanPath.startsWith('/login') ||
-                cleanPath.startsWith('/register') ||
-                cleanPath.startsWith('/reset-password');
-            if (!isPublicRoute) {
-                router.push('/login');
-            }
-            return;
-        }
 
         try {
             const data = await api.auth.me();
             setUser(data as any);
         } catch (err) {
-            localStorage.removeItem('access_token');
             setUser(null);
             const isPublicRoute =
                 cleanPath === '/' ||
@@ -90,10 +74,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
             console.error('Logout API call failed', e);
         } finally {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            // Clear cookie for middleware
-            document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
             setUser(null);
             router.push('/login');
         }

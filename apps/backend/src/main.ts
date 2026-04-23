@@ -1,6 +1,7 @@
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
@@ -99,9 +100,37 @@ async function bootstrap() {
 
     app.use(compression());
 
+    app.use(cookieParser());
+
+    // Payload Limit restriction
+    app.use(json({ limit: '10mb' }));
+    app.use(urlencoded({ extended: true, limit: '10mb' }));
+
     // CSRF & Security Middlewares
     app.use((req: Request, res: Response, next: NextFunction) => {
+        let csrfToken = req.cookies['XSRF-TOKEN'];
+        if (!csrfToken) {
+            csrfToken = crypto.randomBytes(32).toString('hex');
+            res.cookie('XSRF-TOKEN', csrfToken, {
+                httpOnly: false, // Frontend needs to read this to include in header
+                secure: configService.get('NODE_ENV') === 'production',
+                sameSite: 'lax',
+                path: '/',
+            });
+        }
+
         if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+            const headerToken = req.headers['x-xsrf-token'];
+
+            if (!headerToken || headerToken !== csrfToken) {
+                logger.warn(`CSRF double-submit validation failed from origin: ${req.headers.origin}`);
+                return res.status(403).json({
+                    statusCode: 403,
+                    message: 'CSRF validation failed: Invalid XSRF token',
+                    error: 'Forbidden'
+                });
+            }
+
             const requestedWith = req.headers['x-requested-with'];
             if (!requestedWith || requestedWith !== 'XMLHttpRequest') {
                 logger.warn(`CSRF validation failed: Missing X-Requested-With header from origin: ${req.headers.origin}`);
@@ -115,17 +144,8 @@ async function bootstrap() {
         next();
     });
 
-    app.use(cookieParser());
-
-    // Payload Limit restriction
-    app.use(json({ limit: '10mb' }));
-    app.use(urlencoded({ extended: true, limit: '10mb' }));
-
-    // Note: csurf middleware has been completely removed.
-    // The application uses stateless JWTs passed via the Authorization header
-    // (Bearer tokens) injected from localStorage. Because the browser does not
-    // automatically attach Bearer tokens to cross-site requests, traditional CSRF
-    // vulnerabilities are impossible. Enforcing CSRF only breaks CORS requests unnecessarily.
+    // Note: Double-submit CSRF and Custom Header (X-Requested-With) 
+    // mechanisms are implemented manually above to replace deprecated csurf.
 
     const allowedOrigins = [
         'http://localhost:3000',

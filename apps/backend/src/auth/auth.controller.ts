@@ -1,5 +1,6 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Request, Query } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Request, Query, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -18,8 +19,27 @@ export class AuthController {
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Login with email and password' })
-    login(@Body() dto: LoginDto) {
-        return this.authService.login(dto);
+    async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+        const tokens = await this.authService.login(dto);
+
+        const isProd = process.env.NODE_ENV === 'production';
+        res.cookie('access_token', tokens.access_token, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 15 * 60 * 1000, // 15 mins
+        });
+
+        res.cookie('refresh_token', tokens.refresh_token, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: 'lax',
+            path: '/api/v1/auth/refresh',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
+        return tokens;
     }
 
     @Public()
@@ -27,8 +47,27 @@ export class AuthController {
     @Post('refresh')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Refresh access token' })
-    refresh(@Request() req: any) {
-        return this.authService.refreshTokens(req.user.sub, req.user.refreshToken);
+    async refresh(@Request() req: any, @Res({ passthrough: true }) res: Response) {
+        const tokens = await this.authService.refreshTokens(req.user.sub, req.user.refreshToken);
+
+        const isProd = process.env.NODE_ENV === 'production';
+        res.cookie('access_token', tokens.access_token, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 15 * 60 * 1000,
+        });
+
+        res.cookie('refresh_token', tokens.refresh_token, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: 'lax',
+            path: '/api/v1/auth/refresh',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        return tokens;
     }
 
     @UseGuards(JwtAuthGuard)
@@ -36,8 +75,14 @@ export class AuthController {
     @HttpCode(HttpStatus.NO_CONTENT)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Logout' })
-    logout(@Request() req: any) {
-        return this.authService.logout(req.user.sub);
+    async logout(@Request() req: any, @Res({ passthrough: true }) res: Response) {
+        const result = await this.authService.logout(req.user.sub);
+
+        const isProd = process.env.NODE_ENV === 'production';
+        res.clearCookie('access_token', { path: '/', sameSite: 'lax', secure: isProd });
+        res.clearCookie('refresh_token', { path: '/api/v1/auth/refresh', sameSite: 'lax', secure: isProd });
+
+        return result;
     }
 
     @Public()

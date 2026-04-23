@@ -44,11 +44,13 @@ describe('AuthController', () => {
             mockAuthService.login.mockResolvedValue(expectedResult);
 
             // Act
-            const result = await controller.login(dto);
+            const mockRes = { cookie: jest.fn() } as any;
+            const result = await controller.login(dto, mockRes);
 
             // Assert
             expect(mockAuthService.login).toHaveBeenCalledWith(dto);
             expect(result).toEqual(expectedResult);
+            expect(mockRes.cookie).toHaveBeenCalledWith('access_token', 'token', expect.any(Object));
         });
     });
 
@@ -60,11 +62,13 @@ describe('AuthController', () => {
             mockAuthService.refreshTokens.mockResolvedValue(expectedResult);
 
             // Act
-            const result = await controller.refresh(req);
+            const mockRes = { cookie: jest.fn() } as any;
+            const result = await controller.refresh(req, mockRes);
 
             // Assert
             expect(mockAuthService.refreshTokens).toHaveBeenCalledWith('user1', 'refreshToken123');
             expect(result).toEqual(expectedResult);
+            expect(mockRes.cookie).toHaveBeenCalledWith('access_token', 'new-acs', expect.any(Object));
         });
     });
 
@@ -75,11 +79,13 @@ describe('AuthController', () => {
             mockAuthService.logout.mockResolvedValue({ success: true });
 
             // Act
-            const result = await controller.logout(req);
+            const mockRes = { clearCookie: jest.fn() } as any;
+            const result = await controller.logout(req, mockRes);
 
             // Assert
             expect(mockAuthService.logout).toHaveBeenCalledWith('user1');
             expect(result).toEqual({ success: true });
+            expect(mockRes.clearCookie).toHaveBeenCalledWith('access_token', expect.any(Object));
         });
     });
 

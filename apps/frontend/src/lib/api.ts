@@ -22,7 +22,6 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 };
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     const csrfToken = typeof window !== 'undefined'
         ? document.cookie.split('; ').find(row => row.trim().startsWith('XSRF-TOKEN='))?.split('=')[1]
         : null;
@@ -31,10 +30,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         'X-Requested-With': 'XMLHttpRequest',
         ...options?.headers,
     };
-
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
 
     if (csrfToken) {
         headers['X-XSRF-TOKEN'] = csrfToken;
@@ -57,67 +52,46 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     let res = await fetch(`${getApiUrl()}${path}`, fetchOptions);
 
     if (res.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
-        const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
+        if (isRefreshing) {
+            try {
+                await new Promise<void>((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                });
 
-        if (refreshToken) {
-            if (isRefreshing) {
-                try {
-                    const newToken = await new Promise<string | null>((resolve, reject) => {
-                        failedQueue.push({ resolve, reject });
-                    });
-
-                    if (newToken) {
-                        headers['Authorization'] = `Bearer ${newToken}`;
-                        res = await fetch(`${getApiUrl()}${path}`, { ...fetchOptions, headers });
-                        if (res.ok) {
-                            const text = await res.text();
-                            return text ? JSON.parse(text) : {} as T;
-                        }
-                    }
-                } catch (e) {
-                    throw new Error('common.session_expired');
+                res = await fetch(`${getApiUrl()}${path}`, fetchOptions);
+                if (res.ok) {
+                    const text = await res.text();
+                    return text ? JSON.parse(text) : {} as T;
                 }
-            } else {
-                isRefreshing = true;
-                try {
-                    const refreshRes = await fetch(`${getApiUrl()}/auth/refresh`, {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${refreshToken}`
-                        }
-                    });
-
-                    if (refreshRes.ok) {
-                        const refreshData = await refreshRes.json();
-                        if (refreshData.access_token && refreshData.refresh_token) {
-                            localStorage.setItem('access_token', refreshData.access_token);
-                            localStorage.setItem('refresh_token', refreshData.refresh_token);
-
-                            processQueue(null, refreshData.access_token);
-
-                            headers['Authorization'] = `Bearer ${refreshData.access_token}`;
-                            res = await fetch(`${getApiUrl()}${path}`, { ...fetchOptions, headers });
-                        } else {
-                            throw new Error('Invalid refresh response');
-                        }
-                    } else {
-                        throw new Error('Refresh failed');
-                    }
-                } catch (e) {
-                    processQueue(e as Error, null);
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
-                    // role-guard.tsx will catch the 401 and redirect to login
-                    throw new Error('common.session_expired');
-                } finally {
-                    isRefreshing = false;
-                }
+            } catch (e) {
+                throw new Error('common.session_expired');
             }
         } else {
-            // No refresh token, let it fail normally
-            localStorage.removeItem('access_token');
+            isRefreshing = true;
+            try {
+                const refreshRes = await fetch(`${getApiUrl()}/auth/refresh`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (refreshRes.ok) {
+                    processQueue(null);
+                    res = await fetch(`${getApiUrl()}${path}`, fetchOptions);
+                    if (res.ok) {
+                        const text = await res.text();
+                        return text ? JSON.parse(text) : {} as T;
+                    }
+                } else {
+                    processQueue(new Error('Session expired'));
+                    throw new Error('common.session_expired');
+                }
+            } catch (err) {
+                processQueue(err as Error);
+                throw new Error('common.session_expired');
+            } finally {
+                isRefreshing = false;
+            }
         }
     }
 
