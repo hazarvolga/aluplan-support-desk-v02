@@ -6,6 +6,8 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { PiiMaskingService } from './services/pii-masking.service';
 import { DatabaseBackupService } from './services/database-backup.service';
 import { DocumentParserService } from './services/document-parser.service';
+import { TicketOwnerGuard } from './guards/ticket-owner.guard';
+import { TeamScopeGuard } from './guards/team-scope.guard';
 
 @Global()
 @Module({
@@ -15,7 +17,9 @@ import { DocumentParserService } from './services/document-parser.service';
         StorageService,
         PiiMaskingService,
         DatabaseBackupService,
-        DocumentParserService
+        DocumentParserService,
+        TicketOwnerGuard,
+        TeamScopeGuard,
     ],
     controllers: [StorageController],
     exports: [
@@ -23,7 +27,9 @@ import { DocumentParserService } from './services/document-parser.service';
         StorageService,
         PiiMaskingService,
         DatabaseBackupService,
-        DocumentParserService
+        DocumentParserService,
+        TicketOwnerGuard,
+        TeamScopeGuard,
     ],
 })
 export class CommonModule { }
