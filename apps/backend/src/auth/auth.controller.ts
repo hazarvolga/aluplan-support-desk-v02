@@ -15,7 +15,7 @@ export class AuthController {
 
     @Public()
     @Post('login')
-    @Throttle({ default: { limit: 20, ttl: 60000 } }) // Relaxed for debugging (20 req / 1 min)
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Login with email and password' })
     login(@Body() dto: LoginDto) {
@@ -50,7 +50,7 @@ export class AuthController {
 
     @Public()
     @Post('forgot-password')
-    @Throttle({ default: { limit: 10, ttl: 60000 } }) // Relaxed for debugging (10 req / 1 min)
+    @Throttle({ default: { limit: 3, ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Request a password reset email' })
     forgotPassword(@Body('email') email: string) {
@@ -59,7 +59,7 @@ export class AuthController {
 
     @Public()
     @Post('reset-password')
-    @Throttle({ default: { limit: 10, ttl: 60000 } }) // Relaxed for debugging
+    @Throttle({ default: { limit: 3, ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Reset a forgotten password using token' })
     resetPassword(@Body() dto: ResetPasswordDto) {

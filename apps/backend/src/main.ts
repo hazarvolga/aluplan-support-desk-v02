@@ -196,7 +196,10 @@ async function bootstrap() {
     require('fs').writeFileSync('./openapi.json', JSON.stringify(document));
 
     if (configService.get('NODE_ENV') === 'production') {
-        const swaggerPassword = configService.get('SWAGGER_PASSWORD', 'admin1234!');
+        const swaggerPassword = configService.get('SWAGGER_PASSWORD');
+        if (!swaggerPassword) {
+            throw new Error('SWAGGER_PASSWORD environment variable is absolutely required in production.');
+        }
         app.use(['/api/docs', '/api/docs-json'], (req: Request, res: Response, next: NextFunction) => {
             const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
             const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
