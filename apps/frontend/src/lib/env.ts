@@ -24,7 +24,7 @@ function getOptionalEnvVar(name: string, fallback: string = ''): string {
 /** Validated environment configuration */
 export const env = {
     /** Backend API base URL */
-    apiUrl: getRequiredEnvVar('NEXT_PUBLIC_API_URL', 'http://localhost:4000/api/v1'),
+    apiUrl: process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? `https://api.${window.location.hostname.replace('www.', '')}/api/v1` : 'http://localhost:4000/api/v1'),
 
     /** WebSocket endpoint URL (derived from API URL if not set) */
     wsUrl: getOptionalEnvVar('NEXT_PUBLIC_WS_URL'),
