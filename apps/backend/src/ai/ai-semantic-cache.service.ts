@@ -163,11 +163,11 @@ export class AiSemanticCache {
         tenantId: string,
     ): Promise<AiQueryResult | null> {
         try {
-            const embedding = await this.embeddingService.embed(query);
-            if (!embedding?.embedding) return null;
+            const embedding = await this.embeddingService.embedText(query);
+            if (!embedding) return null;
 
             const normalized = this.normalizer.normalize(
-                embedding.embedding,
+                embedding,
                 'canonical',
                 1536,
             );
@@ -202,11 +202,11 @@ export class AiSemanticCache {
         result: AiQueryResult,
     ): Promise<void> {
         try {
-            const embedding = await this.embeddingService.embed(query);
-            if (!embedding?.embedding) return;
+            const embedding = await this.embeddingService.embedText(query);
+            if (!embedding) return;
 
             const normalized = this.normalizer.normalize(
-                embedding.embedding,
+                embedding,
                 'canonical',
                 1536,
             );

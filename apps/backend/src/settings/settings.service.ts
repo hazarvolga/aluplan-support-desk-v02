@@ -190,6 +190,13 @@ export class SettingsService {
         return setting?.value ?? null;
     }
 
+    /**
+     * Quick setter for services that need to update a single setting value.
+     */
+    async setValue(key: string, value: string): Promise<void> {
+        await this.upsert({ key, value, isSecret: false });
+    }
+
     async getAll(decrypt = false) {
         const settings = await this.prisma.setting.findMany();
 

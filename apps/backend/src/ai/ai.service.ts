@@ -80,7 +80,7 @@ export class AiService implements AiProvider {
                 if (isOverride) {
                     result = await operation(provider);
                 } else {
-                    result = await breaker.fire(() => operation(provider));
+                    result = (await breaker.fire(() => operation(provider))) as T | null | undefined;
                 }
 
                 if (result !== null && result !== undefined) {
@@ -171,6 +171,26 @@ export class AiService implements AiProvider {
 
     getName(): string {
         return 'dispatcher';
+    }
+
+    // Backwards-compat circuit breaker helpers (opossum tracks state internally)
+    private recordSuccess(): void { /* no-op: opossum handles this via breaker.fire() */ }
+    private recordFailure(): void { /* no-op: opossum handles this via breaker.fire() */ }
+
+    private async isCircuitClosed(): Promise<boolean> {
+        return !await this.isManualOverride();
+    }
+
+    private get circuitOpenUntil(): number {
+        return 0;
+    }
+
+    private get failureCount(): number {
+        let total = 0;
+        for (const breaker of this.breakers.values()) {
+            total += breaker.stats.failures;
+        }
+        return total;
     }
 
     async embed(text: string): Promise<EmbeddingResult | null> {

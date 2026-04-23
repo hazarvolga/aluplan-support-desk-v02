@@ -212,7 +212,6 @@ export class AiBudgetMonitor {
         }
 
         try {
-            const fetch = (await import('node-fetch')).default;
             await fetch(slackWebhook, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
