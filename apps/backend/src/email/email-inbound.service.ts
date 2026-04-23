@@ -200,8 +200,8 @@ export class EmailInboundService implements OnModuleInit {
                 const newTicket = await this.ticketsService.create({
                     subject,
                     description: body,
-                    priority: 'MEDIUM' as any,
-                }, user.id);
+                    priority: 'MEDIUM',
+                } as any, user.id);
                 ticketId = newTicket.id;
                 const message = await this.prisma.ticketMessage.create({
                     data: {

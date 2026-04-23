@@ -16,6 +16,7 @@ describe('KnowledgeBaseService', () => {
             category: { findMany: jest.fn(), create: jest.fn() },
             knowledgeArticle: {
                 findMany: jest.fn(),
+                findFirst: jest.fn(),
                 count: jest.fn(),
                 findUnique: jest.fn(),
                 create: jest.fn(),
@@ -71,7 +72,7 @@ describe('KnowledgeBaseService', () => {
                 status: 'PUBLISHED',
                 versions: [{ version: 1 }]
             };
-            mockPrisma.knowledgeArticle.findUnique.mockResolvedValue(mockArticle);
+            mockPrisma.knowledgeArticle.findFirst.mockResolvedValue(mockArticle);
             mockPrisma.knowledgeArticle.update.mockResolvedValue({});
             mockPrisma.knowledgeArticleVersion.create.mockResolvedValue({});
 
@@ -94,7 +95,7 @@ describe('KnowledgeBaseService', () => {
     describe('review', () => {
         it('should publish and index article on approval', async () => {
             const mockArticle = { id: 'art-1', title: 'T', status: 'REVIEW', versions: [] };
-            mockPrisma.knowledgeArticle.findUnique.mockResolvedValue(mockArticle);
+            mockPrisma.knowledgeArticle.findFirst.mockResolvedValue(mockArticle);
             mockPrisma.knowledgeArticle.update.mockResolvedValue({
                 ...mockArticle,
                 status: 'PUBLISHED',
@@ -109,7 +110,7 @@ describe('KnowledgeBaseService', () => {
 
         it('should revert to DRAFT on rejection', async () => {
             const mockArticle = { id: 'art-1', status: 'REVIEW' };
-            mockPrisma.knowledgeArticle.findUnique.mockResolvedValue(mockArticle);
+            mockPrisma.knowledgeArticle.findFirst.mockResolvedValue(mockArticle);
             mockPrisma.knowledgeArticle.update.mockResolvedValue({ status: 'DRAFT' });
 
             const result = await service.review('art-1', { approved: false }, 'rev-1');

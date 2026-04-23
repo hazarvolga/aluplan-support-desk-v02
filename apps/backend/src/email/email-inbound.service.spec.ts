@@ -3,6 +3,8 @@ import { EmailInboundService } from './email-inbound.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { TicketsService } from '../tickets/tickets.service';
+import { StorageService } from '../common/services/storage.service';
+import { PiiMaskingService } from '../common/services/pii-masking.service';
 
 describe('EmailInboundService', () => {
     let service: EmailInboundService;
@@ -22,6 +24,9 @@ describe('EmailInboundService', () => {
             findUnique: jest.fn(),
             create: jest.fn(),
         },
+        role: {
+            findFirst: jest.fn().mockResolvedValue({ id: 'role-1', name: 'CUSTOMER' }),
+        },
     };
 
     const mockSettingsService = {
@@ -33,6 +38,14 @@ describe('EmailInboundService', () => {
         create: jest.fn(),
     };
 
+    const mockStorageService = {
+        uploadFile: jest.fn(),
+    };
+
+    const mockPiiMaskingService = {
+        maskSensitiveData: jest.fn((text) => text),
+    };
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -40,13 +53,15 @@ describe('EmailInboundService', () => {
                 { provide: PrismaService, useValue: mockPrismaService },
                 { provide: SettingsService, useValue: mockSettingsService },
                 { provide: TicketsService, useValue: mockTicketsService },
+                { provide: StorageService, useValue: mockStorageService },
+                { provide: PiiMaskingService, useValue: mockPiiMaskingService },
             ],
         }).compile();
 
         service = module.get<EmailInboundService>(EmailInboundService);
         prismaService = module.get<PrismaService>(PrismaService);
         ticketsService = module.get<TicketsService>(TicketsService);
-        
+
         jest.clearAllMocks();
     });
 
@@ -82,7 +97,7 @@ describe('EmailInboundService', () => {
             expect(mockPrismaService.ticket.findUnique).toHaveBeenCalledWith({ where: { ticketNumber: 'SUP-12345' } });
             expect(mockTicketsService.addMessage).toHaveBeenCalledWith(
                 'ticket-1',
-                { message: 'This is a reply to the ticket.', isInternal: false },
+                { message: 'This is a reply to the ticket.', isInternal: false, channel: 'EMAIL' },
                 'user-2',
                 'customer'
             );
@@ -95,7 +110,7 @@ describe('EmailInboundService', () => {
             // Mock no user
             mockPrismaService.user.findUnique.mockResolvedValue(null);
             mockPrismaService.user.create.mockResolvedValue({ id: 'new-user-1', email: 'new@example.com' });
-            
+
             mockTicketsService.create.mockResolvedValue({ id: 'new-ticket-1' });
 
             const mockMail = {

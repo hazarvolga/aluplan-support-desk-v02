@@ -14,8 +14,14 @@ import { ConfigService } from '@nestjs/config';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { PromptsService } from './prompts.service';
 import { SettingsService } from '../settings/settings.service';
+import { RagObservabilityService } from './rag-observability.service';
+import { AiDiagnosisService } from './ai-diagnosis.service';
+import { DocumentParserService } from '../common/services/document-parser.service';
+import { MetricsService } from '../metrics/metrics.service';
+import { getQueueToken } from '@nestjs/bullmq';
 import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 const LOW_CONFIDENCE_THRESHOLD = 0.72;
 
@@ -58,6 +64,11 @@ describe('AiQueryService.streamQuery() — Property-Based Tests', () => {
                 { provide: SettingsService, useValue: mockSettings },
                 { provide: LangfuseService, useValue: mockLangfuse },
                 { provide: RedisService, useValue: mockRedis },
+                { provide: RagObservabilityService, useValue: { recordQuery: jest.fn() } },
+                { provide: AiDiagnosisService, useValue: { analyze: jest.fn().mockResolvedValue({ categoryNames: [], matchedKeywords: [] }) } },
+                { provide: DocumentParserService, useValue: { parse: jest.fn() } },
+                { provide: MetricsService, useValue: { increment: jest.fn(), gauge: jest.fn(), recordCacheOp: jest.fn() } },
+                { provide: getQueueToken('ai-query-processing'), useValue: {} },
             ],
         }).compile();
         service = module.get(AiQueryService);

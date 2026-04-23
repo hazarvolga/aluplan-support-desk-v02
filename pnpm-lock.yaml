@@ -285,6 +285,9 @@ importers:
       nodemailer:
         specifier: ^6.10.1
         version: 6.10.1
+      opossum:
+        specifier: ^9.0.0
+        version: 9.0.0
       otplib:
         specifier: ^13.3.0
         version: 13.3.0
@@ -418,6 +421,9 @@ importers:
       '@types/nodemailer':
         specifier: ^6.4.22
         version: 6.4.22
+      '@types/opossum':
+        specifier: ^8.1.9
+        version: 8.1.9
       '@types/passport-jwt':
         specifier: ^4.0.1
         version: 4.0.1
@@ -4813,6 +4819,9 @@ packages:
   '@types/nodemailer@6.4.22':
     resolution: {integrity: sha512-HV16KRsW7UyZBITE07B62k8PRAKFqRSFXn1T7vslurVjN761tMDBhk5Lbt17ehyTzK6XcyJnAgUpevrvkcVOzw==}
 
+  '@types/opossum@8.1.9':
+    resolution: {integrity: sha512-Jm/tYxuJFefiwRYs+/EOsUP3ktk0c8siMgAHPLnA4PXF4wKghzcjqf88dY+Xii5jId5Txw4JV0FMKTpjbd7KJA==}
+
   '@types/oracledb@6.5.2':
     resolution: {integrity: sha512-kK1eBS/Adeyis+3OlBDMeQQuasIDLUYXsi2T15ccNJ0iyUpQ4xDF7svFu3+bGVrI0CMBUclPciz+lsQR3JX3TQ==}
 
@@ -8383,6 +8392,10 @@ packages:
   opener@1.5.2:
     resolution: {integrity: sha512-ur5UIdyw5Y7yEj9wLzhqXiy6GZ3Mwx0yGI+5sMn2r0N0v3cKJvUmFH5yPP+WXh9e0xfyzyJX95D8l088DNFj7A==}
     hasBin: true
+
+  opossum@9.0.0:
+    resolution: {integrity: sha512-K76U0QkxOfUZamneQuzz+AP0fyfTJcCplZ2oZL93nxeupuJbN4s6uFNbmVCt4eWqqGqRnnowdFuBicJ1fLMVxw==}
+    engines: {node: ^24 || ^22 || ^20}
 
   option@0.2.4:
     resolution: {integrity: sha512-pkEqbDyl8ou5cpq+VsnQbe/WlEy5qS7xPzMS1U55OCG9KPvwFD46zDbxQIj3egJSFc3D+XhYOPUzz49zQAVy7A==}
@@ -15321,6 +15334,10 @@ snapshots:
     dependencies:
       '@types/node': 22.19.11
 
+  '@types/opossum@8.1.9':
+    dependencies:
+      '@types/node': 22.19.11
+
   '@types/oracledb@6.5.2':
     dependencies:
       '@types/node': 22.19.11
@@ -19865,6 +19882,8 @@ snapshots:
       is-wsl: 2.2.0
 
   opener@1.5.2: {}
+
+  opossum@9.0.0: {}
 
   option@0.2.4: {}
 

@@ -7,14 +7,12 @@ import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
 import { VertexAiService } from './vertex-ai.service';
 import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
+import CircuitBreaker from 'opossum';
 
 @Injectable()
 export class AiService implements AiProvider {
     private readonly logger = new Logger(AiService.name);
-    private failureCount = 0;
-    private circuitOpenUntil = 0;
-    private readonly FAILURE_THRESHOLD = 50; // Increased for bulk operations
-    private readonly COOLDOWN_MS = 30_000;
+    private breakers = new Map<string, CircuitBreaker>();
 
     constructor(
         private readonly settings: SettingsService,
@@ -26,28 +24,25 @@ export class AiService implements AiProvider {
         private readonly eventEmitter: EventEmitter2,
     ) { }
 
-    private async isCircuitClosed(): Promise<boolean> {
-        // Manual override check
+    private async isManualOverride(): Promise<boolean> {
         const manualOff = await this.settings.getValue('ai.circuit_breaker.manual_off');
-        if (manualOff?.toString() === 'true') return false;
-
-        if (Date.now() < this.circuitOpenUntil) {
-            return false;
-        }
-        return true;
+        return manualOff?.toString() === 'true';
     }
 
-    private recordFailure() {
-        this.failureCount++;
-        if (this.failureCount >= this.FAILURE_THRESHOLD) {
-            this.circuitOpenUntil = Date.now() + this.COOLDOWN_MS;
-            this.logger.error(`🚨 AI Circuit Breaker OPENED. Cooldown for ${this.COOLDOWN_MS / 1000}s due to ${this.failureCount} failures.`);
+    private getBreaker(providerName: string): CircuitBreaker {
+        if (!this.breakers.has(providerName)) {
+            const breaker = new CircuitBreaker(async (fn: () => Promise<any>) => await fn(), {
+                timeout: 120_000, // 2 minutes max per operation
+                errorThresholdPercentage: 50,
+                resetTimeout: 30000,
+                volumeThreshold: 5,
+            });
+            breaker.on('open', () => this.logger.error(`🚨 Circuit Breaker OPENED for ${providerName}`));
+            breaker.on('halfOpen', () => this.logger.warn(`⚠️ Circuit Breaker HALF-OPEN for ${providerName}`));
+            breaker.on('close', () => this.logger.log(`✅ Circuit Breaker CLOSED for ${providerName}`));
+            this.breakers.set(providerName, breaker);
         }
-    }
-
-    private recordSuccess() {
-        this.failureCount = 0;
-        this.circuitOpenUntil = 0;
+        return this.breakers.get(providerName)!;
     }
 
     private async executeWithFallback<T>(
@@ -55,10 +50,7 @@ export class AiService implements AiProvider {
         task: string,
         operation: (provider: AiProvider) => Promise<T | null>
     ): Promise<T | null> {
-        if (!await this.isCircuitClosed()) {
-            this.logger.warn('⚠️ AI Operation skipped: Circuit Breaker is OPEN or manually disabled.');
-            return null;
-        }
+        const isOverride = await this.isManualOverride();
 
         let primaryName = '';
         if (type === 'chat') {
@@ -82,16 +74,22 @@ export class AiService implements AiProvider {
         for (const pName of providersToTry) {
             try {
                 const provider = await this.getProvider(pName);
-                const result = await operation(provider);
+                const breaker = this.getBreaker(pName);
+
+                let result;
+                if (isOverride) {
+                    result = await operation(provider);
+                } else {
+                    result = await breaker.fire(() => operation(provider));
+                }
+
                 if (result !== null && result !== undefined) {
-                    this.recordSuccess();
                     return result;
                 } else {
                     lastError = new Error('Provider returned null');
                 }
-            } catch (err) {
+            } catch (err: any) {
                 lastError = err;
-                this.recordFailure();
                 this.logger.warn(`⚠️ API Error on Provider [${pName}]: ${err}`);
 
                 if (pName === primaryName && fallbackName && fallbackName !== primaryName) {
@@ -193,9 +191,16 @@ export class AiService implements AiProvider {
     }
 
     async *streamGenerate(prompt: string | AiPart[], timeout?: number, attachments?: AiPart[]): AsyncGenerator<string, void, unknown> {
-        if (!await this.isCircuitClosed()) {
-            yield 'AI servisi şu anda devre dışı (Circuit Breaker).';
-            return;
+        if (await this.isManualOverride()) {
+            // override flow is fine but stream doesn't easily compose with opossum's proxy
+            // Since Opossum is Promise-based and we are streaming, we'll manually check the breaker state.
+        } else {
+            const primaryName = await this.getProviderForTask('chat');
+            const breaker = this.getBreaker(primaryName);
+            if (breaker.opened) {
+                yield 'AI servisi şu anda aşırı yük altında veya hizmet dışı (Circuit Breaker devrede). Lütfen daha sonra tekrar deneyin.';
+                return;
+            }
         }
 
         const task = 'general';

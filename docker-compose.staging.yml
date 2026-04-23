@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      target: runner
+      args:
+        APP: backend
+    environment:
+      - NODE_ENV=staging
+      - DATABASE_URL=${STAGING_DATABASE_URL}
+      - REDIS_URL=${STAGING_REDIS_URL}
+    ports:
+      - "3002:3001"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      target: runner
+      args:
+        APP: frontend
+    environment:
+      - NODE_ENV=staging
+      - NEXT_PUBLIC_API_URL=https://staging-api.aluplan.com/api/v1
+    ports:
+      - "4001:4000"
+    restart: unless-stopped

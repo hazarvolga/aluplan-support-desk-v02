@@ -28,6 +28,7 @@ describe('NotificationsGateway', () => {
                 sadd: jest.fn(),
                 srem: jest.fn(),
                 smembers: jest.fn().mockResolvedValue([]),
+                sunion: jest.fn().mockResolvedValue([]),
                 del: jest.fn(),
                 expire: jest.fn(),
             }),
@@ -68,7 +69,7 @@ describe('NotificationsGateway', () => {
             expect(mockSocket.data.userId).toBe('user-1');
             expect(mockSocket.join).toHaveBeenCalledWith('role:admin');
             expect(mockSocket.join).toHaveBeenCalledWith('user:user-1');
-            expect(mockRedis.getClient().sadd).toHaveBeenCalledWith('ws:active:agents', 'user-1');
+            expect(mockRedis.getClient().sadd).toHaveBeenCalledWith('ws:active:role:admin', 'user-1');
         });
 
         it('should disconnect if token is missing', async () => {
@@ -113,18 +114,18 @@ describe('NotificationsGateway', () => {
                 priority: 'HIGH',
                 status: 'OPEN'
             };
-            mockRedis.getClient().smembers.mockResolvedValue(['agent-1', 'agent-2']);
+            mockRedis.getClient().sunion.mockResolvedValue(['agent-1', 'agent-2']);
 
             await gateway.emitTicketCreated(mockTicket);
 
             expect(mockServer.to).toHaveBeenCalledWith('role:admin');
             expect(mockServer.emit).toHaveBeenCalledWith('ticket:created', expect.any(Object));
-            expect(mockPrisma.notification.createMany).toHaveBeenCalledWith({
+            expect(mockPrisma.notification.createMany).toHaveBeenCalledWith(expect.objectContaining({
                 data: expect.arrayContaining([
                     expect.objectContaining({ userId: 'agent-1' }),
                     expect.objectContaining({ userId: 'agent-2' }),
                 ])
-            });
+            }));
         });
     });
 

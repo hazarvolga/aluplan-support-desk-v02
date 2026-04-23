@@ -23,6 +23,16 @@ echo "[$(date)] Starting database backup..."
 # Note: pg_dump handles DATABASE_URL if passed as first argument
 if pg_dump "${DB_URL}" | gzip > "${BACKUP_FILE}"; then
   echo "✅ Backup successful: ${BACKUP_FILE}"
+  
+  # DR: Upload to external storage (S3) if bucket is configured
+  if [ -n "$AWS_S3_BACKUP_BUCKET" ]; then
+    echo "[$(date)] Uploading to S3 for Disaster Recovery..."
+    if aws s3 cp "${BACKUP_FILE}" "s3://${AWS_S3_BACKUP_BUCKET}/db-backups/$(basename ${BACKUP_FILE})"; then
+      echo "✅ Disaster Recovery: S3 Sync successful."
+    else
+      echo "⚠️ S3 Sync failed. Backup remains local only."
+    fi
+  fi
 else
   echo "❌ Backup failed!"
   exit 1

@@ -29,7 +29,7 @@ const ENCRYPTED_SECRET = 'enc:test-webhook-secret-123';
 
 const mockPrisma = {
     crmConnection: {
-        findUnique: jest.fn().mockResolvedValue({
+        findFirst: jest.fn().mockResolvedValue({
             id: 'conn-1',
             webhookSecret: ENCRYPTED_SECRET,
         }),
@@ -76,7 +76,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         // Reset to valid connection by default
-        mockPrisma.crmConnection.findUnique.mockResolvedValue({
+        mockPrisma.crmConnection.findFirst.mockResolvedValue({
             id: 'conn-1',
             webhookSecret: ENCRYPTED_SECRET,
         });
@@ -103,7 +103,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
         });
 
         it('should return 401 when no CRM connection exists in DB', async () => {
-            mockPrisma.crmConnection.findUnique.mockResolvedValue(null);
+            mockPrisma.crmConnection.findFirst.mockResolvedValue(null);
 
             await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
@@ -113,7 +113,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
         });
 
         it('should return 401 when connection has no webhookSecret', async () => {
-            mockPrisma.crmConnection.findUnique.mockResolvedValue({
+            mockPrisma.crmConnection.findFirst.mockResolvedValue({
                 id: 'conn-1',
                 webhookSecret: null,
             });

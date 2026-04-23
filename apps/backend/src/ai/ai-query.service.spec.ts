@@ -10,7 +10,11 @@ import { SettingsService } from '../settings/settings.service';
 import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
 import { RagObservabilityService } from './rag-observability.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AiDiagnosisService } from './ai-diagnosis.service';
+import { DocumentParserService } from '../common/services/document-parser.service';
+import { MetricsService } from '../metrics/metrics.service';
+import { getQueueToken } from '@nestjs/bullmq';
+
 
 describe('AiQueryService', () => {
     let service: AiQueryService;
@@ -38,6 +42,7 @@ describe('AiQueryService', () => {
         knowledgeSource: { count: jest.fn() },
         knowledgeArticle: { count: jest.fn() },
         faqEntry: { count: jest.fn() },
+        trainingQueue: { upsert: jest.fn() },
     };
 
     const mockAiService = {
@@ -106,7 +111,10 @@ describe('AiQueryService', () => {
                 { provide: LangfuseService, useValue: mockLangfuseService },
                 { provide: RedisService, useValue: mockRedisService },
                 { provide: RagObservabilityService, useValue: mockRagObservabilityService },
-                { provide: EventEmitter2, useValue: mockEventEmitter },
+                { provide: AiDiagnosisService, useValue: { analyze: jest.fn().mockResolvedValue({ categoryNames: [], matchedKeywords: [] }) } },
+                { provide: DocumentParserService, useValue: { parse: jest.fn() } },
+                { provide: MetricsService, useValue: { increment: jest.fn(), gauge: jest.fn(), recordCacheOp: jest.fn() } },
+                { provide: getQueueToken('ai-query-processing'), useValue: {} },
             ],
         }).compile();
 
@@ -156,7 +164,7 @@ describe('AiQueryService', () => {
             // Assert
             expect(result.confidence).toBe('NO_MATCH');
             expect(result.suggestTicket).toBe(true);
-            expect(result.answer).toContain('No reliable source found');
+            expect(result.answer).toContain('Bu konu mevcut bilgi kaynağında yer almıyor');
             expect(mockAiService.reformat).not.toHaveBeenCalled();
         });
     });

@@ -12,6 +12,11 @@ import { mockPrismaService, PrismaServiceProvider } from '../../../test/mocks/pr
 import { EmbeddingService } from '../embedding.service';
 import { LangfuseService } from '../langfuse.service';
 import { ConfigService } from '@nestjs/config';
+import { AiDiagnosisService } from '../ai-diagnosis.service';
+import { DocumentParserService } from '../../common/services/document-parser.service';
+import { MetricsService } from '../../metrics/metrics.service';
+import { getQueueToken } from '@nestjs/bullmq';
+import { RagObservabilityService } from '../rag-observability.service';
 
 const mockEmbeddingService = {
     search: jest.fn(),
@@ -88,6 +93,11 @@ describe('AiQueryService', () => {
                 { provide: SettingsService, useValue: mockSettingsService },
                 { provide: PromptsService, useValue: mockPromptsService },
                 { provide: PromptContextBuilderService, useValue: mockPromptContextBuilderService },
+                { provide: AiDiagnosisService, useValue: { analyze: jest.fn().mockResolvedValue({ categoryNames: [], matchedKeywords: [] }) } },
+                { provide: DocumentParserService, useValue: { parse: jest.fn() } },
+                { provide: MetricsService, useValue: { increment: jest.fn(), gauge: jest.fn(), recordCacheOp: jest.fn() } },
+                { provide: getQueueToken('ai-query-processing'), useValue: {} },
+                { provide: RagObservabilityService, useValue: {} },
             ],
         }).compile();
 
@@ -136,7 +146,7 @@ describe('AiQueryService', () => {
             mockAiService.generateResponse.mockResolvedValue('Here is how to create a roof...');
 
             // Mock user role
-            mockPrismaService.user.findUnique.mockResolvedValue({ role: 'USER' });
+            mockPrismaService.user.findUnique.mockResolvedValue({ role: { name: 'USER' } });
 
             const result = await service.query({ userQuery: customerQuery, userId: 'session-123' });
 
@@ -170,7 +180,7 @@ describe('AiQueryService', () => {
             mockPrismaService.aiInteraction.create.mockResolvedValue({ id: 'mock-interaction-2' });
 
             // Mock user role
-            mockPrismaService.user.findUnique.mockResolvedValue({ role: 'USER' });
+            mockPrismaService.user.findUnique.mockResolvedValue({ role: { name: 'USER' } });
 
             // Even though it found something, threshold logic should reject it.
             const result = await service.query({ userQuery: customerQuery, userId: 'session-456' });
