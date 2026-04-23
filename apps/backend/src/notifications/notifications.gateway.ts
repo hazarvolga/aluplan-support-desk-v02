@@ -5,6 +5,7 @@ import {
     ConnectedSocket,
     OnGatewayConnection,
     OnGatewayDisconnect,
+    OnGatewayInit,
     MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
@@ -15,6 +16,8 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { EmailService } from '../email/email.service';
+import { createAdapter } from '@socket.io/redis-adapter';
+import Redis from 'ioredis';
 
 @WebSocketGateway({
     cors: {
@@ -31,7 +34,7 @@ import { EmailService } from '../email/email.service';
     },
     namespace: '/ws',
 })
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
     @WebSocketServer() server: Server;
     private readonly logger = new Logger(NotificationsGateway.name);
     private connectedClients = 0;
@@ -43,6 +46,19 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         private readonly redisService: RedisService,
         private readonly emailService: EmailService,
     ) { }
+
+    // GAP-09: Socket.io Redis Adapter for horizontal scaling
+    afterInit(server: Server) {
+        try {
+            const redisUrl = this.config.get<string>('redis.url') || this.config.get<string>('REDIS_URL') || 'redis://localhost:6379';
+            const pubClient = new Redis(redisUrl);
+            const subClient = pubClient.duplicate();
+            server.adapter(createAdapter(pubClient, subClient));
+            this.logger.log('✅ Socket.io Redis Adapter connected — multi-instance WS broadcasting ready');
+        } catch (err) {
+            this.logger.warn('⚠️ Socket.io Redis Adapter failed — falling back to in-memory adapter', err);
+        }
+    }
 
     async handleConnection(client: Socket) {
         try {

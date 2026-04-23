@@ -38,11 +38,12 @@ import { AiQueryProcessor } from './ai-query.processor';
         BullModule.registerQueue(
             {
                 name: 'document-parsing',
-                defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 5000 }, removeOnComplete: 100, removeOnFail: 500 }
+                // GAP-11: DLQ pattern — retain failed jobs for admin inspection
+                defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 5000 }, removeOnComplete: 100, removeOnFail: false }
             },
             {
                 name: 'ai-query-processing',
-                defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 1000 }, removeOnComplete: 100, removeOnFail: 500 }
+                defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 1000 }, removeOnComplete: 100, removeOnFail: false }
             }
         ),
     ],

@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+import { REDIS_TTL, RedisTTLKey } from '../config/redis.config';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
@@ -12,16 +13,23 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     onModuleInit() {
         const url = this.config.get<string>('redis.url') as string;
 
+        // GAP-07: Enhanced connection with pooling-ready options
         this.client = new Redis(url, {
-            retryStrategy: (times) => Math.min(times * 50, 2000),
+            retryStrategy: (times) => Math.min(times * 100, 5000),
+            maxRetriesPerRequest: 3,
+            connectTimeout: 10000,
+            enableReadyCheck: true,
+            lazyConnect: false,
         });
 
         this.client.on('connect', () => this.logger.log('✅ Redis connected'));
+        this.client.on('ready', () => this.logger.log('✅ Redis ready'));
         this.client.on('error', (err) => this.logger.error('❌ Redis error', err.stack));
+        this.client.on('reconnecting', (ms: number) => this.logger.warn(`🔄 Redis reconnecting in ${ms}ms`));
     }
 
     onModuleDestroy() {
-        this.client.disconnect();
+        this.client.quit().catch(() => this.client.disconnect());
     }
 
     async get(key: string): Promise<string | null> {
@@ -36,11 +44,55 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         }
     }
 
+    /** Set with centralized TTL from redis.config.ts */
+    async setWithTTL(key: string, value: string, ttlKey: RedisTTLKey): Promise<void> {
+        await this.client.set(key, value, 'EX', REDIS_TTL[ttlKey]);
+    }
+
     async del(key: string): Promise<void> {
         await this.client.del(key);
+    }
+
+    /** Pattern-based cache invalidation (e.g., 'kb:article:*') */
+    async delPattern(pattern: string): Promise<number> {
+        const keys = await this.client.keys(pattern);
+        if (keys.length === 0) return 0;
+        return this.client.del(...keys);
+    }
+
+    /** Pub/Sub publish helper */
+    async publish(channel: string, message: string): Promise<void> {
+        await this.client.publish(channel, message);
+    }
+
+    /** Health introspection — memory usage and connection info */
+    async getHealthInfo(): Promise<{ memoryUsedMB: number; connectedClients: number; hitRate: number }> {
+        try {
+            const info = await this.client.info('memory');
+            const statsInfo = await this.client.info('stats');
+            const clientsInfo = await this.client.info('clients');
+
+            const memMatch = info.match(/used_memory:(\d+)/);
+            const hitsMatch = statsInfo.match(/keyspace_hits:(\d+)/);
+            const missesMatch = statsInfo.match(/keyspace_misses:(\d+)/);
+            const clientsMatch = clientsInfo.match(/connected_clients:(\d+)/);
+
+            const hits = parseInt(hitsMatch?.[1] || '0', 10);
+            const misses = parseInt(missesMatch?.[1] || '0', 10);
+            const hitRate = hits + misses > 0 ? (hits / (hits + misses)) * 100 : 0;
+
+            return {
+                memoryUsedMB: parseInt(memMatch?.[1] || '0', 10) / (1024 * 1024),
+                connectedClients: parseInt(clientsMatch?.[1] || '0', 10),
+                hitRate: Math.round(hitRate * 100) / 100,
+            };
+        } catch {
+            return { memoryUsedMB: 0, connectedClients: 0, hitRate: 0 };
+        }
     }
 
     getClient(): Redis {
         return this.client;
     }
 }
+

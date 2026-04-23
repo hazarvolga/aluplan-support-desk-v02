@@ -44,6 +44,7 @@ import { CommonModule } from './common/common.module';
 import { LoggerModule } from 'nestjs-pino';
 import { MetricsModule } from './metrics/metrics.module';
 import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
+import { QueueDashboardModule } from './queue-dashboard/queue-dashboard.module';
 
 @Module({
     imports: [
@@ -157,6 +158,7 @@ import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
         CommonModule,
         LoggerModule,
         MetricsModule,
+        QueueDashboardModule,
     ],
     providers: [
         {
