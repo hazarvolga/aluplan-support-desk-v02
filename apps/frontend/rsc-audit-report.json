@@ -1,0 +1,97 @@
+{
+  "timestamp": "2026-04-23T17:24:14.200Z",
+  "summary": {
+    "totalFiles": 111,
+    "useClientCount": 14,
+    "pageLevelCount": 0,
+    "layoutLevelCount": 0,
+    "score": 100,
+    "grade": "A"
+  },
+  "details": [
+    {
+      "file": "command-menu.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 119
+    },
+    {
+      "file": "ui/avatar.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 51
+    },
+    {
+      "file": "ui/command.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 156
+    },
+    {
+      "file": "ui/dialog.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 123
+    },
+    {
+      "file": "ui/form.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 175
+    },
+    {
+      "file": "ui/label.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 27
+    },
+    {
+      "file": "ui/popover.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 32
+    },
+    {
+      "file": "ui/progress.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 38
+    },
+    {
+      "file": "ui/scroll-area.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 49
+    },
+    {
+      "file": "ui/select.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 161
+    },
+    {
+      "file": "ui/separator.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 32
+    },
+    {
+      "file": "ui/tabs.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 56
+    },
+    {
+      "file": "ui/toast.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 130
+    },
+    {
+      "file": "ui/toaster.tsx",
+      "type": "component",
+      "hasUseClient": true,
+      "lineCount": 36
+    }
+  ]
+}

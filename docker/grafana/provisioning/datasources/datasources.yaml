@@ -35,3 +35,17 @@ datasources:
     access: proxy
     url: http://prometheus:9090
     isDefault: true
+
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: aluplan_postgres:5432
+    database: aluplan_support
+    user: ${POSTGRES_USER}
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false
+    isDefault: false
