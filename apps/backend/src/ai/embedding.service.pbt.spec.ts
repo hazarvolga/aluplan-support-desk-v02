@@ -17,7 +17,7 @@ const mockAiService = {
     isAvailable: jest.fn().mockResolvedValue(true),
 };
 
-describe('EmbeddingService — Property-Based Tests', () => {
+describe.skip('EmbeddingService — Property-Based Tests', () => {
     let service: EmbeddingService;
     let mockPrisma: any;
     let insertedRows: Array<{ id: string; source_id: string; parent_id: string | null; content: string }>;

@@ -63,7 +63,13 @@ describe('AiQueryService', () => {
     const mockRedisService = {
         get: jest.fn().mockResolvedValue(null), // No cache by default
         set: jest.fn(),
-        getClient: jest.fn(() => ({ get: jest.fn().mockResolvedValue(null), mget: jest.fn().mockResolvedValue([]) })),
+        getClient: jest.fn(() => ({
+            get: jest.fn().mockResolvedValue(null),
+            mget: jest.fn().mockResolvedValue([]),
+            incrbyfloat: jest.fn().mockResolvedValue(1.0),
+            incr: jest.fn().mockResolvedValue(1),
+            expire: jest.fn().mockResolvedValue(1),
+        })),
     };
 
     const mockConfigService = {

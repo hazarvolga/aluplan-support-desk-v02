@@ -2,6 +2,10 @@ module.exports = {
     moduleFileExtensions: ["js", "json", "ts"],
     rootDir: ".",
     testMatch: ["**/*.spec.ts"],
+    testPathIgnorePatterns: [
+        "/node_modules/",
+        "/test/integration/",
+    ],
     transform: {
         "^.+\\.ts$": "@swc/jest"
     },

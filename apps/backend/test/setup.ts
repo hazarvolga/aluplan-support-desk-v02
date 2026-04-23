@@ -32,6 +32,13 @@ jest.mock('ioredis', () => {
             quit: jest.fn().mockResolvedValue(true),
             disconnect: jest.fn().mockResolvedValue(true),
             ping: jest.fn().mockResolvedValue('PONG'),
+            incr: jest.fn().mockResolvedValue(1),
+            incrbyfloat: jest.fn().mockResolvedValue(1.0),
+            expire: jest.fn().mockResolvedValue(1),
+            keys: jest.fn().mockResolvedValue([]),
+            scan: jest.fn().mockResolvedValue(['0', []]),
+            info: jest.fn().mockResolvedValue(''),
+            publish: jest.fn().mockResolvedValue(1),
             status: 'ready'
         };
     });

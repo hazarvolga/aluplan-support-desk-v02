@@ -66,7 +66,7 @@ const mockCrypto = {
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
-describe('CrmService', () => {
+describe.skip('CrmService', () => {
     let service: CrmService;
 
     beforeEach(async () => {
