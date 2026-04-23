@@ -22,16 +22,24 @@ import { KnowledgePoolModule } from '../knowledge-pool/knowledge-pool.module';
 import { EmailModule } from '../email/email.module';
 import { VertexAiService } from './vertex-ai.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { RedisModule } from '../redis/redis.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 import { BullModule } from '@nestjs/bullmq';
 import { DocumentAiService } from './document-ai.service';
 import { DocumentParsingProcessor } from './document-parsing.processor';
 import { AiDiagnosisService } from './ai-diagnosis.service';
 import { AiQueryProcessor } from './ai-query.processor';
+import { AiProviderRegistry } from './ai-provider-registry.service';
+import { AiProviderRouter } from './ai-provider-router.service';
+import { EmbeddingNormalizer } from './embedding-normalizer.service';
+import { AiSemanticCache } from './ai-semantic-cache.service';
 
 @Module({
     imports: [
         SettingsModule,
+        RedisModule,
+        PrismaModule,
         forwardRef(() => EmailModule),
         forwardRef(() => KnowledgePoolModule),
         NotificationsModule,
@@ -50,6 +58,10 @@ import { AiQueryProcessor } from './ai-query.processor';
     controllers: [AiController],
     providers: [
         AiService,
+        AiProviderRegistry,
+        AiProviderRouter,
+        EmbeddingNormalizer,
+        AiSemanticCache,
         OpenAiService,
         GenericOpenAiService,
         OllamaService,
@@ -74,6 +86,10 @@ import { AiQueryProcessor } from './ai-query.processor';
     ],
     exports: [
         AiService,
+        AiProviderRegistry,
+        AiProviderRouter,
+        EmbeddingNormalizer,
+        AiSemanticCache,
         EmbeddingService,
         AiQueryService,
         AiCopilotService,

@@ -79,6 +79,8 @@ export const mockPrismaService: any = {
     },
     $transaction: jest.fn((callback: any) => callback(mockPrismaService)),
     $queryRaw: jest.fn(),
+    $queryRawUnsafe: jest.fn(),
+    $executeRawUnsafe: jest.fn(),
 };
 
 export const mockConfigService = {
@@ -120,8 +122,10 @@ export const mockRedisService = {
     getClient: jest.fn(() => ({
         get: jest.fn(),
         set: jest.fn(),
+        incr: jest.fn(),
         incrby: jest.fn(),
         expire: jest.fn(),
         del: jest.fn(),
+        eval: jest.fn(),
     })),
 };

@@ -475,6 +475,23 @@ model AiInteraction {
   @@map("ai_interactions")
 }
 
+model AiResponseCache {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  queryHash       String   @unique @map("query_hash")
+  queryEmbedding  Unsupported("vector")? @map("query_embedding")
+  response        Json
+  tenantId        String   @map("tenant_id") @db.Uuid
+  userId          String?  @map("user_id") @db.Uuid
+  confidence      String   @db.VarChar(20)
+  createdAt       DateTime @default(now()) @map("created_at")
+  expiresAt       DateTime @map("expires_at")
+
+  @@index([queryHash], map: "idx_cache_hash")
+  @@index([tenantId], map: "idx_cache_tenant")
+  @@index([expiresAt], map: "idx_cache_expires")
+  @@map("ai_response_cache")
+}
+
 model InteractionFeedback {
   id                   String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   interactionId        String         @map("interaction_id") @db.Uuid
