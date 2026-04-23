@@ -43,8 +43,10 @@ export default async function middleware(request: NextRequest) {
             response = NextResponse.redirect(loginUrl);
         } else {
             try {
-                // Ensure secret matches Next.js / Backend shared env or fallback
-                const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-fallback-key-for-dev-only');
+                if (!process.env.JWT_SECRET) {
+                    throw new Error('JWT_SECRET is required. Set it in environment variables.');
+                }
+                const secret = new TextEncoder().encode(process.env.JWT_SECRET);
                 // Validates signature and standard claims (like `exp`) automatically
                 await jwtVerify(token, secret);
 
