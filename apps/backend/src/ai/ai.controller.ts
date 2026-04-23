@@ -29,11 +29,11 @@ export class AiQueryDto {
 
     @ApiPropertyOptional()
     @IsOptional()
-    hotinfoContext?: any;
+    hotinfoContext?: Record<string, unknown>;
 
     @ApiPropertyOptional({ type: 'array', items: { type: 'object' } })
     @IsOptional()
-    attachments?: any[];
+    attachments?: Record<string, unknown>[];
 
     @ApiPropertyOptional({ description: 'Specific product ID to scope the search' })
     @IsOptional()
@@ -46,8 +46,7 @@ export class AiQueryDto {
     language?: string;
 
     @ApiPropertyOptional({ type: 'array', items: { type: 'object' } })
-    @IsOptional()
-    history?: any[];
+    history?: { role: 'user' | 'assistant'; content: string; }[];
 }
 
 export class FeedbackDto {
@@ -100,7 +99,7 @@ export class AiController {
     @ApiResponse({ status: 429, description: 'Rate limit exceeded for AI inference.' })
     @ApiQuery({ name: 'wait', required: false, type: Boolean, description: 'Wait for full response instead of background job' })
     @HttpCode(HttpStatus.OK)
-    query(@Body() dto: AiQueryDto, @Request() req: any, @Query('wait') wait?: string) {
+    query(@Body() dto: AiQueryDto, @Request() req: any /* GAP-06: Next step properly type ReqUser */, @Query('wait') wait?: string) {
         return this.aiQueryService.query({
             userQuery: dto.query,
             userId: req.user.sub,
@@ -203,7 +202,7 @@ export class AiController {
     @ApiQuery({ name: 'lang', required: false, description: 'Target language' })
     @ApiResponse({ status: 200, description: 'Server-Sent Events (SSE) stream established.' })
     @Sse()
-    streamQuery(@Query('q') query: string, @Query('lang') lang: string, @Request() req: any): Observable<MessageEvent> {
+    streamQuery(@Query('q') query: string, @Query('lang') lang: string, @Request() req: any /* GAP-06: Next step properly type ReqUser */): Observable<MessageEvent> {
         return new Observable((subscriber) => {
             (async () => {
                 try {
@@ -233,7 +232,7 @@ export class AiController {
     async submitFeedback(
         @Param('id') interactionId: string,
         @Body() dto: FeedbackDto,
-        @Request() req: any,
+        @Request() req: any /* GAP-06: Next step properly type ReqUser */,
     ) {
         // Feedback logic can live in either AiQueryService or AiService depending on preference.
         // We will bridge it to AiQueryService as it handles the interaction store.

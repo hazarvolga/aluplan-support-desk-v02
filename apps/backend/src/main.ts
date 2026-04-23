@@ -16,6 +16,7 @@ import { AppModule } from './app.module';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import { ErrorLoggerService } from './common/services/error-logger.service';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { XssValidationPipe } from './common/pipes/xss-validation.pipe';
 
 async function checkConnection(host: string, port: number, timeout = 3000): Promise<boolean> {
     return new Promise((resolve) => {
@@ -190,6 +191,7 @@ async function bootstrap() {
 
     // Validation
     app.useGlobalPipes(
+        new XssValidationPipe(),
         new ValidationPipe({
             whitelist: true,
             forbidNonWhitelisted: true,

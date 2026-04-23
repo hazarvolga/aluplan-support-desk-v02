@@ -6,72 +6,85 @@ on:
   pull_request:
     branches: [ "main" ]
 
+env:
+  NODE_VERSION: 20
+  PNPM_VERSION: 8
+
 jobs:
-  build-and-validate:
+  security:
+    name: Security & Audit
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
         with:
-          version: 8
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Generate Prisma Client & Validate Schema
-        run: |
-          npx prisma generate
-          npx prisma validate
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres' }}
-
-      - name: Typecheck Backend
-        run: cd apps/backend && pnpm run build
-
-      - name: Typecheck Frontend
-        run: cd apps/frontend && pnpm run build
-        env:
-          NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
-
-      # GAP-25: Secret Scanning (Gitleaks)
       - name: Secret Scanning (Gitleaks)
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Security Scanning (Audit)
+      - run: pnpm install
+      - name: Pnpm Audit
         run: pnpm audit --prod || true
 
-      - name: Deploy Database Migrations
-        run: npx prisma migrate deploy
+  typecheck-and-build:
+    name: Build (Backend & Frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: Prisma Generate
+        run: npx prisma generate
+      - name: Build Backend
+        run: cd apps/backend && pnpm run build
+      - name: Build Frontend
+        run: cd apps/frontend && pnpm run build
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres' }}
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
 
-      - name: Run Backend Tests & Coverage
+  testing:
+    name: Tests & Coverage
+    runs-on: ubuntu-latest
+    needs: typecheck-and-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: Prisma Generate
+        run: npx prisma generate
+      - name: Run Backend Tests
         run: cd apps/backend && pnpm test -- --coverage
-
-      - name: Upload coverage to Codecov
+      - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
            token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Staging Auto-Deploy
-        if: github.ref == 'refs/heads/main'
-        run: echo "Deploying to staging environment via webhook/CD..."
-
-      - name: Build Docker Container
+  docker-build:
+    name: Docker Build & Scan
+    runs-on: ubuntu-latest
+    needs: typecheck-and-build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Backend Container
         run: docker build -t aluplan-backend -f apps/backend/Dockerfile .
-
-      - name: Run Trivy vulnerability scanner
+      - name: Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'aluplan-backend:latest'
