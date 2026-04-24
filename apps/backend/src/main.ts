@@ -76,12 +76,15 @@ async function bootstrap() {
     // GAP-03: Graceful shutdown — drain BullMQ jobs and close connections on SIGTERM
     app.enableShutdownHooks();
 
+    // Trust proxy for secure cookies and origin validation behind Coolify/Caddy
+    (app as any).set('trust proxy', 1);
+
     app.useLogger(app.get(PinoLogger));
 
     const configService = app.get(ConfigService);
     const port = configService.get<number>('PORT', 4000);
     const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
-    const nodeEnv = configService.get<string>('NODE_ENV', 'development');
+    const nodeEnv = configService.get<string>('NODE_ENV', 'production');
 
     // Manual production validation removed in favor of Zod validateEnv()
 
@@ -126,24 +129,23 @@ async function bootstrap() {
                 path: '/',
                 domain: configService.get('NODE_ENV') === 'production' ? '.allplan.net.tr' : undefined,
             });
-
         }
 
         if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
             const headerToken = req.headers['x-xsrf-token'];
 
             if (!headerToken || headerToken !== csrfToken) {
-                logger.warn(`CSRF double-submit validation failed from origin: ${req.headers.origin}`);
+                logger.warn(`[CSRF] Mismatch - Header: [${headerToken}], Cookie: [${csrfToken}], Method: ${req.method}, Path: ${req.path}`);
                 return res.status(403).json({
                     statusCode: 403,
-                    message: 'CSRF validation failed: Invalid XSRF token',
+                    message: 'CSRF validation failed: Invalid or missing XSRF token',
                     error: 'Forbidden'
                 });
             }
 
             const requestedWith = req.headers['x-requested-with'];
             if (!requestedWith || requestedWith !== 'XMLHttpRequest') {
-                logger.warn(`CSRF validation failed: Missing X-Requested-With header from origin: ${req.headers.origin}`);
+                logger.warn(`[CSRF] Missing X-Requested-With - Header: [${requestedWith}], Method: ${req.method}, Path: ${req.path}`);
                 return res.status(403).json({
                     statusCode: 403,
                     message: 'CSRF validation failed: Missing X-Requested-With header',
@@ -172,8 +174,9 @@ async function bootstrap() {
             // Production'da !origin izin vermiyoruz (SSRF bypass mitigation)
             if (!origin) {
                 if (nodeEnv === 'production') {
-                    logger.warn(`CORS blocked for missing origin request`);
-                    return callback(new Error('Not allowed by CORS (Missing Origin)'));
+                    // Log only, don't block for now to debug
+                    logger.warn(`CORS warning: Request missing Origin header. Path: ${req?.url || 'unknown'}`);
+                    return callback(null, true);
                 }
                 return callback(null, true);
             }
@@ -181,7 +184,7 @@ async function bootstrap() {
             if (allowedOrigins.indexOf(origin) !== -1) {
                 callback(null, true);
             } else {
-                logger.warn(`CORS blocked for origin: ${origin}`);
+                logger.warn(`CORS blocked for origin: ${origin}. Path: ${req?.url || 'unknown'}`);
                 callback(new Error('Not allowed by CORS'));
             }
         },
@@ -189,6 +192,7 @@ async function bootstrap() {
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-CSRF-Token', 'X-XSRF-TOKEN'],
     });
+
 
     // Global API prefix
     app.setGlobalPrefix('api/v1');
