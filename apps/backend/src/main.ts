@@ -199,8 +199,19 @@ async function bootstrap() {
         },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-CSRF-Token', 'X-XSRF-TOKEN'],
+        allowedHeaders: [
+            'Content-Type',
+            'Authorization',
+            'Accept',
+            'X-Requested-With',
+            'X-CSRF-Token',
+            'X-XSRF-TOKEN',
+            'X-Request-Id', // GAP: Crucial for tracing
+            'Sentry-Trace', // GAP: For production observability
+            'baggage'
+        ],
     });
+
 
 
 
