@@ -18,7 +18,7 @@ export class AuthController {
 
     @Public()
     @Post('login')
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
+    @Throttle({ default: { limit: 20, ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Login with email and password' })
     @ApiResponse({ status: 200, description: 'Login successful. Returns tokens and sets HttpOnly cookies.' })
@@ -29,7 +29,7 @@ export class AuthController {
         const isProd = process.env.NODE_ENV === 'production';
         const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
 
-        res.cookie('access_token', tokens.access_token, {
+        res.cookie('alu_at', tokens.access_token, {
             httpOnly: true,
             secure: isProd,
             sameSite: 'lax',
@@ -38,7 +38,7 @@ export class AuthController {
             maxAge: 15 * 60 * 1000, // 15 mins
         });
 
-        res.cookie('refresh_token', tokens.refresh_token, {
+        res.cookie('alu_rt', tokens.refresh_token, {
             httpOnly: true,
             secure: isProd,
             sameSite: 'lax',
@@ -64,7 +64,7 @@ export class AuthController {
         const isProd = process.env.NODE_ENV === 'production';
         const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
 
-        res.cookie('access_token', tokens.access_token, {
+        res.cookie('alu_at', tokens.access_token, {
             httpOnly: true,
             secure: isProd,
             sameSite: 'lax',
@@ -73,7 +73,7 @@ export class AuthController {
             maxAge: 15 * 60 * 1000,
         });
 
-        res.cookie('refresh_token', tokens.refresh_token, {
+        res.cookie('alu_rt', tokens.refresh_token, {
             httpOnly: true,
             secure: isProd,
             sameSite: 'lax',
@@ -97,8 +97,8 @@ export class AuthController {
 
         const isProd = process.env.NODE_ENV === 'production';
         const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
-        res.clearCookie('access_token', { path: '/', sameSite: 'lax', secure: isProd, domain: cookieDomain });
-        res.clearCookie('refresh_token', { path: '/api/v1/auth/refresh', sameSite: 'lax', secure: isProd, domain: cookieDomain });
+        res.clearCookie('alu_at', { path: '/', sameSite: 'lax', secure: isProd, domain: cookieDomain });
+        res.clearCookie('alu_rt', { path: '/api/v1/auth/refresh', sameSite: 'lax', secure: isProd, domain: cookieDomain });
 
 
         return result;
@@ -126,7 +126,7 @@ export class AuthController {
 
     @Public()
     @Post('forgot-password')
-    @Throttle({ default: { limit: 3, ttl: 60000 } })
+    @Throttle({ default: { limit: 10, ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Request a password reset email' })
     forgotPassword(@Body('email') email: string) {
@@ -135,7 +135,7 @@ export class AuthController {
 
     @Public()
     @Post('reset-password')
-    @Throttle({ default: { limit: 3, ttl: 60000 } })
+    @Throttle({ default: { limit: 10, ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Reset a forgotten password using token' })
     resetPassword(@Body() dto: ResetPasswordDto) {

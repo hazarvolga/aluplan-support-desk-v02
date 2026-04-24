@@ -128,36 +128,50 @@ async function bootstrap() {
 
     // CSRF & Security Middlewares
     app.use((req: Request, res: Response, next: NextFunction) => {
+        const csrfBypassPaths = [
+            '/api/v1/auth/login',
+            '/api/v1/auth/refresh',
+            '/api/v1/auth/logout',
+            '/api/v1/auth/forgot-password',
+            '/api/v1/auth/reset-password',
+            '/api/v1/auth/verify-email',
+        ];
+
         let csrfToken = req.cookies['XSRF-TOKEN'];
+        const isProd = configService.get('NODE_ENV') === 'production';
+
+        // Set CSRF token cookie if missing
         if (!csrfToken) {
             csrfToken = crypto.randomBytes(32).toString('hex');
             res.cookie('XSRF-TOKEN', csrfToken, {
-                httpOnly: false, // Frontend needs to read this to include in header
-                secure: configService.get('NODE_ENV') === 'production',
+                httpOnly: false,
+                secure: isProd,
                 sameSite: 'lax',
                 path: '/',
-                domain: configService.get('NODE_ENV') === 'production' ? '.allplan.net.tr' : undefined,
+                domain: isProd ? '.allplan.net.tr' : undefined,
             });
         }
 
-        if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+        const isBypassed = csrfBypassPaths.some(path => req.path.startsWith(path));
+
+        if (!isBypassed && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
             const headerToken = req.headers['x-xsrf-token'];
 
             if (!headerToken || headerToken !== csrfToken) {
-                logger.warn(`[CSRF] Mismatch - Header: [${headerToken}], Cookie: [${csrfToken}], Method: ${req.method}, Path: ${req.path}`);
+                logger.warn(`[CSRF] REJECTED - Header: [${headerToken}], Cookie: [${csrfToken}], Method: ${req.method}, Path: ${req.path}`);
                 return res.status(403).json({
                     statusCode: 403,
-                    message: 'CSRF validation failed: Invalid or missing XSRF token',
+                    message: 'CSRF validation failed',
                     error: 'Forbidden'
                 });
             }
 
             const requestedWith = req.headers['x-requested-with'];
             if (!requestedWith || requestedWith !== 'XMLHttpRequest') {
-                logger.warn(`[CSRF] Missing X-Requested-With - Header: [${requestedWith}], Method: ${req.method}, Path: ${req.path}`);
+                logger.warn(`[CSRF] REJECTED (Missing Header) - Method: ${req.method}, Path: ${req.path}`);
                 return res.status(403).json({
                     statusCode: 403,
-                    message: 'CSRF validation failed: Missing X-Requested-With header',
+                    message: 'Missing required security headers',
                     error: 'Forbidden'
                 });
             }

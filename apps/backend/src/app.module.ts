@@ -127,7 +127,7 @@ import { QueueDashboardModule } from './queue-dashboard/queue-dashboard.module';
                     {
                         name: 'default',
                         ttl: 60000,
-                        limit: 60,
+                        limit: 120,
                     },
                 ],
                 storage: new ThrottlerStorageRedisService(config.get<string>('redis.url')),

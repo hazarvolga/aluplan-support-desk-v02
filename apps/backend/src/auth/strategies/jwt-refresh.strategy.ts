@@ -7,7 +7,7 @@ import { Request } from 'express';
 const cookieExtractor = (req: Request): string | null => {
     let token = null;
     if (req && req.cookies) {
-        token = req.cookies['refresh_token'];
+        token = req.cookies['alu_rt'];
     }
     return token;
 };
@@ -28,8 +28,8 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
 
     async validate(req: Request, payload: any) {
         let refreshToken = null;
-        if (req && req.cookies && req.cookies['refresh_token']) {
-            refreshToken = req.cookies['refresh_token'];
+        if (req && req.cookies && req.cookies['alu_rt']) {
+            refreshToken = req.cookies['alu_rt'];
         } else {
             const authHeader = req.get('Authorization');
             refreshToken = authHeader?.replace('Bearer ', '').trim();
