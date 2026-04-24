@@ -18,4 +18,9 @@ node packages/database/scripts/production-sync.js || echo "Warning: production-s
 node apps/backend/scripts/fix-customer-roles.js || echo "Warning: fix-customer-roles.js failed but continuing..."
 
 echo "Starting application..."
-node apps/backend/dist/src/main.js
+if [ -f "apps/backend/dist/src/main.js" ]; then
+  node apps/backend/dist/src/main.js
+else
+  node apps/backend/dist/main.js
+fi
+

@@ -69,11 +69,18 @@ async function main() {
         ];
 
         for (const prod of taxonomy) {
-            const product = await prisma.product.upsert({
-                where: { name: prod.name },
-                update: { description: prod.description, isActive: true },
-                create: { name: prod.name, description: prod.description, isActive: true }
-            });
+            let product = await prisma.product.findFirst({ where: { name: prod.name } });
+            if (product) {
+                product = await prisma.product.update({
+                    where: { id: product.id },
+                    data: { description: prod.description, isActive: true }
+                });
+            } else {
+                product = await prisma.product.create({
+                    data: { name: prod.name, description: prod.description, isActive: true }
+                });
+            }
+
 
             for (const catName of prod.categories) {
                 // Find first because unique is not on name+productId in schema (only id)
