@@ -6,7 +6,11 @@ FROM base AS builder
 WORKDIR /app
 # Force development mode so devDependencies (nest CLI, typescript, etc.) are installed
 ENV NODE_ENV=development
+# Avoid downloading heavy browser binaries during build
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 COPY . .
+
+
 # Remove any pre-existing generated client to avoid version conflicts
 RUN rm -rf packages/database/client packages/database/generated
 # Use npm mirror for faster and more reliable downloads
