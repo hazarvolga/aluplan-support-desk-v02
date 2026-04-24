@@ -27,11 +27,14 @@ export class AuthController {
         const tokens = await this.authService.login(dto);
 
         const isProd = process.env.NODE_ENV === 'production';
+        const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
+
         res.cookie('access_token', tokens.access_token, {
             httpOnly: true,
             secure: isProd,
             sameSite: 'lax',
             path: '/',
+            domain: cookieDomain,
             maxAge: 15 * 60 * 1000, // 15 mins
         });
 
@@ -40,8 +43,10 @@ export class AuthController {
             secure: isProd,
             sameSite: 'lax',
             path: '/api/v1/auth/refresh',
+            domain: cookieDomain,
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
+
 
         return tokens;
     }
@@ -57,11 +62,14 @@ export class AuthController {
         const tokens = await this.authService.refreshTokens(req.user.sub, req.user.refreshToken);
 
         const isProd = process.env.NODE_ENV === 'production';
+        const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
+
         res.cookie('access_token', tokens.access_token, {
             httpOnly: true,
             secure: isProd,
             sameSite: 'lax',
             path: '/',
+            domain: cookieDomain,
             maxAge: 15 * 60 * 1000,
         });
 
@@ -70,8 +78,10 @@ export class AuthController {
             secure: isProd,
             sameSite: 'lax',
             path: '/api/v1/auth/refresh',
+            domain: cookieDomain,
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
+
 
         return tokens;
     }
@@ -86,8 +96,10 @@ export class AuthController {
         const result = await this.authService.logout(req.user.sub, req.user.jti);
 
         const isProd = process.env.NODE_ENV === 'production';
-        res.clearCookie('access_token', { path: '/', sameSite: 'lax', secure: isProd });
-        res.clearCookie('refresh_token', { path: '/api/v1/auth/refresh', sameSite: 'lax', secure: isProd });
+        const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
+        res.clearCookie('access_token', { path: '/', sameSite: 'lax', secure: isProd, domain: cookieDomain });
+        res.clearCookie('refresh_token', { path: '/api/v1/auth/refresh', sameSite: 'lax', secure: isProd, domain: cookieDomain });
+
 
         return result;
     }

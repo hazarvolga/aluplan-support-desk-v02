@@ -124,7 +124,9 @@ async function bootstrap() {
                 secure: configService.get('NODE_ENV') === 'production',
                 sameSite: 'lax',
                 path: '/',
+                domain: configService.get('NODE_ENV') === 'production' ? '.allplan.net.tr' : undefined,
             });
+
         }
 
         if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
