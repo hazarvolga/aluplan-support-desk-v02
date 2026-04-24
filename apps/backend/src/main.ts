@@ -81,7 +81,16 @@ async function bootstrap() {
 
     app.useLogger(app.get(PinoLogger));
 
+    // GAP: Entry-level request logging for production debugging
+    app.use((req: Request, res: Response, next: NextFunction) => {
+        if (req.method !== 'GET' || req.path.includes('auth')) {
+            console.log(`[DEBUG ENTRY] ${req.method} ${req.path} - Origin: ${req.headers.origin} - X-Forwarded-Proto: ${req.headers['x-forwarded-proto']}`);
+        }
+        next();
+    });
+
     const configService = app.get(ConfigService);
+
     const port = configService.get<number>('PORT', 4000);
     const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
     const nodeEnv = configService.get<string>('NODE_ENV', 'production');
