@@ -175,7 +175,7 @@ async function bootstrap() {
             if (!origin) {
                 if (nodeEnv === 'production') {
                     // Log only, don't block for now to debug
-                    logger.warn(`CORS warning: Request missing Origin header. Path: ${req?.url || 'unknown'}`);
+                    logger.warn(`CORS warning: Request missing Origin header.`);
                     return callback(null, true);
                 }
                 return callback(null, true);
@@ -184,7 +184,7 @@ async function bootstrap() {
             if (allowedOrigins.indexOf(origin) !== -1) {
                 callback(null, true);
             } else {
-                logger.warn(`CORS blocked for origin: ${origin}. Path: ${req?.url || 'unknown'}`);
+                logger.warn(`CORS blocked for origin: ${origin}`);
                 callback(new Error('Not allowed by CORS'));
             }
         },
@@ -192,6 +192,7 @@ async function bootstrap() {
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-CSRF-Token', 'X-XSRF-TOKEN'],
     });
+
 
 
     // Global API prefix
