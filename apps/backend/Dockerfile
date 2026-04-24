@@ -9,6 +9,8 @@ ENV NODE_ENV=development
 COPY . .
 # Remove any pre-existing generated client to avoid version conflicts
 RUN rm -rf packages/database/client packages/database/generated
+# Use npm mirror for faster and more reliable downloads
+RUN pnpm config set registry https://registry.npmmirror.com/
 # Perform full build in builder stage
 RUN pnpm install --frozen-lockfile && \
     NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/database db:generate && \
@@ -26,8 +28,9 @@ COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.ya
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/packages/database/package.json ./packages/database/
 
-# 2. Install production deps (with network tolerance and fallback)
-RUN pnpm config set fetch-retries 5 && \
+# 2. Install production deps (with npm mirror fallback)
+RUN pnpm config set registry https://registry.npmmirror.com/ && \
+    pnpm config set fetch-retries 5 && \
     pnpm config set fetch-retry-mintimeout 20000 && \
     pnpm config set fetch-retry-maxtimeout 120000 && \
     pnpm install --prod --frozen-lockfile || pnpm install --prod

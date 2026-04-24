@@ -9,6 +9,10 @@ export default async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+    const apiOrigin = process.env.NEXT_PUBLIC_API_URL
+        ? new URL(process.env.NEXT_PUBLIC_API_URL).origin
+        : 'http://localhost:4000';
+
     const cspHeader = `
       default-src 'self';
       script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ''};
@@ -17,6 +21,7 @@ export default async function middleware(request: NextRequest) {
       font-src 'self';
       object-src 'none';
       base-uri 'none';
+      connect-src 'self' ${apiOrigin};
       form-action 'self';
       frame-ancestors 'none';
       upgrade-insecure-requests;

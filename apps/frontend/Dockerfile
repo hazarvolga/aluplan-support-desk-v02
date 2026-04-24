@@ -7,8 +7,14 @@ WORKDIR /app
 # Force development mode so devDependencies are installed during build
 ENV NODE_ENV=development
 COPY . .
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Configure pnpm for network resilience
+RUN pnpm config set fetch-retries 5 && \
+    pnpm config set fetch-retry-mintimeout 20000 && \
+    pnpm config set fetch-retry-maxtimeout 120000 && \
+    pnpm config set registry https://registry.npmmirror.com
+
+# Install dependencies (fallback to non-frozen if registry issues occur)
+RUN pnpm install --frozen-lockfile || pnpm install
 # Generate database client
 RUN pnpm --filter @aluplan/database db:generate
 # Build arguments
