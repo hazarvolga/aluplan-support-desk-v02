@@ -69,6 +69,7 @@ services:
 
   # ============================================
   # NestJS Backend (Production Ready)
+  # BullMQ workers run in-process (no separate worker container needed)
   # ============================================
   backend:
     build:
@@ -77,27 +78,48 @@ services:
     container_name: aluplan_backend
     restart: unless-stopped
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-4000}
+      # Database
       DATABASE_URL: ${DATABASE_URL}
+      # Auth
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      JWT_EXPIRES_IN: 15m
-      JWT_REFRESH_EXPIRES_IN: 7d
-      FRONTEND_URL: ${FRONTEND_URL}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      # App
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      # Redis / BullMQ
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      # Storage (Cloudflare R2 / S3)
       STORAGE_TYPE: ${STORAGE_TYPE:-S3}
-      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-}
       STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-}
-      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
-      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-}
       STORAGE_BUCKET: ${STORAGE_BUCKET:-aluplan-storage}
       STORAGE_USE_PATH_STYLE: "true"
-      # AI Strategic Keys
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # Email
+      MAIL_PROVIDER: ${MAIL_PROVIDER:-resend}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-destek@allplan.net.tr}
+      # AI
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1536}
       GENERATIVE_MODEL: ${GENERATIVE_MODEL:-llama-3.3-70b-versatile}
+      # Vector / RAG
+      VECTOR_DIMENSIONS: ${VECTOR_DIMENSIONS:-1536}
+      SIMILARITY_THRESHOLD_HIGH: ${SIMILARITY_THRESHOLD_HIGH:-0.75}
+      SIMILARITY_THRESHOLD_MEDIUM: ${SIMILARITY_THRESHOLD_MEDIUM:-0.70}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      # Swagger
+      SWAGGER_PASSWORD: ${SWAGGER_PASSWORD:-}
+      # Monitoring
+      SENTRY_ENABLED: ${SENTRY_ENABLED:-false}
     ports:
       - "${PORT:-4000}:${PORT:-4000}"
     depends_on:
@@ -154,49 +176,6 @@ services:
         max-file: "3"
     networks:
       - aluplan_net
-
-  # ============================================
-  # GAP-10: BullMQ Worker (Isolated)
-  # Processes queue jobs without serving HTTP traffic
-  # ============================================
-  backend-worker:
-    build:
-      context: .
-      dockerfile: apps/backend/Dockerfile
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      WORKER_MODE: "true"
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      STORAGE_TYPE: ${STORAGE_TYPE:-S3}
-      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
-      STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-}
-      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
-      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
-      STORAGE_BUCKET: ${STORAGE_BUCKET:-aluplan-storage}
-      STORAGE_USE_PATH_STYLE: "true"
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
-      GENERATIVE_MODEL: ${GENERATIVE_MODEL:-llama-3.3-70b-versatile}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    deploy:
-      replicas: 1
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "20m"
-        max-file: "5"
-    networks:
-      - aluplan_net
-
 
 networks:
   aluplan_net:

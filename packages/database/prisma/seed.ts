@@ -155,7 +155,7 @@ async function main() {
 
     for (const deptDef of DEFAULT_DEPARTMENTS) {
         const { sla, teams, ...deptData } = deptDef;
-        let dept = await prisma.department.findUnique({ where: { slug: deptData.slug } });
+        let dept = await prisma.department.findFirst({ where: { slug: deptData.slug } });
         if (dept) {
             dept = await prisma.department.update({
                 where: { id: dept.id },
@@ -206,7 +206,7 @@ async function main() {
         // Seed Teams for this dept
         if (teams) {
             for (const teamDef of teams) {
-                const existingTeam = await prisma.team.findUnique({ where: { slug: teamDef.slug } });
+                const existingTeam = await prisma.team.findFirst({ where: { slug: teamDef.slug } });
                 if (existingTeam) {
                     await prisma.team.update({
                         where: { id: existingTeam.id },
@@ -418,7 +418,7 @@ async function main() {
     ];
 
     for (const setting of defaultSettings) {
-        const existingSetting = await prisma.setting.findUnique({ where: { key: setting.key } });
+        const existingSetting = await prisma.setting.findFirst({ where: { key: setting.key } });
         if (existingSetting) {
             // Only update if it's not a secret or if we want to force update system data
             if (setting.key === 'SYSTEM_REQUIREMENTS' || !setting.isSecret) {

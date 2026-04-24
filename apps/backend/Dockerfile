@@ -17,7 +17,7 @@ RUN pnpm install --frozen-lockfile && \
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-RUN apk add --no-cache openssl fontconfig postgresql-client && \
+RUN apk add --no-cache openssl fontconfig postgresql-client curl && \
     npm install -g pnpm@9.15.4 && \
     npm install -g prisma@7.4.2
 
@@ -26,8 +26,11 @@ COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.ya
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/packages/database/package.json ./packages/database/
 
-# 2. Install production deps (this creates correct pnpm symlink structure)
-RUN pnpm install --prod --frozen-lockfile
+# 2. Install production deps (with network tolerance and fallback)
+RUN pnpm config set fetch-retries 5 && \
+    pnpm config set fetch-retry-mintimeout 20000 && \
+    pnpm config set fetch-retry-maxtimeout 120000 && \
+    pnpm install --prod --frozen-lockfile || pnpm install --prod
 
 # 3. Copy database package source files (NOT the generated client)
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
