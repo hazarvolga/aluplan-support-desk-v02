@@ -111,9 +111,8 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
             this.logger.warn(`🚨 Major change detected (${(delta * 100).toFixed(1)}%) for ${source.url}. Mark for review.`);
         }
 
-        this.logger.log(`🧩 Content split into ${hierarchies.length} hierarchies for ${source.url}`);
-
         const hierarchies = hierarchicalChunk(content, { title });
+        this.logger.log(`🧩 Content split into ${hierarchies.length} hierarchies for ${source.url}`);
 
         await this.prisma.$executeRaw`DELETE FROM knowledge_pool_embeddings WHERE source_id = ${source.id}::uuid`;
         this.logger.log(`🗑️ Existing embeddings cleared for source ${source.id}`);
