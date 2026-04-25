@@ -46,8 +46,8 @@ export interface AiQueryResult {
 }
 
 export const MASTER_DIAGNOSIS_PROMPT = `
-You are a senior AI system designer, software architect, and domain expert in BIM and structural engineering software (ALLPLAN, SCIA Engineer, MEP).
-You are powering an AI-based support ticket system.
+You are a senior AI system designer and technical support architect specializing in engineering software ecosystems.
+You are powering an intelligent support ticket diagnosis engine.
 
 Your job is NOT just to answer — but to reach a technical diagnosis using the 7-STEP engine below.
 
@@ -66,21 +66,25 @@ Using [TECHNICAL DIAGNOSIS] metadata:
 - Category: {{CATEGORIES}}
 - Keywords: {{KEYWORDS}}
 
-## STEP 3 — PROBLEM TYPE DETECTION
+## STEP 3 — KNOWLEDGE VALIDATION
+- CRITICAL RULE: Check if the provided [CONTEXT] actually contains technical information about "{{PRODUCT}}".
+- If {{PRODUCT}} is "GENERIC" or "Unknown" AND the context is unrelated, proceed to STEP 6 with a "No Knowledge" state.
+- DO NOT hallucinate features from other software (like Allplan) if the user is asking about a different product.
+
+## STEP 4 — PROBLEM TYPE DETECTION
 Map symptoms to a specific problem type (e.g., licensing_failure, fem_mesh_instability, crash_on_startup).
 
-## STEP 4 — ROOT CAUSE GENERATION
+## STEP 5 — ROOT CAUSE GENERATION
 Based on Product, Problem Type, and [ATTACHMENTS] or [KULLANICI EKLERİ İÇERİĞİ]:
 - If image attachments exist, ANALYZE THEM for errors, UI messages, or structural cues.
 - If parsed document texts (PDF/DOCX/Logs) exist, EXTRACT technical clues, error stack traces, and configurations directly from the text.
 - If hardware query and [MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)] missing: ASK user for OS/GPU/RAM.
+- If no specific technical knowledge exists in [CONTEXT] for {{PRODUCT}}: State this clearly and ask for logs or specific details.
 - Generate the MOST LIKELY causes for this context.
 - Explain WHY it happens (technical depth required).
 
-## STEP 5 — PRIORITIZATION
+## STEP 6 — PRIORITIZATION & REPORTING
 Sort causes by likelihood (1 = highest).
-
-## STEP 6 — RESPONSE GENERATION
 Generate a PROFESSIONAL, EXPERT-LEVEL diagnostic report.
 - Focus ONLY on the current problem.
 - Be technical (NOT generic).
@@ -111,6 +115,7 @@ Use strict headers:
 ## HARD RULES
 - NEVER give generic support answers.
 - ALWAYS behave like a senior engineer.
+- If knowledge base is empty/irrelevant for {{PRODUCT}}, explicitly say: "Bu ürün ({{PRODUCT}}) hakkında henüz dökümantasyonumda bilgi bulunmuyor."
 - Output ONLY Markdown.
 - Output ONLY in the language specified in STEP 7.
 - Analyze image attachments first if they exist.
@@ -267,7 +272,9 @@ export class AiQueryService {
 
         // 2. Semantic search
         // Use productId if provided explicitly or derived from diagnosis (if we moved diagnosis earlier- but we keep it product-agnostic for first pass intentionally)
+        const searchStartTime = Date.now();
         const searchResponse: SearchResponse = await this.embeddingService.search(expandedQuery, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, options.productId, isStaff);
+        this.logger.log(`🔍 [Phase: Search] Found ${searchResponse.results.length} results in ${Date.now() - searchStartTime}ms. TopScore: ${searchResponse.diagnostics.topScore.toFixed(3)}`);
         let results = searchResponse.results;
 
         /* 
@@ -291,7 +298,9 @@ export class AiQueryService {
         results = this.rerankResults(results);
 
         // Advanced LLM Re-ranking (Cross-Encoder)
+        const rankStartTime = Date.now();
         results = await this.rankResultsWithLLM(userQuery, results);
+        this.logger.log(`🔍 [Phase: Re-ranking] Completed in ${Date.now() - rankStartTime}ms.`);
 
         // Lowered floor for response generation
         // Ensure threshold alignment: topScore must be >= search floor to be valid
@@ -364,7 +373,9 @@ export class AiQueryService {
             // aiParts is already prepared at the beginning of the query func
             const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
 
+            const genStartTime = Date.now();
             const aiResult = await this.ai.reformat(finalPrompt, userQuery, results.slice(0, 10).map(r => r.content).join('\n\n'), aiParts);
+            this.logger.log(`🔍 [Phase: Generation] Completed in ${Date.now() - genStartTime}ms.`);
 
             const rawAnswer = aiResult?.response ?? results[0].content;
 

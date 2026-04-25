@@ -98,9 +98,11 @@ export class AiDiagnosisService {
 
     private async mapCauses(product: any, lowerQuery: string) {
         const causes: Array<{ id: string; title: string; why: string; priority: number }> = [];
+        const isGeneric = !product || product.name === 'GENERIC';
 
-        // Generic patterns
-        if (lowerQuery.includes('açılmıyor') || lowerQuery.includes('crash') || lowerQuery.includes('donuyor')) {
+        // 1. Critical Failures (requires stronger signals for generic)
+        if (lowerQuery.includes('çökme') || lowerQuery.includes('crash') ||
+            (!isGeneric && (lowerQuery.includes('açılmıyor') || lowerQuery.includes('donuyor')))) {
             causes.push({
                 id: 'startup_failure',
                 title: 'Başlangıç Hatası / Çökme',
@@ -109,25 +111,28 @@ export class AiDiagnosisService {
             });
         }
 
-        if (lowerQuery.includes('lisans') || lowerQuery.includes('licens')) {
+        // 2. Licensing (Universal)
+        if (lowerQuery.includes('lisans') || lowerQuery.includes('licens') || lowerQuery.includes('aktivasyon')) {
             causes.push({
                 id: 'licensing_issue',
                 title: 'Lisans Aktivasyon Sorunu',
-                why: 'Wibu Codemeter servisi durmuş olabilir veya lisans süresi dolmuş olabilir.',
+                why: 'Lisans servisleri (Wibu/Dongle) durmuş olabilir veya lisans süresi dolmuş olabilir.',
                 priority: 1
             });
         }
 
-        if (lowerQuery.includes('kur') || lowerQuery.includes('install') || lowerQuery.includes('setup') || lowerQuery.includes('yükle') || lowerQuery.includes('yarıda')) {
+        // 3. Installation
+        if (lowerQuery.includes('kurulum') || lowerQuery.includes('install') ||
+            (!isGeneric && (lowerQuery.includes('yükle') || lowerQuery.includes('setup')))) {
             causes.push({
                 id: 'installation_midway_failure',
                 title: 'Kurulum / Yükleme Hatası',
-                why: 'Kurulum paketi eksik inmiş olabilir, yönetici izinleri yetersizdir veya disk alanı dolmuştur.',
+                why: 'Kurulum paketi eksik olabilir veya yönetici izinleri yetersizdir.',
                 priority: 1
             });
         }
 
-        // Product specific patterns (e.g. SCIA Engineer context from user's sample)
+        // 4. Product specific patterns
         if (product?.name === 'SCIA Engineer') {
             if (lowerQuery.includes('fem') || lowerQuery.includes('mesh')) {
                 causes.push({
@@ -138,9 +143,6 @@ export class AiDiagnosisService {
                 });
             }
         }
-
-        // Dynamic fallback: If we found articles with specific tags, we could inject them as causes too
-        // For brevity in first version, we keep these core patterns.
 
         return causes;
     }
