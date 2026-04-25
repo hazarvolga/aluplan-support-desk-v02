@@ -24,8 +24,8 @@ export class BrandingController {
     constructor(private readonly storageService: StorageService) { }
 
     @Public()
-    @Get('assets/*')
-    async getAsset(@Param('0') key: string, @Res() res: Response) {
+    @Get('assets/*path')
+    async getAsset(@Param('path') key: string, @Res() res: Response) {
         // Creates a fresh presigned URL valid for 1 hour and redirects the user securely
         try {
             const url = await this.storageService.getDownloadUrl(key);

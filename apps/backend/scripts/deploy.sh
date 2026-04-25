@@ -15,6 +15,7 @@ npx prisma migrate deploy \
 
 echo "Running Production Data Synchronization (Seeding & Recovery)..."
 node packages/database/scripts/production-sync.js || echo "Warning: production-sync.js failed but continuing..."
+node apps/backend/scripts/grant-admin.js || echo "Warning: grant-admin.js failed but continuing..."
 node apps/backend/scripts/fix-customer-roles.js || echo "Warning: fix-customer-roles.js failed but continuing..."
 
 echo "Starting application..."

@@ -34,11 +34,13 @@ async function grantAdmin() {
 
         // 2. Transfer user to this role
         await prisma.user.updateMany({
-            where: { email: 'hazarvolga@gmail.com' },
+            where: {
+                email: { in: ['hazarvolga@gmail.com', 'droneracingturkey@gmail.com'] }
+            },
             data: { roleId: adminRole.id }
         });
 
-        console.log('✅ Success! hazarvolga@gmail.com is now officially an ADMIN.');
+        console.log('✅ Success! Target users are now officially ADMIN.');
     } catch (err) {
         console.error('❌ Failed to grant admin:', err.message);
         process.exit(1); // Exit with error so deploy.sh knows it failed

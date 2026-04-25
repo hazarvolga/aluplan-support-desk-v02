@@ -102,6 +102,185 @@ async function main() {
         }
         console.log('✅ Product Taxonomy synchronized.');
 
+        // --- 4.5 Default Departments & SLA (Sync from seed.ts logic) ---
+        console.log('🏢 Syncing Default Departments & SLA Policies...');
+        const DEFAULT_DEPARTMENTS = [
+            {
+                name: 'Technical Support',
+                slug: 'technical-support',
+                description: 'Handles: bug reports, software errors, integration issues, API problems',
+                color: '#3B82F6', // Blue
+                icon: 'Wrench',
+                sla: {
+                    name: 'Technical Standard SLA',
+                    priority: TicketPriority?.MEDIUM || 'MEDIUM',
+                    firstResponseMinutes: 60,
+                    resolutionMinutes: 480
+                },
+                teams: [
+                    { name: 'L1 Support', slug: 'l1-support' },
+                    { name: 'L2 Support', slug: 'l2-support' },
+                    { name: 'Engineering Escalation', slug: 'engineering-escalation' }
+                ]
+            },
+            {
+                name: 'Billing & Payments',
+                slug: 'billing-payments',
+                description: 'Handles: invoice questions, payment failures, subscription changes, refunds',
+                color: '#10B981', // Green
+                icon: 'CreditCard',
+                sla: {
+                    name: 'Billing Standard SLA',
+                    priority: TicketPriority?.MEDIUM || 'MEDIUM',
+                    firstResponseMinutes: 120,
+                    resolutionMinutes: 1440
+                },
+                teams: [
+                    { name: 'Billing Support', slug: 'billing-support' }
+                ]
+            },
+            {
+                name: 'Sales & Pre-Sales',
+                slug: 'sales-pre-sales',
+                description: 'Handles: product inquiries, demo requests, pricing questions, trial support',
+                color: '#F59E0B', // Amber
+                icon: 'ShoppingCart',
+                sla: {
+                    name: 'Sales Fast Response SLA',
+                    priority: TicketPriority?.HIGH || 'HIGH',
+                    firstResponseMinutes: 30,
+                    resolutionMinutes: 240
+                },
+                teams: [
+                    { name: 'Sales Team', slug: 'sales-team' }
+                ]
+            },
+            {
+                name: 'Customer Success',
+                slug: 'customer-success',
+                description: 'Handles: onboarding, feature adoption, account reviews, renewals',
+                color: '#8B5CF6', // Purple
+                icon: 'Heart',
+                sla: {
+                    name: 'CS Standard SLA',
+                    priority: TicketPriority?.MEDIUM || 'MEDIUM',
+                    firstResponseMinutes: 240,
+                    resolutionMinutes: 2880
+                },
+                teams: [
+                    { name: 'CS Team', slug: 'cs-team' }
+                ]
+            },
+            {
+                name: 'General Inquiries',
+                slug: 'general-inquiries',
+                description: 'Handles: unclassified tickets, feedback, general questions',
+                color: '#6B7280', // Gray
+                icon: 'HelpCircle',
+                sla: {
+                    name: 'General Resolution SLA',
+                    priority: TicketPriority?.LOW || 'LOW',
+                    firstResponseMinutes: 240,
+                    resolutionMinutes: 1440
+                },
+                teams: [
+                    { name: 'General Support', slug: 'general-support' }
+                ]
+            },
+            {
+                name: 'Security & Compliance',
+                slug: 'security-compliance',
+                description: 'Handles: security incidents, data requests, GDPR/privacy inquiries, abuse',
+                color: '#EF4444', // Red
+                icon: 'ShieldCheck',
+                sla: {
+                    name: 'Security Critical SLA',
+                    priority: TicketPriority?.URGENT || 'URGENT',
+                    firstResponseMinutes: 30,
+                    resolutionMinutes: 240
+                },
+                teams: [
+                    { name: 'Security Team', slug: 'security-team' }
+                ]
+            }
+        ];
+
+        for (const deptDef of DEFAULT_DEPARTMENTS) {
+            const { sla, teams, ...deptData } = deptDef;
+            let dept = await prisma.department.findFirst({ where: { slug: deptData.slug } });
+            if (dept) {
+                dept = await prisma.department.update({
+                    where: { id: dept.id },
+                    data: {
+                        name: deptData.name,
+                        description: deptData.description,
+                        color: deptData.color,
+                        icon: deptData.icon,
+                        isDefault: true,
+                    }
+                });
+            } else {
+                dept = await prisma.department.create({
+                    data: {
+                        ...deptData,
+                        isDefault: true,
+                    }
+                });
+            }
+
+            // Seed SLA for this dept
+            const slaId = `00000000-0000-0000-0000-${dept.id.substring(dept.id.length - 12)}`;
+            const existingSla = await prisma.slaPolicy.findUnique({ where: { id: slaId } });
+            if (existingSla) {
+                await prisma.slaPolicy.update({
+                    where: { id: slaId },
+                    data: {
+                        name: sla.name,
+                        priority: sla.priority,
+                        firstResponseMinutes: sla.firstResponseMinutes,
+                        resolutionMinutes: sla.resolutionMinutes,
+                    }
+                });
+            } else {
+                await prisma.slaPolicy.create({
+                    data: {
+                        id: slaId,
+                        name: sla.name,
+                        departmentId: dept.id,
+                        priority: sla.priority,
+                        firstResponseMinutes: sla.firstResponseMinutes,
+                        resolutionMinutes: sla.resolutionMinutes,
+                        businessHoursOnly: true
+                    }
+                });
+            }
+
+            // Seed Teams for this dept
+            if (teams) {
+                for (const teamDef of teams) {
+                    const existingTeam = await prisma.team.findFirst({ where: { slug: teamDef.slug } });
+                    if (existingTeam) {
+                        await prisma.team.update({
+                            where: { id: existingTeam.id },
+                            data: {
+                                name: teamDef.name,
+                                departmentId: dept.id,
+                            }
+                        });
+                    } else {
+                        await prisma.team.create({
+                            data: {
+                                name: teamDef.name,
+                                slug: teamDef.slug,
+                                departmentId: dept.id,
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        console.log('✅ Default Departments, Teams, and SLA Policies seeded.');
+
         // --- 5. Mandatory Settings ---
         console.log('⚙️ Enforcing mandatory settings...');
         const mandatorySettings = [
