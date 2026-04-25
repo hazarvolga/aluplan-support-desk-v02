@@ -1,7 +1,6 @@
 import { routing } from './i18n/routing';
 import createMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -38,7 +37,6 @@ export default async function middleware(request: NextRequest) {
     };
 
     // Check if the route is a dashboard route (protected)
-    // Matches patterns like /tr/dashboard, /en/settings, etc.
     const isDashboardRoute = routing.locales.some(locale =>
         pathname.startsWith(`/${locale}/dashboard`) ||
         pathname.startsWith(`/${locale}/tickets`) ||
@@ -64,6 +62,9 @@ export default async function middleware(request: NextRequest) {
     let response: NextResponse;
 
     if (isDashboardRoute) {
+        // Only check cookie existence — the backend API validates JWT
+        // signature on every request. Verifying here caused infinite
+        // redirect loops when JWT_SECRET was missing from the frontend container.
         const token = request.cookies.get('alu_at')?.value;
         const locale = routing.locales.find(l => pathname.startsWith(`/${l}/`)) || routing.defaultLocale;
         const loginUrl = new URL(`/${locale}/login`, request.url);
@@ -71,20 +72,7 @@ export default async function middleware(request: NextRequest) {
         if (!token) {
             response = applyCsp(NextResponse.redirect(loginUrl));
         } else {
-            try {
-                if (!process.env.JWT_SECRET) {
-                    throw new Error('JWT_SECRET is required. Set it in environment variables.');
-                }
-                const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-                // Validates signature and standard claims (like `exp`) automatically
-                await jwtVerify(token, secret);
-
-                response = applyCsp(intlMiddleware(request));
-            } catch (error) {
-                // Token is invalid or expired
-                response = applyCsp(NextResponse.redirect(loginUrl));
-                // To safely overwrite the cookie, we could delete it, but redirecting to login usually drops it or forces a new auth
-            }
+            response = applyCsp(intlMiddleware(request));
         }
     } else {
         response = applyCsp(intlMiddleware(request));
