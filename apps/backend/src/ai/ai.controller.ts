@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsInt, Min, Max, IsOptional, MinLength, IsBoolean, IsUUID } from 'class-validator';
+import { IsString, IsInt, Min, Max, IsOptional, MinLength, IsBoolean, IsUUID, IsArray } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
@@ -46,6 +46,8 @@ export class AiQueryDto {
     language?: string;
 
     @ApiPropertyOptional({ type: 'array', items: { type: 'object' } })
+    @IsOptional()
+    @IsArray()
     history?: { role: 'user' | 'assistant'; content: string; }[];
 }
 

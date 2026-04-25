@@ -72,7 +72,9 @@
         "verify_email_desc": "Kayıt işlemini tamamlamak için lütfen e-postanızı doğrulayın.",
         "verify_button": "Doğrula",
         "invite_title": "Aluplan'a Davet Edildiniz",
-        "invite_desc": "sizi destek ekibine katılmaya davet etti."
+        "invite_desc": "sizi destek ekibine katılmaya davet etti.",
+        "temp_password_label": "Geçici Şifreniz",
+        "temp_password_notice": "Lütfen sisteme giriş yaptıktan sonra güvenliğiniz için şifrenizi değiştirin."
     },
     "sla": {
         "warning_title": "⚠️ SLA Yaklaşıyor",

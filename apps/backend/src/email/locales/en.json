@@ -72,7 +72,9 @@
         "verify_email_desc": "Please verify your email to complete the registration process.",
         "verify_button": "Verify",
         "invite_title": "You're Invited to Aluplan",
-        "invite_desc": "invited you to join the support team."
+        "invite_desc": "invited you to join the support team.",
+        "temp_password_label": "Your Temporary Password",
+        "temp_password_notice": "Please change your password after logging in for your security."
     },
     "sla": {
         "warning_title": "⚠️ SLA Approaching",

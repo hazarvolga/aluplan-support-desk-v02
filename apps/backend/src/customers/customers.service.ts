@@ -391,7 +391,10 @@ export class CustomersService {
     }
 
     async resetPassword(id: string) {
-        const user = await this.prisma.user.findUnique({ where: { id } });
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            include: { customerProfile: true }
+        });
         if (!user) throw new NotFoundException('Customer not found');
 
         // Generate a random temporary password (e.g. 8 chars)
@@ -404,8 +407,23 @@ export class CustomersService {
             data: { passwordHash }
         });
 
+        // Send email with the new password
+        try {
+            await this.emailService.sendPasswordReset({
+                recipientEmail: user.email,
+                recipientName: user.fullName || `${user.customerProfile?.firstName} ${user.customerProfile?.lastName}`.trim() || 'Değerli Müşterimiz',
+                newPassword: tempPassword, // The template handles either resetUrl or newPassword
+            });
+        } catch (error) {
+            await this.errorLogger.logError({
+                action: 'admin_password_reset_email_failed',
+                message: 'Failed to send notification email after admin password reset',
+                error,
+                metadata: { email: user.email }
+            });
+        }
+
         // Return the plain text password so the admin can copy and send it.
-        // In a real email setup, we'd fire an event.
         return { newPassword: tempPassword, email: user.email };
     }
 
