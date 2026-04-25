@@ -25,10 +25,10 @@ export class KnowledgePoolParserService {
         }
     }
 
-    async parsePdf(filePath: string): Promise<string> {
-        this.logger.debug(`Starting PDF parsing for: ${filePath}`);
+    async parsePdf(input: string | Buffer): Promise<string> {
+        this.logger.debug(`Starting PDF parsing...`);
         try {
-            const dataBuffer = fs.readFileSync(filePath);
+            const dataBuffer = Buffer.isBuffer(input) ? input : fs.readFileSync(input);
 
             // eslint-disable-next-line @typescript-eslint/no-require-imports
             let pdfParser: any = await import('pdf-parse');
@@ -43,36 +43,41 @@ export class KnowledgePoolParserService {
             }
 
             const data = await pdfParser(dataBuffer);
-            this.logger.debug(`Completed PDF parsing for: ${filePath}. extracted length: ${data?.text?.length || 0}`);
+            this.logger.debug(`Completed PDF parsing. Extracted length: ${data?.text?.length || 0}`);
             return this.fixEncoding(data.text || '');
         } catch (error: any) {
-            this.logger.error(`Failed to parse PDF ${filePath}: ${error.message}`);
+            this.logger.error(`Failed to parse PDF: ${error.message}`);
             return '';
         }
     }
 
-    async parseCsv(filePath: string): Promise<string> {
+    async parseCsv(input: string | Buffer): Promise<string> {
         return new Promise((resolve, reject) => {
             const results: string[] = [];
-            fs.createReadStream(filePath)
-                .pipe(csv())
+            const stream = Buffer.isBuffer(input)
+                ? require('stream').Readable.from(input)
+                : fs.createReadStream(input);
+
+            stream.pipe(csv())
                 .on('data', (data: any) => results.push(JSON.stringify(data)))
                 .on('end', () => resolve(this.fixEncoding(results.join('\n'))))
                 .on('error', (err: any) => reject(err));
         });
     }
 
-    async parseTxt(filePath: string): Promise<string> {
-        return this.fixEncoding(fs.readFileSync(filePath, 'utf-8'));
+    async parseTxt(input: string | Buffer): Promise<string> {
+        const text = Buffer.isBuffer(input) ? input.toString('utf-8') : fs.readFileSync(input, 'utf-8');
+        return this.fixEncoding(text);
     }
 
-    async parseMd(filePath: string): Promise<string> {
-        return this.fixEncoding(fs.readFileSync(filePath, 'utf-8'));
+    async parseMd(input: string | Buffer): Promise<string> {
+        const text = Buffer.isBuffer(input) ? input.toString('utf-8') : fs.readFileSync(input, 'utf-8');
+        return this.fixEncoding(text);
     }
 
-    async parseMsg(filePath: string): Promise<string> {
+    async parseMsg(input: string | Buffer): Promise<string> {
         const { simpleParser } = await import('mailparser');
-        const dataBuffer = fs.readFileSync(filePath);
+        const dataBuffer = Buffer.isBuffer(input) ? input : fs.readFileSync(input);
         const parsed = await simpleParser(dataBuffer);
         const content = [
             `Subject: ${parsed.subject}`,
@@ -84,13 +89,13 @@ export class KnowledgePoolParserService {
         return this.fixEncoding(content);
     }
 
-    async parseFile(type: string, filePath: string): Promise<string> {
+    async parseFile(type: string, input: string | Buffer): Promise<string> {
         switch (type) {
-            case 'FILE_PDF': return this.parsePdf(filePath);
-            case 'FILE_CSV': return this.parseCsv(filePath);
-            case 'FILE_TXT': return this.parseTxt(filePath);
-            case 'FILE_MD': return this.parseMd(filePath);
-            case 'FILE_MSG': return this.parseMsg(filePath);
+            case 'FILE_PDF': return this.parsePdf(input);
+            case 'FILE_CSV': return this.parseCsv(input);
+            case 'FILE_TXT': return this.parseTxt(input);
+            case 'FILE_MD': return this.parseMd(input);
+            case 'FILE_MSG': return this.parseMsg(input);
             default: throw new Error(`Unsupported file type: ${type}`);
         }
     }

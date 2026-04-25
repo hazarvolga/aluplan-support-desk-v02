@@ -35,7 +35,7 @@ export class AuthController {
             sameSite: 'lax',
             path: '/',
             domain: cookieDomain,
-            maxAge: 15 * 60 * 1000, // 15 mins
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours
         });
 
         res.cookie('alu_rt', tokens.refresh_token, {
@@ -70,7 +70,7 @@ export class AuthController {
             sameSite: 'lax',
             path: '/',
             domain: cookieDomain,
-            maxAge: 15 * 60 * 1000,
+            maxAge: 24 * 60 * 60 * 1000,
         });
 
         res.cookie('alu_rt', tokens.refresh_token, {

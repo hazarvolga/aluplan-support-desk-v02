@@ -65,7 +65,7 @@ export class OpenAiService implements AiProvider {
                 body: JSON.stringify({
                     model,
                     input: text,
-                    dimensions: 1024,
+                    dimensions: parseInt(this.config.get('EMBEDDING_DIMENSIONS') || '1536', 10),
                 }),
                 signal: AbortSignal.timeout(60000),
             });

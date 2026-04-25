@@ -50,7 +50,12 @@ export class CrawlService {
 
     private async fetchWithPlaywright(url: string): Promise<string> {
         if (!this.browser) {
-            this.browser = await chromium.launch({ headless: true });
+            const executablePath = process.env.CHROME_BIN || process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+            this.browser = await chromium.launch({
+                headless: true,
+                executablePath: executablePath || undefined,
+                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+            });
         }
         const context = await this.browser.newContext();
         const page = await context.newPage();

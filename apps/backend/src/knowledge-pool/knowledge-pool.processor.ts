@@ -10,6 +10,7 @@ import * as crypto from 'crypto';
 import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
 
 import { CrawlService } from './crawl.service';
+import { StorageService } from '../common/services/storage.service';
 import { hierarchicalChunk } from '../knowledge-base/utils/smart-chunker';
 import { AiService } from '../ai/ai.service';
 import { OnModuleInit } from '@nestjs/common';
@@ -25,6 +26,7 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         private readonly parserService: KnowledgePoolParserService,
         private readonly crawlService: CrawlService,
         private readonly aiService: AiService,
+        private readonly storageService: StorageService,
     ) {
         super();
     }
@@ -157,36 +159,42 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
     }
 
     private async handleFileSync(source: any, logId: string) {
-        if (!source.filePath) throw new Error('File path missing for source');
+        if (!source.filePath) throw new Error('File path/key missing for source');
 
+        this.logger.log(`📄 Retrieving file content for: ${source.fileName} (Key: ${source.filePath})`);
+
+        let fileBuffer: Buffer | null = null;
         let targetPath = source.filePath;
 
-        // Smart Path Resolution: 
-        // If path is absolute (Mac style) and doesn't exist, try resolving relative to project root/dataset
-        if (targetPath.startsWith('/') && !fs.existsSync(targetPath)) {
-            this.logger.warn(`⚠️ Absolute path not found: ${targetPath}. Attempting relative resolution...`);
+        // Try getting from StorageService first (handles S3 and local relatively)
+        fileBuffer = await this.storageService.getFile(source.filePath);
 
-            // Extract relative portion (look for 'dataset' in the path)
-            const datasetIndex = targetPath.indexOf('dataset');
-            if (datasetIndex !== -1) {
-                const relativePath = targetPath.substring(datasetIndex);
-                // Try from CWD (production /app or local root)
-                const candidate = path.resolve(process.cwd(), relativePath);
-                if (fs.existsSync(candidate)) {
-                    this.logger.log(`✅ Resolved path to: ${candidate}`);
-                    targetPath = candidate;
+        if (!fileBuffer) {
+            this.logger.warn(`⚠️ File not found in primary storage [${source.filePath}]. Attempting local fallback resolution...`);
+
+            // Smart Local Path Resolution (for legacy dataset files)
+            if (targetPath.startsWith('/') && !fs.existsSync(targetPath)) {
+                const datasetIndex = targetPath.indexOf('dataset');
+                if (datasetIndex !== -1) {
+                    const relativePath = targetPath.substring(datasetIndex);
+                    const candidate = path.resolve(process.cwd(), relativePath);
+                    if (fs.existsSync(candidate)) {
+                        this.logger.log(`✅ Resolved path to: ${candidate}`);
+                        targetPath = candidate;
+                        fileBuffer = fs.readFileSync(targetPath);
+                    }
                 }
+            } else if (!targetPath.startsWith('/') && fs.existsSync(path.resolve(process.cwd(), targetPath))) {
+                targetPath = path.resolve(process.cwd(), targetPath);
+                fileBuffer = fs.readFileSync(targetPath);
             }
-        } else if (!targetPath.startsWith('/') && !fs.existsSync(targetPath)) {
-            // Already relative, resolve from CWD
-            targetPath = path.resolve(process.cwd(), targetPath);
         }
 
-        if (!fs.existsSync(targetPath)) {
-            throw new Error(`File not found after resolution attempts: ${targetPath}`);
+        if (!fileBuffer) {
+            throw new Error(`File not found after all resolution attempts: ${source.filePath}`);
         }
 
-        let content = await this.parserService.parseFile(source.type, targetPath);
+        let content = await this.parserService.parseFile(source.type, fileBuffer);
         const hash = crypto.createHash('sha256').update(content).digest('hex');
 
         if (hash === source.lastHash) {

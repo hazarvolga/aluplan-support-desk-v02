@@ -23,8 +23,24 @@ RUN pnpm install --frozen-lockfile && \
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-RUN apk add --no-cache openssl fontconfig postgresql-client curl && \
-    npm install -g pnpm@9.15.4 && \
+# Playwright/Chromium dependencies for Alpine
+RUN apk add --no-cache \
+    openssl \
+    fontconfig \
+    postgresql-client \
+    curl \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+ENV CHROME_BIN=/usr/bin/chromium-browser \
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
+    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+RUN npm install -g pnpm@9.15.4 && \
     npm install -g prisma@7.4.2
 
 # 1. Copy entire workspace (metadata + source needed for pnpm install)
