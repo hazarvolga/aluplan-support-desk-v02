@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, createContext, useContext } from 'react';
+import { useEffect, useState, useRef, useCallback, createContext, useContext } from 'react';
 import { api } from '@/lib/api';
 import { useRouter, usePathname } from 'next/navigation';
 import { routing } from '@/i18n/routing';
@@ -46,8 +46,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
     const pathname = usePathname();
+    const isFetchingRef = useRef(false);
+    const hasFetchedRef = useRef(false);
 
-    const fetchUser = async () => {
+    const fetchUser = useCallback(async () => {
+        // Prevent concurrent fetchUser calls
+        if (isFetchingRef.current) return;
+        isFetchingRef.current = true;
+
         const cleanPath = stripLocale(pathname);
 
         try {
@@ -59,14 +65,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 cleanPath === '/' ||
                 cleanPath.startsWith('/login') ||
                 cleanPath.startsWith('/register') ||
-                cleanPath.startsWith('/reset-password');
+                cleanPath.startsWith('/reset-password') ||
+                cleanPath.startsWith('/verify-email');
             if (!isPublicRoute) {
                 router.push('/login');
             }
         } finally {
             setLoading(false);
+            isFetchingRef.current = false;
+            hasFetchedRef.current = true;
         }
-    };
+    }, [pathname, router]);
 
     const logout = async () => {
         try {
@@ -84,18 +93,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
     };
 
-    // Run fetchUser on mount
+    // Run fetchUser on mount only
     useEffect(() => {
         fetchUser();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    // Re-sync if path changes and we have a token but no user (handles cross-page navigation)
-    useEffect(() => {
-        if (!user && !loading) {
-            fetchUser();
-        }
-    }, [pathname]);
 
     useEffect(() => {
         if (!loading && user) {

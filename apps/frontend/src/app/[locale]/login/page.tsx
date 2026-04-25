@@ -27,25 +27,29 @@ export default function LoginPage() {
 
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
+        if (loading) return; // Prevent double-submit
         setError('');
         setLoading(true);
         try {
-            const user = await api.auth.login(email, password);
+            await api.auth.login(email, password);
 
-            // Check user profile for smart routing
+            // After login sets cookies, fetch user profile
+            // Small delay to ensure cookies are persisted by browser
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             try {
-                const user = await api.auth.me();
-                login(user as any); // Update global auth context immediately
+                const userData = await api.auth.me();
+                login(userData as any); // Update global auth context
 
-                const hotinfoData = user?.customerProfile?.hotinfoData as any;
+                const hotinfoData = userData?.customerProfile?.hotinfoData as any;
 
-                if (hotinfoData?.isAllplanUser && !user?.customerProfile?.hotinfoUpdatedAt) {
+                if (hotinfoData?.isAllplanUser && !userData?.customerProfile?.hotinfoUpdatedAt) {
                     router.push('/profile');
                 } else {
                     router.push('/dashboard');
                 }
             } catch (err) {
-                // Fallback route
+                // Fallback route - cookies are set, just navigate
                 router.push('/dashboard');
             }
 
