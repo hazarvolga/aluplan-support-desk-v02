@@ -12,6 +12,7 @@ import {
     FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import * as path from 'path';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
@@ -26,10 +27,29 @@ export class BrandingController {
     @Public()
     @Get('assets/*path')
     async getAsset(@Param('path') key: string, @Res() res: Response) {
-        // Creates a fresh presigned URL valid for 1 hour and redirects the user securely
         try {
-            const url = await this.storageService.getDownloadUrl(key);
-            return res.redirect(url);
+            if (this.storageService.isS3()) {
+                const url = await this.storageService.getDownloadUrl(key);
+                return res.redirect(url);
+            } else {
+                // For local storage, serve file directly
+                const buffer = await this.storageService.getFile(key);
+                if (!buffer) return res.status(404).send('Asset not found');
+
+                // Determine mime type from extension
+                const ext = path.extname(key).toLowerCase();
+                const mimeTypes: Record<string, string> = {
+                    '.png': 'image/png',
+                    '.jpg': 'image/jpeg',
+                    '.jpeg': 'image/jpeg',
+                    '.gif': 'image/gif',
+                    '.svg': 'image/svg+xml',
+                    '.webp': 'image/webp'
+                };
+                res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+
+                return res.send(buffer);
+            }
         } catch (_error) {
             return res.status(404).send('Asset not found');
         }

@@ -26,25 +26,18 @@
     <mj-include path="../partials/header.mjml" />
     
     <!-- Announcement Content Area -->
-    <mj-section padding-top="10px" padding-bottom="10px">
-      <mj-column css-class="content-wrapper" padding="30px 20px">
-        
-        <!-- ============================================== -->
-        <!-- INJECTED RICH TEXT CONTENT GOES HERE -->
-        <!-- ============================================== -->
-        <mj-text css-class="rich-text">
-          {{{contentHtml}}}
-        </mj-text>
-        
-        <!-- Optional CTA Button injected if provided -->
-        {{#if ctaUrl}}
-        <mj-button href="{{ctaUrl}}" background-color="#0ea5e9" color="white" border-radius="6px" padding-top="20px" font-weight="600">
+    {{{contentHtml}}}
+
+    <!-- Optional CTA Button injected if provided -->
+    {{#if ctaUrl}}
+    <mj-section padding-top="0px">
+      <mj-column>
+        <mj-button href="{{ctaUrl}}" background-color="#0ea5e9" color="white" border-radius="6px" font-weight="600">
           {{ctaText}}
         </mj-button>
-        {{/if}}
-
       </mj-column>
     </mj-section>
+    {{/if}}
 
     <!-- Footer Information (Shared Partials) -->
     <mj-include path="../partials/footer.mjml" />

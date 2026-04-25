@@ -31,6 +31,11 @@ export class StorageService implements OnModuleInit {
         this.publicEndpoint = storageConfig.publicEndpoint;
     }
 
+    isS3(): boolean {
+        return this.storageType === 'S3';
+    }
+
+
     private async getS3Config() {
         const endpoint = (await this.settingsService.getValue('storage.endpoint') || this.configService.get('storage.endpoint') || '').trim().replace(/\/+$/, '');
         const regionStr = (await this.settingsService.getValue('storage.region') || this.configService.get('storage.region') || '').trim();
@@ -151,12 +156,11 @@ export class StorageService implements OnModuleInit {
 
             return url;
         } else {
-            // Serve via backend URL
-            const port = this.configService.get('port') || 4000;
-            const apiBase = `http://localhost:${port}/api/v1`;
-            return `${apiBase}/storage/${key}`;
+            // Serve via relative backend URL
+            return `/api/v1/storage/${key}`;
         }
     }
+
 
     async getFile(key: string): Promise<Buffer | null> {
         try {

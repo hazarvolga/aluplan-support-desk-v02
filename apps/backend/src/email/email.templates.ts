@@ -36,23 +36,33 @@ export class TemplateService {
   }
 
   private static ensurePaths() {
+    if (this.mjmlBaseDir && this.localesDir) return; // Only Once
+
     const cwd = process.cwd();
-    // In monorepo, we need to handle both 'apps/backend' CWD and root CWD
     const backendRoot = cwd.endsWith('apps/backend') ? cwd : path.join(cwd, 'apps', 'backend');
 
-    // Priority 1: Check __dirname/templates/mjml (likely in dist or local dev)
-    const localMjml = path.join(__dirname, 'templates', 'mjml');
-    const localLocales = path.join(__dirname, 'locales');
+    // Possible MJML paths (Monorepo dev, dist root, src fallback)
+    const candidateMjmlPaths = [
+      path.join(__dirname, 'templates', 'mjml'), // local dev / specific dist
+      path.join(backendRoot, 'dist', 'email', 'templates', 'mjml'), // Standard Nest production dist
+      path.join(backendRoot, 'src', 'email', 'templates', 'mjml'), // Source fallback (Docker COPY)
+      path.join(cwd, 'src', 'email', 'templates', 'mjml'), // Raw container source
+    ];
 
-    // Priority 2: Check src relative to backendRoot
-    const srcMjml = path.join(backendRoot, 'src', 'email', 'templates', 'mjml');
-    const srcLocales = path.join(backendRoot, 'src', 'email', 'locales');
+    const candidateLocalesPaths = [
+      path.join(__dirname, 'locales'),
+      path.join(backendRoot, 'dist', 'email', 'locales'),
+      path.join(backendRoot, 'src', 'email', 'locales'),
+      path.join(cwd, 'src', 'email', 'locales'),
+    ];
 
-    this.mjmlBaseDir = fs.existsSync(localMjml) ? localMjml : srcMjml;
-    this.localesDir = fs.existsSync(localLocales) ? localLocales : srcLocales;
+    this.mjmlBaseDir = candidateMjmlPaths.find(p => fs.existsSync(p)) || candidateMjmlPaths[0];
+    this.localesDir = candidateLocalesPaths.find(p => fs.existsSync(p)) || candidateLocalesPaths[0];
 
     if (!fs.existsSync(this.mjmlBaseDir)) {
-      console.warn(`[TEMPLATE-SERVICE] MJML Base Dir NOT FOUND: ${this.mjmlBaseDir}. Falling back to src path.`);
+      console.warn(`[TEMPLATE-SERVICE] MJML Base Dir NOT FOUND in any candidates. Tried: ${candidateMjmlPaths.join(', ')}`);
+    } else {
+      console.log(`[TEMPLATE-SERVICE] MJML template path resolved to: ${this.mjmlBaseDir}`);
     }
   }
 
@@ -156,6 +166,18 @@ export class TemplateService {
       ticketPriorityLow: (data.ticketPriority || data.priority || 'medium').toLowerCase(),
       ticketSubject: data.ticketSubject || data.subject || '',
     };
+
+    // [FIX] Ensure contentHtml is wrapped in MJML tags if it's raw HTML/Text
+    if (renderContext.contentHtml) {
+      const c = renderContext.contentHtml.trim();
+      if (!c.startsWith('<mj-')) {
+        renderContext.contentHtml = `<mj-section padding-top="10px" padding-bottom="10px">
+          <mj-column background-color="#ffffff" border-radius="12px" padding="30px 20px">
+            <mj-text css-class="rich-text">${c}</mj-text>
+          </mj-column>
+        </mj-section>`;
+      }
+    }
 
     // 5. [PILLAR 2] - Contract Validation (Soft validation for now to avoid crashing, but logging issues)
     const validationResult = BaseEmailSchema.safeParse(renderContext);

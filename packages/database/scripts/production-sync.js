@@ -16,8 +16,33 @@ async function main() {
     const prisma = new PrismaClient({ adapter });
 
     try {
-        // --- 1. Roles Enforcement ---
-        console.log('📡 Enforcing System Roles...');
+        // --- 1. Roles & Permissions Enforcement ---
+        console.log('📡 Enforcing System Roles & Permissions...');
+        const ALL_PERMISSIONS = [
+            { name: 'ticket:create', group: 'TICKETS', description: 'Create new support tickets' },
+            { name: 'ticket:read', group: 'TICKETS', description: 'View tickets' },
+            { name: 'ticket:update', group: 'TICKETS', description: 'Update ticket status/details' },
+            { name: 'ticket:assign', group: 'TICKETS', description: 'Assign tickets to agents/teams' },
+            { name: 'ticket:escalate', group: 'TICKETS', description: 'Escalate tickets to higher tiers' },
+            { name: 'kb:read', group: 'KNOWLEDGE', description: 'View knowledge base articles' },
+            { name: 'kb:write', group: 'KNOWLEDGE', description: 'Create/Edit knowledge base articles' },
+            { name: 'faq:read', group: 'KNOWLEDGE', description: 'View FAQ learning candidates' },
+            { name: 'faq:manage', group: 'KNOWLEDGE', description: 'Approve/Dismiss FAQ candidates' },
+            { name: 'settings:read', group: 'SYSTEM', description: 'View system settings' },
+            { name: 'settings:write', group: 'SYSTEM', description: 'Update system settings' },
+            { name: 'reports:read', group: 'SYSTEM', description: 'View analytics and reports' },
+            { name: 'users:manage', group: 'SYSTEM', description: 'Manage users and roles' },
+            { name: '*', group: 'SYSTEM', description: 'Wildcard super-permission' }
+        ];
+
+        for (const permDef of ALL_PERMISSIONS) {
+            await prisma.permission.upsert({
+                where: { name: permDef.name },
+                update: { group: permDef.group, description: permDef.description },
+                create: permDef
+            });
+        }
+
         let adminRole = await prisma.role.findFirst({ where: { name: 'ADMIN' } });
         if (!adminRole) {
             adminRole = await prisma.role.create({ data: { name: 'ADMIN', isSystem: true, description: 'Super Administrator' } });
@@ -26,6 +51,24 @@ async function main() {
         let customerRole = await prisma.role.findFirst({ where: { name: 'CUSTOMER' } });
         if (!customerRole) {
             customerRole = await prisma.role.create({ data: { name: 'CUSTOMER', isSystem: true, description: 'Standard Customer' } });
+        }
+
+        // Connect ALL permissions to ADMIN role
+        const perms = await prisma.permission.findMany();
+        for (const p of perms) {
+            await prisma.rolePermission.upsert({
+                where: {
+                    roleId_permissionId: {
+                        roleId: adminRole.id,
+                        permissionId: p.id
+                    }
+                },
+                update: {},
+                create: {
+                    roleId: adminRole.id,
+                    permissionId: p.id
+                }
+            });
         }
 
         // --- 2. Admin User Protection ---
@@ -41,7 +84,7 @@ async function main() {
             adminUser = await prisma.user.create({
                 data: {
                     email: 'hazarvolga@gmail.com',
-                    password: passwordHash,
+                    passwordHash: passwordHash,
                     fullName: 'Hazar Volga',
                     roleId: adminRole.id,
                     status: 'ACTIVE'
@@ -50,8 +93,9 @@ async function main() {
             console.log('✅ Created default admin user: hazarvolga@gmail.com');
         }
 
-        // --- 3. User Recovery (Current Production Issues Fix) ---
-        console.log('🩹 Running User Recovery (Undeleting stuck users)...');
+        // --- 3. User Recovery ---
+        console.log('🩹 Running User Recovery...');
+        // ... (rest of user recovery)
         const recovered = await prisma.user.updateMany({
             where: { OR: [{ deletedAt: { not: null } }, { status: 'INACTIVE' }] },
             data: { deletedAt: null, status: 'ACTIVE' }
@@ -311,6 +355,87 @@ async function main() {
                 create: { key: setting.key, value: setting.value, isSecret: false }
             });
         }
+
+        // --- 6. Knowledge Base Categories (Sync from seed.ts logic) ---
+        console.log('📚 Syncing Knowledge Base Categories...');
+        const KB_CATEGORIES = [
+            { name: 'Genel Bilgiler', description: 'Destek merkezi kullanımı ve genel duyurular' },
+            { name: 'Teknik Destek', description: 'Yazılım kurulumu ve teknik hata çözümleri' },
+            { name: 'Lisans ve Abonelik', description: 'Lisans aktivasyonu ve abonelik işlemleri' },
+            { name: 'Eğitim Videoları', description: 'Ürün kullanım eğitimleri' }
+        ];
+
+        for (const catDef of KB_CATEGORIES) {
+            const slug = catDef.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            await prisma.category.upsert({
+                where: { slug },
+                update: { description: catDef.description },
+                create: {
+                    name: catDef.name,
+                    slug,
+                    description: catDef.description
+                }
+            });
+        }
+        console.log('✅ Knowledge Base Categories synchronized.');
+
+        // --- 7. Test Customer Account ---
+        console.log('🧪 Ensuring test customer account (droneracingturkey@gmail.com)...');
+        let testCustomer = await prisma.user.findUnique({ where: { email: 'droneracingturkey@gmail.com' } });
+        if (!testCustomer) {
+            const testPassHash = await bcrypt.hash('Test1234!', 10);
+            testCustomer = await prisma.user.create({
+                data: {
+                    email: 'droneracingturkey@gmail.com',
+                    passwordHash: testPassHash,
+                    fullName: 'Test Customer',
+                    roleId: customerRole.id,
+                    status: 'ACTIVE',
+                    customerProfile: {
+                        create: {
+                            firstName: 'Test',
+                            lastName: 'Customer',
+                            customerNo: 'TEST-001',
+                            companyName: 'Drone Racing Turkey',
+                            phoneNumber: '5550000000'
+                        }
+                    }
+                }
+            });
+            console.log('✅ Created test customer account.');
+        } else {
+            // Ensure they have the correct role and are active
+            await prisma.user.update({
+                where: { id: testCustomer.id },
+                data: { roleId: customerRole.id, status: 'ACTIVE', deletedAt: null }
+            });
+        }
+
+        // --- 8. Announcement Templates Seeding ---
+        console.log('📢 Syncing Announcement Templates...');
+        const templates = [
+            {
+                name: 'Ürün Yol Haritası Güncellemesi',
+                topic: 'Product',
+                subject: 'Aluplan 2026 Ürün Yol Haritası Yayınlandı',
+                contentMjml: '<mj-section><mj-column><mj-text>2026 Yol Haritamız yayında!</mj-text></mj-column></mj-section>'
+            },
+            {
+                name: 'Güvenlik Denetimi Sonuç Özeti',
+                topic: 'Security',
+                subject: 'Güvenlik Denetimi Tamamlandı',
+                contentMjml: '<mj-section><mj-column><mj-text>Güvenlik denetimimiz başarıyla tamamlandı.</mj-text></mj-column></mj-section>'
+            }
+        ];
+
+        for (const t of templates) {
+            await prisma.announcementTemplate.upsert({
+                where: { name: t.name },
+                update: { topic: t.topic, subject: t.subject, contentMjml: t.contentMjml },
+                create: { ...t, authorId: adminUser.id }
+            });
+        }
+        console.log('✅ Announcement templates synchronized.');
 
         console.log('🎉 Production Sync completed successfully!');
     } catch (error) {
