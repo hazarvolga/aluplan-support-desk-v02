@@ -1,3 +1,20 @@
 # AI Context Poison Prevention
 docs/archive/
 .gemini/
+
+# Bundled / generated runtime files (cause god-node noise in graph)
+packages/database/client/runtime/
+packages/database/client/index-browser.js
+node_modules/
+.turbo/
+graphify-out/
+
+# Archive & temp files
+.archive/
+dataset/*.resolved
+dataset/*.resolved.*
+dataset/*.metadata.json
+
+# Build outputs
+apps/frontend/.next/
+apps/backend/dist/

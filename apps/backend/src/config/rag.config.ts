@@ -19,7 +19,7 @@ export const RAG_CONFIG = {
         /** Below this score, confidence is LOW (env-overridable) */
         LOW: parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.62'),
         /** Absolute floor — never return below this */
-        FLOOR: 0.62,
+        FLOOR: 0.45,
     },
 
     /** Hierarchical chunking parameters */

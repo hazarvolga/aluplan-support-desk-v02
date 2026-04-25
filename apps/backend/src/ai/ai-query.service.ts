@@ -216,8 +216,8 @@ export class AiQueryService {
 
         // Phase 3: Immediate Adaptive Analysis for Thresholding
         const diagnosisForThreshold = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content), options.productId);
-        const adaptiveThreshold = this.calculateAdaptiveThreshold(userQuery, diagnosisForThreshold);
-        this.logger.debug(`🎯 Adaptive threshold calculated: ${adaptiveThreshold.toFixed(3)} (Query: "${userQuery.slice(0, 30)}...")`);
+        const adaptiveThreshold = this.calculateAdaptiveThreshold(userQuery, diagnosisForThreshold, isStaff);
+        this.logger.debug(`🎯 Adaptive threshold calculated: ${adaptiveThreshold.toFixed(3)} (Query: "${userQuery.slice(0, 30)}...", isStaff: ${isStaff})`);
 
         let expandedQuery = userQuery;
 
@@ -602,8 +602,8 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
         // Phase 3: Adaptive Analysis for Thresholding
         const diagnosisForThreshold = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content), options.productId);
-        const adaptiveThreshold = this.calculateAdaptiveThreshold(userQuery, diagnosisForThreshold);
-        this.logger.debug(`🎯 [Streaming] Adaptive threshold calculated: ${adaptiveThreshold.toFixed(3)}`);
+        const adaptiveThreshold = this.calculateAdaptiveThreshold(userQuery, diagnosisForThreshold, isStaff);
+        this.logger.debug(`🎯 [Streaming] Adaptive threshold calculated: ${adaptiveThreshold.toFixed(3)}, isStaff: ${isStaff}`);
 
         let expandedQuery = userQuery;
         // Conditional Hotinfo expansion (same logic as query())
@@ -902,11 +902,13 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
     /**
      * Dynamically calculates the similarity threshold based on query complexity.
      */
-    private calculateAdaptiveThreshold(query: string, diagnosis?: DiagnosisResult): number {
-        let threshold = RAG_CONFIG.SIMILARITY.FLOOR;
+    private calculateAdaptiveThreshold(query: string, diagnosis?: DiagnosisResult, isStaff = false): number {
+        let threshold: number = RAG_CONFIG.SIMILARITY.FLOOR; // 0.45
+
+        const isTechnical = diagnosis?.categoryNames.some(c => c.toLowerCase().includes('tech')) || (diagnosis?.matchedKeywords.length || 0) > 2;
 
         // 1. Technical Depth Adjustment
-        if (diagnosis && (diagnosis.categoryNames.includes('Technical') || diagnosis.matchedKeywords.length > 3)) {
+        if (diagnosis && isTechnical) {
             // High technical density might warrant lower floor to be more helpful with sparse but specific matches
             threshold -= 0.05;
         }
@@ -916,10 +918,23 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             threshold += 0.08;
         }
 
-        // 3. User Context Adjustment (Staff queries can be more permissive)
-        // Note: isStaff is checked in the caller but we could also pass it here
+        // 3. Product-Aware Adjustment (CRITICAL FIX)
+        // If product is GENERIC, we should be STRICTOR to avoid hallucinations.
+        // But if it's GENERIC and TECHNICAL, we can be slightly more relaxed.
+        if (diagnosis?.productName === 'GENERIC') {
+            if (!isTechnical) {
+                threshold = Math.max(threshold, 0.60); // Strict for non-technical generic
+            } else {
+                threshold = Math.max(threshold, 0.48); // Revit/IFC technical queries
+            }
+        }
 
-        return Math.max(0.45, Math.min(0.80, threshold));
+        // 4. Staff Adjustment (Staff can see slightly less confident matches)
+        if (isStaff) {
+            threshold -= 0.05;
+        }
+
+        return Math.max(0.35, Math.min(0.80, threshold));
     }
 
     async submitFeedback(
