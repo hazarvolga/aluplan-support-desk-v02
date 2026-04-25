@@ -111,9 +111,12 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
             this.logger.warn(`🚨 Major change detected (${(delta * 100).toFixed(1)}%) for ${source.url}. Mark for review.`);
         }
 
+        this.logger.log(`🧩 Content split into ${hierarchies.length} hierarchies for ${source.url}`);
+
         const hierarchies = hierarchicalChunk(content, { title });
 
         await this.prisma.$executeRaw`DELETE FROM knowledge_pool_embeddings WHERE source_id = ${source.id}::uuid`;
+        this.logger.log(`🗑️ Existing embeddings cleared for source ${source.id}`);
 
         let totalChunks = 0;
         for (const h of hierarchies) {
@@ -134,6 +137,9 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
                     status: isMajorChange ? 'PENDING_REVIEW' : 'ACTIVE'
                 });
                 totalChunks++;
+                if (totalChunks % 10 === 0) {
+                    this.logger.log(`⏳ Indexed ${totalChunks} chunks so far...`);
+                }
             }
         }
 

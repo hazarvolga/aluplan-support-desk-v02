@@ -224,19 +224,23 @@ export const api = {
         delete: (id: string) => request<any>(`/tickets/${id}`, { method: 'DELETE' }),
     },
     ai: {
-        query: (query: string, hotinfoContext?: any, productId?: string | null, language?: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>, attachments?: any[]) =>
-            request<{
+        query: (query: string, hotinfoContext?: any, productId?: string | null, language?: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>, attachments?: any[], wait?: boolean) => {
+            const url = wait ? '/ai/query?wait=true' : '/ai/query';
+            return request<{
                 query: string;
                 answer: string | null;
                 confidence: string;
                 sources: any[];
                 interactionId: string;
                 suggestTicket: boolean;
-            }>('/ai/query', {
+                jobId?: string;
+                status?: string;
+            }>(url, {
                 method: 'POST',
                 body: JSON.stringify({ query, hotinfoContext, productId, language, history, attachments }),
-                signal: typeof AbortSignal !== 'undefined' ? AbortSignal.timeout(45000) : undefined,
-            }),
+                signal: typeof AbortSignal !== 'undefined' ? AbortSignal.timeout(60000) : undefined, // Increased to 60s for sync waits
+            });
+        },
         search: (query: string, productId?: string | null, limit = 5, language?: string) =>
             request<{
                 results: any[];

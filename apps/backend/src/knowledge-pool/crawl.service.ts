@@ -24,20 +24,22 @@ export class CrawlService {
 
         try {
             // 1. Try static fetch first (faster)
+            this.logger.log(`🔍 Attempting static fetch for: ${url}`);
             const response = await axios.get(url, {
                 timeout: 10000,
                 headers: { 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0' }
             });
             html = response.data;
+            this.logger.log(`📥 Static fetch successful, length: ${html.length}`);
 
             // 2. Check if it's a SPA or needs JS (simplistic check)
             if (html.includes('app-root') || html.includes('id="root"') || html.length < 1000) {
-                this.logger.log(`⚡ Site looks dynamic, switching to Playwright: ${url}`);
+                this.logger.log(`⚡ Site looks dynamic or too small, switching to Playwright: ${url}`);
                 html = await this.fetchWithPlaywright(url);
                 isDynamic = true;
             }
         } catch (error) {
-            this.logger.warn(`⚠️ Static fetch failed, trying Playwright: ${error.message}`);
+            this.logger.warn(`⚠️ Static fetch failed (${error.message}), trying Playwright: ${url}`);
             html = await this.fetchWithPlaywright(url);
             isDynamic = true;
         }
@@ -51,18 +53,31 @@ export class CrawlService {
     private async fetchWithPlaywright(url: string): Promise<string> {
         if (!this.browser) {
             const executablePath = process.env.CHROME_BIN || process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-            this.browser = await chromium.launch({
-                headless: true,
-                executablePath: executablePath || undefined,
-                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-            });
+            this.logger.log(`🚀 Launching browser (Path: ${executablePath || 'default'})...`);
+            try {
+                this.browser = await chromium.launch({
+                    headless: true,
+                    executablePath: executablePath || undefined,
+                    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+                });
+                this.logger.log(`✅ Browser launched successfully.`);
+            } catch (err) {
+                this.logger.error(`❌ Browser launch FAILED: ${err.message}`);
+                throw err;
+            }
         }
         const context = await this.browser.newContext();
         const page = await context.newPage();
 
         try {
+            this.logger.log(`📄 Navigating to URL in Playwright...`);
             await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
-            return await page.content();
+            const content = await page.content();
+            this.logger.log(`✅ Content fetched via Playwright, length: ${content.length}`);
+            return content;
+        } catch (err) {
+            this.logger.error(`❌ Playwright navigation FAILED: ${err.message}`);
+            throw err;
         } finally {
             await page.close();
             await context.close();
