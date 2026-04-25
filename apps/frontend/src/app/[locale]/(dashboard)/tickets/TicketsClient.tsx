@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import {
     Ticket,
@@ -73,7 +73,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const locale = useLocale();
     const [tickets, setTickets] = useState<any[]>(initialTickets);
     const [total, setTotal] = useState(initialTotal);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(initialTickets.length === 0);
     const [filter, setFilter] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [bulkLoading, setBulkLoading] = useState(false);
@@ -84,6 +84,13 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
         const role = (typeof r === 'string' ? r : '').toUpperCase();
         return role === 'ADMIN' || role === 'DEPARTMENT_MANAGER' || role === 'TEAM_LEAD' || role === 'SENIOR_AGENT';
     })();
+
+    // Auto-load tickets on mount when no initial data was provided
+    useEffect(() => {
+        if (initialTickets.length === 0) {
+            load();
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const load = async (statusFilter?: string) => {
         setLoading(true);
