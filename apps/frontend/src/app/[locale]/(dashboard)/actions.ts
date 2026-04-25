@@ -7,8 +7,8 @@ const API_URL = process.env.NEXT_INTERNAL_API_URL || process.env.NEXT_PUBLIC_API
 
 async function getAuthHeaders() {
     const cookieStore = await cookies();
-    const accessToken = cookieStore.get('access_token')?.value;
-    const refreshToken = cookieStore.get('refresh_token')?.value;
+    const accessToken = cookieStore.get('alu_at')?.value;
+    const refreshToken = cookieStore.get('alu_rt')?.value;
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
     };

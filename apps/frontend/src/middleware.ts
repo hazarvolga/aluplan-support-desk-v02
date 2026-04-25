@@ -64,7 +64,7 @@ export default async function middleware(request: NextRequest) {
     let response: NextResponse;
 
     if (isDashboardRoute) {
-        const token = request.cookies.get('access_token')?.value;
+        const token = request.cookies.get('alu_at')?.value;
         const locale = routing.locales.find(l => pathname.startsWith(`/${l}/`)) || routing.defaultLocale;
         const loginUrl = new URL(`/${locale}/login`, request.url);
 
