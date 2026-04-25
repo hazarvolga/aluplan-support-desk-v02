@@ -25,8 +25,8 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Reset to production for the Next.js build
 ENV NODE_ENV=production
-# Build frontend with optimized memory limit (4096) to prevent OOM
-RUN NODE_OPTIONS="--max-old-space-size=4096" NEXT_MEMORY_WORKERS=0 NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL pnpm --filter @aluplan/frontend build
+# Build frontend with optimized memory limit (2048) to prevent OOM
+RUN NODE_OPTIONS="--max-old-space-size=2048" NEXT_MEMORY_WORKERS=0 NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL pnpm --filter @aluplan/frontend build
 
 
 FROM node:20-alpine AS runner
