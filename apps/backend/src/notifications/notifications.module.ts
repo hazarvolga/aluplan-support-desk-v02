@@ -7,7 +7,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RedisModule } from '../redis/redis.module';
 import { EmailModule } from '../email/email.module';
-import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.module';
+import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants';
 
 @Module({
     imports: [

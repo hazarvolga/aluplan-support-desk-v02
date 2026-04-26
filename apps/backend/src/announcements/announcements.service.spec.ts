@@ -209,13 +209,14 @@ describe('AnnouncementsService — markLogRead', () => {
 
     it('sets readAt to current time when log is unread', async () => {
         const log = { id: logId, customerId, sentAt, readAt: null, status: 'SENT' };
-        const updatedLog = { ...log, readAt: new Date() };
 
         prisma.customerProfile.findUnique.mockResolvedValue({ id: customerId, userId });
         prisma.announcementLog.findUnique.mockResolvedValue(log);
-        prisma.announcementLog.update.mockResolvedValue(updatedLog);
 
         const before = Date.now();
+        const updatedLog = { ...log, readAt: new Date() };
+        prisma.announcementLog.update.mockResolvedValue(updatedLog);
+
         const result = await service.markLogRead(logId, userId);
         const after = Date.now();
 

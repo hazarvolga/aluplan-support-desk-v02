@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { EmailService } from '../email/email.service';
+import { getQueueToken } from '@nestjs/bullmq';
+import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants';
 
 describe('NotificationsGateway', () => {
     let gateway: NotificationsGateway;
@@ -47,6 +49,7 @@ describe('NotificationsGateway', () => {
                 { provide: PrismaService, useValue: mockPrisma },
                 { provide: RedisService, useValue: mockRedis },
                 { provide: EmailService, useValue: mockEmail },
+                { provide: getQueueToken(PROACTIVE_CHAT_QUEUE), useValue: { add: jest.fn() } },
             ],
         }).compile();
 

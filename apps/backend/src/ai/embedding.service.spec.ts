@@ -27,6 +27,11 @@ describe('EmbeddingService [TODO: mocks need update for current implementation]'
             }
         };
 
+        mockAiService = {
+            embed: jest.fn(),
+            getActiveModelName: jest.fn().mockResolvedValue('nomic-embed-text'),
+        };
+
         const mockEventEmitter = {
             emit: jest.fn(),
         };
@@ -96,18 +101,18 @@ describe('EmbeddingService [TODO: mocks need update for current implementation]'
             // Arrange
             mockAiService.embed.mockResolvedValue(mockEmbedResult);
             mockPrismaService.$queryRaw.mockResolvedValue([
-                { article_id: 'a1', source_type: 'ARTICLE', title: 'T1', content: 'C1', similarity: 0.85, trust_score: 5 },
-                { article_id: 'a2', source_type: 'ARTICLE', title: 'T2', content: 'C2', similarity: 0.55, trust_score: 5 },
-                { article_id: 'a3', source_type: 'ARTICLE', title: 'T3', content: 'C3', similarity: 0.30, trust_score: 5 },
+                { article_id: 'a1', source_type: 'ARTICLE', title: 'T1', content: 'C1', similarity: 0.90, trust_score: 5 },
+                { article_id: 'a2', source_type: 'ARTICLE', title: 'T2', content: 'C2', similarity: 0.75, trust_score: 5 },
+                { article_id: 'a3', source_type: 'ARTICLE', title: 'T3', content: 'C3', similarity: 0.50, trust_score: 5 },
             ]);
 
             // Act
             const { results } = await service.search('query');
 
             // Assert
-            expect(results[0].confidence).toBe('HIGH');   // 0.85 > 0.60
-            expect(results[1].confidence).toBe('MEDIUM'); // 0.55 > 0.45
-            expect(results[2].confidence).toBe('LOW');    // 0.30 < 0.45
+            expect(results[0].confidence).toBe('HIGH');   // 0.90 >= 0.85
+            expect(results[1].confidence).toBe('MEDIUM'); // 0.75 >= 0.70
+            expect(results[2].confidence).toBe('LOW');    // 0.50 < 0.70
         });
     });
 

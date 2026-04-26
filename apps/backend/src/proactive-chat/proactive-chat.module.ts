@@ -6,9 +6,9 @@ import { ProactiveChatTimeoutProcessor } from './proactive-chat-timeout.processo
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RedisModule } from '../redis/redis.module';
+import { PROACTIVE_CHAT_QUEUE } from './proactive-chat.constants';
 
-// Export constant BEFORE module decorator to avoid initialization issues
-export const PROACTIVE_CHAT_QUEUE = 'proactive-chat' as const;
+export { PROACTIVE_CHAT_QUEUE };
 
 @Module({
     imports: [

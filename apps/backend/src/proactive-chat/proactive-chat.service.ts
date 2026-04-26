@@ -8,7 +8,7 @@ import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ProactiveChatStatus, TicketStatus, TicketPriority } from '@aluplan/database';
-import { PROACTIVE_CHAT_QUEUE } from './proactive-chat.module';
+import { PROACTIVE_CHAT_QUEUE } from './proactive-chat.constants';
 
 const TERMINAL_STATUSES: ProactiveChatStatus[] = [
     ProactiveChatStatus.ENDED,

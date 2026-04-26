@@ -6,20 +6,13 @@ jest.mock('../../notifications/notifications.gateway', () => ({
     })),
 }));
 
-// Mock the proactive-chat module to avoid pulling in the full NestJS module graph
-// (which would trigger the circular dependency via the controller)
-jest.mock('../proactive-chat.module', () => ({
-    PROACTIVE_CHAT_QUEUE: 'proactive-chat',
-    ProactiveChatModule: class ProactiveChatModule {},
-}));
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProactiveChatService } from '../proactive-chat.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { NotificationsGateway } from '../../notifications/notifications.gateway';
 import { getQueueToken } from '@nestjs/bullmq';
-import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat.module';
+import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat.constants';
 import { NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { ProactiveChatStatus } from '@aluplan/database';
 import * as fc from 'fast-check';

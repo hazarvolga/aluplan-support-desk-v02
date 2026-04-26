@@ -20,7 +20,7 @@ import { RedisService } from '../redis/redis.service';
 import { EmailService } from '../email/email.service';
 import { createAdapter } from '@socket.io/redis-adapter';
 import Redis from 'ioredis';
-import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.module';
+import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants';
 
 @WebSocketGateway({
     cors: {

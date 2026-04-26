@@ -2,7 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { ProactiveChatService } from './proactive-chat.service';
-import { PROACTIVE_CHAT_QUEUE } from './proactive-chat.module';
+import { PROACTIVE_CHAT_QUEUE } from './proactive-chat.constants';
 
 @Processor(PROACTIVE_CHAT_QUEUE)
 export class ProactiveChatTimeoutProcessor extends WorkerHost {
