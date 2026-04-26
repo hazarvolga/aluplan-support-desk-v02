@@ -29,9 +29,11 @@ function makeResult(overrides: Record<string, any> = {}) {
 const mockPrisma = {
     crmConnection: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         findMany: jest.fn(),
         upsert: jest.fn(),
         update: jest.fn(),
+        create: jest.fn(),
     },
     crmSyncLog: {
         create: jest.fn(),
@@ -66,7 +68,7 @@ const mockCrypto = {
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
-describe.skip('CrmService', () => {
+describe('CrmService', () => {
     let service: CrmService;
 
     beforeEach(async () => {
@@ -102,6 +104,7 @@ describe.skip('CrmService', () => {
     describe('upsertConnection', () => {
         it('should throw BadRequestException when connection verification fails', async () => {
             mockAdapter.verifyConnection.mockResolvedValue(false);
+            mockPrisma.crmConnection.findFirst.mockResolvedValue(null);
 
             await expect(
                 service.upsertConnection({ provider: CrmProvider.DYNAMICS_365, clientSecret: 'sec' }),
@@ -110,7 +113,8 @@ describe.skip('CrmService', () => {
 
         it('should encrypt secrets before saving', async () => {
             mockAdapter.verifyConnection.mockResolvedValue(true);
-            mockPrisma.crmConnection.upsert.mockResolvedValue({});
+            mockPrisma.crmConnection.findFirst.mockResolvedValue(null);
+            mockPrisma.crmConnection.create.mockResolvedValue({});
 
             await service.upsertConnection({
                 provider: CrmProvider.DYNAMICS_365,
@@ -127,12 +131,12 @@ describe.skip('CrmService', () => {
 
     describe('triggerSync', () => {
         it('should throw NotFoundException when connection not found', async () => {
-            mockPrisma.crmConnection.findUnique.mockResolvedValue(null);
+            mockPrisma.crmConnection.findFirst.mockResolvedValue(null);
             await expect(service.triggerSync('non-existent')).rejects.toThrow(NotFoundException);
         });
 
         it('should create sync log and return logId', async () => {
-            mockPrisma.crmConnection.findUnique.mockResolvedValue({
+            mockPrisma.crmConnection.findFirst.mockResolvedValue({
                 id: 'conn-1',
                 provider: CrmProvider.DYNAMICS_365,
                 clientSecret: 'enc:secret',
@@ -358,12 +362,12 @@ describe.skip('CrmService', () => {
 
     describe('verifyConnectionById', () => {
         it('should throw NotFoundException when connection not found', async () => {
-            mockPrisma.crmConnection.findUnique.mockResolvedValue(null);
+            mockPrisma.crmConnection.findFirst.mockResolvedValue(null);
             await expect(service.verifyConnectionById('non-existent')).rejects.toThrow(NotFoundException);
         });
 
         it('should decrypt secrets before passing to adapter', async () => {
-            mockPrisma.crmConnection.findUnique.mockResolvedValue({
+            mockPrisma.crmConnection.findFirst.mockResolvedValue({
                 id: 'conn-1',
                 provider: CrmProvider.DYNAMICS_365,
                 clientSecret: 'enc:plain-secret',
@@ -378,7 +382,7 @@ describe.skip('CrmService', () => {
         });
 
         it('should return success:true when adapter verifies', async () => {
-            mockPrisma.crmConnection.findUnique.mockResolvedValue({
+            mockPrisma.crmConnection.findFirst.mockResolvedValue({
                 id: 'conn-1',
                 provider: CrmProvider.DYNAMICS_365,
                 clientSecret: 'enc:s',
@@ -391,7 +395,7 @@ describe.skip('CrmService', () => {
         });
 
         it('should return success:false when adapter rejects', async () => {
-            mockPrisma.crmConnection.findUnique.mockResolvedValue({
+            mockPrisma.crmConnection.findFirst.mockResolvedValue({
                 id: 'conn-1',
                 provider: CrmProvider.DYNAMICS_365,
                 clientSecret: 'enc:s',
@@ -404,7 +408,7 @@ describe.skip('CrmService', () => {
         });
 
         it('should return success:false when adapter throws', async () => {
-            mockPrisma.crmConnection.findUnique.mockResolvedValue({
+            mockPrisma.crmConnection.findFirst.mockResolvedValue({
                 id: 'conn-1',
                 provider: CrmProvider.DYNAMICS_365,
                 clientSecret: 'enc:s',
@@ -507,11 +511,11 @@ describe.skip('CrmService', () => {
                         where: { externalAccountId: 'acc-ext-1' },
                         update: expect.objectContaining({
                             name: 'Aluplan GmbH',
-                            customerNo: 'C300001',
+                            account_number: 'C300001',
                             industry: 'Manufacturing',
                         }),
                         create: expect.objectContaining({
-                            customerNo: 'C300001',
+                            account_number: 'C300001',
                         }),
                     }),
                 );
@@ -528,7 +532,7 @@ describe.skip('CrmService', () => {
 
                 expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        update: expect.objectContaining({ customerNo: null }),
+                        update: expect.objectContaining({ account_number: null }),
                     }),
                 );
             });

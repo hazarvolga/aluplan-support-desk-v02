@@ -9,6 +9,7 @@ import * as fc from 'fast-check';
 import { EmbeddingService } from './embedding.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 const mockEmbedding = Array(1536).fill(0.1);
 
@@ -17,7 +18,7 @@ const mockAiService = {
     isAvailable: jest.fn().mockResolvedValue(true),
 };
 
-describe.skip('EmbeddingService — Property-Based Tests', () => {
+describe('EmbeddingService — Property-Based Tests', () => {
     let service: EmbeddingService;
     let mockPrisma: any;
     let insertedRows: Array<{ id: string; source_id: string; parent_id: string | null; content: string }>;
@@ -44,6 +45,7 @@ describe.skip('EmbeddingService — Property-Based Tests', () => {
                 EmbeddingService,
                 { provide: PrismaService, useValue: mockPrisma },
                 { provide: AiService, useValue: mockAiService },
+                { provide: EventEmitter2, useValue: { emit: jest.fn() } },
             ],
         }).compile();
 

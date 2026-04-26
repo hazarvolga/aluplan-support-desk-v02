@@ -17,13 +17,16 @@ function buildContext(headers: Record<string, string>): ExecutionContext {
     } as unknown as ExecutionContext;
 }
 
-describe.skip('CrmWebhookGuard', () => {
+describe('CrmWebhookGuard', () => {
     let guard: CrmWebhookGuard;
     let prisma: any;
     let crypto: any;
 
     const mockPrisma = {
-        crmConnection: { findUnique: jest.fn() },
+        crmConnection: {
+            findUnique: jest.fn(),
+            findFirst: jest.fn(),
+        },
     };
 
     const mockCrypto = {
@@ -48,7 +51,7 @@ describe.skip('CrmWebhookGuard', () => {
     });
 
     it('should allow request with valid x-api-key', async () => {
-        mockPrisma.crmConnection.findUnique.mockResolvedValue({
+        mockPrisma.crmConnection.findFirst.mockResolvedValue({
             webhookSecret: ENCRYPTED_SECRET,
         });
 
@@ -62,19 +65,19 @@ describe.skip('CrmWebhookGuard', () => {
     });
 
     it('should throw UnauthorizedException when no CRM connection exists', async () => {
-        mockPrisma.crmConnection.findUnique.mockResolvedValue(null);
+        mockPrisma.crmConnection.findFirst.mockResolvedValue(null);
         const ctx = buildContext({ 'x-api-key': VALID_SECRET });
         await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException when connection has no webhookSecret', async () => {
-        mockPrisma.crmConnection.findUnique.mockResolvedValue({ webhookSecret: null });
+        mockPrisma.crmConnection.findFirst.mockResolvedValue({ webhookSecret: null });
         const ctx = buildContext({ 'x-api-key': VALID_SECRET });
         await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException when api-key does not match', async () => {
-        mockPrisma.crmConnection.findUnique.mockResolvedValue({
+        mockPrisma.crmConnection.findFirst.mockResolvedValue({
             webhookSecret: ENCRYPTED_SECRET,
         });
         const ctx = buildContext({ 'x-api-key': 'wrong-key' });
@@ -82,7 +85,7 @@ describe.skip('CrmWebhookGuard', () => {
     });
 
     it('should call crypto.decrypt with the stored webhookSecret', async () => {
-        mockPrisma.crmConnection.findUnique.mockResolvedValue({
+        mockPrisma.crmConnection.findFirst.mockResolvedValue({
             webhookSecret: ENCRYPTED_SECRET,
         });
         const ctx = buildContext({ 'x-api-key': VALID_SECRET });

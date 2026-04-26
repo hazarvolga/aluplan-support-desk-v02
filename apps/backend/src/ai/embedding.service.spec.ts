@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-describe.skip('EmbeddingService [TODO: mocks need update for current implementation]', () => {
+describe('EmbeddingService [TODO: mocks need update for current implementation]', () => {
     let service: EmbeddingService;
     let mockPrismaService: any;
     let mockAiService: any;
@@ -25,11 +25,6 @@ describe.skip('EmbeddingService [TODO: mocks need update for current implementat
             knowledgePoolEmbedding: {
                 findFirst: jest.fn(),
             }
-        };
-
-        mockAiService = {
-            embed: jest.fn(),
-            getActiveModelName: jest.fn().mockResolvedValue('nomic-embed-text'),
         };
 
         const mockEventEmitter = {
@@ -125,7 +120,7 @@ describe.skip('EmbeddingService [TODO: mocks need update for current implementat
             await service.indexPoolContent('src-1', 'some content');
 
             // Assert
-            expect(mockPrismaService.$executeRaw).toHaveBeenCalledTimes(1);
+            expect(mockPrismaService.$executeRawUnsafe).toHaveBeenCalledTimes(1);
         });
 
         it('should execute raw insert when embed succeeds', async () => {
@@ -136,7 +131,7 @@ describe.skip('EmbeddingService [TODO: mocks need update for current implementat
             await service.indexPoolContent('src-1', 'content', { type: 'parent' });
 
             // Assert
-            expect(mockPrismaService.$executeRaw).toHaveBeenCalled();
+            expect(mockPrismaService.$executeRawUnsafe).toHaveBeenCalled();
         });
     });
 

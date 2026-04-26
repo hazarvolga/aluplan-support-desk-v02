@@ -6,7 +6,7 @@ import { EmbeddingNormalizer } from './embedding-normalizer.service';
 import { RedisService } from '../redis/redis.service';
 import { mockPrismaService, mockRedisService } from '../test/mock.utils';
 
-describe.skip('AiSemanticCache [TODO: mocks need update for current implementation]', () => {
+describe('AiSemanticCache [TODO: mocks need update for current implementation]', () => {
     let cache: AiSemanticCache;
     let prisma: any;
     let embeddingService: any;
@@ -15,6 +15,7 @@ describe.skip('AiSemanticCache [TODO: mocks need update for current implementati
 
     const mockEmbeddingService = {
         embed: jest.fn(),
+        embedText: jest.fn(),
     };
 
     beforeEach(async () => {
@@ -63,7 +64,7 @@ describe.skip('AiSemanticCache [TODO: mocks need update for current implementati
             // Arrange
             mockRedisService.get.mockResolvedValue(null);
             mockPrismaService.$queryRawUnsafe.mockResolvedValue([]);
-            mockEmbeddingService.embed.mockResolvedValue({ embedding: [1, 0, 0] });
+            mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
 
             // Act
             const result = await cache.get('test query', 'tenant-1');
@@ -75,7 +76,7 @@ describe.skip('AiSemanticCache [TODO: mocks need update for current implementati
         it('should fallback to semantic match when exact miss', async () => {
             // Arrange
             mockRedisService.get.mockResolvedValue(null);
-            mockEmbeddingService.embed.mockResolvedValue({ embedding: [1, 0, 0] });
+            mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
             mockPrismaService.$queryRawUnsafe.mockResolvedValue([
                 { id: '1', response: mockResult, distance: '0.02' }, // similarity = 0.98
             ]);
@@ -90,7 +91,7 @@ describe.skip('AiSemanticCache [TODO: mocks need update for current implementati
         it('should reject semantic match below threshold', async () => {
             // Arrange
             mockRedisService.get.mockResolvedValue(null);
-            mockEmbeddingService.embed.mockResolvedValue({ embedding: [1, 0, 0] });
+            mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
             mockPrismaService.$queryRawUnsafe.mockResolvedValue([
                 { id: '1', response: mockResult, distance: '0.1' }, // similarity = 0.90
             ]);
@@ -106,7 +107,7 @@ describe.skip('AiSemanticCache [TODO: mocks need update for current implementati
     describe('set', () => {
         it('should store in both exact and semantic cache', async () => {
             // Arrange
-            mockEmbeddingService.embed.mockResolvedValue({ embedding: [1, 0, 0] });
+            mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
             mockPrismaService.$executeRawUnsafe.mockResolvedValue({ count: 1 });
             mockRedisService.set.mockResolvedValue('OK');
 

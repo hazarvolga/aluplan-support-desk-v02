@@ -14,7 +14,7 @@ const mockPrisma = {
     macro: { findMany: jest.fn().mockResolvedValue([]) },
 };
 
-describe.skip('PromptContextBuilderService — Property-Based Tests', () => {
+describe('PromptContextBuilderService — Property-Based Tests', () => {
     let service: PromptContextBuilderService;
 
     beforeEach(async () => {
@@ -57,14 +57,14 @@ describe.skip('PromptContextBuilderService — Property-Based Tests', () => {
     });
 
     // Feature: rag-faq-improvements, Property 1: kbContent her zaman diğer bölümlerden önce gelir
-    it('P1: kbContent bölümü [3. Mevcut Sorgu] bölümünden önce gelir', async () => {
+    it('P1: kbContent bölümü [ACTIVE QUERY] bölümünden önce gelir', async () => {
         await fc.assert(
             fc.asyncProperty(
                 fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
                 async (kbContent) => {
                     const result = await service.buildContext({ userQuery: 'test query', kbContent });
                     const kbIdx = result.indexOf('[APPROVED KNOWLEDGE SOURCE]');
-                    const queryIdx = result.indexOf('[3. Mevcut Sorgu]');
+                    const queryIdx = result.indexOf('[ACTIVE QUERY');
                     expect(kbIdx).toBeLessThan(queryIdx);
                 },
             ),
