@@ -127,8 +127,23 @@ export default function SystemGuidePage() {
                                         <p className="text-sm text-slate-400">{t('customer.section3.step2_desc')}</p>
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-white mb-1">{t('customer.section3.step3_title')}</h4>
-                                        <p className="text-sm text-slate-400">{t('customer.section3.step3_desc')}</p>
+                                        <h4 className="font-bold text-white mb-1 flex items-center gap-2">
+                                            <Shield className="h-4 w-4 text-blue-400" />
+                                            {t('customer.section3.step3_title')}
+                                        </h4>
+                                        <p className="text-sm text-slate-400 mb-3" dangerouslySetInnerHTML={{ __html: t('customer.section3.step3_desc') }} />
+                                        <ul className="space-y-1.5 text-sm text-slate-400">
+                                            <li dangerouslySetInnerHTML={{ __html: t('customer.section3.step3_images') }} />
+                                            <li dangerouslySetInnerHTML={{ __html: t('customer.section3.step3_docs') }} />
+                                            <li dangerouslySetInnerHTML={{ __html: t('customer.section3.step3_archives') }} />
+                                            <li dangerouslySetInnerHTML={{ __html: t('customer.section3.step3_logs') }} />
+                                            <li dangerouslySetInnerHTML={{ __html: t('customer.section3.step3_video') }} />
+                                            <li className="text-red-400/80" dangerouslySetInnerHTML={{ __html: t('customer.section3.step3_blocked') }} />
+                                        </ul>
+                                        <div className="bg-amber-900/20 border border-amber-500/20 rounded-lg p-3 mt-3 flex gap-2 items-start">
+                                            <Zap className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                                            <span className="text-xs text-slate-300" dangerouslySetInnerHTML={{ __html: t('customer.section3.step3_tip') }} />
+                                        </div>
                                     </div>
                                 </div>
                             </CardContent>

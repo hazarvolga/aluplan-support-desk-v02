@@ -138,7 +138,7 @@ export function RoleGuard({
             const cleanPath = stripLocale(pathname);
 
             // Routes that are definitely NOT for customers
-            const adminOnlyPaths = ['/users', '/settings', '/reports', '/customers', '/faq/review', '/ai/training', '/faq-learning'];
+            const adminOnlyPaths = ['/users', '/settings', '/reports', '/customers', '/faq/review', '/ai', '/ai/training', '/faq-learning'];
             const isUnauthorizedTarget = adminOnlyPaths.some(path => cleanPath.startsWith(path));
 
             if (allowedRoles) {
