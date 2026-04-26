@@ -125,7 +125,7 @@ push/PR → main, develop (apps/backend/** değişince)
 
 | Kontrol | Durum | Detay |
 |---------|-------|-------|
-| Unit Tests | ✅ | Jest + @swc/jest, ~75% coverage |
+| Unit Tests | ✅ | Jest + @swc/jest, 39.16% lines coverage |
 | Property-Based Tests | ✅ | fast-check, 17 PBT (proactive-chat dahil) |
 | E2E Tests | ✅ | Playwright, 9 senaryo (proactive-chat dahil) |
 | Test Isolation | ✅ | Global teardown, open handles fix |

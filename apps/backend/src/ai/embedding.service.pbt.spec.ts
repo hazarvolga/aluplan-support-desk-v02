@@ -16,6 +16,7 @@ const mockEmbedding = Array(1536).fill(0.1);
 const mockAiService = {
     embed: jest.fn().mockResolvedValue({ embedding: mockEmbedding, model: 'text-embedding-3-small' }),
     isAvailable: jest.fn().mockResolvedValue(true),
+    getActiveModelName: jest.fn().mockResolvedValue('text-embedding-3-small'),
 };
 
 describe('EmbeddingService — Property-Based Tests', () => {
@@ -36,6 +37,7 @@ describe('EmbeddingService — Property-Based Tests', () => {
                 }
                 return 1;
             }),
+            $executeRawUnsafe: jest.fn().mockResolvedValue(1),
             $queryRaw: jest.fn().mockResolvedValue([]),
             knowledgePoolEmbedding: { findFirst: jest.fn() },
         };
