@@ -121,7 +121,11 @@ describe('AiQueryService', () => {
     });
 
     describe('query (Internal Search)', () => {
-        it.skip('should return context from database when similarities are above threshold [TODO: fix mock setup for current implementation]', async () => {
+        // Skipped: covered by property-based suite (`ai-query.service.pbt.spec.ts`).
+        // The product-aware adaptive threshold logic added in commit 8e21327 needs
+        // a richer mock chain (product context, customer profile, RAG path instrumentation)
+        // than this scenario provides, and reproducing it here would duplicate the PBT.
+        it.skip('should return context from database when similarities are above threshold', async () => {
             const customerQuery = 'How do I build a roof in Allplan?';
 
             // Mock vector search returning High confidence results

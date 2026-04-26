@@ -148,7 +148,7 @@ describe('AiService — VertexAI Removal', () => {
     });
 });
 
-describe.skip('AiService [TODO: mocks need update for current implementation]', () => {
+describe('AiService', () => {
     let service: AiService;
     let settingsService: any;
     let ollamaService: any;
@@ -259,13 +259,12 @@ describe.skip('AiService [TODO: mocks need update for current implementation]', 
                 await expect(service.generate('x')).rejects.toThrow();
             }
 
-            // At this point circuit should be open. Next call should return null immediately without calling provider
+            // After enough failures the breaker opens; the next call should fast-fail
+            // without invoking the provider (current impl re-throws as InternalServerErrorException
+            // wrapping "Breaker is open" rather than returning null).
             mockOllamaService.generate.mockClear();
 
-            const result = await service.generate('should skip');
-
-            // Assert
-            expect(result).toBeNull();
+            await expect(service.generate('should skip')).rejects.toThrow(/Breaker is open/);
             expect(mockOllamaService.generate).not.toHaveBeenCalled();
         });
     });
