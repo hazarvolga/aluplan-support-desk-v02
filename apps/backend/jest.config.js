@@ -16,6 +16,11 @@ module.exports = {
         "^@aluplan/database$": "<rootDir>/../../packages/database"
     },
     setupFiles: ["<rootDir>/test/setup.ts"],
+    globalTeardown: "<rootDir>/test/global-teardown.ts",
+    // Prevent hanging tests due to open handles
+    // Note: This is a safety net - tests should properly clean up in afterAll()
+    forceExit: false, // Set to true only if absolutely necessary
+    detectOpenHandles: true, // Helps identify leaked connections
     collectCoverageFrom: [
         "src/**/*.(t|j)s",
         "!src/**/*.module.ts",

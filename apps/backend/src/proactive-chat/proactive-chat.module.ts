@@ -7,7 +7,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RedisModule } from '../redis/redis.module';
 
-export const PROACTIVE_CHAT_QUEUE = 'proactive-chat';
+// Export constant BEFORE module decorator to avoid initialization issues
+export const PROACTIVE_CHAT_QUEUE = 'proactive-chat' as const;
 
 @Module({
     imports: [
