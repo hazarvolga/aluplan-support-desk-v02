@@ -186,7 +186,10 @@ export function ProactiveChatWindow({
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 w-96 h-[520px] rounded-2xl border border-white/10 bg-background/95 backdrop-blur-sm shadow-2xl shadow-black/20 flex flex-col overflow-hidden">
+        <div 
+            data-testid="proactive-chat-window"
+            className="fixed bottom-6 right-6 z-50 w-96 h-[520px] rounded-2xl border border-white/10 bg-background/95 backdrop-blur-sm shadow-2xl shadow-black/20 flex flex-col overflow-hidden"
+        >
             {/* Header */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
                 <Avatar className="h-8 w-8 border border-white/10">
@@ -206,6 +209,7 @@ export function ProactiveChatWindow({
                     {isAgent && !isReadOnly && (
                         <>
                             <Button
+                                data-testid="convert-to-ticket-button"
                                 size="sm"
                                 variant="ghost"
                                 onClick={handleConvert}
@@ -217,6 +221,7 @@ export function ProactiveChatWindow({
                             </Button>
                             {/* 11.8 Sonlandır — agent only */}
                             <Button
+                                data-testid="end-chat-button"
                                 size="sm"
                                 variant="ghost"
                                 onClick={handleEnd}
@@ -271,7 +276,10 @@ export function ProactiveChatWindow({
                 {/* 11.5 Typing indicator */}
                 {isTyping && (
                     <div className="flex justify-start">
-                        <div className="bg-white/5 rounded-2xl rounded-bl-sm px-3 py-2">
+                        <div 
+                            data-testid="typing-indicator"
+                            className="bg-white/5 rounded-2xl rounded-bl-sm px-3 py-2"
+                        >
                             <div className="flex gap-1 items-center h-4">
                                 <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0ms]" />
                                 <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:150ms]" />
@@ -287,6 +295,7 @@ export function ProactiveChatWindow({
             {!isReadOnly ? (
                 <div className="flex items-center gap-2 px-3 py-3 border-t border-white/5">
                     <input
+                        data-testid="chat-message-input"
                         type="text"
                         value={input}
                         onChange={handleInputChange}
@@ -296,6 +305,7 @@ export function ProactiveChatWindow({
                         className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
                     />
                     <Button
+                        data-testid="chat-send-button"
                         size="sm"
                         onClick={handleSend}
                         disabled={!input.trim() || loading}

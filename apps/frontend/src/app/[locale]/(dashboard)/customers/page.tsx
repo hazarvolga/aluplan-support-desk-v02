@@ -830,6 +830,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                 <TableCell className="px-6 text-right">
                                                     <div className="flex items-center justify-end gap-1">
                                                         <Button
+                                                            data-testid={`start-proactive-chat-${c.id}`}
                                                             variant="ghost"
                                                             size="sm"
                                                             className="h-8 w-8 p-0 rounded-full hover:bg-green-500/10 hover:text-green-500 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"

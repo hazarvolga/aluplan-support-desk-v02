@@ -76,10 +76,11 @@ export function ActiveSessionsPanel({ currentUserId }: ActiveSessionsPanelProps)
 
     return (
         <>
-            <div className="space-y-2">
+            <div data-testid="active-sessions-panel" className="space-y-2">
                 {sessions.map((session) => (
                     <button
                         key={session.id}
+                        data-testid={`session-row-${session.id}`}
                         onClick={() => setOpenSessionId(session.id)}
                         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-colors text-left"
                     >

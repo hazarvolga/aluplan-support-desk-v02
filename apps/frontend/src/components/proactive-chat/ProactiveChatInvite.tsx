@@ -146,7 +146,10 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
     const progress = (countdown / TIMEOUT_SECONDS) * 100;
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 w-80 rounded-2xl border border-white/10 bg-background/95 backdrop-blur-sm shadow-2xl shadow-black/20 overflow-hidden">
+        <div 
+            data-testid="proactive-chat-invite"
+            className="fixed bottom-6 right-6 z-50 w-80 rounded-2xl border border-white/10 bg-background/95 backdrop-blur-sm shadow-2xl shadow-black/20 overflow-hidden"
+        >
             {/* Countdown progress bar */}
             <div className="h-1 bg-white/5">
                 <div
@@ -188,6 +191,7 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
 
                 <div className="flex gap-2">
                     <Button
+                        data-testid="accept-chat-button"
                         onClick={handleAccept}
                         disabled={loading !== null}
                         className="flex-1 h-9 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-widest"
@@ -202,6 +206,7 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
                         )}
                     </Button>
                     <Button
+                        data-testid="decline-chat-button"
                         onClick={handleDecline}
                         disabled={loading !== null}
                         variant="outline"
