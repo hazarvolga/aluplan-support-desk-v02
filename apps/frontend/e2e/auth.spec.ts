@@ -27,10 +27,10 @@ test.describe('Authentication Flow', () => {
         const dashboardPage = new DashboardPage(page);
 
         await loginPage.navigateTo('/tr/login');
-        // Note: Real login would require seeded data, we use the logic flow here
-        // as configured in the project's existing tests.
-        const email = 'e2e-test@aluplan.com';
-        const password = 'pass123';
+        // Use the same default seeded admin credentials as helpers/auth.ts.
+        // Override with E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD in CI.
+        const email = process.env.E2E_ADMIN_EMAIL || 'hazarvolga@gmail.com';
+        const password = process.env.E2E_ADMIN_PASSWORD || 'Vol1872017';
 
         await loginPage.loginWithRetry(email, password);
         expect(await dashboardPage.isAtDashboard()).toBe(true);

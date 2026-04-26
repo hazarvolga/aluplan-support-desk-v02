@@ -77,6 +77,21 @@ jobs:
       - name: Build Frontend
         run: pnpm --filter @aluplan/frontend build
 
+      # Sanity check: catch syntax errors in spec files before launching the
+      # full suite. `--list` does discovery only; if a spec fails to parse,
+      # this exits non-zero. Without this, a SyntaxError can silently cause
+      # `playwright test` to skip everything but still exit 0 on some setups.
+      - name: Verify Playwright suite is discoverable
+        run: |
+          set -e
+          cd apps/frontend
+          discovered=$(pnpm exec playwright test --list --reporter=list 2>&1 | tail -1)
+          echo "$discovered"
+          if ! echo "$discovered" | grep -qE 'Total: [1-9][0-9]* test'; then
+            echo "::error::Playwright discovered no tests — check for spec file syntax errors"
+            exit 1
+          fi
+
       - name: Run E2E Tests
         run: pnpm --filter @aluplan/frontend test:e2e
         env:

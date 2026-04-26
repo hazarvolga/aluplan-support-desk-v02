@@ -147,4 +147,13 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
           NODE_OPTIONS: "--experimental-vm-modules --no-warnings"
-        run: pnpm --filter @aluplan/backend test:e2e
+        # Capture jest output and fail if `Tests: 0 total` appears.
+        # Pre-`@swc/jest` migration the integration suite would silently
+        # exit 0 with zero tests due to `--forceExit` masking OOM crashes.
+        run: |
+          set -o pipefail
+          pnpm --filter @aluplan/backend test:e2e 2>&1 | tee /tmp/be-e2e.log
+          if grep -qE 'Tests: *0 total' /tmp/be-e2e.log; then
+            echo "::error::Backend E2E ran zero tests — suite is broken"
+            exit 1
+          fi
