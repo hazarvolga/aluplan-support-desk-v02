@@ -21,28 +21,60 @@ jest.mock('langfuse-core', () => ({
     LangfuseMedia: jest.fn(),
 }));
 
-// Mock IORedis
+// Mock IORedis — must expose `default` and `Cluster` so `instanceof` checks
+// in third-party libraries (e.g. @nest-lab/throttler-storage-redis) don't crash
+// with "Right-hand side of 'instanceof' is not an object".
+// The fake client is permissive: any unknown method returns a resolved
+// "no-op" value so libraries calling Lua scripts via `call`/`eval` keep working.
 jest.mock('ioredis', () => {
-    return jest.fn().mockImplementation(() => {
-        return {
-            on: jest.fn(),
-            get: jest.fn(),
-            set: jest.fn(),
-            del: jest.fn(),
-            quit: jest.fn().mockResolvedValue(true),
-            disconnect: jest.fn().mockResolvedValue(true),
-            ping: jest.fn().mockResolvedValue('PONG'),
-            incr: jest.fn().mockResolvedValue(1),
-            incrbyfloat: jest.fn().mockResolvedValue(1.0),
-            expire: jest.fn().mockResolvedValue(1),
-            keys: jest.fn().mockResolvedValue([]),
-            scan: jest.fn().mockResolvedValue(['0', []]),
-            info: jest.fn().mockResolvedValue(''),
-            publish: jest.fn().mockResolvedValue(1),
-            status: 'ready'
+    const fakeClient = (): any => {
+        // Default permissive return shape: enough fields for `[totalHits, ttl, isBlocked, timeToBlockExpire]`
+        const noop = jest.fn().mockResolvedValue([0, 60_000, 0, 0]);
+        const handler: ProxyHandler<any> = {
+            get(target, prop) {
+                if (prop in target) return (target as any)[prop];
+                if (prop === 'status') return 'ready';
+                if (prop === 'then' || prop === 'catch') return undefined;
+                return noop;
+            },
         };
-    });
+        return new Proxy({
+            on: jest.fn(),
+            once: jest.fn(),
+            off: jest.fn(),
+            removeListener: jest.fn(),
+            disconnect: jest.fn().mockResolvedValue(true),
+            quit: jest.fn().mockResolvedValue(true),
+            defineCommand: jest.fn(),
+            duplicate: jest.fn(function () { return fakeClient(); }),
+        }, handler);
+    };
+
+    const RedisMock = jest.fn().mockImplementation(fakeClient);
+    const ClusterMock = jest.fn().mockImplementation(fakeClient);
+
+    return {
+        __esModule: true,
+        default: RedisMock,
+        Redis: RedisMock,
+        Cluster: ClusterMock,
+    };
 });
+
+// Mock @bull-board/api — its BullMQAdapter does an `instanceof Queue` check
+// against the real BullMQ class, which fails for our mocked queues.
+jest.mock('@bull-board/api/bullMQAdapter', () => ({
+    BullMQAdapter: jest.fn().mockImplementation(() => ({})),
+}));
+jest.mock('@bull-board/api', () => ({
+    createBullBoard: jest.fn().mockReturnValue({ addQueue: jest.fn() }),
+}));
+jest.mock('@bull-board/express', () => ({
+    ExpressAdapter: jest.fn().mockImplementation(() => ({
+        setBasePath: jest.fn(),
+        getRouter: jest.fn().mockReturnValue((_req: any, _res: any, next: any) => next()),
+    })),
+}));
 
 // Mock BullMQ
 jest.mock('bullmq', () => {

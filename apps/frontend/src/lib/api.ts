@@ -507,6 +507,30 @@ export const api = {
         bulkDeleteAccounts: (ids: string[]) => request<any>('/crm/accounts/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
         getFieldDefinitions: () => request<{ account: any[]; contact: any[] }>('/crm/fields-definitions'),
     },
+    proactiveChat: {
+        createSession: (customerId: string) =>
+            request<any>('/proactive-chat/sessions', {
+                method: 'POST',
+                body: JSON.stringify({ customerId }),
+            }),
+        acceptSession: (sessionId: string) =>
+            request<any>(`/proactive-chat/sessions/${sessionId}/accept`, { method: 'PATCH' }),
+        declineSession: (sessionId: string) =>
+            request<any>(`/proactive-chat/sessions/${sessionId}/decline`, { method: 'PATCH' }),
+        endSession: (sessionId: string) =>
+            request<any>(`/proactive-chat/sessions/${sessionId}/end`, { method: 'PATCH' }),
+        sendMessage: (sessionId: string, content: string) =>
+            request<any>(`/proactive-chat/sessions/${sessionId}/messages`, {
+                method: 'POST',
+                body: JSON.stringify({ content }),
+            }),
+        getMessages: (sessionId: string) =>
+            request<any[]>(`/proactive-chat/sessions/${sessionId}/messages`),
+        convertToTicket: (sessionId: string) =>
+            request<any>(`/proactive-chat/sessions/${sessionId}/convert`, { method: 'POST' }),
+        listSessions: () =>
+            request<any[]>('/proactive-chat/sessions'),
+    },
     get: (url: string) => request<any>(url),
     post: (url: string, body: any) =>
         request<any>(url, {

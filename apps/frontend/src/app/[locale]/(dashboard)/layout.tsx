@@ -1,21 +1,47 @@
 'use client';
 export const dynamic = 'force-dynamic';
 import { Sidebar } from '@/components/sidebar';
-import { RoleGuard } from '@/components/auth/role-guard';
+import { RoleGuard, useAuth } from '@/components/auth/role-guard';
 import { MobileHeader } from '@/components/mobile-header';
 import { useState } from 'react';
 import { GlobalTicketNotification } from '@/components/global-ticket-notification';
 import { GlobalAnnouncementNotification } from '@/components/global-announcement-notification';
 import { AnnouncementArchiveDrawer } from '@/components/announcement-archive-drawer';
+import { ProactiveChatInvite } from '@/components/proactive-chat/ProactiveChatInvite';
+import { ProactiveChatWindow } from '@/components/proactive-chat/ProactiveChatWindow';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
+    const { user } = useAuth();
+
+    const userRoleName = (user?.role as any)?.name || user?.role || '';
+    const userRole = (typeof userRoleName === 'string' ? userRoleName : '').toLowerCase();
+    const isCustomer = userRole === 'customer';
 
     return (
-        <RoleGuard>
+        <>
             <GlobalTicketNotification />
             <GlobalAnnouncementNotification />
             <AnnouncementArchiveDrawer />
+
+            {/* 15.1 ProactiveChatInvite — customer role only */}
+            {isCustomer && (
+                <ProactiveChatInvite
+                    onAccepted={(sessionId) => setActiveChatSessionId(sessionId)}
+                />
+            )}
+
+            {/* Chat window opened after customer accepts */}
+            {isCustomer && activeChatSessionId && (
+                <ProactiveChatWindow
+                    sessionId={activeChatSessionId}
+                    currentUserId={user?.id || ''}
+                    isAgent={false}
+                    onClose={() => setActiveChatSessionId(null)}
+                />
+            )}
+
             <div className="flex h-screen flex-col lg:flex-row overflow-hidden bg-background">
                 {/* Mobile Header */}
                 <MobileHeader
@@ -45,6 +71,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                 </main>
             </div>
+        </>
+    );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <RoleGuard>
+            <DashboardLayoutInner>{children}</DashboardLayoutInner>
         </RoleGuard>
     );
 }

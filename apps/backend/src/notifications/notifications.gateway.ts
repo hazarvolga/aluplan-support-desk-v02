@@ -13,11 +13,14 @@ import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { OnEvent } from '@nestjs/event-emitter';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { EmailService } from '../email/email.service';
 import { createAdapter } from '@socket.io/redis-adapter';
 import Redis from 'ioredis';
+import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.module';
 
 @WebSocketGateway({
     cors: {
@@ -45,6 +48,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         private readonly prisma: PrismaService,
         private readonly redisService: RedisService,
         private readonly emailService: EmailService,
+        @InjectQueue(PROACTIVE_CHAT_QUEUE) private readonly proactiveChatQueue: Queue,
     ) { }
 
     // GAP-09: Socket.io Redis Adapter for horizontal scaling
@@ -93,6 +97,28 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
                 }
             }
             await client.join(`user:${payload.sub}`);
+
+            // Proactive chat: cancel pending disconnect-timeout jobs on reconnect
+            try {
+                const activeSessions = await this.prisma.proactiveChatSession.findMany({
+                    where: {
+                        status: 'ACTIVE',
+                        OR: [{ agentId: payload.sub }, { customerId: payload.sub }],
+                    },
+                    select: { id: true },
+                });
+
+                for (const session of activeSessions) {
+                    const jobId = `pcd-${session.id}-${payload.sub}`;
+                    const job = await this.proactiveChatQueue.getJob(jobId);
+                    if (job) {
+                        await job.remove();
+                        this.logger.log(`Cancelled disconnect-timeout job ${jobId} on reconnect`);
+                    }
+                }
+            } catch (err) {
+                this.logger.error('Failed to cancel proactive chat disconnect timeout on reconnect', err);
+            }
         } catch {
             client.disconnect();
         }
@@ -116,6 +142,32 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             if (client.data.role) {
                 const roleKey = `ws:active:role:${client.data.role.toLowerCase()}`;
                 await redis.srem(roleKey, userId);
+            }
+
+            // Proactive chat: schedule disconnect-timeout for active sessions
+            try {
+                const activeSessions = await this.prisma.proactiveChatSession.findMany({
+                    where: {
+                        status: 'ACTIVE',
+                        OR: [{ agentId: userId }, { customerId: userId }],
+                    },
+                    select: { id: true },
+                });
+
+                for (const session of activeSessions) {
+                    await this.proactiveChatQueue.add(
+                        'disconnect-timeout',
+                        { sessionId: session.id, userId },
+                        {
+                            delay: 60_000,
+                            jobId: `pcd-${session.id}-${userId}`,
+                            removeOnComplete: true,
+                            removeOnFail: false,
+                        },
+                    );
+                }
+            } catch (err) {
+                this.logger.error('Failed to schedule proactive chat disconnect timeout', err);
             }
         }
 
@@ -188,6 +240,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     @SubscribeMessage('ticket:message_read')
     async markAsRead(@ConnectedSocket() client: Socket, @MessageBody() data: { ticketId: string, messageId: string }) {
+
         // Smart Buffer: If message is read via chat, cancel the pending email notification
         const jobId = `msg-ntf-${data.messageId}`;
         await this.emailService.cancelEmail(jobId);
@@ -196,6 +249,54 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         client.to(`ticket:${data.ticketId}`).emit('ticket:message_read', {
             messageId: data.messageId,
             readerId: client.data.userId,
+        });
+    }
+
+    // ─── Proactive Chat Handlers ─────────────────────────────────────────────────
+
+    @SubscribeMessage('proactive_chat:join')
+    async joinProactiveChatSession(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() sessionId: string,
+    ) {
+        const userId = client.data.userId;
+        if (!userId) return { error: 'Unauthorized' };
+
+        // Verify user is a participant of this session
+        const session = await this.prisma.proactiveChatSession.findUnique({
+            where: { id: sessionId },
+            select: { agentId: true, customerId: true },
+        });
+
+        if (!session) return { error: 'Session not found' };
+        if (session.agentId !== userId && session.customerId !== userId) {
+            return { error: 'Unauthorized' };
+        }
+
+        await client.join(`proactive_chat:${sessionId}`);
+        this.logger.log(`👤 User ${userId} joined proactive chat room: ${sessionId}`);
+        return { joined: sessionId };
+    }
+
+    @SubscribeMessage('proactive_chat:leave')
+    async leaveProactiveChatSession(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() sessionId: string,
+    ) {
+        await client.leave(`proactive_chat:${sessionId}`);
+        return { left: sessionId };
+    }
+
+    @SubscribeMessage('proactive_chat:typing')
+    async proactiveChatTyping(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() data: { sessionId: string; isTyping: boolean },
+    ) {
+        // Relay typing event to the other party — do NOT persist
+        client.to(`proactive_chat:${data.sessionId}`).emit('proactive_chat:typing', {
+            sessionId: data.sessionId,
+            userId: client.data.userId,
+            isTyping: data.isTyping,
         });
     }
 

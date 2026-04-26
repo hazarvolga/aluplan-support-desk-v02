@@ -49,6 +49,9 @@ import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { DataTableHeader } from './components/DataTableHeader';
+import { MessageCircle } from 'lucide-react';
+import { ProactiveChatPendingBadge } from '@/components/proactive-chat/ProactiveChatPendingBadge';
+import { ProactiveChatWindow } from '@/components/proactive-chat/ProactiveChatWindow';
 
 interface CustomerItem {
     id: string;
@@ -123,6 +126,10 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
     const [validating, setValidating] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [validationResults, setValidationResults] = useState<Record<string, any>>({});
+
+    const [pendingChatSession, setPendingChatSession] = useState<{ sessionId: string; customerName: string } | null>(null);
+    const [activeChatSession, setActiveChatSession] = useState<{ sessionId: string; customerName: string } | null>(null);
+    const [startingChat, setStartingChat] = useState<string | null>(null); // customerId being started
 
     // Dynamic Table Configuration
     const displaySettings = useMemo(() => {
@@ -362,6 +369,18 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
             toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message });
         } finally {
             setSyncing(false);
+        }
+    };
+
+    const handleStartProactiveChat = async (customerId: string, customerName: string) => {
+        setStartingChat(customerId);
+        try {
+            const session = await api.proactiveChat.createSession(customerId);
+            setPendingChatSession({ sessionId: session.id, customerName });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message || tc('unknown') });
+        } finally {
+            setStartingChat(null);
         }
     };
 
@@ -809,9 +828,25 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                 })}
 
                                                 <TableCell className="px-6 text-right">
-                                                    <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-blue-500/10 hover:text-blue-500 text-muted-foreground">
-                                                        <Link href={`/customers/${c.id}`}><ChevronRight className="h-4 w-4" /></Link>
-                                                    </Button>
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-8 w-8 p-0 rounded-full hover:bg-green-500/10 hover:text-green-500 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            title="Proaktif Chat Başlat"
+                                                            disabled={startingChat === c.id}
+                                                            onClick={() => handleStartProactiveChat(c.id, c.fullName)}
+                                                        >
+                                                            {startingChat === c.id ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <MessageCircle className="h-4 w-4" />
+                                                            )}
+                                                        </Button>
+                                                        <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-blue-500/10 hover:text-blue-500 text-muted-foreground">
+                                                            <Link href={`/customers/${c.id}`}><ChevronRight className="h-4 w-4" /></Link>
+                                                        </Button>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         );
@@ -1135,6 +1170,32 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            {/* Proactive Chat Pending Badge */}
+            {pendingChatSession && (
+                <div className="fixed bottom-6 right-6 z-50 w-80">
+                    <ProactiveChatPendingBadge
+                        sessionId={pendingChatSession.sessionId}
+                        customerName={pendingChatSession.customerName}
+                        onAccepted={(sessionId) => {
+                            setActiveChatSession({ sessionId, customerName: pendingChatSession.customerName });
+                            setPendingChatSession(null);
+                        }}
+                        onClose={() => setPendingChatSession(null)}
+                    />
+                </div>
+            )}
+
+            {/* Proactive Chat Window */}
+            {activeChatSession && (
+                <ProactiveChatWindow
+                    sessionId={activeChatSession.sessionId}
+                    currentUserId=""
+                    isAgent={true}
+                    otherPartyName={activeChatSession.customerName}
+                    onClose={() => setActiveChatSession(null)}
+                />
+            )}
 
             <ConfirmModal
                 isOpen={isDeleteModalOpen}

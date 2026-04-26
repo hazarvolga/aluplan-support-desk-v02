@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
+import cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { truncateDatabase } from '../helpers/db-utils';
@@ -17,13 +18,25 @@ describe('Auth Flow (Integration)', () => {
         }).compile();
 
         app = module.createNestApplication();
+        app.setGlobalPrefix('api/v1');
+        app.use(cookieParser());
+        app.useGlobalPipes(
+            new ValidationPipe({
+                whitelist: true,
+                forbidNonWhitelisted: true,
+                transform: true,
+                transformOptions: { enableImplicitConversion: true },
+            }),
+        );
         await app.init();
 
         prisma = module.get<PrismaService>(PrismaService);
     });
 
     afterAll(async () => {
-        await app.close();
+        if (app) {
+            await app.close();
+        }
     });
 
     beforeEach(async () => {
@@ -31,11 +44,14 @@ describe('Auth Flow (Integration)', () => {
     });
 
     it('should register, login, access protected route, and logout', async () => {
-        // 1. Create a user directly in DB (bypass registration for speed)
+        // 1. Create a user directly in DB (bypass registration for speed).
+        // Using a unique email per run avoids interference from prior leftovers
+        // that truncateDatabase couldn't clear because of FK constraints.
+        const uniqueEmail = `integration-${Date.now()}@test.com`;
         const passwordHash = await bcrypt.hash('password123', 10);
         const user = await prisma.user.create({
             data: {
-                email: 'integration@test.com',
+                email: uniqueEmail,
                 passwordHash,
                 fullName: 'Integration Test',
                 status: 'ACTIVE',
@@ -45,8 +61,12 @@ describe('Auth Flow (Integration)', () => {
         // 2. Login
         const loginRes = await request(app.getHttpServer())
             .post('/api/v1/auth/login')
-            .send({ email: 'integration@test.com', password: 'password123' })
-            .expect(200);
+            .send({ email: uniqueEmail, password: 'password123' });
+        if (loginRes.status !== 200) {
+            // eslint-disable-next-line no-console
+            console.log('LOGIN_DEBUG status=', loginRes.status, 'body=', JSON.stringify(loginRes.body));
+        }
+        expect(loginRes.status).toBe(200);
 
         expect(loginRes.body).toHaveProperty('access_token');
         const cookies = loginRes.headers['set-cookie'];
@@ -58,7 +78,7 @@ describe('Auth Flow (Integration)', () => {
             .set('Cookie', cookies)
             .expect(200);
 
-        expect(meRes.body.email).toBe('integration@test.com');
+        expect(meRes.body.email).toBe(uniqueEmail);
 
         // 4. Logout
         const logoutRes = await request(app.getHttpServer())
@@ -78,7 +98,7 @@ describe('Auth Flow (Integration)', () => {
     it('should reject invalid credentials', async () => {
         await request(app.getHttpServer())
             .post('/api/v1/auth/login')
-            .send({ email: 'wrong@test.com', password: 'wrong' })
+            .send({ email: 'wrong@test.com', password: 'wrongpassword' })
             .expect(401);
     });
 });

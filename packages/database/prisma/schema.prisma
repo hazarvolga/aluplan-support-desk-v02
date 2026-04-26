@@ -52,6 +52,9 @@ model User {
   ticketsCreated        Ticket[]                  @relation("TicketCreatedBy")
   trainingReviews       TrainingQueue[]
   role                  Role?                     @relation(fields: [roleId], references: [id])
+  proactiveChatAsAgent    ProactiveChatSession[]  @relation("ProactiveChatAgent")
+  proactiveChatAsCustomer ProactiveChatSession[]  @relation("ProactiveChatCustomer")
+  proactiveChatMessages   ProactiveChatMessage[]  @relation("ProactiveChatMessageSender")
 
   @@map("users")
 }
@@ -241,6 +244,7 @@ model CustomerProfile {
   updatedAt         DateTime          @updatedAt @map("updated_at")
   subscriptionModel String?           @map("subscription_model") @db.VarChar(100)
   deletedAt         DateTime?         @map("deleted_at")
+  isVip             Boolean           @default(false) @map("is_vip")
   announcementLogs  AnnouncementLog[]
   account           CrmAccount?       @relation(fields: [accountId], references: [id])
   user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1102,4 +1106,52 @@ enum AnnouncementType {
   BROADCAST
   TRIGGER
   LIFECYCLE
+}
+
+enum ProactiveChatStatus {
+  PENDING
+  ACTIVE
+  ENDED
+  DECLINED
+  MISSED
+}
+
+enum ProactiveChatInitiatorType {
+  AGENT
+  CUSTOMER
+}
+
+model ProactiveChatSession {
+  id                String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agentId           String                     @map("agent_id") @db.Uuid
+  customerId        String                     @map("customer_id") @db.Uuid
+  status            ProactiveChatStatus        @default(PENDING)
+  initiatorType     ProactiveChatInitiatorType @default(AGENT) @map("initiator_type")
+  convertedTicketId String?                    @map("converted_ticket_id") @db.Uuid
+  endedAt           DateTime?                  @map("ended_at")
+  createdAt         DateTime                   @default(now()) @map("created_at")
+  updatedAt         DateTime                   @updatedAt @map("updated_at")
+
+  agent    User                   @relation("ProactiveChatAgent", fields: [agentId], references: [id])
+  customer User                   @relation("ProactiveChatCustomer", fields: [customerId], references: [id])
+  messages ProactiveChatMessage[]
+
+  @@index([agentId, status], map: "idx_pcs_agent_status")
+  @@index([customerId, status], map: "idx_pcs_customer_status")
+  @@index([status], map: "idx_pcs_status")
+  @@map("proactive_chat_sessions")
+}
+
+model ProactiveChatMessage {
+  id        String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId String               @map("session_id") @db.Uuid
+  senderId  String               @map("sender_id") @db.Uuid
+  content   String
+  createdAt DateTime             @default(now()) @map("created_at")
+
+  session ProactiveChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender  User                 @relation("ProactiveChatMessageSender", fields: [senderId], references: [id])
+
+  @@index([sessionId, createdAt], map: "idx_pcm_session_created")
+  @@map("proactive_chat_messages")
 }

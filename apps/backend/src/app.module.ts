@@ -47,6 +47,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { MetricsModule } from './metrics/metrics.module';
 import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
 import { QueueDashboardModule } from './queue-dashboard/queue-dashboard.module';
+import { ProactiveChatModule } from './proactive-chat/proactive-chat.module';
 
 @Module({
     imports: [
@@ -168,6 +169,7 @@ import { QueueDashboardModule } from './queue-dashboard/queue-dashboard.module';
         LoggerModule,
         MetricsModule,
         QueueDashboardModule,
+        ProactiveChatModule,
     ],
     providers: [
         {
