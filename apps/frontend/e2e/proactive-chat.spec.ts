@@ -10,6 +10,9 @@ import { test, expect, Page } from '@playwright/test';
  * 4. Ticket conversion
  * 5. Multi-tab protection (customer side)
  * 6. Session isolation (authorization)
+ * 7. Disconnect timeout (60s)
+ * 8. Offline customer notification
+ * 9. Multiple concurrent sessions
  *
  * Architecture:
  * - Uses two browser contexts (agent + customer) to simulate real-time interaction
@@ -592,6 +595,208 @@ test.describe('Proactive Chat E2E Tests', () => {
             console.log('✅ Agent can access messages (authorized)');
 
             console.log('✅✅ SESSION ISOLATION VERIFIED');
+
+        } finally {
+            await agentContext.close();
+            await customer1Context.close();
+            await customer2Context.close();
+        }
+    });
+});
+
+    test('7. Disconnect Timeout (60s)', async ({ browser }) => {
+        const agentContext = await browser.newContext();
+        const customerContext = await browser.newContext();
+        
+        const agentPage = await agentContext.newPage();
+        const customerPage = await customerContext.newPage();
+
+        try {
+            // ── SETUP: Create active session ────────────────────────────────
+            const agentToken = await getAuthToken(agentEmail, agentPassword);
+            const customerToken = await getAuthToken(customerEmail, customerPassword);
+            const customerProfile = await apiGet('/auth/me', customerToken);
+            const customerId = customerProfile.id;
+
+            // Create and accept session via API
+            const session = await apiPost('/proactive-chat/sessions', { customerId }, agentToken);
+            await apiPatch(`/proactive-chat/sessions/${session.id}/accept`, customerToken);
+            console.log('✅ Active session created');
+
+            // ── AGENT: Login and open chat ──────────────────────────────────
+            await loginAsAgent(agentPage);
+            await agentPage.goto('/tr/dashboard');
+            
+            const activeSessionsPanel = agentPage.locator('[data-testid="active-sessions-panel"]');
+            await expect(activeSessionsPanel).toBeVisible({ timeout: 10000 });
+            
+            const sessionRow = activeSessionsPanel.locator(`[data-testid="session-row-${session.id}"]`);
+            await sessionRow.click();
+            
+            const agentChatWindow = agentPage.locator('[data-testid="proactive-chat-window"]');
+            await expect(agentChatWindow).toBeVisible({ timeout: 5000 });
+            console.log('✅ Agent chat window opened');
+
+            // ── CUSTOMER: Login and open chat ───────────────────────────────
+            await loginAsCustomer(customerPage);
+            // Customer would see the chat window automatically or via notification
+            // For this test, we'll simulate disconnect by closing the page
+
+            // ── DISCONNECT: Close customer page ─────────────────────────────
+            console.log('--- [DISCONNECT] Closing customer page ---');
+            await customerPage.close();
+            console.log('✅ Customer disconnected');
+
+            // ── WAIT: For disconnect timeout (60s) ──────────────────────────
+            console.log('⏳ Waiting for 60s disconnect timeout...');
+            await agentPage.waitForTimeout(65000); // 60s + 5s buffer
+
+            // ── VERIFY: Session should be ENDED ─────────────────────────────
+            const updatedSession = await apiGet(`/proactive-chat/sessions`, agentToken);
+            const endedSession = updatedSession.find((s: any) => s.id === session.id);
+            expect(endedSession.status).toBe('ENDED');
+            console.log('✅ Session marked as ENDED after disconnect timeout');
+
+            // Agent should see session ended notification
+            await expect(agentChatWindow.getByText('ended', { exact: false })).toBeVisible({ timeout: 5000 });
+            console.log('✅ Agent sees session ended notification');
+
+            console.log('✅✅ DISCONNECT TIMEOUT COMPLETE');
+
+        } finally {
+            await agentContext.close();
+            await customerContext.close();
+        }
+    });
+
+    test('8. Offline Customer Notification', async ({ browser }) => {
+        const agentContext = await browser.newContext();
+        
+        const agentPage = await agentContext.newPage();
+
+        try {
+            // ── SETUP: Get customer ID ──────────────────────────────────────
+            const agentToken = await getAuthToken(agentEmail, agentPassword);
+            const customerToken = await getAuthToken(customerEmail, customerPassword);
+            const customerProfile = await apiGet('/auth/me', customerToken);
+            const customerId = customerProfile.id;
+
+            console.log('--- [SETUP] Customer is offline (not logged in) ---');
+
+            // ── AGENT: Start chat while customer is offline ─────────────────
+            await loginAsAgent(agentPage);
+            await agentPage.goto('/tr/customers');
+            await agentPage.waitForLoadState('networkidle');
+
+            const startChatButton = agentPage.locator(`[data-testid="start-proactive-chat-${customerId}"]`);
+            await startChatButton.click();
+            console.log('✅ Agent started chat with offline customer');
+
+            // Wait a bit for backend to process
+            await agentPage.waitForTimeout(2000);
+
+            // ── VERIFY: Notification should be created in database ──────────
+            // Check via API that a notification was created for the customer
+            const notifications = await apiGet('/notifications', customerToken);
+            const proactiveChatNotification = notifications.find((n: any) => 
+                n.type === 'PROACTIVE_CHAT_INCOMING' || 
+                n.message?.includes('chat') || 
+                n.message?.includes('proactive')
+            );
+
+            expect(proactiveChatNotification).toBeTruthy();
+            console.log('✅ Notification created for offline customer');
+
+            // ── VERIFY: Session should remain PENDING ───────────────────────
+            const sessions = await apiGet('/proactive-chat/sessions', agentToken);
+            const pendingSession = sessions.find((s: any) => 
+                s.customerId === customerId && s.status === 'PENDING'
+            );
+
+            expect(pendingSession).toBeTruthy();
+            console.log('✅ Session remains PENDING for offline customer');
+
+            console.log('✅✅ OFFLINE CUSTOMER NOTIFICATION COMPLETE');
+
+        } finally {
+            await agentContext.close();
+        }
+    });
+
+    test('9. Multiple Concurrent Sessions', async ({ browser }) => {
+        const agentContext = await browser.newContext();
+        const customer1Context = await browser.newContext();
+        const customer2Context = await browser.newContext();
+        
+        const agentPage = await agentContext.newPage();
+        const customer1Page = await customer1Context.newPage();
+        const customer2Page = await customer2Context.newPage();
+
+        try {
+            // ── SETUP: Get tokens and customer IDs ──────────────────────────
+            const agentToken = await getAuthToken(agentEmail, agentPassword);
+            const customer1Token = await getAuthToken(customerEmail, customerPassword);
+            
+            // For customer2, we'll use the same customer but simulate different sessions
+            // In a real scenario, you'd have a second customer account
+            const customer1Profile = await apiGet('/auth/me', customer1Token);
+            const customer1Id = customer1Profile.id;
+
+            // Note: For this test to work properly, you need a second customer
+            // For now, we'll test that an agent can't have multiple PENDING sessions
+            // with the same customer
+
+            console.log('--- [SETUP] Testing concurrent session limits ---');
+
+            // ── AGENT: Try to create two sessions with same customer ────────
+            const session1 = await apiPost('/proactive-chat/sessions', { customerId: customer1Id }, agentToken);
+            console.log('✅ First session created');
+
+            // Try to create second session - should fail with 409
+            try {
+                await apiPost('/proactive-chat/sessions', { customerId: customer1Id }, agentToken);
+                throw new Error('Second session should have been rejected');
+            } catch (error: any) {
+                expect(error.message).toContain('409');
+                console.log('✅ Second session rejected (409 Conflict)');
+            }
+
+            // ── VERIFY: Agent can have multiple sessions with different customers ──
+            // This would require a second customer account
+            // For now, we verify the single session works correctly
+
+            await loginAsAgent(agentPage);
+            await agentPage.goto('/tr/dashboard');
+            
+            const activeSessionsPanel = agentPage.locator('[data-testid="active-sessions-panel"]');
+            await expect(activeSessionsPanel).toBeVisible({ timeout: 10000 });
+            
+            // Should see the one pending session
+            const sessionRow = activeSessionsPanel.locator(`[data-testid="session-row-${session1.id}"]`);
+            await expect(sessionRow).toBeVisible({ timeout: 5000 });
+            console.log('✅ Agent sees pending session in panel');
+
+            // ── CUSTOMER: Accept first session ──────────────────────────────
+            await loginAsCustomer(customer1Page);
+            
+            const inviteCard = customer1Page.locator('[data-testid="proactive-chat-invite"]');
+            await expect(inviteCard).toBeVisible({ timeout: 10000 });
+            
+            const acceptButton = inviteCard.locator('[data-testid="accept-chat-button"]');
+            await acceptButton.click();
+            console.log('✅ Customer accepted first session');
+
+            // ── VERIFY: Now agent can create another session (first is ACTIVE) ──
+            const session2 = await apiPost('/proactive-chat/sessions', { customerId: customer1Id }, agentToken);
+            console.log('✅ Second session created after first became ACTIVE');
+
+            // Verify both sessions exist
+            const sessions = await apiGet('/proactive-chat/sessions', agentToken);
+            const agentSessions = sessions.filter((s: any) => s.agentId === agentToken);
+            expect(agentSessions.length).toBeGreaterThanOrEqual(2);
+            console.log('✅ Agent has multiple sessions');
+
+            console.log('✅✅ MULTIPLE CONCURRENT SESSIONS COMPLETE');
 
         } finally {
             await agentContext.close();
