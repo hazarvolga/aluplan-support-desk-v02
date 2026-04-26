@@ -313,7 +313,8 @@
       "help": "Help & Support",
       "profile": "My Profile",
       "account": "My Account",
-      "ai_assistant": "ANN Assistant"
+      "ai_assistant": "ANN Assistant",
+      "announcements_bell": "Announcements"
     }
   },
   "command_menu": {
@@ -1332,7 +1333,14 @@
         "step2_title": "Step 2: Subject and Details",
         "step2_desc": "Enter a clear title and details explaining the problem you encountered. Select the urgency level (determined by SLA).",
         "step3_title": "Step 3: File Attachments",
-        "step3_desc": "You can upload screenshots, PDFs, or project files (Max 10MB) directly by dragging and dropping."
+        "step3_desc": "You can upload files up to <b>25 MB</b> by dragging and dropping. The following file types are accepted:",
+        "step3_images": "<b>Images:</b> PNG, JPG, GIF, WebP, BMP (screenshots, error dialogs)",
+        "step3_docs": "<b>Documents:</b> PDF, Word (.docx), Excel (.xlsx), PowerPoint (.pptx), TXT, CSV, MD",
+        "step3_archives": "<b>Archives:</b> ZIP, 7Z, RAR (for bundling multiple log files)",
+        "step3_logs": "<b>Diagnostic files:</b> .log, .xml, .json, .hxl (Allplan Hotinfo), .dmp (crash dump)",
+        "step3_video": "<b>Video:</b> MP4, MOV, AVI, WebM (for reproducing crashes or bugs)",
+        "step3_blocked": "<b>Not accepted:</b> Executable files (.exe, .dll, .bat, .sh, .js, .py, .apk, .iso) are blocked for security reasons.",
+        "step3_tip": "For Allplan crashes, please attach the <b>.hxl Hotinfo file</b> and the <b>.dmp crash dump</b> from <code>%AppData%\\Nemetschek\\Allplan</code>. This significantly speeds up diagnosis."
       }
     },
     "admin_guide": {
@@ -3629,5 +3637,14 @@
       "query_preproc": "SORGU ÖN İŞLEME",
       "hybrid_retrieval": "HİBRİT ERİŞİM MOTORU"
     }
+  },
+  "announcements": {
+    "toast_view": "View",
+    "archive_title": "Announcements",
+    "archive_empty": "No announcements yet.",
+    "archive_unread_dot": "Unread",
+    "mark_read": "Mark as read",
+    "badge_overflow": "99+",
+    "load_more": "Load more"
   }
 }

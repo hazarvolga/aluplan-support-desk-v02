@@ -5,7 +5,7 @@ import {
     LayoutDashboard, Ticket, BookOpen, Bot,
     MessageSquareQuote, Settings, LogOut, ChevronRight, Users, User,
     Brain, Database, Layers, Mail, Link2, Megaphone, HelpCircle, MailCheck,
-    Activity
+    Activity, Bell
 } from 'lucide-react';
 
 import { api } from '@/lib/api';
@@ -14,6 +14,7 @@ import { useAuth } from '@/components/auth/role-guard';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { LanguageSwitcher } from './language-switcher';
+import { useAnnouncementStore } from '@/stores/announcement-store';
 
 const ADMIN_NAV = [
     { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
@@ -59,7 +60,8 @@ const CUSTOMER_NAV = [
     { href: '/dashboard', icon: LayoutDashboard, labelKey: 'overview' },
     { href: '/my-tickets', icon: Ticket, labelKey: 'my_tickets' },
     { href: '/knowledge-base', icon: BookOpen, labelKey: 'articles' },
-    { href: '/ai', icon: Bot, labelKey: 'ai_assistant' },
+    // /ai is intentionally excluded for customers — staff/admin only
+    { href: '#announcements', icon: Bell, labelKey: 'announcements_bell', isAnnouncementBell: true },
     { href: '/help', icon: HelpCircle, labelKey: 'help' },
     { href: '/profile', icon: User, labelKey: 'account' },
 ];
@@ -73,6 +75,7 @@ export function Sidebar({ onNavClick }: SidebarProps) {
     const t = useTranslations('sidebar');
     const { user, logout } = useAuth();
     const [pendingCount, setPendingCount] = useState(0);
+    const { unreadCount, setUnreadCount, openArchive } = useAnnouncementStore();
 
     useEffect(() => {
         // KB Approvals count check
@@ -84,6 +87,13 @@ export function Sidebar({ onNavClick }: SidebarProps) {
         };
         if (user?.role?.toUpperCase() === 'ADMIN') {
             checkPending();
+        }
+    }, [user]);
+
+    useEffect(() => {
+        const role = user?.role?.toUpperCase?.() ?? '';
+        if (role === 'CUSTOMER' || role === 'VIEWER') {
+            api.announcements.getMyUnreadCount().then((r) => setUnreadCount(r.count)).catch(() => {});
         }
     }, [user]);
 
@@ -144,6 +154,27 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                                         })}
                                     </div>
                                 </div>
+                            );
+                        }
+
+                        if (item.isAnnouncementBell) {
+                            return (
+                                <button
+                                    key={idx}
+                                    onClick={() => { openArchive(); onNavClick?.(); }}
+                                    data-testid={`nav-${item.labelKey}`}
+                                    className="group flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all text-muted-foreground hover:bg-white/5 hover:text-white"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Bell className="h-4 w-4 group-hover:text-white" />
+                                        <span>{t(`nav.${item.labelKey}`)}</span>
+                                    </div>
+                                    {unreadCount > 0 && (
+                                        <span className="ml-auto text-[9px] font-bold bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                                            {unreadCount > 99 ? '99+' : unreadCount}
+                                        </span>
+                                    )}
+                                </button>
                             );
                         }
 

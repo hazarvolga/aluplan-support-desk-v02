@@ -457,6 +457,12 @@ export const api = {
         delete: (id: string) => request<any>(`/announcements/${id}`, { method: 'DELETE' }),
         getTargetCount: (criteria: any) => request<{ count: number }>('/announcements/target-count', { method: 'POST', body: JSON.stringify(criteria) }),
         broadcast: (id: string) => request<{ success: true; count: number }>(`/announcements/${id}/broadcast`, { method: 'POST' }),
+        getMyAnnouncements: (page = 1, limit = 20) =>
+            request<{ data: any[]; total: number }>(`/announcements/my?page=${page}&limit=${limit}`),
+        getMyUnreadCount: () =>
+            request<{ count: number }>('/announcements/my/unread-count'),
+        markLogRead: (logId: string) =>
+            request<any>(`/announcements/logs/${logId}/read`, { method: 'PATCH' }),
     },
     announcementTemplates: {
         list: () => request<any[]>('/announcement-templates'),

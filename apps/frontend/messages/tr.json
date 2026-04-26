@@ -313,7 +313,8 @@
       "help": "Yardım ve Destek",
       "profile": "Profilim",
       "account": "Hesabım",
-      "ai_assistant": "ANN Asistanı"
+      "ai_assistant": "ANN Asistanı",
+      "announcements_bell": "Duyurular"
     }
   },
   "command_menu": {
@@ -1334,7 +1335,14 @@
         "step2_title": "Adım 2: Konu ve Detaylar",
         "step2_desc": "Karşılaştığınız sorunu anlatan açık bir başlık ve detayları girin. Zorunluluk derecesini (SLA belirler) seçin.",
         "step3_title": "Adım 3: Dosya Ekleri",
-        "step3_desc": "Ekran görüntüsü, PDF veya proje dosyalarını (Maks 10MB) doğrudan sürükleyip bırakarak yükleyebilirsiniz."
+        "step3_desc": "Sürükleyip bırakarak <b>25 MB</b>'a kadar dosya yükleyebilirsiniz. Kabul edilen dosya türleri:",
+        "step3_images": "<b>Görseller:</b> PNG, JPG, GIF, WebP, BMP (ekran görüntüsü, hata diyalogları)",
+        "step3_docs": "<b>Belgeler:</b> PDF, Word (.docx), Excel (.xlsx), PowerPoint (.pptx), TXT, CSV, MD",
+        "step3_archives": "<b>Arşivler:</b> ZIP, 7Z, RAR (birden fazla log dosyasını paketlemek için)",
+        "step3_logs": "<b>Tanılama dosyaları:</b> .log, .xml, .json, .hxl (Allplan Hotinfo), .dmp (çökme dökümü)",
+        "step3_video": "<b>Video:</b> MP4, MOV, AVI, WebM (çökme veya hata yeniden üretimi için)",
+        "step3_blocked": "<b>Kabul edilmeyenler:</b> Çalıştırılabilir dosyalar (.exe, .dll, .bat, .sh, .js, .py, .apk, .iso) güvenlik nedeniyle engellenmektedir.",
+        "step3_tip": "Allplan çökmelerinde <b>.hxl Hotinfo dosyasını</b> ve <code>%AppData%\\Nemetschek\\Allplan</code> dizinindeki <b>.dmp çökme dökümünü</b> eklemeniz tanıyı önemli ölçüde hızlandırır."
       }
     },
     "admin_guide": {
@@ -3632,5 +3640,14 @@
       "query_preproc": "SORGU ÖN İŞLEME",
       "hybrid_retrieval": "HİBRİT ERİŞİM MOTORU"
     }
+  },
+  "announcements": {
+    "toast_view": "Görüntüle",
+    "archive_title": "Duyurular",
+    "archive_empty": "Henüz duyuru yok.",
+    "archive_unread_dot": "Okunmadı",
+    "mark_read": "Okundu olarak işaretle",
+    "badge_overflow": "99+",
+    "load_more": "Daha fazla yükle"
   }
 }

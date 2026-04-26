@@ -466,6 +466,7 @@ model AiInteraction {
   feedbacks         InteractionFeedback[]
   ticket            Ticket?
   trainingQueue     TrainingQueue[]
+  shiftDetections   AiShiftDetection[]
 
   @@index([sessionId], map: "idx_ai_session")
   @@index([matchedArticleId], map: "idx_ai_article")
@@ -473,6 +474,20 @@ model AiInteraction {
   @@index([createdAt(sort: Desc), confidenceBand], map: "idx_ai_interactions_created_confidence")
   @@index([userContext], map: "idx_ai_context", type: Gin)
   @@map("ai_interactions")
+}
+
+model AiShiftDetection {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  interactionId    String?        @map("interaction_id") @db.Uuid
+  interaction      AiInteraction? @relation(fields: [interactionId], references: [id])
+  userId           String?        @map("user_id")
+  detectedAt       DateTime       @default(now()) @map("detected_at")
+  previousKeywords String[]       @map("previous_keywords")
+  newKeywords      String[]       @map("new_keywords")
+  historyLength    Int            @map("history_length")
+  confirmed        Boolean        @default(false)
+
+  @@map("ai_shift_detections")
 }
 
 model AiResponseCache {
@@ -916,6 +931,7 @@ model AnnouncementLog {
   customerId     String          @map("customer_id") @db.Uuid
   status         String          @default("PENDING") @db.VarChar(50)
   sentAt         DateTime?       @map("sent_at")
+  readAt         DateTime?       @map("read_at")
   error          String?
   emailLogId     String?         @unique @map("email_log_id") @db.Uuid
   createdAt      DateTime        @default(now()) @map("created_at")
@@ -923,6 +939,7 @@ model AnnouncementLog {
   customer       CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
   emailLog       EmailLog?       @relation(fields: [emailLogId], references: [id])
 
+  @@index([customerId, readAt], map: "idx_announcement_logs_customer_read")
   @@map("announcement_logs")
 }
 

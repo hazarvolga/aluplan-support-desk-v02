@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { CreateAnnouncementDto, UpdateAnnouncementDto, TargetCriteriaDto } from './dto/announcement.dto';
-import { Prisma } from '@aluplan/database';
+import { Prisma, AnnouncementLog } from '@aluplan/database';
 
 @Injectable()
 export class AnnouncementsService {
@@ -11,6 +12,7 @@ export class AnnouncementsService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly emailService: EmailService,
+        private readonly notificationsGateway: NotificationsGateway,
     ) { }
 
     async create(dto: CreateAnnouncementDto, userId: string) {
@@ -140,6 +142,7 @@ export class AnnouncementsService {
                 include: {
                     user: {
                         select: {
+                            id: true,
                             email: true,
                         },
                     },
@@ -159,6 +162,18 @@ export class AnnouncementsService {
                         status: 'PENDING',
                     },
                 });
+
+                // Emit real-time WebSocket notification to online customers
+                if (target.user?.id) {
+                    const excerpt = this.generateExcerpt(announcement.contentMjml || '');
+                    this.notificationsGateway.sendToUser(target.user.id, 'ANNOUNCEMENT_RECEIVED', {
+                        logId: annLog.id,
+                        announcementId: id,
+                        title: announcement.title,
+                        excerpt,
+                        sentAt: new Date().toISOString(),
+                    });
+                }
 
                 // Enqueue Email via existing EmailService
                 // Use master-announcement template for new HTML content, 'raw' for old raw MJML content
@@ -234,6 +249,49 @@ export class AnnouncementsService {
         }
 
         return where;
+    }
+
+    private generateExcerpt(contentMjml: string): string {
+        const plain = contentMjml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        return plain.length <= 160 ? plain : plain.slice(0, 160);
+    }
+
+    async getMyAnnouncements(userId: string, page = 1, limit = 20) {
+        const customer = await this.prisma.customerProfile.findUnique({ where: { userId } });
+        if (!customer) return { data: [], total: 0 };
+        const [data, total] = await Promise.all([
+            this.prisma.announcementLog.findMany({
+                where: { customerId: customer.id },
+                orderBy: { sentAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+                include: { announcement: { select: { title: true, contentMjml: true } } },
+            }),
+            this.prisma.announcementLog.count({ where: { customerId: customer.id } }),
+        ]);
+        return { data, total };
+    }
+
+    async getMyUnreadCount(userId: string): Promise<{ count: number }> {
+        const customer = await this.prisma.customerProfile.findUnique({ where: { userId } });
+        if (!customer) return { count: 0 };
+        const count = await this.prisma.announcementLog.count({
+            where: { customerId: customer.id, readAt: null },
+        });
+        return { count };
+    }
+
+    async markLogRead(logId: string, userId: string): Promise<AnnouncementLog> {
+        const customer = await this.prisma.customerProfile.findUnique({ where: { userId } });
+        if (!customer) throw new ForbiddenException();
+        const log = await this.prisma.announcementLog.findUnique({ where: { id: logId } });
+        if (!log) throw new NotFoundException();
+        if (log.customerId !== customer.id) throw new ForbiddenException();
+        if (log.readAt !== null) return log;
+        return this.prisma.announcementLog.update({
+            where: { id: logId },
+            data: { readAt: new Date() },
+        });
     }
 
     async getFilterOptions() {

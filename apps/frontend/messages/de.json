@@ -313,7 +313,8 @@
       "help": "Hilfe & Support",
       "profile": "Mein Profil",
       "account": "Mein Konto",
-      "ai_assistant": "ANN-Assistent"
+      "ai_assistant": "ANN-Assistent",
+      "announcements_bell": "Ankündigungen"
     }
   },
   "command_menu": {
@@ -1329,7 +1330,14 @@
         "step2_title": "Schritt 2: Betreff und Details",
         "step2_desc": "Geben Sie einen klaren Titel und Details ein, die das aufgetretene Problem erläutern. Wählen Sie die Dringlichkeitsstufe (wird durch SLA bestimmt).",
         "step3_title": "Schritt 3: Dateianhänge",
-        "step3_desc": "Sie können Screenshots, PDFs oder Projektdateien (Max. 10 MB) direkt per Drag & Drop hochladen."
+        "step3_desc": "Sie können Dateien bis zu <b>25 MB</b> per Drag & Drop hochladen. Folgende Dateitypen werden akzeptiert:",
+        "step3_images": "<b>Bilder:</b> PNG, JPG, GIF, WebP, BMP (Screenshots, Fehlerdialoge)",
+        "step3_docs": "<b>Dokumente:</b> PDF, Word (.docx), Excel (.xlsx), PowerPoint (.pptx), TXT, CSV, MD",
+        "step3_archives": "<b>Archive:</b> ZIP, 7Z, RAR (zum Bündeln mehrerer Log-Dateien)",
+        "step3_logs": "<b>Diagnosedateien:</b> .log, .xml, .json, .hxl (Allplan Hotinfo), .dmp (Absturz-Dump)",
+        "step3_video": "<b>Video:</b> MP4, MOV, AVI, WebM (zur Reproduktion von Abstürzen oder Fehlern)",
+        "step3_blocked": "<b>Nicht akzeptiert:</b> Ausführbare Dateien (.exe, .dll, .bat, .sh, .js, .py, .apk, .iso) werden aus Sicherheitsgründen blockiert.",
+        "step3_tip": "Bei Allplan-Abstürzen fügen Sie bitte die <b>.hxl Hotinfo-Datei</b> und den <b>.dmp Absturz-Dump</b> aus <code>%AppData%\\Nemetschek\\Allplan</code> bei. Dies beschleunigt die Diagnose erheblich."
       }
     },
     "admin_guide": {
@@ -3624,5 +3632,14 @@
       "query_preproc": "SORGU ÖN İŞLEME",
       "hybrid_retrieval": "HİBRİT ERİŞİM MOTORU"
     }
+  },
+  "announcements": {
+    "toast_view": "Anzeigen",
+    "archive_title": "Ankündigungen",
+    "archive_empty": "Noch keine Ankündigungen.",
+    "archive_unread_dot": "Ungelesen",
+    "mark_read": "Als gelesen markieren",
+    "badge_overflow": "99+",
+    "load_more": "Mehr laden"
   }
 }
