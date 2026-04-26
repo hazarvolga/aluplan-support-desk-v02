@@ -5,8 +5,8 @@ import { Page, expect } from '@playwright/test';
  * Retries login if 'Invalid credentials' or timeout occurs.
  */
 export async function loginAsAdmin(page: Page) {
-    const email = 'e2e-test@aluplan.com';
-    const password = 'pass123';
+    const email = process.env.E2E_ADMIN_EMAIL || 'hazarvolga@gmail.com';
+    const password = process.env.E2E_ADMIN_PASSWORD || 'Vol1872017';
 
     for (let attempt = 1; attempt <= 3; attempt++) {
         try {

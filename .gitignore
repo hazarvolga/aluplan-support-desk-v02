@@ -42,6 +42,12 @@ packages/database/client/
 coverage/
 *.lcov
 .nyc_output/
+# Playwright test artifacts
+apps/frontend/test-results/
+apps/frontend/playwright-report/
+apps/frontend/e2e-timeout-diagnostic.png
+# Graphify cache (auto-generated)
+graphify-out/cache/
 
 # ========================
 # Logs

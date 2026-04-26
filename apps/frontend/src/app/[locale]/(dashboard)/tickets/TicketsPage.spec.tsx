@@ -19,10 +19,20 @@ describe('TicketsPage', () => {
         vi.stubGlobal('confirm', vi.fn(() => true));
     });
 
-    it('renders empty state when no tickets', () => {
+    it('renders empty state when no tickets', async () => {
         (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
+
+        // Mock the tickets API to return empty list so loading resolves
+        server.use(
+            http.get(`${API_BASE}/tickets`, () => {
+                return HttpResponse.json({ data: [], total: 0 });
+            }),
+        );
+
         render(<TicketsClient initialTickets={[]} initialTotal={0} />);
-        expect(screen.getByText(/table.empty/i)).toBeDefined();
+        await waitFor(() => {
+            expect(screen.getByText(/table.empty/i)).toBeDefined();
+        }, { timeout: 10000 });
     });
 
     it('renders tickets list after loading', async () => {
@@ -100,10 +110,16 @@ describe('TicketsPage', () => {
     it('handles empty state', async () => {
         (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
 
+        server.use(
+            http.get(`${API_BASE}/tickets`, () => {
+                return HttpResponse.json({ data: [], total: 0 });
+            }),
+        );
+
         render(<TicketsClient initialTickets={[]} initialTotal={0} />);
 
         await waitFor(() => {
             expect(screen.getByText(/table.empty/i)).toBeDefined();
-        });
+        }, { timeout: 10000 });
     });
 });

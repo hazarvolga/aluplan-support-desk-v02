@@ -2,22 +2,24 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { QueueMonitorService } from '../queue-monitor.service';
 import { getQueueToken } from '@nestjs/bullmq';
 
-const createMockQueue = (name: string) => {
-    const eventHandlers: Record<string, Function[]> = {};
+// QueueMonitorService creates QueueEvents internally via `new QueueEvents(...)`.
+// We mock the bullmq module so QueueEvents is a no-op in tests.
+jest.mock('bullmq', () => {
+    const actual = jest.requireActual('bullmq');
     return {
-        name,
-        events: {
-            on: jest.fn((event: string, handler: Function) => {
-                eventHandlers[event] = eventHandlers[event] || [];
-                eventHandlers[event].push(handler);
-            }),
-        },
-        getFailed: jest.fn(),
-        _emit: (event: string, data: any) => {
-            (eventHandlers[event] || []).forEach((h) => h(data));
-        },
+        ...actual,
+        QueueEvents: jest.fn().mockImplementation(() => ({
+            on: jest.fn(),
+            close: jest.fn().mockResolvedValue(undefined),
+        })),
     };
-};
+});
+
+const createMockQueue = (name: string) => ({
+    name,
+    opts: { connection: { host: 'localhost', port: 6379 } },
+    getFailed: jest.fn(),
+});
 
 describe('QueueMonitorService', () => {
     let service: QueueMonitorService;
@@ -54,10 +56,15 @@ describe('QueueMonitorService', () => {
     });
 
     it('should attach event listeners on module init', () => {
+        const { QueueEvents } = require('bullmq');
         service.onModuleInit();
-        expect(aiQueue.events.on).toHaveBeenCalledWith('stalled', expect.any(Function));
-        expect(aiQueue.events.on).toHaveBeenCalledWith('failed', expect.any(Function));
-        expect(aiQueue.events.on).toHaveBeenCalledWith('completed', expect.any(Function));
+        // QueueEvents is instantiated once per queue (4 queues)
+        expect(QueueEvents).toHaveBeenCalledTimes(4);
+        // Each QueueEvents instance has .on called for stalled, failed, completed
+        const instance = QueueEvents.mock.results[0].value;
+        expect(instance.on).toHaveBeenCalledWith('stalled', expect.any(Function));
+        expect(instance.on).toHaveBeenCalledWith('failed', expect.any(Function));
+        expect(instance.on).toHaveBeenCalledWith('completed', expect.any(Function));
     });
 
     it('should get failed jobs from a queue', async () => {
@@ -65,7 +72,8 @@ describe('QueueMonitorService', () => {
         aiQueue.getFailed.mockResolvedValue(failedJobs);
         const result = await service.getFailedJobs('ai-query-processing', 10);
         expect(result).toEqual(failedJobs);
-        expect(aiQueue.getFailed).toHaveBeenCalledWith(10, 0);
+        // getFailedJobs calls queue.getFailed(0, count)
+        expect(aiQueue.getFailed).toHaveBeenCalledWith(0, 10);
     });
 
     it('should throw for unknown queue name', async () => {

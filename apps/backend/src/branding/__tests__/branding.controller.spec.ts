@@ -7,7 +7,9 @@ describe('BrandingController', () => {
     let storageService: any;
 
     const mockStorageService = {
+        isS3: jest.fn().mockReturnValue(true), // default: S3 mode
         getDownloadUrl: jest.fn(),
+        getFile: jest.fn(),
         uploadFile: jest.fn(),
     };
 
@@ -28,6 +30,7 @@ describe('BrandingController', () => {
     describe('getAsset', () => {
         it('should redirect to the presigned download URL', async () => {
             const presignedUrl = 'https://s3.example.com/brand/logos/logo.png?token=abc';
+            mockStorageService.isS3.mockReturnValue(true);
             mockStorageService.getDownloadUrl.mockResolvedValue(presignedUrl);
 
             const res = {
@@ -41,18 +44,20 @@ describe('BrandingController', () => {
         });
 
         it('should return 404 when storage service throws an error', async () => {
+            mockStorageService.isS3.mockReturnValue(true);
             mockStorageService.getDownloadUrl.mockRejectedValue(new Error('Not found'));
 
+            const mockSend = jest.fn().mockReturnValue(undefined);
             const res = {
-                status: jest.fn().mockReturnThis(),
-                send: jest.fn().mockReturnValue(undefined),
+                status: jest.fn().mockReturnValue({ send: mockSend }),
+                send: jest.fn(),
             } as any;
 
             await controller.getAsset('missing.png', res);
 
             expect(storageService.getDownloadUrl).toHaveBeenCalledWith('missing.png');
             expect(res.status).toHaveBeenCalledWith(404);
-            expect(res.send).toHaveBeenCalledWith('Asset not found');
+            expect(mockSend).toHaveBeenCalledWith('Asset not found');
         });
     });
 

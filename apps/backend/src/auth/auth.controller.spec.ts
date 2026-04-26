@@ -51,7 +51,8 @@ describe('AuthController', () => {
             // Assert
             expect(mockAuthService.login).toHaveBeenCalledWith(dto);
             expect(result).toEqual(expectedResult);
-            expect(mockRes.cookie).toHaveBeenCalledWith('access_token', 'token', expect.any(Object));
+            // Cookie name changed to 'alu_at' (httpOnly auth cookie)
+            expect(mockRes.cookie).toHaveBeenCalledWith('alu_at', 'token', expect.any(Object));
         });
     });
 
@@ -69,7 +70,8 @@ describe('AuthController', () => {
             // Assert
             expect(mockAuthService.refreshTokens).toHaveBeenCalledWith('user1', 'refreshToken123');
             expect(result).toEqual(expectedResult);
-            expect(mockRes.cookie).toHaveBeenCalledWith('access_token', 'new-acs', expect.any(Object));
+            // Cookie name changed to 'alu_at'
+            expect(mockRes.cookie).toHaveBeenCalledWith('alu_at', 'new-acs', expect.any(Object));
         });
     });
 
@@ -86,7 +88,8 @@ describe('AuthController', () => {
             // Assert
             expect(mockAuthService.logout).toHaveBeenCalledWith('user1', 'jti-abc');
             expect(result).toEqual({ success: true });
-            expect(mockRes.clearCookie).toHaveBeenCalledWith('access_token', expect.any(Object));
+            // Cookie name changed to 'alu_at'
+            expect(mockRes.clearCookie).toHaveBeenCalledWith('alu_at', expect.any(Object));
         });
     });
 

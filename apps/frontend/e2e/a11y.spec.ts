@@ -32,13 +32,12 @@ for (const page of CRITICAL_PAGES) {
 
 test.describe('Authenticated Dashboard A11y (requires login)', () => {
     test.beforeEach(async ({ page }) => {
-        // Login via API to get cookies, then navigate
-        // Adjust credentials for your test environment
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL(/dashboard|tickets/);
+        await page.goto('/tr/login');
+        await page.waitForSelector('[data-testid="login-email"]', { timeout: 30000 });
+        await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
+        await page.getByTestId('login-password').fill('Vol1872017');
+        await page.getByTestId('login-submit').click();
+        await page.waitForURL(/.*\/dashboard/, { timeout: 60000 });
     });
 
     test('a11y: Dashboard', async ({ page }) => {
