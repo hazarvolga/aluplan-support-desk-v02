@@ -12,7 +12,7 @@
 | Backend unit | 558 PASS / 6 skip | **600 PASS / 1 skip (78 suite)** | +42 test, -5 skip |
 | Backend integration | 0/53 (suite hung 23 dk) | **57/57 PASS, ~15 sn** | +57 test, alt yapı tam restore |
 | Frontend unit | 92 PASS | 92 PASS | aynı |
-| Frontend E2E | 🔴 Tamamen bloke (syntax error) | **57 test discoverable, 12 PASS / 45 fail** (auth credential drift) | unblocked, kapsamlı fix kaldı |
+| Frontend E2E | 🔴 Tamamen bloke (syntax error) | **57 test discoverable, 10 PASS / 47 fail** (37 dk koşum, exit 1) | unblocked, kapsamlı fix kaldı |
 | Test'siz modüller | 7 (config, events, health, metrics, prisma, rbac, whatsapp) | **1 (sadece prisma — integration'la dolaylı kapsanıyor)** | 6 modül kapatıldı |
 | TypeCheck + Lint | (test edilmemişti) | ✅ Geçen koşumda exit 0 | doğrulandı |
 | CI gate (Playwright zero-test detection) | yok | **✅ frontend-test.yml + backend-test.yml** | yeni |
@@ -53,8 +53,9 @@
 ## 2. ⚠ KALAN KRİTİK İŞ — Frontend E2E
 
 ### Mevcut Durum
-- **57 test discoverable** (was 0). Suite ayağa kalkıyor.
-- İlk koşumda **45 unique fail**. Hızlı taramada **çoğu auth credential drift**'inden kaynaklanıyor.
+- **57 test discoverable** (was 0). Suite ayağa kalkıyor, 37 dk tam koşumda **10 PASS / 47 fail**.
+- Geçenler: smoke (4), bazı a11y, basic.spec, sanity. Yani **infrastructure çalışıyor** ama auth gerektiren her şey düşüyor.
+- **Çoğu fail auth credential drift** + hidrasyon yarışı kombinasyonundan.
 - `auth.spec.ts:32` hardcoded `e2e-test@aluplan.com / pass123` → bu commit'te env-default `hazarvolga@gmail.com / Vol1872017` olarak güncellendi (helpers ile tutarlı). **Login hâlâ dashboard'a redirect olmuyor** — frontend hidrasyon/cookie sorunu.
 - Diğer spec dosyalarında hâlâ `e2e-customer@aluplan.com` gibi seed'de olmayan credential'lar var.
 
@@ -87,7 +88,7 @@ Frontend Unit (vitest) ───────────────────
   13 file  ·  92 PASS · 0 skip ·  10 sec
 
 Frontend E2E (Playwright, 20 file) ─────────────────────────────
-  57 test  ·  12 PASS · 45 fail (auth/credential drift)
+  57 test  ·  10 PASS · 47 fail (auth credential drift) · 37 min
 ```
 
 ---
