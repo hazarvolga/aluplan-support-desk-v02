@@ -3,20 +3,17 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/components/auth/role-guard';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import {
     Bot,
-    Send,
     ThumbsUp,
     ThumbsDown,
-    ExternalLink,
-    AlertCircle,
     Loader2,
     Sparkles,
     Zap,
-    Target,
     Paperclip,
     X
 } from 'lucide-react';
@@ -49,7 +46,13 @@ interface Message {
     result?: QueryResult;
 }
 
-export default function AiPage() {
+/** Resolves the role string regardless of how the backend returns it */
+function resolveRole(user: any): string {
+    return ((user?.role as any)?.name || user?.role || '').toLowerCase();
+}
+
+/** The actual AI assistant UI — only rendered for staff/admin */
+function AiPageContent() {
     const t = useTranslations('ai');
     const { locale } = useParams();
     const [query, setQuery] = useState('');
@@ -134,13 +137,11 @@ export default function AiPage() {
             }];
             setMessages(newMessages);
 
-            // Keep only roles and content for the API history
             const apiHistory = newMessages.map(m => ({ role: m.role, content: m.content }));
             const res = await api.ai.query(userMsg, null, null, locale as string, apiHistory, attachments);
 
             if (res.jobId) {
                 setActiveJobId(res.jobId);
-                // We keep loading true, socket will transition it
             } else {
                 setMessages(prev => [...prev, {
                     role: 'assistant',
@@ -182,7 +183,6 @@ export default function AiPage() {
                         {t('subtitle')}
                     </p>
                 </div>
-
                 <Badge variant="outline" className="h-7 border-orange-500/20 bg-orange-500/5 text-orange-500 font-bold tracking-widest px-3">
                     {t('beta_protocol')}
                 </Badge>
@@ -220,7 +220,6 @@ export default function AiPage() {
                                         {msg.content}
                                     </div>
 
-                                    {/* Action items from Result mapping */}
                                     {msg.result?.suggestTicket && (
                                         <div className="mt-6 p-3 rounded-xl border border-primary/20 bg-primary/5 flex items-center justify-between gap-4">
                                             <p className="text-[10px] font-bold text-white uppercase tracking-tight">
@@ -232,7 +231,6 @@ export default function AiPage() {
                                         </div>
                                     )}
 
-                                    {/* Sources */}
                                     {msg.result?.sources && msg.result.sources.length > 0 && (
                                         <div className="mt-6 pt-4 border-t border-white/5">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -246,7 +244,6 @@ export default function AiPage() {
                                         </div>
                                     )}
 
-                                    {/* Feedback */}
                                     {msg.result?.interactionId && (
                                         <div className="mt-4 flex items-center justify-end gap-2">
                                             {feedback[msg.result.interactionId] ? (
@@ -292,10 +289,9 @@ export default function AiPage() {
                 )}
             </div>
 
-            {/* Query input card (Sticky at bottom) */}
+            {/* Query input */}
             <Card className="glass-card p-2 border-white/10 group focus-within:border-orange-500/30 transition-all shadow-[0_4px_30px_rgba(0,0,0,0.1)] sticky bottom-4 z-50">
                 <form onSubmit={handleQuery} className="space-y-2">
-                    {/* File List */}
                     {files.length > 0 && (
                         <div className="flex flex-wrap gap-2 px-2 pb-2">
                             {files.map((f, i) => (
@@ -357,7 +353,6 @@ export default function AiPage() {
                 </form>
             </Card>
 
-            {/* System Info */}
             {messages.length === 0 && !loading && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-12 opacity-40 grayscale group-hover:grayscale-0 transition-all duration-700">
                     <div className="p-4 rounded-xl border border-white/5 bg-white/[0.01]">
@@ -372,4 +367,34 @@ export default function AiPage() {
             )}
         </motion.div>
     );
+}
+
+/**
+ * Route guard wrapper — redirects customers to /my-tickets.
+ * /ai is staff/admin only to prevent unnecessary token costs.
+ */
+export default function AiPage() {
+    const router = useRouter();
+    const { user, loading } = useAuth();
+
+    useEffect(() => {
+        if (!loading) {
+            if (!user) {
+                router.replace('/login');
+                return;
+            }
+            const role = resolveRole(user);
+            if (role === 'customer' || role === 'viewer') {
+                router.replace('/my-tickets');
+            }
+        }
+    }, [user, loading, router]);
+
+    if (loading) return null;
+    if (!user) return null;
+
+    const role = resolveRole(user);
+    if (role === 'customer' || role === 'viewer') return null;
+
+    return <AiPageContent />;
 }

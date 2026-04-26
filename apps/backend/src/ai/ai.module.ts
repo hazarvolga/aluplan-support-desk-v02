@@ -20,7 +20,6 @@ import { RagObservabilityService } from './rag-observability.service';
 import { RagMaintenanceService } from './rag-maintenance.service';
 import { KnowledgePoolModule } from '../knowledge-pool/knowledge-pool.module';
 import { EmailModule } from '../email/email.module';
-import { VertexAiService } from './vertex-ai.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { RedisModule } from '../redis/redis.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -52,7 +51,7 @@ import { AiBudgetMonitor } from './ai-budget-monitor.service';
             },
             {
                 name: 'ai-query-processing',
-                defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 1000 }, removeOnComplete: 100, removeOnFail: false }
+                defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 1000 }, removeOnComplete: 100, removeOnFail: false },
             }
         ),
     ],
@@ -81,7 +80,6 @@ import { AiBudgetMonitor } from './ai-budget-monitor.service';
         AiReportingService,
         RagObservabilityService,
         RagMaintenanceService,
-        VertexAiService,
         DocumentAiService,
         DocumentParsingProcessor,
         AiQueryProcessor,
@@ -106,7 +104,6 @@ import { AiBudgetMonitor } from './ai-budget-monitor.service';
         AiReportingService,
         RagObservabilityService,
         RagMaintenanceService,
-        VertexAiService,
         DocumentAiService,
     ],
 })

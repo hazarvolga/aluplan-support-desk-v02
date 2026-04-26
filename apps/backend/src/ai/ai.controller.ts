@@ -1,6 +1,6 @@
 import {
     Controller, Post, Get, Body, Param, Request, Query,
-    UseGuards, HttpCode, HttpStatus, Sse, MessageEvent,
+    UseGuards, HttpCode, HttpStatus, Sse, MessageEvent, NotFoundException,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -17,7 +17,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
-import { Public } from '../auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 
 
@@ -115,22 +115,36 @@ export class AiController {
         });
     }
 
-    @Public()
+    @UseGuards(JwtAuthGuard)
     @Get('status/:jobId')
     @ApiOperation({ summary: 'Check the status of a background AI job' })
     @ApiParam({ name: 'jobId', description: 'The unique ID of the AI query job' })
     @ApiResponse({ status: 200, description: 'Job status retrieved.' })
+    @ApiResponse({ status: 404, description: 'Job not found.' })
     async getJobStatus(@Param('jobId') jobId: string) {
         const job = await this.aiQueue.getJob(jobId);
-        if (!job) return { status: 'NOT_FOUND' };
+        if (!job) {
+            throw new NotFoundException({ message: 'Job not found' });
+        }
 
         const state = await job.getState();
+
+        const statusMap: Record<string, string> = {
+            waiting: 'PENDING',
+            delayed: 'PENDING',
+            active: 'PROCESSING',
+            completed: 'COMPLETED',
+            failed: 'FAILED',
+            unknown: 'PENDING',
+        };
+
+        const status = statusMap[state] ?? 'PENDING';
+
         return {
-            id: job.id,
-            status: state.toUpperCase(),
-            progress: job.progress,
-            result: job.returnvalue,
-            error: job.failedReason
+            jobId: job.id,
+            status,
+            ...(status === 'COMPLETED' && { result: job.returnvalue }),
+            ...(status === 'FAILED' && { error: job.failedReason }),
         };
     }
 

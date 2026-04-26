@@ -2,6 +2,7 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
 import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
+import { mapPartsToOpenAi } from './utils/map-parts-to-openai';
 
 @Injectable()
 export class GenericOpenAiService implements AiProvider {
@@ -129,9 +130,24 @@ export class GenericOpenAiService implements AiProvider {
         try {
             this.validateApiKey(baseUrl, apiKey);
 
-            // Generic OpenAI handles content as string usually, but multi-part content is becoming standard.
-            // For now we'll pass text-only from parts to stay safe with older standard providers.
-            const content = typeof prompt === 'string' ? prompt : prompt.map(p => p.text).join('\n');
+            // Use text-only shortcut when all parts are text; otherwise build multipart content array
+            let content: string | ReturnType<typeof mapPartsToOpenAi>;
+            if (typeof prompt === 'string') {
+                content = prompt;
+            } else {
+                const parts = prompt;
+                const allText = parts.every(p => p.text !== undefined && !p.inlineData && !p.fileData);
+                content = allText
+                    ? parts.map(p => p.text).join('\n')
+                    : mapPartsToOpenAi(parts, this.logger);
+            }
+
+            // Warn if image parts are sent to a known non-vision provider
+            const NON_VISION_HOSTS = ['deepseek.com', 'groq.com'];
+            const hasImages = Array.isArray(prompt) && prompt.some(p => p.inlineData || p.fileData);
+            if (hasImages && NON_VISION_HOSTS.some(h => baseUrl.includes(h))) {
+                this.logger.warn(`⚠️ [${this.getName()}] Image parts included but model may not support vision (baseUrl: ${baseUrl})`);
+            }
 
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
@@ -176,7 +192,25 @@ export class GenericOpenAiService implements AiProvider {
         try {
             this.validateApiKey(baseUrl, apiKey);
 
-            const attachmentStrings = attachments?.map(p => p.text).filter(Boolean).join('\n') || '';
+            // Build multipart content array with image_url blocks for image attachments
+            const attachmentBlocks = attachments && attachments.length > 0
+                ? mapPartsToOpenAi(attachments, this.logger)
+                : [];
+
+            // Warn if image parts are sent to a known non-vision provider
+            const NON_VISION_HOSTS = ['deepseek.com', 'groq.com'];
+            const hasImages = attachmentBlocks.some(b => b.type === 'image_url');
+            if (hasImages && NON_VISION_HOSTS.some(h => baseUrl.includes(h))) {
+                this.logger.warn(`⚠️ [${this.getName()}] Image parts included but model may not support vision (baseUrl: ${baseUrl})`);
+            }
+
+            const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
+                { type: 'text', text: `KULLANICI SORUSU:\n${userQuery}` },
+                ...attachmentBlocks,
+                {
+                    type: 'text', text: `\n\n---\n\nONAYLI BİLGİ KAYNAĞI:\n${kbContent}\n\nAbove information source is official. Answer the user question logicially based ONLY on the source. Do not hallucinate.`
+                }
+            ];
 
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
@@ -188,18 +222,7 @@ export class GenericOpenAiService implements AiProvider {
                     model,
                     messages: [
                         { role: 'system', content: systemPrompt },
-                        {
-                            role: 'user', content: `KULLANICI SORUSU:
-${userQuery}
-
-${attachmentStrings}
-
----
-
-ONAYLI BİLGİ KAYNAĞI:
-${kbContent}
-
-Above information source is official. Answer the user question logicially based ONLY on the source. Do not hallucinate.` }
+                        { role: 'user', content: userContent }
                     ],
                     temperature: 0.1,
                 }),

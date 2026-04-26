@@ -5,8 +5,148 @@ import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
-import { VertexAiService } from './vertex-ai.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+
+describe('AiService — VertexAI Removal', () => {
+    let service: AiService;
+
+    const mockOpenAiService = {
+        embed: jest.fn(),
+        generate: jest.fn(),
+        isAvailable: jest.fn(),
+        testConnection: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
+        setProvider: jest.fn(),
+        reformat: jest.fn(),
+        suggestCategory: jest.fn(),
+        summarizeTicket: jest.fn(),
+        analyzeSentiment: jest.fn(),
+        translate: jest.fn(),
+        getName: jest.fn().mockReturnValue('openai'),
+    };
+
+    const mockOllamaService = {
+        embed: jest.fn(),
+        generate: jest.fn(),
+        isAvailable: jest.fn(),
+        testConnection: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
+        reformat: jest.fn(),
+        suggestCategory: jest.fn(),
+        summarizeTicket: jest.fn(),
+        analyzeSentiment: jest.fn(),
+        translate: jest.fn(),
+        getName: jest.fn().mockReturnValue('ollama'),
+    };
+
+    const mockGenericOpenAiService = {
+        embed: jest.fn(),
+        generate: jest.fn(),
+        isAvailable: jest.fn(),
+        testConnection: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
+        setProvider: jest.fn(),
+        reformat: jest.fn(),
+        suggestCategory: jest.fn(),
+        summarizeTicket: jest.fn(),
+        analyzeSentiment: jest.fn(),
+        translate: jest.fn(),
+        getName: jest.fn().mockReturnValue('custom'),
+    };
+
+    const mockLlmApiService = {
+        embed: jest.fn(),
+        generate: jest.fn(),
+        isAvailable: jest.fn(),
+        testConnection: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
+        reformat: jest.fn(),
+        suggestCategory: jest.fn(),
+        summarizeTicket: jest.fn(),
+        analyzeSentiment: jest.fn(),
+        translate: jest.fn(),
+        getName: jest.fn().mockReturnValue('llmapi'),
+    };
+
+    const mockSettingsService = {
+        getValue: jest.fn(),
+    };
+
+    const mockEventEmitter = {
+        emit: jest.fn(),
+    };
+
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                AiService,
+                { provide: SettingsService, useValue: mockSettingsService },
+                { provide: OllamaService, useValue: mockOllamaService },
+                { provide: OpenAiService, useValue: mockOpenAiService },
+                { provide: GenericOpenAiService, useValue: mockGenericOpenAiService },
+                { provide: LlmApiService, useValue: mockLlmApiService },
+                { provide: EventEmitter2, useValue: mockEventEmitter },
+            ],
+        }).compile();
+
+        service = module.get<AiService>(AiService);
+        jest.clearAllMocks();
+    });
+
+    it('getProviderByName("vertex") returns openai provider and emits a warn log', async () => {
+        // Arrange: spy on the logger warn method
+        const loggerWarnSpy = jest.spyOn((service as any).logger, 'warn');
+
+        // Act
+        const provider = await service.getProviderByName('vertex');
+
+        // Assert: returned provider is the OpenAiService mock instance
+        expect(provider).toBe(mockOpenAiService);
+
+        // Assert: logger.warn was called with a message containing 'vertex' and 'deprecated'
+        expect(loggerWarnSpy).toHaveBeenCalledWith(
+            expect.stringContaining('vertex'),
+        );
+        expect(loggerWarnSpy).toHaveBeenCalledWith(
+            expect.stringContaining('deprecated'),
+        );
+    });
+
+    it('getHealthStatus() does NOT contain "vertex" key in providers', async () => {
+        // Arrange: mock settings to return 'openai' for chat provider
+        mockSettingsService.getValue.mockImplementation(async (key: string) => {
+            if (key === 'ai.chat_provider') return 'openai';
+            if (key === 'ai.circuit_breaker.manual_off') return 'false';
+            return null;
+        });
+
+        // All provider testConnection mocks already return { success: true, message: 'ok' }
+
+        // Act
+        const result = await service.getHealthStatus();
+
+        // Assert: 'vertex' key is absent from providers
+        expect(result.providers).not.toHaveProperty('vertex');
+
+        // Sanity check: known providers are present
+        expect(result.providers).toHaveProperty('openai');
+        expect(result.providers).toHaveProperty('ollama');
+    });
+
+    it('NestJS test module compiles successfully without VertexAiService', async () => {
+        // Act: create a fresh module — no VertexAiService provided
+        const moduleFactory = Test.createTestingModule({
+            providers: [
+                AiService,
+                { provide: SettingsService, useValue: mockSettingsService },
+                { provide: OllamaService, useValue: mockOllamaService },
+                { provide: OpenAiService, useValue: mockOpenAiService },
+                { provide: GenericOpenAiService, useValue: mockGenericOpenAiService },
+                { provide: LlmApiService, useValue: mockLlmApiService },
+                { provide: EventEmitter2, useValue: mockEventEmitter },
+            ],
+        });
+
+        // Assert: module compiles without DI errors (no VertexAiService dependency)
+        await expect(moduleFactory.compile()).resolves.toBeDefined();
+    });
+});
 
 describe.skip('AiService [TODO: mocks need update for current implementation]', () => {
     let service: AiService;
@@ -41,7 +181,6 @@ describe.skip('AiService [TODO: mocks need update for current implementation]', 
                 { provide: OpenAiService, useValue: mockOtherProviders },
                 { provide: GenericOpenAiService, useValue: mockOtherProviders },
                 { provide: LlmApiService, useValue: mockOtherProviders },
-                { provide: VertexAiService, useValue: mockOtherProviders },
                 { provide: EventEmitter2, useValue: { emit: jest.fn() } },
             ],
         }).compile();

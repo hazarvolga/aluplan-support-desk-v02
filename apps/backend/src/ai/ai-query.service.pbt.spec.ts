@@ -22,6 +22,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { StorageService } from '../common/services/storage.service';
 
 const LOW_CONFIDENCE_THRESHOLD = 0.72;
 
@@ -68,6 +69,7 @@ describe('AiQueryService.streamQuery() — Property-Based Tests', () => {
                 { provide: AiDiagnosisService, useValue: { analyze: jest.fn().mockResolvedValue({ categoryNames: [], matchedKeywords: [] }) } },
                 { provide: DocumentParserService, useValue: { parse: jest.fn() } },
                 { provide: MetricsService, useValue: { increment: jest.fn(), gauge: jest.fn(), recordCacheOp: jest.fn() } },
+                { provide: StorageService, useValue: { getFile: jest.fn().mockResolvedValue(null) } },
                 { provide: getQueueToken('ai-query-processing'), useValue: {} },
             ],
         }).compile();

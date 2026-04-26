@@ -13,6 +13,7 @@ import { RagObservabilityService } from './rag-observability.service';
 import { AiDiagnosisService } from './ai-diagnosis.service';
 import { DocumentParserService } from '../common/services/document-parser.service';
 import { MetricsService } from '../metrics/metrics.service';
+import { StorageService } from '../common/services/storage.service';
 import { getQueueToken } from '@nestjs/bullmq';
 
 
@@ -22,6 +23,8 @@ describe('AiQueryService', () => {
     let aiService: any;
     let embeddingService: any;
     let redis: any;
+    let diagnosisService: any;
+    let storageService: any;
 
     const mockInteraction = { id: 'int-1', confidence: 'HIGH' };
 
@@ -43,6 +46,7 @@ describe('AiQueryService', () => {
         knowledgeArticle: { count: jest.fn() },
         faqEntry: { count: jest.fn() },
         trainingQueue: { upsert: jest.fn() },
+        aiShiftDetection: { create: jest.fn().mockResolvedValue({ id: 'shift-id' }) },
     };
 
     const mockAiService = {
@@ -94,10 +98,15 @@ describe('AiQueryService', () => {
 
     const mockLangfuseService = {
         trace: jest.fn().mockResolvedValue(undefined),
+        addEvent: jest.fn().mockResolvedValue(undefined),
     };
 
     const mockRagObservabilityService = {
         recordQuery: jest.fn(),
+    };
+
+    const mockStorageService = {
+        getFile: jest.fn(),
     };
 
     const mockEventEmitter = {
@@ -119,8 +128,9 @@ describe('AiQueryService', () => {
                 { provide: RedisService, useValue: mockRedisService },
                 { provide: RagObservabilityService, useValue: mockRagObservabilityService },
                 { provide: AiDiagnosisService, useValue: { analyze: jest.fn().mockResolvedValue({ categoryNames: [], matchedKeywords: [] }) } },
-                { provide: DocumentParserService, useValue: { parse: jest.fn() } },
+                { provide: DocumentParserService, useValue: { parse: jest.fn(), extractText: jest.fn().mockResolvedValue('') } },
                 { provide: MetricsService, useValue: { increment: jest.fn(), gauge: jest.fn(), recordCacheOp: jest.fn() } },
+                { provide: StorageService, useValue: mockStorageService },
                 { provide: getQueueToken('ai-query-processing'), useValue: {} },
             ],
         }).compile();
@@ -130,6 +140,8 @@ describe('AiQueryService', () => {
         aiService = module.get<AiService>(AiService);
         embeddingService = module.get<EmbeddingService>(EmbeddingService);
         redis = module.get<RedisService>(RedisService);
+        diagnosisService = module.get<AiDiagnosisService>(AiDiagnosisService);
+        storageService = module.get<StorageService>(StorageService);
 
         jest.clearAllMocks();
         mockPrismaService.aiInteraction.create.mockResolvedValue(mockInteraction);
@@ -312,6 +324,191 @@ describe('AiQueryService', () => {
                 where: { id: 'int-1' },
                 data: { isAccepted: true, editedResponse: 'edited response' },
             });
+        });
+    });
+
+    describe('queryInternal — Shift Detection Block', () => {
+        /** Shared helper: set up a HIGH-confidence embedding result so the pipeline
+         *  reaches the interaction-creation step and returns a valid AiQueryResult. */
+        function setupHighConfidenceEmbedding() {
+            mockPrismaService.user.findUnique.mockResolvedValue(null);
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [{
+                    articleId: 'art-1', sourceType: 'ARTICLE', title: 'Test',
+                    content: 'Content', similarity: 0.95, confidence: 'HIGH',
+                }],
+                diagnostics: { topScore: 0.95, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue({ response: 'AI answer', model: 'gpt-4o-mini' });
+            mockAiService.generate.mockResolvedValue('{"rankings": [{"id": 0, "score": 90}]}');
+        }
+
+        it('should still return a valid AiQueryResult when DB write throws', async () => {
+            // Arrange
+            mockPrismaService.aiShiftDetection.create.mockRejectedValue(new Error('DB error'));
+            jest.spyOn(diagnosisService, 'analyze').mockResolvedValue({
+                isProblemShift: true,
+                categoryNames: [],
+                matchedKeywords: ['keyword1'],
+                productName: 'Test',
+            } as any);
+            setupHighConfidenceEmbedding();
+
+            // Act
+            const result = await service.queryInternal({
+                userQuery: 'test',
+                history: [{ role: 'user', content: 'prev' }],
+            });
+
+            // Assert — pipeline must complete despite DB failure
+            expect(result).toBeDefined();
+            expect(result.query).toBeDefined();
+            expect(result.confidence).toBeDefined();
+            expect(result.interactionId).toBeDefined();
+        });
+
+        it('should still return a valid AiQueryResult when Langfuse addEvent throws', async () => {
+            // Arrange
+            mockLangfuseService.addEvent.mockRejectedValue(new Error('Langfuse error'));
+            jest.spyOn(diagnosisService, 'analyze').mockResolvedValue({
+                isProblemShift: true,
+                categoryNames: [],
+                matchedKeywords: ['keyword1'],
+                productName: 'Test',
+            } as any);
+            setupHighConfidenceEmbedding();
+
+            // Act
+            const result = await service.queryInternal({
+                userQuery: 'test',
+                history: [{ role: 'user', content: 'prev' }],
+            });
+
+            // Assert — pipeline must complete despite Langfuse failure
+            expect(result).toBeDefined();
+            expect(result.query).toBeDefined();
+            expect(result.confidence).toBeDefined();
+            expect(result.interactionId).toBeDefined();
+        });
+
+        it('should NOT call prisma.aiShiftDetection.create when isProblemShift=false', async () => {
+            // Arrange
+            jest.spyOn(diagnosisService, 'analyze').mockResolvedValue({
+                isProblemShift: false,
+                categoryNames: [],
+                matchedKeywords: [],
+                productName: 'Test',
+            } as any);
+            setupHighConfidenceEmbedding();
+
+            // Act
+            await service.queryInternal({
+                userQuery: 'test',
+                history: [{ role: 'user', content: 'prev' }],
+            });
+
+            // Assert — shift log must NOT be written when no shift detected
+            expect(mockPrismaService.aiShiftDetection.create).not.toHaveBeenCalled();
+        });
+
+        it('should resolve with a valid AiQueryResult when options.history is undefined', async () => {
+            // Arrange — no history provided; history clearing step should be skipped
+            jest.spyOn(diagnosisService, 'analyze').mockResolvedValue({
+                isProblemShift: true,
+                categoryNames: [],
+                matchedKeywords: ['keyword1'],
+                productName: 'Test',
+            } as any);
+            setupHighConfidenceEmbedding();
+
+            // Act — no history field passed
+            const result = await service.queryInternal({ userQuery: 'test' });
+
+            // Assert — pipeline must not crash and must return a valid result
+            expect(result).toBeDefined();
+            expect(result.query).toBeDefined();
+            expect(result.confidence).toBeDefined();
+            expect(result.interactionId).toBeDefined();
+        });
+    });
+
+    describe('normalizeImageAttachments', () => {
+        // Access the private method via type cast
+        const callNormalize = (svc: AiQueryService, attachments: any[]) =>
+            (svc as any).normalizeImageAttachments(attachments);
+
+        it('URL-based image → StorageService.getFile() called, result is inlineData part', async () => {
+            const fakeBuffer = Buffer.from('fake-image-data');
+            mockStorageService.getFile.mockResolvedValue(fakeBuffer);
+
+            const result = await callNormalize(service, [
+                { mimeType: 'image/png', url: 'uploads/test.png' },
+            ]);
+
+            expect(mockStorageService.getFile).toHaveBeenCalledWith('uploads/test.png');
+            expect(result).toHaveLength(1);
+            expect(result[0].inlineData).toBeDefined();
+            expect(result[0].inlineData.mimeType).toBe('image/png');
+            expect(result[0].inlineData.data).toBe(fakeBuffer.toString('base64'));
+            expect(result[0].fileData).toBeUndefined();
+        });
+
+        it('StorageService.getFile() throws → attachment skipped, no exception propagated', async () => {
+            mockStorageService.getFile.mockRejectedValue(new Error('S3 connection failed'));
+
+            const result = await callNormalize(service, [
+                { mimeType: 'image/jpeg', url: 'uploads/error.jpg' },
+            ]);
+
+            expect(result).toHaveLength(0);
+        });
+
+        it('StorageService.getFile() returns null → attachment skipped', async () => {
+            mockStorageService.getFile.mockResolvedValue(null);
+
+            const result = await callNormalize(service, [
+                { mimeType: 'image/png', url: 'uploads/missing.png' },
+            ]);
+
+            expect(result).toHaveLength(0);
+        });
+
+        it('Already-data attachment → pass-through, StorageService NOT called', async () => {
+            const base64Data = Buffer.from('inline-image').toString('base64');
+
+            const result = await callNormalize(service, [
+                { mimeType: 'image/png', data: base64Data },
+            ]);
+
+            expect(mockStorageService.getFile).not.toHaveBeenCalled();
+            expect(result).toHaveLength(1);
+            expect(result[0].inlineData).toEqual({ mimeType: 'image/png', data: base64Data });
+        });
+
+        it('Mixed array (image with URL + non-image) → correct inlineData count, zero fileData parts', async () => {
+            const fakeBuffer = Buffer.from('image-bytes');
+            mockStorageService.getFile.mockResolvedValue(fakeBuffer);
+
+            const result = await callNormalize(service, [
+                { mimeType: 'image/png', url: 'uploads/img.png' },
+                { mimeType: 'application/pdf', url: 'uploads/doc.pdf' },
+                { mimeType: 'text/plain', data: 'dGV4dA==' },
+            ]);
+
+            // Only the image/png with url should produce an inlineData part
+            expect(result).toHaveLength(1);
+            expect(result[0].inlineData).toBeDefined();
+            expect(result.every(p => !p.fileData)).toBe(true);
+        });
+
+        it('StorageService.getFile() returns empty buffer → attachment skipped', async () => {
+            mockStorageService.getFile.mockResolvedValue(Buffer.alloc(0));
+
+            const result = await callNormalize(service, [
+                { mimeType: 'image/png', url: 'uploads/empty.png' },
+            ]);
+
+            expect(result).toHaveLength(0);
         });
     });
 });

@@ -4,7 +4,13 @@ import { Job } from 'bullmq';
 import { AiQueryService } from './ai-query.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 
-@Processor('ai-query-processing', { concurrency: 2 })
+@Processor('ai-query-processing', {
+    concurrency: 2,
+    limiter: {
+        max: parseInt(process.env.AI_QUEUE_RATE_MAX ?? '10', 10),
+        duration: parseInt(process.env.AI_QUEUE_RATE_DURATION_MS ?? '1000', 10),
+    },
+})
 export class AiQueryProcessor extends WorkerHost {
     private readonly logger = new Logger(AiQueryProcessor.name);
 

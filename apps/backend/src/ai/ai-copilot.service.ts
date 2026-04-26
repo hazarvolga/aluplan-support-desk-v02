@@ -134,6 +134,12 @@ export class AiCopilotService {
                 };
             });
 
+        // Shift sonrası messages kırpma — sadece son mesajı tut
+        if (diagnosis.isProblemShift && messages.length > 1) {
+            this.logger.warn('🔄 Copilot: Problem shift detected — messages trimmed to last message only');
+            messages.splice(0, messages.length - 1);
+        }
+
         // 6. Build final context
         const context = await this.promptContextBuilder.buildContext({
             userId: ticket.creator?.id,

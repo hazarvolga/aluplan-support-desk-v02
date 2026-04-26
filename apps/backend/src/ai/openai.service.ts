@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
 import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
+import { mapPartsToOpenAi, OpenAiContentBlock } from './utils/map-parts-to-openai';
 
 @Injectable()
 export class OpenAiService implements AiProvider {
@@ -79,17 +80,9 @@ export class OpenAiService implements AiProvider {
         }
     }
 
-    private mapParts(prompt: string | AiPart[]): any {
+    private mapParts(prompt: string | AiPart[]): string | OpenAiContentBlock[] {
         if (typeof prompt === 'string') return prompt;
-        return prompt.map(p => {
-            if (p.inlineData) {
-                return {
-                    type: 'image_url',
-                    image_url: { url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}` }
-                };
-            }
-            return { type: 'text', text: p.text || '' };
-        });
+        return mapPartsToOpenAi(prompt, this.logger);
     }
 
     async generate(prompt: string | AiPart[], timeout = 30_000): Promise<string | null> {

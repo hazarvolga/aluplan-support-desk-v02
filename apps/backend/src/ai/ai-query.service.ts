@@ -122,6 +122,7 @@ Use strict headers:
 `;
 import { DocumentParserService } from '../common/services/document-parser.service';
 import { MetricsService } from '../metrics/metrics.service';
+import { StorageService } from '../common/services/storage.service';
 
 @Injectable()
 export class AiQueryService {
@@ -141,6 +142,7 @@ export class AiQueryService {
         private readonly documentParser: DocumentParserService,
         @InjectQueue('ai-query-processing') private readonly aiQueue: Queue,
         private readonly metrics: MetricsService,
+        private readonly storage: StorageService,
     ) { }
 
     async query(options: AiQueryOptions): Promise<any> {
@@ -219,20 +221,56 @@ export class AiQueryService {
         const adaptiveThreshold = this.calculateAdaptiveThreshold(userQuery, diagnosisForThreshold, isStaff);
         this.logger.debug(`🎯 Adaptive threshold calculated: ${adaptiveThreshold.toFixed(3)} (Query: "${userQuery.slice(0, 30)}...", isStaff: ${isStaff})`);
 
+        // --- SHIFT DETECTION: DB log + history clear + Langfuse event ---
+        if (diagnosisForThreshold.isProblemShift) {
+            // 1. DB log (non-blocking)
+            try {
+                await this.prisma.aiShiftDetection.create({
+                    data: {
+                        userId: userId ?? null,
+                        previousKeywords: options.history?.flatMap(h =>
+                            diagnosisForThreshold.matchedKeywords.filter(k =>
+                                h.content.toLowerCase().includes(k.toLowerCase())
+                            )
+                        ) ?? [],
+                        newKeywords: diagnosisForThreshold.matchedKeywords,
+                        historyLength: options.history?.length ?? 0,
+                        confirmed: false,
+                    }
+                });
+            } catch (shiftLogErr) {
+                this.logger.error('⚠️ Failed to log shift detection to DB', (shiftLogErr as Error).message);
+            }
+
+            // 2. History temizleme
+            if (options.history && options.history.length > 0) {
+                this.logger.warn('🔄 Problem shift detected — history cleared for clean context');
+                options.history = [];
+            }
+
+            // 3. Langfuse event (non-blocking)
+            try {
+                const traceId = `shift-${Date.now()}-${userId ?? 'guest'}`;
+                await this.langfuse.addEvent(traceId, 'problem-shift', {
+                    previousKeywords: diagnosisForThreshold.matchedKeywords,
+                    newKeywords: diagnosisForThreshold.matchedKeywords,
+                    historyLength: options.history?.length ?? 0,
+                    userId: userId ?? null,
+                });
+            } catch (langfuseErr) {
+                this.logger.error('⚠️ Failed to write shift event to Langfuse', (langfuseErr as Error).message);
+            }
+        }
+        // --- END SHIFT DETECTION ---
+
         let expandedQuery = userQuery;
 
         // Parse Document Attachments
         let parsedDocumentTexts = '';
-        const aiParts: AiPart[] = [];
+        const aiParts: AiPart[] = await this.normalizeImageAttachments(attachments ?? []);
         if (attachments && attachments.length > 0) {
             for (const att of attachments) {
-                if (att.mimeType?.startsWith('image/')) {
-                    if (att.url) {
-                        aiParts.push({ fileData: { mimeType: att.mimeType || 'image/png', fileUri: att.url } });
-                    } else if (att.data) {
-                        aiParts.push({ inlineData: { mimeType: att.mimeType || 'image/png', data: att.data } });
-                    }
-                } else if (att.data) {
+                if (!att.mimeType?.startsWith('image/') && att.data) {
                     // Try parsing non-image base64 directly
                     try {
                         const buffer = Buffer.from(att.data, 'base64');
@@ -682,11 +720,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
             usedPrompt = finalPrompt;
 
-            const aiParts: AiPart[] = attachments?.map(att => {
-                if (att.url) return { fileData: { mimeType: att.mimeType || 'image/png', fileUri: att.url } };
-                if (att.data) return { inlineData: { mimeType: att.mimeType || 'image/png', data: att.data } };
-                return { text: att.text || '' };
-            }).filter(p => !!p.fileData || !!p.inlineData || !!p.text) || [];
+            const aiParts: AiPart[] = await this.normalizeImageAttachments(attachments ?? []);
 
             const stream = this.ai.streamReformat(finalPrompt, userQuery, results.slice(0, 10).map(r => r.content).join('\n\n'), aiParts);
             for await (const chunk of stream) {
@@ -755,6 +789,42 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         await this.redis.set(cacheKey, fullAnswer, 3600);
 
         yield { done: true, interactionId: interaction.id, suggestTicket: (confidence as LocalConfidenceBand) === 'LOW' || confidence === 'NO_MATCH' };
+    }
+
+    /**
+     * Fetches URL-based image attachments via StorageService and converts them
+     * to inlineData AiParts. Already-inlineData parts (with `data` field) are
+     * passed through unchanged. Failed fetches are skipped with a WARN log.
+     *
+     * @param attachments - Raw attachment records from the ticket.
+     * @returns Array of inlineData AiParts (zero fileData parts).
+     */
+    private async normalizeImageAttachments(
+        attachments: Array<{ mimeType?: string; url?: string; data?: string; fileName?: string }>,
+    ): Promise<AiPart[]> {
+        const result: AiPart[] = [];
+        for (const att of attachments) {
+            if (!att.mimeType?.startsWith('image/')) continue;
+
+            if (att.data) {
+                // Already inline — pass through without fetching
+                result.push({ inlineData: { mimeType: att.mimeType, data: att.data } });
+            } else if (att.url) {
+                try {
+                    const buffer = await this.storage.getFile(att.url);
+                    if (buffer && buffer.length > 0) {
+                        const base64 = buffer.toString('base64');
+                        this.logger.debug(`📎 Image attachment fetched: url=${att.url.substring(0, 100)}, mimeType=${att.mimeType}, size=${buffer.length}B`);
+                        result.push({ inlineData: { mimeType: att.mimeType, data: base64 } });
+                    } else {
+                        this.logger.warn(`⚠️ Image attachment returned empty buffer: url=${att.url}`);
+                    }
+                } catch (e) {
+                    this.logger.warn(`⚠️ Failed to fetch image attachment: url=${att.url?.substring(0, 100)}, error=${(e as Error).message}`);
+                }
+            }
+        }
+        return result;
     }
 
     private async isStaff(userId?: string | null): Promise<boolean> {
@@ -1427,14 +1497,11 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
 
         let expandedQuery = userQuery;
         let parsedDocs = '';
-        const aiParts: AiPart[] = [];
+        const aiParts: AiPart[] = await this.normalizeImageAttachments(attachments ?? []);
 
         if (attachments) {
             for (const att of attachments) {
-                if (att.mimeType?.startsWith('image/')) {
-                    if (att.url) aiParts.push({ fileData: { mimeType: att.mimeType, fileUri: att.url } });
-                    else if (att.data) aiParts.push({ inlineData: { mimeType: att.mimeType, data: att.data } });
-                } else if (att.data) {
+                if (!att.mimeType?.startsWith('image/') && att.data) {
                     try {
                         const buffer = Buffer.from(att.data, 'base64');
                         const text = await this.documentParser.extractText(att.mimeType || 'application/octet-stream', buffer);

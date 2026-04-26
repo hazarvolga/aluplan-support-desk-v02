@@ -17,6 +17,7 @@ import { DocumentParserService } from '../../common/services/document-parser.ser
 import { MetricsService } from '../../metrics/metrics.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { RagObservabilityService } from '../rag-observability.service';
+import { StorageService } from '../../common/services/storage.service';
 
 const mockEmbeddingService = {
     search: jest.fn(),
@@ -103,6 +104,7 @@ describe('AiQueryService', () => {
                 { provide: AiDiagnosisService, useValue: { analyze: jest.fn().mockResolvedValue({ categoryNames: [], matchedKeywords: [] }) } },
                 { provide: DocumentParserService, useValue: { parse: jest.fn() } },
                 { provide: MetricsService, useValue: { increment: jest.fn(), gauge: jest.fn(), recordCacheOp: jest.fn() } },
+                { provide: StorageService, useValue: { getFile: jest.fn().mockResolvedValue(null) } },
                 { provide: getQueueToken('ai-query-processing'), useValue: {} },
                 { provide: RagObservabilityService, useValue: { recordQuery: jest.fn(), recordFeedback: jest.fn() } },
             ],

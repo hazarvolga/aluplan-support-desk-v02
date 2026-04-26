@@ -51,4 +51,22 @@ export class LangfuseService implements OnModuleInit {
             return null;
         }
     }
+
+    async addEvent(
+        traceId: string,
+        eventName: string,
+        payload: Record<string, unknown>
+    ): Promise<void> {
+        if (!this.langfuse) return;
+        try {
+            const trace = this.langfuse.trace({ id: traceId });
+            trace.event({
+                name: eventName,
+                input: payload,
+            });
+            await this.langfuse.flushAsync();
+        } catch (error) {
+            this.logger.error(`Langfuse addEvent error [${eventName}]`, (error as Error).stack);
+        }
+    }
 }

@@ -122,4 +122,77 @@ describe('AiCopilotService', () => {
             expect(result.draft).toContain('AI_ERROR');
         });
     });
+
+    describe('generateDraft — Shift Detection Messages Trimming', () => {
+        const mockTicketWith3Messages = {
+            id: 'tik-1',
+            ticketNumber: 'SUP-001',
+            subject: 'Subject',
+            description: 'Desc',
+            productId: null,
+            hotinfoSnapshot: null,
+            messages: [
+                { id: 'm3', message: 'Third message', attachments: [], sender: { fullName: 'User' } },
+                { id: 'm2', message: 'Second message', attachments: [], sender: { fullName: 'User' } },
+                { id: 'm1', message: 'First message', attachments: [], sender: null },
+            ],
+            creator: { id: 'u1', language: 'tr', customerProfile: { hotinfoData: {} } },
+            interaction: null,
+        };
+
+        beforeEach(() => {
+            mockAi.generate.mockResolvedValue('Generated draft response');
+        });
+
+        it('isProblemShift=true and messages.length > 1 → messages trimmed to last message only', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue(mockTicketWith3Messages);
+            mockDiagnosis.analyze.mockResolvedValue({ isProblemShift: true });
+
+            let capturedMessages: any[] | undefined;
+            mockPromptBuilder.buildContext.mockImplementation((args: any) => {
+                capturedMessages = args.messages;
+                return Promise.resolve('Mock Context');
+            });
+
+            await service.generateDraft('tik-1');
+
+            expect(capturedMessages).toHaveLength(1);
+        });
+
+        it('isProblemShift=false → messages unchanged', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue(mockTicketWith3Messages);
+            mockDiagnosis.analyze.mockResolvedValue({ isProblemShift: false });
+
+            let capturedMessages: any[] | undefined;
+            mockPromptBuilder.buildContext.mockImplementation((args: any) => {
+                capturedMessages = args.messages;
+                return Promise.resolve('Mock Context');
+            });
+
+            await service.generateDraft('tik-1');
+
+            expect(capturedMessages).toHaveLength(3);
+        });
+
+        it('messages.length === 1 → splice NOT called (no trimming needed)', async () => {
+            const mockTicketWith1Message = {
+                ...mockTicketWith3Messages,
+                messages: [
+                    { id: 'm1', message: 'Only message', attachments: [], sender: { fullName: 'User' } },
+                ],
+            };
+            mockPrisma.ticket.findUnique.mockResolvedValue(mockTicketWith1Message);
+            mockDiagnosis.analyze.mockResolvedValue({ isProblemShift: true });
+
+            let capturedMessages: any[] | undefined;
+            mockPromptBuilder.buildContext.mockImplementation((args: any) => {
+                capturedMessages = args.messages;
+                return Promise.resolve('Mock Context');
+            });
+
+            await service.generateDraft('tik-1');
+
+            expect(capturedMessages).toHaveLength(1);
+        });
+    });
 });

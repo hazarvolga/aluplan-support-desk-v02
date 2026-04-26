@@ -5,7 +5,6 @@ import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
-import { VertexAiService } from './vertex-ai.service';
 import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
 import CircuitBreaker from 'opossum';
 
@@ -20,7 +19,6 @@ export class AiService implements AiProvider {
         private readonly openai: OpenAiService,
         private readonly custom: GenericOpenAiService,
         private readonly llmapi: LlmApiService,
-        private readonly vertex: VertexAiService,
         private readonly eventEmitter: EventEmitter2,
     ) { }
 
@@ -88,7 +86,7 @@ export class AiService implements AiProvider {
                 } else {
                     lastError = new Error('Provider returned null');
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
                 lastError = err;
                 this.logger.warn(`⚠️ API Error on Provider [${pName}]: ${err}`);
 
@@ -106,12 +104,15 @@ export class AiService implements AiProvider {
 
         this.logger.error(`🚨 SYSTEM ALERT: All AI providers failed for task (${task}).`);
         if (lastError instanceof InternalServerErrorException) throw lastError;
-        throw new InternalServerErrorException(lastError?.message || 'All AI providers failed');
+        throw new InternalServerErrorException((lastError instanceof Error ? lastError.message : undefined) || 'All AI providers failed');
     }
 
     public async getProviderByName(providerName: string | null): Promise<AiProvider | null> {
         if (providerName === 'openai') return this.openai;
-        if (providerName === 'vertex') return this.vertex;
+        if (providerName === 'vertex') {
+            this.logger.warn('⚠️ Provider "vertex" is deprecated. Falling back to "openai".');
+            return this.openai;
+        }
         if (providerName === 'custom' || providerName === 'xai' || providerName === 'deepseek' || providerName === 'groq') {
             this.custom.setProvider(providerName as any);
             return this.custom;
@@ -274,7 +275,7 @@ export class AiService implements AiProvider {
         const providerName = await this.settings.getValue('ai.chat_provider');
         if (providerName === 'ollama') return (await this.settings.getValue('ai.ollama.chat_model')) || 'llama3';
         if (providerName === 'openai') return (await this.settings.getValue('ai.openai.chat_model')) || 'gpt-4o-mini';
-        if (providerName === 'llmapi' || providerName === 'vertex') {
+        if (providerName === 'llmapi') {
             return (await this.settings.getValue(`ai.${providerName}.chat_model`)) || 'gemini-1.5-flash';
         }
         return (await this.settings.getValue(`ai.${providerName}.chat_model`)) || 'unknown';
@@ -298,8 +299,24 @@ export class AiService implements AiProvider {
 
     async reformat(systemPrompt: string, userQuery: string, sourceContext: string, attachments?: AiPart[], task: string = 'reformatting'): Promise<{ response: string; model: string } | null> {
         return this.executeWithFallback('chat', task, async (provider) => {
+            // First attempt: full parts including images
             const result = await provider.reformat(systemPrompt, userQuery, sourceContext, attachments);
-            return result?.response ? result : null;
+            if (result?.response) return result;
+
+            // If null and there were image parts, retry with text-only parts (graceful degradation)
+            const imageParts = attachments?.filter(p => p.inlineData || p.fileData) ?? [];
+            if (imageParts.length > 0) {
+                const textOnlyAttachments = attachments?.filter(p => !p.inlineData && !p.fileData);
+                this.logger.log(JSON.stringify({
+                    provider: provider.getName(),
+                    droppedImageCount: imageParts.length,
+                    retryWithTextOnly: true,
+                }));
+                const retryResult = await provider.reformat(systemPrompt, userQuery, sourceContext, textOnlyAttachments);
+                if (retryResult?.response) return retryResult;
+            }
+
+            return null;
         });
     }
 
@@ -417,7 +434,6 @@ ${content}
                 case 'ollama': return await this.ollama.testConnection();
                 case 'openai': return await this.openai.testConnection();
                 case 'llmapi': return await this.llmapi.testConnection();
-                case 'vertex': return await this.vertex.testConnection();
                 case 'xai':
                     this.custom.setProvider('xai');
                     return await this.custom.testConnection();
@@ -433,9 +449,9 @@ ${content}
                 default:
                     return { success: false, message: 'Bilinmeyen AI sağlayıcısı.' };
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             this.logger.error(`Error testing provider ${providerName}:`, e);
-            return { success: false, message: `Beklenmeyen bir hata oluştu: ${e.message}` };
+            return { success: false, message: `Beklenmeyen bir hata oluştu: ${(e as Error).message}` };
         }
     }
 
