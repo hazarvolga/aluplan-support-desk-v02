@@ -602,7 +602,6 @@ test.describe('Proactive Chat E2E Tests', () => {
             await customer2Context.close();
         }
     });
-});
 
     test('7. Disconnect Timeout (60s)', async ({ browser }) => {
         const agentContext = await browser.newContext();
