@@ -133,7 +133,7 @@ export const api = {
                 body: JSON.stringify({ email, password }),
             }),
         lookup: (email: string) =>
-            request<{ action: 'CLAIM' | 'NEW' | 'NEW_MATCHED_COMPANY'; companyName: string | null }>('/auth/lookup', {
+            request<{ action: 'CLAIM' | 'NEW' | 'NEW_MATCHED_COMPANY' | 'CRM_REJECTED' | 'DELETED' | 'INACTIVE'; companyName: string | null; errorMessage?: string; status?: string }>('/auth/lookup', {
                 method: 'POST',
                 body: JSON.stringify({ email }),
             }),

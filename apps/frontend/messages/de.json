@@ -139,7 +139,13 @@
       "error_customer_no": "Ungültiges Kundennummernformat. Beispiel: C300 XX XX XX",
       "error_register_failed": "Bei der Registrierung ist ein Fehler aufgetreten.",
       "error_default": "Ein Fehler ist aufgetreten.",
-      "error_reset_failed": "Beim Zurücksetzen des Passworts ist ein Fehler aufgetreten."
+      "error_reset_failed": "Beim Zurücksetzen des Passworts ist ein Fehler aufgetreten.",
+      "crm_rejected_title": "Zugang nicht verfügbar",
+      "crm_rejected_desc": "Diese E-Mail-Adresse ist nicht im Aluplan-Kundensystem registriert. Der Zugang zum Support-Portal steht nur bestehenden Aluplan-Kunden zur Verfügung.",
+      "crm_rejected_cta": "Um mehr über Aluplan-Produkte und Abonnementoptionen zu erfahren, wenden Sie sich bitte an unser Vertriebsteam.",
+      "crm_rejected_sales_btn": "Vertriebsteam kontaktieren",
+      "crm_rejected_sales_email": "sales@aluplan.com.tr",
+      "crm_rejected_try_different": "Eine andere E-Mail ausprobieren"
     },
     "reset_password": {
       "new_password_label": "NEUES PASSWORT",

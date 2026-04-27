@@ -69,15 +69,11 @@ export default function RegisterPage() {
             const res = await api.auth.lookup(form.email);
             setLookupResult(res);
 
-            if (res.action === 'CRM_REJECTED') {
-                setError(res.errorMessage || 'Bu e-posta adresi sistemimizde kayıtlı değil.');
-                return;
-            }
-
             if (res.action === 'NEW_MATCHED_COMPANY' && res.companyName) {
                 setForm(prev => ({ ...prev, company: res.companyName! }));
             }
 
+            // Always advance to step 2 — each action has its own UI block
             setStep(2);
             setResetSent(false);
         } catch (err: any) {
@@ -321,15 +317,38 @@ export default function RegisterPage() {
                             {/* STEP 2: CRM REJECTED STATE */}
                             {step === 2 && lookupResult?.action === 'CRM_REJECTED' && (
                                 <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-5 pt-2">
-                                    <div className="p-5 rounded-xl bg-red-500/10 border border-red-500/20 text-center shadow-inner">
-                                        <h3 className="text-lg font-medium text-white mb-2">Kayıt Yapılamıyor</h3>
+                                    <div className="p-5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-center shadow-inner space-y-3">
+                                        <div className="w-12 h-12 mx-auto rounded-full bg-orange-500/20 flex items-center justify-center">
+                                            <svg className="w-6 h-6 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-white">{t('crm_rejected_title')}</h3>
                                         <p className="text-sm text-slate-300 leading-relaxed">
-                                            {lookupResult.errorMessage || 'Bu e-posta adresi sistemimizde kayıtlı değil.'}
+                                            {t('crm_rejected_desc')}
                                         </p>
+                                        <div className="pt-1 border-t border-orange-500/20">
+                                            <p className="text-xs text-slate-400 leading-relaxed">
+                                                {t('crm_rejected_cta')}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <Button type="button" variant="ghost" className="w-full text-slate-400 hover:text-white h-11"
-                                        onClick={() => { setStep(1); setLookupResult(null); }}>
-                                        Farklı e-posta dene
+                                    <a
+                                        href={`mailto:${t('crm_rejected_sales_email')}`}
+                                        className="flex items-center justify-center gap-2 w-full h-11 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold transition-colors"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                        {t('crm_rejected_sales_btn')}
+                                    </a>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="w-full text-slate-400 hover:text-white h-11"
+                                        onClick={() => { setStep(1); setLookupResult(null); setError(''); }}
+                                    >
+                                        {t('crm_rejected_try_different')}
                                     </Button>
                                 </div>
                             )}

@@ -139,7 +139,13 @@
       "error_customer_no": "Müşteri No formatı geçersiz. Örnek: C300 XX XX XX",
       "error_register_failed": "Kayıt sırasında bir hata oluştu.",
       "error_default": "Bir hata oluştu.",
-      "error_reset_failed": "Şifre sıfırlama sırasında bir hata oluştu."
+      "error_reset_failed": "Şifre sıfırlama sırasında bir hata oluştu.",
+      "crm_rejected_title": "Sisteme Erişim Sağlanamıyor",
+      "crm_rejected_desc": "Bu e-posta adresi Aluplan müşteri sisteminde kayıtlı değil. Destek portalına erişim yalnızca mevcut Aluplan müşterilerine açıktır.",
+      "crm_rejected_cta": "Aluplan ürünleri ve abonelik seçenekleri hakkında bilgi almak için satış ekibimizle iletişime geçin.",
+      "crm_rejected_sales_btn": "Satış Ekibiyle İletişime Geç",
+      "crm_rejected_sales_email": "satis@aluplan.com.tr",
+      "crm_rejected_try_different": "Farklı bir e-posta dene"
     },
     "reset_password": {
       "new_password_label": "YENİ ŞİFRE",

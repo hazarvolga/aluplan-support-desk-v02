@@ -139,7 +139,13 @@
       "error_customer_no": "Invalid Customer No format. Example: C300 XX XX XX",
       "error_register_failed": "An error occurred during registration.",
       "error_default": "An error occurred.",
-      "error_reset_failed": "An error occurred during password reset."
+      "error_reset_failed": "An error occurred during password reset.",
+      "crm_rejected_title": "Access Not Available",
+      "crm_rejected_desc": "This email address is not registered in the Aluplan customer system. Access to the support portal is only available to existing Aluplan customers.",
+      "crm_rejected_cta": "To learn about Aluplan products and subscription options, please contact our sales team.",
+      "crm_rejected_sales_btn": "Contact Sales Team",
+      "crm_rejected_sales_email": "sales@aluplan.com.tr",
+      "crm_rejected_try_different": "Try a different email"
     },
     "reset_password": {
       "new_password_label": "NEW PASSWORD",
