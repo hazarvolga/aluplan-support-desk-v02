@@ -117,6 +117,7 @@ obj/
 
 # Archives / Backups
 *.sql
+!packages/database/prisma/migrations/**/*.sql
 *.log
 *_err.txt
 root_startup.log
