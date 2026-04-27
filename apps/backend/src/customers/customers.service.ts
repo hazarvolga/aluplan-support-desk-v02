@@ -119,9 +119,20 @@ export class CustomersService {
         if (!this.crmEmailValidator.isAdminBypass(dto.email)) {
             const crmResult = await this.crmEmailValidator.validateEmailInCrm(dto.email);
             if (!crmResult.isValid) {
-                throw new BadRequestException(
-                    crmResult.errorMessage || 'Bu e-posta adresi CRM sisteminde kayıtlı değil.'
-                );
+                // CRM_ERROR = sistem hatası → fail-open (kayıt devam eder)
+                // NOT_FOUND = email CRM'de yok → reddedilir
+                if (crmResult.errorCode === 'NOT_FOUND') {
+                    throw new BadRequestException(
+                        crmResult.errorMessage || 'Bu e-posta adresi CRM sisteminde kayıtlı değil.'
+                    );
+                }
+                // CRM_ERROR veya NETWORK_ERROR → log et ama devam et
+                await this.errorLogger.logError({
+                    action: 'crm_validation_fail_open',
+                    message: `CRM validation failed with ${crmResult.errorCode}, allowing registration to proceed`,
+                    error: new Error(crmResult.errorMessage || crmResult.errorCode || 'CRM_ERROR'),
+                    metadata: { email: dto.email, errorCode: crmResult.errorCode },
+                });
             }
         }
 

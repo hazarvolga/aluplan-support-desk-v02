@@ -578,6 +578,15 @@ export class CrmService {
             return;
         }
 
+        // Security: prevent CRM webhook from overwriting admin accounts with CUSTOMER role
+        const adminEmails = (process.env.ADMIN_BYPASS_EMAILS || 'hazarvolga@gmail.com')
+            .split(',')
+            .map(e => e.trim().toLowerCase());
+        if (adminEmails.includes(data.emailaddress1.toLowerCase())) {
+            this.logger.warn(`Webhook sync skipped for protected admin email: ${data.emailaddress1}`);
+            return;
+        }
+
         return this.prisma.$transaction(async (tx) => {
             // 1. Find or create User
             let user = await tx.user.findUnique({
