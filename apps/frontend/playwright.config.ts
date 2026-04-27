@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
 
+const ADMIN_STATE = path.join(__dirname, 'playwright', '.auth', 'admin.json');
+
 export default defineConfig({
     testDir: './e2e',
     timeout: 300 * 1000,
@@ -20,9 +22,21 @@ export default defineConfig({
     },
 
     projects: [
+        // 1) Authenticate once and persist storage state per role
+        {
+            name: 'setup',
+            testMatch: /auth\.setup\.ts/,
+        },
+        // 2) Tests that need an authenticated admin session reuse the saved state.
+        //    Tests that need to test login itself or run as anonymous should
+        //    explicitly set `test.use({ storageState: { cookies: [], origins: [] } })`.
         {
             name: 'chromium',
-            use: { ...devices['Desktop Chrome'] },
+            use: {
+                ...devices['Desktop Chrome'],
+                storageState: ADMIN_STATE,
+            },
+            dependencies: ['setup'],
         }
     ],
 
