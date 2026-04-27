@@ -1,66 +1,186 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { CustomersService } from './customers.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { HotinfoParserService } from './hotinfo-parser.service';
-import { EmailService } from '../email/email.service';
-import { ErrorLoggerService } from '../common/services/error-logger.service';
+import { CrmEmailValidatorService } from '../crm/crm-email-validator.service';
+
+// Direct instantiation — avoids NestJS DI circular dependency issues in tests
+function buildService(overrides: Partial<{
+  crmIsAdminBypass: boolean;
+  crmValidationResult: { isValid: boolean; errorCode?: string; errorMessage?: string };
+}> = {}) {
+  const mockPrisma = {
+    user: {
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest.fn(),
+      update: jest.fn(),
+      findMany: jest.fn(),
+      updateMany: jest.fn(),
+      count: jest.fn(),
+    },
+    role: {
+      findUnique: jest.fn().mockResolvedValue({ id: 'role-id', name: 'CUSTOMER' }),
+      findFirst: jest.fn().mockResolvedValue({ id: 'role-id', name: 'CUSTOMER' }),
+      create: jest.fn(),
+    },
+    customerProfile: {
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    setting: { findUnique: jest.fn().mockResolvedValue(null) },
+    $transaction: jest.fn().mockImplementation(async (fn: any) => {
+      const txPrisma = {
+        user: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue({
+            id: 'user-id',
+            email: 'test@example.com',
+            fullName: 'Test User',
+            passwordHash: 'hash',
+            customerProfile: null,
+          }),
+          update: jest.fn(),
+        },
+        customerProfile: {
+          create: jest.fn().mockResolvedValue({ id: 'profile-id' }),
+          update: jest.fn(),
+          upsert: jest.fn(),
+        },
+      };
+      return fn(txPrisma);
+    }),
+  } as any;
+
+  const mockHotinfoParser = { parseHotinfo: jest.fn() } as any;
+  const mockEmailService = { enqueueEmail: jest.fn().mockResolvedValue(undefined) } as any;
+  const mockJwtService = { sign: jest.fn().mockReturnValue('token') } as any;
+  const mockConfigService = { get: jest.fn().mockReturnValue('http://localhost:3000') } as any;
+  const mockErrorLogger = { logError: jest.fn().mockResolvedValue(undefined) } as any;
+  const mockCrmValidator = {
+    isAdminBypass: jest.fn().mockReturnValue(overrides.crmIsAdminBypass ?? false),
+    validateEmailInCrm: jest.fn().mockResolvedValue(
+      overrides.crmValidationResult ?? { isValid: true, contactId: 'contact-id' }
+    ),
+  } as unknown as CrmEmailValidatorService;
+
+  const service = new CustomersService(
+    mockPrisma,
+    mockHotinfoParser,
+    mockEmailService,
+    mockJwtService,
+    mockConfigService,
+    mockErrorLogger,
+    mockCrmValidator,
+  );
+
+  return { service, mockPrisma, mockCrmValidator, mockEmailService, mockErrorLogger };
+}
 
 describe('CustomersService', () => {
-  let service: CustomersService;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        CustomersService,
-        {
-          provide: PrismaService,
-          useValue: {
-            user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn(), findMany: jest.fn(), deleteMany: jest.fn() },
-            role: { findUnique: jest.fn(), create: jest.fn() },
-            customerProfile: { update: jest.fn(), create: jest.fn(), findUnique: jest.fn() },
-            $transaction: jest.fn(),
-          },
-        },
-        {
-          provide: HotinfoParserService,
-          useValue: {
-            parseHotinfo: jest.fn(),
-          },
-        },
-        {
-          provide: EmailService,
-          useValue: {
-            enqueueEmail: jest.fn(),
-          },
-        },
-        {
-          provide: JwtService,
-          useValue: {
-            sign: jest.fn(),
-          },
-        },
-        {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn(),
-          },
-        },
-        {
-          provide: ErrorLoggerService,
-          useValue: {
-            logError: jest.fn(),
-          },
-        },
-      ],
-    }).compile();
-
-    service = module.get<CustomersService>(CustomersService);
+  it('should be defined', () => {
+    const { service } = buildService();
+    expect(service).toBeDefined();
   });
 
+  describe('registerCustomer — CRM validation', () => {
+    it('allows registration when CRM validation passes', async () => {
+      const { service, mockPrisma } = buildService({
+        crmValidationResult: { isValid: true, contactId: 'c-1' },
+      });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+      mockPrisma.user.findUnique.mockResolvedValue(null); // email not taken
+
+      const dto = {
+        email: 'user@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        password: 'password123',
+        company: 'Test Co',
+        phone: '555-0000',
+        usedProducts: [],
+        isAllplanUser: false,
+      };
+
+      // Should not throw
+      await expect(service.registerCustomer(dto as any)).resolves.toBeDefined();
+    });
+
+    it('rejects registration when CRM returns NOT_FOUND', async () => {
+      const { service, mockPrisma } = buildService({
+        crmValidationResult: {
+          isValid: false,
+          errorCode: 'NOT_FOUND',
+          errorMessage: 'Bu e-posta adresi CRM sisteminde kayıtlı değil.',
+        },
+      });
+
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      const dto = {
+        email: 'unknown@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        password: 'password123',
+        company: 'Test Co',
+        phone: '555-0000',
+        usedProducts: [],
+        isAllplanUser: false,
+      };
+
+      await expect(service.registerCustomer(dto as any)).rejects.toThrow(
+        'Bu e-posta adresi CRM sisteminde kayıtlı değil.'
+      );
+    });
+
+    it('allows registration when CRM returns CRM_ERROR (fail-open)', async () => {
+      const { service, mockPrisma, mockErrorLogger } = buildService({
+        crmValidationResult: {
+          isValid: false,
+          errorCode: 'CRM_ERROR',
+          errorMessage: 'Sistem geçici olarak kullanılamıyor.',
+        },
+      });
+
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      const dto = {
+        email: 'user@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        password: 'password123',
+        company: 'Test Co',
+        phone: '555-0000',
+        usedProducts: [],
+        isAllplanUser: false,
+      };
+
+      // Should NOT throw — fail-open behavior
+      await expect(service.registerCustomer(dto as any)).resolves.toBeDefined();
+      // Should log the error
+      expect(mockErrorLogger.logError).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'crm_validation_fail_open' })
+      );
+    });
+
+    it('skips CRM validation for admin bypass emails', async () => {
+      const { service, mockPrisma, mockCrmValidator } = buildService({
+        crmIsAdminBypass: true,
+      });
+
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      const dto = {
+        email: 'hazarvolga@gmail.com',
+        firstName: 'Admin',
+        lastName: 'User',
+        password: 'password123',
+        company: 'Admin Co',
+        phone: '555-0000',
+        usedProducts: [],
+        isAllplanUser: false,
+      };
+
+      await expect(service.registerCustomer(dto as any)).resolves.toBeDefined();
+      // CRM validation should NOT be called for admin bypass
+      expect(mockCrmValidator.validateEmailInCrm).not.toHaveBeenCalled();
+    });
   });
 });
