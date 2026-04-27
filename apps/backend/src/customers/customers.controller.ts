@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Param, Patch, Req, UseInterceptors, UploadedFile, BadRequestException, Response } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Param, Patch, Req, UseInterceptors, UploadedFile, BadRequestException, Response, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CustomersService } from './customers.service';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
@@ -23,8 +23,16 @@ export class CustomersController {
     @Get()
     @UseGuards(JwtAuthGuard, RbacGuard)
     @Roles('ADMIN', 'SUPPORT_AGENT', 'SUPPORT_MANAGER')
-    async getAllCustomers() {
-        return this.customersService.getAllCustomers();
+    async getAllCustomers(
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.customersService.getAllCustomers(
+            page ? parseInt(page, 10) : 1,
+            limit ? Math.min(parseInt(limit, 10), 200) : 100,
+            search,
+        );
     }
 
     @Post('import')

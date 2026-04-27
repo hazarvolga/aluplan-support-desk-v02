@@ -107,6 +107,10 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
     const { toast } = useToast();
     const { user } = useAuth();
     const [customers, setCustomers] = useState<CustomerItem[]>([]);
+    const [customerTotal, setCustomerTotal] = useState(0);
+    const [customerPage, setCustomerPage] = useState(1);
+    const [customerTotalPages, setCustomerTotalPages] = useState(1);
+    const CUSTOMER_PAGE_SIZE = 100;
     const [accounts, setAccounts] = useState<AccountItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [accountsLoading, setAccountsLoading] = useState(false);
@@ -190,12 +194,15 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
             }));
     }, [displaySettings]);
 
-    const loadCustomers = () => {
+    const loadCustomers = (page = 1) => {
         setLoading(true);
         api.customers
-            .list()
-            .then((data) => {
-                setCustomers(data);
+            .list({ page, limit: CUSTOMER_PAGE_SIZE, search: searchTerm || undefined })
+            .then((res) => {
+                setCustomers(res.data);
+                setCustomerTotal(res.total);
+                setCustomerPage(res.page);
+                setCustomerTotalPages(res.totalPages);
                 setSelectedIds([]);
             })
             .catch((err: any) => { if (process.env.NODE_ENV === 'development') console.error(err); })
@@ -873,6 +880,38 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                             </TableBody>
                         </Table>
                     </Card>
+
+                    {/* Pagination */}
+                    {customerTotalPages > 1 && (
+                        <div className="flex items-center justify-between px-2 py-3">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                {customerPage * CUSTOMER_PAGE_SIZE - CUSTOMER_PAGE_SIZE + 1}–{Math.min(customerPage * CUSTOMER_PAGE_SIZE, customerTotal)} / {customerTotal} {t('labels.items')}
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={customerPage <= 1 || loading}
+                                    onClick={() => loadCustomers(customerPage - 1)}
+                                    className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest border border-white/10 hover:bg-white/5"
+                                >
+                                    ← {tc('previous') || 'Önceki'}
+                                </Button>
+                                <span className="text-[10px] font-bold text-muted-foreground px-2">
+                                    {customerPage} / {customerTotalPages}
+                                </span>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={customerPage >= customerTotalPages || loading}
+                                    onClick={() => loadCustomers(customerPage + 1)}
+                                    className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest border border-white/10 hover:bg-white/5"
+                                >
+                                    {tc('next') || 'Sonraki'} →
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </TabsContent>
 
                 <TabsContent value="accounts" className="space-y-6 mt-0">

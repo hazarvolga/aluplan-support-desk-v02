@@ -43,7 +43,8 @@ export default function CustomerProfilePage() {
                         jobTitle: data.customerProfile.jobTitle || '',
                         phoneNumber: data.customerProfile.phoneNumber || '',
                         contractStatus: data.customerProfile.contractStatus || '',
-                        customerNo: data.customerProfile.customerNo || ''
+                        customerNo: data.customerProfile.customerNo || '',
+                        isVip: data.customerProfile.isVip || false,
                     });
                 }
             })
@@ -55,7 +56,7 @@ export default function CustomerProfilePage() {
             .finally(() => setLoading(false));
     }, [id, router]);
 
-    const handleChange = (field: string, value: string) => {
+    const handleChange = (field: string, value: string | boolean) => {
         setFormData((prev: any) => ({ ...prev, [field]: value }));
     };
 
@@ -221,7 +222,23 @@ export default function CustomerProfilePage() {
                                 <Input value={formData.contractStatus} onChange={e => handleChange('contractStatus', e.target.value)} />
                             </div>
 
-                            <div className="pt-8">
+                            <div className="flex items-center justify-between pt-2 pb-1 px-1 rounded-lg border border-amber-500/20 bg-amber-500/5">
+                                <div className="flex items-center gap-2 px-2">
+                                    <span className="text-amber-500 text-xs font-black uppercase tracking-widest">VIP</span>
+                                    <span className="text-muted-foreground text-xs">{t('labels.vip_customer') || 'VIP Müşteri'}</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={!!formData.isVip}
+                                    onClick={() => handleChange('isVip', !formData.isVip as any)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500/30 mr-2 ${formData.isVip ? 'bg-amber-500' : 'bg-white/10'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${formData.isVip ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
+
+                            <div className="pt-4">
                                 <Button type="submit" disabled={saving} className="w-full">
                                     {saving ? t('labels.saving') : t('labels.save_all')}
                                     <Save className="ml-2 h-4 w-4" />

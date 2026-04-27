@@ -281,45 +281,56 @@ export class CustomersService {
         return result;
     }
 
-    async getAllCustomers() {
+    async getAllCustomers(page = 1, limit = 100, search?: string) {
         // Ensure CUSTOMER role exists as a safety net
         let customerRole = await this.prisma.role.findFirst({
             where: { name: { equals: 'CUSTOMER', mode: 'insensitive' } }
         });
 
         if (!customerRole) {
-            console.warn('[DIAGNOSTIC] CUSTOMER role NOT found during query, creating it.');
             customerRole = await this.prisma.role.create({
                 data: { name: 'CUSTOMER', isSystem: true, description: 'Default customer role' }
             });
         }
 
-        const allUsersCount = await this.prisma.user.count();
-        const usersWithRole = await this.prisma.user.count({ where: { roleId: customerRole.id } });
-        const usersWithProfile = await this.prisma.customerProfile.count();
+        const skip = (page - 1) * limit;
 
-        console.log(`[DIAGNOSTIC] Total Users: ${allUsersCount}`);
-        console.log(`[DIAGNOSTIC] CUSTOMER Role ID: ${customerRole.id}`);
-        console.log(`[DIAGNOSTIC] Users with this Role: ${usersWithRole}`);
-        console.log(`[DIAGNOSTIC] Total Customer Profiles: ${usersWithProfile}`);
+        const where: any = {
+            roleId: customerRole.id,
+            deletedAt: null,
+        };
 
-        // Return users who have the CUSTOMER role
-        // Fallback: If for some reason the role assignment is lagging, but profiles exist, 
-        // we might want to see them. But for now, let's stick to role-based for strictness.
-        return this.prisma.user.findMany({
-            where: {
-                roleId: customerRole.id,
-                deletedAt: null
-            },
-            include: {
-                role: true,
-                customerProfile: {
-                    include: {
-                    }
+        // Search filter
+        if (search) {
+            where.OR = [
+                { fullName: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
+                { customerProfile: { companyName: { contains: search, mode: 'insensitive' } } },
+                { customerProfile: { customerNo: { contains: search, mode: 'insensitive' } } },
+            ];
+        }
+
+        const [data, total] = await Promise.all([
+            this.prisma.user.findMany({
+                where,
+                include: {
+                    role: true,
+                    customerProfile: true,
                 },
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.user.count({ where }),
+        ]);
+
+        return {
+            data,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 
     async updateCustomer(id: string, dto: UpdateCustomerProfileDto) {
@@ -343,6 +354,7 @@ export class CustomersService {
         if (dto.contractStatus !== undefined) updatedConfig.contractStatus = dto.contractStatus;
         if (dto.subscriptionModel !== undefined) updatedConfig.subscriptionModel = dto.subscriptionModel;
         if (dto.customerNo !== undefined) updatedConfig.customerNo = dto.customerNo;
+        if (dto.isVip !== undefined) updatedConfig.isVip = dto.isVip;
 
         const _updatedProfile = await this.prisma.customerProfile.update({
             where: { userId: id },

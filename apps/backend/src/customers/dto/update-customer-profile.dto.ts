@@ -1,5 +1,6 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 
 export class UpdateCustomerProfileDto {
     @ApiPropertyOptional()
@@ -41,4 +42,10 @@ export class UpdateCustomerProfileDto {
     @IsOptional()
     @IsString()
     customerNo?: string;
+
+    @ApiPropertyOptional({ description: 'Mark customer as VIP' })
+    @IsOptional()
+    @IsBoolean()
+    @Transform(({ value }) => value === true || value === 'true')
+    isVip?: boolean;
 }

@@ -401,7 +401,14 @@ export const api = {
         },
     },
     customers: {
-        list: () => request<any[]>('/customers'),
+        list: (params?: { page?: number; limit?: number; search?: string }) => {
+            const qs = new URLSearchParams();
+            if (params?.page) qs.set('page', String(params.page));
+            if (params?.limit) qs.set('limit', String(params.limit));
+            if (params?.search) qs.set('search', params.search);
+            const query = qs.toString();
+            return request<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(`/customers${query ? `?${query}` : ''}`);
+        },
         getById: (id: string) => request<any>(`/customers/${id}`),
         update: (id: string, body: any) => request<any>(`/customers/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
         bulkDelete: (ids: string[]) => request<any>('/customers/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
