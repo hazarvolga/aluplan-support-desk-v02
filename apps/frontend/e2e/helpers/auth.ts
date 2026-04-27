@@ -57,8 +57,10 @@ export async function login(
 
             await page.getByTestId('login-submit').click();
 
+            // Admin/agent land on /dashboard, customer lands on /my-tickets;
+            // accept any post-login URL that no longer points at /login.
             const result = await Promise.race([
-                page.waitForURL(/.*\/dashboard/, { timeout }).then(() => 'success' as const),
+                page.waitForURL((url) => !url.pathname.endsWith('/login'), { timeout }).then(() => 'success' as const),
                 page.getByTestId('error-message').waitFor({ state: 'visible', timeout: 5000 }).then(() => 'error' as const),
             ]).catch(() => 'timeout' as const);
 
