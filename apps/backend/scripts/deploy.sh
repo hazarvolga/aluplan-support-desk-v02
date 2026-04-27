@@ -9,9 +9,16 @@ if [ -z "$DATABASE_URL" ]; then
 fi
 
 echo "Running Prisma migrations..."
+echo "[DEPLOY DIAGNOSTIC] Available migrations:"
+ls -1 ./packages/database/prisma/migrations/ | grep -E '^[0-9]' | tail -10
+MIGRATION_COUNT=$(ls -1 ./packages/database/prisma/migrations/ | grep -E '^[0-9]' | wc -l | tr -d ' ')
+echo "[DEPLOY DIAGNOSTIC] Total migration folders: $MIGRATION_COUNT"
+
 npx prisma migrate deploy \
   --schema ./packages/database/prisma/schema.prisma \
   --config ./packages/database/prisma.config.js
+
+echo "[DEPLOY DIAGNOSTIC] prisma migrate deploy completed with exit code: $?"
 
 echo "Running Production Data Synchronization (Seeding & Recovery)..."
 node packages/database/scripts/production-sync.js || echo "Warning: production-sync.js failed but continuing..."
