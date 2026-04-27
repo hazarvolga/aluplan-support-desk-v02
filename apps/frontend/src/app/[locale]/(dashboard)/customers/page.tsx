@@ -52,6 +52,8 @@ import { DataTableHeader } from './components/DataTableHeader';
 import { MessageCircle } from 'lucide-react';
 import { ProactiveChatPendingBadge } from '@/components/proactive-chat/ProactiveChatPendingBadge';
 import { ProactiveChatWindow } from '@/components/proactive-chat/ProactiveChatWindow';
+import { ActiveSessionsPanel } from '@/components/proactive-chat/ActiveSessionsPanel';
+import { useAuth } from '@/components/auth/role-guard';
 
 interface CustomerItem {
     id: string;
@@ -102,6 +104,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
     const t = useTranslations('customers');
     const tc = useTranslations('common');
     const { toast } = useToast();
+    const { user } = useAuth();
     const [customers, setCustomers] = useState<CustomerItem[]>([]);
     const [accounts, setAccounts] = useState<AccountItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -654,6 +657,9 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                         <TabsTrigger value="history" className="rounded-lg px-6 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-blue-500 data-[state=active]:text-white">
                             {t('tabs.history')}
                         </TabsTrigger>
+                        <TabsTrigger value="chat" className="rounded-lg px-6 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                            {t('tabs.chat')}
+                        </TabsTrigger>
                     </TabsList>
 
                     <div className="relative flex-1 max-w-sm group">
@@ -1170,6 +1176,11 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                         </Table>
                     </Card>
                 </TabsContent>
+
+                {/* Proactive Chat Sessions — agent oturumlarını listeler */}
+                <TabsContent value="chat" className="space-y-6">
+                    <ActiveSessionsPanel currentUserId={user?.id || ''} />
+                </TabsContent>
             </Tabs>
 
             {/* Proactive Chat Pending Badge */}
@@ -1191,7 +1202,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
             {activeChatSession && (
                 <ProactiveChatWindow
                     sessionId={activeChatSession.sessionId}
-                    currentUserId=""
+                    currentUserId={user?.id || ''}
                     isAgent={true}
                     otherPartyName={activeChatSession.customerName}
                     onClose={() => setActiveChatSession(null)}

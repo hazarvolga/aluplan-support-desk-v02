@@ -589,7 +589,8 @@
       "customers": "Kunden",
       "accounts": "Konten",
       "sync": "Synchronisierung",
-      "history": "Aktionsverlauf"
+      "history": "Aktionsverlauf",
+      "chat": "Proaktiver Chat"
     },
     "search": {
       "placeholder": "Kunde oder Unternehmen suchen..."
@@ -3440,121 +3441,13 @@
     }
   },
   "announcements": {
-    "title": "Ankündigungsmanagement",
-    "subtitle": "Unternehmenskommunikation und gezielte Ankündigungen",
-    "enterprise_control": "Enterprise-Steuerung",
-    "preview_prepared": "Vorschau des vorbereiteten Inhalts",
-    "close": "Schließen",
-    "industries": "Branchen",
-    "customer_status": "Kundenstatus",
-    "company_name": "Unternehmensname",
-    "special_tags": "Spezielle Tags",
-    "categories": {
-      "all": "HEPSİ",
-      "general": "Allgemein",
-      "product": "Ürün",
-      "security": "Güvenlik",
-      "compliance": "Uyum (Compliance)",
-      "operations": "Operasyonlar",
-      "ai_tech": "Yapay Zeka ve Teknoloji",
-      "infrastructure": "Altyapı",
-      "change_management": "Değişim Yönetimi",
-      "education": "Eğitim",
-      "performance_reports": "Performans Raporları",
-      "strategic_updates": "Stratejik Güncellemeler",
-      "community": "Topluluk"
-    },
-    "tabs": {
-      "create": "Ankündigung erstellen",
-      "templates": "Vorlagenbibliothek",
-      "history": "Sendeverlauf"
-    },
-    "editor": {
-      "title": "Inhalts-Editor",
-      "desc": "Bereiten Sie den E-Mail-Inhalt für Kunden vor.",
-      "template_select": "Vorlage auswählen",
-      "title_label": "Name des Ankündigungsdatensatzes",
-      "title_placeholder": "Z.B. 2024 Sommer Hotfix Ankündigung",
-      "subject_label": "E-Mail-Betreffzeile",
-      "subject_placeholder": "Betreff, der dem Kunden angezeigt wird",
-      "content_label": "Rich-Text-Inhalt",
-      "default_content": "<p>Hallo {{customer.name}}!</p><p>Hier kommt der Inhalt der Ankündigung...</p>",
-      "preview": "Vorschau",
-      "save_draft": "Entwurf protokollieren"
-    },
-    "audience": {
-      "title": "Zielgruppe",
-      "desc": "Legen Sie fest, wen die Ankündigung erreichen soll.",
-      "industries": "Branchen",
-      "industry_placeholder": "Branche auswählen",
-      "statuses": "Kundenstatus",
-      "status_placeholder": "Status auswählen",
-      "companies": "Unternehmensname",
-      "company_placeholder": "Unternehmen auswählen",
-      "tags": "Spezielle Tags",
-      "tags_placeholder": "Tag hinzufügen (Enter)",
-      "target_audience": "Zielgruppe",
-      "persons": "Personen",
-      "select_filter": "Bitte wählen Sie mindestens einen Filter aus",
-      "realtime_telemetry": "Real-time telemetri verisi"
-    },
-    "template_editor": {
-      "title": "Şablon Düzenleyici",
-      "modify_desc": "{name} kaydı modifiye ediliyor.",
-      "new_desc": "Sistem için yeni bir iletişim şablonu protokolleyin.",
-      "new_record": "Yeni Kayıt",
-      "name_label": "Şablon İsmi",
-      "name_placeholder": "Örn: Hoşgeldin Maili",
-      "topic_label": "Kategori (Topic)",
-      "topic_placeholder": "Örn: Onboarding",
-      "subject_label": "Varsayılan Konu Başlığı",
-      "subject_placeholder": "Müşteriye görünecek konu",
-      "content_label": "Zengin Metin İçeriği (Şablon)",
-      "render_test": "Render Testi",
-      "update": "Güncelle",
-      "archive": "Kütüphaneye Arşivle"
-    },
-    "library": {
-      "title": "Kütüphane",
-      "search_placeholder": "İsim veya konu ara...",
-      "category_filter": "Kategori Filtresi",
-      "all": "Tümü",
-      "no_records": "Kayıt Bulunamadı",
-      "apply": "Uygula",
-      "preview": "Önizle",
-      "delete": "Delete",
-      "validated": "Onaylandı"
-    },
-    "history": {
-      "title": "Gönderim Arşivi",
-      "desc": "Sistem üzerinden protokollenen ve yayınlanan tüm duyuru kayıtları.",
-      "empty": "Arşiv Boş",
-      "sent": "GÖNDERİLDİ",
-      "draft": "TASLAK",
-      "terminal_delivered": "{count} Terminale İletildi",
-      "broadcast": "Veröffentlichen"
-    },
-    "toasts": {
-      "template_empty": "Bu şablonun içeriği boş.",
-      "template_compile_error": "Şablon derlenemedi. MJML sözdizimini kontrol edin.",
-      "preview_error": "Önizleme hatası:",
-      "unknown_error": "Bilinmeyen hata",
-      "required_fields": "Şablon adı ve içeriği gereklidir",
-      "template_updated": "Şablon güncellendi",
-      "template_added": "Şablon kütüphaneye eklendi",
-      "template_applied": "{name} şablonu uygulandı",
-      "title_subject_required": "Başlık ve Konu gerekli",
-      "draft_saved": "Duyuru taslağı kaydedildi",
-      "save_failed": "Kaydetme hatası: {message}",
-      "broadcast_success": "Duyuru başarıyla yayınlandı",
-      "broadcast_error": "Yayınlama hatası",
-      "confirm_broadcast": "Bu duyuruyu yayınlamak istediğinize emin misiniz?",
-      "delete_success": "Kayıt silindi",
-      "delete_failed": "Silme hatası",
-      "confirm_delete_announcement": "Bu duyuruyu silmek istediğinize emin misiniz?",
-      "confirm_delete_template": "Bu şablonu silmek istediğinize emin misiniz?",
-      "error": "Fehler"
-    }
+    "toast_view": "Anzeigen",
+    "archive_title": "Ankündigungen",
+    "archive_empty": "Noch keine Ankündigungen.",
+    "archive_unread_dot": "Ungelesen",
+    "mark_read": "Als gelesen markieren",
+    "badge_overflow": "99+",
+    "load_more": "Mehr laden"
   },
   "emails": {
     "title": "E-Posta Yönetimi",
@@ -3632,14 +3525,5 @@
       "query_preproc": "SORGU ÖN İŞLEME",
       "hybrid_retrieval": "HİBRİT ERİŞİM MOTORU"
     }
-  },
-  "announcements": {
-    "toast_view": "Anzeigen",
-    "archive_title": "Ankündigungen",
-    "archive_empty": "Noch keine Ankündigungen.",
-    "archive_unread_dot": "Ungelesen",
-    "mark_read": "Als gelesen markieren",
-    "badge_overflow": "99+",
-    "load_more": "Mehr laden"
   }
 }

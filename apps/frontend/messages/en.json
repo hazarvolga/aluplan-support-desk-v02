@@ -589,7 +589,8 @@
       "customers": "Customers",
       "accounts": "Accounts",
       "sync": "Sync",
-      "history": "Action History"
+      "history": "Action History",
+      "chat": "Proactive Chat"
     },
     "search": {
       "placeholder": "Search customer or company..."
@@ -3445,121 +3446,13 @@
     }
   },
   "announcements": {
-    "title": "Announcement Management",
-    "subtitle": "Corporate communications and targeted announcement operations",
-    "enterprise_control": "Enterprise Control",
-    "preview_prepared": "Prepared Content Preview",
-    "close": "Close",
-    "industries": "Industries",
-    "customer_status": "Customer Status",
-    "company_name": "Company Name",
-    "special_tags": "Special Tags",
-    "categories": {
-      "all": "HEPSİ",
-      "general": "General",
-      "product": "Ürün",
-      "security": "Güvenlik",
-      "compliance": "Uyum (Compliance)",
-      "operations": "Operasyonlar",
-      "ai_tech": "Yapay Zeka ve Teknoloji",
-      "infrastructure": "Altyapı",
-      "change_management": "Değişim Yönetimi",
-      "education": "Eğitim",
-      "performance_reports": "Performans Raporları",
-      "strategic_updates": "Stratejik Güncellemeler",
-      "community": "Topluluk"
-    },
-    "tabs": {
-      "create": "Create Announcement",
-      "templates": "Template Library",
-      "history": "Broadcast History"
-    },
-    "editor": {
-      "title": "Content Editor",
-      "desc": "Prepare the email content for customers.",
-      "template_select": "Select Template",
-      "title_label": "Announcement Record Name",
-      "title_placeholder": "Ex: 2024 Summer Hotfix Announcement",
-      "subject_label": "Email Subject Line",
-      "subject_placeholder": "Subject that will appear to customer",
-      "content_label": "Rich Text Content",
-      "default_content": "<p>Hello [customer.name]!</p><p>Announcement content will go here...</p>",
-      "preview": "Preview",
-      "save_draft": "Protocol Draft"
-    },
-    "audience": {
-      "title": "Target Audience",
-      "desc": "Determine who the announcement will reach.",
-      "industries": "Industries",
-      "industry_placeholder": "Select Industry",
-      "statuses": "Customer Status",
-      "status_placeholder": "Select Status",
-      "companies": "Company Name",
-      "company_placeholder": "Select Company",
-      "tags": "Special Tags",
-      "tags_placeholder": "Add tag (Enter)",
-      "target_audience": "Targeted Audience",
-      "persons": "Persons",
-      "select_filter": "Please select at least one filter",
-      "realtime_telemetry": "Real-time telemetri verisi"
-    },
-    "template_editor": {
-      "title": "Şablon Düzenleyici",
-      "modify_desc": "{name} kaydı modifiye ediliyor.",
-      "new_desc": "Sistem için yeni bir iletişim şablonu protokolleyin.",
-      "new_record": "Yeni Kayıt",
-      "name_label": "Şablon İsmi",
-      "name_placeholder": "Örn: Hoşgeldin Maili",
-      "topic_label": "Kategori (Topic)",
-      "topic_placeholder": "Örn: Onboarding",
-      "subject_label": "Varsayılan Konu Başlığı",
-      "subject_placeholder": "Müşteriye görünecek konu",
-      "content_label": "Zengin Metin İçeriği (Şablon)",
-      "render_test": "Render Testi",
-      "update": "Güncelle",
-      "archive": "Kütüphaneye Arşivle"
-    },
-    "library": {
-      "title": "Kütüphane",
-      "search_placeholder": "İsim veya konu ara...",
-      "category_filter": "Kategori Filtresi",
-      "all": "Tümü",
-      "no_records": "Kayıt Bulunamadı",
-      "apply": "Uygula",
-      "preview": "Önizle",
-      "delete": "Delete",
-      "validated": "Onaylandı"
-    },
-    "history": {
-      "title": "Gönderim Arşivi",
-      "desc": "Sistem üzerinden protokollenen ve yayınlanan tüm duyuru kayıtları.",
-      "empty": "Arşiv Boş",
-      "sent": "GÖNDERİLDİ",
-      "draft": "TASLAK",
-      "terminal_delivered": "{count} Terminale İletildi",
-      "broadcast": "Publish"
-    },
-    "toasts": {
-      "template_empty": "Bu şablonun içeriği boş.",
-      "template_compile_error": "Şablon derlenemedi. MJML sözdizimini kontrol edin.",
-      "preview_error": "Önizleme hatası:",
-      "unknown_error": "Bilinmeyen hata",
-      "required_fields": "Şablon adı ve içeriği gereklidir",
-      "template_updated": "Şablon güncellendi",
-      "template_added": "Şablon kütüphaneye eklendi",
-      "template_applied": "{name} şablonu uygulandı",
-      "title_subject_required": "Başlık ve Konu gerekli",
-      "draft_saved": "Duyuru taslağı kaydedildi",
-      "save_failed": "Kaydetme hatası: {message}",
-      "broadcast_success": "Duyuru başarıyla yayınlandı",
-      "broadcast_error": "Yayınlama hatası",
-      "confirm_broadcast": "Bu duyuruyu yayınlamak istediğinize emin misiniz?",
-      "delete_success": "Kayıt silindi",
-      "delete_failed": "Silme hatası",
-      "confirm_delete_announcement": "Bu duyuruyu silmek istediğinize emin misiniz?",
-      "confirm_delete_template": "Bu şablonu silmek istediğinize emin misiniz?",
-      "error": "Error"
-    }
+    "toast_view": "View",
+    "archive_title": "Announcements",
+    "archive_empty": "No announcements yet.",
+    "archive_unread_dot": "Unread",
+    "mark_read": "Mark as read",
+    "badge_overflow": "99+",
+    "load_more": "Load more"
   },
   "emails": {
     "title": "E-Posta Yönetimi",
@@ -3637,14 +3530,5 @@
       "query_preproc": "SORGU ÖN İŞLEME",
       "hybrid_retrieval": "HİBRİT ERİŞİM MOTORU"
     }
-  },
-  "announcements": {
-    "toast_view": "View",
-    "archive_title": "Announcements",
-    "archive_empty": "No announcements yet.",
-    "archive_unread_dot": "Unread",
-    "mark_read": "Mark as read",
-    "badge_overflow": "99+",
-    "load_more": "Load more"
   }
 }
