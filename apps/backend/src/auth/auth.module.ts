@@ -11,6 +11,7 @@ import { EmailModule } from '../email/email.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RedisModule } from '../redis/redis.module';
+import { CrmModule } from '../crm/crm.module';
 
 @Module({
     imports: [
@@ -19,6 +20,7 @@ import { RedisModule } from '../redis/redis.module';
         ConfigModule,
         EmailModule,
         RedisModule,
+        CrmModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],

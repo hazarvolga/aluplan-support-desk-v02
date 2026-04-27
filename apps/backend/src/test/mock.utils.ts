@@ -70,6 +70,15 @@ export const mockPrismaService: any = {
         upsert: jest.fn(),
         delete: jest.fn(),
     },
+    customerProfile: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        upsert: jest.fn(),
+        delete: jest.fn(),
+    },
     crmAccount: {
         findUnique: jest.fn(),
         findFirst: jest.fn(),

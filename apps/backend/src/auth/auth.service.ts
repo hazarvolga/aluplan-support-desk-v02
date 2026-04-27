@@ -7,6 +7,7 @@ import { LoginDto } from './dto/login.dto';
 import { EmailService } from '../email/email.service';
 import { SettingsService } from '../settings/settings.service';
 import { RedisService } from '../redis/redis.service';
+import { CrmEmailValidatorService } from '../crm/crm-email-validator.service';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class AuthService {
         private readonly emailService: EmailService,
         private readonly settings: SettingsService,
         private readonly redisService: RedisService,
+        private readonly crmEmailValidator: CrmEmailValidatorService,
     ) { }
 
     async login(dto: LoginDto): Promise<any> {
@@ -158,8 +160,15 @@ export class AuthService {
             return { action: 'CLAIM' };
         }
 
+        // ── User does NOT exist in DB — new registration path ────────────────
+        // Determine the intended action (NEW or NEW_MATCHED_COMPANY) first,
+        // then gate it behind CRM validation (unless admin bypass applies).
+
         const domain = email.split('@')[1];
-        if (!domain) return { action: 'NEW', companyName: null };
+        if (!domain) {
+            // Malformed email — run CRM check before allowing registration
+            return await this.validateNewUserWithCrm(email, 'NEW', null);
+        }
 
         const publicDomains = [
             'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
@@ -167,7 +176,7 @@ export class AuthService {
         ];
 
         if (publicDomains.includes(domain.toLowerCase())) {
-            return { action: 'NEW', companyName: null };
+            return await this.validateNewUserWithCrm(email, 'NEW', null);
         }
 
         const matchedProfile = await this.prisma.customerProfile.findFirst({
@@ -185,10 +194,40 @@ export class AuthService {
         });
 
         if (matchedProfile?.companyName) {
-            return { action: 'NEW_MATCHED_COMPANY', companyName: matchedProfile.companyName };
+            return await this.validateNewUserWithCrm(email, 'NEW_MATCHED_COMPANY', matchedProfile.companyName);
         }
 
-        return { action: 'NEW', companyName: null };
+        return await this.validateNewUserWithCrm(email, 'NEW', null);
+    }
+
+    /**
+     * Runs CRM validation for a new (not-yet-registered) user.
+     * Admin bypass emails skip the CRM check entirely.
+     *
+     * @param email       - The email address being looked up
+     * @param action      - The intended action ('NEW' | 'NEW_MATCHED_COMPANY')
+     * @param companyName - Company name for NEW_MATCHED_COMPANY, null otherwise
+     */
+    private async validateNewUserWithCrm(
+        email: string,
+        action: 'NEW' | 'NEW_MATCHED_COMPANY',
+        companyName: string | null,
+    ) {
+        // Admin bypass — skip CRM check
+        if (this.crmEmailValidator.isAdminBypass(email)) {
+            this.logger.debug(`lookupEmail: Admin bypass — skipping CRM check for ${action}`);
+            return { action, companyName };
+        }
+
+        // CRM validation
+        const result = await this.crmEmailValidator.validateEmailInCrm(email);
+
+        if (!result.isValid) {
+            this.logger.debug(`lookupEmail: CRM rejected email — errorCode: ${result.errorCode}`);
+            return { action: 'CRM_REJECTED', errorMessage: result.errorMessage };
+        }
+
+        return { action, companyName };
     }
 
     async forgotPassword(email: string) {

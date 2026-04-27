@@ -7,6 +7,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CrmModule } from '../crm/crm.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     EmailModule,
     ConfigModule,
     CommonModule,
+    CrmModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

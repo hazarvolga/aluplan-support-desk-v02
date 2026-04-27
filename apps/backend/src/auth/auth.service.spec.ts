@@ -7,6 +7,7 @@ import { EmailService } from '../email/email.service';
 import { SettingsService } from '../settings/settings.service';
 import { mockPrismaService, mockConfigService, mockRedisService } from '../test/mock.utils';
 import { RedisService } from '../redis/redis.service';
+import { CrmEmailValidatorService } from '../crm/crm-email-validator.service';
 import * as bcrypt from 'bcryptjs';
 import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
 
@@ -19,6 +20,7 @@ describe('AuthService', () => {
     let email: any;
     let settings: any;
     let redis: any;
+    let crmEmailValidator: any;
 
     const mockJwtService = {
         sign: jest.fn(),
@@ -35,6 +37,11 @@ describe('AuthService', () => {
         getValue: jest.fn(),
     };
 
+    const mockCrmEmailValidatorService = {
+        isAdminBypass: jest.fn().mockReturnValue(false),
+        validateEmailInCrm: jest.fn().mockResolvedValue({ isValid: true, contactId: 'crm-contact-1' }),
+    };
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -45,6 +52,7 @@ describe('AuthService', () => {
                 { provide: EmailService, useValue: mockEmailService },
                 { provide: SettingsService, useValue: mockSettingsService },
                 { provide: RedisService, useValue: mockRedisService },
+                { provide: CrmEmailValidatorService, useValue: mockCrmEmailValidatorService },
             ],
         }).compile();
 
@@ -54,6 +62,7 @@ describe('AuthService', () => {
         email = module.get<EmailService>(EmailService);
         settings = module.get<SettingsService>(SettingsService);
         redis = module.get<RedisService>(RedisService);
+        crmEmailValidator = module.get<CrmEmailValidatorService>(CrmEmailValidatorService);
 
         jest.clearAllMocks();
     });
@@ -240,6 +249,130 @@ describe('AuthService', () => {
                 expect.any(String),
                 15 * 60
             );
+        });
+    });
+
+    describe('lookupEmail', () => {
+        it('should return CLAIM for existing active user without CRM check', async () => {
+            // Arrange
+            prisma.user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com', status: 'ACTIVE', deletedAt: null });
+
+            // Act
+            const result = await service.lookupEmail('test@test.com');
+
+            // Assert
+            expect(result).toEqual({ action: 'CLAIM' });
+            expect(crmEmailValidator.validateEmailInCrm).not.toHaveBeenCalled();
+        });
+
+        it('should return DELETED for soft-deleted user without CRM check', async () => {
+            // Arrange
+            prisma.user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com', status: 'ACTIVE', deletedAt: new Date() });
+
+            // Act
+            const result = await service.lookupEmail('test@test.com');
+
+            // Assert
+            expect(result).toEqual({ action: 'DELETED', companyName: null });
+            expect(crmEmailValidator.validateEmailInCrm).not.toHaveBeenCalled();
+        });
+
+        it('should return INACTIVE for non-active user without CRM check', async () => {
+            // Arrange
+            prisma.user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com', status: 'PENDING', deletedAt: null });
+
+            // Act
+            const result = await service.lookupEmail('test@test.com');
+
+            // Assert
+            expect(result).toEqual({ action: 'INACTIVE', status: 'PENDING', companyName: null });
+            expect(crmEmailValidator.validateEmailInCrm).not.toHaveBeenCalled();
+        });
+
+        it('should validate NEW user with CRM and return NEW when valid', async () => {
+            // Arrange
+            prisma.user.findUnique.mockResolvedValue(null);
+            prisma.customerProfile.findFirst.mockResolvedValue(null);
+            crmEmailValidator.isAdminBypass.mockReturnValue(false);
+            crmEmailValidator.validateEmailInCrm.mockResolvedValue({ isValid: true, contactId: 'crm-1' });
+
+            // Act
+            const result = await service.lookupEmail('newuser@gmail.com');
+
+            // Assert
+            expect(result).toEqual({ action: 'NEW', companyName: null });
+            expect(crmEmailValidator.validateEmailInCrm).toHaveBeenCalledWith('newuser@gmail.com');
+        });
+
+        it('should return CRM_REJECTED when CRM validation fails for NEW user', async () => {
+            // Arrange
+            prisma.user.findUnique.mockResolvedValue(null);
+            prisma.customerProfile.findFirst.mockResolvedValue(null);
+            crmEmailValidator.isAdminBypass.mockReturnValue(false);
+            crmEmailValidator.validateEmailInCrm.mockResolvedValue({
+                isValid: false,
+                errorCode: 'NOT_FOUND',
+                errorMessage: 'Bu e-posta adresi CRM sisteminde kayıtlı değil.'
+            });
+
+            // Act
+            const result = await service.lookupEmail('unknown@gmail.com');
+
+            // Assert
+            expect(result).toEqual({
+                action: 'CRM_REJECTED',
+                errorMessage: 'Bu e-posta adresi CRM sisteminde kayıtlı değil.'
+            });
+        });
+
+        it('should skip CRM check for admin bypass emails', async () => {
+            // Arrange
+            prisma.user.findUnique.mockResolvedValue(null);
+            prisma.customerProfile.findFirst.mockResolvedValue(null);
+            crmEmailValidator.isAdminBypass.mockReturnValue(true);
+
+            // Act
+            const result = await service.lookupEmail('hazarvolga@gmail.com');
+
+            // Assert
+            expect(result).toEqual({ action: 'NEW', companyName: null });
+            expect(crmEmailValidator.validateEmailInCrm).not.toHaveBeenCalled();
+        });
+
+        it('should validate NEW_MATCHED_COMPANY user with CRM and return action when valid', async () => {
+            // Arrange
+            prisma.user.findUnique.mockResolvedValue(null);
+            prisma.customerProfile.findFirst.mockResolvedValue({ companyName: 'Acme Corp' });
+            crmEmailValidator.isAdminBypass.mockReturnValue(false);
+            crmEmailValidator.validateEmailInCrm.mockResolvedValue({ isValid: true, contactId: 'crm-2' });
+
+            // Act
+            const result = await service.lookupEmail('newuser@acme.com');
+
+            // Assert
+            expect(result).toEqual({ action: 'NEW_MATCHED_COMPANY', companyName: 'Acme Corp' });
+            expect(crmEmailValidator.validateEmailInCrm).toHaveBeenCalledWith('newuser@acme.com');
+        });
+
+        it('should return CRM_REJECTED for NEW_MATCHED_COMPANY when CRM validation fails', async () => {
+            // Arrange
+            prisma.user.findUnique.mockResolvedValue(null);
+            prisma.customerProfile.findFirst.mockResolvedValue({ companyName: 'Acme Corp' });
+            crmEmailValidator.isAdminBypass.mockReturnValue(false);
+            crmEmailValidator.validateEmailInCrm.mockResolvedValue({
+                isValid: false,
+                errorCode: 'NOT_FOUND',
+                errorMessage: 'Bu e-posta adresi CRM sisteminde kayıtlı değil.'
+            });
+
+            // Act
+            const result = await service.lookupEmail('unknown@acme.com');
+
+            // Assert
+            expect(result).toEqual({
+                action: 'CRM_REJECTED',
+                errorMessage: 'Bu e-posta adresi CRM sisteminde kayıtlı değil.'
+            });
         });
     });
 });

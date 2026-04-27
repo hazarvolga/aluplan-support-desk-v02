@@ -18,7 +18,7 @@ export default function RegisterPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
     const [step, setStep] = useState<1 | 2>(1);
-    const [lookupResult, setLookupResult] = useState<{ action: string, companyName: string | null } | null>(null);
+    const [lookupResult, setLookupResult] = useState<{ action: string, companyName: string | null, errorMessage?: string } | null>(null);
     const [resetSent, setResetSent] = useState(false);
 
     // Products fetched from backend
@@ -68,6 +68,11 @@ export default function RegisterPage() {
         try {
             const res = await api.auth.lookup(form.email);
             setLookupResult(res);
+
+            if (res.action === 'CRM_REJECTED') {
+                setError(res.errorMessage || 'Bu e-posta adresi sistemimizde kayıtlı değil.');
+                return;
+            }
 
             if (res.action === 'NEW_MATCHED_COMPANY' && res.companyName) {
                 setForm(prev => ({ ...prev, company: res.companyName! }));
@@ -309,6 +314,22 @@ export default function RegisterPage() {
                                     </Button>
                                     <Button type="button" variant="ghost" className="w-full text-slate-400 hover:text-white h-11" onClick={() => { setStep(1); setLookupResult(null); }}>
                                         {t('different_email')}
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* STEP 2: CRM REJECTED STATE */}
+                            {step === 2 && lookupResult?.action === 'CRM_REJECTED' && (
+                                <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-5 pt-2">
+                                    <div className="p-5 rounded-xl bg-red-500/10 border border-red-500/20 text-center shadow-inner">
+                                        <h3 className="text-lg font-medium text-white mb-2">Kayıt Yapılamıyor</h3>
+                                        <p className="text-sm text-slate-300 leading-relaxed">
+                                            {lookupResult.errorMessage || 'Bu e-posta adresi sistemimizde kayıtlı değil.'}
+                                        </p>
+                                    </div>
+                                    <Button type="button" variant="ghost" className="w-full text-slate-400 hover:text-white h-11"
+                                        onClick={() => { setStep(1); setLookupResult(null); }}>
+                                        Farklı e-posta dene
                                     </Button>
                                 </div>
                             )}

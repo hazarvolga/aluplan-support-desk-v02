@@ -78,6 +78,16 @@ function buildSyncDetails(
 
 import { PiiMaskingService } from '../common/services/pii-masking.service';
 
+export interface CrmContact {
+    contactId: string;           // CustomerProfile.id
+    externalContactId?: string;  // CustomerProfile.externalContactId
+    emailAddress: string;        // User.email
+    firstName?: string;
+    lastName?: string;
+    companyName?: string;
+    crmVerified: boolean;
+}
+
 @Injectable()
 export class CrmService {
     private readonly logger = new Logger(CrmService.name);
@@ -100,6 +110,58 @@ export class CrmService {
             throw new BadRequestException(`CRM provider ${provider} is not supported yet.`);
         }
         return adapter;
+    }
+
+    /**
+     * Looks up a CRM contact by email address using the locally-synced database.
+     *
+     * Queries CustomerProfile joined with User where user.email matches (case-insensitive)
+     * and crmVerified = true. Returns null when no matching contact is found.
+     *
+     * @param email - The email address to look up
+     * @returns CrmContact if found, null otherwise
+     */
+    async findContactByEmail(email: string): Promise<CrmContact | null> {
+        const maskedEmail = this.piiMasking.maskSensitiveData(email);
+        this.logger.debug(`CRM contact lookup initiated for: ${maskedEmail}`);
+
+        const profile = await this.prisma.customerProfile.findFirst({
+            where: {
+                crmVerified: true,
+                user: {
+                    email: {
+                        equals: email,
+                        mode: 'insensitive',
+                    },
+                },
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        fullName: true,
+                    },
+                },
+            },
+        });
+
+        if (!profile) {
+            this.logger.debug(`CRM contact not found for: ${maskedEmail}`);
+            return null;
+        }
+
+        this.logger.debug(`CRM contact found for: ${maskedEmail}`);
+
+        return {
+            contactId: profile.id,
+            externalContactId: profile.externalContactId ?? undefined,
+            emailAddress: profile.user.email,
+            firstName: profile.firstName ?? undefined,
+            lastName: profile.lastName ?? undefined,
+            companyName: profile.companyName ?? undefined,
+            crmVerified: profile.crmVerified,
+        };
     }
 
     private maskSecret(val: string | null | undefined): string | null {

@@ -11,6 +11,7 @@ import { HotinfoParserService } from './hotinfo-parser.service';
 import { EmailService } from '../email/email.service';
 import { ErrorLoggerService } from '../common/services/error-logger.service';
 import { UpdateCustomerProfileDto } from './dto/update-customer-profile.dto';
+import { CrmEmailValidatorService } from '../crm/crm-email-validator.service';
 
 @Injectable()
 export class CustomersService {
@@ -21,6 +22,7 @@ export class CustomersService {
         private jwtService: JwtService,
         private config: ConfigService,
         private errorLogger: ErrorLoggerService,
+        private readonly crmEmailValidator: CrmEmailValidatorService,
     ) { }
 
     async importCustomers(data: ImportCustomerRecordDto[]) {
@@ -113,6 +115,16 @@ export class CustomersService {
             throw new ConflictException('Bu e-posta adresi sistemde zaten kayıtlı.');
         }
 
+        // 2. CRM validation — only for non-admin users
+        if (!this.crmEmailValidator.isAdminBypass(dto.email)) {
+            const crmResult = await this.crmEmailValidator.validateEmailInCrm(dto.email);
+            if (!crmResult.isValid) {
+                throw new BadRequestException(
+                    crmResult.errorMessage || 'Bu e-posta adresi CRM sisteminde kayıtlı değil.'
+                );
+            }
+        }
+
         const isAllplan = dto.usedProducts?.some(p => p.toLowerCase().includes('allplan')) || dto.isAllplanUser;
         let finalCustomerNo = dto.customerNo;
 
@@ -121,7 +133,7 @@ export class CustomersService {
                 throw new BadRequestException('Allplan kullanıcıları için Müşteri No zorunludur.');
             }
 
-            // 2. Check if customerNo already registered
+            // 3. Check if customerNo already registered
             const existingProfile = await this.prisma.customerProfile.findUnique({
                 where: { customerNo: finalCustomerNo },
             });
@@ -129,15 +141,6 @@ export class CustomersService {
             if (existingProfile) {
                 throw new ConflictException(
                     'Bu Müşteri No daha önce kaydedilmiş. Lütfen destek alınız.',
-                );
-            }
-
-            // 3. CRM Validation Logic (Mock - will be replaced with real CRM API)
-            const isCrmValid = this.mockVerifyCrmCustomer(finalCustomerNo);
-
-            if (!isCrmValid) {
-                throw new BadRequestException(
-                    'Bu Müşteri No geçersizdir veya CRM sisteminde bulunamadı.',
                 );
             }
         } else {
@@ -265,14 +268,6 @@ export class CustomersService {
         // Strip password before returning
         const { passwordHash: _, ...result } = resultUser;
         return result;
-    }
-
-    /**
-     * Mock CRM verification. Replace with real API call when CRM is integrated.
-     * Currently validates format: must start with "C" and be at least 5 chars.
-     */
-    private mockVerifyCrmCustomer(customerNo: string): boolean {
-        return customerNo.length >= 5 && customerNo.startsWith('C');
     }
 
     async getAllCustomers() {
