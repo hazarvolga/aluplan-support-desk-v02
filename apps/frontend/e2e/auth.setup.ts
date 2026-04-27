@@ -8,11 +8,10 @@ import { TEST_USERS, login } from './helpers/auth';
  * skip the login dance. Eliminates the hydration race that turned
  * single-test login retries into a 6-attempt cascade.
  *
- * Usage in playwright.config.ts:
- *   projects: [
- *     { name: 'setup', testMatch: /auth\.setup\.ts/ },
- *     { name: 'chromium', use: { storageState: 'playwright/.auth/admin.json' }, dependencies: ['setup'] },
- *   ]
+ * The three role setups run in a single `setup()` block sequentially
+ * (rather than three parallel `setup()` calls) because Playwright would
+ * otherwise spin up two of them concurrently with `workers: 2`, and the
+ * second navigation would abort the first with ERR_ABORTED.
  */
 
 export const STATE_DIR = path.join(__dirname, '..', 'playwright', '.auth');
@@ -20,17 +19,21 @@ export const ADMIN_STATE = path.join(STATE_DIR, 'admin.json');
 export const AGENT_STATE = path.join(STATE_DIR, 'agent.json');
 export const CUSTOMER_STATE = path.join(STATE_DIR, 'customer.json');
 
-setup('authenticate as admin', async ({ page }) => {
-    await login(page, TEST_USERS.admin.email, TEST_USERS.admin.password);
-    await page.context().storageState({ path: ADMIN_STATE });
-});
-
-setup('authenticate as agent', async ({ page }) => {
-    await login(page, TEST_USERS.agent.email, TEST_USERS.agent.password);
-    await page.context().storageState({ path: AGENT_STATE });
-});
-
-setup('authenticate as customer', async ({ page }) => {
-    await login(page, TEST_USERS.customer.email, TEST_USERS.customer.password);
-    await page.context().storageState({ path: CUSTOMER_STATE });
+setup('authenticate all roles', async ({ browser }) => {
+    for (const [role, creds, state] of [
+        ['admin', TEST_USERS.admin, ADMIN_STATE] as const,
+        ['agent', TEST_USERS.agent, AGENT_STATE] as const,
+        ['customer', TEST_USERS.customer, CUSTOMER_STATE] as const,
+    ]) {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        try {
+            await login(page, creds.email, creds.password);
+            await context.storageState({ path: state });
+            console.log(`[auth.setup] ${role} state persisted`);
+        } finally {
+            await page.close();
+            await context.close();
+        }
+    }
 });

@@ -42,7 +42,9 @@ export async function login(
             if (debug) console.log(`--- [AUTH] Login attempt ${attempt}/${maxRetries} for ${email} ---`);
 
             await page.goto('/tr/login');
-            await page.waitForLoadState('networkidle');
+            // Don't waitForLoadState('networkidle') — under `next dev` hot-reload
+            // never lets the network settle and the wait expires. The selector
+            // wait below is enough to confirm the page is interactive.
             await page.waitForSelector('[data-testid="login-email"]', { timeout });
 
             await page.getByTestId('login-email').clear();
