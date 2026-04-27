@@ -54,48 +54,67 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
     }, [clearInvite]);
 
     useEffect(() => {
-        // Multi-tab: BroadcastChannel to coordinate invite display
         try {
             channelRef.current = new BroadcastChannel(BROADCAST_CHANNEL);
-            channelRef.current.onmessage = (event) => {
-                if (event.data.type === 'INVITE_CLAIMED') {
-                    // Another tab claimed this invite — hide it here
-                    setInvite(null);
-                    if (countdownRef.current) clearInterval(countdownRef.current);
-                } else if (event.data.type === 'INVITE_CLEARED') {
-                    setInvite(null);
-                    if (countdownRef.current) clearInterval(countdownRef.current);
-                }
-            };
         } catch {
-            // BroadcastChannel not supported — graceful degradation
+            // BroadcastChannel not supported
         }
-
         return () => {
             channelRef.current?.close();
         };
     }, []);
 
+    // Multi-tab sync & initial cleanup
     useEffect(() => {
+        // Clear any old session locks on mount to prevent deadlocks
+        localStorage.removeItem(STORAGE_KEY);
+
+        // Listen for channel messages
+        const channel = channelRef.current;
+        if (!channel) return;
+
+        const handleChannelMessage = (event: MessageEvent) => {
+            if (event.data.type === 'INVITE_CLAIMED') {
+                setInvite(null);
+                if (countdownRef.current) clearInterval(countdownRef.current);
+            } else if (event.data.type === 'INVITE_CLEARED') {
+                setInvite(null);
+                if (countdownRef.current) clearInterval(countdownRef.current);
+            }
+        };
+
+        channel.addEventListener('message', handleChannelMessage);
+        return () => {
+            channel.removeEventListener('message', handleChannelMessage);
+            localStorage.removeItem(STORAGE_KEY); // Cleanup on full unmount
+        };
+    }, []);
+
+    useEffect(() => {
+        let isSubscribed = true;
+
         try {
             const socket = getSocket();
-            socket.connect();
+            if (!socket.connected) socket.connect();
 
             const handleIncoming = (payload: IncomingPayload) => {
-                // Multi-tab: check if another tab already has this invite
-                const existing = localStorage.getItem(STORAGE_KEY);
-                if (existing) return; // Another tab is handling it
+                if (!isSubscribed) return;
 
-                // Claim this invite
-                localStorage.setItem(STORAGE_KEY, payload.sessionId);
-                channelRef.current?.postMessage({ type: 'INVITE_CLAIMED', sessionId: payload.sessionId });
+                // Multi-tab: check if another tab is already handling a session
+                const existing = localStorage.getItem(STORAGE_KEY);
+                if (existing) return;
 
                 setInvite(payload);
                 startCountdown();
+
+                // Block other tabs from showing this invite
+                localStorage.setItem(STORAGE_KEY, payload.sessionId);
+                channelRef.current?.postMessage({ type: 'INVITE_CLAIMED', sessionId: payload.sessionId });
             };
 
-            const handleMissed = (data: { sessionId: string }) => {
-                if (invite?.sessionId === data.sessionId) {
+            const handleMissed = (payload: { sessionId: string }) => {
+                if (!isSubscribed) return;
+                if (invite?.sessionId === payload.sessionId) {
                     clearInvite();
                 }
             };
@@ -103,16 +122,36 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
             socket.on('proactive_chat:incoming', handleIncoming);
             socket.on('proactive_chat:missed', handleMissed);
 
+            // Persistent Recovery: Check for active sessions on mount
+            const recoverSession = async () => {
+                try {
+                    const sessions = await api.proactiveChat.listSessions();
+                    const pending = sessions.find(s => s.status === 'PENDING');
+                    if (pending && isSubscribed) {
+                        handleIncoming({
+                            sessionId: pending.id,
+                            agentId: pending.agentId,
+                            agentName: pending.agent?.fullName || 'Agent',
+                            agentAvatar: pending.agent?.avatarUrl,
+                            createdAt: pending.createdAt,
+                        });
+                    }
+                } catch (err) {
+                    console.error('[ProactiveChatInvite] Recovery error:', err);
+                }
+            };
+
+            recoverSession();
+
             return () => {
+                isSubscribed = false;
                 socket.off('proactive_chat:incoming', handleIncoming);
                 socket.off('proactive_chat:missed', handleMissed);
             };
         } catch (err) {
-            if (process.env.NODE_ENV === 'development') {
-                console.warn('[ProactiveChatInvite] Socket init failed:', err);
-            }
+            console.error('[ProactiveChatInvite] Socket error:', err);
         }
-    }, [invite, startCountdown, clearInvite]);
+    }, [invite?.sessionId, startCountdown, clearInvite]);
 
     const handleAccept = async () => {
         if (!invite) return;
@@ -146,7 +185,7 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
     const progress = (countdown / TIMEOUT_SECONDS) * 100;
 
     return (
-        <div 
+        <div
             data-testid="proactive-chat-invite"
             className="fixed bottom-6 right-6 z-50 w-80 rounded-2xl border border-white/10 bg-background/95 backdrop-blur-sm shadow-2xl shadow-black/20 overflow-hidden"
         >

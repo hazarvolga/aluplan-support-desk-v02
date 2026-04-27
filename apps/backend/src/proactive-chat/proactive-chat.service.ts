@@ -26,19 +26,26 @@ export class ProactiveChatService {
         @Inject(forwardRef(() => NotificationsGateway))
         private readonly gateway: NotificationsGateway,
         @InjectQueue(PROACTIVE_CHAT_QUEUE) private readonly queue: Queue,
-    ) {}
+    ) { }
 
     // ─── Task 3: Session Management ─────────────────────────────────────────────
 
     async createSession(agentId: string, customerId: string) {
-        // 1. Verify customer exists
-        const customerProfile = await this.prisma.customerProfile.findFirst({
+        // 1. Verify customer profile exists and is VIP
+        const profile = await this.prisma.customerProfile.findUnique({
             where: { userId: customerId },
-            include: { user: { select: { id: true, fullName: true } } },
+            include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
         });
-        if (!customerProfile) {
-            throw new NotFoundException(`Customer profile not found for user ${customerId}`);
+
+        if (!profile) {
+            throw new NotFoundException(`Customer profile for user ${customerId} not found`);
         }
+
+        if (!profile.isVip) {
+            throw new ForbiddenException('Proaktif chat hizmeti sadece VIP müşterilere sunulmaktadır.');
+        }
+
+        const customer = profile.user;
 
         // 2. Check for conflicting sessions (PENDING or ACTIVE)
         const existing = await this.prisma.proactiveChatSession.findFirst({
@@ -91,23 +98,16 @@ export class ProactiveChatService {
         };
         this.gateway.sendToUser(customerId, 'proactive_chat:incoming', wsPayload);
 
-        // 7. If customer is offline, create persistent Notification
-        const redis = this.redisService.getClient();
-        const customerRoleKeys = ['ws:active:role:customer'];
-        const activeCustomers = await redis.sunion(...customerRoleKeys);
-        const isCustomerOnline = activeCustomers.includes(customerId);
-
-        if (!isCustomerOnline) {
-            await this.prisma.notification.create({
-                data: {
-                    userId: customerId,
-                    title: 'Proaktif Chat Daveti',
-                    message: `${agent?.fullName || 'Bir ajan'} sizinle chat başlatmak istiyor.`,
-                    type: 'PROACTIVE_CHAT_INVITE',
-                    link: `/chat/${session.id}`,
-                },
-            });
-        }
+        // 7. Create persistent Notification
+        await this.prisma.notification.create({
+            data: {
+                userId: customerId,
+                title: 'Proaktif Chat Daveti',
+                message: `${agent?.fullName || 'Bir ajan'} sizinle chat başlatmak istiyor.`,
+                type: 'PROACTIVE_CHAT_INVITE',
+                link: `/chat/${session.id}`,
+            },
+        });
 
         this.logger.log(`Proactive chat session created: ${session.id} (agent: ${agentId}, customer: ${customerId})`);
         return session;

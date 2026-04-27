@@ -96,7 +96,7 @@ Bu implementation plan, kullanıcı kaydını sadece CRM sisteminde (Dynamics 36
     - **Validates: Requirements 3.2**
 
 - [ ] 6. Security and data protection implementation
-  - [~] 6.1 Implement input validation and rate limiting
+  - [ ] 6.1 Implement input validation and rate limiting
     - Add email format validation before CRM queries
     - Implement per-IP rate limiting for registration attempts
     - Add protection against injection attacks and abuse
@@ -119,7 +119,7 @@ Bu implementation plan, kullanıcı kaydını sadece CRM sisteminde (Dynamics 36
     - **Validates: Requirements 2.3, 3.3, 6.4**
 
 - [ ] 7. Configuration and feature flag setup
-  - [~] 7.1 Create configuration management system
+  - [ ] 7.1 Create configuration management system
     - Add CrmValidationSettings interface and database settings
     - Implement environment variable configuration
     - Add runtime configuration validation and startup checks

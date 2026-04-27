@@ -257,28 +257,43 @@ export class AnnouncementsService {
     }
 
     async getMyAnnouncements(userId: string, page = 1, limit = 20) {
-        const customer = await this.prisma.customerProfile.findUnique({ where: { userId } });
-        if (!customer) return { data: [], total: 0 };
-        const [data, total] = await Promise.all([
-            this.prisma.announcementLog.findMany({
-                where: { customerId: customer.id },
-                orderBy: { sentAt: 'desc' },
-                skip: (page - 1) * limit,
-                take: limit,
-                include: { announcement: { select: { title: true, contentMjml: true } } },
-            }),
-            this.prisma.announcementLog.count({ where: { customerId: customer.id } }),
-        ]);
-        return { data, total };
+        try {
+            const customer = await this.prisma.customerProfile.findUnique({ where: { userId } });
+            if (!customer) return { data: [], total: 0 };
+            const [data, total] = await Promise.all([
+                this.prisma.announcementLog.findMany({
+                    where: { customerId: customer.id },
+                    orderBy: { sentAt: 'desc' },
+                    skip: (page - 1) * limit,
+                    take: limit,
+                    include: { announcement: { select: { title: true, contentMjml: true } } },
+                }),
+                this.prisma.announcementLog.count({ where: { customerId: customer.id } }),
+            ]);
+            return { data, total };
+        } catch (error) {
+            this.logger.error(`Error in getMyAnnouncements for user ${userId}:`, error);
+            return { data: [], total: 0 };
+        }
     }
 
     async getMyUnreadCount(userId: string): Promise<{ count: number }> {
-        const customer = await this.prisma.customerProfile.findUnique({ where: { userId } });
-        if (!customer) return { count: 0 };
-        const count = await this.prisma.announcementLog.count({
-            where: { customerId: customer.id, readAt: null },
-        });
-        return { count };
+        try {
+            const customer = await this.prisma.customerProfile.findUnique({ where: { userId } });
+            if (!customer) return { count: 0 };
+
+            const count = await this.prisma.announcementLog.count({
+                where: {
+                    customerId: customer.id,
+                    readAt: null
+                },
+            });
+            return { count };
+        } catch (error) {
+            this.logger.error(`Error in getMyUnreadCount for user ${userId}:`, error);
+            // Fallback to 0 to prevent UI crashes if DB is misaligned
+            return { count: 0 };
+        }
     }
 
     async markLogRead(logId: string, userId: string): Promise<AnnouncementLog> {

@@ -328,6 +328,7 @@ export class AuthService {
                 customerProfile: {
                     select: {
                         id: true,
+                        isVip: true,
                         hotinfoData: true,
                         hotinfoUpdatedAt: true,
                     }

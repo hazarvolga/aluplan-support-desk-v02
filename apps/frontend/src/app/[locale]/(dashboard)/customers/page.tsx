@@ -62,6 +62,7 @@ interface CustomerItem {
     status: string;
     createdAt: string;
     customerProfile?: {
+        isVip: boolean;
         customerNo: string;
         companyName: string;
         firstName: string;
@@ -763,9 +764,16 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                         case 'fullName':
                                                             return (
                                                                 <TableCell key={col.key}>
-                                                                    <Link href={`/customers/${c.id}`} className="font-bold text-white hover:text-blue-400 underline-offset-4 hover:underline transition-colors block">
-                                                                        {c.fullName}
-                                                                    </Link>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Link href={`/customers/${c.id}`} className="font-bold text-white hover:text-blue-400 underline-offset-4 hover:underline transition-colors block">
+                                                                            {c.fullName}
+                                                                        </Link>
+                                                                        {c.customerProfile?.isVip && (
+                                                                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20 px-1 py-0 h-4 text-[8px] font-black uppercase tracking-tighter">
+                                                                                VIP
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
                                                                 </TableCell>
                                                             );
                                                         case 'email':
@@ -839,9 +847,12 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                             data-testid={`start-proactive-chat-${c.id}`}
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="h-8 w-8 p-0 rounded-full hover:bg-green-500/10 hover:text-green-500 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                                                            title="Proaktif Chat Başlat"
-                                                            disabled={startingChat === c.id}
+                                                            className={`h-8 w-8 p-0 rounded-full transition-all ${c.customerProfile?.isVip
+                                                                ? 'hover:bg-green-500/10 hover:text-green-500 text-muted-foreground opacity-30 group-hover:opacity-100'
+                                                                : 'opacity-0 cursor-not-allowed text-white/5'
+                                                                }`}
+                                                            title={c.customerProfile?.isVip ? "Proaktif Chat Başlat" : "Sadece VIP Müşteriler İçin"}
+                                                            disabled={startingChat === c.id || !c.customerProfile?.isVip}
                                                             onClick={() => handleStartProactiveChat(c.id, c.fullName)}
                                                         >
                                                             {startingChat === c.id ? (
