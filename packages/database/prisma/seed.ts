@@ -28,7 +28,8 @@ async function main() {
         adminRole = await prisma.role.create({ data: { name: 'ADMIN', isSystem: true } });
     }
 
-    let admin = await prisma.user.findUnique({ where: { email: 'hazarvolga@gmail.com' } });
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+    let admin = await prisma.user.findUnique({ where: { email: adminEmail } });
     if (admin) {
         admin = await prisma.user.update({
             where: { id: admin.id },
@@ -41,7 +42,7 @@ async function main() {
     } else {
         admin = await prisma.user.create({
             data: {
-                email: 'hazarvolga@gmail.com',
+                email: adminEmail,
                 fullName: 'hazarvolga',
                 passwordHash: hash,
                 roleId: adminRole.id,

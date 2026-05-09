@@ -72,8 +72,9 @@ async function main() {
         }
 
         // --- 2. Admin User Protection ---
-        console.log('👤 Ensuring Admin user integrity (hazarvolga@gmail.com)...');
-        let adminUser = await prisma.user.findUnique({ where: { email: 'hazarvolga@gmail.com' } });
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+        console.log(`👤 Ensuring Admin user integrity (${adminEmail})...`);
+        let adminUser = await prisma.user.findUnique({ where: { email: adminEmail } });
         if (adminUser) {
             await prisma.user.update({
                 where: { id: adminUser.id },
@@ -83,14 +84,14 @@ async function main() {
             const passwordHash = await bcrypt.hash('Vol1872017', 10);
             adminUser = await prisma.user.create({
                 data: {
-                    email: 'hazarvolga@gmail.com',
+                    email: adminEmail,
                     passwordHash: passwordHash,
                     fullName: 'Hazar Volga',
                     roleId: adminRole.id,
                     status: 'ACTIVE'
                 }
             });
-            console.log('✅ Created default admin user: hazarvolga@gmail.com');
+            console.log(`✅ Created default admin user: ${adminEmail}`);
         }
 
         // --- 3. User Recovery ---

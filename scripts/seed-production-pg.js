@@ -43,11 +43,12 @@ async function main() {
 
     try {
         // Get Admin ID
-        const adminRes = await client.query(`SELECT id FROM users WHERE email = 'hazarvolga@gmail.com' LIMIT 1`);
-        const adminId = adminRes.rows.length > 0 ? adminRes.rows[0].id : null;
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+        const adminRes = await client.query(`SELECT id FROM users WHERE email = $1 LIMIT 1`, [adminEmail]);
+        const adminId = adminRes.rows[0]?.id;
 
         if (!adminId) {
-            console.warn('⚠️ Admin user hazarvolga@gmail.com not found, updatedBy fields will be null.');
+            console.warn(`⚠️ Admin user ${adminEmail} not found, updatedBy fields will be null.`);
         }
 
         const settings = [

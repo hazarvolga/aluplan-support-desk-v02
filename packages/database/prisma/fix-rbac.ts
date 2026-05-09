@@ -64,9 +64,10 @@ async function main() {
     });
     console.log('✅ Linked "*" permission to "admin" role');
 
-    // 4. Ensure hazarvolga@gmail.com is linked to admin role
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+    // 4. Ensure admin email is linked to admin role
     const user = await prisma.user.findUnique({
-        where: { email: 'hazarvolga@gmail.com' }
+        where: { email: adminEmail }
     });
 
     if (user) {
@@ -77,9 +78,9 @@ async function main() {
                 status: 'ACTIVE'
             }
         });
-        console.log('✅ User hazarvolga@gmail.com updated with admin roleId');
+        console.log(`✅ User ${adminEmail} updated with admin roleId`);
     } else {
-        console.warn('⚠️ User hazarvolga@gmail.com not found. Please run seed-admin first.');
+        console.warn(`⚠️ User ${adminEmail} not found. Please run seed-admin first.`);
     }
 
     console.log('\n🎉 RBAC Fix complete!');
