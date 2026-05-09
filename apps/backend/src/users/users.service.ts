@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
+import { BCRYPT_ROUNDS } from '../auth/security.constants';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
@@ -9,7 +10,7 @@ export class UsersService {
 
     async create(dto: { email: string; password: string; fullName: string; roles?: string[] }) {
         const existing = await this.prisma.user.findUnique({ where: { email: dto.email }, include: { role: true } });
-        const passwordHash = await bcrypt.hash(dto.password, 10);
+        const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
 
         if (existing) {
             // Allow upgrading an existing user (e.g., from CUSTOMER synced via CRM)
@@ -118,7 +119,7 @@ export class UsersService {
         const updateData: any = {};
         if (dto.fullName) updateData.fullName = dto.fullName;
         if (dto.password) {
-            updateData.passwordHash = await bcrypt.hash(dto.password, 10);
+            updateData.passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
         }
         if (dto.language) updateData.language = dto.language;
 

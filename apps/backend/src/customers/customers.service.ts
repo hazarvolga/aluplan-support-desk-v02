@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
 import * as bcrypt from 'bcryptjs';
+import { BCRYPT_ROUNDS } from '../auth/security.constants';
 
 import { ImportCustomerRecordDto } from './dto/import-customers.dto';
 import { HotinfoParserService } from './hotinfo-parser.service';
@@ -40,7 +41,7 @@ export class CustomersService {
 
                     if (!existingUser) {
                         const tempPassword = `Aluplan${new Date().getFullYear()}!`;
-                        const passwordHash = await bcrypt.hash(tempPassword, 10);
+                        const passwordHash = await bcrypt.hash(tempPassword, BCRYPT_ROUNDS);
 
                         // Get customer role
                         const customerRole = await prisma.role.findUnique({
@@ -165,7 +166,7 @@ export class CustomersService {
 
         // 4. Create User + CustomerProfile in a single transaction
         const resultUser = await this.prisma.$transaction(async (prisma) => {
-            const passwordHash = await bcrypt.hash(dto.password, 10);
+            const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
             const fullName = `${dto.firstName} ${dto.lastName}`;
 
             const hotinfoData = {
@@ -419,7 +420,7 @@ export class CustomersService {
         const generateTempPass = () => Math.random().toString(36).slice(-8);
         const tempPassword = generateTempPass() + 'A1!'; // ensure some complexity
 
-        const passwordHash = await bcrypt.hash(tempPassword, 10);
+        const passwordHash = await bcrypt.hash(tempPassword, BCRYPT_ROUNDS);
         await this.prisma.user.update({
             where: { id },
             data: { passwordHash }

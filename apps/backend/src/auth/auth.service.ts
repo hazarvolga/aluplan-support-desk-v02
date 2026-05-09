@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, ForbiddenException, Logger } from '@
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
+import { BCRYPT_ROUNDS } from './security.constants';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { EmailService } from '../email/email.service';
@@ -280,8 +281,7 @@ export class AuthService {
                 throw new UnauthorizedException('Kullanıcı bulunamadı.');
             }
 
-            const salt = await bcrypt.genSalt();
-            const passwordHash = await bcrypt.hash(newPasswordStr, salt);
+            const passwordHash = await bcrypt.hash(newPasswordStr, BCRYPT_ROUNDS);
 
             await this.prisma.user.update({
                 where: { id: userId },
@@ -392,8 +392,7 @@ export class AuthService {
     }
 
     private async updateRefreshTokenHash(userId: string, refreshToken: string) {
-        const salt = await bcrypt.genSalt();
-        const hash = await bcrypt.hash(refreshToken, salt);
+const hash = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
         await this.prisma.user.update({
             where: { id: userId },
             data: { refreshTokenHash: hash },
