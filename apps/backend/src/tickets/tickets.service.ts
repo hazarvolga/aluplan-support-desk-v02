@@ -204,7 +204,6 @@ export class TicketsService {
     // FIND ONE
     // =============================================
     async findOne(id: string, requester?: any) {
-        console.log(`[DEBUG-TICKET] findOne id=${id} requesterRole=${requester?.role} requesterId=${requester?.id}`);
         const ticket = await this.prisma.ticket.findFirst({
             where: { id, deletedAt: null },
             include: {
