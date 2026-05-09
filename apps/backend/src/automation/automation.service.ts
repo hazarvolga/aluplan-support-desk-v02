@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from './audit.service';
 import { TicketStatus } from '@aluplan/database';
 import { EmailService } from '../email/email.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AutomationService {
@@ -14,11 +15,14 @@ export class AutomationService {
         private readonly prisma: PrismaService,
         private readonly audit: AuditService,
         private readonly emailService: EmailService,
+        private readonly config: ConfigService,
     ) { }
 
     @OnEvent('ticket.status_changed')
     async handleStatusChange(payload: { ticketId: string; oldStatus: TicketStatus; newStatus: TicketStatus; actorId?: string }) {
         this.logger.log(`🤖 Automation: Processing status change for ticket ${payload.ticketId} (${payload.oldStatus} -> ${payload.newStatus})`);
+
+        const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
         // Log to Audit
         await this.audit.log({
@@ -44,7 +48,7 @@ export class AutomationService {
                 ticketId: ticket.id,
                 oldStatus: payload.oldStatus,
                 newStatus: payload.newStatus,
-                ticketUrl: `${process.env.FRONTEND_URL}/tickets/${ticket.id}`
+                ticketUrl: `${frontendUrl}/tickets/${ticket.id}`
             }).catch(err => this.logger.error(`Failed to send status change email: ${err.message}`));
 
             // If RESOLVED or PENDING_CUSTOMER_REVIEW, send closed/survey email
@@ -55,7 +59,7 @@ export class AutomationService {
                         customerName: ticket.creator.fullName,
                         ticketNumber: ticket.ticketNumber,
                         ticketId: ticket.id,
-                        surveyUrl: `${process.env.FRONTEND_URL}/tickets/${ticket.id}/feedback`
+                        surveyUrl: `${frontendUrl}/tickets/${ticket.id}/feedback`
                     });
                 }
 
@@ -64,7 +68,7 @@ export class AutomationService {
                     customerName: ticket.creator.fullName,
                     ticketNumber: ticket.ticketNumber,
                     ticketId: ticket.id,
-                    surveyUrl: `${process.env.FRONTEND_URL}/tickets/${ticket.id}/feedback`
+                    surveyUrl: `${frontendUrl}/tickets/${ticket.id}/feedback`
                 });
             }
         }
@@ -89,13 +93,15 @@ export class AutomationService {
                 this.logger.debug(`⏳ Smart Buffer: Delaying email for message ${payload.message.id} by 1m`);
             }
 
+            const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
+
             this.emailService.sendNewMessage({
                 recipientEmail: payload.recipientEmail,
                 userName: payload.userName || 'Kullanıcı',
                 ticketId: payload.ticket.id,
                 ticketNumber: payload.ticket.ticketNumber,
                 latestMessage: payload.message.message,
-                ticketUrl: `${process.env.FRONTEND_URL}/tickets/${payload.ticket.id}`
+                ticketUrl: `${frontendUrl}/tickets/${payload.ticket.id}`
             }, options).catch(err => this.logger.error(`Failed to send message notification: ${err.message}`));
         }
     }
@@ -103,6 +109,8 @@ export class AutomationService {
     @OnEvent('ticket.created')
     async handleTicketCreated(ticket: any) {
         this.logger.log(`🤖 Automation: New ticket created ${ticket.ticketNumber}`);
+
+        const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
         await this.audit.log({
             actorId: ticket.userId,
@@ -121,7 +129,7 @@ export class AutomationService {
                 subject: ticket.subject,
                 priority: ticket.priority,
                 createdAt: new Date(ticket.createdAt).toLocaleString(),
-                ticketUrl: `${process.env.FRONTEND_URL}/tickets/${ticket.id}`
+                ticketUrl: `${frontendUrl}/tickets/${ticket.id}`
             }).catch(err => {
                 this.logger.error(`Failed to send creation email for ${ticket.ticketNumber}: ${err.message}`);
                 fs.writeFileSync('/tmp/mail_error.txt', err.stack || err.message);
@@ -152,7 +160,7 @@ export class AutomationService {
                     customerEmail: ticket.creator?.email || '-',
                     customerCompany: (ticket as any).creator?.customerProfile?.companyName || '-',
                     createdAt: new Date(ticket.createdAt).toLocaleString(),
-                    ticketUrl: `${process.env.FRONTEND_URL}/admin/tickets/${ticket.id}`
+                    ticketUrl: `${frontendUrl}/admin/tickets/${ticket.id}`
                 }).catch(err => this.logger.error(`Failed to notify staff for ${ticket.ticketNumber}: ${err.message}`));
             }
         } catch (error) {
@@ -168,10 +176,11 @@ export class AutomationService {
 
         // Send confirmation email to customer
         if (user?.email) {
+            const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
             this.emailService.sendWelcomeCustomer({
                 customerEmail: user.email,
                 fullName: user.fullName || 'Değerli Müşterimiz',
-                loginUrl: `${process.env.FRONTEND_URL}/login`
+                loginUrl: `${frontendUrl}/login`
             }).catch(err => {
                 this.logger.error(`Failed to send welcome email for ${user.email}: ${err.message}`);
             });
