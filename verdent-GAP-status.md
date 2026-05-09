@@ -4,7 +4,7 @@ Kaynak: `verdent-GAP.md` + `git log --oneline -50`
 
 ---
 
-## ✅ Kapatılan GAP'ler (20/30)
+## ✅ Kapatılan GAP'ler (21/30)
 
 | GAP | Commit | Özet |
 |-----|--------|------|
@@ -26,7 +26,7 @@ Kaynak: `verdent-GAP.md` + `git log --oneline -50`
 
 ---
 
-## ⏳ Açık GAP'ler (10/30)
+## ⏳ Açık GAP'ler (9/30)
 
 ### Kritik (0)
 
@@ -51,7 +51,7 @@ Tüm kritik GAP'ler kapatıldı.
 | GAP-22 | Açık | help-docs spec görev 7.5, 8 eksik |
 | GAP-23 | Açık | customer-list spec görevler eksik |
 | GAP-25 | Açık | document-parsing TODO eksik |
-| GAP-26 | Açık | Budget cap tekrar okuma (4 yerde) |
+| GAP-26 | Kapalı | Global cap constructor'da cached (satır 35) |
 | GAP-27 | Açık | Backend e2e/integration test yok |
 
 ### Düşük (2)
