@@ -37,7 +37,7 @@ Tüm kritik GAP'ler kapatıldı.
 | GAP | Durum | Not |
 |-----|-------|-----|
 | GAP-07 | Kapalı | onModuleInit'te DDL yok - temiz |
-| GAP-10 | Açık | 76 `as any` backend, 284 frontend — type safety düşük |
+| GAP-10 | Açık | ~20 `as any` backend prod, 32 frontend prod (önemli ölçüde düzeltildi) |
 | GAP-11 | Açık | 50+ kritik servis test yok |
 | GAP-17 | Kapalı | `kb-summarizer.processor.ts` settings'den okuyor (satır 21, 79) |
 | GAP-18 | Kapalı | bcrypt rounds test sabiti 12 olarak düzeltildi |
