@@ -59,6 +59,9 @@ jobs:
       - run: pnpm install
       - name: Prisma Generate
         run: npx prisma generate
+      - name: Prisma Migration Check (GAP-07)
+        run: npx prisma migrate diff --from-migrations packages/database/prisma/migrations --to-schema-datamodel packages/database/prisma/schema.prisma --script
+        continue-on-error: true
       - name: Build Backend
         run: cd apps/backend && pnpm run build
       - name: Build Frontend
