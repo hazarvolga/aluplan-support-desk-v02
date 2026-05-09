@@ -24,19 +24,15 @@ import { AiProviderRouter } from './ai-provider-router.service';
 @Injectable()
 export class AiBudgetMonitor {
     private readonly logger = new Logger(AiBudgetMonitor.name);
-    private alertSent = new Map<string, boolean>(); // Track sent alerts to avoid spam
-    private readonly globalCap: number;
+    private alertSent = new Map<string, boolean>();
+    private readonly this.globalCap: number;
 
     constructor(
         private readonly settings: SettingsService,
         private readonly redis: RedisService,
         private readonly router: AiProviderRouter,
     ) {
-        this.globalCap = this.getGlobalCap();
-    }
-
-    private getGlobalCap(): number {
-        return this.globalCap;
+        this.this.globalCap = parseFloat(process.env.AI_GLOBAL_DAILY_CAP || '200');
     }
 
     /**
@@ -78,10 +74,9 @@ export class AiBudgetMonitor {
         const config = await this.router.getTenantConfig(tenantId);
 
         // Check global cap
-        const globalCap = this.getGlobalCap();
         const globalCost = parseFloat((await this.redis.get(`ai:budget:global:cost:${today}`)) || '0');
-        if (globalCost >= globalCap) {
-            return { exceeded: true, reason: `Global budget exceeded: $${globalCost.toFixed(2)} / $${globalCap}` };
+        if (globalCost >= this.globalCap) {
+            return { exceeded: true, reason: `Global budget exceeded: $${globalCost.toFixed(2)} / $${this.globalCap}` };
         }
 
         // Check tenant cap
@@ -103,7 +98,6 @@ export class AiBudgetMonitor {
     }> {
         const today = new Date().toISOString().split('T')[0];
         const config = await this.router.getTenantConfig(tenantId);
-        const globalCap = this.getGlobalCap();
 
         const globalCost = parseFloat((await this.redis.get(`ai:budget:global:cost:${today}`)) || '0');
         const tenantCost = parseFloat((await this.redis.get(`ai:budget:${tenantId}:cost:${today}`)) || '0');
@@ -112,8 +106,8 @@ export class AiBudgetMonitor {
         return {
             global: {
                 spent: globalCost,
-                cap: globalCap,
-                remaining: Math.max(0, globalCap - globalCost),
+                cap: this.globalCap,
+                remaining: Math.max(0, this.globalCap - globalCost),
             },
             tenant: {
                 spent: tenantCost,
@@ -154,25 +148,24 @@ export class AiBudgetMonitor {
 
     private async checkThresholds(tenantId: string, today: string): Promise<void> {
         const config = await this.router.getTenantConfig(tenantId);
-        const globalCap = this.getGlobalCap();
         const warningThreshold = config.budget.warningThreshold;
 
         // Check global threshold
         const globalCost = parseFloat((await this.redis.get(`ai:budget:global:cost:${today}`)) || '0');
-        const globalRatio = globalCost / globalCap;
+        const globalRatio = globalCost / this.globalCap;
 
         if (globalRatio >= 1.0 && !this.alertSent.get('global:killed')) {
             await this.settings.setValue('ai.circuit_breaker.manual_off', 'true');
             await this.sendAlert(
                 '🚨 AI BUDGET CRITICAL',
-                `Global daily cap exceeded: $${globalCost.toFixed(2)} / $${globalCap}. AI services auto-disabled.`,
+                `Global daily cap exceeded: $${globalCost.toFixed(2)} / $${this.globalCap}. AI services auto-disabled.`,
                 'critical'
             );
             this.alertSent.set('global:killed', true);
         } else if (globalRatio >= warningThreshold && !this.alertSent.get('global:warning')) {
             await this.sendAlert(
                 '⚠️ AI BUDGET WARNING',
-                `Global daily cap at ${(globalRatio * 100).toFixed(0)}%: $${globalCost.toFixed(2)} / $${globalCap}`,
+                `Global daily cap at ${(globalRatio * 100).toFixed(0)}%: $${globalCost.toFixed(2)} / $${this.globalCap}`,
                 'warning'
             );
             this.alertSent.set('global:warning', true);
@@ -198,10 +191,9 @@ export class AiBudgetMonitor {
     @Cron('*/5 * * * *')
     async periodicBudgetCheck(): Promise<void> {
         const today = new Date().toISOString().split('T')[0];
-        const globalCap = this.getGlobalCap();
         const globalCost = parseFloat((await this.redis.get(`ai:budget:global:cost:${today}`)) || '0');
 
-        if (globalCost >= globalCap) {
+        if (globalCost >= this.globalCap) {
             const isKilled = await this.settings.getValue('ai.circuit_breaker.manual_off');
             if (isKilled !== 'true') {
                 await this.triggerGlobalKillSwitch('Periodic check: budget exceeded');
