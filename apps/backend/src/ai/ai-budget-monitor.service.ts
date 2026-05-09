@@ -25,14 +25,14 @@ import { AiProviderRouter } from './ai-provider-router.service';
 export class AiBudgetMonitor {
     private readonly logger = new Logger(AiBudgetMonitor.name);
     private alertSent = new Map<string, boolean>();
-    private readonly this.globalCap: number;
+    private readonly globalCap: number;
 
     constructor(
         private readonly settings: SettingsService,
         private readonly redis: RedisService,
         private readonly router: AiProviderRouter,
     ) {
-        this.this.globalCap = parseFloat(process.env.AI_GLOBAL_DAILY_CAP || '200');
+        this.globalCap = parseFloat(process.env.AI_GLOBAL_DAILY_CAP || '200');
     }
 
     /**
