@@ -35,8 +35,8 @@ export class RuleEngineService {
             });
 
             for (const rule of rules) {
-                const conditions: Record<string, string> = rule.conditions as any;
-                const actions: Record<string, string> = rule.actions as any;
+                const conditions: Record<string, unknown> = typeof rule.conditions === 'object' ? rule.conditions : {};
+                const actions: Record<string, unknown> = typeof rule.actions === 'object' ? rule.actions : {};
 
                 if (!conditions || !actions) continue;
 

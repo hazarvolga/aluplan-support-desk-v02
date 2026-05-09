@@ -2,9 +2,24 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY, PERMISSIONS_KEY } from './decorators/rbac.decorators';
 
+type UserRole = string | { name: string } | null;
+
+interface AuthUser {
+    role: UserRole;
+    permissions?: string[];
+    sub?: string;
+}
+
 @Injectable()
 export class RbacGuard implements CanActivate {
     constructor(private reflector: Reflector) { }
+
+    private getRoleName(role: UserRole): string | null {
+        if (!role) return null;
+        if (typeof role === 'string') return role.toUpperCase();
+        if (typeof role === 'object' && 'name' in role) return (role.name as string).toUpperCase();
+        return null;
+    }
 
     canActivate(context: ExecutionContext): boolean {
         const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
@@ -20,13 +35,12 @@ export class RbacGuard implements CanActivate {
         // If no RBAC restriction, allow
         if (!requiredRoles?.length && !requiredPermissions?.length) return true;
 
-        const { user } = context.switchToHttp().getRequest();
+        const { user } = context.switchToHttp().getRequest() as { user?: AuthUser };
         if (!user) throw new ForbiddenException('No user context');
 
         // Role check
         if (requiredRoles?.length) {
-            const userRoleName = (user.role as any)?.name || user.role;
-            const userRole = typeof userRoleName === 'string' ? userRoleName.toUpperCase() : null;
+            const userRole = this.getRoleName(user.role);
 
             const hasRole = requiredRoles.some(role => role.toUpperCase() === userRole);
             if (!hasRole && !user.permissions?.includes('*')) {
