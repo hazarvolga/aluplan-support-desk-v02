@@ -59,7 +59,7 @@ function makePayload(overrides: Partial<{
 /** Simulate the socket emitting ANNOUNCEMENT_RECEIVED */
 function emitAnnouncementReceived(payload: ReturnType<typeof makePayload>) {
     const handler = mockSocket.on.mock.calls.find(
-        ([event]: [string]) => event === 'ANNOUNCEMENT_RECEIVED'
+        (call) => call[0] === 'ANNOUNCEMENT_RECEIVED'
     )?.[1];
     if (!handler) throw new Error('ANNOUNCEMENT_RECEIVED handler not registered');
     act(() => handler(payload));
@@ -82,14 +82,14 @@ describe('GlobalAnnouncementNotification', () => {
 
     it('registers ANNOUNCEMENT_RECEIVED handler on mount', () => {
         render(<GlobalAnnouncementNotification />);
-        const registeredEvents = mockSocket.on.mock.calls.map(([event]: [string]) => event);
+        const registeredEvents = mockSocket.on.mock.calls.map((call) => call[0] as string);
         expect(registeredEvents).toContain('ANNOUNCEMENT_RECEIVED');
     });
 
     it('deregisters handler on unmount', () => {
         const { unmount } = render(<GlobalAnnouncementNotification />);
         unmount();
-        const offEvents = mockSocket.off.mock.calls.map(([event]: [string]) => event);
+        const offEvents = mockSocket.off.mock.calls.map((call) => call[0] as string);
         expect(offEvents).toContain('ANNOUNCEMENT_RECEIVED');
     });
 

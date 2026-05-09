@@ -869,7 +869,9 @@
       "endpoint": "Endpoint URL",
       "bucket": "Bucket Adı",
       "save_success": "Depolama ayarları kaydedildi.",
-      "save_error": "Kaydetme hatası: {message}"
+      "save_error": "Kaydetme hatası: {message}",
+      "region": "Region",
+      "test_btn": "Test Connection"
     },
     "crm": {
       "title": "Dynamics 365 CRM",
@@ -3187,7 +3189,8 @@
         "logo_upload_error": "Logo yükleme hatası.",
         "generic_error": "Bir hata oluştu.",
         "generic_success_hint": "{provider} servisine erişim sağlandı.",
-        "generic_fail_hint": "Servis şu anda ulaşılamaz durumda."
+        "generic_fail_hint": "Servis şu anda ulaşılamaz durumda.",
+        "success": "Success"
       }
     },
     "knowledge_base": {

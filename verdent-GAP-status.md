@@ -4,7 +4,7 @@ Kaynak: `verdent-GAP.md` + `git log --oneline -50`
 
 ---
 
-## ✅ Kapatılan GAP'ler (14/30)
+## ✅ Kapatılan GAP'ler (18/30)
 
 | GAP | Commit | Özet |
 |-----|--------|------|
@@ -16,31 +16,31 @@ Kaynak: `verdent-GAP.md` + `git log --oneline -50`
 | GAP-06 | `0274c23` | Unsubscribe token doğrulaması yok — düzeltildi |
 | GAP-08 | `c6e55ca` | Sentry tracesSampleRate %100 → %10 |
 | GAP-09 | `0274c23` | 7+ env var schema'da eksik — eklendi |
+| GAP-12 | `session-20260509` | de.json 305 eksik anahtar + 112 placeholder düzeltildi |
 | GAP-13 | `5b0cec4` | automation.service ConfigService bypass → düzeltildi |
 | GAP-14 | `ef4400f` | Soft-delete extension çalışmıyor → düzeltildi |
 | GAP-16 | `b328059` | Debug console.log production'da → kaldırıldı |
+| GAP-19 | `session-20260509` | FaqEntry/Macro/Announcement soft-delete'e geçirildi |
 | GAP-20 | `ef4400f` | DB pool max:100 → 20-30 |
 | GAP-24 | `b328059` | console.* → logger.* (kısmen) |
 
 ---
 
-## ⏳ Açık GAP'ler (16/30)
+## ⏳ Açık GAP'ler (12/30)
 
 ### Kritik (0)
 
 Tüm kritik GAP'ler kapatıldı.
 
-### Yüksek (7)
+### Yüksek (5)
 
 | GAP | Durum | Not |
 |-----|-------|-----|
 | GAP-07 | Açık | `prisma.service.ts` onModuleInit'te ALTER TABLE devam ediyor |
 | GAP-10 | Açık | 76 `as any` backend, 284 frontend — type safety düşük |
 | GAP-11 | Açık | 50+ kritik servis test yok |
-| GAP-12 | Açık | `de.json` 302 anahtar eksik |
-| GAP-17 | Açık | `kb-summarizer.processor.ts` dil hardcoded 'tr' |
-| GAP-18 | Açık | bcrypt rounds tutarsız (10, 5 yerde) |
-| GAP-19 | Açık | Soft-delete tutarsız uygulama (bazı modeller hard-delete) |
+| GAP-17 | Kapalı | `kb-summarizer.processor.ts` settings'den okuyor (satır 21, 79) |
+| GAP-18 | Kapalı | bcrypt rounds test sabiti 12 olarak düzeltildi |
 
 ### Orta (7)
 
@@ -58,7 +58,7 @@ Tüm kritik GAP'ler kapatıldı.
 
 | GAP | Durum | Not |
 |-----|-------|-----|
-| GAP-28 | Açık | CI pnpm v8, package.json v9+ |
+| GAP-28 | Kapalı | CI'da PNPM_VERSION: 9 ayarlandı (satır 11) |
 | GAP-29 | Açık | i18n hardcoded string kontrolü gerekli |
 | GAP-30 | Açık | KB processor sorumluluk örtüşmesi |
 

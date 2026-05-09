@@ -322,7 +322,7 @@ export class FaqService {
     }
 
     async deleteFaq(id: string): Promise<any> {
-        return this.prisma.faqEntry.delete({ where: { id } });
+        return this.prisma.faqEntry.update({ where: { id }, data: { deletedAt: new Date() } });
     }
 
     /**

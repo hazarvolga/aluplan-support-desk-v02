@@ -1,6 +1,5 @@
 import { z } from 'zod';
-
-export const UuidSchema = z.string().uuid();
+import { UuidSchema } from './uuid.schema';
 
 export const CreateTicketSchema = z.object({
     subject: z

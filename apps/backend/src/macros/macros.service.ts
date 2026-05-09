@@ -57,8 +57,9 @@ export class MacrosService {
     }
 
     async remove(id: string) {
-        return this.prisma.macro.delete({
+        return this.prisma.macro.update({
             where: { id },
+            data: { deletedAt: new Date() },
         });
     }
 

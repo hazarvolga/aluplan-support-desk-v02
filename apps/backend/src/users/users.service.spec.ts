@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { mockPrismaService } from '../test/mock.utils';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import { BCRYPT_ROUNDS } from '../auth/security.constants';
 
 jest.mock('bcryptjs');
 
@@ -46,7 +47,7 @@ describe('UsersService', () => {
             const result = await service.create({ email: 'test@t.com', password: 'pw', fullName: 'Test' });
 
             // Assert
-            expect(bcrypt.hash).toHaveBeenCalledWith('pw', 10);
+            expect(bcrypt.hash).toHaveBeenCalledWith('pw', BCRYPT_ROUNDS);
             expect(prisma.user.create).toHaveBeenCalled();
             expect(result).not.toHaveProperty('passwordHash');
             expect(result).toEqual({ id: '1', email: 'test@t.com', fullName: 'Test' });

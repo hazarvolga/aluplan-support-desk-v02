@@ -662,11 +662,12 @@ model FaqEntry {
   feedbackWeight  Decimal   @default(1.0) @map("feedback_weight") @db.Decimal(5, 4)
   sourceTypes     String[]  @default([]) @map("source_types")
   tags            String[]  @default([])
-  language          String                @default("tr") @db.VarChar(10)
+  language        String    @default("tr") @db.VarChar(10)
   questionEmbedding Unsupported("vector")? @map("question_embedding")
-  publishedAt       DateTime?             @map("published_at")
-  createdAt         DateTime              @default(now()) @map("created_at")
-  updatedAt         DateTime              @updatedAt @map("updated_at")
+  publishedAt     DateTime? @map("published_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
 
   @@index([status], map: "idx_faq_status")
   @@map("faq_entries")
@@ -716,6 +717,7 @@ model Macro {
   createdBy String?  @map("created_by") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
   creator   User?    @relation(fields: [createdBy], references: [id])
 
   @@map("macros")
@@ -923,6 +925,7 @@ model Announcement {
   createdBy      String?            @map("created_by") @db.Uuid
   createdAt      DateTime           @default(now()) @map("created_at")
   updatedAt      DateTime           @updatedAt @map("updated_at")
+  deletedAt      DateTime?          @map("deleted_at")
   logs           AnnouncementLog[]
   author         User?              @relation(fields: [createdBy], references: [id])
 

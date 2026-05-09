@@ -79,8 +79,9 @@ export class AnnouncementsService {
     }
 
     async delete(id: string) {
-        return this.prisma.announcement.delete({
+        return this.prisma.announcement.update({
             where: { id },
+            data: { deletedAt: new Date() },
         });
     }
 

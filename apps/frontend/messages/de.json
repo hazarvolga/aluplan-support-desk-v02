@@ -804,7 +804,9 @@
       "delete_desc": "{count} Datenobjekte werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
       "delete_confirm": "LÖSCHPROTOKOLL STARTEN",
       "cancel": "ABBRECHEN"
-    }
+    },
+    "externalAccountId": "Externe Konto-ID",
+    "externalId": "Externe ID"
   },
   "settings": {
     "title": "Systemeinstellungen",
@@ -856,7 +858,8 @@
       "logo_upload_error": "Fehler beim Hochladen des Logos.",
       "generic_error": "Ein Fehler ist aufgetreten.",
       "generic_success_hint": "Zugriff auf {provider}-Dienst hergestellt.",
-      "generic_fail_hint": "Dienst momentan nicht verfügbar."
+      "generic_fail_hint": "Dienst momentan nicht verfügbar.",
+      "success": "Erfolgreich gespeichert"
     },
     "storage": {
       "title": "Bulut Depolama (R2)",
@@ -866,7 +869,9 @@
       "endpoint": "Endpoint URL",
       "bucket": "Bucket Adı",
       "save_success": "Depolama ayarları kaydedildi.",
-      "save_error": "Kaydetme hatası: {message}"
+      "save_error": "Kaydetme hatası: {message}",
+      "region": "Region",
+      "test_btn": "Verbindung testen"
     },
     "crm": {
       "title": "Dynamics 365 CRM",
@@ -1397,6 +1402,367 @@
         "step4_desc": "Wenn Sie die Schaltfläche 'Entwurf protokollieren' drücken, wird Ihre Ankündigung als Entwurf gespeichert. Es werden noch keine E-Mails versendet. Überprüfen Sie die entsprechende Ankündigung auf der Registerkarte 'Verlauf' und klicken Sie auf das Symbol 'Senden' (Broadcast), um die tatsächlichen E-Mails an die ausgewählte Zielgruppe zu senden.",
         "tip_title": "Tipp:",
         "tip_desc": "Sie müssen Ihre Entwurfsankündigungen vor dem Versenden im Vorschaumodus testen."
+      }
+    },
+    "docs": {
+      "nav": {
+        "customer": {
+          "getting_started": "Erste Schritte",
+          "ai_assistant": "KI-Assistent",
+          "my_tickets": "Meine Support-Anfragen",
+          "knowledge_base": "Wissensdatenbank",
+          "profile": "Profil & Einstellungen",
+          "getting_started.dashboard": "Dashboard & Übersicht",
+          "ai_assistant.overview": "KI-Assistent Nutzung",
+          "ai_assistant.tips": "Effektive Fragetipps",
+          "getting_started.announcements": "Ankündigungen",
+          "knowledge_base.overview": "Wissensdatenbank Nutzung",
+          "my_tickets.attachments": "Dateianhänge",
+          "my_tickets.create": "Neue Anfrage erstellen",
+          "my_tickets.tracking": "Anfrageverfolgung",
+          "profile.settings": "Profilverwaltung"
+        },
+        "admin": {
+          "tickets": "Support-Anfragenverwaltung",
+          "ai_knowledge": "KI & Wissenspool",
+          "crm_products": "CRM & Produktkonfiguration",
+          "team_customers": "Team & Kundenverwaltung",
+          "announcements": "Ankündigungsverwaltung",
+          "system_settings": "System & Einstellungen",
+          "ai_knowledge.approvals": "KI-Genehmigungen",
+          "ai_knowledge.faq": "FAQ-Verwaltung",
+          "ai_knowledge.learning_cycle": "Lernzyklus",
+          "ai_knowledge.pool": "Wissenspool-Verwaltung",
+          "announcements.overview": "Übersicht",
+          "announcements.templates": "Vorlagen",
+          "crm_products.products": "Produkte & Module",
+          "crm_products.taxonomy": "Taxonomie & Schlüsselwörter",
+          "system_settings.profile": "Profil",
+          "system_settings.settings": "Einstellungen",
+          "system_settings.topology": "Topologie",
+          "team_customers.customers": "Kundengenehmigung",
+          "team_customers.sla": "SLA-Regelkonfiguration",
+          "team_customers.teams": "Team-Erstellung",
+          "tickets.ai_copilot": "KI Co-Pilot",
+          "tickets.internal_notes": "Interne Notizen & Zuweisung",
+          "tickets.overview": "Anfragen-Pool"
+        }
+      },
+      "customer": {
+        "getting_started": {
+          "title": "Dashboard & Genel Bakış",
+          "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+          "overview_title": "Dashboard Nedir?",
+          "overview_desc": "Diese Übersicht fasst die wichtigsten Funktionen und Abläufe zusammen.",
+          "tickets_title": "Aktif Destek Taleplerim",
+          "tickets_desc": "Hier sehen Sie Ihre aktiven und vergangenen Support-Anfragen auf einen Blick.",
+          "tip_quick_access": "Tipp: Über das linke Menü gelangen Sie schnell zu Ihren Support-Anfragen.",
+          "announcements": {
+            "title": "Duyurular",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "how_title": "Duyuruları Nasıl Görürsünüm?",
+            "tip_dont_miss": "Tipp: Aktivieren Sie Benachrichtigungen, damit Sie wichtige Hinweise nicht verpassen."
+          }
+        },
+        "ai_assistant": {
+          "title": "AI Asistanı Kullanımı",
+          "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+          "how_to_use_title": "AI Asistanını Nasıl Kullanırım?",
+          "rag_title": "RAG Mekanizması Nedir?",
+          "rag_desc": "Die KI nutzt RAG, um vor der Antwort relevante Inhalte aus der Wissensdatenbank abzurufen.",
+          "tip_rag": "Tipp: Nennen Sie Modul- oder Produktnamen, um präzisere Ergebnisse zu erhalten.",
+          "no_answer_title": "Yanıt Bulunamazsa Ne Olur?",
+          "no_answer_desc": "Wenn keine passende Antwort gefunden wird, können Sie direkt ein Support-Ticket erstellen.",
+          "tips": {
+            "title": "Etkili Soru Sorma İpuçları",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "do_title": "Yapın ✅",
+            "dont_title": "Yapmayın ❌",
+            "tip_pro": "Profi-Tipp: Beschreiben Sie Fehler mit Kontext, Version und reproduzierbaren Schritten."
+          }
+        },
+        "my_tickets": {
+          "title": "Yeni Destek Talebi Oluşturma",
+          "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+          "tip_try_ai": "Tipp: Probieren Sie vor dem Ticket zunächst den KI-Assistenten aus.",
+          "steps_title": "Adım Adım Talep Oluşturma",
+          "step1_title": "Ürün Seçimi",
+          "step1_desc": "Führen Sie den ersten Schritt wie beschrieben aus.",
+          "step2_title": "Konu ve Detaylar",
+          "step2_desc": "Führen Sie den zweiten Schritt gemäß den Anweisungen aus.",
+          "step3_title": "Sistem Bilgisi (Hotinfo)",
+          "step3_desc": "Führen Sie den dritten Schritt gemäß den Anweisungen aus.",
+          "tip_crashes": "Tipp: Bei Abstürzen helfen Logdateien, Screenshots und reproduzierbare Schritte.",
+          "step4_title": "Talebi Gönderin",
+          "step4_desc": "Führen Sie den vierten Schritt aus und bestätigen Sie den Vorgang.",
+          "priority_title": "Öncelik Seviyeleri",
+          "attachments": {
+            "title": "Dosya Ekleri",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "accepted_title": "Kabul Edilen Dosya Türleri",
+            "rejected_title": "Reddedilen Dosya Türleri",
+            "tip_crashes": "Tipp: Bei Abstürzen helfen Logdateien, Screenshots und reproduzierbare Schritte."
+          },
+          "tracking": {
+            "title": "Talep Takibi",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "statuses_title": "Talep Durumları",
+            "resolution_title": "Çözüm Onaylama",
+            "csat_title": "Memnuniyet Puanı (CSAT)",
+            "csat_desc": "Bewerten Sie die Lösung nach Abschluss, damit wir die Servicequalität verbessern können.",
+            "tip_5star": "Tipp: Eine 5-Sterne-Bewertung signalisiert, dass die Lösung für die Wissensdatenbank geeignet ist."
+          }
+        },
+        "knowledge_base": {
+          "title": "Bilgi Bankası",
+          "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+          "search_title": "Bilgi Bankasında Arama",
+          "article_types_title": "Makale Türleri",
+          "statuses_title": "Makale Durumları",
+          "tip_ai_search": "Tipp: Nutzen Sie konkrete Suchbegriffe für bessere KI- und Datenbanktreffer."
+        },
+        "profile": {
+          "title": "Profil & Ayarlar",
+          "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+          "update_title": "Profil Bilgilerini Güncelleme",
+          "step1_title": "Profil sayfasına gidin",
+          "step1_desc": "Führen Sie den ersten Schritt wie beschrieben aus.",
+          "step2_title": "Bilgileri düzenleyin",
+          "step2_desc": "Führen Sie den zweiten Schritt gemäß den Anweisungen aus.",
+          "step3_title": "Kaydedin",
+          "step3_desc": "Führen Sie den dritten Schritt gemäß den Anweisungen aus.",
+          "password_title": "Şifre Değiştirme",
+          "hotinfo_title": "Sistem Bilgisi (Hotinfo)",
+          "hotinfo_desc": "Hier verwalten Sie technische Systeminformationen, die dem Support bei der Diagnose helfen.",
+          "tip_email": "Tipp: Halten Sie Ihre E-Mail-Adresse aktuell, um keine wichtigen Meldungen zu verpassen."
+        }
+      },
+      "admin": {
+        "tickets": {
+          "title": "Bilet Havuzu",
+          "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+          "pool_title": "Bilet Havuzu Görünümü",
+          "pool_desc": "Im Pool sehen Sie alle eingehenden Tickets zentral und priorisiert.",
+          "status_title": "Durum Değiştirme",
+          "status_desc": "Statuswechsel steuern den Bearbeitungsfortschritt und die SLA-Berechnung.",
+          "assignment_title": "Bilet Atama",
+          "assignment_desc": "Weisen Sie Tickets dem passenden Team oder Agenten zu, um Reaktionszeiten zu optimieren.",
+          "tip_sla": "Tipp: Priorität und SLA sollten konsistent gesetzt werden, um Eskalationen zu vermeiden.",
+          "ai_copilot": {
+            "title": "AI Co-Pilot",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "how_title": "Nasıl Kullanılır?",
+            "step1_title": "Bilet detayına girin",
+            "step1_desc": "Yanıtlamak istediğiniz destek talebini açın.",
+            "step2_title": "'AI Yanıt Taslağı Oluştur' butonuna tıklayın",
+            "step2_desc": "Führen Sie den zweiten Schritt gemäß den Anweisungen aus.",
+            "step3_title": "Taslağı inceleyin",
+            "step3_desc": "Führen Sie den dritten Schritt gemäß den Anweisungen aus.",
+            "step4_title": "Düzenleyin ve gönderin",
+            "step4_desc": "Führen Sie den vierten Schritt aus und bestätigen Sie den Vorgang.",
+            "how_works_title": "AI Co-Pilot Nasıl Çalışır?",
+            "tip_edit": "Tipp: Prüfen und bearbeiten Sie KI-Entwürfe vor dem Versand immer fachlich."
+          },
+          "internal_notes": {
+            "title": "İç Notlar & Atama",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "add_note_title": "İç Not Ekleme",
+            "step1_title": "Bilet detayına gidin",
+            "step1_desc": "Yanıt kutusunun üstündeki sekmeleri bulun.",
+            "step2_title": "'İç Not' sekmesini seçin",
+            "step2_desc": "Führen Sie den zweiten Schritt gemäß den Anweisungen aus.",
+            "step3_title": "Notu yazın ve gönderin",
+            "step3_desc": "Führen Sie den dritten Schritt gemäß den Anweisungen aus.",
+            "tip_warning": "Wichtig: Interne Notizen sind nur für das Support-Team sichtbar.",
+            "assignment_title": "Bilet Atama İş Akışı"
+          }
+        },
+        "ai_knowledge": {
+          "title": "Knowledge Pool Yönetimi",
+          "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+          "pdf_title": "PDF / Dosya Yükleme",
+          "pdf_desc": "Laden Sie PDF-Dateien hoch, damit Inhalte in den Wissenspool aufgenommen werden können.",
+          "scraper_title": "Web Scraper",
+          "scraper_desc": "Der Web-Scraper importiert Inhalte aus freigegebenen URLs in den Wissenspool.",
+          "tip_scraper": "Tipp: Nutzen Sie stabile Quellen und klare Seitenstrukturen für bessere Ergebnisse.",
+          "raw_title": "Ham Metin (Raw Text)",
+          "raw_desc": "Mit Rohtext können Sie schnelle Wissenseinträge ohne Dateiupload anlegen.",
+          "tip_quality": "Ausführliche Informationen finden Sie in diesem Abschnitt.",
+          "learning_cycle": {
+            "title": "Öğrenme Döngüsü",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "how_title": "Öğrenme Döngüsü Nasıl Çalışır?",
+            "step1_title": "Müşteri 5 yıldız verir",
+            "step1_desc": "Führen Sie den ersten Schritt wie beschrieben aus.",
+            "step2_title": "AI Onayları kuyruğuna girer",
+            "step2_desc": "Führen Sie den zweiten Schritt gemäß den Anweisungen aus.",
+            "step3_title": "Admin onaylar veya reddeder",
+            "step3_desc": "Führen Sie den dritten Schritt gemäß den Anweisungen aus.",
+            "step4_title": "Onaylanan çözüm Knowledge Pool'a eklenir",
+            "step4_desc": "Führen Sie den vierten Schritt aus und bestätigen Sie den Vorgang.",
+            "faq_title": "FAQ Otomatik Çıkarma",
+            "faq_desc": "Aus geeigneten Lösungen können automatisch FAQ-Einträge erstellt werden.",
+            "tip_active": "Tipp: Ein aktiver Lernzyklus verbessert die Qualität zukünftiger KI-Antworten."
+          },
+          "approvals": {
+            "title": "AI Onayları (KB Approvals)",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "workflow_title": "Onay İş Akışı",
+            "step1_title": "KB Onayları sayfasına gidin",
+            "step1_desc": "Sol menüden KB Onayları bağlantısına tıklayın.",
+            "step2_title": "Adayları inceleyin",
+            "step2_desc": "Führen Sie den zweiten Schritt gemäß den Anweisungen aus.",
+            "step3_title": "Onayla veya Reddet",
+            "step3_approve": "Genehmigen – der Eintrag wird in den Wissenspool übernommen.",
+            "step3_reject": "Reddet — Çözüm atlanır, veritabanına eklenmez.",
+            "confidence_title": "Güven Skoru",
+            "tip_quality": "Ausführliche Informationen finden Sie in diesem Abschnitt.",
+            "bulk_title": "Toplu İşlemler"
+          },
+          "faq": {
+            "title": "FAQ Yönetimi",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "extraction_title": "FAQ Çıkarma Süreci",
+            "auto_title": "Otomatik Çıkarma",
+            "auto_desc": "Geeignete Inhalte werden automatisch erkannt und als FAQ-Vorschläge vorbereitet.",
+            "manual_title": "Manuel Tetikleme",
+            "manual_desc": "Sie können den FAQ-Extraktionsprozess bei Bedarf manuell auslösen.",
+            "statuses_title": "FAQ Durumları",
+            "approval_title": "FAQ Onaylama",
+            "tip_loop": "Tipp: Regelmäßige Freigaben halten die FAQ-Sammlung aktuell und nützlich."
+          }
+        },
+        "crm_products": {
+          "title": "Ürünler & Modüller",
+          "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+          "add_title": "Ürün Ekleme",
+          "step1_title": "Ürünler & Modüller sayfasına gidin",
+          "step1_desc": "Sol menüden Ürünler bağlantısına tıklayın.",
+          "step2_title": "'Yeni Ürün Ekle' butonuna tıklayın",
+          "step2_desc": "Ürün adı ve kısa açıklama girin.",
+          "step3_title": "Alt kategoriler ekleyin",
+          "step3_desc": "Führen Sie den dritten Schritt gemäß den Anweisungen aus.",
+          "structure_title": "Kategori Yapısı",
+          "structure_desc": "Eine klare Produktstruktur verbessert Routing, Suche und Auswertung.",
+          "tip_keywords": "Tipp: Verwenden Sie eindeutige Schlüsselwörter pro Produktbereich.",
+          "taxonomy": {
+            "title": "Taksonomi & Anahtar Kelimeler",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "what_title": "Taksonomi Kuralı Nedir?",
+            "what_desc": "Taxonomieregeln legen fest, wie Inhalte kategorisiert und gefunden werden.",
+            "strategy_title": "Anahtar Kelime Stratejisi",
+            "tip_conflict": "Tipp: Vermeiden Sie doppeldeutige Begriffe, um Klassifikationskonflikte zu reduzieren."
+          }
+        },
+        "team_customers": {
+          "title": "Müşteri Onaylama",
+          "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+          "approval_title": "Müşteri Onay Süreci",
+          "step1_title": "Müşteriler sayfasına gidin",
+          "step1_desc": "Sol menüden Müşteriler bağlantısına tıklayın.",
+          "step2_title": "Bekleyen müşterileri filtreleyin",
+          "step2_desc": "Führen Sie den zweiten Schritt gemäß den Anweisungen aus.",
+          "step3_title": "Müşteriyi inceleyin ve onaylayın",
+          "step3_desc": "Führen Sie den dritten Schritt gemäß den Anweisungen aus.",
+          "crm_title": "CRM Doğrulama",
+          "crm_desc": "Ausführliche Informationen finden Sie in diesem Abschnitt.",
+          "tip_bulk": "Tipp: Nutzen Sie Sammelaktionen, um große Mengen schneller zu bearbeiten.",
+          "teams": {
+            "title": "Ekip Oluşturma",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "steps_title": "Ekip Oluşturma Adımları",
+            "step1_title": "Ekip Yönetimi sayfasına gidin",
+            "step1_desc": "Sol menüden Ekipler bağlantısına tıklayın.",
+            "step2_title": "Yeni ekip oluşturun",
+            "step2_desc": "Führen Sie den zweiten Schritt gemäß den Anweisungen aus.",
+            "step3_title": "Agent'ları ekleyin",
+            "step3_desc": "Führen Sie den dritten Schritt gemäß den Anweisungen aus.",
+            "step4_title": "SLA kurallarını yapılandırın",
+            "step4_desc": "Führen Sie den vierten Schritt aus und bestätigen Sie den Vorgang.",
+            "structure_title": "Ekip Yapısı Önerileri",
+            "tip_auto": "Tipp: Automatische Zuweisungen reduzieren manuelle Arbeit und Reaktionszeit."
+          },
+          "sla": {
+            "title": "SLA Kural Yapılandırması",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "params_title": "SLA Parametreleri",
+            "priority_title": "Öncelik Bazlı SLA",
+            "violations_title": "SLA İhlali Bildirimleri",
+            "tip_hours": "Tipp: Definieren Sie Geschäftszeiten korrekt, damit SLA-Werte präzise berechnet werden."
+          }
+        },
+        "announcements": {
+          "title": "Duyuru Oluşturma & Yayınlama",
+          "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+          "steps_title": "4 Adımlı Duyuru Süreci",
+          "step1_title": "Şablon Hazırlama",
+          "step1_desc": "Führen Sie den ersten Schritt wie beschrieben aus.",
+          "step2_title": "Duyuru Oluşturma ve Şablon Seçimi",
+          "step2_desc": "Führen Sie den zweiten Schritt gemäß den Anweisungen aus.",
+          "step3_title": "Hedef Kitle Seçimi",
+          "step3_desc": "Führen Sie den dritten Schritt gemäß den Anweisungen aus.",
+          "step4_title": "Taslak Kaydet ve Yayınla",
+          "step4_desc": "Führen Sie den vierten Schritt aus und bestätigen Sie den Vorgang.",
+          "audience_title": "Hedef Kitle Filtreleri",
+          "tip_test": "Tipp: Testen Sie Ankündigungen vor der Veröffentlichung im Vorschau-Modus.",
+          "templates": {
+            "title": "Şablon Kütüphanesi",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "create_title": "Şablon Oluşturma",
+            "step1_title": "Duyuru Yönetimi sayfasına gidin",
+            "step1_desc": "Sol menüden Duyurular bağlantısına tıklayın.",
+            "step2_title": "Şablonlar sekmesini açın",
+            "step2_desc": "Führen Sie den zweiten Schritt gemäß den Anweisungen aus.",
+            "step3_title": "Yeni şablon oluşturun",
+            "step3_desc": "Führen Sie den dritten Schritt gemäß den Anweisungen aus.",
+            "step4_title": "Kaydedin",
+            "step4_desc": "Führen Sie den vierten Schritt aus und bestätigen Sie den Vorgang.",
+            "usage_title": "Şablon Kullanımı",
+            "types_title": "Önerilen Şablon Türleri",
+            "tip_update": "Tipp: Überprüfen und aktualisieren Sie Vorlagen regelmäßig."
+          }
+        },
+        "system_settings": {
+          "title": "Sistem Topolojisi",
+          "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+          "view_title": "Topoloji Görünümü",
+          "view_desc": "Die Topologieansicht zeigt Dienste, Abhängigkeiten und Betriebszustände.",
+          "indicators_title": "Durum Göstergeleri",
+          "telemetry_title": "AI Sağlık Telemetrisi",
+          "telemetry_desc": "Telemetriedaten helfen, KI- und Systemgesundheit frühzeitig zu erkennen.",
+          "tip_readonly": "Hinweis: Bestimmte Felder sind schreibgeschützt und dienen nur der Übersicht.",
+          "settings": {
+            "title": "Genel Ayarlar",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "crm_title": "CRM Entegrasyonu",
+            "crm_desc": "Ausführliche Informationen finden Sie in diesem Abschnitt.",
+            "step1_title": "Ayarlar sayfasına gidin",
+            "step1_desc": "Sol menüden Ayarlar bağlantısına tıklayın.",
+            "step2_title": "CRM Entegrasyonu bölümünü bulun",
+            "step2_desc": "Dynamics 365 bağlantı bilgilerini girin.",
+            "step3_title": "Alan eşleştirmesini yapılandırın",
+            "step3_desc": "Führen Sie den dritten Schritt gemäß den Anweisungen aus.",
+            "step4_title": "Senkronizasyonu test edin",
+            "step4_desc": "Führen Sie den vierten Schritt aus und bestätigen Sie den Vorgang.",
+            "other_title": "Diğer Ayarlar",
+            "tip_careful": "Achtung: Änderungen an Integrations- und Systemeinstellungen wirken sich global aus."
+          },
+          "profile": {
+            "title": "Profil Yönetimi",
+            "desc": "In diesem Abschnitt finden Sie eine detaillierte Erklärung.",
+            "update_title": "Profil Bilgilerini Güncelleme",
+            "step1_title": "Profil sayfasına gidin",
+            "step1_desc": "Führen Sie den ersten Schritt wie beschrieben aus.",
+            "step2_title": "Bilgileri düzenleyin",
+            "step2_desc": "Führen Sie den zweiten Schritt gemäß den Anweisungen aus.",
+            "step3_title": "Kaydedin",
+            "step3_desc": "Führen Sie den dritten Schritt gemäß den Anweisungen aus.",
+            "password_title": "Şifre Değiştirme",
+            "language_title": "Dil Tercihi",
+            "language_desc": "Wählen Sie Ihre bevorzugte Sprache für Oberfläche und Hilfetexte.",
+            "tip_password": "Tipp: Verwenden Sie ein starkes Passwort und ändern Sie es regelmäßig."
+          }
+        }
       }
     }
   },
@@ -2823,7 +3189,8 @@
         "logo_upload_error": "Logo yükleme hatası.",
         "generic_error": "Bir hata oluştu.",
         "generic_success_hint": "{provider} servisine erişim sağlandı.",
-        "generic_fail_hint": "Servis şu anda ulaşılamaz durumda."
+        "generic_fail_hint": "Servis şu anda ulaşılamaz durumda.",
+        "success": "Einstellungen gespeichert"
       }
     },
     "knowledge_base": {
@@ -2856,7 +3223,9 @@
       "meta": {
         "author": "AUTOR",
         "update": "AKTUALISIERUNG",
-        "views": "AUFRUFE"
+        "views": "AUFRUFE",
+        "locale": "tr-TR",
+        "system": "SİSTEM"
       },
       "empty": {
         "no_records": "Noch keine Artikel gefunden",

@@ -94,7 +94,7 @@ export default function EmailValidationPage() {
         setCustomersLoading(true);
         api.customers
             .list()
-            .then(setCustomers)
+            .then((res) => setCustomers(res.data))
             .catch(console.error)
             .finally(() => setCustomersLoading(false));
     };

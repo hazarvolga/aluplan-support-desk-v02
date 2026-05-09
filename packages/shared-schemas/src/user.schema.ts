@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { EmailSchema, PasswordSchema } from './auth.schema';
-
-export const UuidSchema = z.string().uuid();
+import { UuidSchema } from './uuid.schema';
 
 export const CreateUserSchema = z.object({
     email: EmailSchema,
