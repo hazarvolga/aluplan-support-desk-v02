@@ -151,6 +151,73 @@ Check `verdent-GAP-status.md` for current status. Remaining high-priority:
 
 ---
 
+## graphify — Knowledge Graph
+
+Bu projenin bilgi grafiği `graphify-out/` dizininde yaşıyor.
+
+Mimari sorularda **önce** `graphify-out/GRAPH_REPORT.md` oku — god node'lar, community yapısı ve sürpriz bağlantılar burada. `graphify-out/wiki/index.md` varsa ham dosyalar yerine oradan gezin.
+
+```bash
+graphify query "<soru>"              # BFS traversal — geniş bağlam
+graphify path "<A>" "<B>"            # İki node arasındaki en kısa yol
+graphify explain "<kavram>"          # Bir node'un komşularıyla açıklaması
+```
+
+Kod dosyası değiştirdikten sonra graf güncelle:
+```bash
+graphify update .                    # AST-only, API maliyeti yok
+```
+
+- `packages/database/client/runtime/` ve `node_modules/` grafa dahil değil
+- Graf `graphify-out/graph.json`'da kalıcı — session'lar arası sorgu yapılabilir
+- Her edge EXTRACTED, INFERRED veya AMBIGUOUS — güven seviyesi bellidir
+
+---
+
+<!-- gitnexus:start -->
+## GitNexus — Code Intelligence
+
+This project is indexed by GitNexus as **aluplan-support-desk-v02** (9,142 symbols, 15,926 relationships, 241 execution flows).
+
+> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+
+### Always Do
+
+- **MUST run impact analysis before editing any symbol.** Run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report blast radius before any edit.
+- **MUST run `gitnexus_detect_changes()` before committing** to verify scope.
+- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk.
+- Use `gitnexus_query({query: "concept"})` to find execution flows — not grep.
+- Use `gitnexus_context({name: "symbolName"})` for full caller/callee context.
+
+### Never Do
+
+- NEVER edit a function, class, or method without first running `gitnexus_impact`.
+- NEVER rename symbols with find-and-replace — use `gitnexus_rename`.
+- NEVER commit without running `gitnexus_detect_changes()`.
+
+### Resources
+
+| Resource | Use for |
+|----------|---------|
+| `gitnexus://repo/aluplan-support-desk-v02/context` | Codebase overview, index freshness |
+| `gitnexus://repo/aluplan-support-desk-v02/clusters` | All functional areas |
+| `gitnexus://repo/aluplan-support-desk-v02/processes` | All execution flows |
+| `gitnexus://repo/aluplan-support-desk-v02/process/{name}` | Step-by-step execution trace |
+
+### Skill files
+
+| Task | Skill |
+|------|-------|
+| How does X work? | `gitnexus-exploring` |
+| What breaks if I change X? | `gitnexus-impact-analysis` |
+| Why is X failing? | `gitnexus-debugging` |
+| Rename / extract / refactor | `gitnexus-refactoring` |
+| CLI commands (index, wiki) | `gitnexus-cli` |
+
+<!-- gitnexus:end -->
+
+---
+
 ## Session persistence
 
 Read before starting work:
