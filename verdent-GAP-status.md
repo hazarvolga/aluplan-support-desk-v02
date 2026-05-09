@@ -4,7 +4,7 @@ Kaynak: `verdent-GAP.md` + `git log --oneline -50`
 
 ---
 
-## ✅ Kapatılan GAP'ler (18/30)
+## ✅ Kapatılan GAP'ler (20/30)
 
 | GAP | Commit | Özet |
 |-----|--------|------|
@@ -26,7 +26,7 @@ Kaynak: `verdent-GAP.md` + `git log --oneline -50`
 
 ---
 
-## ⏳ Açık GAP'ler (12/30)
+## ⏳ Açık GAP'ler (10/30)
 
 ### Kritik (0)
 
@@ -36,7 +36,7 @@ Tüm kritik GAP'ler kapatıldı.
 
 | GAP | Durum | Not |
 |-----|-------|-----|
-| GAP-07 | Açık | `prisma.service.ts` onModuleInit'te ALTER TABLE devam ediyor |
+| GAP-07 | Kapalı | onModuleInit'te DDL yok - temiz |
 | GAP-10 | Açık | 76 `as any` backend, 284 frontend — type safety düşük |
 | GAP-11 | Açık | 50+ kritik servis test yok |
 | GAP-17 | Kapalı | `kb-summarizer.processor.ts` settings'den okuyor (satır 21, 79) |
