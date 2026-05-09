@@ -20,7 +20,7 @@ async function main() {
 
     await client.connect();
 
-    const adminEmail = 'hazarvolga@gmail.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
     const plainPassword = 'Admin123!';
     const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
