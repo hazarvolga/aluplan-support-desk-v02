@@ -206,20 +206,6 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             });
                             this.logger.debug(`Created user ID: ${user.id} with role: ${customerRole?.name}`);
                         } else {
-                            // PROTECTION: If email is the main admin email, ALWAYS ensure it has ADMIN role
-                            if (email === 'hazarvolga@gmail.com') {
-                                const adminRole = await tx.role.findFirst({ where: { name: 'ADMIN' } });
-                                if (adminRole && user.roleId !== adminRole.id) {
-                                    user = await tx.user.update({
-                                        where: { id: user.id },
-                                        data: { roleId: adminRole.id },
-                                        include: { role: true }
-                                    });
-                                    this.logger.warn(`REPAIRED: Restored ADMIN role for hazarvolga@gmail.com`);
-                                    return;
-                                }
-                            }
-
                             // BROADEN PROTECTION: Don't demote any user who is NOT currently a CUSTOMER
                             const currentRole = await tx.role.findUnique({ where: { id: user.roleId || '' } });
                             const isAlreadyCustomer = currentRole?.name.toUpperCase() === 'CUSTOMER';

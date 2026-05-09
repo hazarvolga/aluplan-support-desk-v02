@@ -2,7 +2,7 @@
 
 ## Tasks
 
-- [-] 1. Schema Değişiklikleri ve Migration
+- [x] 1. Schema Değişiklikleri ve Migration
   - [x] 1.1 KnowledgePoolEmbedding modeline parentId alanı ekle (schema.prisma)
   - [x] 1.2 FaqEntry modeline questionEmbedding alanı ekle (schema.prisma)
   - [x] 1.3 Manuel SQL migration uygula: knowledge_pool_embeddings tablosuna parent_id kolonu ekle

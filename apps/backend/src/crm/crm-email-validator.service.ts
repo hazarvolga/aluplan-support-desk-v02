@@ -118,7 +118,7 @@ export class CrmEmailValidatorService implements ICrmEmailValidator {
                 );
             }
         } else {
-            this.adminBypassEmails = ['hazarvolga@gmail.com'];
+            this.adminBypassEmails = [];
         }
 
         return this.adminBypassEmails;
@@ -129,7 +129,7 @@ export class CrmEmailValidatorService implements ICrmEmailValidator {
      * Shows the first 2 characters of the local part, then "***", then the full domain.
      *
      * Examples:
-     *   hazarvolga@gmail.com  →  ha***@gmail.com
+     *   admin@example.com  →  ad***@example.com
      *   a@example.com         →  a***@example.com
      */
     private maskEmail(email: string): string {
@@ -283,7 +283,7 @@ export class CrmEmailValidatorService implements ICrmEmailValidator {
      * allowing registration to proceed without CRM validation.
      *
      * The bypass list is loaded from the ADMIN_BYPASS_EMAILS environment variable
-     * (comma-separated) and cached in memory. Falls back to ['hazarvolga@gmail.com']
+     * (comma-separated) and cached in memory. Falls back to an empty list
      * when the variable is not set.
      *
      * Emits a structured audit log entry whenever a bypass is triggered.

@@ -155,7 +155,7 @@ export class AiAutoResolverService {
 
     /**
      * Listener triggered when a ticket feedback represents a high score (>=4).
-     * Extracts useful context from the ticket and saves to embeddings AND creates a draft FaqEntry.
+     * Indexes the ticket conversation into the embedding store; FAQ creation is owned by KbSummarizerProcessor.
      */
     @OnEvent('ticket.kb_summarize', { async: true })
     async handleTicketSummarize(ticket: Ticket) {
@@ -176,49 +176,10 @@ export class AiAutoResolverService {
             const conversation = messages.map(m => `[${m.isInternal ? 'Admin' : 'Customer'}]: ${m.message}`).join('\n\n');
             const totalContent = `TICKET: ${ticket.subject}\nISSUE: ${ticket.description || ''}\n\nCONVERSATION:\n${conversation}`;
 
-            // Pass this context to the embedding service to index
+            // Pass this context to the embedding service to index.
+            // knowledgeBaseAdded flag'ini KbSummarizerProcessor setler — burada setlersek FaqService'in
+            // queue'ya gönderdiği iş, worker yetişmeden önce "already in KB" görüp atlayabilir.
             await this.embeddingService.indexTicket(ticket.id, totalContent);
-
-            // Mark the ticket as having been added to knowledge base
-            await this.prisma.ticket.update({
-                where: { id: ticket.id },
-                data: { knowledgeBaseAdded: true }
-            });
-
-            const faqPrompt = `Task: Analyze the following technical support conversation and create a professional FAQ entry from it.
-            If the conversation contains a solution, extract the question and the answer with clear technical steps.
-            
-            CONVERSATION:
-            ${totalContent}
-            
-            OUTPUT FORMAT (JSON):
-            {
-              "question": "Clear and technical question sentence",
-              "answer": "Technical solution with numbered steps",
-              "language": "tr | en | de" (The language used in the conversation)
-            }`;
-
-
-            const faqJson = await this.aiService.generate(faqPrompt);
-            if (faqJson) {
-                try {
-                    const parsed = JSON.parse(faqJson);
-                    await this.prisma.faqEntry.create({
-                        data: {
-                            question: parsed.question,
-                            answer: parsed.answer,
-                            language: parsed.language || 'tr',
-                            status: 'PENDING_REVIEW',
-                            confidenceScore: 0.95,
-                            sourceTypes: ['TICKET'],
-                            tags: ticket.tags,
-                        }
-                    });
-                    this.logger.log(`📚 Created draft FAQ from ticket ${ticket.ticketNumber}`);
-                } catch (pe) {
-                    this.logger.error('Failed to parse FAQ JSON from AI', pe);
-                }
-            }
 
             this.logger.log(`✅ Ticket ${ticket.ticketNumber} context saved to Vector DB.`);
 

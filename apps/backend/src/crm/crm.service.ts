@@ -579,7 +579,7 @@ export class CrmService {
         }
 
         // Security: prevent CRM webhook from overwriting admin accounts with CUSTOMER role
-        const adminEmails = (process.env.ADMIN_BYPASS_EMAILS || 'hazarvolga@gmail.com')
+        const adminEmails = (process.env.ADMIN_BYPASS_EMAILS || '')
             .split(',')
             .map(e => e.trim().toLowerCase());
         if (adminEmails.includes(data.emailaddress1.toLowerCase())) {

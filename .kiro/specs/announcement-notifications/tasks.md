@@ -169,7 +169,7 @@ Extend the existing announcement broadcast pipeline with real-time WebSocket toa
     - **Validates: Requirements 4.4, 4.5, 6.6**
   - Commit: `feat(frontend): useAnnouncementStore Zustand store + api.announcements customer methods`
 
-- [~] 7. Frontend — `GlobalAnnouncementNotification` component + layout integration
+- [ ] 7. Frontend — `GlobalAnnouncementNotification` component + layout integration
   - [x] 7.1 Create `apps/frontend/src/components/global-announcement-notification.tsx`
     - `'use client'` component that returns `null`
     - In `useEffect`: call `getSocket()`, `socket.connect()`, register handler for `'ANNOUNCEMENT_RECEIVED'`
@@ -186,7 +186,7 @@ Extend the existing announcement broadcast pipeline with real-time WebSocket toa
     - _Requirements: 2.3, 2.4, 4.4_
   - Commit: `feat(frontend): GlobalAnnouncementNotification component + layout integration`
 
-- [~] 8. Frontend — Sidebar bell icon with unread badge (customer only)
+- [ ] 8. Frontend — Sidebar bell icon with unread badge (customer only)
   - [x] 8.1 Add a bell nav entry to `CUSTOMER_NAV` in `apps/frontend/src/components/sidebar.tsx`
     - Add `{ icon: Bell, labelKey: 'announcements', isAnnouncementBell: true }` entry (import `Bell` from `lucide-react`)
     - _Requirements: 3.3, 4.2_
@@ -204,7 +204,7 @@ Extend the existing announcement broadcast pipeline with real-time WebSocket toa
     - **Validates: Requirements 4.6**
   - Commit: `feat(frontend): sidebar bell icon with unread badge for customer role`
 
-- [~] 9. Frontend — `AnnouncementArchiveDrawer` component
+- [ ] 9. Frontend — `AnnouncementArchiveDrawer` component
   - [x] 9.1 Create `apps/frontend/src/components/announcement-archive-drawer.tsx`
     - Use shadcn `Sheet` (side drawer); controlled by `isArchiveOpen` / `closeArchive` from `useAnnouncementStore`
     - On open, fetch page 1 from `api.announcements.getMyAnnouncements()`

@@ -1,0 +1,13 @@
+node_modules/
+.next/
+dist/
+.turbo/
+graphify-out/
+dataset/
+uploads/
+.archive/
+.git/
+*.min.js
+*.min.css
+pnpm-lock.yaml
+package-lock.json

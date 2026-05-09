@@ -1,0 +1,9 @@
+export { GettingStartedDashboard } from './GettingStartedDashboard';
+export { GettingStartedAnnouncements } from './GettingStartedAnnouncements';
+export { AiAssistantOverview } from './AiAssistantOverview';
+export { AiAssistantTips } from './AiAssistantTips';
+export { MyTicketsCreate } from './MyTicketsCreate';
+export { MyTicketsAttachments } from './MyTicketsAttachments';
+export { MyTicketsTracking } from './MyTicketsTracking';
+export { KnowledgeBaseOverview } from './KnowledgeBaseOverview';
+export { ProfileSettings } from './ProfileSettings';

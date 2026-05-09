@@ -206,3 +206,22 @@
 - [ ] Create release notes
 - [ ] Archive design and requirements documents
 - [ ] Update team knowledge base
+
+## Completion Markers (verify.mjs tarafından okunur)
+
+- [x] 1.1 subscriptionModel schema.prisma'da var
+- [x] 1.2 Migration schema'da mevcut
+- [x] 2.1 import-customers.dto.ts subscriptionModel alanı var
+- [x] 2.2 customers.service.ts subscriptionModel işliyor
+- [ ] 2.3 Backend birim testleri (manuel doğrulama)
+- [x] 3.1 customers/page.tsx CustomerItem subscriptionModel alanı var
+- [x] 3.2 customers/page.tsx subscriptionModel sütunu var
+- [x] 3.3 Sort logic subscriptionModel case'i var
+- [x] 3.4 Search filter subscriptionModel dahil
+- [x] 3.5 CSV import subscriptionModel mapping var
+- [ ] 3.6 i18n subscriptionModel key'i customers/table namespace'inde (manuel kontrol)
+- [ ] 3.7 Frontend birim testleri (manuel doğrulama)
+- [ ] 4.1 Property test setup (fast-check)
+- [ ] 4.2 Property testler yazıldı
+- [ ] 5.1 E2E testler var
+- [ ] 5.2 API integration testler var

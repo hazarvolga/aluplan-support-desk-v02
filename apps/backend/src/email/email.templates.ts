@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 // Robust MJML import to handle ESM/CJS interop crashes
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -155,12 +156,20 @@ export class TemplateService {
 
     const brandData = { ...rawBrand, logo_url: absoluteLogoUrl };
 
+    let unsubscribeToken = 'global';
+    if (data.userId) {
+      const uidRaw = data.userId.toString();
+      const uidBase64 = Buffer.from(uidRaw).toString('base64');
+      const sig = crypto.createHmac('sha256', process.env.JWT_SECRET || 'fallback-secret').update(uidRaw).digest('hex');
+      unsubscribeToken = `${uidBase64}.${sig}`;
+    }
+
     // 4. Final Context Construction
     const renderContext = {
       ...data,
       brand: brandData,
       t: t,
-      unsubscribe_url: data.unsubscribe_url || `${brandData.help_center_url}/unsubscribe?token=${data.userId || 'global'}`,
+      unsubscribe_url: data.unsubscribe_url || `${brandData.help_center_url}/unsubscribe?token=${unsubscribeToken}`,
       // Normalize common variables
       ticketId: data.ticketNumber || data.ticketId || '-',
       ticketPriorityLow: (data.ticketPriority || data.priority || 'medium').toLowerCase(),
