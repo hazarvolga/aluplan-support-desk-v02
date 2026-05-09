@@ -14,13 +14,13 @@ dotenv.config({ path: envPath });
  */
 Sentry.init({
     dsn: process.env.SENTRY_DSN,
+// Tracing
+// We recommend adjusting this value in production, or using tracesSampler
+// for finer control
+tracesSampleRate: 0.1, // GAP-08: Reduced from 1.0 to 0.1 (10%) for production
 
-    // We recommend adjusting this value in production, or using tracesSampler
-    // for finer control
-    tracesSampleRate: 1.0,
-
-    // Set sampling rate for profiling - this is relative to tracesSampleRate
-    profilesSampleRate: 1.0,
+// Set sampling rate for profiling - this is relative to tracesSampleRate
+profilesSampleRate: 0.1, // GAP-08: Reduced from 1.0 to 0.1 (10%) for production
 
     integrations: [
         nodeProfilingIntegration(),
