@@ -1,83 +1,164 @@
-## graphify — Knowledge Graph
+# AGENTS.md — aluplan-support-desk-v02
 
-Bu projenin bilgi grafiği `graphify-out/` dizininde yaşıyor.
+## Repo at a glance
 
-### Mimari sorularda ÖNCE şunu yap
+Turborepo monorepo. Three packages:
 
-`graphify-out/GRAPH_REPORT.md` dosyasını oku — god node'lar, community yapısı ve sürpriz bağlantılar burada. Ham dosyaları grep'lemek yerine graf yapısını kullan.
+| Path | Package | Role |
+|------|---------|------|
+| `apps/backend` | `@aluplan/backend` | NestJS API, port 4000 |
+| `apps/frontend` | `@aluplan/frontend` | Next.js 15 App Router, port 3000 |
+| `packages/database` | `@aluplan/database` | Prisma 7 schema + migrations |
 
-Eğer `graphify-out/wiki/index.md` varsa, ham dosyalar yerine oradan gezin.
+Prisma client is generated into `packages/database/client/` — never edit that directory.
 
-### Navigasyon komutları
+---
+
+## Commands
 
 ```bash
-graphify query "<soru>"              # BFS traversal — geniş bağlam
-graphify path "<A>" "<B>"            # İki node arasındaki en kısa yol
-graphify explain "<kavram>"          # Bir node'un komşularıyla açıklaması
+# Install
+pnpm install               # requires pnpm >=9, node >=20
+
+# Dev
+pnpm dev                   # starts both apps via turbo
+
+# Type-check (run before committing)
+pnpm --filter @aluplan/backend typecheck
+pnpm --filter @aluplan/frontend typecheck
+
+# Backend tests (unit)
+pnpm --filter @aluplan/backend test
+pnpm --filter @aluplan/backend test:cov
+
+# Frontend tests
+pnpm --filter @aluplan/frontend test:unit       # vitest
+pnpm --filter @aluplan/frontend test:e2e        # playwright
+
+# i18n gap check
+pnpm i18n:check            # alias: pnpm --filter @aluplan/frontend i18n:check
+
+# Database
+pnpm db:migrate            # prisma migrate deploy (via turbo)
+pnpm db:generate           # prisma generate
+
+# Migrations live in packages/database/prisma/migrations/
+# Schema: packages/database/prisma/schema.prisma
 ```
 
-Cross-module "X ile Y nasıl ilişkili?" sorularında grep yerine bu komutları kullan — bunlar dosyaları taramak yerine EXTRACTED + INFERRED edge'leri traverse eder.
+---
 
-### MCP server aktifse
+## Before editing any symbol
 
-`query_graph`, `get_node`, `shortest_path` araçlarını kullan — CLI komutlarına gerek yok.
+1. Run `gitnexus impact "<SymbolName>"` — mandatory for services, guards, DTOs, processors.
+2. If impact is HIGH or CRITICAL: warn the user, list affected flows, do not proceed silently.
+3. After significant changes: `gitnexus detect_changes`
 
-### Güncel tutma
+Graph data lives in `graphify-out/` — read `graphify-out/GRAPH_REPORT.md` before deep exploration.
 
-Kod dosyası değiştirdikten sonra:
-```bash
-graphify update .                    # AST-only, API maliyeti yok
+---
+
+## Architecture quirks agents miss
+
+**Prisma client is extended with a global soft-delete filter** (`prisma.service.ts`).
+`findMany/findFirst/findUnique/count` automatically add `deletedAt: null`.
+If you need to query deleted records, bypass the filter explicitly.
+
+**Prisma client output** is `packages/database/client/` not the default location.
+Import from `@aluplan/database`, never from `@prisma/client` directly.
+
+**`onModuleInit()` in `PrismaService`** must stay clean — no DDL.
+Ghost column repairs were migrated to `20260509000001_gap07_ghost_column_repair`.
+
+**AiService is a dispatcher**, not a direct LLM caller. Provider resolution order:
+1. Settings DB (`ai.chat_provider`)
+2. Env: `OPENAI_API_KEY` → openai, `GEMINI_API_KEY` → llmapi
+3. Fallback: ollama
+
+**Gemini free tier** is the target AI provider:
+```
+GEMINI_API_KEY=AIza...
+LLMAPI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
+LLMAPI_CHAT_MODEL=gemini-2.5-flash-preview-06-05
+LLMAPI_EMBED_MODEL=gemini-embedding-2-001
 ```
 
-Git hook'ları kurulu — her commit/checkout'ta otomatik çalışır.
+**RBAC guard** reads `user.role` as `string | { name: string }` — use `getRoleName()` helper, not direct cast.
 
-### Önemli
+**Bcrypt rounds** are centralised in `apps/backend/src/auth/security.constants.ts` (`BCRYPT_ROUNDS = 12`).
+Import from there; never hardcode `10`.
 
-- `packages/database/client/runtime/` ve `node_modules/` grafa dahil değil (bundled gürültü hariç tutuldu)
-- Graf `graphify-out/graph.json`'da kalıcı — session'lar arası sorgu yapılabilir
-- Her edge EXTRACTED, INFERRED veya AMBIGUOUS olarak etiketli — güven seviyesi bellidir
-- God node'lar: `AiService`, `toast()`, `emit()` — bunlar projenin gerçek çekirdek soyutlamaları
+**KB default language** is now read from settings (`kb.default_language`), not hardcoded `'tr'`.
 
-<!-- gitnexus:start -->
-# GitNexus — Code Intelligence
+---
 
-This project is indexed by GitNexus as **aluplan-support-desk-v02** (9060 symbols, 15769 relationships, 233 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+## Env validation
 
-> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+All env vars must go through `apps/backend/src/config/env-validation.schema.ts` (Zod).
+Missing vars that bypass Zod and use `process.env` directly are a known GAP — add new vars to schema first.
 
-## Always Do
+Required at boot: `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `ENCRYPTION_KEY`, `ADMIN_BYPASS_EMAILS`.
 
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
-- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
-- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
+---
 
-## Never Do
+## i18n
 
-- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
-- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
-- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
-- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
+Frontend uses `next-intl`. Translation files: `apps/frontend/messages/{tr,en,de}.json`.
+`de.json` has 302 missing keys (GAP-12 — open). Run `pnpm i18n:check` to see current state.
+Never hardcode user-facing strings in components — always use `t('key')`.
 
-## Resources
+---
 
-| Resource | Use for |
-|----------|---------|
-| `gitnexus://repo/aluplan-support-desk-v02/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/aluplan-support-desk-v02/clusters` | All functional areas |
-| `gitnexus://repo/aluplan-support-desk-v02/processes` | All execution flows |
-| `gitnexus://repo/aluplan-support-desk-v02/process/{name}` | Step-by-step execution trace |
+## Testing quirks
 
-## CLI
+- Backend uses **Jest + @swc/jest** (fast transform — no ts-jest).
+- Frontend unit tests use **Vitest**; E2E uses **Playwright**.
+- Integration tests need Postgres + Redis running (`docker-compose up -d`).
+- Property-based tests use **fast-check** — files named `*.pbt.spec.ts`.
+- E2E auth uses storageState — seed dedicated test users before running Playwright.
 
-| Task | Read this skill file |
-|------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+---
 
-<!-- gitnexus:end -->
+## God nodes — high blast radius
+
+| Symbol | Edges | Risk |
+|--------|-------|------|
+| `AiService` | 33 | Dispatcher for all AI — changes cascade |
+| `NotificationsGateway` | 22 | WebSocket hub |
+| `CrmService` | 20 | Dynamics 365 sync |
+| `EmailService` | 25 | All email flows |
+| `toast()` | 37 | Frontend notification hook |
+
+---
+
+## CI pipeline
+
+`.github/workflows/ci.yml` gates: `spec-verify → security → typecheck-and-build → testing + e2e + docker-build → deploy-staging`.
+Staging deploys only on `main` via Coolify webhook.
+CI requires pnpm 9 (fixed from 8 in GAP-28).
+
+---
+
+## Open GAPs (as of 2026-05-09)
+
+Check `verdent-GAP-status.md` for current status. Remaining high-priority:
+
+| GAP | File | Issue |
+|-----|------|-------|
+| GAP-11 | various | 50+ services have no tests |
+| GAP-12 | `messages/de.json` | 302 missing German keys |
+| GAP-19 | faq/announcements/macros services | Hard-delete instead of soft-delete |
+
+---
+
+## Session persistence
+
+Read before starting work:
+- `AGENTS.md` (this file)
+- `.ai/session-summary.md`
+- `verdent-GAP-status.md`
+
+Write after significant work: `.ai/session-summary.md`
+
+Graph index: `.gitnexus/meta.json` — 9,142 nodes, 15,926 edges, 241 flows.
+Re-index when stale: `npx gitnexus analyze`
