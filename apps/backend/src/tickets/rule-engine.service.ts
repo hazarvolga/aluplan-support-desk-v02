@@ -35,20 +35,21 @@ export class RuleEngineService {
             });
 
             for (const rule of rules) {
-                const conditions: Record<string, unknown> = typeof rule.conditions === 'object' ? rule.conditions : {};
-                const actions: Record<string, unknown> = typeof rule.actions === 'object' ? rule.actions : {};
+                const conditions = (rule.conditions as Record<string, unknown>) || {};
+                const actions = (rule.actions as Record<string, unknown>) || {};
 
                 if (!conditions || !actions) continue;
 
                 let isMatch = true;
 
                 for (const [key, value] of Object.entries(conditions)) {
+                    const strValue = String(value);
                     if (key === 'subject:contains') {
-                        if (!context.subject?.toLowerCase().includes(value.toLowerCase())) isMatch = false;
+                        if (!context.subject?.toLowerCase().includes(strValue.toLowerCase())) isMatch = false;
                     } else if (key === 'priority:equals') {
-                        if (context.priority !== value) isMatch = false;
+                        if (context.priority !== strValue) isMatch = false;
                     } else if (key === 'message:contains' && typeof context.messageBody === 'string') {
-                        if (!context.messageBody.toLowerCase().includes(value.toLowerCase())) isMatch = false;
+                        if (!context.messageBody.toLowerCase().includes(strValue.toLowerCase())) isMatch = false;
                     }
                 }
 
@@ -63,24 +64,25 @@ export class RuleEngineService {
                         newValue: { ruleName: rule.name, triggerOn },
                     });
 
-                    const updateData: any = {};
+                    const updateData: Record<string, unknown> = {};
                     for (const [key, value] of Object.entries(actions)) {
+                        const strValue = String(value);
                         if (key === 'setPriority') {
-                            updateData.priority = value as TicketPriority;
+                            updateData.priority = strValue as TicketPriority;
                         } else if (key === 'addTags') {
                             const current = await this.prisma.ticket.findUnique({ where: { id: ticketId }, select: { tags: true } });
                             if (current) {
-                                const newTags = value.split(',').map(t => t.trim());
+                                const newTags = strValue.split(',').map((t: string) => t.trim());
                                 updateData.tags = Array.from(new Set([...current.tags, ...newTags]));
                             }
                         } else if (key === 'assignTo') {
-                            updateData.assignedTo = value;
+                            updateData.assignedTo = strValue;
                         } else if (key === 'translateTo') {
                             // Trigger translation in background
                             this.eventEmitter.emit('ai.translate_message', {
                                 ticketId,
-                                messageId: (context as any).messageId,
-                                targetLanguage: value
+                                messageId: (context as Record<string, unknown>).messageId as string,
+                                targetLanguage: strValue
                             });
                         }
                     }
