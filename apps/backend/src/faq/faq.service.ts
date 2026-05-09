@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { FaqStatus } from '@aluplan/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -281,9 +282,9 @@ export class FaqService {
     }
 
     // ─── CRUD ────────────────────────────────────────────────
-    async findAll(params: { status?: string; page?: number; limit?: number }): Promise<{ data: any[]; total: number; page: number; limit: number; pages: number }> {
+    async findAll(params: { status?: FaqStatus; page?: number; limit?: number }): Promise<{ data: any[]; total: number; page: number; limit: number; pages: number }> {
         const { status, page = 1, limit = 20 } = params;
-        const statusFilter = status ? { status: status as any } : {};
+        const statusFilter = status ? { status: status } : {};
 
         const [data, total] = await Promise.all([
             this.prisma.faqEntry.findMany({

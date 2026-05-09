@@ -36,7 +36,7 @@ export class QueueMonitorService implements OnModuleInit, OnModuleDestroy {
     private monitorQueue(queue: Queue, name: string) {
         try {
             const queueEvents = new QueueEvents(name, {
-                connection: (queue as any).opts?.connection ?? {
+                connection: (queue as unknown as { opts?: { connection?: object } })?.opts?.connection ?? {
                     host: process.env.REDIS_HOST ?? 'localhost',
                     port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
                 },

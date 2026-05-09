@@ -147,7 +147,7 @@ export class StorageService implements OnModuleInit {
                 Key: key,
             });
             // Presigned URL valid for 1 hour
-            const url = await getSignedUrl(client as any, command as any, { expiresIn: 3600 });
+            const url = await getSignedUrl(client, command, { expiresIn: 3600 });
 
             const internalEndpoint = (await this.getS3Config()).endpoint;
             if (this.publicEndpoint && internalEndpoint && this.publicEndpoint !== internalEndpoint) {

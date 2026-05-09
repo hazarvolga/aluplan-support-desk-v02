@@ -1,6 +1,7 @@
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { HttpAdapterHost } from '@nestjs/core';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -69,7 +70,7 @@ async function bootstrap() {
         logger.log(`[NetCheck] 🐘 Database (${dbHost}:${dbPort}): ${dbOk ? 'REACHABLE ✅' : 'UNREACHABLE ❌'}`);
     }
 
-    const app = await NestFactory.create(AppModule, {
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
         bufferLogs: true,
     });
 
@@ -77,7 +78,7 @@ async function bootstrap() {
     app.enableShutdownHooks();
 
     // Trust proxy for secure cookies and origin validation behind Coolify/Caddy
-    (app as any).set('trust proxy', 1);
+    app.set('trust proxy', 1);
 
     app.useLogger(app.get(PinoLogger));
 
@@ -186,13 +187,13 @@ async function bootstrap() {
     // CORS
     app.enableCors({
         origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-            // Production'da !origin izin vermiyoruz (SSRF bypass mitigation)
+            // SSRF bypass mitigation: Production'da origin olmadan gelen istekleri engelle
             if (!origin) {
                 if (nodeEnv === 'production') {
-                    // Log only, don't block for now to debug
-                    logger.warn(`CORS warning: Request missing Origin header.`);
-                    return callback(null, true);
+                    logger.warn(`CORS blocked: Request missing Origin header`);
+                    return callback(new Error('CORS blocked: Origin header required in production'));
                 }
+                // Development/test ortamında origin olmadan izin ver
                 return callback(null, true);
             }
 

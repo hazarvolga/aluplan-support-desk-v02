@@ -24,30 +24,35 @@ export class ProactiveChatController {
     }
 
     @Patch('sessions/:id/accept')
+    @Roles('admin', 'super-admin', 'department-manager', 'team-lead', 'agent', 'customer')
     @ApiOperation({ summary: 'Customer accepts a proactive chat session' })
     acceptSession(@Param('id') id: string, @Request() req: any) {
         return this.proactiveChatService.acceptSession(id, req.user.sub);
     }
 
     @Patch('sessions/:id/decline')
+    @Roles('admin', 'super-admin', 'department-manager', 'team-lead', 'agent', 'customer')
     @ApiOperation({ summary: 'Customer declines a proactive chat session' })
     declineSession(@Param('id') id: string, @Request() req: any) {
         return this.proactiveChatService.declineSession(id, req.user.sub);
     }
 
     @Patch('sessions/:id/end')
+    @Roles('admin', 'super-admin', 'department-manager', 'team-lead', 'agent', 'customer')
     @ApiOperation({ summary: 'End a proactive chat session (agent or customer)' })
     endSession(@Param('id') id: string, @Request() req: any) {
         return this.proactiveChatService.endSession(id, req.user.sub);
     }
 
     @Post('sessions/:id/messages')
+    @Roles('admin', 'super-admin', 'department-manager', 'team-lead', 'agent', 'customer')
     @ApiOperation({ summary: 'Send a message in a proactive chat session' })
     sendMessage(@Param('id') id: string, @Body() dto: SendMessageDto, @Request() req: any) {
         return this.proactiveChatService.sendMessage(id, req.user.sub, dto.content);
     }
 
     @Get('sessions/:id/messages')
+    @Roles('admin', 'super-admin', 'department-manager', 'team-lead', 'agent', 'customer')
     @ApiOperation({ summary: 'Get message history for a proactive chat session' })
     getMessages(@Param('id') id: string, @Request() req: any) {
         return this.proactiveChatService.getMessages(id, req.user.sub);

@@ -1,4 +1,5 @@
 import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@aluplan/database';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -377,7 +378,11 @@ export class CustomersService {
             include: { customerProfile: true }
         });
 
-        const { passwordHash: _, ...result } = freshUser as any;
+        if (!freshUser) {
+            throw new NotFoundException('Customer profile not found');
+        }
+
+        const { passwordHash: _passwordHash, ...result } = freshUser;
         return result;
     }
 
@@ -391,7 +396,7 @@ export class CustomersService {
             throw new NotFoundException('Customer profile not found');
         }
 
-        const { passwordHash: _, ...result } = user as any;
+        const { passwordHash: _passwordHash, ...result } = user;
         return result;
     }
 
@@ -472,7 +477,7 @@ export class CustomersService {
                     lastName: user.fullName ? user.fullName.split(' ').slice(1).join(' ') || 'User' : 'User',
                     companyName: 'Bilinmeyen Şirket',
                     customerNo: `INT-${Date.now()}`,
-                    hotinfoData: parsedData as any,
+                    hotinfoData: parsedData as Prisma.InputJsonValue,
                     hotinfoRaw: xmlString,
                     hotinfoUpdatedAt: new Date()
                 }
@@ -481,7 +486,7 @@ export class CustomersService {
             updatedProfile = await this.prisma.customerProfile.update({
                 where: { userId },
                 data: {
-                    hotinfoData: parsedData as any,
+                    hotinfoData: parsedData as Prisma.InputJsonValue,
                     hotinfoRaw: xmlString,
                     hotinfoUpdatedAt: new Date(),
                 },

@@ -110,7 +110,7 @@ import { ProactiveChatModule } from './proactive-chat/proactive-chat.module';
                     maxRetriesPerRequest: null,
                 });
                 return {
-                    connection: connection as any,
+                    connection: connection as unknown as object,
                     defaultJobOptions: {
                         attempts: 3,
                         backoff: { type: 'exponential', delay: 5000 },

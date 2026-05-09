@@ -13,6 +13,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RedisModule } from '../redis/redis.module';
 import { CrmModule } from '../crm/crm.module';
 
+type JwtExpiresIn =
+    | `${number}`
+    | `${number}${'ms' | 's' | 'm' | 'h' | 'd' | 'w' | 'y'}`
+    | `${number} ${'ms' | 's' | 'm' | 'h' | 'd' | 'w' | 'y'}`;
+
+const JWT_EXPIRES_IN_DEFAULT: JwtExpiresIn = '24h';
+
 @Module({
     imports: [
         PassportModule,
@@ -27,7 +34,7 @@ import { CrmModule } from '../crm/crm.module';
             useFactory: (config: ConfigService) => ({
                 secret: config.get<string>('JWT_SECRET'),
                 signOptions: {
-                    expiresIn: config.get<string>('JWT_EXPIRES_IN', '24h') as any,
+                    expiresIn: config.get<JwtExpiresIn>('JWT_EXPIRES_IN', JWT_EXPIRES_IN_DEFAULT),
                 },
             }),
         }),

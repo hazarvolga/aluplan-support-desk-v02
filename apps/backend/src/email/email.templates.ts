@@ -6,7 +6,7 @@ import * as crypto from 'crypto';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 
 import mjmlModule from 'mjml';
-const mjml2html = typeof mjmlModule === 'function' ? mjmlModule : ((mjmlModule as any).default || mjmlModule);
+const mjml2html = typeof mjmlModule === 'function' ? mjmlModule : ((mjmlModule as { default?: typeof mjmlModule }).default || mjmlModule);
 import * as Handlebars from 'handlebars';
 import { convert } from 'html-to-text';
 import { BaseEmailSchema } from './contracts/base.contract';

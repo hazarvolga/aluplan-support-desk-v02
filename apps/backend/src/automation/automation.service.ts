@@ -158,7 +158,7 @@ export class AutomationService {
                     ticketStatus: ticket.status,
                     customerName: ticket.creator?.fullName || 'Müşteri',
                     customerEmail: ticket.creator?.email || '-',
-                    customerCompany: (ticket as any).creator?.customerProfile?.companyName || '-',
+                    customerCompany: (ticket.creator as unknown as { customerProfile?: { companyName?: string } })?.customerProfile?.companyName || '-',
                     createdAt: new Date(ticket.createdAt).toLocaleString(),
                     ticketUrl: `${frontendUrl}/admin/tickets/${ticket.id}`
                 }).catch(err => this.logger.error(`Failed to notify staff for ${ticket.ticketNumber}: ${err.message}`));

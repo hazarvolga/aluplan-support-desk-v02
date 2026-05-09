@@ -74,6 +74,7 @@ export class AnnouncementsController {
     // --- Customer Endpoints ---
 
     @Get('my')
+    @Roles('ADMIN', 'AGENT', 'CUSTOMER')
     @ApiOperation({ summary: 'Get announcements sent to the authenticated customer' })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -90,12 +91,14 @@ export class AnnouncementsController {
     }
 
     @Get('my/unread-count')
+    @Roles('ADMIN', 'AGENT', 'CUSTOMER')
     @ApiOperation({ summary: 'Get unread announcement count for the authenticated customer' })
     getMyUnreadCount(@Request() req: any) {
         return this.announcementsService.getMyUnreadCount(req.user.id);
     }
 
     @Patch('logs/:logId/read')
+    @Roles('ADMIN', 'AGENT', 'CUSTOMER')
     @ApiOperation({ summary: 'Mark an announcement log as read' })
     @ApiParam({ name: 'logId', description: 'AnnouncementLog UUID' })
     markLogRead(@Param('logId') logId: string, @Request() req: any) {

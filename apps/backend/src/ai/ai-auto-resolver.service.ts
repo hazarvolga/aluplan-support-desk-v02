@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { Ticket, TicketStatus, TicketMessage } from '@aluplan/database';
+import { Ticket, TicketStatus, TicketMessage, CommunicationChannel, Prisma } from '@aluplan/database';
 import { AiQueryService } from './ai-query.service';
 import { AiService } from './ai.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -126,7 +126,7 @@ export class AiAutoResolverService {
                 const result = await this.aiQueryService.query({
                     userQuery: message.message,
                     userId: ticket.userId ?? undefined,
-                    channel: (ticket.channel as any) || 'WEB',
+                    channel: (ticket.channel as CommunicationChannel) || CommunicationChannel.WEB,
                     hotinfoContext: ticket.hotinfoSnapshot,
                     history
                 });
@@ -141,7 +141,7 @@ export class AiAutoResolverService {
                             metadata: {
                                 translations: result.translations,
                                 diagnosis: result.diagnosis
-                            } as any
+                            } as Prisma.InputJsonValue
                         }
                     });
                     this.logger.log(`🤖 AI Suggestion created for message ${message.id} in ticket ${ticket.ticketNumber}`);
@@ -188,4 +188,3 @@ export class AiAutoResolverService {
         }
     }
 }
-

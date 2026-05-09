@@ -97,12 +97,12 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         }
     }
 
-    private async handleUrlSync(source: any, logId: string) {
+    private async handleUrlSync(source: { metadata?: Record<string, unknown> | null }, logId: string) {
         const { content, hash, title } = await this.crawlService.fetch(source.url);
 
         // Section 3.5.3: Change Monitor
         // If content length changes significantly (>30%), mark as major
-        const oldLength = (source.metadata as any)?.lastContentLength || 0;
+        const oldLength = source.metadata?.lastContentLength as number | undefined || 0;
         const newLength = content.length;
         const delta = oldLength > 0 ? Math.abs(newLength - oldLength) / oldLength : 0;
         const isMajorChange = delta > 0.30;
@@ -150,7 +150,7 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
                 status: isMajorChange ? KnowledgeSourceStatus.PENDING_REVIEW : KnowledgeSourceStatus.ACTIVE,
                 lastSyncedAt: new Date(),
                 metadata: {
-                    ...(source.metadata as any || {}),
+                    ...(source.metadata || {}),
                     lastContentLength: newLength,
                     isMajorChange
                 }
@@ -163,7 +163,7 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         });
     }
 
-    private async handleFileSync(source: any, logId: string) {
+    private async handleFileSync(source: { metadata?: Record<string, unknown> | null }, logId: string) {
         if (!source.filePath) throw new Error('File path/key missing for source');
 
         this.logger.log(`📄 Retrieving file content for: ${source.fileName} (Key: ${source.filePath})`);
@@ -248,7 +248,7 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
 
 
         // Section 3.5.3: Change Monitor (Partial for files - size track)
-        const _oldLength = (source.metadata as any)?.lastContentLength || 0;
+        const _oldLength = source.metadata?.lastContentLength as number | undefined || 0;
         const newLength = content.length;
 
         await this.prisma.knowledgeSource.update({
@@ -258,7 +258,7 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
                 status: KnowledgeSourceStatus.ACTIVE,
                 lastSyncedAt: new Date(),
                 metadata: {
-                    ...(source.metadata as any || {}),
+                    ...(source.metadata || {}),
                     lastContentLength: newLength
                 }
             }

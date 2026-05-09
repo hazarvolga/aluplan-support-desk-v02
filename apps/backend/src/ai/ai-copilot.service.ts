@@ -48,7 +48,7 @@ export class AiCopilotService {
         if (!ticket) throw new NotFoundException('Ticket not found');
 
         // Extract Hotinfo
-        const hotinfoSnapshot = (ticket.hotinfoSnapshot || ticket.creator?.customerProfile?.hotinfoData) as any;
+        const hotinfoSnapshot = (ticket.hotinfoSnapshot || ticket.creator?.customerProfile?.hotinfoData) as Record<string, unknown> | null;
         const latestMessage = ticket.messages[0];
 
         // 1. Process Attachments (Early)

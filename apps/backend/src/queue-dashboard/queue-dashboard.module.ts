@@ -51,10 +51,10 @@ export class QueueDashboardModule implements OnModuleInit {
 
         createBullBoard({
             queues: [
-                new BullMQAdapter(this.aiQueue as any),
-                new BullMQAdapter(this.docQueue as any),
-                new BullMQAdapter(this.crmQueue as any),
-                new BullMQAdapter(this.emailQueue as any),
+                new BullMQAdapter(this.aiQueue),
+                new BullMQAdapter(this.docQueue),
+                new BullMQAdapter(this.crmQueue),
+                new BullMQAdapter(this.emailQueue),
             ],
             serverAdapter,
         });

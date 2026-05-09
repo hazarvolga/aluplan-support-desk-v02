@@ -114,7 +114,7 @@ export class AiService implements AiProvider {
             return this.openai;
         }
         if (providerName === 'custom' || providerName === 'xai' || providerName === 'deepseek' || providerName === 'groq') {
-            this.custom.setProvider(providerName as any);
+            this.custom.setProvider(providerName);
             return this.custom;
         }
         if (providerName === 'llmapi') return this.llmapi;

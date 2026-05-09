@@ -555,9 +555,9 @@ export class TicketsService {
             where: { id: childId },
             data: {
                 parentId,
-                status: 'CLOSED',
+                status: 'CLOSED' as const,
                 closedAt: new Date()
-            } as any
+            }
         });
 
         await this.prisma.ticketMessage.createMany({

@@ -21,7 +21,7 @@ export class AnnouncementsService {
                 title: dto.title,
                 subject: dto.subject,
                 contentMjml: dto.contentMjml,
-                targetCriteria: dto.targetCriteria as any,
+                targetCriteria: dto.targetCriteria as Prisma.InputJsonValue,
                 type: dto.type || 'BROADCAST',
                 status: 'DRAFT',
                 createdBy: userId,
@@ -123,7 +123,7 @@ export class AnnouncementsService {
         });
 
         try {
-            const criteria = announcement.targetCriteria as any as TargetCriteriaDto;
+            const criteria = announcement.targetCriteria as unknown as TargetCriteriaDto;
 
             // Safety check: if no filters are selected, don't broadcast to everyone (or crash Prisma)
             const hasIndustries = criteria.industries && criteria.industries.length > 0;

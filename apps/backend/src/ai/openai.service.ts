@@ -187,7 +187,7 @@ export class OpenAiService implements AiProvider {
             ];
 
             if (attachments && attachments.length > 0) {
-                userContent.push(...this.mapParts(attachments) as any[]);
+                userContent.push(...(this.mapParts(attachments) as OpenAiContentBlock[]));
             }
 
             userContent.push({

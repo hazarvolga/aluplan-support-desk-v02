@@ -318,7 +318,7 @@ export class AiQueryService {
         /* 
         // 3. Vertex AI Data Store Hybrid Merge (DEACTIVATED FOR COST OPTIMIZATION)
         try {
-            const vertexSearch = await (this.ai as any).getProviderByName('vertex');
+            const vertexSearch = await this.ai.getProviderByName('vertex');
             if (vertexSearch && typeof vertexSearch.searchDataStore === 'function') {
                 const vertexResults = await vertexSearch.searchDataStore(userQuery);
                 if (vertexResults && vertexResults.length > 0) {
@@ -473,7 +473,7 @@ export class AiQueryService {
                 userContext: {
                     translations,
                     diagnosis
-                } as any
+                } as Prisma.InputJsonValue
             }
         });
 
@@ -767,7 +767,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                 estimatedCost,
                 userContext: {
                     diagnosis: diagnosis
-                } as any
+                } as Prisma.InputJsonValue
             },
         });
 
@@ -937,17 +937,17 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
             const translated = await this.ai.translate(message.message, payload.targetLanguage);
             if (translated) {
-                const currentMetadata = (message.metadata as any) || {};
+                const currentMetadata = (message.metadata as Prisma.JsonObject) || {};
                 await this.prisma.ticketMessage.update({
                     where: { id: message.id },
                     data: {
                         metadata: {
                             ...currentMetadata,
                             translations: {
-                                ...(currentMetadata.translations || {}),
+                                ...((currentMetadata.translations as Prisma.JsonObject) || {}),
                                 [payload.targetLanguage]: translated
                             }
-                        }
+                        } as Prisma.InputJsonValue
                     }
                 });
                 this.logger.log(`🌍 Translated message ${message.id} to ${payload.targetLanguage} `);
@@ -1140,9 +1140,20 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         });
 
         const h = ticket.hotinfoSnapshot || ticket.creator?.customerProfile?.hotinfoData;
+        type HotinfoSnapshot = {
+            allplanVersion?: string;
+            allplanEdition?: string;
+            osVersion?: string;
+            gpu?: string;
+            ram?: string;
+            errorTrace?: string;
+            conflictingProcesses?: string[];
+        };
         let hotinfoContext = '';
+        let hotinfoAllplanVersion = '...';
         if (h && typeof h === 'object') {
-            const data = h as any;
+            const data = h as HotinfoSnapshot;
+            hotinfoAllplanVersion = data.allplanVersion || '...';
             hotinfoContext = `\n[MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)]:
 - Allplan: ${data.allplanVersion || 'Bilinmiyor'} ${data.allplanEdition ? `(${data.allplanEdition})` : ''}
 - İşletim Sistemi: ${data.osVersion || 'Bilinmiyor'}
@@ -1166,7 +1177,7 @@ ${conversation}
 
 Önemli Notlar:
 1. Müşterinin sistem bilgilerini (Allplan versiyonu, GPU vb.) yukarıdaki [MÜŞTERİ SİSTEM BİLGİLERİ] kısmından biliyorsun.
-2. Özetinde bu bilgileri kullanarak "Müşteri Allplan ${h ? (h as any).allplanVersion : '...'} versiyonu kullanıyor" gibi net ifadeler kullan.
+2. Özetinde bu bilgileri kullanarak "Müşteri Allplan ${hotinfoAllplanVersion} versiyonu kullanıyor" gibi net ifadeler kullan.
 3. KESİNLİKLE "Hangi versiyonu kullanıyorsunuz?" veya "Güncel mi?" gibi zaten bildiğin bilgileri soran önerilerde BULUNMA.
 4. Teknik engelleri (GPU hatası, RAM eksikliği vb.) doğrudan belirt.
 
@@ -1257,7 +1268,7 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
                 channel,
                 productId,
                 userQuery: query,
-                confidenceBand: topResult ? (topResult.confidence as any) : null,
+                confidenceBand: topResult ? (topResult.confidence as ConfidenceBand) : null,
                 matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
                 similarityScore: topResult ? topResult.similarity : undefined,
                 autoAnswered: false, // This was just a search
@@ -1474,7 +1485,7 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
                     outputTokens,
                     totalTokens: inputTokens + outputTokens,
                     estimatedCost: (inputTokens * 0.00000015) + (outputTokens * 0.0000006),
-                    userContext: { diagnosis } as any
+                    userContext: { diagnosis } as unknown as Prisma.InputJsonValue
                 }
             });
         }
@@ -1482,9 +1493,9 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
 
     private mapConfidence(similarity?: number): ConfidenceBand | null {
         if (!similarity || similarity < 0.2) return null;
-        if (similarity >= RAG_CONFIG.SIMILARITY.HIGH) return 'HIGH' as any;
-        if (similarity >= RAG_CONFIG.SIMILARITY.MEDIUM) return 'MEDIUM' as any;
-        return 'LOW' as any;
+        if (similarity >= RAG_CONFIG.SIMILARITY.HIGH) return ConfidenceBand.HIGH;
+        if (similarity >= RAG_CONFIG.SIMILARITY.MEDIUM) return ConfidenceBand.MEDIUM;
+        return ConfidenceBand.LOW;
     }
 
     private async prepareQueryContext(options: AiQueryOptions) {

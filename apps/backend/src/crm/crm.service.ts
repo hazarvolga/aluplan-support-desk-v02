@@ -4,7 +4,7 @@ import { Dynamics365Adapter } from './adapters/dynamics365.adapter';
 import { ICrmAdapter, SyncResult } from './adapters/crm-adapter.interface';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { CrmProvider, SyncStatus } from '@aluplan/database';
+import { CrmProvider, SyncStatus, Prisma } from '@aluplan/database';
 import { CryptoService } from '../utils/crypto.service';
 
 interface FailedRecord {
@@ -379,7 +379,7 @@ export class CrmService {
                     totalRecords: accountResult.totalRecords + contactResult.totalRecords,
                     successCount: accountResult.successCount + contactResult.successCount,
                     errorCount: accountResult.errorCount + contactResult.errorCount,
-                    details: details as any,
+                    details: details as unknown as Prisma.InputJsonValue,
                 }
             });
 
@@ -406,7 +406,7 @@ export class CrmService {
                     totalRecords: totalAccountRecords + totalContactRecords,
                     successCount: successAccountRecords + successContactRecords,
                     errorCount: errorAccountRecords + errorContactRecords,
-                    details: details as any,
+                    details: details as unknown as Prisma.InputJsonValue,
                 }
             });
 
@@ -517,7 +517,7 @@ export class CrmService {
                     ...customer.user,
                     email: this.piiMasking.maskSensitiveData(customer.user.email || '')
                 } : null
-            })) as any;
+            }));
         }
 
         return account;
