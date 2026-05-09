@@ -545,7 +545,7 @@ async function main() {
             phoneNumber: '905550009988'
         },
         {
-            email: 'hazarvolga@gmail.com', // Admin but also having profile for testing convenience
+            email: 'admin@example.com', // Admin but also having profile for testing convenience
             fullName: 'hazarvolga',
             phoneNumber: '905550007766'
         }
@@ -564,7 +564,7 @@ async function main() {
                     email: testCust.email,
                     fullName: testCust.fullName,
                     passwordHash: hash,
-                    roleId: testCust.email === 'hazarvolga@gmail.com' ? adminRole.id : customerRole.id,
+                    roleId: testCust.email === 'admin@example.com' ? adminRole.id : customerRole.id,
                     status: 'ACTIVE',
                 }
             });

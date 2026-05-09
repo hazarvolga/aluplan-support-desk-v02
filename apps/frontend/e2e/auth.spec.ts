@@ -29,7 +29,7 @@ test.describe('Authentication Flow', () => {
         await loginPage.navigateTo('/tr/login');
         // Use the same default seeded admin credentials as helpers/auth.ts.
         // Override with E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD in CI.
-        const email = process.env.E2E_ADMIN_EMAIL || 'hazarvolga@gmail.com';
+        const email = process.env.E2E_ADMIN_EMAIL || 'admin@example.com';
         const password = process.env.E2E_ADMIN_PASSWORD || 'Vol1872017';
 
         await loginPage.loginWithRetry(email, password);

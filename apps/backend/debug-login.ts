@@ -8,9 +8,9 @@ async function bootstrap() {
     const authService = app.get(AuthService);
 
     try {
-        console.log('Testing login for hazarvolga@gmail.com...');
+        console.log('Testing login for admin@example.com...');
         const result = await authService.login({
-            email: 'hazarvolga@gmail.com',
+            email: 'admin@example.com',
             password: 'Vol?*187'
         });
         console.log('Login successful:', !!result.access_token);

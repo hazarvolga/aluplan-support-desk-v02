@@ -24,9 +24,9 @@ async function setPassword() {
 
         let result = await pool.query(
             'UPDATE "users" SET "passwordHash" = $1 WHERE "email" = $2',
-            [passwordHash, 'hazarvolga@gmail.com']
+            [passwordHash, 'admin@example.com']
         );
-        console.log('Updated hazarvolga@gmail.com rows:', result.rowCount);
+        console.log('Updated admin@example.com rows:', result.rowCount);
 
         if (result.rowCount === 0) {
             result = await pool.query(

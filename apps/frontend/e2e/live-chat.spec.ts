@@ -40,7 +40,7 @@ async function apiPatch(url: string, body: any, token: string) {
 test.describe('Live Chat WebSocket Flow', () => {
     const customerEmail = 'test_customer@aluplan.com';
     const customerPassword = 'Test1234!';
-    const adminEmail = 'hazarvolga@gmail.com';
+    const adminEmail = 'admin@example.com';
     const adminPassword = 'Vol1872017';
 
     test('should activate live chat session end-to-end', async ({ page }) => {

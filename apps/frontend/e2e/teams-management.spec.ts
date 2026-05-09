@@ -6,7 +6,7 @@ test.describe('Team Management', () => {
         // 1. Navigation and Login
         await page.goto('/tr/login');
 
-        await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
+        await page.getByTestId('login-email').fill('admin@example.com');
         await page.getByTestId('login-password').fill('Vol1872017');
         await page.getByTestId('login-submit').click();
 

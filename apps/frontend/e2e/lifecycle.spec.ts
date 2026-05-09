@@ -43,7 +43,7 @@ async function apiPatch(url: string, token: string) {
 test.describe('Ticket Lifecycle Orchestration', () => {
     const customerEmail = 'e2e-customer@aluplan.com';
     const customerPassword = 'Vol1872017';
-    const adminEmail = 'hazarvolga@gmail.com';
+    const adminEmail = 'admin@example.com';
     const adminPassword = 'Vol1872017';
 
     test('full ticket lifecycle via API setup + UI resolution', async ({ page }) => {

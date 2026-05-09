@@ -71,7 +71,7 @@ async function apiPatch(url: string, token: string, body?: any) {
 // ── Auth Helpers ─────────────────────────────────────────────────────────────
 
 async function loginAsAgent(page: Page) {
-    const email = process.env.E2E_ADMIN_EMAIL || 'hazarvolga@gmail.com';
+    const email = process.env.E2E_ADMIN_EMAIL || 'admin@example.com';
     const password = process.env.E2E_ADMIN_PASSWORD || 'Vol1872017';
 
     console.log('--- [AUTH] Agent Login ---');
@@ -114,7 +114,7 @@ async function getAuthToken(email: string, password: string): Promise<string> {
 // ── Test Suite ───────────────────────────────────────────────────────────────
 
 test.describe('Proactive Chat E2E Tests', () => {
-    const agentEmail = 'hazarvolga@gmail.com';
+    const agentEmail = 'admin@example.com';
     const agentPassword = 'Vol1872017';
     const customerEmail = 'e2e-customer@aluplan.com';
     const customerPassword = 'Vol1872017';

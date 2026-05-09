@@ -168,7 +168,7 @@ describe('CustomersService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
       const dto = {
-        email: 'hazarvolga@gmail.com',
+        email: 'admin@example.com',
         firstName: 'Admin',
         lastName: 'User',
         password: 'password123',

@@ -9,7 +9,7 @@ test.describe('Omni-channel Integration', () => {
     test.use({ viewport: { width: 1280, height: 800 } });
 
     test('should create a ticket from an incoming WhatsApp message', async ({ page, request }) => {
-        const adminEmail = 'hazarvolga@gmail.com';
+        const adminEmail = 'admin@example.com';
         const adminPassword = 'Vol1872017';
 
         // E2E customer phone number (reconciled in DB)

@@ -3,7 +3,7 @@ const { PrismaPg } = require('@prisma/adapter-pg');
 const { Pool } = require('pg');
 
 async function grantAdmin() {
-    console.log('🚀 Enforcing uppercase ADMIN role for hazarvolga@gmail.com...');
+    console.log('🚀 Enforcing uppercase ADMIN role for admin@example.com...');
     if (!process.env.DATABASE_URL) {
         console.error('❌ Error: DATABASE_URL environment variable is missing.');
         process.exit(1);
@@ -35,7 +35,7 @@ async function grantAdmin() {
         // 2. Transfer user to this role
         await prisma.user.updateMany({
             where: {
-                email: { in: ['hazarvolga@gmail.com', 'droneracingturkey@gmail.com'] }
+                email: { in: ['admin@example.com', 'droneracingturkey@gmail.com'] }
             },
             data: { roleId: adminRole.id }
         });

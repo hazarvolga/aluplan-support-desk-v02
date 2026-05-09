@@ -332,7 +332,7 @@ describe('AuthService', () => {
             crmEmailValidator.isAdminBypass.mockReturnValue(true);
 
             // Act
-            const result = await service.lookupEmail('hazarvolga@gmail.com');
+            const result = await service.lookupEmail('admin@example.com');
 
             // Assert
             expect(result).toEqual({ action: 'NEW', companyName: null });

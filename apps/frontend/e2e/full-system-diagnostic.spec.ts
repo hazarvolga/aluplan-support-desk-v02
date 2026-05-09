@@ -18,8 +18,8 @@ test.describe('Full System Diagnostic E2E Test', () => {
         await page.waitForTimeout(8000);
 
         // Fill credentials and strictly enforce state update
-        await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
-        await expect(page.getByTestId('login-email')).toHaveValue('hazarvolga@gmail.com');
+        await page.getByTestId('login-email').fill('admin@example.com');
+        await expect(page.getByTestId('login-email')).toHaveValue('admin@example.com');
 
         await page.getByTestId('login-password').fill('Vol1872017');
         await expect(page.getByTestId('login-password')).toHaveValue('Vol1872017');
@@ -71,8 +71,8 @@ test.describe('Full System Diagnostic E2E Test', () => {
         // but E2E tests are isolated. We need to login again.
         await page.goto('/tr/login', { waitUntil: 'domcontentloaded' });
         await page.waitForTimeout(8000);
-        await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
-        await expect(page.getByTestId('login-email')).toHaveValue('hazarvolga@gmail.com');
+        await page.getByTestId('login-email').fill('admin@example.com');
+        await expect(page.getByTestId('login-email')).toHaveValue('admin@example.com');
 
         await page.getByTestId('login-password').fill('Vol1872017');
         await expect(page.getByTestId('login-password')).toHaveValue('Vol1872017');

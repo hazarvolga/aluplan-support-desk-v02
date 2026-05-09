@@ -15,7 +15,7 @@ test.describe('Email Threading Integration', () => {
 
         // Login to get token
         const loginRes = await apiContext.post('/api/v1/auth/login', {
-            data: { email: 'hazarvolga@gmail.com', password: 'Vol1872017' }
+            data: { email: 'admin@example.com', password: 'Vol1872017' }
         });
         const { access_token } = await loginRes.json();
 
@@ -65,7 +65,7 @@ test.describe('Email Threading Integration', () => {
         // But for Playwright, I will just verify that the ticket exists and the subject is correct.
 
         await page.goto('/tr/login');
-        await page.getByTestId('login-email').fill('hazarvolga@gmail.com');
+        await page.getByTestId('login-email').fill('admin@example.com');
         await page.getByTestId('login-password').fill('Vol1872017');
         await page.getByTestId('login-submit').click();
         await page.waitForURL(/.*\/dashboard/);
