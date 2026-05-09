@@ -4,12 +4,46 @@ import { ICrmAdapter, SyncResult } from './crm-adapter.interface';
 import axios from 'axios';
 import { PrismaService } from '../../prisma/prisma.service';
 
+import { ConfigService } from '@nestjs/config';
+
 @Injectable()
 export class Dynamics365Adapter implements ICrmAdapter {
     private readonly logger = new Logger(Dynamics365Adapter.name);
     provider = CrmProvider.DYNAMICS_365;
 
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly config: ConfigService,
+    ) { }
+
+    /**
+     * Patch system integrity (Ghost user check)
+     * In some environments, the primary admin user might be missing from DB
+     * even if seeds were run. This ensures the admin specified in env exists.
+     */
+    async onModuleInit() {
+        if (process.env.NODE_ENV === 'provision') return;
+
+        try {
+            const adminEmail = this.config.get<string>('ADMIN_EMAIL') || 'admin@example.com';
+            const mainUser = await this.prisma.user.findUnique({
+                where: { email: adminEmail }
+            });
+
+            if (mainUser) {
+                // Ensure ADMIN role uppercase
+                if (mainUser.roleId !== 'ADMIN') {
+                    await this.prisma.user.update({
+                        where: { id: mainUser.id },
+                        data: { roleId: 'ADMIN' }
+                    });
+                    this.logger.log(`🛡️ System Integrity: Role for ${adminEmail} updated to ADMIN.`);
+                }
+            }
+        } catch (e: any) {
+            this.logger.warn(`System integrity check failed: ${e.message}`);
+        }
+    }
 
     async verifyConnection(config: any): Promise<boolean> {
         try {
