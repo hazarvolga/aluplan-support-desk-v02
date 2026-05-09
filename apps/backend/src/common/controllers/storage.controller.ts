@@ -21,7 +21,12 @@ export class StorageController {
         @Res({ passthrough: true }) res: Response,
     ) {
         const fullPath = params['0']; // Catch-all value
-        const filePath = path.join(process.cwd(), this.localPath, fullPath);
+        const basePath = path.resolve(path.join(process.cwd(), this.localPath));
+        const filePath = path.resolve(path.join(process.cwd(), this.localPath, fullPath));
+
+        if (!filePath.startsWith(basePath + path.sep) && filePath !== basePath) {
+            throw new NotFoundException('File not found'); // Hide path traversal attempts as 404
+        }
 
         if (!(await fs.pathExists(filePath))) {
             throw new NotFoundException('File not found');

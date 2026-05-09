@@ -75,22 +75,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             this.metrics.setDbPoolConnections(this.pool.totalCount);
         }, 10000);
 
-        // Emergency Repair: Restore hazarvolga@gmail.com to ADMIN role if needed
-        try {
-            const adminRole = await this.role.findFirst({ where: { name: 'ADMIN' } });
-            if (adminRole) {
-                const mainUser = await this.user.findUnique({ where: { email: 'hazarvolga@gmail.com' } });
-                if (mainUser && mainUser.roleId !== adminRole.id) {
-                    await this.user.update({
-                        where: { id: mainUser.id },
-                        data: { roleId: adminRole.id }
-                    });
-                    this.logger.warn('REPAIRED: Restored ADMIN role for hazarvolga@gmail.com at startup');
-                }
-            }
-        } catch (repairError: any) {
-            this.logger.error(`Self-repair failed: ${repairError.message}`);
-        }
     }
 
     async onModuleDestroy() {

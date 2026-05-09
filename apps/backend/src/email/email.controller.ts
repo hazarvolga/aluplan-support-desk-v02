@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body, Param, Res, HttpStatus, UseGuards, Req, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Param, Res, HttpStatus, UseGuards, Req, NotFoundException, BadRequestException, Logger, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -10,6 +10,7 @@ import { GmailProvider } from './gmail.provider';
 import { Public } from '../auth/decorators/public.decorator';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 
 
 import { EmailInboundService } from './email-inbound.service';
@@ -61,8 +62,40 @@ export class EmailController {
 
   @Public()
   @Post('webhook/resend')
-  async resendWebhook(@Body() payload: any, @Res() res: Response) {
-    // Basic Resend webhook signature validation goes here (HMAC)
+  async resendWebhook(@Req() req: any, @Body() payload: any, @Res() res: Response) {
+    const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      return res.status(HttpStatus.UNAUTHORIZED).send('Webhook secret is not configured');
+    }
+
+    try {
+      const svixId = req.headers['svix-id'] as string;
+      const svixTimestamp = req.headers['svix-timestamp'] as string;
+      const svixSignature = req.headers['svix-signature'] as string;
+
+      if (!svixId || !svixTimestamp || !svixSignature) {
+        return res.status(HttpStatus.UNAUTHORIZED).send();
+      }
+
+      const rawBody = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(payload);
+      const signedContent = `${svixId}.${svixTimestamp}.${rawBody}`;
+      const secretBytes = Buffer.from(webhookSecret.split('_')[1] || webhookSecret, 'base64');
+      const expectedSignature = crypto.createHmac('sha256', secretBytes).update(signedContent).digest('base64');
+
+      const passedSignatures = svixSignature.split(' ').map(s => s.split(',')[1]);
+      const isValid = passedSignatures.some(sig => {
+        if (!sig || sig.length !== expectedSignature.length) return false;
+        return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSignature));
+      });
+
+      if (!isValid) {
+        return res.status(HttpStatus.UNAUTHORIZED).send();
+      }
+    } catch (err) {
+      return res.status(HttpStatus.UNAUTHORIZED).send();
+    }
+
     const type = payload.type; // e.g. "email.delivered", "email.bounced"
     const messageId = payload.data?.email_id;
 
@@ -132,12 +165,38 @@ export class EmailController {
   @Public()
   @Post('unsubscribe')
   async unsubscribe(@Body() body: { token: string }) {
-    // In a production app, the token would be a signed JWT. 
-    // Here we use the userId for the proof-of-concept.
-    const userId = body.token;
-
-    if (!userId || userId === 'global') {
+    if (!body.token || typeof body.token !== 'string') {
       return { success: false, message: 'Invalid token' };
+    }
+
+    if (body.token === 'global') {
+      return { success: false, message: 'Global token cannot be unsubscribed' };
+    }
+
+    let userId: string;
+
+    try {
+      const parts = body.token.split('.');
+      if (parts.length !== 2) {
+        throw new Error('Invalid token format');
+      }
+
+      userId = Buffer.from(parts[0], 'base64').toString('utf8');
+      const signature = parts[1];
+
+      const expectedSignature = crypto.createHmac('sha256', process.env.JWT_SECRET || 'fallback-secret')
+        .update(userId)
+        .digest('hex');
+
+      if (signature !== expectedSignature) {
+        throw new Error('Invalid signature');
+      }
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired unsubscribe token');
+    }
+
+    if (!userId) {
+      return { success: false, message: 'Invalid user' };
     }
 
     // Disable all email notification types for this user

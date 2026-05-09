@@ -22,12 +22,6 @@ export class KnowledgePoolController {
         private readonly storageService: StorageService,
     ) { }
 
-    @Public()
-    @Get('sync-force-unlocked')
-    async forceSync() {
-        return this.knowledgePoolService.syncLocalDataset();
-    }
-
     @Post('sources')
     @Roles('admin', 'super-admin')
     @ApiOperation({ summary: 'Add a new knowledge source (URL)' })

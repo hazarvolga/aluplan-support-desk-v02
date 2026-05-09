@@ -39,38 +39,39 @@ async function main() {
     console.log('🚀 Starting Pre-Flight Production Configuration Seed...');
 
     // Users & Assignee logic (We get the admin ID to assign updates to)
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
     const admin = await prisma.user.findFirst({
-        where: { email: 'hazarvolga@gmail.com' }
+        where: { email: adminEmail }
     });
 
     const adminId = admin ? admin.id : null;
 
     if (!adminId) {
-        console.warn('⚠️ Admin user hazarvolga@gmail.com not found, updatedBy fields will be null.');
+        console.warn(`⚠️ Admin user ${adminEmail} not found, updatedBy fields will be null.`);
     }
 
     // 1. Settings Data
     const settings = [
         // EMAIL - RESEND
         { key: 'email.provider', value: 'resend', isSecret: false },
-        { key: 'email.resend.api_key', value: 're_fupJu99g_BM3sewTw2JtnpG3ezskBSWhB', isSecret: true },
+        { key: 'email.resend.api_key', value: process.env.RESEND_API_KEY || '', isSecret: true },
 
         // AI - GROK / XAI
-        { key: 'ai.xai.api_key', value: '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', isSecret: true },
-        { key: 'ai.xai.chat_model', value: 'llama3-8b-8192', isSecret: false },
+        { key: 'ai.xai.api_key', value: process.env.XAI_API_KEY || '', isSecret: true },
+        { key: 'ai.xai.chat_model', value: process.env.XAI_CHAT_MODEL || 'llama3-8b-8192', isSecret: false },
 
         // AI - OPENAI
-        { key: 'ai.openai.api_key', value: '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', isSecret: true },
-        { key: 'ai.openai.chat_model', value: 'gpt-4o-mini', isSecret: false },
-        { key: 'ai.openai.embed_model', value: 'text-embedding-3-small', isSecret: false },
+        { key: 'ai.openai.api_key', value: process.env.OPENAI_API_KEY || '', isSecret: true },
+        { key: 'ai.openai.chat_model', value: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini', isSecret: false },
+        { key: 'ai.openai.embed_model', value: process.env.OPENAI_EMBED_MODEL || 'text-embedding-3-small', isSecret: false },
 
         // STORAGE - CLOUDFLARE R2
         { key: 'storage.provider', value: 'r2', isSecret: false },
-        { key: 'storage.r2.endpoint', value: 'https://457188683bc1b5df04c2ef11a013605a.r2.cloudflarestorage.com', isSecret: false },
-        { key: 'storage.r2.access_key_id', value: '23d300382474b47fe069a8900ef85175', isSecret: true },
-        { key: 'storage.r2.secret_access_key', value: '4f6d2d4e39800edf6a85da491470fd404abd1c6cb4785c622869803fc2d03c6b', isSecret: true },
-        { key: 'storage.r2.token', value: 'cfat_vivAwu0aBtZUfpEKAJq4KN8uWr6dzo5WdsHtYPEX4b8eb87b', isSecret: true },
-        { key: 'storage.r2.bucket', value: 'aluplan-docs', isSecret: false }, // Default fallback
+        { key: 'storage.r2.endpoint', value: process.env.R2_ENDPOINT || '', isSecret: false },
+        { key: 'storage.r2.access_key_id', value: process.env.R2_ACCESS_KEY_ID || '', isSecret: true },
+        { key: 'storage.r2.secret_access_key', value: process.env.R2_SECRET_ACCESS_KEY || '', isSecret: true },
+        { key: 'storage.r2.token', value: process.env.R2_TOKEN || '', isSecret: true },
+        { key: 'storage.r2.bucket', value: process.env.R2_BUCKET || 'aluplan-docs', isSecret: false }, // Default fallback
     ];
 
     console.log('🔄 Upserting Configurations...');
@@ -101,16 +102,16 @@ async function main() {
     // CRM keys can be stored either in Settings or in CrmConnection model
     // Both mapped to ensure coverage based on earlier DB architecture
 
-    const d365Secret = encrypt('J0n8Q~bkkepIW0RBeqe9pt~NT-GG6GcNp72Vda9u');
+    const d365Secret = encrypt(process.env.DYNAMICS365_CLIENT_SECRET || '');
 
     try {
         const existingCrm = await prisma.crmConnection.findFirst({
             where: { provider: 'DYNAMICS_365' }
         });
         const d365Data = {
-            instanceUrl: 'https://marketingaluplan.crm4.dynamics.com/',
-            tenantId: '0902521f-1c17-498d-99e7-17770cf5bb5f',
-            clientId: 'aab421de-0e21-41e3-ab9b-908c2c24b2f9',
+            instanceUrl: process.env.DYNAMICS365_INSTANCE_URL || 'https://marketingaluplan.crm4.dynamics.com/',
+            tenantId: process.env.DYNAMICS365_TENANT_ID || '',
+            clientId: process.env.DYNAMICS365_CLIENT_ID || '',
             clientSecret: d365Secret,
             isActive: true
         };
@@ -123,8 +124,8 @@ async function main() {
         // Ensure API key is also stored if accessed via Settings
         await prisma.setting.upsert({
             where: { key: 'crm.dynamics.api_key' },
-            update: { value: encrypt('b2PJTkEctm4muQeTJm'), isSecret: true },
-            create: { key: 'crm.dynamics.api_key', value: encrypt('b2PJTkEctm4muQeTJm'), isSecret: true }
+            update: { value: encrypt(process.env.DYNAMICS365_API_KEY || ''), isSecret: true },
+            create: { key: 'crm.dynamics.api_key', value: encrypt(process.env.DYNAMICS365_API_KEY || ''), isSecret: true }
         });
 
         console.log(' ✅ Dynamics 365 Connected and Secured.');
