@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { SettingsService } from '../settings/settings.service';
 
 @Processor('kb-summarizer')
 export class KbSummarizerProcessor extends WorkerHost {
@@ -11,8 +12,13 @@ export class KbSummarizerProcessor extends WorkerHost {
     constructor(
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
+        private readonly settings: SettingsService,
     ) {
         super();
+    }
+
+    private async getDefaultLanguage(): Promise<string> {
+        return (await this.settings.getValue('kb.default_language')) || 'tr';
     }
 
     async process(job: Job<{ ticketId: string }>): Promise<any> {
@@ -70,6 +76,7 @@ export class KbSummarizerProcessor extends WorkerHost {
         }
 
         // 4. Save to FaqEntry (as PENDING_REVIEW)
+        const defaultLanguage = await this.getDefaultLanguage();
         await this.prisma.faqEntry.create({
             data: {
                 question: question,
@@ -79,7 +86,7 @@ export class KbSummarizerProcessor extends WorkerHost {
                 confidenceScore: 0.90, // CSAT backed!
                 sourceTypes: ['ticket'],
                 tags: ticket.tags,
-                language: 'tr' // Default language
+                language: defaultLanguage
             }
         });
 
