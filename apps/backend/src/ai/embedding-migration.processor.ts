@@ -1,4 +1,4 @@
-import { Process, Processor } from '@nestjs/bullmq';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
@@ -56,9 +56,8 @@ export class EmbeddingMigrationProcessor {
     });
   }
 
-  @Process('migrate-vectors')
-  async processMigration(job: Job<MigrationJobData>) {
-    const { targetVersion, targetDimension, provider, model, batchSize, dryRun } = job.data;
+  async process(job: Job<MigrationJobData>) {
+    const { targetVersion, targetDimension, provider, model, batchSize, dryRun = false } = job.data;
     this.logger.log(`Starting embedding migration to version: ${targetVersion} (Dim: ${targetDimension}) [DryRun: ${dryRun}]`);
 
     let totalMigrated = 0;
@@ -93,7 +92,11 @@ export class EmbeddingMigrationProcessor {
       for (const record of records) {
         if (!dryRun) {
           try {
-            const vector = await this.embeddingService.generateEmbedding(record.question);
+            const vector = await this.embeddingService.embedText(record.question);
+            if (!vector) {
+              this.logger.warn(`⚠️ Embedding failed for FAQ ${record.id}`);
+              continue;
+            }
             const vectorStr = `[${vector.join(',')}]`;
             
             await this.prisma.$executeRawUnsafe(
@@ -127,7 +130,11 @@ export class EmbeddingMigrationProcessor {
       for (const record of records) {
         if (!dryRun) {
           try {
-            const vector = await this.embeddingService.generateEmbedding(record.content);
+            const vector = await this.embeddingService.embedText(record.content);
+            if (!vector) {
+              this.logger.warn(`⚠️ Embedding failed for KnowledgePool ${record.id}`);
+              continue;
+            }
             const vectorStr = `[${vector.join(',')}]`;
             
             await this.prisma.$executeRawUnsafe(
@@ -163,7 +170,11 @@ export class EmbeddingMigrationProcessor {
         if (!dryRun) {
           try {
             const content = `${record.ticket.subject}\n${record.ticket.description || ''}`;
-            const vector = await this.embeddingService.generateEmbedding(content);
+            const vector = await this.embeddingService.embedText(content);
+            if (!vector) {
+              this.logger.warn(`⚠️ Embedding failed for ticket ${record.id}`);
+              continue;
+            }
             const vectorStr = `[${vector.join(',')}]`;
             
             await this.prisma.$executeRawUnsafe(
@@ -196,7 +207,11 @@ export class EmbeddingMigrationProcessor {
       for (const record of records) {
         if (!dryRun) {
           try {
-            const vector = await this.embeddingService.generateEmbedding(record.content);
+            const vector = await this.embeddingService.embedText(record.content);
+            if (!vector) {
+              this.logger.warn(`⚠️ Embedding failed for KnowledgeEmbedding ${record.id}`);
+              continue;
+            }
             const vectorStr = `[${vector.join(',')}]`;
             
             await this.prisma.$executeRawUnsafe(

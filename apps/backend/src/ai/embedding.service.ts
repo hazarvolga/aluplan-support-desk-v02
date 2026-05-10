@@ -5,6 +5,7 @@ import { hierarchicalChunk } from '../knowledge-base/utils/smart-chunker';
 import { RAG_CONFIG, getConfidenceBand } from '../config/rag.config';
 import { createHash } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EmbeddingVersionRegistry } from './embedding-version.registry';
 
 export interface SearchResult {
     articleId: string;
@@ -41,6 +42,7 @@ export class EmbeddingService {
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly registry: EmbeddingVersionRegistry,
     ) { }
 
     /**
@@ -49,7 +51,8 @@ export class EmbeddingService {
     async indexArticle(articleId: string, versionId: string, title: string, content: string): Promise<void> {
         const parentMax = RAG_CONFIG.CHUNKING.PARENT_MAX_TOKENS;
         const hierarchies = hierarchicalChunk(content, { title, maxTokens: parentMax });
-        const modelName = await this.ai.getActiveModelName();
+        const config = await this.registry.getActiveVersionConfig();
+        const modelName = config.model;
 
         await this.prisma.$executeRaw`DELETE FROM knowledge_embeddings WHERE article_version_id = ${versionId}::uuid`;
 
@@ -59,9 +62,9 @@ export class EmbeddingService {
             if (!parentEmb) continue;
 
             await this.prisma.$executeRaw`
-                INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, model_name, parent_id)
+                INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, model_name, parent_id, embedding_version, embedding_dim)
                 VALUES (${parentId}::uuid, ${articleId}::uuid, ${versionId}::uuid,
-                        ${JSON.stringify(parentEmb)}::vector, ${h.parent}, 0, ${modelName}, NULL)
+                        ${JSON.stringify(parentEmb.embedding)}::vector, ${h.parent}, 0, ${modelName}, NULL, ${config.version}, ${config.dimension})
             `;
 
             for (let i = 0; i < h.children.length; i++) {
@@ -69,9 +72,9 @@ export class EmbeddingService {
                 const childEmb = await this.ai.embed(childContent);
                 if (childEmb) {
                     await this.prisma.$executeRaw`
-                        INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, model_name, parent_id)
+                        INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, model_name, parent_id, embedding_version, embedding_dim)
                         VALUES (gen_random_uuid(), ${articleId}::uuid, ${versionId}::uuid,
-                                ${JSON.stringify(childEmb)}::vector, ${childContent}, ${i + 1}, ${modelName}, ${parentId}::uuid)
+                                ${JSON.stringify(childEmb.embedding)}::vector, ${childContent}, ${i + 1}, ${modelName}, ${parentId}::uuid, ${config.version}, ${config.dimension})
                     `;
                 }
             }
@@ -92,9 +95,12 @@ export class EmbeddingService {
             return { results: [], diagnostics: { topScore: 0, passedThreshold: 0, queryEmbeddingModel: 'unknown', thresholdUsed: 0 } };
         }
 
-        const modelName = await this.ai.getActiveModelName();
+        const config = await this.registry.getActiveVersionConfig();
         const vectorStr = JSON.stringify(embResult.embedding);
         const cleanQuery = query.replace(/['"\\;]/g, '');
+
+        const isValidUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+        const validProductId = (productId && isValidUuid(productId)) ? productId : null;
 
         // Hybrid Arama: 
         // 1. Semantic (Vector) -> %60
@@ -142,7 +148,7 @@ export class EmbeddingService {
         LEFT JOIN knowledge_embeddings parent ON ke.parent_id = parent.id
         WHERE ka.status = 'PUBLISHED' 
           AND (${includeInternal} = true OR ka.is_internal = false)
-          AND ke.model_name = ${modelName}
+          AND ke.embedding_version = ${config.version}
           AND (
               (1 - (ke.embedding <=> ${vectorStr}::vector)) > ${this.SIMILARITY_THRESHOLD}
               OR EXISTS (SELECT 1 FROM keyword_search WHERE id = ka.id)
@@ -168,8 +174,8 @@ export class EmbeddingService {
         JOIN knowledge_sources ks ON kpe.source_id = ks.id
         LEFT JOIN knowledge_pool_embeddings parent_kpe ON kpe.parent_id = parent_kpe.id
         WHERE ks.status = 'ACTIVE' 
-          AND (${productId}::uuid IS NULL OR ks.product_id = ${productId}::uuid OR ks.product_id IS NULL) 
-          AND kpe.model_name = ${modelName}
+          AND (${validProductId}::uuid IS NULL OR ks.product_id = ${validProductId}::uuid OR ks.product_id IS NULL) 
+          AND kpe.embedding_version = ${config.version}
           AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.SIMILARITY_THRESHOLD}
           AND kpe.parent_id IS NOT NULL
       )
@@ -192,7 +198,7 @@ export class EmbeddingService {
         const diagnostics: SearchDiagnostics = {
             topScore: results.length > 0 ? results[0].similarity : 0,
             passedThreshold: results.length,
-            queryEmbeddingModel: modelName,
+            queryEmbeddingModel: config.model,
             thresholdUsed: this.SIMILARITY_THRESHOLD,
         };
 
@@ -204,7 +210,8 @@ export class EmbeddingService {
     async indexPoolContent(sourceId: string, content: string, metadata: any = {}): Promise<void> {
         const parentMax = RAG_CONFIG.CHUNKING.PARENT_MAX_TOKENS;
         const contentHash = createHash('md5').update(content).digest('hex');
-        const modelName = await this.ai.getActiveModelName();
+        const config = await this.registry.getActiveVersionConfig();
+        const modelName = config.model;
 
         // [DEBUG] Log entry
         this.logger.log(`🧬 Starting indexing for source ${sourceId}. Content length: ${content?.length}`);
@@ -232,9 +239,9 @@ export class EmbeddingService {
             const parentMeta = JSON.stringify({ ...metadata, hash: contentHash, total_children: h.children.length });
 
             const res = await this.prisma.$executeRawUnsafe(
-                `INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, model_name)
-                 VALUES ($1::uuid, $2::uuid, NULL, $3::vector, $4, $5::jsonb, $6)`,
-                parentId, sourceId, parentVector, h.parent, parentMeta, modelName
+                `INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, model_name, embedding_version, embedding_dim)
+                 VALUES ($1::uuid, $2::uuid, NULL, $3::vector, $4, $5::jsonb, $6, $7, $8)`,
+                parentId, sourceId, parentVector, h.parent, parentMeta, modelName, config.version, config.dimension
             );
             this.logger.log(`✅ Parent Insert Res: ${res} | ID: ${parentId}`);
             totalInserted++;
@@ -245,9 +252,9 @@ export class EmbeddingService {
                     const childVector = JSON.stringify(childEmb.embedding);
                     const childMeta = JSON.stringify(metadata);
                     const cRes = await this.prisma.$executeRawUnsafe(
-                        `INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, model_name)
-                         VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3::vector, $4, $5::jsonb, $6)`,
-                        sourceId, parentId, childVector, childContent, childMeta, modelName
+                        `INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, model_name, embedding_version, embedding_dim)
+                         VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3::vector, $4, $5::jsonb, $6, $7, $8)`,
+                        sourceId, parentId, childVector, childContent, childMeta, modelName, config.version, config.dimension
                     );
                     this.logger.log(`✅ Child Insert Res: ${cRes}`);
                     totalInserted++;
@@ -263,23 +270,25 @@ export class EmbeddingService {
     async indexTicket(ticketId: string, content: string): Promise<void> {
         const result = await this.ai.embed(content);
         if (!result) return;
+        const config = await this.registry.getActiveVersionConfig();
 
         await this.prisma.$executeRaw`
-      INSERT INTO ticket_embeddings(id, ticket_id, embedding, model_name)
-        VALUES(gen_random_uuid(), ${ticketId}:: uuid, ${JSON.stringify(result.embedding)}:: vector, ${result.model})
+      INSERT INTO ticket_embeddings(id, ticket_id, embedding, model_name, embedding_version, embedding_dim)
+        VALUES(gen_random_uuid(), ${ticketId}:: uuid, ${JSON.stringify(result.embedding)}:: vector, ${result.model}, ${config.version}, ${config.dimension})
             `;
     }
 
     async searchTickets(query: string, limit = 3): Promise<Array<{ ticketId: string; subject: string; similarity: number }>> {
         const embResult = await this.ai.embed(query);
         if (!embResult) return [];
+        const config = await this.registry.getActiveVersionConfig();
 
         const vectorStr = JSON.stringify(embResult.embedding);
         const rows = await this.prisma.$queryRaw<Array<{ ticket_id: string; subject: string; similarity: number }>>`
       SELECT t.id AS ticket_id, t.subject, 1 - (te.embedding <=> ${vectorStr}::vector) AS similarity
       FROM ticket_embeddings te
       JOIN tickets t ON t.id = te.ticket_id
-      WHERE 1 - (te.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
+      WHERE te.embedding_version = ${config.version} AND 1 - (te.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
       ORDER BY similarity DESC LIMIT ${limit}
         `;
 

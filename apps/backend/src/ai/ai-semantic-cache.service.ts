@@ -5,6 +5,7 @@ import { EmbeddingNormalizer } from './embedding-normalizer.service';
 import { RedisService } from '../redis/redis.service';
 import { AiQueryResult } from './ai-query.service';
 import { createHash } from 'crypto';
+import { EmbeddingVersionRegistry } from './embedding-version.registry';
 
 /**
  * AI Semantic Cache
@@ -37,6 +38,7 @@ export class AiSemanticCache {
         private readonly embeddingService: EmbeddingService,
         private readonly normalizer: EmbeddingNormalizer,
         private readonly redis: RedisService,
+        private readonly registry: EmbeddingVersionRegistry,
     ) { }
 
     /**
@@ -163,13 +165,14 @@ export class AiSemanticCache {
         tenantId: string,
     ): Promise<AiQueryResult | null> {
         try {
+            const config = await this.registry.getActiveVersionConfig();
             const embedding = await this.embeddingService.embedText(query);
             if (!embedding) return null;
 
             const normalized = this.normalizer.normalize(
                 embedding,
                 'canonical',
-                1536,
+                config.dimension,
             );
             const vectorStr = `[${normalized.join(',')}]`;
 
@@ -177,6 +180,7 @@ export class AiSemanticCache {
                 `SELECT id, response, "query_embedding" <=> '${vectorStr}'::vector AS distance
                  FROM "ai_response_cache"
                  WHERE "tenant_id" = '${tenantId}'
+                   AND "embedding_version" = '${config.version}'
                    AND "expires_at" > NOW()
                  ORDER BY "query_embedding" <=> '${vectorStr}'::vector
                  LIMIT 1`
@@ -202,30 +206,33 @@ export class AiSemanticCache {
         result: AiQueryResult,
     ): Promise<void> {
         try {
+            const config = await this.registry.getActiveVersionConfig();
             const embedding = await this.embeddingService.embedText(query);
             if (!embedding) return;
 
             const normalized = this.normalizer.normalize(
                 embedding,
                 'canonical',
-                1536,
+                config.dimension,
             );
             const vectorStr = `[${normalized.join(',')}]`;
-            const hash = createHash('sha256').update(query).digest('hex');
+            const hash = createHash('sha256').update(query + tenantId).digest('hex');
             const expiresAt = new Date(Date.now() + this.DEFAULT_TTL_SECONDS * 1000);
 
             await this.prisma.$executeRawUnsafe(
                 `INSERT INTO "ai_response_cache" (
-                    "query_hash", "query_embedding", "response", "tenant_id",
+                    "query_hash", "query_embedding", "embedding_version", "embedding_dim", "response", "tenant_id",
                     "confidence", "created_at", "expires_at"
                 ) VALUES (
-                    '${hash}', '${vectorStr}'::vector,
+                    '${hash}', '${vectorStr}'::vector, '${config.version}', ${config.dimension},
                     '${JSON.stringify(result).replace(/'/g, "''")}'::jsonb,
                     '${tenantId}', '${result.confidence}',
                     NOW(), '${expiresAt.toISOString()}'
                 )
                 ON CONFLICT ("query_hash") DO UPDATE SET
                     "query_embedding" = EXCLUDED."query_embedding",
+                    "embedding_version" = EXCLUDED."embedding_version",
+                    "embedding_dim" = EXCLUDED."embedding_dim",
                     "response" = EXCLUDED."response",
                     "expires_at" = EXCLUDED."expires_at"`
             );

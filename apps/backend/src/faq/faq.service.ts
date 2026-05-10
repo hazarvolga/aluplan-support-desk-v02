@@ -6,6 +6,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { EmbeddingService } from '../ai/embedding.service';
 import { AiService } from '../ai/ai.service';
+import { EmbeddingVersionRegistry } from '../ai/embedding-version.registry';
 
 const AUTO_PUBLISH_THRESHOLD = 0.85; // Sorular %85+ eşleşme → direkt yayınla
 
@@ -28,6 +29,7 @@ export class FaqService {
         @InjectQueue('kb-summarizer') private readonly kbQueue: Queue,
         private readonly embeddingService: EmbeddingService,
         private readonly aiService: AiService,
+        private readonly registry: EmbeddingVersionRegistry,
     ) { }
 
     @OnEvent('ticket.kb_summarize')
@@ -178,6 +180,7 @@ export class FaqService {
         let skipped = 0;
 
         const DEDUP_THRESHOLD = parseFloat(process.env.FAQ_SEMANTIC_DEDUP_THRESHOLD || '0.90');
+        const config = await this.registry.getActiveVersionConfig();
 
         for (const pattern of patterns) {
             // Skip if empty answer (interaction-sourced without resolution)
@@ -208,6 +211,7 @@ export class FaqService {
                         SELECT id, 1 - (question_embedding <=> ${vectorStr}::vector) AS similarity
                         FROM faq_entries
                         WHERE question_embedding IS NOT NULL
+                          AND embedding_version = ${config.version}
                           AND status IN ('PUBLISHED', 'PENDING_REVIEW')
                           AND 1 - (question_embedding <=> ${vectorStr}::vector) >= ${DEDUP_THRESHOLD}
                         ORDER BY similarity DESC
@@ -241,10 +245,10 @@ export class FaqService {
             if (questionEmbedding) {
                 const vectorStr = JSON.stringify(questionEmbedding);
                 await this.prisma.$executeRaw`
-                    INSERT INTO faq_entries (id, question, answer, status, is_internal, confidence_score, source_types, tags, language, published_at, question_embedding)
+                    INSERT INTO faq_entries (id, question, answer, status, is_internal, confidence_score, source_types, tags, language, published_at, question_embedding, embedding_version, embedding_dim)
                     VALUES (gen_random_uuid(), ${pattern.question}, ${pattern.answer}, ${status}::"FaqStatus",
                             true, ${pattern.confidenceScore}, ${pattern.tags}::text[], ${pattern.tags}::text[], ${pattern.language},
-                            ${status === 'PUBLISHED' ? new Date() : null}, ${vectorStr}::vector)
+                            ${status === 'PUBLISHED' ? new Date() : null}, ${vectorStr}::vector, ${config.version}, ${config.dimension})
                 `;
             } else {
                 await this.prisma.faqEntry.create({

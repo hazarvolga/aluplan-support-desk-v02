@@ -667,7 +667,7 @@ model FaqEntry {
   sourceTypes       String[]              @default([]) @map("source_types")
   tags              String[]              @default([])
   language          String                @default("tr") @db.VarChar(10)
-  questionEmbedding Unsupported("vector") @map("question_embedding")
+  questionEmbedding Unsupported("vector")? @map("question_embedding")
   embeddingVersion  String                @default("v1") @map("embedding_version") @db.VarChar(10)
   embeddingDim      Int                   @default(1536) @map("embedding_dim")
   migratedAt        DateTime?             @map("migrated_at")
