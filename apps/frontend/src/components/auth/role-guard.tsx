@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         try {
             const data = await api.auth.me();
-            setUser(data as any);
+            setUser(data as unknown as User | null);
         } catch (err) {
             setUser(null);
             const isPublicRoute =
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!loading && user) {
             const cleanPath = stripLocale(pathname);
             if (cleanPath === '/' || cleanPath.startsWith('/login')) {
-                const userRoleName = (user?.role as any)?.name || user?.role || (user?.roles && user.roles[0]) || 'viewer';
+const userRoleName = typeof user?.role === 'object' && user.role !== null ? (user.role as { name?: string }).name : user?.role;
                 const userRole = (typeof userRoleName === 'string' ? userRoleName : 'viewer').toLowerCase();
                 router.push(userRole === 'customer' || userRole === 'viewer' ? '/my-tickets' : '/dashboard');
             }
@@ -132,7 +132,7 @@ export function RoleGuard({
 
     useEffect(() => {
         if (!loading && user) {
-            const userRoleName = (user?.role as any)?.name || user?.role || (user?.roles && user.roles[0]) || 'viewer';
+            const userRoleName = typeof user?.role === 'object' && user.role !== null ? (user.role as { name?: string }).name : user?.role;
             const userRole = (typeof userRoleName === 'string' ? userRoleName : 'viewer').toLowerCase();
             const isCustomer = userRole === 'customer' || userRole === 'viewer';
             const cleanPath = stripLocale(pathname);

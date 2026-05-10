@@ -15,7 +15,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
     const { user } = useAuth();
 
-    const userRoleName = (user?.role as any)?.name || user?.role || '';
+    const userRoleName = typeof user?.role === 'object' && user.role !== null ? (user.role as { name?: string }).name : user?.role || '';
     const userRole = (typeof userRoleName === 'string' ? userRoleName : '').toLowerCase();
     const isCustomer = userRole === 'customer';
 

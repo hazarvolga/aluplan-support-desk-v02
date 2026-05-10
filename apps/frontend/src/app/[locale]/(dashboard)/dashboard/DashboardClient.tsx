@@ -53,7 +53,7 @@ export default function DashboardClient() {
             try {
                 const [statusRes, statsRes, aiHealthRes] = await Promise.all([
                     api.ai.status().catch(() => null),
-                    (api.tickets as any).getSlaStats().catch(() => null),
+                    (api.tickets as unknown as { getSlaStats: () => Promise<unknown> }).getSlaStats().catch(() => null),
                     api.ai.getHealthMetrics().catch(() => null)
                 ]);
                 setAiStatus(statusRes);

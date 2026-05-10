@@ -113,14 +113,15 @@ describe('FaqService - Knowledge Base CRUD', () => {
     describe('deleteFaq', () => {
         it('should delete FAQ by id', async () => {
             // Arrange
-            localMockPrismaService.faqEntry.delete.mockResolvedValue({ id: 'faq-1' });
+            localMockPrismaService.faqEntry.update.mockResolvedValue({ id: 'faq-1', deletedAt: new Date() });
 
             // Act
             await service.deleteFaq('faq-1');
 
             // Assert
-            expect(localMockPrismaService.faqEntry.delete).toHaveBeenCalledWith({
-                where: { id: 'faq-1' }
+            expect(localMockPrismaService.faqEntry.update).toHaveBeenCalledWith({
+                where: { id: 'faq-1' },
+                data: { deletedAt: expect.any(Date) }
             });
         });
     });

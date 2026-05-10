@@ -130,16 +130,17 @@ describe('MacrosService', () => {
     });
 
     describe('remove', () => {
-        it('should delete a macro by id', async () => {
-            const expected = { id: 'macro-1' };
+        it('should soft-delete a macro by id', async () => {
+            const expected = { id: 'macro-1', deletedAt: new Date() };
 
-            prisma.macro.delete.mockResolvedValue(expected);
+            prisma.macro.update.mockResolvedValue(expected);
 
             const result = await service.remove('macro-1');
 
             expect(result).toEqual(expected);
-            expect(prisma.macro.delete).toHaveBeenCalledWith({
+            expect(prisma.macro.update).toHaveBeenCalledWith({
                 where: { id: 'macro-1' },
+                data: { deletedAt: expect.any(Date) },
             });
         });
     });

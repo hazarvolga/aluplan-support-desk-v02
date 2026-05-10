@@ -121,7 +121,7 @@ export default function CustomerProfilePage() {
 
     const t = useTranslations('customers');
     const tc = useTranslations('common');
-    const { locale } = params as any;
+    const { locale } = params as { locale: string; id: string };
 
     if (loading) {
         return <div className="p-8 text-center animate-pulse">{tc('loading')}</div>;
@@ -231,7 +231,7 @@ export default function CustomerProfilePage() {
                                     type="button"
                                     role="switch"
                                     aria-checked={!!formData.isVip}
-                                    onClick={() => handleChange('isVip', !formData.isVip as any)}
+                                    onClick={() => handleChange('isVip', Boolean(!formData.isVip))}
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500/30 mr-2 ${formData.isVip ? 'bg-amber-500' : 'bg-white/10'}`}
                                 >
                                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${formData.isVip ? 'translate-x-6' : 'translate-x-1'}`} />

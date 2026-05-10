@@ -80,9 +80,10 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const { user } = useAuth();
 
     const isAdmin = (() => {
-        const r = (user?.role as any)?.name || user?.role || (user?.roles && user.roles[0]);
-        const role = (typeof r === 'string' ? r : '').toUpperCase();
-        return role === 'ADMIN' || role === 'DEPARTMENT_MANAGER' || role === 'TEAM_LEAD' || role === 'SENIOR_AGENT';
+        const userRole = user?.role;
+        const r = typeof userRole === 'object' && userRole !== null ? (userRole as { name?: string }).name : userRole || (user?.roles && user.roles[0]);
+        const roleStr = (typeof r === 'string' ? r : '').toUpperCase();
+        return roleStr === 'ADMIN' || roleStr === 'DEPARTMENT_MANAGER' || roleStr === 'TEAM_LEAD' || roleStr === 'SENIOR_AGENT';
     })();
 
     // Auto-load tickets on mount when no initial data was provided

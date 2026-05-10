@@ -141,9 +141,9 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
 
     // Dynamic Table Configuration
     const displaySettings = useMemo(() => {
-        const conn = connections.find(c => (c as any).isActive !== false) || connections[0];
+        const conn = connections.find(c => c && typeof c === 'object' && (c as { isActive?: boolean }).isActive !== false) || connections[0];
         if (!conn?.syncSettings || typeof conn.syncSettings !== 'object') return null;
-        const settings = conn.syncSettings as any;
+        const settings = conn.syncSettings as Record<string, unknown>;
         return settings.displaySettings || null;
     }, [connections]);
 
@@ -164,7 +164,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         if (!displaySettings?.contact || displaySettings.contact.length === 0) return defaultCols;
 
         // Merge with current definitions to ensure labels are present
-        const settings = displaySettings.contact as any[];
+        const settings = displaySettings.contact as unknown as Array<{ key: string; label?: string; visible?: boolean }>;
         return settings
             .filter(s => s.visible !== false)
             .map(s => ({
@@ -185,7 +185,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
 
         if (!displaySettings?.account || displaySettings.account.length === 0) return defaultCols;
 
-        const settings = displaySettings.account as any[];
+        const settings = displaySettings.account as unknown as Array<{ key: string; label?: string; visible?: boolean }>;
         return settings
             .filter(s => s.visible !== false)
             .map(s => ({
@@ -702,7 +702,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                             label={t(col.label)}
                                             currentSortField={sortField}
                                             currentSortOrder={sortOrder}
-                                            onSort={handleSort as any}
+                                            onSort={handleSort as (field: SortField, order?: SortOrder) => void}
                                             onGroupBy={handleGroupByChange}
                                             isGrouped={groupBy === col.key}
                                             onFilterChange={handleFilterChange}
@@ -934,7 +934,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                             label={t(col.label)}
                                             currentSortField={sortField}
                                             currentSortOrder={sortOrder}
-                                            onSort={handleSort as any}
+                                            onSort={handleSort as (field: SortField, order?: SortOrder) => void}
                                             onGroupBy={handleGroupByChange}
                                             isGrouped={groupBy === col.key}
                                             onFilterChange={handleFilterChange}

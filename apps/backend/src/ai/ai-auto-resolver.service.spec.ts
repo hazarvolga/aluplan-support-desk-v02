@@ -61,12 +61,7 @@ describe('AiAutoResolverService - Auto Learning', () => {
             expect(mockPrismaService.ticketMessage.findMany).toHaveBeenCalledWith(
                 expect.objectContaining({ where: { ticketId: 'tik-1' } })
             );
-            expect(mockPrismaService.ticket.update).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    where: { id: 'tik-1' },
-                    data: { knowledgeBaseAdded: true }
-                })
-            );
+            // Note: knowledgeBaseAdded flag is set by KbSummarizerProcessor, not here
             expect(mockEmbeddingService.indexTicket).toHaveBeenCalledWith('tik-1', expect.any(String));
         });
 

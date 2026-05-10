@@ -92,8 +92,8 @@ export default function KnowledgePoolPage() {
                 setTotalArticles(res.total || 0);
                 setHasMoreArticles((page - 1) * 50 + (res.data.length || 0) < (res.total || 0));
             } else {
-                setArticles(res as any || []);
-                setTotalArticles((res as any)?.length || 0);
+                setArticles(res as unknown as Array<unknown> || []);
+                setTotalArticles((res as unknown as Array<unknown>)?.length || 0);
                 setHasMoreArticles(false);
             }
         } catch { /* handled */ }

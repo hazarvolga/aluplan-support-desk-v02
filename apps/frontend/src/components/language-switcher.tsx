@@ -20,7 +20,7 @@ export function LanguageSwitcher() {
         if (newLocale === locale) return;
 
         // 1. Immediate UI switch via URL
-        router.replace(pathname, { locale: newLocale as any });
+        router.replace(pathname, { locale: newLocale as string });
 
         // 2. Background sync with DB
         try {

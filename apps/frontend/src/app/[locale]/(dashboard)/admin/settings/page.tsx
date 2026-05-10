@@ -193,7 +193,7 @@ export default function AdminSettingsPage() {
                             custom: ['ai.custom.api_key', 'ai.custom.url', 'ai.custom.chat_model', 'ai.custom.embed_model'],
                             llmapi: ['ai.llmapi.api_key', 'ai.llmapi.chat_model', 'ai.llmapi.embed_model']
                         };
-                        checkFields(p.toUpperCase(), (models as any)[p]);
+                        checkFields(p.toUpperCase(), (models as Record<string, unknown>)[p]);
                     }
                 };
 

@@ -25,11 +25,16 @@ import { useTranslations } from 'next-intl';
 
 export default function FaqLearningPage() {
     const t = useTranslations('admin.faq_learning');
-    const [stats, setStats] = useState({
+    const [stats, setStats] = useState<{
+        totalInteractions: number;
+        deflectionRate: number;
+        aiAccuracy: number;
+        confidenceDistribution: Array<{ confidence: string; count: number }>;
+    }>({
         totalInteractions: 0,
         deflectionRate: 0,
         aiAccuracy: 0,
-        confidenceDistribution: [] as any[]
+        confidenceDistribution: []
     });
     const [sourceStats, setSourceStats] = useState({
         pillars: {

@@ -47,8 +47,12 @@ interface Message {
 }
 
 /** Resolves the role string regardless of how the backend returns it */
-function resolveRole(user: any): string {
-    return ((user?.role as any)?.name || user?.role || '').toLowerCase();
+function resolveRole(user: { role?: string | { name?: string } | null } | null): string {
+    const role = user?.role;
+    if (typeof role === 'object' && role !== null) {
+        return (role as { name?: string }).name?.toLowerCase() || '';
+    }
+    return (role as string)?.toLowerCase() || '';
 }
 
 /** The actual AI assistant UI — only rendered for staff/admin */

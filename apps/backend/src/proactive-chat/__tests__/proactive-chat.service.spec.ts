@@ -50,8 +50,10 @@ function makeMessage(sessionId: string, senderId: string, overrides: Partial<any
 // ─── Mock factories ──────────────────────────────────────────────────────────
 
 function makePrismaMock() {
+    const mockFindUnique = jest.fn();
+    mockFindUnique.mockResolvedValue(null);
     return {
-        customerProfile: { findFirst: jest.fn() },
+        customerProfile: { findFirst: jest.fn(), findUnique: mockFindUnique },
         proactiveChatSession: {
             findFirst: jest.fn(),
             findUnique: jest.fn(),
@@ -86,6 +88,7 @@ function makeRedisMock() {
             sunion: jest.fn().mockResolvedValue([]),
             sadd: jest.fn(),
             srem: jest.fn(),
+            sismember: jest.fn().mockResolvedValue(0),
         }),
         get: jest.fn(),
         set: jest.fn(),
@@ -142,6 +145,7 @@ describe('ProactiveChatService', () => {
                 async (agentId, customerId) => {
                     const sessionId = uuid();
                     prisma.customerProfile.findFirst.mockResolvedValue({ userId: customerId, user: { id: customerId, fullName: 'Test' } });
+                    prisma.customerProfile.findUnique.mockResolvedValue({ userId: customerId, user: { id: customerId, fullName: 'Test' } });
                     prisma.proactiveChatSession.findFirst.mockResolvedValue(null);
                     prisma.user.findUnique.mockResolvedValue({ id: agentId, fullName: 'Agent', avatarUrl: null });
                     prisma.proactiveChatSession.create.mockResolvedValue(
@@ -175,6 +179,7 @@ describe('ProactiveChatService', () => {
                     const agentId = uuid();
                     const customerId = uuid();
                     prisma.customerProfile.findFirst.mockResolvedValue({ userId: customerId });
+                    prisma.customerProfile.findUnique.mockResolvedValue({ userId: customerId, user: { id: customerId, fullName: 'Test' } });
                     prisma.proactiveChatSession.findFirst.mockResolvedValue(
                         makeSession({ agentId, customerId, status: existingStatus })
                     );
@@ -197,6 +202,7 @@ describe('ProactiveChatService', () => {
                 fc.uuid(),
                 async (agentId, invalidCustomerId) => {
                     prisma.customerProfile.findFirst.mockResolvedValue(null);
+                    prisma.customerProfile.findUnique.mockResolvedValue(null);
 
                     await expect(service.createSession(agentId, invalidCustomerId)).rejects.toThrow(NotFoundException);
                     return true;
@@ -576,6 +582,7 @@ describe('ProactiveChatService', () => {
         const customerId = uuid();
 
         prisma.customerProfile.findFirst.mockResolvedValue({ userId: customerId });
+        prisma.customerProfile.findUnique.mockResolvedValue({ userId: customerId, user: { id: customerId, fullName: 'Customer' } });
         prisma.proactiveChatSession.findFirst.mockResolvedValue(null);
         prisma.user.findUnique.mockResolvedValue({ id: agentId, fullName: 'DND Agent', avatarUrl: null, agentStatus: 'DND' });
         prisma.proactiveChatSession.create.mockResolvedValue(
@@ -593,6 +600,7 @@ describe('ProactiveChatService', () => {
         const customerId = uuid();
 
         prisma.customerProfile.findFirst.mockResolvedValue({ userId: customerId });
+        prisma.customerProfile.findUnique.mockResolvedValue({ userId: customerId, user: { id: customerId, fullName: 'Customer' } });
         prisma.proactiveChatSession.findFirst.mockResolvedValue(null);
         prisma.user.findUnique.mockResolvedValue({ id: agentId, fullName: 'Agent', avatarUrl: null });
         prisma.proactiveChatSession.create.mockResolvedValue(
@@ -601,6 +609,7 @@ describe('ProactiveChatService', () => {
         // Customer is offline (not in active set)
         redis.getClient.mockReturnValue({
             sunion: jest.fn().mockResolvedValue([]), // empty = no online customers
+            sismember: jest.fn().mockResolvedValue(0), // offline
         });
 
         await service.createSession(agentId, customerId);

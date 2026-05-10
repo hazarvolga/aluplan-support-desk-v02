@@ -74,8 +74,8 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
             accountMapping: {},
             contactMapping: {},
             displaySettings: {
-                account: [] as any[],
-                contact: [] as any[],
+                account: [] as unknown as Array<{ key: string; visible?: boolean }>,
+                contact: [] as unknown as Array<{ key: string; visible?: boolean }>,
             }
         },
     });
@@ -110,7 +110,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
                     clientSecret: conn.clientSecret || '',
                     webhookSecret: conn.webhookSecret || '',
                     instanceUrl: conn.instanceUrl || '',
-                    syncSettings: (conn as any).syncSettings || {
+                    syncSettings: (conn as unknown as { syncSettings?: object }).syncSettings || {
                         accountMapping: {},
                         contactMapping: {},
                         displaySettings: { account: [], contact: [] },
@@ -402,7 +402,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
                                 onMappingChange={(key, val) => handleMappingChange('account', key, val)}
                                 onDisplayChange={(settings) => handleDisplaySettingsChange('account', settings)}
                                 onReset={() => handleResetMapping('account')}
-                                onSave={() => handleSave({ preventDefault: () => { } } as any)}
+                                onSave={() => handleSave({ preventDefault: () => { } } as unknown as React.FormEvent)}
                                 saving={saving}
                             />
                         </TabsContent>
@@ -417,7 +417,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
                                 onMappingChange={(key, val) => handleMappingChange('contact', key, val)}
                                 onDisplayChange={(settings) => handleDisplaySettingsChange('contact', settings)}
                                 onReset={() => handleResetMapping('contact')}
-                                onSave={() => handleSave({ preventDefault: () => { } } as any)}
+                                onSave={() => handleSave({ preventDefault: () => { } } as unknown as React.FormEvent)}
                                 saving={saving}
                             />
                         </TabsContent>

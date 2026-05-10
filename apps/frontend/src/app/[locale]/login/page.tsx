@@ -39,9 +39,9 @@ export default function LoginPage() {
 
             try {
                 const userData = await api.auth.me();
-                login(userData as any); // Update global auth context
+                login(userData as unknown as Parameters<typeof login>[0]);
 
-                const hotinfoData = userData?.customerProfile?.hotinfoData as any;
+                const hotinfoData = userData?.customerProfile?.hotinfoData as Record<string, unknown> | undefined;
 
                 if (hotinfoData?.isAllplanUser && !userData?.customerProfile?.hotinfoUpdatedAt) {
                     router.push('/profile');

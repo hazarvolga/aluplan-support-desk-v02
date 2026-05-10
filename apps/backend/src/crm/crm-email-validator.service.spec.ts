@@ -31,23 +31,23 @@ function buildService(adminBypassEmails?: string): CrmEmailValidatorService {
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe('CrmEmailValidatorService — isAdminBypass', () => {
-    describe('default bypass list (no env var set)', () => {
+    describe('no bypass list configured (env var not set)', () => {
         let service: CrmEmailValidatorService;
 
         beforeEach(() => {
             service = buildService(undefined);
         });
 
-        it('returns true for the default admin email (exact match)', () => {
-            expect(service.isAdminBypass('admin@example.com')).toBe(true);
+        it('returns false when no bypass emails are configured', () => {
+            expect(service.isAdminBypass('admin@example.com')).toBe(false);
         });
 
-        it('returns true for the default admin email in uppercase (case-insensitive)', () => {
-            expect(service.isAdminBypass('HAZARVOLGA@GMAIL.COM')).toBe(true);
+        it('returns false for any email when no config', () => {
+            expect(service.isAdminBypass('HAZARVOLGA@GMAIL.COM')).toBe(false);
         });
 
-        it('returns true for the default admin email in mixed case', () => {
-            expect(service.isAdminBypass('HazarVolga@Gmail.Com')).toBe(true);
+        it('returns false for non-configured emails', () => {
+            expect(service.isAdminBypass('HazarVolga@Gmail.Com')).toBe(false);
         });
 
         it('returns false for a non-admin email', () => {
@@ -83,19 +83,19 @@ describe('CrmEmailValidatorService — isAdminBypass', () => {
             expect(service.isAdminBypass('valid@example.com')).toBe(true);
         });
 
-        it('returns false for the default admin when a custom list is set', () => {
+        it('returns true for configured admin when a custom list is set', () => {
             const service = buildService('admin@example.com');
+            expect(service.isAdminBypass('admin@example.com')).toBe(true);
+        });
+
+        it('falls back to empty list when env var is an empty string', () => {
+            const service = buildService('');
             expect(service.isAdminBypass('admin@example.com')).toBe(false);
         });
 
-        it('falls back to default list when env var is an empty string', () => {
-            const service = buildService('');
-            expect(service.isAdminBypass('admin@example.com')).toBe(true);
-        });
-
-        it('falls back to default list when env var contains only whitespace', () => {
+        it('falls back to empty list when env var contains only whitespace', () => {
             const service = buildService('   ');
-            expect(service.isAdminBypass('admin@example.com')).toBe(true);
+            expect(service.isAdminBypass('admin@example.com')).toBe(false);
         });
     });
 
@@ -121,7 +121,7 @@ describe('CrmEmailValidatorService — isAdminBypass', () => {
 
     describe('audit logging on bypass', () => {
         it('logs a structured audit event when bypass is triggered', () => {
-            const service = buildService(undefined);
+            const service = buildService('admin@example.com');
             const logSpy = jest.spyOn(service['logger'], 'log').mockImplementation(() => undefined);
 
             service.isAdminBypass('admin@example.com');
@@ -133,7 +133,7 @@ describe('CrmEmailValidatorService — isAdminBypass', () => {
                 timestamp: expect.any(String),
             });
             // Email must be masked — should NOT contain the full local part
-            expect(logArg.email).toMatch(/^ha\*\*\*@/);
+            expect(logArg.email).toMatch(/^ad\*\*\*@/);
         });
 
         it('does NOT log when bypass is not triggered', () => {
@@ -149,13 +149,13 @@ describe('CrmEmailValidatorService — isAdminBypass', () => {
 
 describe('CrmEmailValidatorService — maskEmail (via audit log)', () => {
     it('masks to first 2 chars + *** + @domain', () => {
-        const service = buildService(undefined);
+        const service = buildService('admin@example.com');
         const logSpy = jest.spyOn(service['logger'], 'log').mockImplementation(() => undefined);
 
         service.isAdminBypass('admin@example.com');
 
         const logArg = logSpy.mock.calls[0][0] as Record<string, unknown>;
-        expect(logArg.email).toBe('ha***@gmail.com');
+        expect(logArg.email).toBe('ad***@example.com');
     });
 
     it('handles single-char local part gracefully', () => {
@@ -296,7 +296,7 @@ describe('CrmEmailValidatorService — isAdminBypass (Property 4: Admin Bypass A
      */
     describe('Property 4: Admin Bypass Audit Logging', () => {
         it('creates an audit log entry when admin bypass is triggered', () => {
-            const service = buildService(undefined);
+            const service = buildService('admin@example.com');
             const logSpy = jest.spyOn(service['logger'], 'log').mockImplementation(() => undefined);
 
             service.isAdminBypass('admin@example.com');
@@ -310,7 +310,7 @@ describe('CrmEmailValidatorService — isAdminBypass (Property 4: Admin Bypass A
         });
 
         it('audit log entry contains a masked email (not the raw address)', () => {
-            const service = buildService(undefined);
+            const service = buildService('admin@example.com');
             const logSpy = jest.spyOn(service['logger'], 'log').mockImplementation(() => undefined);
 
             service.isAdminBypass('admin@example.com');
@@ -322,7 +322,7 @@ describe('CrmEmailValidatorService — isAdminBypass (Property 4: Admin Bypass A
         });
 
         it('audit log entry contains a valid ISO timestamp', () => {
-            const service = buildService(undefined);
+            const service = buildService('admin@example.com');
             const logSpy = jest.spyOn(service['logger'], 'log').mockImplementation(() => undefined);
 
             const before = new Date().toISOString();
@@ -357,7 +357,7 @@ describe('CrmEmailValidatorService — isAdminBypass (Property 4: Admin Bypass A
         });
 
         it('creates an audit log entry for bypass regardless of email casing', () => {
-            const service = buildService(undefined);
+            const service = buildService('hazarvolga@gmail.com');
             const logSpy = jest.spyOn(service['logger'], 'log').mockImplementation(() => undefined);
 
             service.isAdminBypass('HAZARVOLGA@GMAIL.COM');

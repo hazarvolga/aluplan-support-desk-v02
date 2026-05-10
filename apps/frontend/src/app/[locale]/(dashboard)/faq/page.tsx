@@ -89,7 +89,7 @@ export default function FaqPage() {
                     <Button
                         key={status}
                         variant={filter === status ? 'default' : 'outline'}
-                        onClick={() => setFilter(status as any)}
+                        onClick={() => setFilter(status as 'ALL' | 'PUBLISHED' | 'PENDING_REVIEW' | 'DRAFT')}
                         size="sm"
                         className="h-6 px-3 text-[9px] uppercase font-bold tracking-widest rounded-none border-border/60"
                     >

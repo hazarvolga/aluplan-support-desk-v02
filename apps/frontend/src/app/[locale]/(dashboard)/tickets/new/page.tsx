@@ -49,7 +49,7 @@ export default function NewTicketPage() {
     const [interactionId, setInteractionId] = useState<string | null>(null);
 
     const form = useForm<TicketFormValues>({
-        resolver: zodResolver(getTicketSchema(t)) as any,
+        resolver: zodResolver(getTicketSchema(t)) as Parameters<typeof useForm>[0]['resolver'],
         defaultValues: {
             subject: '',
             description: '',
@@ -160,7 +160,7 @@ export default function NewTicketPage() {
                 setTimeout(() => reject(new Error('AI_TIMEOUT')), 45000)
             );
 
-            const response = await Promise.race([queryPromise, timeoutPromise]) as any;
+            const response = await Promise.race([queryPromise, timeoutPromise]) as unknown as { answer?: string; interactionId?: string } | null;
 
             if (!response || !response.answer) {
                 toast.warning(t('toasts.ai_unavailable'));

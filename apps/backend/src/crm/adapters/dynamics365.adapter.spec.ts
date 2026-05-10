@@ -1,5 +1,6 @@
 // P1 — Kritik iş mantığı: Dynamics365Adapter
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { Dynamics365Adapter } from './dynamics365.adapter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SyncStatus } from '@aluplan/database';
@@ -74,10 +75,23 @@ describe('Dynamics365Adapter', () => {
     let adapter: Dynamics365Adapter;
 
     beforeEach(async () => {
+        const mockConfigService = {
+            get: jest.fn((key: string) => {
+                const config: Record<string, string> = {
+                    'dynamics365.baseUrl': 'https://org.crm.dynamics.com',
+                    'dynamics365.clientId': 'test-client-id',
+                    'dynamics365.clientSecret': 'test-client-secret',
+                    'dynamics365.tenantId': 'test-tenant-id',
+                };
+                return config[key];
+            }),
+        };
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 Dynamics365Adapter,
                 { provide: PrismaService, useValue: mockPrisma },
+                { provide: ConfigService, useValue: mockConfigService },
             ],
         }).compile();
 
