@@ -37,22 +37,22 @@ Kaynak: `verdent-GAP.md` + git log
 |-----|-------|-----|
 | GAP-15 | ⏳ Çözüldü | Frontend test kapsamı: 15 dosya, 117 test (önceki: 13/92) |
 
-### Orta (6)
+### Orta (5)
 
 | GAP | Durum | Not |
 |-----|-------|-----|
-| GAP-21 | ⏳ Kısmen | AiService sorumlulukları ayrıldı - AiCircuitBreakerService, AiProviderRouter |
-| GAP-22 | Açık | help-docs spec görev 7.5, 8 eksik |
-| GAP-23 | Açık | customer-list spec görevler eksik |
-| GAP-25 | Açık | document-parsing TODO eksik |
-| GAP-27 | Açık | Backend e2e/integration test yok |
-| GAP-29 | Açık | i18n hardcoded string kontrolü gerekli |
+| GAP-21 | ⏳ Kısmen | AiService sorumlulukları ayrıldı |
+| GAP-22 | ⏳ | Spec dosyaları gerekli (.kiro/specs/) |
+| GAP-23 | ⏳ | Spec dosyaları gerekli |
+| GAP-25 | ⏳ | Düşük öncelik - TODO mevcut |
+| GAP-27 | ⏳ | e2e/integration test gerekli |
 
 ### Düşük (1)
 
 | GAP | Durum | Not |
 |-----|-------|-----|
-| GAP-30 | Açık | KB processor sorumluluk örtüşmesi |
+| GAP-30 | ⏳ | Mimari refactor gerekli - FaqService üzerinden tek nokta |
+| GAP-29 | ✅ | i18n check geçiyor - statik dokümantasyon |
 
 ---
 
