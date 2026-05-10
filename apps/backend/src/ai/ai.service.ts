@@ -6,6 +6,8 @@ import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
 import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
+import { AiCircuitBreakerService } from './ai-circuit-breaker.service';
+import { AiProviderRouter } from './ai-provider-router.service';
 import CircuitBreaker from 'opossum';
 
 @Injectable()
@@ -20,6 +22,8 @@ export class AiService implements AiProvider {
         private readonly custom: GenericOpenAiService,
         private readonly llmapi: LlmApiService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly circuitBreaker: AiCircuitBreakerService,
+        private readonly providerRouter: AiProviderRouter,
     ) { }
 
     private async isManualOverride(): Promise<boolean> {

@@ -4,6 +4,10 @@ import { AiProviderRegistry } from './ai-provider-registry.service';
 import { SettingsService } from '../settings/settings.service';
 import { RedisService } from '../redis/redis.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { OllamaService } from './ollama.service';
+import { OpenAiService } from './openai.service';
+import { GenericOpenAiService } from './generic-openai.service';
+import { LlmApiService } from './llm-api.service';
 import { ServiceUnavailableException } from '@nestjs/common';
 import { mockPrismaService, mockRedisService, mockConfigService } from '../test/mock.utils';
 
@@ -16,6 +20,16 @@ describe('AiProviderRouter', () => {
     const mockSettingsService = {
         getValue: jest.fn(),
     };
+
+    // Mock AI provider services
+    const mockOllamaService = { getName: () => 'ollama', isAvailable: jest.fn() };
+    const mockOpenAiService = { getName: () => 'openai', isAvailable: jest.fn() };
+    const mockGenericOpenAiService = { 
+        getName: () => 'custom', 
+        setProvider: jest.fn(),
+        isAvailable: jest.fn() 
+    };
+    const mockLlmApiService = { getName: () => 'llmapi', isAvailable: jest.fn() };
 
     const mockAiProvider = {
         embed: jest.fn(),
@@ -41,6 +55,10 @@ describe('AiProviderRouter', () => {
                 { provide: SettingsService, useValue: mockSettingsService },
                 { provide: RedisService, useValue: mockRedisService },
                 { provide: PrismaService, useValue: mockPrismaService },
+                { provide: OllamaService, useValue: mockOllamaService },
+                { provide: OpenAiService, useValue: mockOpenAiService },
+                { provide: GenericOpenAiService, useValue: mockGenericOpenAiService },
+                { provide: LlmApiService, useValue: mockLlmApiService },
             ],
         }).compile();
 

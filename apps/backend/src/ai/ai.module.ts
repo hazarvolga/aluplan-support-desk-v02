@@ -31,6 +31,7 @@ import { AiDiagnosisService } from './ai-diagnosis.service';
 import { AiQueryProcessor } from './ai-query.processor';
 import { AiProviderRegistry } from './ai-provider-registry.service';
 import { AiProviderRouter } from './ai-provider-router.service';
+import { AiCircuitBreakerService } from './ai-circuit-breaker.service';
 import { EmbeddingNormalizer } from './embedding-normalizer.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
 import { AiBudgetMonitor } from './ai-budget-monitor.service';
@@ -60,6 +61,7 @@ import { AiBudgetMonitor } from './ai-budget-monitor.service';
         AiService,
         AiProviderRegistry,
         AiProviderRouter,
+        AiCircuitBreakerService,
         EmbeddingNormalizer,
         AiSemanticCache,
         AiBudgetMonitor,
@@ -88,6 +90,7 @@ import { AiBudgetMonitor } from './ai-budget-monitor.service';
         AiService,
         AiProviderRegistry,
         AiProviderRouter,
+        AiCircuitBreakerService,
         EmbeddingNormalizer,
         AiSemanticCache,
         AiBudgetMonitor,
