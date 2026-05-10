@@ -35,7 +35,7 @@ Kaynak: `verdent-GAP.md` + git log
 
 | GAP | Durum | Not |
 |-----|-------|-----|
-| GAP-15 | Açık | Frontend 151 bileşen, 12 test - test kapsamı gerekli |
+| GAP-15 | ⏳ Çözüldü | Frontend test kapsamı: 15 dosya, 117 test (önceki: 13/92) |
 
 ### Orta (6)
 
