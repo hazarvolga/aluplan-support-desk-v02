@@ -41,7 +41,7 @@ Kaynak: `verdent-GAP.md` + git log
 
 | GAP | Durum | Not |
 |-----|-------|-----|
-| GAP-21 | Açık | AiService god node (33 edge) |
+| GAP-21 | ⏳ Kısmen | AiService sorumlulukları ayrıldı - AiCircuitBreakerService, AiProviderRouter |
 | GAP-22 | Açık | help-docs spec görev 7.5, 8 eksik |
 | GAP-23 | Açık | customer-list spec görevler eksik |
 | GAP-25 | Açık | document-parsing TODO eksik |
