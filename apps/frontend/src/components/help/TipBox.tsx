@@ -95,4 +95,4 @@ const TipBox = React.forwardRef<HTMLDivElement, TipBoxProps>(
 
 TipBox.displayName = 'TipBox';
 
-export { TipBox };
+export { TipBox, tipBoxVariants, iconVariants };

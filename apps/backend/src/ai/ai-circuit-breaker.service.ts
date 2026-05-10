@@ -121,4 +121,16 @@ export class AiCircuitBreakerService {
             this.logger.log(`Reset circuit breaker for: ${providerName}`);
         }
     }
+
+    /**
+     * Get total failure count across all breakers
+     */
+    getTotalFailureCount(): number {
+        let total = 0;
+        for (const [, breaker] of this.breakers) {
+            const stats = breaker.status as { failures?: number } | undefined;
+            total += stats?.failures ?? 0;
+        }
+        return total;
+    }
 }

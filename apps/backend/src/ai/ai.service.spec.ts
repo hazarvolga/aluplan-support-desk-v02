@@ -6,6 +6,8 @@ import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AiCircuitBreakerService } from './ai-circuit-breaker.service';
+import { AiProviderRouter } from './ai-provider-router.service';
 
 describe('AiService — VertexAI Removal', () => {
     let service: AiService;
@@ -72,6 +74,30 @@ describe('AiService — VertexAI Removal', () => {
         emit: jest.fn(),
     };
 
+    const mockCircuitBreakerService = {
+        getBreaker: jest.fn().mockReturnValue({
+            fire: jest.fn((fn) => fn()),
+            opened: false,
+            stats: { failures: 0 },
+        }),
+        getTotalFailureCount: jest.fn().mockReturnValue(0),
+    };
+
+    const mockProviderRouter = {
+        getProviderByName: jest.fn().mockImplementation((name: string | null) => {
+            if (!name) return null;
+            const n = name.toLowerCase();
+            if (n === 'vertex' || n === 'openai') return mockOpenAiService;
+            if (n === 'ollama') return mockOllamaService;
+            if (['custom', 'xai', 'deepseek', 'groq'].includes(n)) return mockGenericOpenAiService;
+            if (n === 'llmapi') return mockLlmApiService;
+            return null;
+        }),
+        getActiveChatProvider: jest.fn().mockResolvedValue(mockOllamaService),
+        getActiveEmbedProvider: jest.fn().mockResolvedValue(mockOllamaService),
+        isManualOverride: jest.fn().mockResolvedValue(false),
+    };
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -82,6 +108,8 @@ describe('AiService — VertexAI Removal', () => {
                 { provide: GenericOpenAiService, useValue: mockGenericOpenAiService },
                 { provide: LlmApiService, useValue: mockLlmApiService },
                 { provide: EventEmitter2, useValue: mockEventEmitter },
+                { provide: AiCircuitBreakerService, useValue: mockCircuitBreakerService },
+                { provide: AiProviderRouter, useValue: mockProviderRouter },
             ],
         }).compile();
 
@@ -157,6 +185,18 @@ describe('AiService', () => {
         getValue: jest.fn(),
     };
 
+    const mockCircuitBreakerService = {
+        getBreaker: jest.fn(),
+        getTotalFailureCount: jest.fn().mockReturnValue(0),
+    };
+
+    const mockProviderRouter = {
+        getProviderByName: jest.fn(),
+        getActiveChatProvider: jest.fn(),
+        getActiveEmbedProvider: jest.fn(),
+        isManualOverride: jest.fn().mockResolvedValue(false),
+    };
+
     const mockOllamaService = {
         embed: jest.fn(),
         generate: jest.fn(),
@@ -182,6 +222,8 @@ describe('AiService', () => {
                 { provide: GenericOpenAiService, useValue: mockOtherProviders },
                 { provide: LlmApiService, useValue: mockOtherProviders },
                 { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+                { provide: AiCircuitBreakerService, useValue: mockCircuitBreakerService },
+                { provide: AiProviderRouter, useValue: mockProviderRouter },
             ],
         }).compile();
 

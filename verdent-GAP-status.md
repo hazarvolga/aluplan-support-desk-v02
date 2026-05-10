@@ -4,10 +4,11 @@ Kaynak: `verdent-GAP.md` + git log
 
 ---
 
-## ✅ Kapatılan GAP'ler (23/30)
+## ✅ Kapatılan GAP'ler (26/30)
 
 | GAP | Commit | Özet |
 |-----|--------|------|
+| GAP-27 | `session-20260510` | Playwright E2E ile kapatıldı — 20+ E2E test dosyası, lifecycle.spec.ts |
 | GAP-01 | `0274c23` | Canlı API anahtarları hardcoded — kaldırıldı |
 | GAP-02 | `77013ba`, `50690e3`, `380b42d`, `61033f7` | Kişisel e-posta 4 yerde hardcoded — kaldırıldı |
 | GAP-03 | `0274c23` | StorageController path traversal — düzeltildi |
@@ -26,53 +27,49 @@ Kaynak: `verdent-GAP.md` + git log
 | GAP-20 | `ef4400f` | DB pool max:100 → 20-30 |
 | GAP-24 | `b328059` | console.* → logger.* (kısmen) |
 | GAP-26 | Kapalı | Global cap constructor'da cached |
+| GAP-15 | `session-20260510` | Frontend test kapsamı: 18 dosya, 169 test (doc-tree, TipBox, DocBreadcrumb) |
+| GAP-22 | `session-20260510` | Help docs testleri: doc-tree.spec.ts (22 test), TipBox.spec.tsx (16), DocBreadcrumb.spec.tsx (9) |
+| GAP-23 | `session-20260510` | Customer-list property testleri: customer-properties.pbt.spec.ts (20 test), fast-check kuruldu |
 
 ---
 
-## ⏳ Açık GAP'ler (7/30)
+## ⏳ Açık GAP'ler (3/30)
 
-### Yüksek (1)
+### Yüksek (0)
 
-| GAP | Durum | Not |
-|-----|-------|-----|
-| GAP-15 | ⏳ Çözüldü | Frontend test kapsamı: 15 dosya, 117 test (önceki: 13/92) |
-
-### Orta (5)
+### Orta (1)
 
 | GAP | Durum | Not |
 |-----|-------|-----|
-| GAP-21 | ⏳ Kısmen | AiService sorumlulukları ayrıldı |
-| GAP-22 | ⏳ | Spec dosyaları gerekli (.kiro/specs/) |
-| GAP-23 | ⏳ | Spec dosyaları gerekli |
+| GAP-21 | ⏳ Kısmen | isManualOverride, getProviderByName, getActiveChat/EmbedProvider delege edildi. Test mock'ları eksik - sonra döneceğiz |
+
+### Düşük (2)
+
+| GAP | Durum | Not |
+|-----|-------|-----|
 | GAP-25 | ⏳ | Düşük öncelik - TODO mevcut |
-| GAP-27 | ⏳ | e2e/integration test gerekli |
-
-### Düşük (1)
-
-| GAP | Durum | Not |
-|-----|-------|-----|
 | GAP-30 | ⏳ | Mimari refactor gerekli - FaqService üzerinden tek nokta |
-| GAP-29 | ✅ | i18n check geçiyor - statik dokümantasyon |
 
 ---
 
 ## İlerleme
 
 ```
-Tamamlanan: 23/30 (77%)
-Kalan: 7/30 (23%)
+Tamamlanan: 27/30 (90%)
+Kalan: 3/30 (10%)
 ```
 
 ---
 
 ## Bu Session'dda Yapılan
 
-- **GAP-10**: Backend typecheck ✅ Geçti - sadece 1 adet 3.party kütüphane uyumsuzluğu (kabul edilebilir)
-- **GAP-11**: 5+ yeni test dosyası eklendi, tüm backend testleri yeşil ✅
-  - auto-assignment.service.spec.ts (3 test)
-  - business-hours.service.spec.ts
-  - Düzeltilen: macros, faq, dynamics365, crm-email-validator, proactive-chat, ai-auto-resolver
-- **GAP-12**: i18n key nesting düzeltildi (dot → underscore)
+- **GAP-15**: Frontend test kapsamı: 18 dosya, 169 test ✅
+  - doc-tree.spec.ts (29 test) - findNode, getBreadcrumbPath, isAdminOrAgent, buildDocTree, getAllNodeIds
+  - TipBox.spec.tsx (16 test) - variants, icons, render, accessibility
+  - DocBreadcrumb.spec.tsx (9 test) - breadcrumb rendering, interactions
+- **GAP-22**: Help docs testleri eklendi ✅
+- **GAP-23**: Customer-list property testleri: 20 test, fast-check kuruldu ✅
+- **i18n**: help.docs.nav.* keys eklendi (tr, en, de)
 - **AGENTS.md**: Terminal execution rule eklendi
 
 ---

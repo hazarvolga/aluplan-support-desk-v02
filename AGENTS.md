@@ -177,7 +177,7 @@ graphify update .                    # AST-only, API maliyeti yok
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **aluplan-support-desk-v02** (9365 symbols, 16193 relationships, 242 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **aluplan-support-desk-v02** (9366 symbols, 16197 relationships, 242 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

@@ -1,140 +1,330 @@
-# CLAUDE.md
+# CLAUDE.md — Aluplan Support Desk v0.2
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Bu dosya Claude Code ve Claude Desktop için projeyi tanımlar.
+Kod yazarken, refactor ederken veya debug ederken önce bu dosyayı oku.
 
-## Repository Layout
+---
 
-Turborepo + pnpm workspace. Two apps and two shared packages:
+## 1. REPO YAPISI
 
-- `apps/backend` — NestJS 11 API (`@aluplan/backend`), port **4000**. Swagger at `/api/docs`.
-- `apps/frontend` — Next.js 15 App Router (`@aluplan/frontend`), port **3000**.
-- `packages/database` — Prisma 7 schema, migrations, and seed scripts (`@aluplan/database`). The Prisma client is generated to `packages/database/client/` (not into `node_modules`); always run `pnpm db:generate` after pulling schema changes.
-- `packages/shared-schemas` — Zod schemas shared between frontend and backend (`@aluplan/shared-schemas`).
+**Turborepo + pnpm workspace.** Dört paket:
 
-The root `package.json` proxies most tasks through `turbo`. Use `pnpm --filter <pkg> ...` to scope a command to one workspace.
+```
+aluplan-support-desk/
+├── apps/
+│   ├── backend/        @aluplan/backend   → NestJS 11, port 4000  (Swagger: /api/docs)
+│   └── frontend/       @aluplan/frontend  → Next.js 15 App Router, port 3000
+├── packages/
+│   ├── database/       @aluplan/database  → Prisma 7 schema + migrations + seed
+│   └── shared-schemas/ @aluplan/shared-schemas → Zod şemaları (FE+BE ortak)
+└── docker-compose.yml  → Postgres 16 (pgvector) + Redis + Ollama (opsiyonel)
+```
 
-## Common Commands
+> **Kritik:** Prisma client `packages/database/client/` dizinine generate edilir,
+> `node_modules/`'a değil. Pull sonrası her zaman `pnpm db:generate` çalıştır.
+
+---
+
+## 2. YAYGIN KOMUTLAR
 
 ```bash
-# install + bootstrap infra (Postgres + Redis via docker-compose) + run dev
+# Başlangıç (önerilen)
 pnpm install
-pnpm start:full           # bash scripts/start.sh — kills zombie 3000/4000, brings up Docker, then `pnpm dev`
-pnpm dev                  # turbo dev (backend + frontend in parallel) without the pre-flight
+pnpm start:full           # Docker compose up + dev (zombie port temizleme dahil)
+pnpm dev                  # Sadece turbo dev (Docker'ı kendin başlatmışsan)
 
-# build / typecheck / lint everything
+# Build / Typecheck / Lint
 pnpm build
 pnpm typecheck
 pnpm lint
 
-# database (runs in packages/database)
-pnpm db:generate          # regenerate Prisma client → packages/database/client
+# Veritabanı
+pnpm db:generate          # Prisma client yenile (şema değişiminden sonra zorunlu)
 pnpm db:migrate           # prisma migrate dev
-# production: cd packages/database && pnpm db:migrate:prod  (deploy)
-# seed: cd packages/database && pnpm db:seed
-```
+cd packages/database && pnpm db:migrate:prod   # production deploy
+cd packages/database && pnpm db:seed
 
-### Backend (NestJS, Jest)
-
-```bash
-pnpm --filter @aluplan/backend dev               # nest start --watch
-pnpm --filter @aluplan/backend test              # jest, *.spec.ts (excludes test/integration/)
-pnpm --filter @aluplan/backend test:e2e          # ts-jest, *.e2e-spec.ts and test/integration/**/*.spec.ts
-pnpm --filter @aluplan/backend test:cov          # with coverage (thresholds: 35% lines/statements)
-
-# single file
+# Backend testleri (Jest + @swc/jest)
+pnpm --filter @aluplan/backend dev
+pnpm --filter @aluplan/backend test
+pnpm --filter @aluplan/backend test:e2e        # ts-jest + aliases @aluplan/database
+pnpm --filter @aluplan/backend test:cov        # eşik: %35 satır/statement
 pnpm --filter @aluplan/backend exec jest src/ai/ai-query.service.spec.ts
-# single test name
 pnpm --filter @aluplan/backend exec jest -t "should fall back when provider fails"
-```
 
-Backend Jest uses `@swc/jest` for unit tests; the e2e config (`test/jest-e2e.json`) uses `ts-jest` and aliases `@aluplan/database` → `packages/database`.
-
-### Frontend (Next.js, Vitest, Playwright)
-
-```bash
-pnpm --filter @aluplan/frontend dev              # next dev --port 3000
-pnpm --filter @aluplan/frontend test:unit        # vitest (jsdom)
+# Frontend testleri (Vitest + Playwright)
+pnpm --filter @aluplan/frontend dev            # next dev --port 3000
+pnpm --filter @aluplan/frontend test:unit      # vitest (jsdom), eşik: %45
 pnpm --filter @aluplan/frontend test:unit:watch
-pnpm --filter @aluplan/frontend test:e2e         # playwright; auto-spawns backend + frontend
+pnpm --filter @aluplan/frontend test:e2e       # playwright — backend+frontend otomatik başlar
 pnpm --filter @aluplan/frontend test:e2e:ui
-pnpm --filter @aluplan/frontend i18n:check       # node scripts/check-i18n.js — verifies tr/en/de parity
-pnpm --filter @aluplan/frontend analyze          # ANALYZE=true next build (bundle analyzer)
-
-# single vitest file
-pnpm --filter @aluplan/frontend exec vitest run src/app/[locale]/.../TicketsPage.spec.tsx
-# single playwright test
-pnpm --filter @aluplan/frontend exec playwright test e2e/auth.spec.ts -g "login"
+pnpm --filter @aluplan/frontend i18n:check     # tr/en/de key parite kontrolü — FE işi bitmeden çalıştır
+pnpm --filter @aluplan/frontend analyze        # ANALYZE=true next build (bundle analyzer)
 ```
 
-Vitest covers `src/**`, excludes `e2e/**`, coverage threshold 45% across the board. Playwright config (`apps/frontend/playwright.config.ts`) starts both backend and frontend via `webServer` — set `reuseExistingServer: true` is in effect, so a manual `pnpm dev` will be reused. Tests retry 2× and run with 2 workers to avoid Next compilation thrashing.
+> **Her zaman `pnpm` kullan** — `npm install` workspace'i bozar
+> (`engines.pnpm: ">=9.0.0"` ile enforce edilmiş).
 
-## Architecture
+---
 
-### Backend — feature modules under `apps/backend/src`
+## 3. BACKEND MİMARİSİ (`apps/backend/src`)
 
-The app composes ~30 feature modules in `app.module.ts`. The non-obvious cross-cutting wiring:
+### 3.1 ~30 Feature Modül
 
-- **Logging**: `nestjs-pino` with PII redaction (auth headers, password fields, `clientSecret`, `webhookSecret`). In production with `LOKI_HOST` set, logs ship to Loki via `pino-loki`; otherwise pretty-printed.
-- **Queues**: `BullModule.forRootAsync` shares one Redis connection across all queue producers. Default job options: 3 attempts, exponential backoff (5s base), keep last 100 completed and **last 500 failed jobs as a DLQ**. The `queue-dashboard` module mounts Bull-Board.
-- **Throttling**: `ThrottlerGuard` is a global `APP_GUARD` backed by Redis (`@nest-lab/throttler-storage-redis`) — 120 req/min per IP by default.
-- **Global interceptors**: `AuditLogInterceptor` and `MetricsInterceptor` registered as `APP_INTERCEPTOR` — every request flows through both.
-- **Sentry + OpenTelemetry**: `instrument.ts` and `otel.ts` are imported before `AppModule`; Sentry uses `@sentry/nestjs/setup`'s `SentryModule.forRoot()`.
-- **Boot pre-check** (`main.ts`): TCP-probes Redis and DB hosts before `NestFactory.create`, logs reachability. `app.enableShutdownHooks()` is on so SIGTERM drains BullMQ jobs.
+| Modül | Yol | Açıklama |
+|-------|-----|----------|
+| `ai` | `src/ai/` | RAG pipeline, embedding, caching, provider routing |
+| `knowledge-base` | `src/knowledge-base/` | Admin makale CRUD, approval workflow |
+| `knowledge-pool` | `src/knowledge-pool/` | Data sources: URL/file/dataset crawl & processing |
+| `faq` | `src/faq/` | FAQ cron, clustering, öneri kuyruğu |
+| `tickets` | `src/tickets/` | Ticket yaşam döngüsü, SLA, rule engine |
+| `auth` | `src/auth/` | JWT, refresh token, strateji |
+| `users` | `src/users/` | Kullanıcı CRUD |
+| `customers` | `src/customers/` | Müşteri profil, hotinfo parser |
+| `crm` | `src/crm/` | Dynamics365 adapter, webhook, processor |
+| `email` | `src/email/` | SMTP/Gmail/Resend provider, IMAP inbound |
+| `email-validator` | `src/email-validator/` | Syntax + DNS + SMTP doğrulama |
+| `announcements` | `src/announcements/` | Duyuru CRUD + template |
+| `notifications` | `src/notifications/` | Socket.io gateway, bildirim dağıtımı |
+| `proactive-chat` | `src/proactive-chat/` | Proaktif chat session + message |
+| `omni-channel` | `src/omni-channel/` | Kanal birleştirme katmanı |
+| `teams` | `src/teams/` | Ekip, departman, ajan yönetimi |
+| `rbac` | `src/rbac/` | Rol tabanlı erişim kontrolü + guard |
+| `automation` | `src/automation/` | SLA cron, audit service |
+| `reports` | `src/reports/` | Raporlama servisi |
+| `macros` | `src/macros/` | Hazır cevap makroları |
+| `attachments` | `src/attachments/` | Dosya ekleri (S3/GCS) |
+| `products` | `src/products/` | Ürün & kategori yönetimi |
+| `webhooks` | `src/webhooks/` | Dış webhook gönderimi |
+| `whatsapp` | `src/whatsapp/` | WhatsApp entegrasyonu |
+| `settings` | `src/settings/` | Uygulama ayarları key-value store |
+| `metrics` | `src/metrics/` | Prometheus metrics |
+| `health` | `src/health/` | Health check endpoint |
+| `redis` | `src/redis/` | Redis servis wrapper |
+| `prisma` | `src/prisma/` | PrismaService singleton |
+| `common` | `src/common/` | Global guard/filter/interceptor/pipe |
 
-### AI pipeline — `apps/backend/src/ai`
+### 3.2 Cross-Cutting Wiring (Kritik)
 
-This is the system's core. Read these together:
+- **Logging:** `nestjs-pino` + PII redaction (şifre, auth header, `clientSecret`, `webhookSecret`). `LOKI_HOST` varsa `pino-loki` ile Loki'ye.
+- **Queue:** `BullMQ` Redis-backed. Default: 3 retry, 5s exponential backoff, son 100 completed + **500 failed (DLQ)**. Bull-Board `/queues`.
+- **Throttle:** Global `ThrottlerGuard` Redis-backed — 120 req/min per IP.
+- **Interceptors:** `AuditLogInterceptor` + `MetricsInterceptor` her isteği karşılar (`APP_INTERCEPTOR`).
+- **Güvenlik:** `helmet`, `csurf`, `XssValidationPipe`, `SsrfGuard`.
+- **Observability:** Sentry (`instrument.ts`) + OpenTelemetry (`otel.ts`) — `AppModule`'dan önce yüklenir.
+- **Boot pre-check:** `main.ts` Redis ve DB'ye TCP probe atar, sonra NestFactory çalışır.
+- **Shutdown:** `app.enableShutdownHooks()` — SIGTERM'de BullMQ jobları drainlenir.
 
-- `ai-provider-router.service.ts` + `ai-provider-registry.service.ts` — multi-provider fallback chain (OpenAI → Groq → Ollama) with circuit breakers (`opossum`).
-- `ai-query.service.ts` + `ai-query.processor.ts` — RAG entry point. Processor consumes a BullMQ queue rate-limited by `AI_QUEUE_RATE_MAX` / `AI_QUEUE_RATE_DURATION_MS`.
-- `embedding.service.ts` + `embedding-normalizer.service.ts` — OpenAI (`text-embedding-3-small`, 1536-dim) or Ollama (BGE-M3, 1024-dim) per `EMBEDDING_PROVIDER`. The normalizer makes them comparable.
-- `prompt-context-builder.service.ts` — hybrid retrieval (semantic + keyword) with re-ranking multipliers per source type (`RERANK_MULTIPLIER_*` env vars).
-- `langfuse.service.ts` — distributed tracing of every LLM call (cost + latency).
-- `ai-semantic-cache.service.ts` — semantic cache keyed by embedding similarity, not exact text match.
-- The "feedback-to-vector loop" lives in `knowledge-pool/`, `faq/`, and `tickets/` — low-confidence answers populate `TrainingQueue` (Prisma model), admin approval promotes them to `KnowledgeArticle`.
+---
 
-There are **property-based tests** (`*.pbt.spec.ts`) for the AI pipeline using `fast-check` — keep them green when changing provider logic.
+## 4. AI / RAG PIPELINE (`apps/backend/src/ai`)
 
-### Database — `packages/database/prisma/schema.prisma`
+Bu sistemin çekirdeği. Değişiklik yapmadan önce ilgili dosyaları birlikte oku.
 
-- PostgreSQL 16 with `vector` (pgvector) and `uuid-ossp` extensions enabled in the schema.
-- HNSW indexes on embedding columns are managed via raw SQL (`scripts/migrate-hnsw-indexes.sql`); they are **not** in the Prisma schema. After major migrations, re-run that script.
-- Prisma uses `driverAdapters` preview feature with `@prisma/adapter-pg`.
-- Generator output is `../client` relative to the schema → `packages/database/client/`. Importers use `@aluplan/database` (re-exports from `packages/database/index.ts`).
-- `binaryTargets = ["native", "linux-musl-openssl-3.0.x"]` — the second is for the Coolify/Alpine container build.
+### 4.1 Servis Haritası
 
-### Frontend — `apps/frontend/src`
+| Servis | Görev |
+|--------|-------|
+| `ai-provider-router.service.ts` | Multi-provider fallback: OpenAI → Groq → Ollama (`opossum` circuit breaker) |
+| `ai-provider-registry.service.ts` | Provider kaydı ve seçimi |
+| `ai-query.service.ts` | RAG giriş noktası |
+| `ai-query.processor.ts` | BullMQ consumer — `AI_QUEUE_RATE_MAX` / `AI_QUEUE_RATE_DURATION_MS` |
+| `embedding.service.ts` | OpenAI `text-embedding-3-small` (1536-dim) veya Ollama BGE-M3 (1024-dim) — `EMBEDDING_PROVIDER` env |
+| `embedding-normalizer.service.ts` | Farklı dim vektörleri karşılaştırılabilir hale getirir |
+| `prompt-context-builder.service.ts` | Hybrid retrieval (semantic + keyword) + re-ranking (`RERANK_MULTIPLIER_*`) |
+| `ai-semantic-cache.service.ts` | Embedding similarity-based semantic cache (exact match değil) |
+| `langfuse.service.ts` | Her LLM çağrısının distributed trace (cost + latency) |
+| `ai-auto-resolver.service.ts` | Düşük güvenli yanıtları `TrainingQueue`'a yollar |
+| `ai-budget-monitor.service.ts` | Token/maliyet izleme |
+| `ai-copilot.service.ts` | Agent ekranı için AI copilot önerileri |
+| `ai-reporting.service.ts` | AI Intelligence dashboard metrikleri |
+| `ticket-clustering.service.ts` | Kapanan ticketlardan cluster çıkarımı → FAQ adayı |
+| `rag-maintenance.service.ts` | Vektör indeksi bakımı |
+| `rag-observability.service.ts` | RAG performans izleme |
 
-- **Routing**: `app/[locale]/` with `next-intl`. Locales: `tr` (default), `en`, `de`. Route groups: `(auth)` (register/reset-password/verify-email) and `(dashboard)` (everything authenticated). Use the `next-intl/navigation` wrappers from `src/i18n/routing.ts` — never import `next/link` directly for internal links.
-- **Middleware** (`src/middleware.ts`): combines `next-intl` middleware with a strict per-request CSP (`script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`). The nonce is set on `x-nonce` header for downstream consumers. Auth gating for dashboard routes also lives here.
-- **State**: Zustand stores in `src/stores/`. No TanStack Query in deps despite the README mention — server data is fetched via Server Components / route handlers.
-- **UI**: shadcn-style components on Radix primitives + Tailwind. Toaster is `sonner` (`toast()` is a god-node per the graph report — many call sites).
-- **Server Actions**: top-level `(dashboard)/actions.ts` aggregates server actions used by the dashboard tree.
-- **i18n keys**: every user-facing string must exist in all three of `messages/tr.json`, `messages/en.json`, `messages/de.json`. Run `pnpm i18n:check` before declaring frontend work done.
+### 4.2 Feedback-to-Vector Döngüsü
 
-### Real-time
+```
+Ticket kapanır
+  └─► ticket-clustering.service.ts  (BullMQ, günlük 02:00)
+        └─► Eşik: ≥5 ticket/7 gün + CSAT ≥ 4/5 + tutarlılık ≥ %70
+              └─► FAQ adayı → TrainingQueue (Prisma model)
+                    └─► Admin onayı → KnowledgeArticle → KnowledgePoolEmbedding
+```
 
-`socket.io` server is configured with `@socket.io/redis-adapter` so multiple backend instances share rooms. Clients use `socket.io-client`. Streaming AI responses go over WebSocket events, not HTTP SSE.
+**İhlal edilemez kurallar:**
+- `R-T1:` Admin onayı olmadan FAQ yayına alınamaz. Otomatik yayın **YASAK**.
+- `R-T3:` CSAT < 3/5 olan ticket FAQ kaynağı olamaz.
+- `R-T5:` Reddedilen cluster 30 gün yeniden aday üretemez.
+- `R-S5:` Müşteriye yalnızca `audience = "customer"` içerik gösterilir. Bypass yok.
+- `R-S7:` Her chunk'ın `source_id` + `source_type` audit log'a yazılır, değiştirilemez.
+- `R-P1:` Semantic cache zorunlu — 5 dk içinde aynı sorgu cache'den yanıtlanır.
 
-### Infrastructure
+### 4.3 Güven Skoru
 
-- `docker-compose.yml` (root) — Postgres (pgvector/pg16, with `pg_stat_statements` enabled and `log_min_duration_statement=500`), Redis (AOF + LRU 256MB), and optional Ollama. **Always run `docker compose up -d` before backend dev** unless using `pnpm start:full`.
-- `docker-compose.override.yml` and `docker-compose.staging.yml` exist; the override is auto-applied by Docker Compose for local dev.
-- `Dockerfile`s exist per app and target Coolify deployment.
-- CI: `.github/workflows/` has separate `backend-test.yml`, `frontend-test.yml`, `ci.yml`, `ai-eval.yml`, `dr-drill.yml`, and `semantic-release.yml`.
+| Skor | Label |
+|------|-------|
+| > 0.85 | `high` |
+| 0.60–0.85 | `medium` |
+| 0.40–0.60 | `low` |
+| < 0.40 | `no_match` |
 
-## Working Conventions
+### 4.4 Kaynak Güven Hiyerarşisi (Re-ranking'de baz alınır)
 
-- **Always use `pnpm`** (enforced by `engines.pnpm: ">=9.0.0"` and `packageManager` field). `npm install` will produce a broken `node_modules`.
-- **After pulling**, run `pnpm install && pnpm db:generate` — schema changes break TypeScript otherwise because the generated client is a local file.
-- **Imports across workspaces**: `@aluplan/database`, `@aluplan/shared-schemas`. Both Jest configs alias these; Vitest aliases `@/` to `apps/frontend/src/`.
-- **Don't commit** `apps/frontend/test-results/` or `apps/backend/coverage/` — both are in `.gitignore`. Playwright leaves a lot of artifacts under `test-results/` after failed runs.
-- **Knowledge graph**: `graphify-out/GRAPH_REPORT.md` indexes the codebase with EXTRACTED/INFERRED edges. For cross-module "how does X relate to Y" questions, `graphify query "<question>"` is faster than grepping. See `AGENTS.md` for the full graphify workflow.
+| Sıra | Kaynak | Ağırlık |
+|------|--------|---------|
+| 1 | Admin Makalesi | ★★★★★ |
+| 2 | Resmi Doküman | ★★★★☆ |
+| 3 | AI FAQ (Onaylı) | ★★★☆☆ |
+| 4 | URL Whitelist | ★★★☆☆ |
+| 5 | URL Harici | ★★☆☆☆ |
+| 6 | AI FAQ (Otomatik) | ★★☆☆☆ |
+| 7 | Benzer Ticketlar | ★☆☆☆☆ |
+
+### 4.5 Property-Based Testler
+
+`*.pbt.spec.ts` dosyaları `fast-check` kullanır. Provider logic değişiminde bunları **yeşil tut**.
+
+---
+
+## 5. VERİTABANI (`packages/database`)
+
+- **PostgreSQL 16** + `vector` (pgvector) + `uuid-ossp`
+- Prisma `driverAdapters` preview + `@prisma/adapter-pg`
+- Client: `packages/database/client/` → import: `@aluplan/database`
+- `binaryTargets: ["native", "linux-musl-openssl-3.0.x"]` (Coolify/Alpine)
+- **HNSW index'leri** schema'da değil, `scripts/migrate-hnsw-indexes.sql`'da. Büyük migration sonrası yeniden çalıştır.
+
+### Prisma Modelleri
+
+```
+# Kullanıcı & Yetki
+User, Role, Permission, RolePermission, Department, Team, TeamMember
+Skill, AgentSkill, Shift, AvailabilityOverride
+
+# Ticket & Mesaj
+Ticket, TicketMessage, Attachment, TicketEscalation, TicketRule
+TicketEmbedding, SlaPolicy, BusinessHours, Holiday, Macro
+
+# AI & Bilgi Bankası
+KnowledgeArticle, KnowledgeArticleVersion, ArticleFeedback
+KnowledgeEmbedding, KnowledgeSource, KnowledgeSourceSyncLog
+KnowledgePoolEmbedding, FaqEntry, TrainingQueue
+AiInteraction, AiShiftDetection, AiResponseCache, InteractionFeedback
+PromptTemplate, Category
+
+# Müşteri & CRM
+CustomerProfile, CrmAccount, CrmConnection, CrmSyncLog
+
+# Email & İletişim
+EmailLog, EmailEvent, EmailPreference, InboundEmailLog
+Announcement, AnnouncementLog, AnnouncementTemplate
+
+# Chat & Diğer
+ProactiveChatSession, ProactiveChatMessage
+Product, ProductCategory, Setting, AuditLog, Webhook, Notification
+```
+
+---
+
+## 6. FRONTEND MİMARİSİ (`apps/frontend/src`)
+
+### 6.1 Route Yapısı
+
+```
+app/[locale]/
+├── (auth)/          → register, reset-password, verify-email
+└── (dashboard)/     → tüm kimlik doğrulamalı ekranlar
+    ├── dashboard/
+    ├── tickets/ + tickets/[id]/
+    ├── knowledge-base/ + knowledge-base/[id]/
+    ├── knowledge-pool/ + knowledge-pool/upload/
+    ├── faq/ + faq-learning/
+    ├── kb-approvals/
+    ├── customers/ + customers/crm/ + customers/[id]/
+    ├── teams/ + teams/agents/ + teams/departments/
+    ├── products/
+    ├── admin/
+    │   ├── ai-health/           ← AI Health & Telemetry
+    │   ├── ai-intelligence/     ← AI Strategic Intelligence
+    │   ├── announcements/
+    │   ├── email-validation/
+    │   ├── emails/
+    │   └── settings/
+    ├── settings/
+    ├── users/
+    └── system-topology/
+```
+
+### 6.2 Kritik Konvansiyonlar
+
+- **Routing:** `next-intl` — `src/i18n/routing.ts`'ten import et. `next/link` doğrudan kullanma.
+- **Lokalizasyon:** `tr` (default), `en`, `de`. Her string `messages/*.json`'da paralel olmalı. `pnpm i18n:check` geçmeli.
+- **State:** Zustand (`src/stores/`). TanStack Query **yok** — server data, Server Components + route handler'lardan gelir.
+- **UI:** Radix UI primitives + Tailwind + shadcn stili `src/components/ui/`.
+- **Toast:** `sonner` — `toast()` ile.
+- **Server Actions:** `(dashboard)/actions.ts` — dashboard tree paylaşımlı hub.
+- **Middleware:** `next-intl` + CSP nonce (`x-nonce` header) + auth gating.
+- **Gerçek zamanlı:** Socket.io client (`src/lib/socket.ts`). SSE değil WS. Streaming AI yanıtları da WS.
+
+---
+
+## 7. ÇALIŞMA KONVANSİYONLARI
+
+- **Pull sonrası:** `pnpm install && pnpm db:generate`.
+- **Cross-workspace import:** `@aluplan/database`, `@aluplan/shared-schemas`.
+- **`@/` alias** → `apps/frontend/src/` (Vitest + TypeScript).
+- **Commit etme:** `apps/frontend/test-results/`, `apps/backend/coverage/`.
+- **Backend:** TypeScript strict, DTO `class-validator`+`class-transformer`, API yanıt `{ success, data, error, meta }`, env `@nestjs/config`.
+- **Frontend:** Server Components varsayılan, `"use client"` minimum, form `react-hook-form` + Zod.
+- **AI değişikliklerinde:** `*.pbt.spec.ts` yeşil tut, confidence score standartlarına uy, token kullanımını `langfuse` üzerinden logla.
+
+---
+
+## 8. ALTYAPI & CI/CD
+
+- **Docker Compose:** Postgres 16 pgvector + Redis (AOF, LRU 256MB) + Ollama. `pg_stat_statements` aktif, `log_min_duration_statement=500`. Dev'den önce `docker compose up -d`.
+- **Socket.io:** `@socket.io/redis-adapter` multi-instance room sharing.
+- **Deployment:** Coolify hedefli. Her app'in Dockerfile'ı var. `docker-compose.staging.yml` staging için.
+- **CI:** `backend-test.yml`, `frontend-test.yml`, `ci.yml`, `ai-eval.yml`, `dr-drill.yml`, `semantic-release.yml`.
+
+---
+
+## 9. HENÜZ TAMAMLANMAMIŞ — KIRO SPEC'LER
+
+`.kiro/specs/` altında tasarım + görev belgesi olan aktif geliştirmeler:
+
+| Spec | Açıklama |
+|------|----------|
+| `ai-pipeline-optimization` | RAG performans iyileştirme |
+| `announcement-notifications` | Duyuru bildirim sistemi |
+| `attachment-vision-support` | Dosya eki görüntü analizi |
+| `crm-only-registration` | Sadece CRM'den kayıt |
+| `crm-sync-improvements` | CRM senkronizasyon iyileştirme |
+| `customer-list-missing-columns` | Müşteri listesi kolon eksikleri |
+| `proactive-chat` | Proaktif chat akışı |
+| `rag-faq-improvements` | FAQ öğrenme döngüsü iyileştirme |
+
+---
+
+## 10. KRİTİK METRİKLER
+
+| Metrik | Hedef | Kritik Eşik |
+|--------|-------|-------------|
+| Self-servis deflection | ≥ %40 | < %30 → kritik uyarı |
+| AI yanıt doğruluğu | ≥ %85 | — |
+| Ortalama yanıt süresi | < 3 sn | > 5 sn → kritik uyarı |
+| Cache hit rate | > %60 | — |
+| Vector DB query p99 | < 500 ms | — |
+| Embedding queue depth | < 100 | > 500 → uyarı |
+| Crawler error rate | < %5 | — |
+
+---
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **aluplan-support-desk-v02** (9365 symbols, 16193 relationships, 242 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **aluplan-support-desk-v02** (9366 symbols, 16197 relationships, 242 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -162,7 +352,7 @@ This project is indexed by GitNexus as **aluplan-support-desk-v02** (9365 symbol
 | `gitnexus://repo/aluplan-support-desk-v02/processes` | All execution flows |
 | `gitnexus://repo/aluplan-support-desk-v02/process/{name}` | Step-by-step execution trace |
 
-## CLI
+## CLI Skills
 
 | Task | Read this skill file |
 |------|---------------------|

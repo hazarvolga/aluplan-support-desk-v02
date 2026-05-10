@@ -52,33 +52,39 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
      * By returning the extended client from the constructor, NestJS injects the proxy.
      */
     private applySoftDeleteExtension(): any {
+        const modelsWithSoftDelete = new Set([
+            'User', 'Department', 'Team', 'TeamMember', 'Shift',
+            'AvailabilityOverride', 'SlaPolicy', 'Notification', 'Role', 'Permission',
+            'RolePermission', 'CustomerProfile', 'CrmAccount', 'CrmConnection', 'CrmSyncLog',
+            'Setting', 'PromptTemplate', 'Category', 'KnowledgeArticle', 'ArticleFeedback',
+            'KnowledgeArticleVersion', 'KnowledgeEmbedding', 'AiInteraction', 'AiShiftDetection',
+            'AiResponseCache', 'InteractionFeedback', 'TrainingQueue', 'Ticket', 'TicketMessage',
+            'Attachment', 'TicketEscalation', 'FaqEntry', 'AuditLog', 'TicketRule', 'Macro',
+            'InboundEmailLog', 'Webhook', 'KnowledgeSource', 'KnowledgeSourceSyncLog',
+            'KnowledgePoolEmbedding', 'Product', 'ProductCategory', 'TicketEmbedding',
+            'BusinessHours', 'Holiday', 'EmailLog', 'EmailEvent', 'EmailPreference',
+            'Announcement', 'AnnouncementLog', 'ProactiveChatSession', 'ProactiveChatMessage',
+        ]);
+
+        const softDeleteMiddleware = async ({ model, operation, args, query }: any) => {
+            if (model && modelsWithSoftDelete.has(model)) {
+                args.where = { ...args.where, deletedAt: null };
+            }
+            return query(args);
+        };
+
         const extendedClient = this.$extends({
             query: {
                 $allModels: {
-                    async findMany({ model, operation, args, query }: any) {
-                        args.where = { ...args.where, deletedAt: null };
-                        return query(args);
-                    },
-                    async findFirst({ model, operation, args, query }: any) {
-                        args.where = { ...args.where, deletedAt: null };
-                        return query(args);
-                    },
-                    async findFirstOrThrow({ model, operation, args, query }: any) {
-                        args.where = { ...args.where, deletedAt: null };
-                        return query(args);
-                    },
-                    async count({ model, operation, args, query }: any) {
-                        args.where = { ...args.where, deletedAt: null };
-                        return query(args);
-                    },
-                    async findUnique({ model, operation, args, query }: any) {
-                        args.where = { ...args.where, deletedAt: null };
-                        return query(args);
-                    },
+                    findMany: softDeleteMiddleware,
+                    findFirst: softDeleteMiddleware,
+                    findFirstOrThrow: softDeleteMiddleware,
+                    count: softDeleteMiddleware,
+                    findUnique: softDeleteMiddleware,
                 },
             },
         });
-        this.logger.log('🔒 Soft-delete extension active — deletedAt: null filter applied to all reads');
+        this.logger.log('🔒 Soft-delete extension active — deletedAt: null filter applied to models with soft-delete');
         return extendedClient;
     }
 }

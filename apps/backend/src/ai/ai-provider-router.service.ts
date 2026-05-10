@@ -84,7 +84,7 @@ export class AiProviderRouter {
         const provider = await this.getProviderByName(embedProvider || legacyProvider);
         if (provider) return provider;
 
-        // Auto-upgrade logic for production
+// Auto-upgrade logic for production
         if (process.env.OPENAI_API_KEY) return this.openai;
         if (process.env.GEMINI_API_KEY) return this.llmapi;
 
@@ -92,7 +92,15 @@ export class AiProviderRouter {
     }
 
     /**
-     * Get provider for specific task (future extensibility)
+     * Check if circuit breaker is manually overridden (disabled)
+     */
+    async isManualOverride(): Promise<boolean> {
+        const manualOff = await this.settings.getValue('ai.circuit_breaker.manual_off');
+        return manualOff?.toString() === 'true';
+    }
+
+    /**
+     * Get provider by task type
      */
     async getProviderForTask(task: string): Promise<string> {
         // Task-specific provider selection can be added here

@@ -13,7 +13,6 @@ import CircuitBreaker from 'opossum';
 @Injectable()
 export class AiService implements AiProvider {
     private readonly logger = new Logger(AiService.name);
-    private breakers = new Map<string, CircuitBreaker>();
 
     constructor(
         private readonly settings: SettingsService,
@@ -26,25 +25,12 @@ export class AiService implements AiProvider {
         private readonly providerRouter: AiProviderRouter,
     ) { }
 
-    private async isManualOverride(): Promise<boolean> {
-        const manualOff = await this.settings.getValue('ai.circuit_breaker.manual_off');
-        return manualOff?.toString() === 'true';
+    private getBreaker(providerName: string): CircuitBreaker {
+        return this.circuitBreaker.getBreaker(providerName);
     }
 
-    private getBreaker(providerName: string): CircuitBreaker {
-        if (!this.breakers.has(providerName)) {
-            const breaker = new CircuitBreaker(async (fn: () => Promise<any>) => await fn(), {
-                timeout: 120_000, // 2 minutes max per operation
-                errorThresholdPercentage: 50,
-                resetTimeout: 30000,
-                volumeThreshold: 5,
-            });
-            breaker.on('open', () => this.logger.error(`🚨 Circuit Breaker OPENED for ${providerName}`));
-            breaker.on('halfOpen', () => this.logger.warn(`⚠️ Circuit Breaker HALF-OPEN for ${providerName}`));
-            breaker.on('close', () => this.logger.log(`✅ Circuit Breaker CLOSED for ${providerName}`));
-            this.breakers.set(providerName, breaker);
-        }
-        return this.breakers.get(providerName)!;
+    private async isManualOverride(): Promise<boolean> {
+        return this.providerRouter.isManualOverride();
     }
 
     private async executeWithFallback<T>(
@@ -111,52 +97,19 @@ export class AiService implements AiProvider {
         throw new InternalServerErrorException((lastError instanceof Error ? lastError.message : undefined) || 'All AI providers failed');
     }
 
-    public async getProviderByName(providerName: string | null): Promise<AiProvider | null> {
-        if (providerName === 'openai') return this.openai;
-        if (providerName === 'vertex') {
-            this.logger.warn('⚠️ Provider "vertex" is deprecated. Falling back to "openai".');
-            return this.openai;
-        }
-        if (providerName === 'custom' || providerName === 'xai' || providerName === 'deepseek' || providerName === 'groq') {
-            this.custom.setProvider(providerName);
-            return this.custom;
-        }
-        if (providerName === 'llmapi') return this.llmapi;
-        if (providerName === 'ollama') return this.ollama;
-        return null;
+    private async getActiveChatProvider(): Promise<AiProvider> {
+        return this.providerRouter.getActiveChatProvider();
     }
 
-    private async getActiveChatProvider(): Promise<AiProvider> {
-        const chatProvider = await this.settings.getValue('ai.chat_provider');
-        const legacyProvider = await this.settings.getValue('ai.active_provider');
-
-        const provider = await this.getProviderByName(chatProvider || legacyProvider);
-        if (provider) return provider;
-
-        // Auto-upgrade logic for production
-        if (process.env.OPENAI_API_KEY) return this.openai;
-        if (process.env.GEMINI_API_KEY) return this.llmapi;
-
-        return this.ollama;
+    /**
+     * Public wrapper for provider lookup - delegates to router
+     */
+    async getProviderByName(providerName: string | null): Promise<AiProvider | null> {
+        return this.providerRouter.getProviderByName(providerName);
     }
 
     private async getActiveEmbedProvider(): Promise<AiProvider> {
-        const embedProvider = await this.settings.getValue('ai.embed_provider');
-        const legacyProvider = await this.settings.getValue('ai.active_provider');
-
-        // Env check (Priority)
-        const envProvider = process.env.EMBEDDING_PROVIDER?.toLowerCase();
-        if (envProvider === 'openai') return this.openai;
-        if (envProvider === 'ollama') return this.ollama;
-
-        const provider = await this.getProviderByName(embedProvider || legacyProvider);
-        if (provider) return provider;
-
-        // Auto-upgrade logic for production
-        if (process.env.OPENAI_API_KEY) return this.openai;
-        if (process.env.GEMINI_API_KEY) return this.llmapi;
-
-        return this.ollama;
+        return this.providerRouter.getActiveEmbedProvider();
     }
 
 
@@ -191,11 +144,7 @@ export class AiService implements AiProvider {
     }
 
     private get failureCount(): number {
-        let total = 0;
-        for (const breaker of this.breakers.values()) {
-            total += breaker.stats.failures;
-        }
-        return total;
+        return this.circuitBreaker.getTotalFailureCount();
     }
 
     async embed(text: string): Promise<EmbeddingResult | null> {
@@ -286,7 +235,7 @@ export class AiService implements AiProvider {
     }
 
     private async getProvider(name: string): Promise<AiProvider> {
-        return (await this.getProviderByName(name)) || this.getActiveChatProvider();
+        return (await this.providerRouter.getProviderByName(name)) || this.providerRouter.getActiveChatProvider();
     }
 
     /**
