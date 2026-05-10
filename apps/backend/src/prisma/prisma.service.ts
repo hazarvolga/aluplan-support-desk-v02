@@ -56,7 +56,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             'User', 'Department', 'Team', 'TeamMember', 'Shift',
             'AvailabilityOverride', 'SlaPolicy', 'Notification', 'Role', 'Permission',
             'RolePermission', 'CustomerProfile', 'CrmAccount', 'CrmConnection', 'CrmSyncLog',
-            'Setting', 'PromptTemplate', 'Category', 'KnowledgeArticle', 'ArticleFeedback',
+            'PromptTemplate', 'Category', 'KnowledgeArticle', 'ArticleFeedback',
             'KnowledgeArticleVersion', 'KnowledgeEmbedding', 'AiInteraction', 'AiShiftDetection',
             'AiResponseCache', 'InteractionFeedback', 'TrainingQueue', 'Ticket', 'TicketMessage',
             'Attachment', 'TicketEscalation', 'FaqEntry', 'AuditLog', 'TicketRule', 'Macro',

@@ -27,8 +27,8 @@ export class AiCircuitBreakerService {
     private readonly breakers = new Map<string, CircuitBreaker>();
     private readonly options: Required<CircuitBreakerOptions>;
 
-    constructor(options?: CircuitBreakerOptions) {
-        this.options = { ...DEFAULT_OPTIONS, ...options };
+    constructor() {
+        this.options = { ...DEFAULT_OPTIONS };
     }
 
     /**
