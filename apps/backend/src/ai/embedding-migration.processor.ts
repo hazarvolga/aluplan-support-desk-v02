@@ -20,7 +20,7 @@ export interface MigrationJobData {
 
 @Processor('embedding-migration')
 @Injectable()
-export class EmbeddingMigrationProcessor {
+export class EmbeddingMigrationProcessor extends WorkerHost {
   private readonly logger = new Logger(EmbeddingMigrationProcessor.name);
 
   constructor(
@@ -28,7 +28,9 @@ export class EmbeddingMigrationProcessor {
     private readonly embeddingService: EmbeddingService,
     private readonly registry: EmbeddingVersionRegistry,
     @InjectQueue('embedding-migration') private readonly migrationQueue: Queue
-  ) {}
+  ) {
+    super();
+  }
 
   @OnEvent('ai.embedding.provider_changed')
   async handleProviderChange(payload: { key: string; newValue: string; oldValue: string }) {
