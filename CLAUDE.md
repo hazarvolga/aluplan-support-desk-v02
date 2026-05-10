@@ -134,7 +134,7 @@ There are **property-based tests** (`*.pbt.spec.ts`) for the AI pipeline using `
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **aluplan-support-desk-v02** (9060 symbols, 15769 relationships, 233 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **aluplan-support-desk-v02** (9353 symbols, 16154 relationships, 241 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

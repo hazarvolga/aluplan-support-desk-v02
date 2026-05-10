@@ -517,7 +517,7 @@ export class CrmService {
                     ...customer.user,
                     email: this.piiMasking.maskSensitiveData(customer.user.email || '')
                 } : null
-            }));
+            })) as typeof account.customers;
         }
 
         return account;

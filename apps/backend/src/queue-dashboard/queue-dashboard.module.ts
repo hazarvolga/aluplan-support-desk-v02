@@ -49,13 +49,11 @@ export class QueueDashboardModule implements OnModuleInit {
         const serverAdapter = new ExpressAdapter();
         serverAdapter.setBasePath('/admin/queues');
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const queues = [this.aiQueue, this.docQueue, this.crmQueue, this.emailQueue].map(q => new BullMQAdapter(q as any));
+
         createBullBoard({
-            queues: [
-                new BullMQAdapter(this.aiQueue),
-                new BullMQAdapter(this.docQueue),
-                new BullMQAdapter(this.crmQueue),
-                new BullMQAdapter(this.emailQueue),
-            ],
+            queues,
             serverAdapter,
         });
 

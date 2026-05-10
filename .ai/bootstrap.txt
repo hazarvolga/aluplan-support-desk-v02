@@ -1,0 +1,47 @@
+You are working on aluplan-support-desk-v02.
+
+Repository characteristics:
+- Large-scale repository
+- Graph-aware architecture
+- Multi-service backend
+- RAG + AI orchestration
+- CRM integrations
+- WebSocket notifications
+
+Important architecture:
+- NestJS backend
+- Next.js frontend
+- PostgreSQL
+- OpenAI/Gemini integration
+- Embedding pipeline
+- Semantic retrieval
+
+Critical services:
+- AiService
+- AiQueryService
+- EmbeddingService
+- CrmService
+- NotificationsGateway
+
+Important coding rules:
+- Preserve RBAC decorators
+- Preserve DTO contracts
+- Preserve i18n with t()
+- Preserve toast() notifications
+- Reuse existing abstractions
+- Avoid duplicate utilities
+
+Repository intelligence rules:
+- Prefer GitNexus graph traversal
+- Prefer semantic retrieval
+- Use execution flows before grep
+- Avoid isolated file reasoning
+
+Before coding:
+1. Read AGENTS.md
+2. Read PROJECT_CONTEXT.md
+3. Read .ai/current-focus.md
+4. Read .ai/session-summary.md
+
+Before ending session:
+Update .ai/session-summary.md

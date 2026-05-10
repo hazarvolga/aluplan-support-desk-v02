@@ -1,0 +1,36 @@
+retrieval:
+  mode: hybrid
+
+priority:
+  - gitnexus_graph
+  - semantic_search
+  - execution_flows
+  - architecture_summaries
+  - raw_search
+
+semantic_search:
+  enabled: true
+  chunk_size: 1200
+  overlap: 200
+
+graph_search:
+  enabled: true
+  include_dependencies: true
+  include_callers: true
+  include_execution_flows: true
+
+summaries:
+  enabled: true
+  files:
+    - .ai/session-summary.md
+    - .ai/current-focus.md
+    - PROJECT_CONTEXT.md
+
+fallback:
+  use_grep: true
+  use_file_search: true
+
+rules:
+  avoid_duplicate_utilities: true
+  preserve_architecture: true
+  preserve_service_boundaries: true
