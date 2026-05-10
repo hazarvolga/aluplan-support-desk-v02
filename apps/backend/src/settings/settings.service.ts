@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../utils/crypto.service';
 import { UpsertSettingDto } from './dto/upsert-setting.dto';
@@ -13,9 +14,13 @@ export class SettingsService {
     constructor(
         private prisma: PrismaService,
         private crypto: CryptoService,
+        private eventEmitter: EventEmitter2,
     ) { }
 
     async upsert(dto: UpsertSettingDto, userId?: string) {
+        const existing = await this.get(dto.key, true);
+        const oldValue = existing?.value;
+
         // AI Validation Logic
         if (dto.key.startsWith('ai.')) {
             const context = new Map([[dto.key, dto.value]]);
@@ -51,6 +56,10 @@ export class SettingsService {
         // Update cache
         this.cache.set(dto.key, dto.value); // Store plaintext in cache for internal use
         this.secretCache.set(dto.key, dto.isSecret ?? false);
+
+        if ((dto.key === 'ai.embed_provider' || dto.key.endsWith('.embed_model')) && oldValue !== finalValue) {
+            this.eventEmitter.emit('ai.embedding.provider_changed', { key: dto.key, newValue: finalValue, oldValue });
+        }
 
         return setting;
     }
@@ -225,6 +234,14 @@ export class SettingsService {
     async bulkUpsert(dto: BulkUpsertSettingDto, userId?: string) {
         // Run validations first with full context of this request
         const context = new Map<string, string>(dto.settings.map(s => [s.key, s.value]));
+        
+        // Fetch existing settings before bulk update to compare changes
+        const keysToUpdate = dto.settings.map(s => s.key);
+        const existingSettings = await this.prisma.setting.findMany({
+            where: { key: { in: keysToUpdate } }
+        });
+        const existingMap = new Map(existingSettings.map(s => [s.key, s.isSecret ? this.crypto.decrypt(s.value) : s.value]));
+
         for (const item of dto.settings) {
             if (item.key.startsWith('ai.')) {
                 await this.validateAiSetting(item.key, item.value, context);
@@ -270,6 +287,11 @@ export class SettingsService {
             if (item.value !== '********') {
                 this.cache.set(item.key, item.value);
                 this.secretCache.set(item.key, item.isSecret ?? false);
+                
+                const oldVal = existingMap.get(item.key);
+                if ((item.key === 'ai.embed_provider' || item.key.endsWith('.embed_model')) && oldVal !== item.value) {
+                    this.eventEmitter.emit('ai.embedding.provider_changed', { key: item.key, newValue: item.value, oldValue: oldVal });
+                }
             }
         }
 

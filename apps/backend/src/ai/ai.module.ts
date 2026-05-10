@@ -35,6 +35,8 @@ import { AiCircuitBreakerService } from './ai-circuit-breaker.service';
 import { EmbeddingNormalizer } from './embedding-normalizer.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
 import { AiBudgetMonitor } from './ai-budget-monitor.service';
+import { EmbeddingVersionRegistry } from './embedding-version.registry';
+import { EmbeddingMigrationProcessor } from './embedding-migration.processor';
 
 @Module({
     imports: [
@@ -53,6 +55,10 @@ import { AiBudgetMonitor } from './ai-budget-monitor.service';
             {
                 name: 'ai-query-processing',
                 defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 1000 }, removeOnComplete: 100, removeOnFail: false },
+            },
+            {
+                name: 'embedding-migration',
+                defaultJobOptions: { attempts: 5, backoff: { type: 'exponential', delay: 5000 }, removeOnComplete: 100, removeOnFail: false },
             }
         ),
     ],
@@ -85,6 +91,8 @@ import { AiBudgetMonitor } from './ai-budget-monitor.service';
         DocumentAiService,
         DocumentParsingProcessor,
         AiQueryProcessor,
+        EmbeddingVersionRegistry,
+        EmbeddingMigrationProcessor,
     ],
     exports: [
         AiService,
@@ -108,6 +116,7 @@ import { AiBudgetMonitor } from './ai-budget-monitor.service';
         RagObservabilityService,
         RagMaintenanceService,
         DocumentAiService,
+        EmbeddingVersionRegistry,
     ],
 })
 export class AiModule { }
