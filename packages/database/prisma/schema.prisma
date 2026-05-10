@@ -11,50 +11,50 @@ datasource db {
 }
 
 model User {
-  id                    String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email                 String                    @unique @db.VarChar(255)
-  fullName              String                    @db.VarChar(255)
-  passwordHash          String
-  refreshTokenHash      String?                   @map("refresh_token_hash")
-  avatarUrl             String?
-  status                UserStatus                @default(ACTIVE)
-  deletedAt             DateTime?                 @map("deleted_at")
-  createdAt             DateTime                  @default(now()) @map("created_at")
-  updatedAt             DateTime                  @updatedAt @map("updated_at")
-  roleId                String?                   @map("role_id") @db.Uuid
-  agentStatus           AgentStatus               @default(DND) @map("agent_status")
-  title                 String?                   @db.VarChar(100)
-  bio                   String?
-  timezone              String                    @default("UTC") @db.VarChar(50)
-  language              String                    @default("tr") @db.VarChar(10)
-  maxActiveTickets      Int                       @default(5) @map("max_active_tickets")
-  agentSkills           AgentSkill[]
-  aiInteractions        AiInteraction[]
-  announcementTemplates AnnouncementTemplate[]    @relation("TemplateAuthor")
-  announcements         Announcement[]
-  articleFeedbacks      ArticleFeedback[]
-  auditLogs             AuditLog[]
-  availability          AvailabilityOverride[]
-  customerProfile       CustomerProfile?
-  emailPreferences      EmailPreference[]
-  feedbacks             InteractionFeedback[]
-  articleVersions       KnowledgeArticleVersion[]
-  articlesApproved      KnowledgeArticle[]        @relation("ArticleApprovedBy")
-  articlesCreated       KnowledgeArticle[]        @relation("ArticleCreatedBy")
-  macrosCreated         Macro[]
-  notifications         Notification[]
-  settings              Setting[]
-  shifts                Shift[]
-  teamMembers           TeamMember[]
-  ticketEscalations     TicketEscalation[]
-  ticketMessages        TicketMessage[]
-  ticketsAssigned       Ticket[]                  @relation("TicketAssignedTo")
-  ticketsCreated        Ticket[]                  @relation("TicketCreatedBy")
-  trainingReviews       TrainingQueue[]
-  role                  Role?                     @relation(fields: [roleId], references: [id])
-  proactiveChatAsAgent    ProactiveChatSession[]  @relation("ProactiveChatAgent")
-  proactiveChatAsCustomer ProactiveChatSession[]  @relation("ProactiveChatCustomer")
-  proactiveChatMessages   ProactiveChatMessage[]  @relation("ProactiveChatMessageSender")
+  id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                   String                    @unique @db.VarChar(255)
+  fullName                String                    @db.VarChar(255)
+  passwordHash            String
+  refreshTokenHash        String?                   @map("refresh_token_hash")
+  avatarUrl               String?
+  status                  UserStatus                @default(ACTIVE)
+  deletedAt               DateTime?                 @map("deleted_at")
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  updatedAt               DateTime                  @updatedAt @map("updated_at")
+  roleId                  String?                   @map("role_id") @db.Uuid
+  agentStatus             AgentStatus               @default(DND) @map("agent_status")
+  title                   String?                   @db.VarChar(100)
+  bio                     String?
+  timezone                String                    @default("UTC") @db.VarChar(50)
+  language                String                    @default("tr") @db.VarChar(10)
+  maxActiveTickets        Int                       @default(5) @map("max_active_tickets")
+  agentSkills             AgentSkill[]
+  aiInteractions          AiInteraction[]
+  announcementTemplates   AnnouncementTemplate[]    @relation("TemplateAuthor")
+  announcements           Announcement[]
+  articleFeedbacks        ArticleFeedback[]
+  auditLogs               AuditLog[]
+  availability            AvailabilityOverride[]
+  customerProfile         CustomerProfile?
+  emailPreferences        EmailPreference[]
+  feedbacks               InteractionFeedback[]
+  articleVersions         KnowledgeArticleVersion[]
+  articlesApproved        KnowledgeArticle[]        @relation("ArticleApprovedBy")
+  articlesCreated         KnowledgeArticle[]        @relation("ArticleCreatedBy")
+  macrosCreated           Macro[]
+  notifications           Notification[]
+  settings                Setting[]
+  shifts                  Shift[]
+  teamMembers             TeamMember[]
+  ticketEscalations       TicketEscalation[]
+  ticketMessages          TicketMessage[]
+  ticketsAssigned         Ticket[]                  @relation("TicketAssignedTo")
+  ticketsCreated          Ticket[]                  @relation("TicketCreatedBy")
+  trainingReviews         TrainingQueue[]
+  role                    Role?                     @relation(fields: [roleId], references: [id])
+  proactiveChatAsAgent    ProactiveChatSession[]    @relation("ProactiveChatAgent")
+  proactiveChatAsCustomer ProactiveChatSession[]    @relation("ProactiveChatCustomer")
+  proactiveChatMessages   ProactiveChatMessage[]    @relation("ProactiveChatMessageSender")
 
   @@map("users")
 }
@@ -431,6 +431,9 @@ model KnowledgeEmbedding {
   modelName            String                  @map("model_name") @db.VarChar(100)
   isActive             Boolean                 @default(true) @map("is_active")
   embeddingGeneratedAt DateTime                @default(now()) @map("embedding_generated_at")
+  embeddingVersion     String                  @default("v1") @map("embedding_version") @db.VarChar(10)
+  embeddingDim         Int                     @default(1536) @map("embedding_dim")
+  migratedAt           DateTime?               @map("migrated_at")
   article              KnowledgeArticle        @relation(fields: [articleId], references: [id], onDelete: Cascade)
   articleVersion       KnowledgeArticleVersion @relation(fields: [articleVersionId], references: [id], onDelete: Cascade)
 
@@ -495,15 +498,16 @@ model AiShiftDetection {
 }
 
 model AiResponseCache {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  queryHash       String   @unique @map("query_hash")
-  queryEmbedding  Unsupported("vector")? @map("query_embedding")
-  response        Json
-  tenantId        String   @map("tenant_id") @db.Uuid
-  userId          String?  @map("user_id") @db.Uuid
-  confidence      String   @db.VarChar(20)
-  createdAt       DateTime @default(now()) @map("created_at")
-  expiresAt       DateTime @map("expires_at")
+  id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  queryHash        String                 @unique @map("query_hash")
+  queryEmbedding   Unsupported("vector")? @map("query_embedding")
+  embeddingVersion String?                @map("embedding_version") @db.VarChar(10)
+  response         Json
+  tenantId         String                 @map("tenant_id") @db.Uuid
+  userId           String?                @map("user_id") @db.Uuid
+  confidence       String                 @db.VarChar(20)
+  createdAt        DateTime               @default(now()) @map("created_at")
+  expiresAt        DateTime               @map("expires_at")
 
   @@index([queryHash], map: "idx_cache_hash")
   @@index([tenantId], map: "idx_cache_tenant")
@@ -651,23 +655,26 @@ model TicketEscalation {
 }
 
 model FaqEntry {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  question        String
-  answer          String
-  status          FaqStatus @default(PENDING_REVIEW)
-  confidenceScore Decimal   @map("confidence_score") @db.Decimal(5, 4)
-  frequency       Int       @default(1)
-  isInternal      Boolean   @default(true) @map("is_internal")
-  trustScore      Decimal   @default(0.75) @map("trust_score") @db.Decimal(5, 4)
-  feedbackWeight  Decimal   @default(1.0) @map("feedback_weight") @db.Decimal(5, 4)
-  sourceTypes     String[]  @default([]) @map("source_types")
-  tags            String[]  @default([])
-  language        String    @default("tr") @db.VarChar(10)
-  questionEmbedding Unsupported("vector")? @map("question_embedding")
-  publishedAt     DateTime? @map("published_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  deletedAt       DateTime? @map("deleted_at")
+  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question          String
+  answer            String
+  status            FaqStatus             @default(PENDING_REVIEW)
+  confidenceScore   Decimal               @map("confidence_score") @db.Decimal(5, 4)
+  frequency         Int                   @default(1)
+  isInternal        Boolean               @default(true) @map("is_internal")
+  trustScore        Decimal               @default(0.75) @map("trust_score") @db.Decimal(5, 4)
+  feedbackWeight    Decimal               @default(1.0) @map("feedback_weight") @db.Decimal(5, 4)
+  sourceTypes       String[]              @default([]) @map("source_types")
+  tags              String[]              @default([])
+  language          String                @default("tr") @db.VarChar(10)
+  questionEmbedding Unsupported("vector") @map("question_embedding")
+  embeddingVersion  String                @default("v1") @map("embedding_version") @db.VarChar(10)
+  embeddingDim      Int                   @default(1536) @map("embedding_dim")
+  migratedAt        DateTime?             @map("migrated_at")
+  publishedAt       DateTime?             @map("published_at")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+  deletedAt         DateTime?             @map("deleted_at")
 
   @@index([status], map: "idx_faq_status")
   @@map("faq_entries")
@@ -711,14 +718,14 @@ model TicketRule {
 }
 
 model Macro {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String   @db.VarChar(100)
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @db.VarChar(100)
   content   String
-  createdBy String?  @map("created_by") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?   @map("created_by") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
-  creator   User?    @relation(fields: [createdBy], references: [id])
+  creator   User?     @relation(fields: [createdBy], references: [id])
 
   @@map("macros")
 }
@@ -790,15 +797,17 @@ model KnowledgeSourceSyncLog {
 }
 
 model KnowledgePoolEmbedding {
-  id        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sourceId  String                @map("source_id") @db.Uuid
-  embedding Unsupported("vector")
-  content   String
-  metadata  Json?
-  modelName String                @map("model_name") @db.VarChar(100)
-  createdAt DateTime              @default(now()) @map("created_at")
-  parentId  String?               @map("parent_id") @db.Uuid
-  source    KnowledgeSource       @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId         String                @map("source_id") @db.Uuid
+  embedding        Unsupported("vector")
+  content          String
+  metadata         Json?
+  embeddingVersion String                @default("v1") @map("embedding_version") @db.VarChar(10)
+  embeddingDim     Int                   @default(1536) @map("embedding_dim")
+  migratedAt       DateTime?             @map("migrated_at")
+  createdAt        DateTime              @default(now()) @map("created_at")
+  parentId         String?               @map("parent_id") @db.Uuid
+  source           KnowledgeSource       @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
   @@index([sourceId], map: "idx_kpe_source")
   @@index([embedding], map: "knowledge_pool_embeddings_vector_hnsw_idx")
@@ -835,12 +844,14 @@ model ProductCategory {
 }
 
 model TicketEmbedding {
-  id        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ticketId  String                @map("ticket_id") @db.Uuid
-  embedding Unsupported("vector")
-  modelName String                @map("model_name") @db.VarChar(100)
-  createdAt DateTime              @default(now()) @map("created_at")
-  ticket    Ticket                @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticketId         String                @map("ticket_id") @db.Uuid
+  embedding        Unsupported("vector")
+  embeddingVersion String                @default("v1") @map("embedding_version") @db.VarChar(10)
+  embeddingDim     Int                   @default(1536) @map("embedding_dim")
+  migratedAt       DateTime?             @map("migrated_at")
+  createdAt        DateTime              @default(now()) @map("created_at")
+  ticket           Ticket                @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId], map: "idx_ticket_embeddings_ticket")
   @@map("ticket_embeddings")
@@ -1146,11 +1157,11 @@ model ProactiveChatSession {
 }
 
 model ProactiveChatMessage {
-  id        String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sessionId String               @map("session_id") @db.Uuid
-  senderId  String               @map("sender_id") @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId String   @map("session_id") @db.Uuid
+  senderId  String   @map("sender_id") @db.Uuid
   content   String
-  createdAt DateTime             @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   session ProactiveChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   sender  User                 @relation("ProactiveChatMessageSender", fields: [senderId], references: [id])
