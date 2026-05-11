@@ -27,6 +27,12 @@ describe('EmailInboundService', () => {
         role: {
             findFirst: jest.fn().mockResolvedValue({ id: 'role-1', name: 'CUSTOMER' }),
         },
+        ticketMessage: {
+            create: jest.fn().mockResolvedValue({ id: 'msg-1' }),
+        },
+        attachment: {
+            create: jest.fn().mockResolvedValue({ id: 'att-1' }),
+        },
     };
 
     const mockSettingsService = {
