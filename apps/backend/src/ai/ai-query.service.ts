@@ -481,7 +481,12 @@ export class AiQueryService {
                 estimatedCost,
                 userContext: {
                     translations,
-                    diagnosis
+                    diagnosis,
+                    chunkAnalytics: {
+                        resultCount: results.length,
+                        avgSimilarity: results.length > 0 ? Math.round((results.reduce((a, r) => a + r.similarity, 0) / results.length) * 1000) / 1000 : 0,
+                        topScore: topResult?.similarity ? Math.round(topResult.similarity * 1000) / 1000 : 0,
+                    }
                 } as Prisma.InputJsonValue
             }
         });
@@ -1280,9 +1285,16 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
 
     async logSearchInteraction(query: string, userId?: string, results: SearchResult[] = [], productId?: string | null, isStaff = false, channel: CommunicationChannel = 'WEB') {
         const topResult = results[0] ?? null;
-
         const providerName = await this.ai.getActiveProviderName();
         const modelName = await this.ai.getActiveModelName();
+
+        // Chunk analytics
+        const similarities = results.map(r => r.similarity);
+        const avgSimilarity = similarities.length > 0 ? similarities.reduce((a, b) => a + b, 0) / similarities.length : 0;
+        const sourceTypes = results.reduce((acc, r) => {
+            acc[r.sourceType] = (acc[r.sourceType] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
 
         return this.prisma.aiInteraction.create({
             data: {
@@ -1293,10 +1305,24 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
                 confidenceBand: topResult ? (topResult.confidence as ConfidenceBand) : null,
                 matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
                 similarityScore: topResult ? topResult.similarity : undefined,
-                autoAnswered: false, // This was just a search
+                autoAnswered: false,
                 provider: providerName,
                 model: modelName,
-                userContext: { type: 'WIZARD_SEARCH', resultCount: results.length, isStaff }
+                userContext: {
+                    type: 'WIZARD_SEARCH',
+                    resultCount: results.length,
+                    isStaff,
+                    chunkAnalytics: {
+                        avgSimilarity: Math.round(avgSimilarity * 1000) / 1000,
+                        topScore: topResult?.similarity ? Math.round(topResult.similarity * 1000) / 1000 : 0,
+                        scoreDistribution: {
+                            high: similarities.filter(s => s >= 0.7).length,
+                            medium: similarities.filter(s => s >= 0.4 && s < 0.7).length,
+                            low: similarities.filter(s => s < 0.4).length,
+                        },
+                        sourceTypes
+                    }
+                }
             },
         });
     }
