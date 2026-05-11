@@ -5,7 +5,7 @@ import { resolve } from 'path';
 config({ path: resolve(__dirname, '../../../.env') });
 
 import { PrismaClient, TicketPriority } from '../client';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
@@ -51,6 +51,52 @@ async function main() {
         });
     }
     console.log('✅ Admin user seeded');
+
+    // 1.5 Seed E2E Test Users
+    const e2ePasswordHashAdmin = await bcrypt.hash('E2eAdmin!Pass123', 12);
+    const e2ePasswordHashAgent = await bcrypt.hash('E2eAgent!Pass123', 12);
+    const e2ePasswordHashCustomer = await bcrypt.hash('E2eCustomer!Pass123', 12);
+
+    let agentRole = await prisma.role.findFirst({ where: { name: 'AGENT' } });
+    if (!agentRole) {
+        agentRole = await prisma.role.create({ data: { name: 'AGENT', isSystem: true } });
+    }
+
+    let customerRole = await prisma.role.findFirst({ where: { name: 'CUSTOMER' } });
+    if (!customerRole) {
+        customerRole = await prisma.role.create({ data: { name: 'CUSTOMER', isSystem: true } });
+    }
+
+    const e2eUsers = [
+        { email: 'e2e-admin@aluplan.test', fullName: 'E2E Admin', role: 'ADMIN', passwordHash: e2ePasswordHashAdmin },
+        { email: 'e2e-agent@aluplan.test', fullName: 'E2E Agent', role: 'AGENT', passwordHash: e2ePasswordHashAgent },
+        { email: 'e2e-customer@aluplan.test', fullName: 'E2E Customer', role: 'CUSTOMER', passwordHash: e2ePasswordHashCustomer },
+    ];
+
+    for (const eu of e2eUsers) {
+        const targetRole = eu.role === 'ADMIN' ? adminRole : eu.role === 'AGENT' ? agentRole : customerRole;
+        let user = await prisma.user.findUnique({ where: { email: eu.email } });
+        if (!user) {
+            await prisma.user.create({
+                data: {
+                    email: eu.email,
+                    fullName: eu.fullName,
+                    passwordHash: eu.passwordHash,
+                    roleId: targetRole.id,
+                    status: 'ACTIVE',
+                }
+            });
+        } else {
+            await prisma.user.update({
+                where: { email: eu.email },
+                data: {
+                    passwordHash: eu.passwordHash,
+                    roleId: targetRole.id,
+                }
+            });
+        }
+    }
+    console.log('✅ E2E test users seeded');
 
     // 2. Default Departments Seeding (from ekip.md)
     const DEFAULT_DEPARTMENTS = [
@@ -533,11 +579,6 @@ async function main() {
     console.log('✅ Products and Categories seeded');
 
     // 5. Seed Test Customers
-    let customerRole = await prisma.role.findFirst({ where: { name: 'CUSTOMER' } });
-    if (!customerRole) {
-        customerRole = await prisma.role.create({ data: { name: 'CUSTOMER', isSystem: true } });
-    }
-
     const testCustomers = [
         {
             email: 'e2e-customer@aluplan.com',
