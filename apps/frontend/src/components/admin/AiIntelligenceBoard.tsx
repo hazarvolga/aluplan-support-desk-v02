@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Brain, Compass, Target, Database, Activity, TrendingUp, AlertCircle } from 'lucide-react';
+import { Loader2, Brain, Compass, Target, Database, Activity, TrendingUp, AlertCircle, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useTranslations } from 'next-intl';
 
@@ -10,6 +10,7 @@ export function AiIntelligenceBoard() {
     const t = useTranslations('admin.ai_intelligence');
     const [loading, setLoading] = useState(true);
     const [metrics, setMetrics] = useState<any>(null);
+    const [knowledgeGaps, setKnowledgeGaps] = useState<any[]>([]);
 
     useEffect(() => {
         loadMetrics();
@@ -18,8 +19,12 @@ export function AiIntelligenceBoard() {
     const loadMetrics = async () => {
         try {
             setLoading(true);
-            const data = await api.ai.getIntelligence(30);
+            const [data, gaps] = await Promise.all([
+                api.ai.getIntelligence(30),
+                api.ai.getKnowledgeGaps(10)
+            ]);
             setMetrics(data);
+            setKnowledgeGaps(gaps);
         } catch (error) {
             console.error('Failed to load AI intelligence metrics', error);
         } finally {
@@ -192,6 +197,29 @@ export function AiIntelligenceBoard() {
                     </div>
                 </CardContent>
             </Card>
+
+            {knowledgeGaps.length > 0 && (
+                <Card className="bg-card/50 backdrop-blur-sm border-orange-500/20">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            <span className="flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4 text-orange-500" />
+                                {t('knowledge_gaps') || 'Bilgi Boşlukları'}
+                            </span>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2">
+                            {knowledgeGaps.map((gap, idx) => (
+                                <div key={idx} className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground truncate max-w-[70%]">{gap.query}</span>
+                                    <span className="text-orange-500 font-medium">{gap.frequency}x</span>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }
