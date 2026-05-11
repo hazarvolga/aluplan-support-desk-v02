@@ -16,6 +16,7 @@ import { RedisService } from '../redis/redis.service';
 import { RAG_CONFIG } from '../config/rag.config';
 import { expandQueryWithSynonyms } from './utils/synonym-dictionary';
 import { rewriteQueryWithHistory } from './utils/conversation-query-rewriter';
+import { generateHypotheticalDocument, detectQueryLanguage } from './utils/hypothetical-document';
 import { RagObservabilityService } from './rag-observability.service';
 import { AiDiagnosisService, DiagnosisResult } from './ai-diagnosis.service';
 import { createHash } from 'crypto';
@@ -312,10 +313,13 @@ export class AiQueryService {
             expandedQuery = synonymExpanded;
         }
 
-        // 2. Semantic search
-        // Use productId if provided explicitly or derived from diagnosis (if we moved diagnosis earlier- but we keep it product-agnostic for first pass intentionally)
+        // 2. HyDE: Generate hypothetical document for better retrieval
+        const queryLanguage = detectQueryLanguage(expandedQuery);
+        const hypotheticalDoc = generateHypotheticalDocument(expandedQuery, { language: queryLanguage });
+
+        // 3. Semantic search (use HyDE document for embedding, but original query for logging)
         const searchStartTime = Date.now();
-        const searchResponse: SearchResponse = await this.embeddingService.search(expandedQuery, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, options.productId, isStaff);
+        const searchResponse: SearchResponse = await this.embeddingService.search(hypotheticalDoc, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, options.productId, isStaff);
         this.logger.log(`🔍 [Phase: Search] Found ${searchResponse.results.length} results in ${Date.now() - searchStartTime}ms. TopScore: ${searchResponse.diagnostics.topScore.toFixed(3)}`);
         let results = searchResponse.results;
 
@@ -1541,7 +1545,12 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
 
         const historyEnriched = rewriteQueryWithHistory(expandedQuery, history);
         const { expanded } = expandQueryWithSynonyms(historyEnriched);
-        const searchResponse = await this.embeddingService.search(expanded, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, productId, isStaff);
+        
+        // HyDE: Generate hypothetical document for better retrieval
+        const queryLanguage = detectQueryLanguage(expanded);
+        const hypotheticalDoc = generateHypotheticalDocument(expanded, { language: queryLanguage });
+        
+        const searchResponse = await this.embeddingService.search(hypotheticalDoc, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, productId, isStaff);
         let results = searchResponse.results;
 
         if (results.length > 1) {
