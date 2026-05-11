@@ -1,7 +1,7 @@
 # Graph Report - aluplan-support-desk-V02  (2026-05-11)
 
 ## Corpus Check
-- 682 files · ~1,289,150 words
+- 682 files · ~1,289,128 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
