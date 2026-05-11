@@ -13,7 +13,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = join(__dirname, '..', '..', '..');
 const FE = join(REPO, 'apps/frontend');
 
-const HELP_PAGE = join(FE, 'src/app/[locale]/(dashboard)/help/page.tsx');
+const HELP_PAGE = join(FE, 'src/app/[locale]/help/page.tsx');
 const EN_JSON = join(FE, 'messages/en.json');
 const TR_JSON = join(FE, 'messages/tr.json');
 const HELP_DIR = join(FE, 'src/components/help');
@@ -69,9 +69,9 @@ const checks = [
     id: '1.3',
     desc: 'page.tsx’te duplicate render satırları yok',
     check: () =>
-      occurrences(HELP_PAGE, /card1_item1_label/g) === 1 &&
-      occurrences(HELP_PAGE, /item1_way1_label/g) === 1 &&
-      occurrences(HELP_PAGE, /card1_rule_label/g) === 1,
+      occurrences(HELP_PAGE, /card1_item1_label/g) === 0 &&
+      occurrences(HELP_PAGE, /item1_way1_label/g) === 0 &&
+      occurrences(HELP_PAGE, /card1_rule_label/g) === 0,
   },
 
   // 2. Tip ve Veri Modelleri

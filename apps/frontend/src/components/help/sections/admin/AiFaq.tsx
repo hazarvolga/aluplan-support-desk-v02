@@ -1,86 +1,91 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { HelpCircle, ArrowRight } from 'lucide-react';
 import { TipBox } from '@/components/help/TipBox';
 
 /**
  * admin.ai_knowledge.faq
- * Covers: FAQ management — review, publish, dismiss FAQ candidates
+ * Covers: Automated FAQ extraction and management
  */
 export function AiFaq() {
+  const t = useTranslations('help.docs.admin.ai_faq');
+
   return (
     <article className="space-y-6">
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-primary">
           <HelpCircle className="h-5 w-5" aria-hidden="true" />
-          <h2 className="text-2xl font-bold">FAQ Yönetimi</h2>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
         </div>
         <p className="text-muted-foreground">
-          Sistem, kapatılan biletlerden otomatik olarak sık sorulan soruları çıkarır.
-          Bu sayfadan FAQ adaylarını inceleyebilir, yayınlayabilir veya reddedebilirsiniz.
+          {t('desc')}
         </p>
       </header>
 
       <section className="space-y-4">
-        <h3 className="text-lg font-semibold">FAQ Çıkarma Süreci</h3>
-        <div className="space-y-3 border-l-2 border-primary/30 pl-4 ml-2 text-sm text-muted-foreground">
-          <div>
-            <p className="font-medium text-foreground">Otomatik Çıkarma</p>
-            <p>
-              Sistem periyodik olarak kapatılan biletleri analiz eder ve tekrar eden
-              soruları FAQ adayı olarak işaretler.
+        <h3 className="text-lg font-semibold">{t('process_title')}</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-2">
+            <h4 className="font-semibold text-foreground">{t('auto_title')}</h4>
+            <p className="text-sm text-muted-foreground">
+              {t('auto_desc')}
             </p>
           </div>
-          <div>
-            <p className="font-medium text-foreground">Manuel Tetikleme</p>
-            <p>
-              <strong>Çıkarma Başlat</strong> butonuyla pipeline&apos;ı manuel olarak
-              çalıştırabilirsiniz.
-            </p>
+          <div className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-2">
+            <h4 className="font-semibold text-foreground">{t('manual_title')}</h4>
+            <p className="text-sm text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.raw('manual_desc') }} />
           </div>
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <h3 className="text-lg font-semibold">FAQ Durumları</h3>
-        <div className="space-y-2 text-sm">
-          {[
-            { status: 'İnceleme Bekliyor', color: 'bg-amber-500', desc: 'Henüz değerlendirilmemiş adaylar' },
-            { status: 'Yayınlandı', color: 'bg-green-500', desc: 'Onaylanmış ve aktif FAQ\'lar' },
-            { status: 'Taslak', color: 'bg-slate-500', desc: 'Reddedilmiş veya beklemedeki içerikler' },
-          ].map(({ status, color, desc }) => (
-            <div key={status} className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3">
-              <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${color}`} aria-hidden="true" />
-              <div>
-                <p className="font-medium">{status}</p>
-                <p className="text-muted-foreground text-xs mt-0.5">{desc}</p>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold">FAQ Onaylama</h3>
-        <ul className="space-y-2 text-sm text-muted-foreground">
-          <li className="flex gap-2 items-start">
-            <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-            <strong>Onayla</strong> — FAQ yayınlanır ve bilgi bankasına eklenir.
+        <h3 className="text-lg font-semibold">{t('status_title')}</h3>
+        <ul className="space-y-3 text-sm text-muted-foreground">
+          <li className="flex gap-3">
+            <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+            <div>
+              <strong className="text-amber-400 block">{t('status_pending')}</strong>
+              {t('status_pending_desc')}
+            </div>
           </li>
-          <li className="flex gap-2 items-start">
-            <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-            <strong>Reddet</strong> — FAQ taslak/silinmiş durumuna geçer.
+          <li className="flex gap-3">
+            <div className="w-2 h-2 rounded-full bg-green-400 mt-1.5 shrink-0" />
+            <div>
+              <strong className="text-green-400 block">{t('status_published')}</strong>
+              {t('status_published_desc')}
+            </div>
           </li>
-          <li className="flex gap-2 items-start">
-            <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-            Güven skoru ve kaynak bilet bilgisi her aday için görüntülenir.
+          <li className="flex gap-3">
+            <div className="w-2 h-2 rounded-full bg-slate-400 mt-1.5 shrink-0" />
+            <div>
+              <strong className="text-slate-400 block">{t('status_draft')}</strong>
+              {t('status_draft_desc')}
+            </div>
           </li>
         </ul>
       </section>
 
-      <TipBox variant="info" title="FAQ Öğrenme Döngüsü">
-        FAQ Yönetimi ve KB Onayları birlikte çalışır. Öğrenme döngüsünün tamamı
-        için her iki sayfayı da düzenli olarak kontrol edin.
+      <section className="space-y-3">
+        <h3 className="text-lg font-semibold">{t('approval_title')}</h3>
+        <ul className="space-y-2 text-sm text-muted-foreground">
+          <li className="flex gap-2 items-start">
+            <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+            <span dangerouslySetInnerHTML={{ __html: t.raw('approval_item1') }} />
+          </li>
+          <li className="flex gap-2 items-start">
+            <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+            <span dangerouslySetInnerHTML={{ __html: t.raw('approval_item2') }} />
+          </li>
+          <li className="flex gap-2 items-start">
+            <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+            {t('approval_item3')}
+          </li>
+        </ul>
+      </section>
+
+      <TipBox variant="info" title={t('tip_cycle_title')}>
+        {t('tip_cycle_desc')}
       </TipBox>
     </article>
   );

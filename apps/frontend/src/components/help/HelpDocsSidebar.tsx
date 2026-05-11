@@ -290,6 +290,7 @@ export function HelpDocsSidebar({
   isOpen,
   onToggle,
 }: HelpDocsSidebarProps) {
+  const t = useTranslations();
   const navRef = React.useRef<HTMLElement>(null);
   useArrowNavigation(navRef);
 
@@ -305,7 +306,7 @@ export function HelpDocsSidebar({
     >
       {/* Customer tree */}
       <SidebarSection
-        label="Müşteri Kılavuzu"
+        label={t('help.docs.nav.customer_guide')}
         nodes={tree.customer}
         activeNodeId={activeNodeId}
         onNodeSelect={onNodeSelect}
@@ -316,13 +317,14 @@ export function HelpDocsSidebar({
         <>
           <div className="border-t border-white/5" role="separator" />
           <SidebarSection
-            label="Yönetici Kılavuzu"
+            label={t('help.docs.nav.admin_guide')}
             nodes={tree.admin}
             activeNodeId={activeNodeId}
             onNodeSelect={onNodeSelect}
           />
         </>
       )}
+      
     </nav>
   );
 
@@ -332,7 +334,7 @@ export function HelpDocsSidebar({
       <aside
         className={cn(
           'hidden md:flex md:w-64 md:shrink-0 md:flex-col',
-          'sticky top-0 h-screen border-r border-white/5 bg-[#111111]',
+          'h-full border-r border-white/5 bg-[#111111]',
         )}
         aria-label="Dokümantasyon navigasyonu"
       >
@@ -361,7 +363,7 @@ export function HelpDocsSidebar({
       >
         {/* Close button inside drawer */}
         <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
-          <span className="text-sm font-semibold text-white">Yardım Merkezi</span>
+          <span className="text-sm font-semibold text-white">{t('help.title')}</span>
           <button
             type="button"
             aria-label="Menüyü kapat"
@@ -388,10 +390,11 @@ export interface MobileSidebarToggleProps {
 }
 
 export function MobileSidebarToggle({ isOpen, onToggle, className }: MobileSidebarToggleProps) {
+  const t = useTranslations();
   return (
     <button
       type="button"
-      aria-label={isOpen ? 'Menüyü kapat' : 'Menüyü aç'}
+      aria-label={isOpen ? t('help.common.close_menu') : t('help.common.open_menu')}
       aria-expanded={isOpen}
       aria-controls="help-sidebar-mobile"
       onClick={onToggle}

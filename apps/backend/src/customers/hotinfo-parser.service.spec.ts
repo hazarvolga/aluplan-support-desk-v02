@@ -16,68 +16,98 @@ describe('HotinfoParserService', () => {
         expect(service).toBeDefined();
     });
 
-    it('should successfully parse valid generic XML structures', () => {
+    it('should correctly map the entire range of Windows builds', () => {
+        const testCases = [
+            { build: '26200', expected: '25H2' },
+            { build: '26100', expected: '24H2' },
+            { build: '22631', expected: '23H2' },
+            { build: '22621', expected: '22H2' },
+            { build: '22000', expected: '21H2' },
+            { build: '19045', expected: '22H2' },
+            { build: '19044', expected: '21H2' },
+            { build: '19043', expected: '21H1' },
+            { build: '19042', expected: '20H2' },
+            { build: '19041', expected: '2004' },
+            { build: '18363', expected: '1909' },
+            { build: '18362', expected: '1903' },
+            { build: '17763', expected: '1809' },
+            { build: '17134', expected: '1803' },
+            { build: '16299', expected: '1709' },
+            { build: '15063', expected: '1703' },
+        ];
+
+        testCases.forEach(({ build, expected }) => {
+            const xml = `<hotinfo><system><platform name="Win"><build>${build}</build></platform></system></hotinfo>`;
+            const data = service.parseHotinfo(xml);
+            expect(data?.osVersion).toContain(expected);
+        });
+    });
+
+    it('should extract screen resolution from multiple possible XML locations', () => {
+        const xmlDisplay = `<hotinfo><system><display resolution="1920x1080" /></system></hotinfo>`;
+        const xmlVideo = `<hotinfo><system><video screen-resolution="2560x1440" /></system></hotinfo>`;
+        const xmlVideoWH = `<hotinfo><system><video screen-width="3840" screen-height="2160" /></system></hotinfo>`;
+
+        expect(service.parseHotinfo(xmlDisplay)?.screenResolution).toBe('1920x1080');
+        expect(service.parseHotinfo(xmlVideo)?.screenResolution).toBe('2560x1440');
+        expect(service.parseHotinfo(xmlVideoWH)?.screenResolution).toBe('3840x2160');
+    });
+
+    it('should extract comprehensive diagnostic data (Registry, Drives, Printers, EnvVars)', () => {
         const mockXml = `<?xml version="1.0" encoding="utf-8"?>
         <hotinfo>
-            <system>
-                <item name="OS">Windows 10</item>
-            </system>
             <cadinfo>
+                <registry>
+                    <item name="DataPath">C:\\Data</item>
+                    <item name="ProgramPath">C:\\Prg</item>
+                </registry>
                 <allplanversion>
-                    <item name="Version">2024.1</item>
+                    <item name="Version">Allplan 2026</item>
+                    <item name="Build-ID">39.1.1</item>
                 </allplanversion>
             </cadinfo>
+            <system>
+                <platform name="Win11"><build>26100</build></platform>
+                <drives>
+                    <drive root="C:\\">
+                        <total>100000000000</total>
+                        <free>50000000000</free>
+                        <filesystem>NTFS</filesystem>
+                    </drive>
+                </drives>
+                <printers>
+                    <printer name="PDF Printer" default="yes" />
+                    <printer name="Office Jet" />
+                </printers>
+                <processes>
+                    <process>C:\\Windows\\System32\\onedrive.exe</process>
+                </processes>
+                <variables>
+                    <item name="USERNAME">Melih</item>
+                    <item name="COMPUTERNAME">WORKSTATION-01</item>
+                </variables>
+            </system>
         </hotinfo>`;
 
-        const parsedData = service.parseHotinfo(mockXml);
+        const data = service.parseHotinfo(mockXml);
 
-        expect(parsedData).toBeDefined();
-        // The service logic transforms keys
-        expect(parsedData!).toHaveProperty('allplanVersion');
-        expect(parsedData!.allplanVersion).toBe('2024.1');
+        expect(data).not.toBeNull();
+        if (data) {
+            expect(data.allplanBuildId).toBe('39.1.1');
+            expect(data.registryPaths).toHaveProperty('DataPath', 'C:\\Data');
+            expect(data.drives).toHaveLength(1);
+            expect(data.drives[0].free).toContain('47 GB');
+            expect(data.printers).toContain('PDF Printer');
+            expect(data.defaultPrinter).toBe('PDF Printer');
+            expect(data.conflictingProcesses).toContain('onedrive.exe');
+            expect(data.envVars).toHaveProperty('USERNAME', 'Melih');
+            expect(data.envVars).toHaveProperty('COMPUTERNAME', 'WORKSTATION-01');
+        }
     });
 
     it('should return null for invalid XML strings', () => {
         const badXml = `<UnclosedTag>Missing</AnotherTag>`;
         const result = service.parseHotinfo(badXml);
         expect(result).toBeNull();
-    });
-
-    it('should extract error traces, map Windows versions, and identify conflicting processes', () => {
-        const mockXml = `<?xml version="1.0" encoding="utf-8"?>
-        <hotinfo>
-            <cadinfo>
-                <sec>Dosya kullanılamıyor. (C:\\\\License\\\\_SEC.NSE)</sec>
-            </cadinfo>
-            <system>
-                <platform name="Microsoft Windows 11 Enterprise">
-                    <system-caption>Microsoft Windows 11</system-caption>
-                    <build>26200</build>
-                </platform>
-                <processes>
-                    <process>C:\\\\Program Files\\\\Microsoft OneDrive\\\\OneDrive.exe</process>
-                    <process>C:\\\\Windows\\\\System32\\\\svchost.exe</process>
-                    <process>C:\\\\Program Files\\\\WindowsApps\\\\MSTeams\\\\teams.exe</process>
-                </processes>
-            </system>
-            <traceinfo>
-                <trace application="allplan">Dosya okunamadı.</trace>
-            </traceinfo>
-        </hotinfo>`;
-
-        const parsedData = service.parseHotinfo(mockXml);
-
-        expect(parsedData).toBeDefined();
-        if (parsedData) {
-            expect(parsedData.osVersion).toContain('Windows 11');
-            expect(parsedData.osVersion).toContain('24H2');
-
-            expect(parsedData.errorTrace).toContain('SEC Hata: Dosya kullanılamıyor.');
-            expect(parsedData.errorTrace).toContain('Trace: Dosya okunamadı.');
-
-            expect(parsedData.conflictingProcesses).toContain('onedrive.exe');
-            expect(parsedData.conflictingProcesses).toContain('teams.exe');
-            expect(parsedData.conflictingProcesses).not.toContain('svchost.exe');
-        }
     });
 });

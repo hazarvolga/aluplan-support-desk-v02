@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Package, ArrowRight } from 'lucide-react';
 import { TipBox } from '@/components/help/TipBox';
 
@@ -8,48 +9,47 @@ import { TipBox } from '@/components/help/TipBox';
  * Covers: Product and module management for ticket classification
  */
 export function CrmProducts() {
+  const t = useTranslations('help.docs.admin.crm_products');
+
   return (
     <article className="space-y-6">
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-primary">
           <Package className="h-5 w-5" aria-hidden="true" />
-          <h2 className="text-2xl font-bold">Ürünler &amp; Modüller</h2>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
         </div>
         <p className="text-muted-foreground">
-          Müşterilerin bilet açarken gördüğü ürün kartlarını buradan yönetin.
-          Doğru yapılandırılmış ürünler, AI&apos;ın biletleri doğru ekibe yönlendirmesini sağlar.
+          {t('desc')}
         </p>
       </header>
 
       <section className="space-y-4">
-        <h3 className="text-lg font-semibold">Ürün Ekleme</h3>
+        <h3 className="text-lg font-semibold">{t('add_title')}</h3>
         <div className="space-y-3 border-l-2 border-primary/30 pl-4 ml-2 text-sm text-muted-foreground">
           <div>
-            <p className="font-medium text-foreground">1. Ürünler &amp; Modüller sayfasına gidin</p>
-            <p>Sol menüden <strong>Ürünler</strong> bağlantısına tıklayın.</p>
+            <p className="font-medium text-foreground">{t('step1_title')}</p>
+            <p dangerouslySetInnerHTML={{ __html: t.raw('step1_desc') }} />
           </div>
           <div>
-            <p className="font-medium text-foreground">2. &quot;Yeni Ürün Ekle&quot; butonuna tıklayın</p>
-            <p>Ürün adı ve kısa açıklama girin.</p>
+            <p className="font-medium text-foreground">{t('step2_title')}</p>
+            <p>{t('step2_desc')}</p>
           </div>
           <div>
-            <p className="font-medium text-foreground">3. Alt kategoriler ekleyin</p>
+            <p className="font-medium text-foreground">{t('step3_title')}</p>
             <p>
-              Her ürün için alt kategoriler (modüller) oluşturun. Bu kategoriler
-              AI&apos;ın bilet sınıflandırmasında kullanılır.
+              {t('step3_desc')}
             </p>
           </div>
         </div>
       </section>
 
       <section className="space-y-4">
-        <h3 className="text-lg font-semibold">Kategori Yapısı</h3>
+        <h3 className="text-lg font-semibold">{t('category_title')}</h3>
         <p className="text-sm text-muted-foreground">
-          Her ürün altında birden fazla kategori (modül) tanımlayabilirsiniz.
-          Kategoriler, AI&apos;ın biletleri otomatik etiketlemesinde kullanılır.
+          {t('category_desc')}
         </p>
         <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm">
-          <p className="font-medium mb-2">Örnek Yapı:</p>
+          <p className="font-medium mb-2">{t('example_title')}</p>
           <div className="space-y-1 text-muted-foreground font-mono text-xs">
             <p>📦 ALLPLAN</p>
             <p className="pl-4">├── Duvar &amp; Döşeme</p>
@@ -62,10 +62,8 @@ export function CrmProducts() {
         </div>
       </section>
 
-      <TipBox variant="tip" title="Anahtar Kelimeler Kritik">
-        Kategorilere yalnızca özellik adları değil, müşteri semptomlarını da ekleyin
-        (örn. &quot;yavaşlama&quot;, &quot;siyah ekran&quot;, &quot;kapanıyor&quot;). AI bu anahtar kelimeleri
-        okuyarak bileti doğru ekibe yönlendirir (Triage).
+      <TipBox variant="tip" title={t('tip_keywords_title')}>
+        {t('tip_keywords_desc')}
       </TipBox>
     </article>
   );

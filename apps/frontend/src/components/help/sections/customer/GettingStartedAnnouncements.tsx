@@ -1,6 +1,7 @@
 'use client';
 
 import { Megaphone, Bell, ArrowRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { TipBox } from '@/components/help/TipBox';
 
 /**
@@ -8,73 +9,59 @@ import { TipBox } from '@/components/help/TipBox';
  * Covers: How to read and navigate announcements
  */
 export function GettingStartedAnnouncements() {
+  const t = useTranslations('help.docs.customer.getting_started_announcements');
+
   return (
     <article className="space-y-6">
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-primary">
           <Megaphone className="h-5 w-5" aria-hidden="true" />
-          <h2 className="text-2xl font-bold">Duyurular</h2>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
         </div>
-        <p className="text-muted-foreground">
-          Aluplan destek ekibinin size ilettiği bakım bildirimleri, yeni özellik
-          duyuruları ve önemli güncellemeleri bu sayfadan takip edebilirsiniz.
-        </p>
+        <p className="text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.raw('desc') }} />
       </header>
 
       <section className="space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Bell className="h-4 w-4 text-primary" aria-hidden="true" />
-          Duyuruları Nasıl Görürsünüm?
+          {t('read_announcements_title')}
         </h3>
         <ul className="space-y-2 text-sm text-muted-foreground pl-4">
           <li className="flex gap-2 items-start">
             <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-            Sol menüdeki <strong>zil ikonu</strong> okunmamış duyuru sayısını gösterir.
+            <span dangerouslySetInnerHTML={{ __html: t.raw('read_item1') }} />
           </li>
           <li className="flex gap-2 items-start">
             <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-            Zile tıklayarak duyuru listesini açabilirsiniz.
+            <span dangerouslySetInnerHTML={{ __html: t.raw('read_item2') }} />
           </li>
           <li className="flex gap-2 items-start">
             <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-            Bir duyuruya tıkladığınızda tam içeriği görüntülenir ve okundu olarak işaretlenir.
+            <span dangerouslySetInnerHTML={{ __html: t.raw('read_item3') }} />
           </li>
         </ul>
       </section>
 
       <section className="space-y-4">
-        <h3 className="text-lg font-semibold">Duyuru Türleri</h3>
+        <h3 className="text-lg font-semibold">{t('types_title')}</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-1">
-            <p className="font-medium text-sm">🔧 Bakım Bildirimleri</p>
-            <p className="text-xs text-muted-foreground">
-              Planlı sistem bakımları ve geçici kesintiler hakkında önceden bilgilendirme.
-            </p>
+            <p className="font-medium text-sm" dangerouslySetInnerHTML={{ __html: t.raw('type1').split(':')[0] + ':' }} />
+            <p className="text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.raw('type1').split(':').slice(1).join(':') }} />
           </div>
           <div className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-1">
-            <p className="font-medium text-sm">✨ Yeni Özellikler</p>
-            <p className="text-xs text-muted-foreground">
-              Platforma eklenen yeni özellikler ve iyileştirmeler hakkında bilgi.
-            </p>
+            <p className="font-medium text-sm" dangerouslySetInnerHTML={{ __html: t.raw('type2').split(':')[0] + ':' }} />
+            <p className="text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.raw('type2').split(':').slice(1).join(':') }} />
           </div>
           <div className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-1">
-            <p className="font-medium text-sm">📢 Genel Duyurular</p>
-            <p className="text-xs text-muted-foreground">
-              Tüm müşterilere yönelik önemli bilgilendirmeler.
-            </p>
-          </div>
-          <div className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-1">
-            <p className="font-medium text-sm">🎯 Kişisel Duyurular</p>
-            <p className="text-xs text-muted-foreground">
-              Yalnızca size veya şirketinize özel iletilen mesajlar.
-            </p>
+            <p className="font-medium text-sm" dangerouslySetInnerHTML={{ __html: t.raw('type3').split(':')[0] + ':' }} />
+            <p className="text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.raw('type3').split(':').slice(1).join(':') }} />
           </div>
         </div>
       </section>
 
-      <TipBox variant="tip" title="Duyuruları Kaçırmayın">
-        Önemli bakım bildirimleri e-posta ile de iletilir. E-posta adresinizin güncel
-        olduğundan emin olmak için <strong>Profil &amp; Ayarlar</strong> sayfasını kontrol edin.
+      <TipBox variant="tip" title={t('tip_title')}>
+        <span dangerouslySetInnerHTML={{ __html: t.raw('tip_desc') }} />
       </TipBox>
     </article>
   );

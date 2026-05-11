@@ -466,7 +466,7 @@ export const api = {
         broadcast: (id: string) => request<{ success: true; count: number }>(`/announcements/${id}/broadcast`, { method: 'POST' }),
         getMyAnnouncements: (page = 1, limit = 20) =>
             request<{ data: any[]; total: number }>(`/announcements/my?page=${page}&limit=${limit}`),
-        getMyUnreadCount: () =>
+        getUnreadCount: () =>
             request<{ count: number }>('/announcements/my/unread-count'),
         markLogRead: (logId: string) =>
             request<any>(`/announcements/logs/${logId}/read`, { method: 'PATCH' }),

@@ -1,7 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { DocBreadcrumb } from './DocBreadcrumb';
 import type { BreadcrumbItem } from './types';
+
+// Mock next-intl
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+}));
 
 describe('DocBreadcrumb component (task 8.3)', () => {
   const mockPath: BreadcrumbItem[] = [

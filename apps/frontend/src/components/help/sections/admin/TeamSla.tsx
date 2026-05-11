@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Clock, ArrowRight } from 'lucide-react';
 import { TipBox } from '@/components/help/TipBox';
 
@@ -8,37 +9,38 @@ import { TipBox } from '@/components/help/TipBox';
  * Covers: SLA rule configuration — response time, resolution time, business hours
  */
 export function TeamSla() {
+  const t = useTranslations('help.docs.admin.team_sla');
+
   return (
     <article className="space-y-6">
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-primary">
           <Clock className="h-5 w-5" aria-hidden="true" />
-          <h2 className="text-2xl font-bold">SLA Kural Yapılandırması</h2>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
         </div>
         <p className="text-muted-foreground">
-          SLA (Service Level Agreement) kuralları, destek taleplerine ne kadar sürede
-          yanıt verilmesi ve çözülmesi gerektiğini tanımlar.
+          {t('desc')}
         </p>
       </header>
 
       <section className="space-y-4">
-        <h3 className="text-lg font-semibold">SLA Parametreleri</h3>
+        <h3 className="text-lg font-semibold">{t('params_title')}</h3>
         <div className="space-y-2 text-sm">
           {[
             {
-              param: 'İlk Yanıt Süresi',
-              desc: 'Bilet açıldıktan sonra ilk yanıtın verilmesi gereken maksimum süre.',
-              example: 'Örn: Yüksek öncelik → 2 saat',
+              param: t('param1_title'),
+              desc: t('param1_desc'),
+              example: t('param1_example'),
             },
             {
-              param: 'Çözüm Süresi',
-              desc: 'Biletin tamamen çözülmesi gereken maksimum süre.',
-              example: 'Örn: Orta öncelik → 24 saat',
+              param: t('param2_title'),
+              desc: t('param2_desc'),
+              example: t('param2_example'),
             },
             {
-              param: 'Mesai Saatleri',
-              desc: 'SLA sayacının çalışacağı saat aralığı. Mesai dışı duraklatılabilir.',
-              example: 'Örn: Pazartesi-Cuma, 09:00-18:00',
+              param: t('param3_title'),
+              desc: t('param3_desc'),
+              example: t('param3_example'),
             },
           ].map(({ param, desc, example }) => (
             <div key={param} className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
@@ -51,22 +53,22 @@ export function TeamSla() {
       </section>
 
       <section className="space-y-4">
-        <h3 className="text-lg font-semibold">Öncelik Bazlı SLA</h3>
+        <h3 className="text-lg font-semibold">{t('priority_title')}</h3>
         <div className="overflow-x-auto rounded-lg border border-white/10">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10 bg-white/5">
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Öncelik</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">İlk Yanıt</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Çözüm</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground">{t('table_col1')}</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground">{t('table_col2')}</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground">{t('table_col3')}</th>
               </tr>
             </thead>
             <tbody>
               {[
-                { priority: 'Acil', response: '1 saat', resolution: '4 saat', color: 'text-red-400' },
-                { priority: 'Yüksek', response: '2 saat', resolution: '8 saat', color: 'text-amber-400' },
-                { priority: 'Orta', response: '4 saat', resolution: '24 saat', color: 'text-blue-400' },
-                { priority: 'Düşük', response: '8 saat', resolution: '72 saat', color: 'text-slate-400' },
+                { priority: t('row1_pri'), response: t('row1_res'), resolution: t('row1_reso'), color: 'text-red-400' },
+                { priority: t('row2_pri'), response: t('row2_res'), resolution: t('row2_reso'), color: 'text-amber-400' },
+                { priority: t('row3_pri'), response: t('row3_res'), resolution: t('row3_reso'), color: 'text-blue-400' },
+                { priority: t('row4_pri'), response: t('row4_res'), resolution: t('row4_reso'), color: 'text-slate-400' },
               ].map(({ priority, response, resolution, color }) => (
                 <tr key={priority} className="border-b border-white/5 last:border-0">
                   <td className={`px-4 py-2.5 font-medium ${color}`}>{priority}</td>
@@ -78,32 +80,30 @@ export function TeamSla() {
           </table>
         </div>
         <p className="text-xs text-muted-foreground">
-          * Bu değerler örnek yapılandırmadır. Ekip Yönetimi sayfasından özelleştirin.
+          {t('table_note')}
         </p>
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold">SLA İhlali Bildirimleri</h3>
+        <h3 className="text-lg font-semibold">{t('violation_title')}</h3>
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex gap-2 items-start">
             <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-            SLA süresi dolmak üzereyken sistem otomatik uyarı gönderir.
+            {t('vio_item1')}
           </li>
           <li className="flex gap-2 items-start">
             <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-            İhlal olan biletler bilet listesinde kırmızı <strong>SLA_VIO</strong> rozeti ile işaretlenir.
+            <span dangerouslySetInnerHTML={{ __html: t.raw('vio_item2') }} />
           </li>
           <li className="flex gap-2 items-start">
             <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-            Dashboard&apos;da SLA ihlali istatistikleri görüntülenir.
+            {t('vio_item3')}
           </li>
         </ul>
       </section>
 
-      <TipBox variant="warning" title="Mesai Saatlerini Doğru Ayarlayın">
-        SLA sayacının mesai dışında durması için mesai saatlerini doğru
-        yapılandırın. Aksi halde hafta sonu ve tatil günlerinde SLA ihlalleri
-        oluşabilir.
+      <TipBox variant="warning" title={t('tip_hours_title')}>
+        {t('tip_hours_desc')}
       </TipBox>
     </article>
   );

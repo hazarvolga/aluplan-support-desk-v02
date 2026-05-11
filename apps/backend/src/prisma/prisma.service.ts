@@ -53,17 +53,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
      */
     private applySoftDeleteExtension(): any {
         const modelsWithSoftDelete = new Set([
-            'User', 'Department', 'Team', 'TeamMember', 'Shift',
-            'AvailabilityOverride', 'SlaPolicy', 'Notification', 'Role', 'Permission',
-            'RolePermission', 'CustomerProfile', 'CrmAccount', 'CrmConnection', 'CrmSyncLog',
-            'PromptTemplate', 'Category', 'KnowledgeArticle', 'ArticleFeedback',
-            'KnowledgeArticleVersion', 'KnowledgeEmbedding', 'AiInteraction', 'AiShiftDetection',
-            'AiResponseCache', 'InteractionFeedback', 'TrainingQueue', 'Ticket', 'TicketMessage',
-            'Attachment', 'TicketEscalation', 'FaqEntry', 'AuditLog', 'TicketRule', 'Macro',
-            'InboundEmailLog', 'Webhook', 'KnowledgeSource', 'KnowledgeSourceSyncLog',
-            'KnowledgePoolEmbedding', 'Product', 'ProductCategory', 'TicketEmbedding',
-            'BusinessHours', 'Holiday', 'EmailLog', 'EmailEvent', 'EmailPreference',
-            'Announcement', 'AnnouncementLog', 'ProactiveChatSession', 'ProactiveChatMessage',
+            'User', 'Department', 'Team', 'Category', 'KnowledgeArticle',
+            'CustomerProfile', 'CrmConnection', 'Ticket', 'TicketMessage',
+            'Attachment', 'FaqEntry', 'Macro', 'Product', 'ProductCategory',
+            'Announcement',
         ]);
 
         const softDeleteMiddleware = async ({ model, operation, args, query }: any) => {

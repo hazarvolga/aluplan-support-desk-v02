@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { ChevronRight, HelpCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { BreadcrumbItem } from './types';
 
@@ -29,6 +30,7 @@ export interface DocBreadcrumbProps {
  * - Supports keyboard navigation (Enter / Space to activate).
  */
 export function DocBreadcrumb({ path, onNodeSelect, className }: DocBreadcrumbProps) {
+  const t = useTranslations();
   if (path.length === 0) return null;
 
   return (
@@ -39,7 +41,7 @@ export function DocBreadcrumb({ path, onNodeSelect, className }: DocBreadcrumbPr
       {/* Static root crumb — always "Yardım" */}
       <span className="flex items-center gap-1 text-muted-foreground/60">
         <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
-        <span>Yardım</span>
+        <span>{t('help.nav.back')}</span>
       </span>
 
       {path.map((crumb, index) => {

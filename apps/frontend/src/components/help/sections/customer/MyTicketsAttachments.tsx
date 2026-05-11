@@ -1,6 +1,7 @@
 'use client';
 
 import { Paperclip, CheckCircle, XCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { TipBox } from '@/components/help/TipBox';
 import { CodeBlock } from '@/components/help/CodeBlock';
 
@@ -9,17 +10,19 @@ import { CodeBlock } from '@/components/help/CodeBlock';
  * Covers: Accepted/rejected file types, size limits, drag-and-drop
  */
 export function MyTicketsAttachments() {
+  const t = useTranslations('help.docs.customer.my_tickets_attachments');
+
   const accepted = [
-    { category: 'Görseller', types: 'PNG, JPG, GIF, WebP, BMP', note: 'Ekran görüntüleri, hata diyalogları' },
-    { category: 'Belgeler', types: 'PDF, DOCX, XLSX, PPTX, TXT, CSV, MD', note: 'Teknik dökümanlar, raporlar' },
-    { category: 'Arşivler', types: 'ZIP, 7Z, RAR', note: 'Birden fazla log dosyasını paketlemek için' },
-    { category: 'Tanılama Dosyaları', types: '.log, .xml, .json, .hxl, .dmp', note: 'Allplan Hotinfo ve crash dump' },
-    { category: 'Video', types: 'MP4, MOV, AVI, WebM', note: 'Çökme veya hata yeniden üretimi için' },
+    { category: t('acc_cat1'), types: 'PNG, JPG, GIF, WebP, BMP', note: t('acc_note1') },
+    { category: t('acc_cat2'), types: 'PDF, DOCX, XLSX, PPTX, TXT, CSV, MD', note: t('acc_note2') },
+    { category: t('acc_cat3'), types: 'ZIP, 7Z, RAR', note: t('acc_note3') },
+    { category: t('acc_cat4'), types: '.log, .xml, .json, .hxl, .dmp', note: t('acc_note4') },
+    { category: t('acc_cat5'), types: 'MP4, MOV, AVI, WebM', note: t('acc_note5') },
   ];
 
   const rejected = [
-    { types: '.exe, .dll, .bat, .sh', note: 'Çalıştırılabilir dosyalar' },
-    { types: '.js, .py, .apk, .iso', note: 'Script ve imaj dosyaları' },
+    { types: '.exe, .dll, .bat, .sh', note: t('rej_note1') },
+    { types: '.js, .py, .apk, .iso', note: t('rej_note2') },
   ];
 
   return (
@@ -27,26 +30,23 @@ export function MyTicketsAttachments() {
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-primary">
           <Paperclip className="h-5 w-5" aria-hidden="true" />
-          <h2 className="text-2xl font-bold">Dosya Ekleri</h2>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
         </div>
-        <p className="text-muted-foreground">
-          Destek talebinize sürükle-bırak ile <strong>25 MB</strong>&apos;a kadar dosya
-          ekleyebilirsiniz. Aşağıda kabul edilen ve reddedilen dosya türleri listelenmiştir.
-        </p>
+        <p className="text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.raw('desc') }} />
       </header>
 
       <section className="space-y-3">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <CheckCircle className="h-4 w-4 text-green-400" aria-hidden="true" />
-          Kabul Edilen Dosya Türleri
+          {t('accepted_title')}
         </h3>
         <div className="overflow-x-auto rounded-lg border border-white/10">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10 bg-white/5">
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Kategori</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Uzantılar</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground hidden sm:table-cell">Not</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground">{t('category')}</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground">{t('extensions')}</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground hidden sm:table-cell">{t('note')}</th>
               </tr>
             </thead>
             <tbody>
@@ -65,7 +65,7 @@ export function MyTicketsAttachments() {
       <section className="space-y-3">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <XCircle className="h-4 w-4 text-red-400" aria-hidden="true" />
-          Reddedilen Dosya Türleri
+          {t('rejected_title')}
         </h3>
         <div className="rounded-lg border border-red-500/20 bg-red-900/10 p-4 space-y-2">
           {rejected.map(({ types, note }) => (
@@ -78,19 +78,13 @@ export function MyTicketsAttachments() {
             </div>
           ))}
           <p className="text-xs text-red-300/70 mt-2">
-            Bu dosya türleri güvenlik nedeniyle engellenmektedir.
+            {t('rej_warning')}
           </p>
         </div>
       </section>
 
-      <TipBox variant="warning" title="Allplan Çökmeleri İçin">
-        <p className="text-sm">
-          Allplan çökmelerinde{' '}
-          <CodeBlock code="%AppData%\Nemetschek\Allplan" inline />
-          {' '}dizinindeki <strong>.hxl Hotinfo</strong> dosyasını ve{' '}
-          <strong>.dmp crash dump</strong> dosyasını eklemeniz teşhisi önemli ölçüde
-          hızlandırır.
-        </p>
+      <TipBox variant="warning" title={t('tip_crash_title')}>
+        <p className="text-sm" dangerouslySetInnerHTML={{ __html: t.raw('tip_crash_desc') }} />
       </TipBox>
     </article>
   );

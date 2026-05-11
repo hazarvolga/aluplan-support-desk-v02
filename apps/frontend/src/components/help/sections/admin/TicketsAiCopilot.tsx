@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Bot, Zap, ArrowRight } from 'lucide-react';
 import { TipBox } from '@/components/help/TipBox';
 
@@ -8,45 +9,46 @@ import { TipBox } from '@/components/help/TipBox';
  * Covers: AI Co-Pilot draft generation, vector search, editing drafts
  */
 export function TicketsAiCopilot() {
+  const t = useTranslations('help.docs.admin.tickets_ai_copilot');
+
   return (
     <article className="space-y-6">
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-primary">
           <Bot className="h-5 w-5" aria-hidden="true" />
-          <h2 className="text-2xl font-bold">AI Co-Pilot</h2>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
         </div>
         <p className="text-muted-foreground">
-          AI Co-Pilot, müşteri mesajını analiz ederek Knowledge Pool&apos;dan ilgili
-          belgeleri bulur ve profesyonel bir yanıt taslağı hazırlar.
+          {t('desc')}
         </p>
       </header>
 
       <section className="space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Zap className="h-4 w-4 text-amber-400" aria-hidden="true" />
-          Nasıl Kullanılır?
+          {t('usage_title')}
         </h3>
         <div className="space-y-4 border-l-2 border-primary/30 pl-4 ml-2">
           {[
             {
               step: '1',
-              title: 'Bilet detayına girin',
-              desc: 'Yanıtlamak istediğiniz destek talebini açın.',
+              title: t('step1_title'),
+              desc: t('step1_desc'),
             },
             {
               step: '2',
-              title: '"AI Yanıt Taslağı Oluştur" butonuna tıklayın',
-              desc: 'Sağ üst köşedeki butona tıklayın. AI işlemi 5-10 saniye sürer.',
+              title: t('step2_title'),
+              desc: t('step2_desc'),
             },
             {
               step: '3',
-              title: 'Taslağı inceleyin',
-              desc: 'AI, müşteri mesajını ve Knowledge Pool\'u tarayarak hazırladığı taslağı sunar. Kaynak belgeler altta listelenir.',
+              title: t('step3_title'),
+              desc: t('step3_desc'),
             },
             {
               step: '4',
-              title: 'Düzenleyin ve gönderin',
-              desc: 'Taslağı kendi üslubunuza göre düzenleyin ve müşteriye gönderin.',
+              title: t('step4_title'),
+              desc: t('step4_desc'),
             },
           ].map(({ step, title, desc }) => (
             <div key={step} className="space-y-1">
@@ -63,26 +65,25 @@ export function TicketsAiCopilot() {
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold">AI Co-Pilot Nasıl Çalışır?</h3>
+        <h3 className="text-lg font-semibold">{t('how_it_works_title')}</h3>
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex gap-2 items-start">
             <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-            Müşteri mesajı vektör aramasıyla Knowledge Pool&apos;daki belgelerle eşleştirilir.
+            {t('how_item1')}
           </li>
           <li className="flex gap-2 items-start">
             <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-            En alakalı belgeler bağlam olarak kullanılır.
+            {t('how_item2')}
           </li>
           <li className="flex gap-2 items-start">
             <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-            Profesyonel bir yanıt taslağı oluşturulur ve kaynak belgeler gösterilir.
+            {t('how_item3')}
           </li>
         </ul>
       </section>
 
-      <TipBox variant="tip" title="Taslağı Her Zaman Düzenleyin">
-        AI taslakları bir başlangıç noktasıdır. Müşteriye göndermeden önce kendi
-        üslubunuza ve duruma özel detaylara göre düzenlemeniz önerilir.
+      <TipBox variant="tip" title={t('tip_edit_title')}>
+        {t('tip_edit_desc')}
       </TipBox>
     </article>
   );

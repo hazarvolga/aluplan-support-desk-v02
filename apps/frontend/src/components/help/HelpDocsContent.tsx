@@ -90,18 +90,18 @@ export function HelpDocsContent({
 
   const activeLabel = activeNode
     ? t(activeNode.labelKey as Parameters<typeof t>[0])
-    : 'Yardım Merkezi';
+    : t('help.title');
 
   return (
     <main
       className={cn(
-        'flex flex-1 flex-col min-w-0 overflow-y-auto',
+        'flex flex-1 flex-col min-w-0 overflow-y-auto bg-background',
         className,
       )}
       id="help-docs-content"
     >
       {/* ── Mobile header ─────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-white/5 bg-background/80 px-4 py-3 backdrop-blur-sm md:hidden">
+      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-white/5 bg-background/80 px-4 py-3 backdrop-blur-sm md:hidden shrink-0">
         <MobileSidebarToggle
           isOpen={false}
           onToggle={onMobileMenuToggle}
@@ -110,10 +110,10 @@ export function HelpDocsContent({
       </header>
 
       {/* ── Content area ──────────────────────────────────────────────────── */}
-      <div className="flex-1 px-4 py-6 md:px-8 md:py-8 max-w-4xl w-full mx-auto">
+      <div className="flex-1 px-4 py-6 md:px-8 md:py-8 max-w-5xl w-full mx-auto">
         {/* Breadcrumb */}
         {breadcrumbPath.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-8">
             <DocBreadcrumb
               path={breadcrumbPath}
               onNodeSelect={onNodeSelect}
@@ -139,15 +139,16 @@ export function HelpDocsContent({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function WelcomeState() {
+  const t = useTranslations('help.common');
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
-        <span className="text-3xl" aria-hidden="true">📚</span>
+      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20 shadow-lg shadow-primary/5">
+        <span className="text-4xl" aria-hidden="true">📚</span>
       </div>
-      <div className="space-y-2 max-w-sm">
-        <h2 className="text-xl font-bold">Yardım Merkezine Hoş Geldiniz</h2>
-        <p className="text-sm text-muted-foreground">
-          Sol menüden bir konu seçerek dokümantasyona göz atın.
+      <div className="space-y-3 max-w-md">
+        <h2 className="text-2xl font-bold tracking-tight">{t('welcome_title')}</h2>
+        <p className="text-muted-foreground leading-relaxed">
+          {t('welcome_desc')}
         </p>
       </div>
     </div>

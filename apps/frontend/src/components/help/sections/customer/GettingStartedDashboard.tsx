@@ -1,6 +1,7 @@
 'use client';
 
 import { LayoutDashboard, Bell, Ticket, ArrowRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { TipBox } from '@/components/help/TipBox';
 import { DocAccordion } from '@/components/help/DocAccordion';
 
@@ -9,16 +10,17 @@ import { DocAccordion } from '@/components/help/DocAccordion';
  * Covers: Dashboard overview, active tickets, announcements board
  */
 export function GettingStartedDashboard() {
+  const t = useTranslations('help.docs.customer.getting_started');
+
   return (
     <article className="space-y-6">
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-primary">
           <LayoutDashboard className="h-5 w-5" aria-hidden="true" />
-          <h2 className="text-2xl font-bold">Dashboard &amp; Genel Bakış</h2>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
         </div>
         <p className="text-muted-foreground">
-          Sisteme giriş yaptığınızda karşılaştığınız ilk ekran <strong>Dashboard</strong>'dur.
-          Bu ekran, destek süreçlerinizi tek bakışta takip etmenizi sağlar.
+          {t('desc')}
         </p>
       </header>
 
@@ -27,27 +29,23 @@ export function GettingStartedDashboard() {
         items={[
           {
             id: 'overview',
-            title: 'Dashboard Nedir?',
+            title: t('overview_title'),
             icon: LayoutDashboard,
             children: (
               <div className="space-y-3 text-sm text-muted-foreground">
-                <p>
-                  Dashboard, platformdaki tüm aktivitelerinizin özetini sunan ana kontrol
-                  panelidir. Açık destek talepleriniz, son bilgi bankası makaleleri ve
-                  sistem duyuruları burada bir arada görünür.
-                </p>
+                <p>{t('overview_desc')}</p>
                 <ul className="space-y-1.5 pl-4">
                   <li className="flex gap-2 items-start">
                     <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    Aktif destek taleplerinizin anlık durumunu görüntüleyin.
+                    {t('overview_item1')}
                   </li>
                   <li className="flex gap-2 items-start">
                     <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    Son oluşturulan bilgi bankası makalelerine hızlıca erişin.
+                    {t('overview_item2')}
                   </li>
                   <li className="flex gap-2 items-start">
                     <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    Size özel sistem duyurularını &quot;Duyurular&quot; panosundan okuyun.
+                    {t('overview_item3')}
                   </li>
                 </ul>
               </div>
@@ -55,50 +53,42 @@ export function GettingStartedDashboard() {
           },
           {
             id: 'tickets',
-            title: 'Aktif Destek Taleplerim',
+            title: t('tickets_title'),
             icon: Ticket,
             children: (
               <div className="space-y-3 text-sm text-muted-foreground">
-                <p>
-                  Dashboard&apos;daki <strong>Aktif Talepler</strong> kartı, yanıt bekleyen
-                  veya işlemde olan tüm destek taleplerinizi listeler.
-                </p>
+                <p dangerouslySetInnerHTML={{ __html: t.raw('tickets_desc') }} />
                 <ul className="space-y-1.5 pl-4">
                   <li className="flex gap-2 items-start">
                     <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    Talep durumunu (Açık, Yanıtlandı, Kapalı) buradan takip edebilirsiniz.
+                    {t('tickets_item1')}
                   </li>
                   <li className="flex gap-2 items-start">
                     <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    Bir talebe tıklayarak detay sayfasına geçebilirsiniz.
+                    {t('tickets_item2')}
                   </li>
                 </ul>
-                <TipBox variant="info" title="Hızlı Erişim">
-                  Sol menüdeki <strong>Destek Taleplerim</strong> bağlantısı sizi doğrudan
-                  tüm taleplerinizin listelendiği sayfaya götürür.
+                <TipBox variant="info" title={t('tip_quick_access_title')}>
+                  <span dangerouslySetInnerHTML={{ __html: t.raw('tip_quick_access') }} />
                 </TipBox>
               </div>
             ),
           },
           {
             id: 'announcements',
-            title: 'Duyurular Panosu',
+            title: t('announcements_title'),
             icon: Bell,
             children: (
               <div className="space-y-3 text-sm text-muted-foreground">
-                <p>
-                  Aluplan destek ekibi, bakım bildirimleri, yeni özellik duyuruları ve
-                  önemli güncellemeleri <strong>Duyurular</strong> panosu aracılığıyla
-                  iletir.
-                </p>
+                <p dangerouslySetInnerHTML={{ __html: t.raw('announcements_desc') }} />
                 <ul className="space-y-1.5 pl-4">
                   <li className="flex gap-2 items-start">
                     <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    Okunmamış duyurular sol menüdeki zil ikonuyla belirtilir.
+                    {t('announcements_item1')}
                   </li>
                   <li className="flex gap-2 items-start">
                     <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    Duyurular size özel veya tüm müşterilere yönelik olabilir.
+                    {t('announcements_item2')}
                   </li>
                 </ul>
               </div>

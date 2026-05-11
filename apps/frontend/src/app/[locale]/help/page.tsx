@@ -53,8 +53,8 @@ export default function HelpDocsPage() {
   // Set role-based default node on first load
   useEffect(() => {
     const defaultNode = isStaff
-      ? 'admin.tickets.overview'
-      : 'customer.getting_started.dashboard';
+      ? 'admin_tickets_overview'
+      : 'customer_getting_started_dashboard';
     setActiveNodeId(defaultNode);
   }, [isStaff]);
 

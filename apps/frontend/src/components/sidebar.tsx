@@ -93,7 +93,7 @@ export function Sidebar({ onNavClick }: SidebarProps) {
     useEffect(() => {
         const role = user?.role?.toUpperCase?.() ?? '';
         if (role === 'CUSTOMER' || role === 'VIEWER') {
-            api.announcements.getMyUnreadCount().then((r) => setUnreadCount(r.count)).catch(() => {});
+            api.announcements.getUnreadCount().then((r) => setUnreadCount(r.count)).catch(() => {});
         }
     }, [user]);
 
@@ -183,6 +183,8 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                             <Link
                                 key={idx}
                                 href={item.href}
+                                target={item.href === '/help' ? '_blank' : undefined}
+                                rel={item.href === '/help' ? 'noopener noreferrer' : undefined}
                                 onClick={onNavClick}
                                 data-testid={`nav-${item.labelKey}`}
                                 className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all ${active

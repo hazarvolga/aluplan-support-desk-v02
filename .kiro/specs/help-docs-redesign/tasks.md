@@ -34,20 +34,20 @@
   - [x] 6.2 next/dynamic ile lazy loading entegrasyonunu ekle
   - [x] 6.3 Rol bazlı varsayılan node seçimini uygula
 
-- [-] 7. i18n Genişletme — Yeni Key'ler
+- [x] 7. i18n Genişletme — Yeni Key'ler
   - [x] 7.1 en.json'a help.docs.nav.customer.* navigasyon key'lerini ekle
   - [x] 7.2 en.json'a help.docs.nav.admin.* navigasyon key'lerini ekle
   - [x] 7.3 en.json'a help.docs.customer.* içerik key'lerini ekle (tüm customer node'ları)
   - [x] 7.4 en.json'a help.docs.admin.* içerik key'lerini ekle (tüm admin node'ları)
-  - [-] 7.5 tr.json'a tüm yeni key'lerin Türkçe karşılıklarını ekle (key simetrisi)
+  - [x] 7.5 tr.json'a tüm yeni key'lerin Türkçe karşılıklarını ekle (key simetrisi)
 
-- [~] 8. Testler
-  - [~] 8.1 doc-tree.ts yardımcı fonksiyonları için birim testleri yaz (findNode, getBreadcrumbPath, buildDocTree)
-  - [~] 8.2 TipBox bileşeni için birim testleri yaz (3 varyant)
-  - [~] 8.3 DocBreadcrumb bileşeni için birim testleri yaz
-  - [~] 8.4 HelpDocsSidebar rol bazlı görünürlük testlerini yaz
-  - [~] 8.5 i18n key simetrisi için property-based test yaz (fast-check)
-  - [~] 8.6 Doc_Node seçimi içerik eşleşmesi için property-based test yaz
-  - [~] 8.7 Breadcrumb yol doğruluğu için property-based test yaz
-  - [~] 8.8 TipBox varyant render tutarlılığı için property-based test yaz
-  - [~] 8.9 Sidebar aria-expanded durumu için property-based test yaz
+- [-] 8. Testler
+  - [x] 8.1 doc-tree.ts yardımcı fonksiyonları için birim testleri yaz (findNode, getBreadcrumbPath, buildDocTree)
+  - [x] 8.2 TipBox bileşeni için birim testleri yaz (3 varyant)
+  - [x] 8.3 DocBreadcrumb bileşeni için birim testleri yaz
+  - [ ] 8.4 HelpDocsSidebar rol bazlı görünürlük testlerini yaz
+  - [ ] 8.5 i18n key simetrisi için property-based test yaz (fast-check)
+  - [ ] 8.6 Doc_Node seçimi içerik eşleşmesi için property-based test yaz
+  - [ ] 8.7 Breadcrumb yol doğruluğu için property-based test yaz
+  - [ ] 8.8 TipBox varyant render tutarlılığı için property-based test yaz
+  - [ ] 8.9 Sidebar aria-expanded durumu için property-based test yaz

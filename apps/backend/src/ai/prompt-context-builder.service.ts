@@ -56,14 +56,23 @@ export class PromptContextBuilderService {
                 if (!options.skipHotinfoProfile) {
                     const h = hotinfoSnapshot || user?.customerProfile?.hotinfoData;
                     if (h) {
-                        const hotinfoContent = `[MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)]
-- Allplan Sürümü: ${h.allplanVersion || 'Bilinmiyor'}
+                        let hotinfoContent = `[MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)]
+- Allplan Sürümü: ${h.allplanVersion || 'Bilinmiyor'} (Build: ${h.allplanBuildId || 'Bilinmiyor'})
 - İşletim Sistemi: ${h.osVersion || 'Bilinmiyor'}
 - İşlemci (CPU): ${h.cpu || 'Bilinmiyor'}
-- Ekran Kartı (GPU): ${h.gpu || 'Bilinmiyor'} (Sürücü: ${h.gpuDriverVersion || 'Bilinmiyor'})
+- Ekran Kartı (GPU): ${h.gpu || 'Bilinmiyor'} (Sürücü: ${h.gpuDriverVersion || 'Bilinmiyor'}, VRAM: ${h.vram || 'Bilinmiyor'})
 - RAM: ${h.ram || 'Bilinmiyor'}
 - Ekran Çözünürlüğü: ${h.screenResolution || 'Bilinmiyor'}
 `;
+                        if (h.drives && h.drives.length > 0) {
+                            hotinfoContent += `- Diskler: ${h.drives.map((d: any) => `${d.root} (${d.free}/${d.total})`).join(', ')}\n`;
+                        }
+                        if (h.registryPaths && Object.keys(h.registryPaths).length > 0) {
+                            hotinfoContent += `- Kayıt Defteri Yolları: ${Object.entries(h.registryPaths).map(([k, v]) => `${k}=${v}`).join(' | ')}\n`;
+                        }
+                        if (h.conflictingProcesses && h.conflictingProcesses.length > 0) {
+                            hotinfoContent += `- Olası Çakışmalar: ${h.conflictingProcesses.join(', ')}\n`;
+                        }
                         sections.push({ name: 'HOTINFO_DATA', priority: P.HOTINFO_DATA, content: hotinfoContent });
                     } else {
                         sections.push({

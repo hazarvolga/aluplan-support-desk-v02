@@ -1142,10 +1142,12 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         const h = ticket.hotinfoSnapshot || ticket.creator?.customerProfile?.hotinfoData;
         type HotinfoSnapshot = {
             allplanVersion?: string;
-            allplanEdition?: string;
+            allplanBuildId?: string;
             osVersion?: string;
             gpu?: string;
+            vram?: string;
             ram?: string;
+            screenResolution?: string;
             errorTrace?: string;
             conflictingProcesses?: string[];
         };
@@ -1155,10 +1157,11 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             const data = h as HotinfoSnapshot;
             hotinfoAllplanVersion = data.allplanVersion || '...';
             hotinfoContext = `\n[MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)]:
-- Allplan: ${data.allplanVersion || 'Bilinmiyor'} ${data.allplanEdition ? `(${data.allplanEdition})` : ''}
-- İşletim Sistemi: ${data.osVersion || 'Bilinmiyor'}
-- Ekran Kartı: ${data.gpu || 'Bilinmiyor'}
+- Allplan: ${data.allplanVersion || 'Bilinmiyor'} (Build: ${data.allplanBuildId || 'N/A'})
+- OS: ${data.osVersion || 'Bilinmiyor'}
+- GPU: ${data.gpu || 'Bilinmiyor'} (VRAM: ${data.vram || 'N/A'})
 - RAM: ${data.ram || 'Bilinmiyor'}
+- Çözünürlük: ${data.screenResolution || 'Bilinmiyor'}
 - Hata Kaydı: ${data.errorTrace || 'Yok'}
 - Çakışan İşlemler: ${data.conflictingProcesses?.join(', ') || 'Yok'}\n`;
         }

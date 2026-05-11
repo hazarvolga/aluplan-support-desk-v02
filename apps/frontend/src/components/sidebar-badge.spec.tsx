@@ -19,7 +19,7 @@ vi.mock('@/components/auth/role-guard', () => ({
 vi.mock('@/lib/api', () => ({
     api: {
         kb: { listPending: vi.fn().mockResolvedValue({ total: 0 }) },
-        announcements: { getMyUnreadCount: vi.fn().mockResolvedValue({ count: 0 }) },
+        announcements: { getUnreadCount: vi.fn().mockResolvedValue({ count: 0 }) },
     },
 }));
 

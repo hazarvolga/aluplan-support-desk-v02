@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Inbox, ArrowRight, UserCheck } from 'lucide-react';
 import { TipBox } from '@/components/help/TipBox';
 import { DocAccordion } from '@/components/help/DocAccordion';
@@ -9,18 +10,19 @@ import { DocAccordion } from '@/components/help/DocAccordion';
  * Covers: Ticket pool, status management, assignment
  */
 export function TicketsOverview() {
+  const t = useTranslations('help.docs.admin.tickets_overview');
+
   return (
     <article className="space-y-6">
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-primary">
           <Inbox className="h-5 w-5" aria-hidden="true" />
-          <h2 className="text-2xl font-bold">Bilet Havuzu</h2>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
         </div>
-        <p className="text-muted-foreground">
-          <strong>Destek Talepleri</strong> sayfası, müşterilerden gelen tüm talepleri
-          tek bir havuzda toplar. Durum yönetimi, atama ve önceliklendirme işlemlerini
-          buradan gerçekleştirebilirsiniz.
-        </p>
+        <p 
+          className="text-muted-foreground"
+          dangerouslySetInnerHTML={{ __html: t.raw('desc') }}
+        />
       </header>
 
       <DocAccordion
@@ -28,26 +30,23 @@ export function TicketsOverview() {
         items={[
           {
             id: 'pool',
-            title: 'Bilet Havuzu Görünümü',
+            title: t('pool_title'),
             icon: Inbox,
             children: (
               <div className="space-y-3 text-sm text-muted-foreground">
-                <p>
-                  Bilet havuzu, tüm aktif ve geçmiş destek taleplerini listeler.
-                  Filtreler ve sıralama seçenekleriyle iş yükünüzü yönetin.
-                </p>
+                <p>{t('pool_desc')}</p>
                 <ul className="space-y-1.5 pl-4">
                   <li className="flex gap-2 items-start">
                     <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    Durum, öncelik, şirket ve tarih aralığına göre filtreleyin.
+                    {t('pool_item1')}
                   </li>
                   <li className="flex gap-2 items-start">
                     <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    Toplu işlemler için birden fazla bilet seçin.
+                    {t('pool_item2')}
                   </li>
                   <li className="flex gap-2 items-start">
                     <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    SLA ihlali olan biletler kırmızı rozet ile işaretlenir.
+                    {t('pool_item3')}
                   </li>
                 </ul>
               </div>
@@ -55,20 +54,17 @@ export function TicketsOverview() {
           },
           {
             id: 'status',
-            title: 'Durum Değiştirme',
+            title: t('status_title'),
             icon: ArrowRight,
             children: (
               <div className="space-y-3 text-sm text-muted-foreground">
-                <p>
-                  Bilet detay sayfasında sağ paneldeki açılır menüden durumu
-                  değiştirebilirsiniz.
-                </p>
+                <p>{t('status_desc')}</p>
                 <div className="space-y-2">
                   {[
-                    { from: 'Yeni → Açık', desc: 'Talebi incelemeye aldığınızda' },
-                    { from: 'Açık → İşlemde', desc: 'Aktif olarak çalışmaya başladığınızda' },
-                    { from: 'İşlemde → Çözüm Onayı', desc: 'Çözüm sunduğunuzda' },
-                    { from: 'Çözüm Onayı → Çözüldü', desc: 'Müşteri onayladığında otomatik' },
+                    { from: t('status_item1_from'), desc: t('status_item1_desc') },
+                    { from: t('status_item2_from'), desc: t('status_item2_desc') },
+                    { from: t('status_item3_from'), desc: t('status_item3_desc') },
+                    { from: t('status_item4_from'), desc: t('status_item4_desc') },
                   ].map(({ from, desc }) => (
                     <div key={from} className="flex gap-2 items-start">
                       <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
@@ -81,27 +77,23 @@ export function TicketsOverview() {
           },
           {
             id: 'assignment',
-            title: 'Bilet Atama',
+            title: t('assignment_title'),
             icon: UserCheck,
             children: (
               <div className="space-y-3 text-sm text-muted-foreground">
-                <p>
-                  Bilet detay sayfasındaki <strong>Ata</strong> butonuyla talebi
-                  belirli bir uzman agent&apos;a devredebilirsiniz.
-                </p>
+                <p dangerouslySetInnerHTML={{ __html: t.raw('assignment_desc') }} />
                 <ul className="space-y-1.5 pl-4">
                   <li className="flex gap-2 items-start">
                     <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    Atanan agent e-posta bildirimi alır.
+                    {t('assignment_item1')}
                   </li>
                   <li className="flex gap-2 items-start">
                     <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    Atama değiştirilebilir; geçmiş atamalar loglanır.
+                    {t('assignment_item2')}
                   </li>
                 </ul>
                 <TipBox variant="info">
-                  SLA kuralları, atanmamış biletleri otomatik olarak uygun ekibe
-                  yönlendirebilir. Ekip Yönetimi sayfasından SLA kurallarını yapılandırın.
+                  {t('tip_sla_desc')}
                 </TipBox>
               </div>
             ),
