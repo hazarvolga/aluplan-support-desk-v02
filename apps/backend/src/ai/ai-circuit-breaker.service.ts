@@ -10,9 +10,9 @@ export interface CircuitBreakerOptions {
 
 const DEFAULT_OPTIONS: Required<CircuitBreakerOptions> = {
     timeout: 120_000,
-    errorThresholdPercentage: 50,
-    resetTimeout: 30_000,
-    volumeThreshold: 5,
+    errorThresholdPercentage: 60,
+    resetTimeout: 10_000,
+    volumeThreshold: 10,
 };
 
 /**
