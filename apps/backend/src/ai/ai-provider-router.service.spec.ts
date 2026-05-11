@@ -8,6 +8,7 @@ import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
+import { GeminiService } from './gemini.service';
 import { ServiceUnavailableException } from '@nestjs/common';
 import { mockPrismaService, mockRedisService, mockConfigService } from '../test/mock.utils';
 
@@ -30,6 +31,7 @@ describe('AiProviderRouter', () => {
         isAvailable: jest.fn() 
     };
     const mockLlmApiService = { getName: () => 'llmapi', isAvailable: jest.fn() };
+    const mockGeminiService = { getName: () => 'gemini', isAvailable: jest.fn() };
 
     const mockAiProvider = {
         embed: jest.fn(),
@@ -59,6 +61,7 @@ describe('AiProviderRouter', () => {
                 { provide: OpenAiService, useValue: mockOpenAiService },
                 { provide: GenericOpenAiService, useValue: mockGenericOpenAiService },
                 { provide: LlmApiService, useValue: mockLlmApiService },
+                { provide: GeminiService, useValue: mockGeminiService },
             ],
         }).compile();
 
@@ -256,6 +259,102 @@ describe('AiProviderRouter', () => {
             expect(health.length).toBeGreaterThan(0);
             expect(health[0]).toHaveProperty('providerId');
             expect(health[0]).toHaveProperty('healthy');
+        });
+    });
+
+    describe('getProviderByName', () => {
+        it('should return provider by exact name', async () => {
+            mockSettingsService.getValue.mockResolvedValue(null);
+            mockAiProvider.isAvailable.mockResolvedValue(true);
+
+            const provider = await router.getProviderByName('openai');
+            expect(provider).toBeDefined();
+            expect(provider?.getName()).toBe('openai');
+        });
+
+        it('should return null for unknown provider', async () => {
+            const provider = await router.getProviderByName('unknown-provider');
+            expect(provider).toBeNull();
+        });
+
+        it('should return null when null is passed', async () => {
+            const provider = await router.getProviderByName(null);
+            expect(provider).toBeNull();
+        });
+    });
+
+    describe('getActiveChatProvider', () => {
+        it('should return active chat provider from settings', async () => {
+            mockSettingsService.getValue.mockImplementation((key: string) => {
+                if (key === 'ai.chat_provider') return 'openai';
+                if (key === 'ai.circuit_breaker.manual_off') return null;
+                return null;
+            });
+            mockAiProvider.isAvailable.mockResolvedValue(true);
+            mockRedisService.get.mockResolvedValue(null);
+
+            const provider = await router.getActiveChatProvider();
+            expect(provider).toBeDefined();
+        });
+
+        it('should fallback to default when no setting', async () => {
+            mockSettingsService.getValue.mockResolvedValue(null);
+            mockAiProvider.isAvailable.mockResolvedValue(true);
+            mockRedisService.get.mockResolvedValue(null);
+
+            const provider = await router.getActiveChatProvider();
+            expect(provider).toBeDefined();
+        });
+    });
+
+    describe('getActiveEmbedProvider', () => {
+        it('should return active embed provider from settings', async () => {
+            mockSettingsService.getValue.mockImplementation((key: string) => {
+                if (key === 'ai.embed_provider') return 'openai';
+                if (key === 'ai.circuit_breaker.manual_off') return null;
+                return null;
+            });
+            mockAiProvider.isAvailable.mockResolvedValue(true);
+
+            const provider = await router.getActiveEmbedProvider();
+            expect(provider).toBeDefined();
+        });
+
+        it('should fallback to default when no setting', async () => {
+            mockSettingsService.getValue.mockResolvedValue(null);
+            mockAiProvider.isAvailable.mockResolvedValue(true);
+
+            const provider = await router.getActiveEmbedProvider();
+            expect(provider).toBeDefined();
+        });
+    });
+
+    describe('isManualOverride', () => {
+        it('should return true when manual override is set', async () => {
+            mockSettingsService.getValue.mockImplementation((key: string) => {
+                if (key === 'ai.circuit_breaker.manual_off') return 'true';
+                return null;
+            });
+
+            const result = await router.isManualOverride();
+            expect(result).toBe(true);
+        });
+
+        it('should return false when no manual override', async () => {
+            mockSettingsService.getValue.mockResolvedValue(null);
+
+            const result = await router.isManualOverride();
+            expect(result).toBe(false);
+        });
+
+        it('should return false when manual_off is false', async () => {
+            mockSettingsService.getValue.mockImplementation((key: string) => {
+                if (key === 'ai.circuit_breaker.manual_off') return 'false';
+                return null;
+            });
+
+            const result = await router.isManualOverride();
+            expect(result).toBe(false);
         });
     });
 });
