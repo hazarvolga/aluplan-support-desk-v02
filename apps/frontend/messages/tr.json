@@ -871,10 +871,15 @@
       "title": "Bulut Depolama (S3 / R2)",
       "desc": "Dosya yüklemeleri için S3 uyumlu depo ayarları (Cloudflare R2, AWS S3, MinIO vb.).",
       "access_key": "Access Key ID",
+      "access_key_placeholder": "örn: AKIA...",
       "secret_key": "Secret Access Key",
+      "secret_key_placeholder": "örn: wJalrXU...",
       "endpoint": "Endpoint URL",
+      "endpoint_placeholder": "https://<accountid>.r2.cloudflarestorage.com",
       "region": "Bölge (Region)",
+      "region_placeholder": "auto / us-east-1",
       "bucket": "Bucket Adı",
+      "bucket_placeholder": "örn: aluplan-files",
       "save_success": "Depolama ayarları kaydedildi.",
       "save_error": "Kaydetme hatası: {message}",
       "test_btn": "Bağlantıyı Test Et"
@@ -926,7 +931,8 @@
       "portal_name_placeholder": "örn: Aluplan Destek",
       "frontend_url": "Frontend URL",
       "frontend_url_placeholder": "https://destek.aluplan.com",
-      "portal_version": "KONTROL PANELİ v1.0"
+      "portal_version": "KONTROL PANELİ v1.0",
+      "save_btn": "Değişiklikleri Kaydet"
     },
     "ai": {
       "title": "Yapay Zeka Entegrasyonu",

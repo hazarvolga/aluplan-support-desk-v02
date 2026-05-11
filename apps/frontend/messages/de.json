@@ -868,15 +868,20 @@
       "success": "Erfolgreich gespeichert"
     },
     "storage": {
-      "title": "Bulut Depolama (R2)",
-      "desc": "Cloudflare R2 nesne depolama yapılandırması.",
+      "title": "Cloud-Speicher (S3 / R2)",
+      "desc": "S3-kompatible Speichereinstellungen für Datei-Uploads (Cloudflare R2, AWS S3, MinIO usw.).",
       "access_key": "Access Key ID",
+      "access_key_placeholder": "z.B.: AKIA...",
       "secret_key": "Secret Access Key",
+      "secret_key_placeholder": "z.B.: wJalrXU...",
       "endpoint": "Endpoint URL",
-      "bucket": "Bucket Adı",
-      "save_success": "Depolama ayarları kaydedildi.",
-      "save_error": "Kaydetme hatası: {message}",
+      "endpoint_placeholder": "https://<accountid>.r2.cloudflarestorage.com",
       "region": "Region",
+      "region_placeholder": "auto / us-east-1",
+      "bucket": "Bucket-Name",
+      "bucket_placeholder": "z.B.: aluplan-files",
+      "save_success": "Speichereinstellungen gespeichert.",
+      "save_error": "Speicherfehler: {message}",
       "test_btn": "Verbindung testen"
     },
     "crm": {
@@ -926,7 +931,8 @@
       "portal_name_placeholder": "z.B. Aluplan Support",
       "frontend_url": "Frontend-URL",
       "frontend_url_placeholder": "https://support.aluplan.com",
-      "portal_version": "KONTROLLZENTRUM v1.0"
+      "portal_version": "KONTROLLZENTRUM v1.0",
+      "save_btn": "Änderungen speichern"
     },
     "ai": {
       "title": "KI-Integration",
