@@ -12,6 +12,7 @@ import { OllamaService } from './ollama.service';
 import { AiService } from './ai.service';
 import { AiCopilotService } from './ai-copilot.service';
 import { AiReportingService } from './ai-reporting.service';
+import { RagObservabilityService } from './rag-observability.service';
 import { StorageService } from '../common/services/storage.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -83,6 +84,7 @@ export class AiController {
         private readonly aiCopilotService: AiCopilotService,
         private readonly _ollama: OllamaService,
         private readonly aiReportingService: AiReportingService,
+        private readonly ragObservabilityService: RagObservabilityService,
         private readonly storageService: StorageService,
         @InjectQueue('ai-query-processing') private readonly aiQueue: Queue,
     ) { }
@@ -299,6 +301,13 @@ export class AiController {
     @ApiOperation({ summary: 'Get detailed AI health status for all providers' })
     async getHealthStatus() {
         return this.aiService.getHealthStatus();
+    }
+
+    @Get('embedding/migration-status')
+    @Roles('ADMIN', 'SUPERUSER')
+    @ApiOperation({ summary: 'Get embedding migration status and version distribution' })
+    async getMigrationStatus() {
+        return this.ragObservabilityService.getMigrationStatus();
     }
 
     @Post('test-connection')
