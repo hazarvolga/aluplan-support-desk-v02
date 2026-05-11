@@ -80,6 +80,24 @@ export class AiService implements AiProvider {
                 }
             } catch (err: unknown) {
                 lastError = err;
+                const errMsg = err instanceof Error ? err.message : String(err);
+                const is429 = errMsg.includes('429') || errMsg.toLowerCase().includes('rate limit') || errMsg.toLowerCase().includes('too many requests');
+
+                if (is429 && pName === primaryName) {
+                    this.logger.warn(`🔄 Rate limited (429) on primary provider ${primaryName}. Retrying after delay...`);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    try {
+                        const retryProvider = await this.getProvider(pName);
+                        const retryResult = await operation(retryProvider);
+                        if (retryResult !== null && retryResult !== undefined) {
+                            this.logger.log(`✅ Retry succeeded after 429`);
+                            return retryResult as T;
+                        }
+                    } catch (retryErr) {
+                        this.logger.warn(`⚠️ Retry failed after 429: ${retryErr}`);
+                    }
+                }
+
                 this.logger.warn(`⚠️ API Error on Provider [${pName}]: ${err}`);
 
                 if (pName === primaryName && fallbackName && fallbackName !== primaryName) {
@@ -88,7 +106,7 @@ export class AiService implements AiProvider {
                         primaryProvider: primaryName,
                         fallbackProvider: fallbackName,
                         task,
-                        error: err instanceof Error ? err.message : String(err)
+                        error: errMsg
                     });
                 }
             }

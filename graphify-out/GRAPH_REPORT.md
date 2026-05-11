@@ -1,12 +1,12 @@
 # Graph Report - aluplan-support-desk-V02  (2026-05-11)
 
 ## Corpus Check
-- 687 files · ~1,312,801 words
+- 687 files · ~1,312,878 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 5467 nodes · 9478 edges · 280 communities detected
-- Extraction: 76% EXTRACTED · 24% INFERRED · 0% AMBIGUOUS · INFERRED: 2281 edges (avg confidence: 0.8)
+- 5467 nodes · 9479 edges · 277 communities detected
+- Extraction: 76% EXTRACTED · 24% INFERRED · 0% AMBIGUOUS · INFERRED: 2282 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -116,9 +116,9 @@
 - [[_COMMUNITY_Community 104|Community 104]]
 - [[_COMMUNITY_Community 105|Community 105]]
 - [[_COMMUNITY_Community 106|Community 106]]
-- [[_COMMUNITY_Community 107|Community 107]]
 - [[_COMMUNITY_Community 108|Community 108]]
 - [[_COMMUNITY_Community 109|Community 109]]
+- [[_COMMUNITY_Community 110|Community 110]]
 - [[_COMMUNITY_Community 111|Community 111]]
 - [[_COMMUNITY_Community 112|Community 112]]
 - [[_COMMUNITY_Community 113|Community 113]]
@@ -130,9 +130,9 @@
 - [[_COMMUNITY_Community 119|Community 119]]
 - [[_COMMUNITY_Community 120|Community 120]]
 - [[_COMMUNITY_Community 121|Community 121]]
-- [[_COMMUNITY_Community 122|Community 122]]
 - [[_COMMUNITY_Community 123|Community 123]]
 - [[_COMMUNITY_Community 124|Community 124]]
+- [[_COMMUNITY_Community 125|Community 125]]
 - [[_COMMUNITY_Community 126|Community 126]]
 - [[_COMMUNITY_Community 127|Community 127]]
 - [[_COMMUNITY_Community 128|Community 128]]
@@ -142,22 +142,22 @@
 - [[_COMMUNITY_Community 132|Community 132]]
 - [[_COMMUNITY_Community 133|Community 133]]
 - [[_COMMUNITY_Community 134|Community 134]]
-- [[_COMMUNITY_Community 135|Community 135]]
-- [[_COMMUNITY_Community 136|Community 136]]
 - [[_COMMUNITY_Community 137|Community 137]]
+- [[_COMMUNITY_Community 138|Community 138]]
 - [[_COMMUNITY_Community 140|Community 140]]
 - [[_COMMUNITY_Community 142|Community 142]]
+- [[_COMMUNITY_Community 143|Community 143]]
 - [[_COMMUNITY_Community 144|Community 144]]
 - [[_COMMUNITY_Community 145|Community 145]]
 - [[_COMMUNITY_Community 146|Community 146]]
 - [[_COMMUNITY_Community 147|Community 147]]
 - [[_COMMUNITY_Community 148|Community 148]]
 - [[_COMMUNITY_Community 149|Community 149]]
-- [[_COMMUNITY_Community 150|Community 150]]
 - [[_COMMUNITY_Community 151|Community 151]]
-- [[_COMMUNITY_Community 152|Community 152]]
-- [[_COMMUNITY_Community 154|Community 154]]
+- [[_COMMUNITY_Community 156|Community 156]]
+- [[_COMMUNITY_Community 158|Community 158]]
 - [[_COMMUNITY_Community 159|Community 159]]
+- [[_COMMUNITY_Community 160|Community 160]]
 - [[_COMMUNITY_Community 161|Community 161]]
 - [[_COMMUNITY_Community 162|Community 162]]
 - [[_COMMUNITY_Community 163|Community 163]]
@@ -185,9 +185,9 @@
 - [[_COMMUNITY_Community 185|Community 185]]
 - [[_COMMUNITY_Community 186|Community 186]]
 - [[_COMMUNITY_Community 187|Community 187]]
-- [[_COMMUNITY_Community 188|Community 188]]
-- [[_COMMUNITY_Community 189|Community 189]]
-- [[_COMMUNITY_Community 190|Community 190]]
+- [[_COMMUNITY_Community 214|Community 214]]
+- [[_COMMUNITY_Community 215|Community 215]]
+- [[_COMMUNITY_Community 216|Community 216]]
 - [[_COMMUNITY_Community 217|Community 217]]
 - [[_COMMUNITY_Community 218|Community 218]]
 - [[_COMMUNITY_Community 219|Community 219]]
@@ -205,26 +205,26 @@
 - [[_COMMUNITY_Community 231|Community 231]]
 - [[_COMMUNITY_Community 232|Community 232]]
 - [[_COMMUNITY_Community 233|Community 233]]
-- [[_COMMUNITY_Community 234|Community 234]]
 - [[_COMMUNITY_Community 235|Community 235]]
 - [[_COMMUNITY_Community 236|Community 236]]
-- [[_COMMUNITY_Community 238|Community 238]]
+- [[_COMMUNITY_Community 237|Community 237]]
 - [[_COMMUNITY_Community 239|Community 239]]
 - [[_COMMUNITY_Community 240|Community 240]]
+- [[_COMMUNITY_Community 241|Community 241]]
 - [[_COMMUNITY_Community 242|Community 242]]
-- [[_COMMUNITY_Community 243|Community 243]]
 - [[_COMMUNITY_Community 244|Community 244]]
 - [[_COMMUNITY_Community 245|Community 245]]
+- [[_COMMUNITY_Community 246|Community 246]]
 - [[_COMMUNITY_Community 247|Community 247]]
-- [[_COMMUNITY_Community 248|Community 248]]
-- [[_COMMUNITY_Community 249|Community 249]]
 - [[_COMMUNITY_Community 250|Community 250]]
+- [[_COMMUNITY_Community 251|Community 251]]
+- [[_COMMUNITY_Community 252|Community 252]]
 - [[_COMMUNITY_Community 253|Community 253]]
 - [[_COMMUNITY_Community 254|Community 254]]
 - [[_COMMUNITY_Community 255|Community 255]]
-- [[_COMMUNITY_Community 256|Community 256]]
-- [[_COMMUNITY_Community 257|Community 257]]
 - [[_COMMUNITY_Community 258|Community 258]]
+- [[_COMMUNITY_Community 259|Community 259]]
+- [[_COMMUNITY_Community 260|Community 260]]
 - [[_COMMUNITY_Community 261|Community 261]]
 - [[_COMMUNITY_Community 262|Community 262]]
 - [[_COMMUNITY_Community 263|Community 263]]
@@ -287,9 +287,6 @@
 - [[_COMMUNITY_Community 320|Community 320]]
 - [[_COMMUNITY_Community 321|Community 321]]
 - [[_COMMUNITY_Community 322|Community 322]]
-- [[_COMMUNITY_Community 323|Community 323]]
-- [[_COMMUNITY_Community 324|Community 324]]
-- [[_COMMUNITY_Community 325|Community 325]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Error()` - 236 edges
@@ -319,7 +316,7 @@
 
 ### Community 0 - "Community 0"
 Cohesion: 0.01
-Nodes (253): AgentStatusBadge(), AiAutoResolverService, AiCircuitBreakerService, AiQueryProcessor, handleSave(), handleTest(), loadData(), triggerWeeklyReport() (+245 more)
+Nodes (254): AgentStatusBadge(), AiAutoResolverService, AiCircuitBreakerService, AiQueryProcessor, handleSave(), handleTest(), loadData(), triggerWeeklyReport() (+246 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.01
@@ -327,7 +324,7 @@ Nodes (359): af(), ef(), ff(), Ja(), lf(), mt(), nf(), of() (+351 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.01
-Nodes (148): AiProviderRegistry, AnnouncementTemplatesService, T_(), setEnv(), B(), register(), MetricsService, RagObservabilityService (+140 more)
+Nodes (147): AiProviderRegistry, AnnouncementTemplatesService, T_(), setEnv(), B(), register(), MetricsService, SsrfGuard (+139 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.02
@@ -335,15 +332,15 @@ Nodes (37): AiProviderRouter, AiService, AlertingService, apiGet(), apiPatch(), 
 
 ### Community 4 - "Community 4"
 Cohesion: 0.03
-Nodes (13): a_(), el(), gA(), hh, IA, mh, Qe, qh() (+5 more)
+Nodes (14): a_(), el(), gA(), hh, IA, mh, Qe, qh() (+6 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.02
-Nodes (30): AiController, AiQueryDto, AiTelemetryDto, FeedbackDto, AiCopilotService, AiDiagnosisService, AiQueryService, callNormalize() (+22 more)
+Nodes (25): AiController, AiQueryDto, AiTelemetryDto, FeedbackDto, AiCopilotService, AiDiagnosisService, AiQueryService, callNormalize() (+17 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.02
-Nodes (112): 2D Drawing Tools, 3D Modeling, 3D PDF Generation, Add-ons and Extensions, Advanced Automation with Python API, Advanced Features, Advanced Finishing Workflows (Allplan 2026), Allplan 2026 Enhancements (+104 more)
+Nodes (15): fetchPage(), handleItemClick(), sanitizeHtml(), AnnouncementTemplatesController, AnnouncementsController, AnnouncementsService, FaqController, FaqService (+7 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.02
@@ -354,12 +351,12 @@ Cohesion: 0.02
 Nodes (112): 2D Drawing Tools, 3D Modeling, 3D PDF Generation, Add-ons and Extensions, Advanced Automation with Python API, Advanced Features, Advanced Finishing Workflows (Allplan 2026), Allplan 2026 Enhancements (+104 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.03
-Nodes (8): AiBudgetMonitor, AiSemanticCache, EmbeddingNormalizer, NotificationsGateway, RedisService, SettingsService, To(), TicketsController
+Cohesion: 0.02
+Nodes (112): 2D Drawing Tools, 3D Modeling, 3D PDF Generation, Add-ons and Extensions, Advanced Automation with Python API, Advanced Features, Advanced Finishing Workflows (Allplan 2026), Allplan 2026 Enhancements (+104 more)
 
 ### Community 10 - "Community 10"
 Cohesion: 0.03
-Nodes (10): AuthController, AuthService, CrmEmailValidatorService, CustomersController, KnowledgeBaseController, KnowledgeBaseService, makeSlug(), handleCompare() (+2 more)
+Nodes (9): AiBudgetMonitor, AiSemanticCache, EmbeddingNormalizer, NotificationsGateway, RedisService, SettingsController, SettingsService, To() (+1 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.04
@@ -370,12 +367,12 @@ Cohesion: 0.02
 Nodes (89): AGENTS.md — aluplan-support-desk-v02, 🤖 Ajan Davranış Tipi, Always Do, Always Do, Architecture quirks agents miss, Backend tests (unit), Backend tests (unit), Backend tests (unit) (+81 more)
 
 ### Community 13 - "Community 13"
-Cohesion: 0.04
-Nodes (42): getApiUrl(), processQueue(), request(), handleConfirm(), c_(), qC, ask_notebooklm(), deep_discover() (+34 more)
+Cohesion: 0.03
+Nodes (9): AuthController, AuthService, CrmEmailValidatorService, CustomersController, KnowledgeBaseController, KnowledgeBaseService, makeSlug(), handleCompare() (+1 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.03
-Nodes (39): buildModule(), makeMockJob(), buildModule(), makeAiService(), makeConfig(), makeEmbeddingService(), makeLangfuse(), makePrisma() (+31 more)
+Cohesion: 0.04
+Nodes (42): getApiUrl(), processQueue(), request(), handleConfirm(), c_(), qC, ask_notebooklm(), deep_discover() (+34 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.05
@@ -410,24 +407,24 @@ Cohesion: 0.04
 Nodes (48): 1.1 Geçerli Bağlantı Kaydetme, 1.2 Geçersiz Credentials ile Bağlantı Denemesi, 1.3 Bağlantı Doğrulama (Verify), 2.1 Discovery Endpoint, 3.1 Sync Başlatma, 3.2 Sync Log Takibi, 3.3 Account Verilerini Doğrula, 3.4 Tek Account Detayı (+40 more)
 
 ### Community 23 - "Community 23"
+Cohesion: 0.07
+Nodes (33): buildModule(), makeMockJob(), buildModule(), makeAiService(), makeConfig(), makeEmbeddingService(), makeLangfuse(), makePrisma() (+25 more)
+
+### Community 24 - "Community 24"
 Cohesion: 0.05
 Nodes (40): code:block1 ({ key: 'email.resend.api_key', value: 're_fupJu99g_BM3sewTw2), code:ts (// prisma.service.ts:82), code:ts (const resolved = path.resolve(path.join(process.cwd(), this.), code:ts (const extended = (this as any).$extends({...});), DÜŞÜK ÖNCELİK, GAP-01 — Güvenlik: Canlı API anahtarları kaynak kodunda hardcoded, GAP-02 — Güvenlik: Belirli bir kişinin e-posta adresi kaynak koduna hardcoded (4 ayrı yerde), GAP-03 — Güvenlik: `StorageController` path traversal açığı (+32 more)
 
-### Community 24 - "Community 24"
+### Community 25 - "Community 25"
 Cohesion: 0.07
 Nodes (13): CrawlService, $(), a(), ae(), de(), fe(), ge(), I() (+5 more)
 
-### Community 25 - "Community 25"
+### Community 26 - "Community 26"
 Cohesion: 0.1
 Nodes (4): BusinessHoursService, PiiMaskingService, SlaService, TicketsService
 
-### Community 26 - "Community 26"
+### Community 27 - "Community 27"
 Cohesion: 0.08
 Nodes (7): setLocale(), handleChange(), handleForgotPassword(), handleLookup(), StorageController, UsersController, UsersService
-
-### Community 27 - "Community 27"
-Cohesion: 0.07
-Nodes (3): handleRemoveMember(), TeamsController, TeamsService
 
 ### Community 28 - "Community 28"
 Cohesion: 0.07
@@ -491,15 +488,15 @@ Nodes (16): 1. Hedef, 2. Seçilen Strateji: Option B (Hibrit), 3. Uygulanacak 7 
 
 ### Community 43 - "Community 43"
 Cohesion: 0.12
-Nodes (15): 🔄 AI İş Akışı: "Sonsuz Bilgi Döngüsü", AI & Intelligence, Backend (Core Engine), code:text (aluplan-support-desk-v02/), code:bash (# 1. Bağımlılıkları Yükleyin), Frontend (User & Admin Interface), 🚀 Kurulum ve Çalıştırma, 🤝 İletişim ve Katkı (+7 more)
+Nodes (3): AttachmentsController, AttachmentsService, WebhooksController
 
 ### Community 44 - "Community 44"
 Cohesion: 0.12
-Nodes (15): Aluplan Support Desk — Production Readiness Checklist, Architecture, Backend (NestJS), Blockers for Production, Completed Milestones, Database, Documentation, Frontend (Next.js) (+7 more)
+Nodes (15): 🔄 AI İş Akışı: "Sonsuz Bilgi Döngüsü", AI & Intelligence, Backend (Core Engine), code:text (aluplan-support-desk-v02/), code:bash (# 1. Bağımlılıkları Yükleyin), Frontend (User & Admin Interface), 🚀 Kurulum ve Çalıştırma, 🤝 İletişim ve Katkı (+7 more)
 
 ### Community 45 - "Community 45"
-Cohesion: 0.17
-Nodes (2): AttachmentsController, AttachmentsService
+Cohesion: 0.12
+Nodes (15): Aluplan Support Desk — Production Readiness Checklist, Architecture, Backend (NestJS), Blockers for Production, Completed Milestones, Database, Documentation, Frontend (Next.js) (+7 more)
 
 ### Community 46 - "Community 46"
 Cohesion: 0.17
@@ -542,388 +539,388 @@ Cohesion: 0.22
 Nodes (1): MacrosController
 
 ### Community 57 - "Community 57"
-Cohesion: 0.28
-Nodes (1): MacrosService
-
-### Community 58 - "Community 58"
 Cohesion: 0.22
 Nodes (8): 🔍 1. Yapısal Uyumsuzluklar ve Çözümleri, ⚙️ 2. Backend & RAG Performans Notları, 🛰 3. İleri Seviye Entegrasyon (A, B, C), A. Q&A -> FaqEntry Eşleşmesi, 👥 Agents Involved, B. Markdown Articles -> KnowledgeBase Eşleşmesi, 🎼 Final Orchestration Report: Dataset & Platform Alignment, ✅ Sonuç
 
-### Community 59 - "Community 59"
+### Community 58 - "Community 58"
 Cohesion: 0.22
 Nodes (8): Agents Invoked (MINIMUM 3), Deliverables, Key Findings, Mode, 🎼 Orchestration Report: Allplan 2026 Deep Research, Summary, Task, Verification Scripts Executed
 
-### Community 60 - "Community 60"
+### Community 59 - "Community 59"
 Cohesion: 0.22
 Nodes (8): Agents Invoked (MINIMUM 3), Deliverables, Key Findings, Mode, 🎼 Orchestration Report: Global Allplan Intelligence, Summary, Task, Verification Scripts Executed
 
-### Community 61 - "Community 61"
+### Community 60 - "Community 60"
 Cohesion: 0.22
 Nodes (8): 🛠 1. Mevcut Platforma Entegrasyon, 🚀 2. İleri Seviye (Pro) Yol Haritası, Allplan Destek Zekası Veri Seti (2021-2026 Hibrit & Enterprise), 📅 Entegrasyon ve Gelecek Detayları, 🤖 Opsiyon A: Otonom Veri Besleme (Knowledge Scraper), 🧠 Opsiyon B: RAG Engine (Canlı AI Asistanı), 👁 Opsiyon C: Multimodal Teşhis (Visual AI), 📂 Veri Seti Yapısı
 
-### Community 62 - "Community 62"
+### Community 61 - "Community 61"
 Cohesion: 0.22
 Nodes (8): 1. Taksonomi Yapısı (Taxonomy), 2. Çıktı Formatı ve Organizasyonu, 3. Allplan 2026 Önceliği, Allplan Destek Zekası Dönüşüm Planı, Doğrulama Planı, Manuel Doğrulama, Önerilen Değişiklikler, Otomatik Kontroller
 
-### Community 63 - "Community 63"
+### Community 62 - "Community 62"
 Cohesion: 0.22
 Nodes (8): 1. CSV ile Kural Bazlı Nitelik Güncelleme, 2. Parametrik Boşluk (Void) Yönetimi, 3. Özel Node (Custom Node) Geliştirme, Allplan Visual Scripting: İleri Seviye Otomasyon İpuçları, Etiketler, Sorun Özeti, Teknik Kaynaklar, Uzman İpuçları (Secret Workflows)
 
-### Community 64 - "Community 64"
+### Community 63 - "Community 63"
 Cohesion: 0.22
 Nodes (8): 1. SQL Servis Hataları, 2. Ağ ve VPN Engelleri, 3. Kayıt Defteri ve Dosya Bozulmaları, Allplan Workgroup Manager: SQL ve Ağ Bağlantı Hataları, Etiketler, Önerilen İş Akışı, Sorun Özeti, Teknik Nedenler ve Çözümler
 
-### Community 65 - "Community 65"
+### Community 64 - "Community 64"
 Cohesion: 0.22
 Nodes (8): 1. "No module named 'TestHelper.Mock'" Hatası, 2. Kod Değişikliklerinin Yansıması (Reloader), 3. Python Sürüm Uyumsuzluğu, Etiketler, Geliştirici İpuçları, PythonParts SDK ve Geliştirme Hataları (Allplan 2026), Sorun Özeti, Yaygın Hatalar ve Çözümler
 
-### Community 66 - "Community 66"
+### Community 65 - "Community 65"
 Cohesion: 0.22
 Nodes (8): Adım Adım Çözüm, Belirtiler, Etiketler, Etkilenen Ortam, IFC Dışa Aktarımında Veri Kaybı ve Nitelik Eşleme (Attribute Mapping) Sorunları, Kök Neden, Önleyici Öneriler, Sorun Özeti
 
-### Community 67 - "Community 67"
+### Community 66 - "Community 66"
 Cohesion: 0.22
 Nodes (8): Allplan 2021-2025: Kronik Hatalar ve Çözüm Arşivi, Allplan 2022: Vulkan Modu ve Sunum Çökmeleri, Allplan 2023: Başlatma (Launch) Failures, Allplan 2025: Hyper Slab (Döşeme) Güncelleme Hatası, Etiketler, Genel Hata Kodları, Versiyon Bazlı Kritik Sorunlar, Özet
 
-### Community 68 - "Community 68"
+### Community 67 - "Community 67"
 Cohesion: 0.22
 Nodes (8): 1. File Integrity (Backend), 2. Dockerfile Hardening (DevOps), 3. Member & Import Fixes (Backend), 4. Verification, Agents to Invoke, PLAN: Deployment Error Resolution (v4), Problem Analysis, Proposed Strategy
 
-### Community 69 - "Community 69"
+### Community 68 - "Community 68"
 Cohesion: 0.22
 Nodes (8): Analiz & Mevcut Durum (jackc1111/antigravity-notebooklm-mcp), 🧠 Brainstorm: NotebookLM "ALLPLAN" Eğitim Modülü Entegrasyonu, Context, 🎯 Karar ve Sonraki Adımlar (06 Mart 2026), Option A: Direct NotebookLM Engine Fork (Doğrudan Entegrasyon), Option B: "Sync & RAG" Mimari Kurulumu (Platform Bağımsız, Profesyonel Yol), Option C: Microservice (MCP) Passthrough Modeli, �� Recommendation
 
-### Community 70 - "Community 70"
-Cohesion: 0.25
-Nodes (1): AnnouncementTemplatesController
-
-### Community 71 - "Community 71"
+### Community 69 - "Community 69"
 Cohesion: 0.32
 Nodes (1): QueueMonitorService
 
-### Community 72 - "Community 72"
+### Community 70 - "Community 70"
 Cohesion: 0.25
 Nodes (7): 1. Geliştirici ve SDK Madenciliği (GitHub Focus), 2. Alman BIM Standartları (VDI 2552 & buildingSMART), 3. Ultimate Mühendislik Raporları, 📅 Milestones (Zirve Yol Haritası), 🤖 Orchestration Team (Phase 1), ✅ Plan Onay Durumu, PLAN: Phase 7 - The Final Frontier (God-Mode Enrichment)
 
-### Community 73 - "Community 73"
+### Community 71 - "Community 71"
 Cohesion: 0.25
 Nodes (7): 1. Overview, 2. Integration Summary, 3. Duplication & Deduplication Analysis, 4. Newly Introduced Intents, 5. RAG Pipeline Benefits, 6. Next Steps, Dataset Evaluation and Integration Report
 
-### Community 74 - "Community 74"
+### Community 72 - "Community 72"
 Cohesion: 0.25
 Nodes (7): 1. Keşif ve Kaynak Envanteri (Option A & B Focus), 2. Bilgi Sentezi (Zenginleştirme), 3. Dataset Final Mühürleme, 📅 Milestones (Yol Haritası), 🤖 Orchestration Team (Phase 1), ✅ Plan Onay Durumu, PLAN: Phase 6 - Ultimate Support Intelligence (Veri Sömürme)
 
-### Community 75 - "Community 75"
+### Community 73 - "Community 73"
 Cohesion: 0.25
 Nodes (7): Allplan 2026: Hotfix ve Güncelleme Notları (Kritik Çözümler), Etiketler, Hotfix 2026-0-3 (22 Ocak 2026), Hotfix 2026-0-4 (18 Şubat 2026), Kritik Hotfix Detayları, Önerilen Teşhis ve Çözüm, Özet
 
-### Community 76 - "Community 76"
+### Community 74 - "Community 74"
 Cohesion: 0.25
 Nodes (7): Adım Adım Çözüm, Allplan Abonelik ve Lisans Yönetimi Rehberi, Belirtiler, Etiketler, İlgili Konular, Önemli Bilgiler, Sorun Özeti
 
-### Community 77 - "Community 77"
+### Community 75 - "Community 75"
 Cohesion: 0.25
 Nodes (7): **ADIM 1: Yerel mi, Sunucu mu?**, **ADIM 2: Yerel Ayarların Sıfırlanması**, **ADIM 3: Sunucu ve SQL Kontrolü**, **ADIM 4: VPN ve Ağ Gecikmesi**, **ADIM 5: Proje Kilidi (lock.lok)**, Başlangıç Sorusu: "Ağ hatası veya proje kilitlenmesi mi yaşıyorsunuz?", Enterprise Teşhis Rehberi: Ağ Bağlantı Hataları (Decision Tree)
 
-### Community 78 - "Community 78"
+### Community 76 - "Community 76"
 Cohesion: 0.25
 Nodes (7): Alüplan Support Desk - Onboarding Guide, code:bash (git clone git@github.com:aluplan/aluplan-support-desk.git), code:bash (pnpm dev), 🚀 Getting Started, 📖 Key Documentation, 🏗 System Architecture, 🛠 Testing & CI
 
-### Community 79 - "Community 79"
+### Community 77 - "Community 77"
 Cohesion: 0.25
 Nodes (7): 🧠 Brainstorm: NotebookLM "ALLPLAN" Veri Göçü (Sync & RAG) Mimarisi ve Duplicate Yönetimi, Context, Option 1: URL & Meta Hash Tabanlı Hard-Sync (Deduplication), Option 2: "Semantic Similarity" (Anlamsal Benzerlik) Tabanlı Zeki Deduplication, Option 3: "Tag & Override" (Üstüne Yazma / Sürümleme) Stratejisi, Option 4: LLM-Assisted Reconciliation (İnsan Onaylı & AI Destekli), 💡 Recommendation
 
-### Community 80 - "Community 80"
+### Community 78 - "Community 78"
 Cohesion: 0.25
 Nodes (7): About BFU (Beton-Fertigteil-Union GmbH & Co. KG), BFU Relies on ALLPLAN Precast, BIM in Practice on the Rütihof Project, Modeling in Record Time, Project Information at a Glance, Smooth Information Flows via IFC, The Project Scope and Collaboration
 
-### Community 81 - "Community 81"
-Cohesion: 0.29
-Nodes (1): SlaController
-
-### Community 82 - "Community 82"
+### Community 79 - "Community 79"
 Cohesion: 0.29
 Nodes (6): 🧠 Brainstorm: Allplan Destek Zekası - Gelecek Geliştirme Yolları, Context, Option A: Otonom Veri Besleme Hattı (Auto-Intelligence), Option B: RAG Engine ve Özel Platform MVP, Option C: Gelişmiş Multimodal Teşhis - "Bak ve Çöz", 💡 Recommendation
 
-### Community 83 - "Community 83"
+### Community 80 - "Community 80"
 Cohesion: 0.29
 Nodes (6): 1. Alan Eşleşme (Mapping) Analizi, 2. Markdown Yapılandırması, 3. Vektör Uyumluluğu, 🤖 Orchestration Team (Phase 1), PLAN: Dataset & Platform Tam Uyumluluk Senkronizasyonu, ✅ Plan Onay Durumu
 
-### Community 84 - "Community 84"
+### Community 81 - "Community 81"
 Cohesion: 0.29
 Nodes (6): 🧠 Brainstorm: Allplan İçin Henüz Keşfedilmemiş Veri Kaynakları, Context, Option A: Multimedya ve Eğitim Platformu Madenciliği (Video-to-Text), Option B: Akademik ve BIM Standartları Makaleleri, Option C: Mikro-Topluluk ve Sosyal Medya "Dark Data", 💡 Recommendation
 
-### Community 85 - "Community 85"
+### Community 82 - "Community 82"
 Cohesion: 0.29
 Nodes (6): 1. Yerel Ekosistem ve Distribütör Taraması, 2. Türkiye BIM Mevzuat Senkronizasyonu, 3. Türkçe Destek Zenginleştirmesi, 📅 Milestones (Türkiye Yol Haritası), ✅ Plan Onay Durumu, PLAN: Phase 8 - Türkiye Lokal Destek Zekası (Local Scouring)
 
-### Community 86 - "Community 86"
+### Community 83 - "Community 83"
 Cohesion: 0.29
 Nodes (6): 1. Structure & Alignment Components, 2. Engineering & Developer Layer (God-Mode), 3. Turkey Local & Regulatory Layer (Legal-Certified), 📁 Delivered Intelligence Layers, 🏆 Final Statistics, FINAL WALKTHROUGH: Allplan Support & Engineering Intelligence (V3.6)
 
-### Community 87 - "Community 87"
+### Community 84 - "Community 84"
 Cohesion: 0.29
 Nodes (6): 1. Planlama (Phase 1), 2. Uygulama (Phase 2 - Onay Sonrası), Araştırma Odak Noktaları, Entegrasyon Stratejisi, Görev Dağılımı (Orchestration), PLAN: Allplan 2026 Deep Research ve Veri Seti Genişletme
 
-### Community 88 - "Community 88"
+### Community 85 - "Community 85"
 Cohesion: 0.29
 Nodes (6): 1. Planlama (Phase 1), 2. Uygulama (Phase 2 - Onay Sonrası), Araştırma Dikeyleri, Entegrasyon Stratejisi, Görev Dağılımı (Orchestration), PLAN: Geniş Kapsamlı Allplan Bilgi Araştırması ve Entegrasyonu
 
-### Community 89 - "Community 89"
+### Community 86 - "Community 86"
 Cohesion: 0.29
 Nodes (6): 1. Temel Kanun ve Yönetmelik Sentezi, 2. Mimari Tasarım ve Ruhsat Kriterleri, 3. Profesyonel Mevzuat Veri Seti, 📅 Milestones (Mevzuat ve İmar Yol Haritası), ✅ Plan Onay Durumu, PLAN: Phase 9 - Türkiye İmar ve İnşaat Mevzuat Katmanı
 
-### Community 90 - "Community 90"
+### Community 87 - "Community 87"
 Cohesion: 0.29
 Nodes (6): 1. Yapılandırılmış Bilgi Havuzu, 2. AI & Chatbot Veri Setleri, 3. Teknik Standartlaştırma, Allplan Destek Zekası Dönüşüm Raporu, Doğrulama Sonuçları, Yapılan Çalışmalar
 
-### Community 91 - "Community 91"
+### Community 88 - "Community 88"
 Cohesion: 0.29
 Nodes (6): 1. Etkileşimli Teşhis Ağaçları (Decision Trees), 2. Log ve Telemetri Mühendisliği, 3. Multimodal (Görsel) Bilgi Katmanı, 4. Persona Bazlı İçerikler, 5. Dinamik Sürüm Senkronizasyonu, PLAN: Enterprise Seviye Destek Zekası Zenginleştirme
 
-### Community 92 - "Community 92"
+### Community 89 - "Community 89"
 Cohesion: 0.29
 Nodes (6): 1. Deprem Yer Hareketi Seviyeleri (Ground Motion Levels), 2. Taşıyıcı Sistem Davranış Katsayıları (R and D), 3. Betonarme Taşıyıcı Sistemlerin Süneklik Seviyeleri (Chapter 7), 4. Yüksek Yapılar İçin Özel Kurallar (Chapter 13), 5. Çelik Yapılarda Sismik Tasarım (Chapter 9), TBDY 2018 Derin Analiz: Mühendislik Modeli ve Allplan Entegrasyonu
 
-### Community 93 - "Community 93"
+### Community 90 - "Community 90"
 Cohesion: 0.29
 Nodes (6): 1. Enine Donatı (Etriye) Sıklaştırma Bölgeleri, 2. Kolon-Kiriş Birleşim Bölgeleri (Kesme Güvenliği), 3. Donatı Kenetlenme (Kanca) Boyları, 4. Süneklik Düzeyi Yüksek Sistemler, 5. Sismik İzolatör Modelleme (Opsiyonel), TBDY 2018 ve Allplan: Deprem Güvenliği Detaylandırma Rehberi
 
-### Community 94 - "Community 94"
+### Community 91 - "Community 91"
 Cohesion: 0.29
 Nodes (6): 1. Allplan Trace Dosyası (AllplanTrace.txt), 2. Kurulum Logları (Setup.log), 3. Lisans Logları (Wibu / CodeMeter), Allplan Teknik Log Dosyaları Nasıl Bulunur?, Etiketler, Önemli Not: AI Analizi
 
-### Community 95 - "Community 95"
+### Community 92 - "Community 92"
 Cohesion: 0.29
 Nodes (6): 🧠 Brainstorm: NotebookLM Veri Çekme (Extraction) Mimarisi, Context, Option A: `antigravity-notebooklm-mcp` Üzerinden Otomatik / Periyodik Senkronizasyon (Senaryo Odaklı), Option B: Google Drive / Klasör Tabanlı Doğrudan Senkronizasyon (Bypass NotebookLM), Option C: Manuel Dışa Aktarım (Export) ve Toplu Yükleme (Batch Upload), 💡 Recommendation
 
-### Community 96 - "Community 96"
+### Community 93 - "Community 93"
 Cohesion: 0.29
 Nodes (6): 🧠 Brainstorm: AI Provider Test Et Butonu İyileştirmesi, Context, Option A: Gerçek API Ping & Doğrudan Mesaj (Hızlı ve Etkili), Option B: Detaylı Sağlık Raporu Modalı (Kapsamlı Diagnostik), Option C: Arka Plan (Cron) Sağlık Taraması (Proaktif), 💡 Recommendation
 
-### Community 97 - "Community 97"
+### Community 94 - "Community 94"
 Cohesion: 0.29
 Nodes (6): ADR-002: BullMQ Worker Separation, Consequences, Context, Decision, References, Status
 
-### Community 98 - "Community 98"
+### Community 95 - "Community 95"
 Cohesion: 0.29
 Nodes (6): ADR-001: Cookie-Based Authentication with CSRF Protection, Consequences, Context, Decision, References, Status
 
-### Community 99 - "Community 99"
+### Community 96 - "Community 96"
 Cohesion: 0.29
 Nodes (6): ADR-004: pgvector for RAG Semantic Search, Consequences, Context, Decision, References, Status
 
-### Community 100 - "Community 100"
+### Community 97 - "Community 97"
 Cohesion: 0.29
 Nodes (6): ADR-010: API Versioning Strategy, Consequences, Context, Decision, References, Status
 
-### Community 101 - "Community 101"
+### Community 98 - "Community 98"
 Cohesion: 0.29
 Nodes (6): ADR-005: Centralized Redis TTL Configuration, Consequences, Context, Decision, References, Status
 
-### Community 102 - "Community 102"
+### Community 99 - "Community 99"
 Cohesion: 0.29
 Nodes (6): ADR-008: Two-Tier AI Response Cache, Consequences, Context, Decision, References, Status
 
-### Community 103 - "Community 103"
+### Community 100 - "Community 100"
 Cohesion: 0.29
 Nodes (6): ADR-003: AI Multi-Provider Architecture with Routing, Consequences, Context, Decision, References, Status
 
-### Community 104 - "Community 104"
+### Community 101 - "Community 101"
 Cohesion: 0.29
 Nodes (6): ADR-009: Zod Validation Unification, Consequences, Context, Decision, References, Status
 
-### Community 105 - "Community 105"
+### Community 102 - "Community 102"
 Cohesion: 0.29
 Nodes (6): ADR-006: JWT Revocation via Redis Blacklist, Consequences, Context, Decision, References, Status
 
-### Community 106 - "Community 106"
+### Community 103 - "Community 103"
 Cohesion: 0.29
 Nodes (6): ADR-007: Canonical Embedding Normalization, Consequences, Context, Decision, References, Status
 
-### Community 107 - "Community 107"
+### Community 104 - "Community 104"
+Cohesion: 0.29
+Nodes (6): Agents Invoked, PHASE 1: Root Cause Analysis, PHASE 2: Implementation, PHASE 3: Verification, Phases, PLAN: File Upload Validation Fix
+
+### Community 105 - "Community 105"
+Cohesion: 0.29
+Nodes (6): Agents Invoked, PHASE 1: Root Cause Analysis, PHASE 2: Implementation, PHASE 3: Verification, Phases, PLAN: File Upload Validation Fix
+
+### Community 106 - "Community 106"
 Cohesion: 0.29
 Nodes (6): Agents Invoked, PHASE 1: Root Cause Analysis, PHASE 2: Implementation, PHASE 3: Verification, Phases, PLAN: File Upload Validation Fix
 
 ### Community 108 - "Community 108"
-Cohesion: 0.29
-Nodes (6): Agents Invoked, PHASE 1: Root Cause Analysis, PHASE 2: Implementation, PHASE 3: Verification, Phases, PLAN: File Upload Validation Fix
-
-### Community 109 - "Community 109"
-Cohesion: 0.29
-Nodes (6): Agents Invoked, PHASE 1: Root Cause Analysis, PHASE 2: Implementation, PHASE 3: Verification, Phases, PLAN: File Upload Validation Fix
-
-### Community 111 - "Community 111"
 Cohesion: 0.33
 Nodes (1): RolesService
 
-### Community 112 - "Community 112"
+### Community 109 - "Community 109"
 Cohesion: 0.33
 Nodes (1): AuditLogInterceptor
 
-### Community 113 - "Community 113"
+### Community 110 - "Community 110"
 Cohesion: 0.53
 Nodes (4): fileDataPartArbitrary(), inlineDataPartArbitrary(), textPartArbitrary(), validAiPartArbitrary()
 
-### Community 114 - "Community 114"
+### Community 111 - "Community 111"
 Cohesion: 0.33
 Nodes (1): NotificationsController
 
-### Community 115 - "Community 115"
+### Community 112 - "Community 112"
 Cohesion: 0.33
 Nodes (5): 1. DACH (Almanya, Avusturya, İsviçre) Bölgesi Özel Teknikleri, 2. Rakip Geçiş (Cross-Platform) Rehberleri, 3. ISO 19650 ve IFC 4.3 Global Standartları, 4. Donanım ve GPU Benchmark Verileri, PLAN: Global BIM Ekspansiyonu ve Rakip Diferansiyasyonu
 
-### Community 116 - "Community 116"
+### Community 113 - "Community 113"
 Cohesion: 0.33
 Nodes (5): 1. Allplan 2026 Yenilikleri ve Kritik Hatalar, 2. BIM & Koordinasyon, 3. Modelleme ve Mühendislik, 4. Genel Destek ve Lisanslama, Ayıklanan Veri Kümesi (Sınıflandırılmış)
 
-### Community 117 - "Community 117"
+### Community 114 - "Community 114"
 Cohesion: 0.33
 Nodes (5): 1. Otopark Yönetmeliği (1 Daire 1 Otopark), 2. Sığınak Yönetmeliği (7 Kasım 2025 Güncellemesi), 3. Yangın Yönetmeliği (Yangından Korunma Hakkında Yönetmelik), 4. Deprem Yönetmeliği (TBYD 2018), Bina Yönetmelikleri: Otopark, Sığınak ve Yangın Kriterleri (Allplan)
 
-### Community 118 - "Community 118"
+### Community 115 - "Community 115"
 Cohesion: 0.33
 Nodes (5): Etiketler, Hızlı Komut Haritası, Kritik Tavsiye, Revit Kullanıcıları İçin Allplan'a Hızlı Geçiş Rehberi, Temel Kavram Farkları
 
-### Community 119 - "Community 119"
+### Community 116 - "Community 116"
 Cohesion: 0.33
 Nodes (5): 1. Taban Alanı ve Kat Alanı Hesapları (TAKS / KAKS), 2. Bahçe Mesafeleri ve Yangın Merdiveni, 3. Sosyal Donatı Zorunlulukları (Büyük Ölçekli Projeler), 4. Erişilebilirlik Standartları (Yaşlı ve Engelli), Türkiye İmar Mevzuatı: Allplan Mimari Tasarım ve Hesap Kriterleri
 
-### Community 120 - "Community 120"
+### Community 117 - "Community 117"
 Cohesion: 0.33
 Nodes (5): 1. Kamu Projeleri ve Poz No Entegrasyonu, 2. Türkçe Karakter ve PDF Karakter Sorunları, 3. Yerel Beton ve Çelik Sınıfları (TS EN Uyumu), 4. Allplan-Revit-Bimplus Yerel Veri Akışı, Allplan Türkiye Yerel Uygulama ve Teknik Rehber
 
-### Community 121 - "Community 121"
+### Community 118 - "Community 118"
 Cohesion: 0.33
 Nodes (5): 1. Sayısal Proje Onay Esasları, 2. BIM Model Kontrol Kriterleri, 3. E-Ruhsat ve E-İmza Entegrasyonu, 4. Teknik Şartname Uyumu, Dijital Yapı Ruhsatı ve BIM: 2027 Hedefli Allplan Standartları
 
-### Community 122 - "Community 122"
+### Community 119 - "Community 119"
 Cohesion: 0.33
 Nodes (5): Allplan Bridge Uzman Taktiği, Etiketler, GLOBAL Standart Çizelgesi (Checklist), IFC 4.3'ün Getirdiği Yenilikler, IFC 4.3 ve Altyapı Modelleme Stratejileri (Bridge & Tunnel)
 
-### Community 123 - "Community 123"
+### Community 120 - "Community 120"
 Cohesion: 0.4
 Nodes (4): AnyNull, DbNull, JsonNull, PrismaClient
 
-### Community 124 - "Community 124"
+### Community 121 - "Community 121"
 Cohesion: 0.4
 Nodes (2): RootLayout(), NotFound()
 
-### Community 126 - "Community 126"
+### Community 123 - "Community 123"
 Cohesion: 0.5
 Nodes (1): RbacGuard
 
-### Community 127 - "Community 127"
+### Community 124 - "Community 124"
 Cohesion: 0.4
 Nodes (1): HealthController
 
-### Community 128 - "Community 128"
+### Community 125 - "Community 125"
 Cohesion: 0.5
 Nodes (1): PrismaService
 
-### Community 129 - "Community 129"
+### Community 126 - "Community 126"
 Cohesion: 0.4
 Nodes (1): KnowledgeBaseApprovalController
 
-### Community 130 - "Community 130"
+### Community 127 - "Community 127"
 Cohesion: 0.4
 Nodes (4): CreateArticleDto, ReviewArticleDto, SubmitFeedbackDto, UpdateArticleDto
 
-### Community 131 - "Community 131"
+### Community 128 - "Community 128"
 Cohesion: 0.6
 Nodes (1): TrustScoreCalculator
 
-### Community 132 - "Community 132"
+### Community 129 - "Community 129"
 Cohesion: 0.4
 Nodes (1): PreferencesController
 
-### Community 133 - "Community 133"
+### Community 130 - "Community 130"
 Cohesion: 0.4
 Nodes (1): ReportsService
 
-### Community 134 - "Community 134"
+### Community 131 - "Community 131"
 Cohesion: 0.4
 Nodes (1): ReportsController
 
-### Community 135 - "Community 135"
+### Community 132 - "Community 132"
 Cohesion: 0.4
 Nodes (4): 1. Bilgi Gereksinimleri Seviyesi (LOD/LOI), 2. Ortak Veri Ortamı (CDE) Gereksinimleri, 3. BCF (BIM Collaboration Format) Protokolü, Türkiye Kamu Projeleri: Çevre ve Şehircilik Bakanlığı BIM Uyumluluğu
 
-### Community 136 - "Community 136"
+### Community 133 - "Community 133"
 Cohesion: 0.4
 Nodes (4): 🧪 CI/CD Verification Checklist, 🔐 GitHub Repository Secrets, Production Secrets & Environment Manifest, 🛡️ Repository Protection Rules
 
-### Community 137 - "Community 137"
+### Community 134 - "Community 134"
 Cohesion: 0.5
 Nodes (1): DashboardPage
 
-### Community 140 - "Community 140"
+### Community 137 - "Community 137"
 Cohesion: 0.67
 Nodes (2): handleKeyDown(), toggleExpanded()
 
-### Community 142 - "Community 142"
+### Community 138 - "Community 138"
+Cohesion: 0.5
+Nodes (1): main()
+
+### Community 140 - "Community 140"
 Cohesion: 0.5
 Nodes (1): JwtAuthGuard
 
-### Community 144 - "Community 144"
+### Community 142 - "Community 142"
 Cohesion: 0.5
 Nodes (3): CreateAnnouncementDto, TargetCriteriaDto, UpdateAnnouncementDto
 
-### Community 145 - "Community 145"
+### Community 143 - "Community 143"
 Cohesion: 0.5
 Nodes (1): CrmWebhookGuard
 
-### Community 146 - "Community 146"
+### Community 144 - "Community 144"
 Cohesion: 0.5
 Nodes (1): MetricsInterceptor
 
-### Community 147 - "Community 147"
+### Community 145 - "Community 145"
 Cohesion: 0.5
 Nodes (1): TeamScopeGuard
 
-### Community 148 - "Community 148"
+### Community 146 - "Community 146"
 Cohesion: 0.5
 Nodes (1): TicketOwnerGuard
 
-### Community 149 - "Community 149"
-Cohesion: 0.5
-Nodes (1): OmniChannelController
-
-### Community 150 - "Community 150"
+### Community 147 - "Community 147"
 Cohesion: 0.5
 Nodes (1): StalledJobRecoveryService
 
-### Community 151 - "Community 151"
+### Community 148 - "Community 148"
 Cohesion: 0.5
 Nodes (3): 1. Teknik Terim Normalizasyonu, 2. Kritik Hata Mesajları ve Teşhis Rehberi, Terminoloji ve Hata Kodları Sözlüğü
 
-### Community 152 - "Community 152"
+### Community 149 - "Community 149"
 Cohesion: 0.5
 Nodes (3): Allplan Sürüm Bazlı Sorun & Hata Matrisi (2021-2026), Sistemsel (Sürüm Bağımsız) Kronik Sorunlar, Stratejik Öneri
 
-### Community 154 - "Community 154"
+### Community 151 - "Community 151"
 Cohesion: 0.67
 Nodes (1): getKeys()
 
-### Community 159 - "Community 159"
+### Community 156 - "Community 156"
 Cohesion: 0.67
 Nodes (1): TestController
 
-### Community 161 - "Community 161"
+### Community 158 - "Community 158"
 Cohesion: 0.67
 Nodes (2): CreateAnnouncementTemplateDto, UpdateAnnouncementTemplateDto
 
-### Community 162 - "Community 162"
+### Community 159 - "Community 159"
 Cohesion: 1.0
 Nodes (2): buildAiQueryWorkerConfig(), buildQueueLimiterConfig()
 
-### Community 163 - "Community 163"
+### Community 160 - "Community 160"
 Cohesion: 0.67
 Nodes (1): SmtpValidator
 
-### Community 164 - "Community 164"
+### Community 161 - "Community 161"
 Cohesion: 0.67
 Nodes (2): Engineering Standards Matrix: Allplan Compliance (2021-2026), Mevzuat Uyumluluğu İçin Tavsiye
+
+### Community 162 - "Community 162"
+Cohesion: 0.67
+Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
+
+### Community 163 - "Community 163"
+Cohesion: 0.67
+Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
+
+### Community 164 - "Community 164"
+Cohesion: 0.67
+Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
 
 ### Community 165 - "Community 165"
 Cohesion: 0.67
@@ -931,7 +928,7 @@ Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
 
 ### Community 166 - "Community 166"
 Cohesion: 0.67
-Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
+Nodes (2): code:yaml (- generic [ref=e1]:), Page snapshot
 
 ### Community 167 - "Community 167"
 Cohesion: 0.67
@@ -955,7 +952,7 @@ Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
 
 ### Community 172 - "Community 172"
 Cohesion: 0.67
-Nodes (2): code:yaml (- generic [ref=e1]:), Page snapshot
+Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
 
 ### Community 173 - "Community 173"
 Cohesion: 0.67
@@ -983,7 +980,7 @@ Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
 
 ### Community 179 - "Community 179"
 Cohesion: 0.67
-Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
+Nodes (2): code:yaml (- generic [ref=e1]:), Page snapshot
 
 ### Community 180 - "Community 180"
 Cohesion: 0.67
@@ -995,7 +992,7 @@ Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
 
 ### Community 182 - "Community 182"
 Cohesion: 0.67
-Nodes (2): code:yaml (- generic [ref=e1]:), Page snapshot
+Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
 
 ### Community 183 - "Community 183"
 Cohesion: 0.67
@@ -1017,423 +1014,411 @@ Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
 Cohesion: 0.67
 Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
 
-### Community 188 - "Community 188"
-Cohesion: 0.67
-Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
-
-### Community 189 - "Community 189"
-Cohesion: 0.67
-Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
-
-### Community 190 - "Community 190"
-Cohesion: 0.67
-Nodes (2): code:yaml (- generic [active] [ref=e1]:), Page snapshot
-
-### Community 217 - "Community 217"
+### Community 214 - "Community 214"
 Cohesion: 1.0
 Nodes (1): AppModule
 
-### Community 218 - "Community 218"
+### Community 215 - "Community 215"
 Cohesion: 1.0
 Nodes (1): CustomersModule
 
-### Community 219 - "Community 219"
+### Community 216 - "Community 216"
 Cohesion: 1.0
 Nodes (1): UpdateCustomerProfileDto
 
-### Community 220 - "Community 220"
+### Community 217 - "Community 217"
 Cohesion: 1.0
 Nodes (1): ImportCustomerRecordDto
 
-### Community 221 - "Community 221"
+### Community 218 - "Community 218"
 Cohesion: 1.0
 Nodes (1): RegisterCustomerDto
 
-### Community 222 - "Community 222"
+### Community 219 - "Community 219"
 Cohesion: 1.0
 Nodes (1): MetricsModule
 
-### Community 223 - "Community 223"
+### Community 220 - "Community 220"
 Cohesion: 1.0
 Nodes (1): SettingsModule
 
-### Community 224 - "Community 224"
+### Community 221 - "Community 221"
 Cohesion: 1.0
 Nodes (1): BulkUpsertSettingDto
 
-### Community 225 - "Community 225"
+### Community 222 - "Community 222"
 Cohesion: 1.0
 Nodes (1): UpsertSettingDto
 
-### Community 226 - "Community 226"
+### Community 223 - "Community 223"
 Cohesion: 1.0
 Nodes (1): RbacModule
 
-### Community 227 - "Community 227"
+### Community 224 - "Community 224"
 Cohesion: 1.0
 Nodes (1): TicketsModule
 
-### Community 228 - "Community 228"
+### Community 225 - "Community 225"
 Cohesion: 1.0
 Nodes (1): UpdateSlaPolicyDto
 
-### Community 229 - "Community 229"
+### Community 226 - "Community 226"
 Cohesion: 1.0
 Nodes (1): CreateTicketDto
 
-### Community 230 - "Community 230"
+### Community 227 - "Community 227"
 Cohesion: 1.0
 Nodes (1): AddMessageDto
 
-### Community 231 - "Community 231"
+### Community 228 - "Community 228"
 Cohesion: 1.0
 Nodes (1): UpdateTicketDto
 
-### Community 232 - "Community 232"
+### Community 229 - "Community 229"
 Cohesion: 1.0
 Nodes (1): BulkUpdateTicketDto
 
-### Community 233 - "Community 233"
+### Community 230 - "Community 230"
 Cohesion: 1.0
 Nodes (1): EscalateTicketDto
 
-### Community 234 - "Community 234"
+### Community 231 - "Community 231"
 Cohesion: 1.0
 Nodes (1): CreateSlaPolicyDto
 
-### Community 235 - "Community 235"
+### Community 232 - "Community 232"
 Cohesion: 1.0
 Nodes (1): BrandingModule
 
-### Community 236 - "Community 236"
+### Community 233 - "Community 233"
 Cohesion: 1.0
 Nodes (1): ProductsModule
 
-### Community 238 - "Community 238"
+### Community 235 - "Community 235"
 Cohesion: 1.0
 Nodes (1): RedisModule
 
-### Community 239 - "Community 239"
+### Community 236 - "Community 236"
 Cohesion: 1.0
 Nodes (1): AuthModule
 
-### Community 240 - "Community 240"
+### Community 237 - "Community 237"
 Cohesion: 1.0
 Nodes (1): LoginDto
 
-### Community 242 - "Community 242"
+### Community 239 - "Community 239"
 Cohesion: 1.0
 Nodes (1): RefreshGuard
 
-### Community 243 - "Community 243"
+### Community 240 - "Community 240"
 Cohesion: 1.0
 Nodes (1): ProactiveChatModule
 
-### Community 244 - "Community 244"
+### Community 241 - "Community 241"
 Cohesion: 1.0
 Nodes (1): SendMessageDto
 
-### Community 245 - "Community 245"
+### Community 242 - "Community 242"
 Cohesion: 1.0
 Nodes (1): CreateSessionDto
 
-### Community 247 - "Community 247"
+### Community 244 - "Community 244"
 Cohesion: 1.0
 Nodes (1): FaqModule
 
-### Community 248 - "Community 248"
+### Community 245 - "Community 245"
 Cohesion: 1.0
 Nodes (1): HealthModule
 
-### Community 249 - "Community 249"
+### Community 246 - "Community 246"
 Cohesion: 1.0
 Nodes (1): AnnouncementTemplatesModule
 
-### Community 250 - "Community 250"
+### Community 247 - "Community 247"
 Cohesion: 1.0
 Nodes (1): CrmModule
 
-### Community 253 - "Community 253"
+### Community 250 - "Community 250"
 Cohesion: 1.0
 Nodes (1): PrismaModule
 
-### Community 254 - "Community 254"
+### Community 251 - "Community 251"
 Cohesion: 1.0
 Nodes (1): AnnouncementsModule
 
-### Community 255 - "Community 255"
+### Community 252 - "Community 252"
 Cohesion: 1.0
 Nodes (1): MacrosModule
 
-### Community 256 - "Community 256"
+### Community 253 - "Community 253"
 Cohesion: 1.0
 Nodes (1): UpdateMacroDto
 
-### Community 257 - "Community 257"
+### Community 254 - "Community 254"
 Cohesion: 1.0
 Nodes (1): CreateMacroDto
 
-### Community 258 - "Community 258"
+### Community 255 - "Community 255"
 Cohesion: 1.0
 Nodes (1): CommonModule
 
-### Community 261 - "Community 261"
+### Community 258 - "Community 258"
 Cohesion: 1.0
 Nodes (1): KnowledgeBaseModule
 
-### Community 262 - "Community 262"
+### Community 259 - "Community 259"
 Cohesion: 1.0
 Nodes (1): AiModule
 
-### Community 263 - "Community 263"
+### Community 260 - "Community 260"
 Cohesion: 1.0
 Nodes (1): UsersModule
 
-### Community 264 - "Community 264"
+### Community 261 - "Community 261"
 Cohesion: 1.0
 Nodes (1): UpdateUserDto
 
-### Community 265 - "Community 265"
+### Community 262 - "Community 262"
 Cohesion: 1.0
 Nodes (1): UpdateProfileDto
 
-### Community 266 - "Community 266"
+### Community 263 - "Community 263"
 Cohesion: 1.0
 Nodes (1): CreateUserDto
 
-### Community 267 - "Community 267"
+### Community 264 - "Community 264"
 Cohesion: 1.0
 Nodes (1): OmniChannelModule
 
-### Community 268 - "Community 268"
+### Community 265 - "Community 265"
 Cohesion: 1.0
 Nodes (1): TeamsModule
 
-### Community 269 - "Community 269"
+### Community 266 - "Community 266"
 Cohesion: 1.0
 Nodes (1): KnowledgePoolModule
 
-### Community 270 - "Community 270"
+### Community 267 - "Community 267"
 Cohesion: 1.0
 Nodes (1): CreateKnowledgeSourceDto
 
-### Community 271 - "Community 271"
+### Community 268 - "Community 268"
 Cohesion: 1.0
 Nodes (1): AutomationModule
 
-### Community 272 - "Community 272"
+### Community 269 - "Community 269"
 Cohesion: 1.0
 Nodes (1): EmailValidatorModule
 
-### Community 273 - "Community 273"
+### Community 270 - "Community 270"
 Cohesion: 1.0
 Nodes (1): AttachmentsModule
 
-### Community 274 - "Community 274"
+### Community 271 - "Community 271"
 Cohesion: 1.0
 Nodes (1): WebhooksModule
 
-### Community 275 - "Community 275"
+### Community 272 - "Community 272"
 Cohesion: 1.0
 Nodes (1): NotificationsModule
 
-### Community 276 - "Community 276"
+### Community 273 - "Community 273"
 Cohesion: 1.0
 Nodes (1): EmailModule
 
-### Community 277 - "Community 277"
+### Community 274 - "Community 274"
 Cohesion: 1.0
 Nodes (1): UpdateEmailPreferenceDto
 
-### Community 278 - "Community 278"
+### Community 275 - "Community 275"
 Cohesion: 1.0
 Nodes (1): WhatsAppModule
 
-### Community 279 - "Community 279"
+### Community 276 - "Community 276"
 Cohesion: 1.0
 Nodes (1): ReportsModule
 
+### Community 277 - "Community 277"
+Cohesion: 1.0
+Nodes (1): Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)
+
+### Community 278 - "Community 278"
+Cohesion: 1.0
+Nodes (1): Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)
+
+### Community 279 - "Community 279"
+Cohesion: 1.0
+Nodes (1): Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)
+
 ### Community 280 - "Community 280"
-Cohesion: 1.0
-Nodes (1): Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)
-
-### Community 281 - "Community 281"
-Cohesion: 1.0
-Nodes (1): Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)
-
-### Community 282 - "Community 282"
-Cohesion: 1.0
-Nodes (1): Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)
-
-### Community 283 - "Community 283"
 Cohesion: 1.0
 Nodes (1): Otomasyon ve Raporlama: Otomatik kolon/kiriş donatısı yerleşimi, dinamik büküm şemaları (Bending Sch
 
-### Community 284 - "Community 284"
+### Community 281 - "Community 281"
 Cohesion: 1.0
 Nodes (1): 5. Mühendislik, Donatı ve Çelik Yapılar
 
-### Community 285 - "Community 285"
+### Community 282 - "Community 282"
 Cohesion: 1.0
 Nodes (1): Donatı Çakışması Yönetimi
 
-### Community 286 - "Community 286"
+### Community 283 - "Community 283"
 Cohesion: 1.0
 Nodes (1): Yapısal Analiz (SAF): Bimplus AutoConverter kullanılarak fiziksel modelin analitik modele dönüştürül
 
-### Community 287 - "Community 287"
+### Community 284 - "Community 284"
 Cohesion: 1.0
 Nodes (1): 3. Bulut İşbirliği: Allplan Share ve Bimplus
 
-### Community 288 - "Community 288"
+### Community 285 - "Community 285"
 Cohesion: 1.0
 Nodes (1): Allplan Share ile Bulut Üzerinden Ekip Çalışmasını Optimize Etme
 
-### Community 289 - "Community 289"
+### Community 286 - "Community 286"
 Cohesion: 1.0
 Nodes (1): Çelik Detaylandırma: SDS2 entegrasyonu ile parametrik çelik bağlantı tasarımları, MRP/ERP yazılımlar
 
-### Community 290 - "Community 290"
+### Community 287 - "Community 287"
 Cohesion: 1.0
 Nodes (1): Allplan Bridge'de LandXML Verilerinin Optimizasyonu
 
-### Community 291 - "Community 291"
+### Community 288 - "Community 288"
 Cohesion: 1.0
 Nodes (1): Lisans Modelleri: Abonelik (Subscription) ve Kalıcı (Perpetual) lisans farkları, bulut (Bimplus) eri
 
-### Community 292 - "Community 292"
+### Community 289 - "Community 289"
 Cohesion: 1.0
 Nodes (1): Allplan Bridge ve Yol Projelerinin Koordinasyonu
 
-### Community 293 - "Community 293"
+### Community 290 - "Community 290"
 Cohesion: 1.0
 Nodes (1): Visual Scripting Arayüz Hataları ve Sıfırlama
 
-### Community 294 - "Community 294"
+### Community 291 - "Community 291"
 Cohesion: 1.0
 Nodes (1): Gelişmiş Donatı Raporları ve Şekil Kodu (Shape Code) Yönetimi
 
-### Community 295 - "Community 295"
+### Community 292 - "Community 292"
 Cohesion: 1.0
 Nodes (1): Allplan Share Proje Yedekleme (Backup) ve Geri Yükleme (Restore)
 
-### Community 296 - "Community 296"
+### Community 293 - "Community 293"
 Cohesion: 1.0
 Nodes (1): 3B Donatı Modelleme: Çubuk donatı, hasır donatı, manşon ve BAMTEC halı donatı sistemleri
 
-### Community 297 - "Community 297"
+### Community 294 - "Community 294"
 Cohesion: 1.0
 Nodes (1): Kurulum Süreci: Sistem gereksinimleri (CPU, VRAM, RAM önerileri), dil ve standart seçimleri (örn. Tü
 
-### Community 298 - "Community 298"
+### Community 295 - "Community 295"
 Cohesion: 1.0
 Nodes (1): Allplan ve Bimplus Senkronizasyon Hataları
 
-### Community 299 - "Community 299"
+### Community 296 - "Community 296"
 Cohesion: 1.0
 Nodes (1): Oska e-Hakediş CAD Export Konfigürasyonu
 
-### Community 300 - "Community 300"
+### Community 297 - "Community 297"
 Cohesion: 1.0
 Nodes (1): 4. Mimari Modelleme ve Görselleştirme
 
-### Community 301 - "Community 301"
+### Community 298 - "Community 298"
 Cohesion: 1.0
 Nodes (1): Çelik Yapı Otomasyonunda PythonPart Kullanımı
 
-### Community 302 - "Community 302"
+### Community 299 - "Community 299"
 Cohesion: 1.0
 Nodes (1): Oda ve Alan Yönetimi: Metraj ve etiketleme için hacim/yüzey hesaplamaları
 
-### Community 303 - "Community 303"
+### Community 300 - "Community 300"
 Cohesion: 1.0
 Nodes (1): BCF ve Bimplus ile Gelişmiş Çakışma Yönetimi
 
-### Community 304 - "Community 304"
+### Community 301 - "Community 301"
 Cohesion: 1.0
 Nodes (1): Kalite Kontrol ve Standartlar: IDS (Information Delivery Specification) ile zorunlu veri kontrolü, M
 
-### Community 305 - "Community 305"
+### Community 302 - "Community 302"
 Cohesion: 1.0
 Nodes (1): Lisans Aktivasyonu: Product Key ile çevrimiçi/çevrimdışı aktivasyon, lisans iadesi, Codemeter ve Sof
 
-### Community 306 - "Community 306"
+### Community 303 - "Community 303"
 Cohesion: 1.0
 Nodes (1): IFC Aktarımı: IFC 2x3, IFC 4, IFC 4.3 (altyapı) standartları ile veri kayıpsız içe/dışa aktarım
 
-### Community 307 - "Community 307"
+### Community 304 - "Community 304"
 Cohesion: 1.0
 Nodes (1): Eşzamanlı Çalışma: Allplan Share ile bulut üzerinden eşzamanlı modelleme, dosya kilitleme (Locking)
 
-### Community 308 - "Community 308"
+### Community 305 - "Community 305"
 Cohesion: 1.0
 Nodes (1): Allplan Connect Üzerinden Bulut Tabanlı Lisans Yönetimi
 
-### Community 309 - "Community 309"
+### Community 306 - "Community 306"
 Cohesion: 1.0
 Nodes (1): Lisans Aktivasyon Sorunları
 
-### Community 310 - "Community 310"
+### Community 307 - "Community 307"
 Cohesion: 1.0
 Nodes (1): Allplan Pafta Düzenlemeden X-Ref ile DWG Dönüşümü
 
-### Community 311 - "Community 311"
+### Community 308 - "Community 308"
 Cohesion: 1.0
 Nodes (1): Çakışma Yönetimi (Clash Detection): Bimplus'ta disiplin modellerinin (Mimari, Statik, MEP) birleştir
 
-### Community 312 - "Community 312"
+### Community 309 - "Community 309"
 Cohesion: 1.0
 Nodes (1): Prekast Üretim Verileri ve Makine Entegrasyonu Optimizasyonu
 
-### Community 313 - "Community 313"
+### Community 310 - "Community 310"
 Cohesion: 1.0
 Nodes (1): Akıllı Mimari Elemanlar: Parametrik duvar, döşeme, kapı, pencere, çatı, merdiven ve çok katmanlı yap
 
-### Community 314 - "Community 314"
+### Community 311 - "Community 311"
 Cohesion: 1.0
 Nodes (1): Çelik Yapı (SDS2) Bağlantı Hataları Yönetimi
 
-### Community 315 - "Community 315"
+### Community 312 - "Community 312"
 Cohesion: 1.0
 Nodes (1): Yedekleme ve Revizyon: Bimplus üzerinde versiyon karşılaştırması, Allplan Share projelerinin manuel
 
-### Community 316 - "Community 316"
+### Community 313 - "Community 313"
 Cohesion: 1.0
 Nodes (1): BAMTEC Donatı Sistemi ve Allplan Entegrasyonu
 
-### Community 317 - "Community 317"
+### Community 314 - "Community 314"
 Cohesion: 1.0
 Nodes (1): Görselleştirme Teknolojileri: AI Visualizer ile yapay zeka destekli anlık render, Redshift motoru ve
 
-### Community 318 - "Community 318"
+### Community 315 - "Community 315"
 Cohesion: 1.0
 Nodes (1): 2. OpenBIM, IFC ve Veri Yönetimi
 
-### Community 319 - "Community 319"
+### Community 316 - "Community 316"
 Cohesion: 1.0
 Nodes (1): Hata Çözümleri: "Lisans bulunamadı" hataları, Windows Güvenlik Duvarı/Antivirüs engelleri, hizmet (s
 
-### Community 320 - "Community 320"
+### Community 317 - "Community 317"
 Cohesion: 1.0
 Nodes (1): Geometri Optimizasyonu: Büyük dosyalarda performansı artırmak için B-rep yerine SweptSolid veya Extr
 
-### Community 321 - "Community 321"
+### Community 318 - "Community 318"
 Cohesion: 1.0
 Nodes (1): Nitelik Eşleme (Attribute Mapping): Allplan verilerinin Pset_QuantityTakeOff, Pset_Cost gibi uluslar
 
-### Community 322 - "Community 322"
+### Community 319 - "Community 319"
 Cohesion: 1.0
 Nodes (1): Hata Çözümleri: Asılı kalan senkronizasyon kilitlerinin Services üzerinden veya proje ayarlarından k
 
-### Community 323 - "Community 323"
+### Community 320 - "Community 320"
 Cohesion: 1.0
 Nodes (1): Allplan Share Senkronizasyon ve Dosya Kilidi Yönetimi
 
-### Community 324 - "Community 324"
+### Community 321 - "Community 321"
 Cohesion: 1.0
 Nodes (1): more_horiz
 
-### Community 325 - "Community 325"
+### Community 322 - "Community 322"
 Cohesion: 1.0
 Nodes (1): Frontend Deployment on Coolify
 
@@ -1442,341 +1427,333 @@ Nodes (1): Frontend Deployment on Coolify
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 36`** (19 nodes): `products.controller.ts`, `products.service.ts`, `ProductsController`, `.constructor()`, `.create()`, `.createCategory()`, `.deleteCategory()`, `.findAll()`, `.findOne()`, `.restoreFaqs()`, `.updateCategory()`, `ProductsService`, `.constructor()`, `.createCategory()`, `.createProduct()`, `.deleteCategory()`, `.findAllProducts()`, `.getProduct()`, `.updateCategory()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 45`** (12 nodes): `attachments.controller.ts`, `attachments.service.ts`, `AttachmentsController`, `.constructor()`, `.download()`, `AttachmentsService`, `.constructor()`, `.create()`, `.findByMessage()`, `.findMessageByAttachment()`, `.findOne()`, `.findOne()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 47`** (11 nodes): `BasePage.ts`, `LoginPage.ts`, `BasePage`, `.constructor()`, `.getErrorMessage()`, `.navigateTo()`, `.waitForLoadingFinished()`, `LoginPage`, `.constructor()`, `.login()`, `.loginWithRetry()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 48`** (11 nodes): `proactive-chat.controller.ts`, `ProactiveChatController`, `.acceptSession()`, `.constructor()`, `.convertToTicket()`, `.createSession()`, `.declineSession()`, `.endSession()`, `.getMessages()`, `.listSessions()`, `.sendMessage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 56`** (9 nodes): `macros.controller.ts`, `MacrosController`, `.constructor()`, `.create()`, `.findAll()`, `.findOne()`, `.remove()`, `.renderMacro()`, `.update()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 57`** (9 nodes): `macros.service.ts`, `MacrosService`, `.constructor()`, `.create()`, `.findAll()`, `.findOne()`, `.remove()`, `.renderMacro()`, `.update()`
+- **Thin community `Community 69`** (8 nodes): `queue-monitor.service.ts`, `QueueMonitorService`, `.constructor()`, `.getFailedJobs()`, `.getQueueByName()`, `.monitorQueue()`, `.onModuleDestroy()`, `.onModuleInit()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 70`** (8 nodes): `AnnouncementTemplatesController`, `.constructor()`, `.create()`, `.findAll()`, `.findOne()`, `.remove()`, `.update()`, `announcement-templates.controller.ts`
+- **Thin community `Community 108`** (6 nodes): `roles.service.ts`, `RolesService`, `.constructor()`, `.findAll()`, `.findRoleWithPermissions()`, `.getPermissions()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 71`** (8 nodes): `queue-monitor.service.ts`, `QueueMonitorService`, `.constructor()`, `.getFailedJobs()`, `.getQueueByName()`, `.monitorQueue()`, `.onModuleDestroy()`, `.onModuleInit()`
+- **Thin community `Community 109`** (6 nodes): `audit-log.interceptor.ts`, `AuditLogInterceptor`, `.constructor()`, `.extractEntityInfo()`, `.intercept()`, `.mapUrlToAction()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 81`** (7 nodes): `sla.controller.ts`, `SlaController`, `.constructor()`, `.create()`, `.findAll()`, `.remove()`, `.update()`
+- **Thin community `Community 111`** (6 nodes): `notifications.controller.ts`, `NotificationsController`, `.constructor()`, `.getMyNotifications()`, `.markAllAsRead()`, `.markAsRead()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 111`** (6 nodes): `roles.service.ts`, `RolesService`, `.constructor()`, `.findAll()`, `.findRoleWithPermissions()`, `.getPermissions()`
+- **Thin community `Community 121`** (5 nodes): `layout.tsx`, `not-found.tsx`, `RootLayout()`, `NotFound()`, `.getMessages()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 112`** (6 nodes): `audit-log.interceptor.ts`, `AuditLogInterceptor`, `.constructor()`, `.extractEntityInfo()`, `.intercept()`, `.mapUrlToAction()`
+- **Thin community `Community 123`** (5 nodes): `rbac.guard.ts`, `RbacGuard`, `.canActivate()`, `.constructor()`, `.getRoleName()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 114`** (6 nodes): `notifications.controller.ts`, `NotificationsController`, `.constructor()`, `.getMyNotifications()`, `.markAllAsRead()`, `.markAsRead()`
+- **Thin community `Community 124`** (5 nodes): `health.controller.ts`, `HealthController`, `.check()`, `.constructor()`, `.triggerManualBackup()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 124`** (5 nodes): `layout.tsx`, `not-found.tsx`, `RootLayout()`, `NotFound()`, `.getMessages()`
+- **Thin community `Community 125`** (5 nodes): `prisma.service.ts`, `PrismaService`, `.applySoftDeleteExtension()`, `.constructor()`, `.onModuleDestroy()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 126`** (5 nodes): `rbac.guard.ts`, `RbacGuard`, `.canActivate()`, `.constructor()`, `.getRoleName()`
+- **Thin community `Community 126`** (5 nodes): `knowledge-base-approval.controller.ts`, `KnowledgeBaseApprovalController`, `.constructor()`, `.review()`, `.submitForReview()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 127`** (5 nodes): `health.controller.ts`, `HealthController`, `.check()`, `.constructor()`, `.triggerManualBackup()`
+- **Thin community `Community 128`** (5 nodes): `trust-score.calculator.ts`, `TrustScoreCalculator`, `.calculate()`, `.calculateAgeFactor()`, `.calculateFeedbackFactor()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 128`** (5 nodes): `prisma.service.ts`, `PrismaService`, `.applySoftDeleteExtension()`, `.constructor()`, `.onModuleDestroy()`
+- **Thin community `Community 129`** (5 nodes): `preferences.controller.ts`, `PreferencesController`, `.constructor()`, `.getMyPreferences()`, `.updatePreference()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 129`** (5 nodes): `knowledge-base-approval.controller.ts`, `KnowledgeBaseApprovalController`, `.constructor()`, `.review()`, `.submitForReview()`
+- **Thin community `Community 130`** (5 nodes): `reports.service.ts`, `ReportsService`, `.constructor()`, `.getAgentPerformance()`, `.getSlaPerformance()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 131`** (5 nodes): `trust-score.calculator.ts`, `TrustScoreCalculator`, `.calculate()`, `.calculateAgeFactor()`, `.calculateFeedbackFactor()`
+- **Thin community `Community 131`** (5 nodes): `reports.controller.ts`, `ReportsController`, `.constructor()`, `.getAgentPerformance()`, `.getSlaPerformance()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 132`** (5 nodes): `preferences.controller.ts`, `PreferencesController`, `.constructor()`, `.getMyPreferences()`, `.updatePreference()`
+- **Thin community `Community 134`** (4 nodes): `DashboardPage.ts`, `DashboardPage`, `.constructor()`, `.isAtDashboard()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 133`** (5 nodes): `reports.service.ts`, `ReportsService`, `.constructor()`, `.getAgentPerformance()`, `.getSlaPerformance()`
+- **Thin community `Community 137`** (4 nodes): `HelpDocsSidebar.tsx`, `handleClick()`, `handleKeyDown()`, `toggleExpanded()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 134`** (5 nodes): `reports.controller.ts`, `ReportsController`, `.constructor()`, `.getAgentPerformance()`, `.getSlaPerformance()`
+- **Thin community `Community 138`** (4 nodes): `ingest-bilgi-bankasi.ts`, `classify()`, `determineTypeFromExt()`, `main()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 137`** (4 nodes): `DashboardPage.ts`, `DashboardPage`, `.constructor()`, `.isAtDashboard()`
+- **Thin community `Community 140`** (4 nodes): `jwt-auth.guard.ts`, `JwtAuthGuard`, `.canActivate()`, `.constructor()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 140`** (4 nodes): `HelpDocsSidebar.tsx`, `handleClick()`, `handleKeyDown()`, `toggleExpanded()`
+- **Thin community `Community 143`** (4 nodes): `crm-webhook.guard.ts`, `CrmWebhookGuard`, `.canActivate()`, `.constructor()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 142`** (4 nodes): `jwt-auth.guard.ts`, `JwtAuthGuard`, `.canActivate()`, `.constructor()`
+- **Thin community `Community 144`** (4 nodes): `metrics.interceptor.ts`, `MetricsInterceptor`, `.constructor()`, `.intercept()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 145`** (4 nodes): `crm-webhook.guard.ts`, `CrmWebhookGuard`, `.canActivate()`, `.constructor()`
+- **Thin community `Community 145`** (4 nodes): `team-scope.guard.ts`, `TeamScopeGuard`, `.canActivate()`, `.constructor()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 146`** (4 nodes): `metrics.interceptor.ts`, `MetricsInterceptor`, `.constructor()`, `.intercept()`
+- **Thin community `Community 146`** (4 nodes): `ticket-owner.guard.ts`, `TicketOwnerGuard`, `.canActivate()`, `.constructor()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 147`** (4 nodes): `team-scope.guard.ts`, `TeamScopeGuard`, `.canActivate()`, `.constructor()`
+- **Thin community `Community 147`** (4 nodes): `stalled-job-recovery.service.ts`, `StalledJobRecoveryService`, `.constructor()`, `.onModuleInit()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 148`** (4 nodes): `ticket-owner.guard.ts`, `TicketOwnerGuard`, `.canActivate()`, `.constructor()`
+- **Thin community `Community 151`** (3 nodes): `check-i18n.js`, `getKeys()`, `check-i18n.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 149`** (4 nodes): `omni-channel.controller.ts`, `OmniChannelController`, `.constructor()`, `.handleInboundEmail()`
+- **Thin community `Community 156`** (3 nodes): `test_route.ts`, `TestController`, `.getAsset()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 150`** (4 nodes): `stalled-job-recovery.service.ts`, `StalledJobRecoveryService`, `.constructor()`, `.onModuleInit()`
+- **Thin community `Community 158`** (3 nodes): `CreateAnnouncementTemplateDto`, `UpdateAnnouncementTemplateDto`, `announcement-template.dto.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 154`** (3 nodes): `check-i18n.js`, `getKeys()`, `check-i18n.js`
+- **Thin community `Community 159`** (3 nodes): `buildAiQueryWorkerConfig()`, `buildQueueLimiterConfig()`, `ai.module.spec.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 159`** (3 nodes): `test_route.ts`, `TestController`, `.getAsset()`
+- **Thin community `Community 160`** (3 nodes): `smtp.validator.ts`, `SmtpValidator`, `.validate()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 161`** (3 nodes): `CreateAnnouncementTemplateDto`, `UpdateAnnouncementTemplateDto`, `announcement-template.dto.ts`
+- **Thin community `Community 161`** (3 nodes): `Engineering Standards Matrix: Allplan Compliance (2021-2026)`, `ENGINEERING_STANDARDS_MATRIX.md`, `Mevzuat Uyumluluğu İçin Tavsiye`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 162`** (3 nodes): `buildAiQueryWorkerConfig()`, `buildQueueLimiterConfig()`, `ai.module.spec.ts`
+- **Thin community `Community 162`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 163`** (3 nodes): `smtp.validator.ts`, `SmtpValidator`, `.validate()`
+- **Thin community `Community 163`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 164`** (3 nodes): `Engineering Standards Matrix: Allplan Compliance (2021-2026)`, `ENGINEERING_STANDARDS_MATRIX.md`, `Mevzuat Uyumluluğu İçin Tavsiye`
+- **Thin community `Community 164`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 165`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
+- **Thin community `Community 165`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 166`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
+- **Thin community `Community 166`** (3 nodes): `code:yaml (- generic [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 167`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 168`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
+- **Thin community `Community 168`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 169`** (3 nodes): `code:yaml (- generic [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 170`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
+- **Thin community `Community 170`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 171`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
+- **Thin community `Community 171`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 172`** (3 nodes): `code:yaml (- generic [ref=e1]:)`, `Page snapshot`, `error-context.md`
+- **Thin community `Community 172`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 173`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 174`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
+- **Thin community `Community 174`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 175`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 176`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
+- **Thin community `Community 176`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 177`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
+- **Thin community `Community 177`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 178`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
+- **Thin community `Community 178`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 179`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
+- **Thin community `Community 179`** (3 nodes): `code:yaml (- generic [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 180`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 181`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
+- **Thin community `Community 181`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 182`** (3 nodes): `code:yaml (- generic [ref=e1]:)`, `Page snapshot`, `error-context.md`
+- **Thin community `Community 182`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 183`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 184`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
+- **Thin community `Community 184`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 185`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
+- **Thin community `Community 185`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 186`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
+- **Thin community `Community 186`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 187`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
+- **Thin community `Community 187`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 188`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
+- **Thin community `Community 214`** (2 nodes): `AppModule`, `app.module.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 189`** (3 nodes): `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`, `error-context.md`
+- **Thin community `Community 215`** (2 nodes): `customers.module.ts`, `CustomersModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 190`** (3 nodes): `error-context.md`, `code:yaml (- generic [active] [ref=e1]:)`, `Page snapshot`
+- **Thin community `Community 216`** (2 nodes): `update-customer-profile.dto.ts`, `UpdateCustomerProfileDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 217`** (2 nodes): `AppModule`, `app.module.ts`
+- **Thin community `Community 217`** (2 nodes): `import-customers.dto.ts`, `ImportCustomerRecordDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 218`** (2 nodes): `customers.module.ts`, `CustomersModule`
+- **Thin community `Community 218`** (2 nodes): `register-customer.dto.ts`, `RegisterCustomerDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 219`** (2 nodes): `update-customer-profile.dto.ts`, `UpdateCustomerProfileDto`
+- **Thin community `Community 219`** (2 nodes): `metrics.module.ts`, `MetricsModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 220`** (2 nodes): `import-customers.dto.ts`, `ImportCustomerRecordDto`
+- **Thin community `Community 220`** (2 nodes): `settings.module.ts`, `SettingsModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 221`** (2 nodes): `register-customer.dto.ts`, `RegisterCustomerDto`
+- **Thin community `Community 221`** (2 nodes): `bulk-upsert-setting.dto.ts`, `BulkUpsertSettingDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 222`** (2 nodes): `metrics.module.ts`, `MetricsModule`
+- **Thin community `Community 222`** (2 nodes): `upsert-setting.dto.ts`, `UpsertSettingDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 223`** (2 nodes): `settings.module.ts`, `SettingsModule`
+- **Thin community `Community 223`** (2 nodes): `rbac.module.ts`, `RbacModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 224`** (2 nodes): `bulk-upsert-setting.dto.ts`, `BulkUpsertSettingDto`
+- **Thin community `Community 224`** (2 nodes): `tickets.module.ts`, `TicketsModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 225`** (2 nodes): `upsert-setting.dto.ts`, `UpsertSettingDto`
+- **Thin community `Community 225`** (2 nodes): `update-sla-policy.dto.ts`, `UpdateSlaPolicyDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 226`** (2 nodes): `rbac.module.ts`, `RbacModule`
+- **Thin community `Community 226`** (2 nodes): `create-ticket.dto.ts`, `CreateTicketDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 227`** (2 nodes): `tickets.module.ts`, `TicketsModule`
+- **Thin community `Community 227`** (2 nodes): `AddMessageDto`, `add-message.dto.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 228`** (2 nodes): `update-sla-policy.dto.ts`, `UpdateSlaPolicyDto`
+- **Thin community `Community 228`** (2 nodes): `update-ticket.dto.ts`, `UpdateTicketDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 229`** (2 nodes): `create-ticket.dto.ts`, `CreateTicketDto`
+- **Thin community `Community 229`** (2 nodes): `bulk-update-ticket.dto.ts`, `BulkUpdateTicketDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 230`** (2 nodes): `AddMessageDto`, `add-message.dto.ts`
+- **Thin community `Community 230`** (2 nodes): `escalate-ticket.dto.ts`, `EscalateTicketDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 231`** (2 nodes): `update-ticket.dto.ts`, `UpdateTicketDto`
+- **Thin community `Community 231`** (2 nodes): `create-sla-policy.dto.ts`, `CreateSlaPolicyDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 232`** (2 nodes): `bulk-update-ticket.dto.ts`, `BulkUpdateTicketDto`
+- **Thin community `Community 232`** (2 nodes): `branding.module.ts`, `BrandingModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 233`** (2 nodes): `escalate-ticket.dto.ts`, `EscalateTicketDto`
+- **Thin community `Community 233`** (2 nodes): `products.module.ts`, `ProductsModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 234`** (2 nodes): `create-sla-policy.dto.ts`, `CreateSlaPolicyDto`
+- **Thin community `Community 235`** (2 nodes): `redis.module.ts`, `RedisModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 235`** (2 nodes): `branding.module.ts`, `BrandingModule`
+- **Thin community `Community 236`** (2 nodes): `auth.module.ts`, `AuthModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 236`** (2 nodes): `products.module.ts`, `ProductsModule`
+- **Thin community `Community 237`** (2 nodes): `login.dto.ts`, `LoginDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 238`** (2 nodes): `redis.module.ts`, `RedisModule`
+- **Thin community `Community 239`** (2 nodes): `refresh.guard.ts`, `RefreshGuard`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 239`** (2 nodes): `auth.module.ts`, `AuthModule`
+- **Thin community `Community 240`** (2 nodes): `proactive-chat.module.ts`, `ProactiveChatModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 240`** (2 nodes): `login.dto.ts`, `LoginDto`
+- **Thin community `Community 241`** (2 nodes): `send-message.dto.ts`, `SendMessageDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 242`** (2 nodes): `refresh.guard.ts`, `RefreshGuard`
+- **Thin community `Community 242`** (2 nodes): `create-session.dto.ts`, `CreateSessionDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 243`** (2 nodes): `proactive-chat.module.ts`, `ProactiveChatModule`
+- **Thin community `Community 244`** (2 nodes): `faq.module.ts`, `FaqModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 244`** (2 nodes): `send-message.dto.ts`, `SendMessageDto`
+- **Thin community `Community 245`** (2 nodes): `health.module.ts`, `HealthModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 245`** (2 nodes): `create-session.dto.ts`, `CreateSessionDto`
+- **Thin community `Community 246`** (2 nodes): `AnnouncementTemplatesModule`, `announcement-templates.module.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 247`** (2 nodes): `faq.module.ts`, `FaqModule`
+- **Thin community `Community 247`** (2 nodes): `crm.module.ts`, `CrmModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 248`** (2 nodes): `health.module.ts`, `HealthModule`
+- **Thin community `Community 250`** (2 nodes): `prisma.module.ts`, `PrismaModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 249`** (2 nodes): `AnnouncementTemplatesModule`, `announcement-templates.module.ts`
+- **Thin community `Community 251`** (2 nodes): `AnnouncementsModule`, `announcements.module.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 250`** (2 nodes): `crm.module.ts`, `CrmModule`
+- **Thin community `Community 252`** (2 nodes): `macros.module.ts`, `MacrosModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 253`** (2 nodes): `prisma.module.ts`, `PrismaModule`
+- **Thin community `Community 253`** (2 nodes): `update-macro.dto.ts`, `UpdateMacroDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 254`** (2 nodes): `AnnouncementsModule`, `announcements.module.ts`
+- **Thin community `Community 254`** (2 nodes): `create-macro.dto.ts`, `CreateMacroDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 255`** (2 nodes): `macros.module.ts`, `MacrosModule`
+- **Thin community `Community 255`** (2 nodes): `common.module.ts`, `CommonModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 256`** (2 nodes): `update-macro.dto.ts`, `UpdateMacroDto`
+- **Thin community `Community 258`** (2 nodes): `knowledge-base.module.ts`, `KnowledgeBaseModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 257`** (2 nodes): `create-macro.dto.ts`, `CreateMacroDto`
+- **Thin community `Community 259`** (2 nodes): `AiModule`, `ai.module.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 258`** (2 nodes): `common.module.ts`, `CommonModule`
+- **Thin community `Community 260`** (2 nodes): `users.module.ts`, `UsersModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 261`** (2 nodes): `knowledge-base.module.ts`, `KnowledgeBaseModule`
+- **Thin community `Community 261`** (2 nodes): `update-user.dto.ts`, `UpdateUserDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 262`** (2 nodes): `AiModule`, `ai.module.ts`
+- **Thin community `Community 262`** (2 nodes): `update-profile.dto.ts`, `UpdateProfileDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 263`** (2 nodes): `users.module.ts`, `UsersModule`
+- **Thin community `Community 263`** (2 nodes): `create-user.dto.ts`, `CreateUserDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 264`** (2 nodes): `update-user.dto.ts`, `UpdateUserDto`
+- **Thin community `Community 264`** (2 nodes): `omni-channel.module.ts`, `OmniChannelModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 265`** (2 nodes): `update-profile.dto.ts`, `UpdateProfileDto`
+- **Thin community `Community 265`** (2 nodes): `teams.module.ts`, `TeamsModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 266`** (2 nodes): `create-user.dto.ts`, `CreateUserDto`
+- **Thin community `Community 266`** (2 nodes): `knowledge-pool.module.ts`, `KnowledgePoolModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 267`** (2 nodes): `omni-channel.module.ts`, `OmniChannelModule`
+- **Thin community `Community 267`** (2 nodes): `create-knowledge-source.dto.ts`, `CreateKnowledgeSourceDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 268`** (2 nodes): `teams.module.ts`, `TeamsModule`
+- **Thin community `Community 268`** (2 nodes): `automation.module.ts`, `AutomationModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 269`** (2 nodes): `knowledge-pool.module.ts`, `KnowledgePoolModule`
+- **Thin community `Community 269`** (2 nodes): `email-validator.module.ts`, `EmailValidatorModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 270`** (2 nodes): `create-knowledge-source.dto.ts`, `CreateKnowledgeSourceDto`
+- **Thin community `Community 270`** (2 nodes): `attachments.module.ts`, `AttachmentsModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 271`** (2 nodes): `automation.module.ts`, `AutomationModule`
+- **Thin community `Community 271`** (2 nodes): `webhooks.module.ts`, `WebhooksModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 272`** (2 nodes): `email-validator.module.ts`, `EmailValidatorModule`
+- **Thin community `Community 272`** (2 nodes): `notifications.module.ts`, `NotificationsModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 273`** (2 nodes): `attachments.module.ts`, `AttachmentsModule`
+- **Thin community `Community 273`** (2 nodes): `email.module.ts`, `EmailModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 274`** (2 nodes): `webhooks.module.ts`, `WebhooksModule`
+- **Thin community `Community 274`** (2 nodes): `update-preference.dto.ts`, `UpdateEmailPreferenceDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 275`** (2 nodes): `notifications.module.ts`, `NotificationsModule`
+- **Thin community `Community 275`** (2 nodes): `whatsapp.module.ts`, `WhatsAppModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 276`** (2 nodes): `email.module.ts`, `EmailModule`
+- **Thin community `Community 276`** (2 nodes): `reports.module.ts`, `ReportsModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 277`** (2 nodes): `update-preference.dto.ts`, `UpdateEmailPreferenceDto`
+- **Thin community `Community 277`** (2 nodes): `Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)`, `TASK_FINAL_STATUS.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 278`** (2 nodes): `whatsapp.module.ts`, `WhatsAppModule`
+- **Thin community `Community 278`** (2 nodes): `Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)`, `FINAL_TASK_LOG.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 279`** (2 nodes): `reports.module.ts`, `ReportsModule`
+- **Thin community `Community 279`** (2 nodes): `Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)`, `task.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 280`** (2 nodes): `Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)`, `TASK_FINAL_STATUS.md`
+- **Thin community `Community 280`** (2 nodes): `nlm_nlm_b137ca71_otomasyon_ve_raporlama_otomatik_kolonk.md`, `Otomasyon ve Raporlama: Otomatik kolon/kiriş donatısı yerleşimi, dinamik büküm şemaları (Bending Sch`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 281`** (2 nodes): `Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)`, `FINAL_TASK_LOG.md`
+- **Thin community `Community 281`** (2 nodes): `nlm_nlm_7fe5c8ef_5._mühendislik_donatı_ve_çelik_yapılar.md`, `5. Mühendislik, Donatı ve Çelik Yapılar`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 282`** (2 nodes): `Bilgi Mühendisliği Görevi: Destek Zekası Dönüşümü (Allplan 2026 Odaklı)`, `task.md`
+- **Thin community `Community 282`** (2 nodes): `donati_cakismasi_yonetimi.md`, `Donatı Çakışması Yönetimi`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 283`** (2 nodes): `nlm_nlm_b137ca71_otomasyon_ve_raporlama_otomatik_kolonk.md`, `Otomasyon ve Raporlama: Otomatik kolon/kiriş donatısı yerleşimi, dinamik büküm şemaları (Bending Sch`
+- **Thin community `Community 283`** (2 nodes): `nlm_nlm_b07dba1b_yapısal_analiz_saf_bimplus_autoconver.md`, `Yapısal Analiz (SAF): Bimplus AutoConverter kullanılarak fiziksel modelin analitik modele dönüştürül`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 284`** (2 nodes): `nlm_nlm_7fe5c8ef_5._mühendislik_donatı_ve_çelik_yapılar.md`, `5. Mühendislik, Donatı ve Çelik Yapılar`
+- **Thin community `Community 284`** (2 nodes): `nlm_nlm_8506b09d_3._bulut_işbirliği_allplan_share_ve_bim.md`, `3. Bulut İşbirliği: Allplan Share ve Bimplus`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 285`** (2 nodes): `donati_cakismasi_yonetimi.md`, `Donatı Çakışması Yönetimi`
+- **Thin community `Community 285`** (2 nodes): `allplan_share_ile_bulut_uzerinden_ekip_calismasini_optimize_etme.md`, `Allplan Share ile Bulut Üzerinden Ekip Çalışmasını Optimize Etme`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 286`** (2 nodes): `nlm_nlm_b07dba1b_yapısal_analiz_saf_bimplus_autoconver.md`, `Yapısal Analiz (SAF): Bimplus AutoConverter kullanılarak fiziksel modelin analitik modele dönüştürül`
+- **Thin community `Community 286`** (2 nodes): `nlm_nlm_3a9e58d5_çelik_detaylandırma_sds2_entegrasyonu_i.md`, `Çelik Detaylandırma: SDS2 entegrasyonu ile parametrik çelik bağlantı tasarımları, MRP/ERP yazılımlar`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 287`** (2 nodes): `nlm_nlm_8506b09d_3._bulut_işbirliği_allplan_share_ve_bim.md`, `3. Bulut İşbirliği: Allplan Share ve Bimplus`
+- **Thin community `Community 287`** (2 nodes): `allplan_bridgede_landxml_verilerinin_optimizasyonu.md`, `Allplan Bridge'de LandXML Verilerinin Optimizasyonu`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 288`** (2 nodes): `allplan_share_ile_bulut_uzerinden_ekip_calismasini_optimize_etme.md`, `Allplan Share ile Bulut Üzerinden Ekip Çalışmasını Optimize Etme`
+- **Thin community `Community 288`** (2 nodes): `nlm_nlm_4d5d1b97_lisans_modelleri_abonelik_subscription.md`, `Lisans Modelleri: Abonelik (Subscription) ve Kalıcı (Perpetual) lisans farkları, bulut (Bimplus) eri`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 289`** (2 nodes): `nlm_nlm_3a9e58d5_çelik_detaylandırma_sds2_entegrasyonu_i.md`, `Çelik Detaylandırma: SDS2 entegrasyonu ile parametrik çelik bağlantı tasarımları, MRP/ERP yazılımlar`
+- **Thin community `Community 289`** (2 nodes): `allplan_bridge_ve_yol_projelerinin_koordinasyonu.md`, `Allplan Bridge ve Yol Projelerinin Koordinasyonu`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 290`** (2 nodes): `allplan_bridgede_landxml_verilerinin_optimizasyonu.md`, `Allplan Bridge'de LandXML Verilerinin Optimizasyonu`
+- **Thin community `Community 290`** (2 nodes): `visual_scripting_arayuz_hatalari_ve_sifirlama.md`, `Visual Scripting Arayüz Hataları ve Sıfırlama`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 291`** (2 nodes): `nlm_nlm_4d5d1b97_lisans_modelleri_abonelik_subscription.md`, `Lisans Modelleri: Abonelik (Subscription) ve Kalıcı (Perpetual) lisans farkları, bulut (Bimplus) eri`
+- **Thin community `Community 291`** (2 nodes): `gelismis_donati_raporlari_ve_sekil_kodu_shape_code_yonetimi.md`, `Gelişmiş Donatı Raporları ve Şekil Kodu (Shape Code) Yönetimi`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 292`** (2 nodes): `allplan_bridge_ve_yol_projelerinin_koordinasyonu.md`, `Allplan Bridge ve Yol Projelerinin Koordinasyonu`
+- **Thin community `Community 292`** (2 nodes): `allplan_share_proje_yedekleme_backup_ve_geri_yukleme_restore.md`, `Allplan Share Proje Yedekleme (Backup) ve Geri Yükleme (Restore)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 293`** (2 nodes): `visual_scripting_arayuz_hatalari_ve_sifirlama.md`, `Visual Scripting Arayüz Hataları ve Sıfırlama`
+- **Thin community `Community 293`** (2 nodes): `nlm_nlm_5bcfd514_3b_donatı_modelleme_çubuk_donatı_hasır.md`, `3B Donatı Modelleme: Çubuk donatı, hasır donatı, manşon ve BAMTEC halı donatı sistemleri`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 294`** (2 nodes): `gelismis_donati_raporlari_ve_sekil_kodu_shape_code_yonetimi.md`, `Gelişmiş Donatı Raporları ve Şekil Kodu (Shape Code) Yönetimi`
+- **Thin community `Community 294`** (2 nodes): `nlm_nlm_bed65976_kurulum_süreci_sistem_gereksinimleri_c.md`, `Kurulum Süreci: Sistem gereksinimleri (CPU, VRAM, RAM önerileri), dil ve standart seçimleri (örn. Tü`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 295`** (2 nodes): `allplan_share_proje_yedekleme_backup_ve_geri_yukleme_restore.md`, `Allplan Share Proje Yedekleme (Backup) ve Geri Yükleme (Restore)`
+- **Thin community `Community 295`** (2 nodes): `allplan_ve_bimplus_senkronizasyon_hatalari.md`, `Allplan ve Bimplus Senkronizasyon Hataları`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 296`** (2 nodes): `nlm_nlm_5bcfd514_3b_donatı_modelleme_çubuk_donatı_hasır.md`, `3B Donatı Modelleme: Çubuk donatı, hasır donatı, manşon ve BAMTEC halı donatı sistemleri`
+- **Thin community `Community 296`** (2 nodes): `nlm_nlm_1ed4cdf5_oska_e-hakediş_cad_export_konfigürasyonu.md`, `Oska e-Hakediş CAD Export Konfigürasyonu`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 297`** (2 nodes): `nlm_nlm_bed65976_kurulum_süreci_sistem_gereksinimleri_c.md`, `Kurulum Süreci: Sistem gereksinimleri (CPU, VRAM, RAM önerileri), dil ve standart seçimleri (örn. Tü`
+- **Thin community `Community 297`** (2 nodes): `nlm_nlm_a1b5d6be_4._mimari_modelleme_ve_görselleştirme.md`, `4. Mimari Modelleme ve Görselleştirme`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 298`** (2 nodes): `allplan_ve_bimplus_senkronizasyon_hatalari.md`, `Allplan ve Bimplus Senkronizasyon Hataları`
+- **Thin community `Community 298`** (2 nodes): `celik_yapi_otomasyonunda_pythonpart_kullanimi.md`, `Çelik Yapı Otomasyonunda PythonPart Kullanımı`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 299`** (2 nodes): `nlm_nlm_1ed4cdf5_oska_e-hakediş_cad_export_konfigürasyonu.md`, `Oska e-Hakediş CAD Export Konfigürasyonu`
+- **Thin community `Community 299`** (2 nodes): `nlm_nlm_8b919363_oda_ve_alan_yönetimi_metraj_ve_etiketle.md`, `Oda ve Alan Yönetimi: Metraj ve etiketleme için hacim/yüzey hesaplamaları`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 300`** (2 nodes): `nlm_nlm_a1b5d6be_4._mimari_modelleme_ve_görselleştirme.md`, `4. Mimari Modelleme ve Görselleştirme`
+- **Thin community `Community 300`** (2 nodes): `bcf_ve_bimplus_ile_gelismis_cakisma_yonetimi.md`, `BCF ve Bimplus ile Gelişmiş Çakışma Yönetimi`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 301`** (2 nodes): `celik_yapi_otomasyonunda_pythonpart_kullanimi.md`, `Çelik Yapı Otomasyonunda PythonPart Kullanımı`
+- **Thin community `Community 301`** (2 nodes): `nlm_nlm_ce600175_kalite_kontrol_ve_standartlar_ids_info.md`, `Kalite Kontrol ve Standartlar: IDS (Information Delivery Specification) ile zorunlu veri kontrolü, M`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 302`** (2 nodes): `nlm_nlm_8b919363_oda_ve_alan_yönetimi_metraj_ve_etiketle.md`, `Oda ve Alan Yönetimi: Metraj ve etiketleme için hacim/yüzey hesaplamaları`
+- **Thin community `Community 302`** (2 nodes): `nlm_nlm_f230c967_lisans_aktivasyonu_product_key_ile_çevr.md`, `Lisans Aktivasyonu: Product Key ile çevrimiçi/çevrimdışı aktivasyon, lisans iadesi, Codemeter ve Sof`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 303`** (2 nodes): `bcf_ve_bimplus_ile_gelismis_cakisma_yonetimi.md`, `BCF ve Bimplus ile Gelişmiş Çakışma Yönetimi`
+- **Thin community `Community 303`** (2 nodes): `nlm_nlm_bebaac9c_ifc_aktarımı_ifc_2x3_ifc_4_ifc_4.3_a.md`, `IFC Aktarımı: IFC 2x3, IFC 4, IFC 4.3 (altyapı) standartları ile veri kayıpsız içe/dışa aktarım`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 304`** (2 nodes): `nlm_nlm_ce600175_kalite_kontrol_ve_standartlar_ids_info.md`, `Kalite Kontrol ve Standartlar: IDS (Information Delivery Specification) ile zorunlu veri kontrolü, M`
+- **Thin community `Community 304`** (2 nodes): `nlm_nlm_6c4ea639_eşzamanlı_çalışma_allplan_share_ile_bul.md`, `Eşzamanlı Çalışma: Allplan Share ile bulut üzerinden eşzamanlı modelleme, dosya kilitleme (Locking)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 305`** (2 nodes): `nlm_nlm_f230c967_lisans_aktivasyonu_product_key_ile_çevr.md`, `Lisans Aktivasyonu: Product Key ile çevrimiçi/çevrimdışı aktivasyon, lisans iadesi, Codemeter ve Sof`
+- **Thin community `Community 305`** (2 nodes): `allplan_connect_uzerinden_bulut_tabanli_lisans_yonetimi.md`, `Allplan Connect Üzerinden Bulut Tabanlı Lisans Yönetimi`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 306`** (2 nodes): `nlm_nlm_bebaac9c_ifc_aktarımı_ifc_2x3_ifc_4_ifc_4.3_a.md`, `IFC Aktarımı: IFC 2x3, IFC 4, IFC 4.3 (altyapı) standartları ile veri kayıpsız içe/dışa aktarım`
+- **Thin community `Community 306`** (2 nodes): `lisans_aktivasyon_sorunlari.md`, `Lisans Aktivasyon Sorunları`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 307`** (2 nodes): `nlm_nlm_6c4ea639_eşzamanlı_çalışma_allplan_share_ile_bul.md`, `Eşzamanlı Çalışma: Allplan Share ile bulut üzerinden eşzamanlı modelleme, dosya kilitleme (Locking)`
+- **Thin community `Community 307`** (2 nodes): `nlm_nlm_7075b5c1_allplan_pafta_düzenlemeden_x-ref_ile_dwg.md`, `Allplan Pafta Düzenlemeden X-Ref ile DWG Dönüşümü`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 308`** (2 nodes): `allplan_connect_uzerinden_bulut_tabanli_lisans_yonetimi.md`, `Allplan Connect Üzerinden Bulut Tabanlı Lisans Yönetimi`
+- **Thin community `Community 308`** (2 nodes): `nlm_nlm_8a404139_çakışma_yönetimi_clash_detection_bimp.md`, `Çakışma Yönetimi (Clash Detection): Bimplus'ta disiplin modellerinin (Mimari, Statik, MEP) birleştir`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 309`** (2 nodes): `lisans_aktivasyon_sorunlari.md`, `Lisans Aktivasyon Sorunları`
+- **Thin community `Community 309`** (2 nodes): `prekast_uretim_verileri_ve_makine_entegrasyonu_optimizasyonu.md`, `Prekast Üretim Verileri ve Makine Entegrasyonu Optimizasyonu`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 310`** (2 nodes): `nlm_nlm_7075b5c1_allplan_pafta_düzenlemeden_x-ref_ile_dwg.md`, `Allplan Pafta Düzenlemeden X-Ref ile DWG Dönüşümü`
+- **Thin community `Community 310`** (2 nodes): `nlm_nlm_973cb970_akıllı_mimari_elemanlar_parametrik_duva.md`, `Akıllı Mimari Elemanlar: Parametrik duvar, döşeme, kapı, pencere, çatı, merdiven ve çok katmanlı yap`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 311`** (2 nodes): `nlm_nlm_8a404139_çakışma_yönetimi_clash_detection_bimp.md`, `Çakışma Yönetimi (Clash Detection): Bimplus'ta disiplin modellerinin (Mimari, Statik, MEP) birleştir`
+- **Thin community `Community 311`** (2 nodes): `celik_yapi_sds2_baglanti_hatalari_yonetimi.md`, `Çelik Yapı (SDS2) Bağlantı Hataları Yönetimi`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 312`** (2 nodes): `prekast_uretim_verileri_ve_makine_entegrasyonu_optimizasyonu.md`, `Prekast Üretim Verileri ve Makine Entegrasyonu Optimizasyonu`
+- **Thin community `Community 312`** (2 nodes): `nlm_nlm_b17d04ab_yedekleme_ve_revizyon_bimplus_üzerinde_.md`, `Yedekleme ve Revizyon: Bimplus üzerinde versiyon karşılaştırması, Allplan Share projelerinin manuel`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 313`** (2 nodes): `nlm_nlm_973cb970_akıllı_mimari_elemanlar_parametrik_duva.md`, `Akıllı Mimari Elemanlar: Parametrik duvar, döşeme, kapı, pencere, çatı, merdiven ve çok katmanlı yap`
+- **Thin community `Community 313`** (2 nodes): `nlm_nlm_c5667fd9_bamtec_donatı_sistemi_ve_allplan_entegra.md`, `BAMTEC Donatı Sistemi ve Allplan Entegrasyonu`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 314`** (2 nodes): `celik_yapi_sds2_baglanti_hatalari_yonetimi.md`, `Çelik Yapı (SDS2) Bağlantı Hataları Yönetimi`
+- **Thin community `Community 314`** (2 nodes): `nlm_nlm_e7f26fd9_görselleştirme_teknolojileri_ai_visuali.md`, `Görselleştirme Teknolojileri: AI Visualizer ile yapay zeka destekli anlık render, Redshift motoru ve`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 315`** (2 nodes): `nlm_nlm_b17d04ab_yedekleme_ve_revizyon_bimplus_üzerinde_.md`, `Yedekleme ve Revizyon: Bimplus üzerinde versiyon karşılaştırması, Allplan Share projelerinin manuel`
+- **Thin community `Community 315`** (2 nodes): `nlm_nlm_d51514bf_2._openbim_ifc_ve_veri_yönetimi.md`, `2. OpenBIM, IFC ve Veri Yönetimi`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 316`** (2 nodes): `nlm_nlm_c5667fd9_bamtec_donatı_sistemi_ve_allplan_entegra.md`, `BAMTEC Donatı Sistemi ve Allplan Entegrasyonu`
+- **Thin community `Community 316`** (2 nodes): `nlm_nlm_9f90e219_hata_çözümleri_lisans_bulunamadı_hata.md`, `Hata Çözümleri: "Lisans bulunamadı" hataları, Windows Güvenlik Duvarı/Antivirüs engelleri, hizmet (s`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 317`** (2 nodes): `nlm_nlm_e7f26fd9_görselleştirme_teknolojileri_ai_visuali.md`, `Görselleştirme Teknolojileri: AI Visualizer ile yapay zeka destekli anlık render, Redshift motoru ve`
+- **Thin community `Community 317`** (2 nodes): `nlm_nlm_6ccfc632_geometri_optimizasyonu_büyük_dosyalarda.md`, `Geometri Optimizasyonu: Büyük dosyalarda performansı artırmak için B-rep yerine SweptSolid veya Extr`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 318`** (2 nodes): `nlm_nlm_d51514bf_2._openbim_ifc_ve_veri_yönetimi.md`, `2. OpenBIM, IFC ve Veri Yönetimi`
+- **Thin community `Community 318`** (2 nodes): `nlm_nlm_f94433eb_nitelik_eşleme_attribute_mapping_allp.md`, `Nitelik Eşleme (Attribute Mapping): Allplan verilerinin Pset_QuantityTakeOff, Pset_Cost gibi uluslar`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 319`** (2 nodes): `nlm_nlm_9f90e219_hata_çözümleri_lisans_bulunamadı_hata.md`, `Hata Çözümleri: "Lisans bulunamadı" hataları, Windows Güvenlik Duvarı/Antivirüs engelleri, hizmet (s`
+- **Thin community `Community 319`** (2 nodes): `nlm_nlm_4761d297_hata_çözümleri_asılı_kalan_senkronizasy.md`, `Hata Çözümleri: Asılı kalan senkronizasyon kilitlerinin Services üzerinden veya proje ayarlarından k`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 320`** (2 nodes): `nlm_nlm_6ccfc632_geometri_optimizasyonu_büyük_dosyalarda.md`, `Geometri Optimizasyonu: Büyük dosyalarda performansı artırmak için B-rep yerine SweptSolid veya Extr`
+- **Thin community `Community 320`** (2 nodes): `allplan_share_senkronizasyon_ve_dosya_kilidi_yonetimi.md`, `Allplan Share Senkronizasyon ve Dosya Kilidi Yönetimi`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 321`** (2 nodes): `nlm_nlm_f94433eb_nitelik_eşleme_attribute_mapping_allp.md`, `Nitelik Eşleme (Attribute Mapping): Allplan verilerinin Pset_QuantityTakeOff, Pset_Cost gibi uluslar`
+- **Thin community `Community 321`** (2 nodes): `nlm_nlm_6c6c0671_more_horiz.md`, `more_horiz`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 322`** (2 nodes): `nlm_nlm_4761d297_hata_çözümleri_asılı_kalan_senkronizasy.md`, `Hata Çözümleri: Asılı kalan senkronizasyon kilitlerinin Services üzerinden veya proje ayarlarından k`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 323`** (2 nodes): `allplan_share_senkronizasyon_ve_dosya_kilidi_yonetimi.md`, `Allplan Share Senkronizasyon ve Dosya Kilidi Yönetimi`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 324`** (2 nodes): `nlm_nlm_6c6c0671_more_horiz.md`, `more_horiz`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 325`** (2 nodes): `Frontend Deployment on Coolify`, `COOLIFY_FRONTEND.md`
+- **Thin community `Community 322`** (2 nodes): `Frontend Deployment on Coolify`, `COOLIFY_FRONTEND.md`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Error()` connect `Community 0` to `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 71`, `Community 9`, `Community 10`, `Community 13`, `Community 14`, `Community 15`, `Community 16`, `Community 20`, `Community 24`, `Community 25`, `Community 26`?**
-  _High betweenness centrality (0.081) - this node is a cross-community bridge._
-- **Why does `mt()` connect `Community 1` to `Community 0`, `Community 2`, `Community 4`, `Community 5`, `Community 9`, `Community 11`, `Community 15`, `Community 16`?**
+- **Why does `Error()` connect `Community 0` to `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 69`, `Community 10`, `Community 13`, `Community 14`, `Community 15`, `Community 16`, `Community 20`, `Community 25`, `Community 26`, `Community 27`?**
+  _High betweenness centrality (0.080) - this node is a cross-community bridge._
+- **Why does `mt()` connect `Community 1` to `Community 0`, `Community 2`, `Community 4`, `Community 5`, `Community 10`, `Community 11`, `Community 15`, `Community 16`?**
   _High betweenness centrality (0.038) - this node is a cross-community bridge._
-- **Why does `t()` connect `Community 0` to `Community 32`, `Community 1`, `Community 2`, `Community 3`, `Community 11`, `Community 26`?**
+- **Why does `t()` connect `Community 0` to `Community 32`, `Community 1`, `Community 2`, `Community 3`, `Community 11`, `Community 27`?**
   _High betweenness centrality (0.026) - this node is a cross-community bridge._
 - **Are the 235 inferred relationships involving `Error()` (e.g. with `bootstrap()` and `bootstrap()`) actually correct?**
   _`Error()` has 235 INFERRED edges - model-reasoned connections that need verification._
