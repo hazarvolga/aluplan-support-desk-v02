@@ -435,6 +435,8 @@ ${content}
                 return ['ai.custom.api_key', 'ai.custom.url', 'ai.custom.chat_model', 'ai.custom.embed_model'];
             case 'gemini':
                 return ['ai.gemini.api_key', 'ai.gemini.chat_model', 'ai.gemini.embed_model'];
+            case 'vertex':
+                return ['ai.vertex.project_id', 'ai.vertex.location', 'ai.vertex.chat_model', 'ai.vertex.embed_model'];
             default:
                 return [];
         }
@@ -454,7 +456,7 @@ ${content}
         const embedProviderName = await this.settings.getValue('ai.embed_provider') || chatProvider;
         const isClosed = await this.isCircuitClosed();
 
-        const providers = ['ollama', 'openai', 'llmapi', 'xai', 'deepseek', 'groq', 'custom', 'gemini'];
+        const providers = ['ollama', 'openai', 'llmapi', 'xai', 'deepseek', 'groq', 'custom', 'gemini', 'vertex'];
         const healthResults: Record<string, { available: boolean; message: string }> = {};
 
         for (const p of providers) {

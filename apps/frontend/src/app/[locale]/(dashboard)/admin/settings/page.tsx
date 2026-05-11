@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
     Loader2, Bot, Globe, Mail, ShieldCheck, Palette, CheckCircle2,
     XCircle, ExternalLink, Plus, Trash2, Edit2, AlertCircle, Clock,
-    Upload, Trash, MessageSquare, Phone, Monitor, Database
+    Upload, Trash, MessageSquare, Phone, Monitor, Database, Sparkles, Copy
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -673,11 +673,58 @@ export default function AdminSettingsPage() {
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
                                                     <Label className="text-xs">{t('ai.gemini.chat_model')}</Label>
-                                                    <Input value={getSetting('ai.gemini.chat_model')} onChange={e => updateValue('ai.gemini.chat_model', e.target.value)} placeholder="gemini-1.5-flash" className="bg-black/50 h-8 text-sm" />
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <Input 
+                                                            list="gemini-chat-models"
+                                                            value={getSetting('ai.gemini.chat_model')} 
+                                                            onChange={e => updateValue('ai.gemini.chat_model', e.target.value)} 
+                                                            placeholder="gemini-1.5-flash" 
+                                                            className="bg-black/50 h-8 text-sm" 
+                                                        />
+                                                        <datalist id="gemini-chat-models">
+                                                            <option value="gemini-1.5-flash" />
+                                                            <option value="gemini-1.5-pro" />
+                                                            <option value="gemini-2.0-flash-exp" />
+                                                        </datalist>
+                                                        <div className="flex gap-1">
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                className="h-5 px-1.5 text-[9px] hover:bg-teal-500/20 text-teal-500"
+                                                                onClick={() => updateValue('ai.gemini.chat_model', 'gemini-1.5-flash')}
+                                                            >
+                                                                Flash 1.5
+                                                            </Button>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                className="h-5 px-1.5 text-[9px] hover:bg-teal-500/20 text-teal-500"
+                                                                onClick={() => updateValue('ai.gemini.chat_model', 'gemini-2.0-flash-exp')}
+                                                            >
+                                                                Flash 2.0 (Exp)
+                                                            </Button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-xs">Vektör Modeli</Label>
-                                                    <Input value={getSetting('ai.gemini.embed_model')} onChange={e => updateValue('ai.gemini.embed_model', e.target.value)} placeholder="text-embedding-004" className="bg-black/50 h-8 text-sm" />
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <Input 
+                                                            list="gemini-embed-models"
+                                                            value={getSetting('ai.gemini.embed_model')} 
+                                                            onChange={e => updateValue('ai.gemini.embed_model', e.target.value)} 
+                                                            placeholder="text-embedding-004" 
+                                                            className="bg-black/50 h-8 text-sm" 
+                                                        />
+                                                        <datalist id="gemini-embed-models">
+                                                            <option value="text-embedding-004" />
+                                                        </datalist>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            className="h-5 px-1.5 text-[9px] w-fit hover:bg-teal-500/20 text-teal-500"
+                                                            onClick={() => updateValue('ai.gemini.embed_model', 'text-embedding-004')}
+                                                        >
+                                                            text-embedding-004
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1079,10 +1126,13 @@ export default function AdminSettingsPage() {
                                                     <div className="flex gap-2">
                                                         <Input
                                                             disabled
-                                                            value="http://localhost:4000/api/v1/email/gmail/callback"
+                                                            value={`${window.location.origin.replace('3000', '4000')}/api/v1/email/gmail/callback`}
                                                             className="text-xs h-8 bg-muted/50"
                                                         />
                                                     </div>
+                                                    <p className="text-[10px] text-muted-foreground mt-1">
+                                                        {t('email.redirect_uri_hint')}
+                                                    </p>
                                                 </div>
                                             </div>
 

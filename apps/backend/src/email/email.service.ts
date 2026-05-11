@@ -33,6 +33,7 @@ export class EmailService implements OnModuleInit {
     private async refreshProvider() {
         try {
             const providerName = (await this.settings.getValue('email.active_provider')) || 'resend';
+            this.logger.log(`📧 Active email provider from settings: ${providerName}`);
             switch (providerName) {
                 case 'smtp':
                     this.provider = this.smtp;
@@ -320,17 +321,27 @@ export class EmailService implements OnModuleInit {
 
     // ─── UTILITIES & SYNC TRIGGERS ────────────────────────────
 
-    async healthCheck(): Promise<{ provider: string; available: boolean }> {
-        const available = await this.provider.healthCheck();
-        let providerName = 'unknown';
-        if (this.provider instanceof ResendProvider) providerName = 'resend';
-        else if (this.provider instanceof SmtpProvider) providerName = 'smtp';
-        else if (this.provider instanceof GmailProvider) providerName = 'gmail';
-
-        return {
-            provider: providerName,
-            available,
-        };
+    async healthCheck(): Promise<{ provider: string; available: boolean; message?: string }> {
+        // Force refresh to get latest settings
+        await this.refreshProvider();
+        
+        // Get the real provider name directly from settings to avoid UI confusion
+        const providerName = (await this.settings.getValue('email.active_provider')) || 'resend';
+        
+        try {
+            const available = await this.provider.healthCheck();
+            return {
+                provider: providerName,
+                available,
+                message: available ? 'Connection successful' : 'Provider health check failed'
+            };
+        } catch (error: any) {
+            return {
+                provider: providerName,
+                available: false,
+                message: error.message
+            };
+        }
     }
 
     async switchProvider(name: 'resend' | 'smtp' | 'gmail') {

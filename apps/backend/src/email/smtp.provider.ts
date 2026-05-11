@@ -13,14 +13,23 @@ export class SmtpProvider implements EmailProvider {
         const host = await this.settings.getValue('email.smtp.host');
         if (!host) return null;
 
+        const port = parseInt((await this.settings.getValue('email.smtp.port')) ?? '587', 10);
+        const isSecure = (await this.settings.getValue('email.smtp.secure')) === 'true';
+
         return nodemailer.createTransport({
             host,
-            port: parseInt((await this.settings.getValue('email.smtp.port')) ?? '587', 10),
-            secure: (await this.settings.getValue('email.smtp.secure')) === 'true',
+            port,
+            secure: isSecure, // true for 465, false for other ports
             auth: {
                 user: (await this.settings.getValue('email.smtp.user')) ?? '',
                 pass: (await this.settings.getValue('email.smtp.pass')) ?? '',
             },
+            tls: {
+                // Do not fail on invalid certs (common with docker-mailserver/self-signed)
+                rejectUnauthorized: false,
+                // Ensure STARTTLS is attempted if not on secure port
+                ciphers: 'SSLv3',
+            }
         } as nodemailer.TransportOptions);
     }
 
@@ -39,13 +48,24 @@ export class SmtpProvider implements EmailProvider {
     }
 
     async healthCheck(): Promise<boolean> {
+        const host = (await this.settings.getValue('email.smtp.host')) || 'localhost';
+        const port = parseInt((await this.settings.getValue('email.smtp.port')) || '587', 10);
+        
         const transporter = await this.getTransporter();
-        if (!transporter) return false;
-        try {
-            await transporter.verify();
-            return true;
-        } catch {
+        if (!transporter) {
+            this.logger.warn(`⚠️ SMTP check skipped: Host not configured.`);
             return false;
+        }
+
+        try {
+            this.logger.log(`🔍 Testing SMTP connection to ${host}:${port}...`);
+            await transporter.verify();
+            this.logger.log(`✅ SMTP connection to ${host}:${port} successful.`);
+            return true;
+        } catch (error: any) {
+            this.logger.error(`❌ SMTP Connection Failed (${host}:${port}): ${error.message}`);
+            // Throwing allows EmailService to catch the error and return the message to the UI
+            throw new Error(`SMTP (${host}:${port}) Refused: ${error.message}`);
         }
     }
 }

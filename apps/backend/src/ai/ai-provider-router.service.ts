@@ -36,13 +36,9 @@ export class AiProviderRouter {
         
         if (name === 'openai') return this.openai;
         
-        if (name === 'vertex') {
-            this.logger.warn('⚠️ Provider "vertex" is deprecated. Falling back to "openai".');
-            return this.openai;
-        }
-        
-        if (['custom', 'xai', 'deepseek', 'groq'].includes(name)) {
-            this.custom.setProvider(name as 'custom' | 'xai' | 'deepseek' | 'groq');
+        if (['custom', 'xai', 'deepseek', 'groq', 'grok'].includes(name)) {
+            const providerKey = (name === 'grok') ? 'xai' : name;
+            this.custom.setProvider(providerKey as any);
             return this.custom;
         }
         

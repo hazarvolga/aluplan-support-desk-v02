@@ -875,7 +875,7 @@
       "secret_key": "Secret Access Key",
       "secret_key_placeholder": "e.g.: wJalrXU...",
       "endpoint": "Endpoint URL",
-      "endpoint_placeholder": "https://<accountid>.r2.cloudflarestorage.com",
+      "endpoint_placeholder": "https://[accountid].r2.cloudflarestorage.com",
       "region": "Region",
       "region_placeholder": "auto / us-east-1",
       "bucket": "Bucket Name",
