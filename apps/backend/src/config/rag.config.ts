@@ -94,6 +94,22 @@ export const RAG_CONFIG = {
         /** Max results to fetch before re-ranking */
         PRE_RERANK_LIMIT: 20,
     },
+
+    /** Embedding configuration for abstraction layer */
+    EMBEDDING: {
+        /** Active embedding version (Settings DB'den override edilebilir) */
+        DEFAULT_VERSION: 'v1',
+        /** Cleanup için bekleme süresi (ms) — 24 saat */
+        CLEANUP_DELAY_MS: 24 * 60 * 60 * 1000,
+        /** Migration batch size */
+        MIGRATION_BATCH_SIZE: 50,
+        /** Gemini embedding model dimensions */
+        GEMINI_DIM: 768,
+        /** OpenAI embedding dimensions */
+        OPENAI_DIM: 1536,
+        /** Ollama default dimensions */
+        OLLAMA_DIM: 768,
+    },
 } as const;
 
 /** Confidence band based on similarity score */
