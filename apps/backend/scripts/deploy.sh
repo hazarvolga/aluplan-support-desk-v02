@@ -21,7 +21,11 @@ npx prisma migrate deploy \
 
 # Verify critical column exists — if not, apply migrations directly via psql
 echo "[DEPLOY DIAGNOSTIC] Checking if is_vip column exists in customer_profiles..."
-HAS_VIP=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_name='customer_profiles' AND column_name='is_vip';" 2>/dev/null || echo "0")
+# Clean DATABASE_URL for psql (remove ?schema=... etc)
+CLEAN_DB_URL=$(echo $DATABASE_URL | sed 's/\?.*//')
+
+# Check if is_vip exists in customer_profiles
+HAS_VIP=$(psql "$CLEAN_DB_URL" -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_name='customer_profiles' AND column_name='is_vip';" 2>/dev/null || echo "0")
 
 if [ "$HAS_VIP" = "0" ]; then
   echo "[DEPLOY FIX] is_vip column MISSING — applying migration SQL directly via psql..."

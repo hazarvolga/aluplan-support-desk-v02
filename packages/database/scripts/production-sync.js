@@ -433,7 +433,7 @@ async function main() {
             await prisma.announcementTemplate.upsert({
                 where: { name: t.name },
                 update: { topic: t.topic, subject: t.subject, contentMjml: t.contentMjml },
-                create: { ...t, authorId: adminUser.id }
+                create: { ...t, createdBy: adminUser.id }
             });
         }
         console.log('✅ Announcement templates synchronized.');

@@ -108,7 +108,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
-      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-OPENAI}
       EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1536}
       GENERATIVE_MODEL: ${GENERATIVE_MODEL:-llama-3.3-70b-versatile}
       # Vector / RAG
@@ -120,6 +120,8 @@ services:
       SWAGGER_PASSWORD: ${SWAGGER_PASSWORD:-}
       # Monitoring
       SENTRY_ENABLED: ${SENTRY_ENABLED:-false}
+      # Security
+      ADMIN_BYPASS_EMAILS: ${ADMIN_BYPASS_EMAILS:-hazar@allplan.net.tr}
     ports:
       - "${PORT:-4000}:${PORT:-4000}"
     depends_on:

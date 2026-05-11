@@ -27,8 +27,8 @@ export class SmtpProvider implements EmailProvider {
             tls: {
                 // Do not fail on invalid certs (common with docker-mailserver/self-signed)
                 rejectUnauthorized: false,
-                // Ensure STARTTLS is attempted if not on secure port
-                ciphers: 'SSLv3',
+                // Ensure modern TLS version is used
+                minVersion: 'TLSv1.2'
             }
         } as nodemailer.TransportOptions);
     }

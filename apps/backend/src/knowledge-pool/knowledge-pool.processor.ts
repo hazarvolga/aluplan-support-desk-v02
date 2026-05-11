@@ -178,8 +178,13 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         if (!fileBuffer) {
             this.logger.warn(`⚠️ File not found in primary storage [${source.filePath}]. Attempting local fallback resolution...`);
 
-            // Smart Local Path Resolution (for legacy dataset files)
-            if (targetPath.startsWith('/') && !fs.existsSync(targetPath)) {
+            // 1. Try absolute path directly if it exists
+            if (targetPath.startsWith('/') && fs.existsSync(targetPath)) {
+                this.logger.log(`✅ Found file at absolute path: ${targetPath}`);
+                fileBuffer = fs.readFileSync(targetPath);
+            } 
+            // 2. Smart Local Path Resolution (for legacy dataset files)
+            else if (targetPath.startsWith('/') && !fs.existsSync(targetPath)) {
                 const datasetIndex = targetPath.indexOf('dataset');
                 if (datasetIndex !== -1) {
                     const relativePath = targetPath.substring(datasetIndex);
@@ -190,7 +195,9 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
                         fileBuffer = fs.readFileSync(targetPath);
                     }
                 }
-            } else if (!targetPath.startsWith('/') && fs.existsSync(path.resolve(process.cwd(), targetPath))) {
+            } 
+            // 3. Relative path check
+            else if (!targetPath.startsWith('/') && fs.existsSync(path.resolve(process.cwd(), targetPath))) {
                 targetPath = path.resolve(process.cwd(), targetPath);
                 fileBuffer = fs.readFileSync(targetPath);
             }

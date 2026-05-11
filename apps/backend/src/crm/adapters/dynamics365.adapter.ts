@@ -31,11 +31,14 @@ export class Dynamics365Adapter implements ICrmAdapter {
             });
 
             if (mainUser) {
-                // Ensure ADMIN role uppercase
-                if (mainUser.roleId !== 'ADMIN') {
+                const adminRole = await this.prisma.role.findFirst({
+                    where: { name: 'ADMIN' }
+                });
+
+                if (adminRole && mainUser.roleId !== adminRole.id) {
                     await this.prisma.user.update({
                         where: { id: mainUser.id },
-                        data: { roleId: 'ADMIN' }
+                        data: { roleId: adminRole.id }
                     });
                     this.logger.log(`🛡️ System Integrity: Role for ${adminEmail} updated to ADMIN.`);
                 }
