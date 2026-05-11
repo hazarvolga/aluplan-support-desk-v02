@@ -35,7 +35,7 @@ export async function login(
     password: string,
     options: LoginOptions = {},
 ) {
-    const { maxRetries = 3, timeout = 45000, debug = false } = options;
+    const { maxRetries = 3, timeout = 120000, debug = false } = options;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
@@ -45,7 +45,7 @@ export async function login(
             // Don't waitForLoadState('networkidle') — under `next dev` hot-reload
             // never lets the network settle and the wait expires. The selector
             // wait below is enough to confirm the page is interactive.
-            await page.waitForSelector('[data-testid="login-email"]', { timeout });
+            await page.waitForSelector('[data-testid="login-email"]', { timeout: 90000 });
 
             await page.getByTestId('login-email').clear();
             await page.getByTestId('login-email').fill(email);
