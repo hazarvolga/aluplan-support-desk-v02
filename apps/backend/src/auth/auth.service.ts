@@ -443,7 +443,7 @@ const hash = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
             // Return requirements for requested locale or fallback to 'en'
             return allReqs[locale] || allReqs['en'] || [];
         } catch (e) {
-            console.error('Failed to parse SYSTEM_REQUIREMENTS setting', e);
+            this.logger.error('Failed to parse SYSTEM_REQUIREMENTS setting', e);
             return [];
         }
     }

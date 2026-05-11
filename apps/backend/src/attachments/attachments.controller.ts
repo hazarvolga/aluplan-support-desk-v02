@@ -70,7 +70,7 @@ export class AttachmentsController {
             uploadError = e;
             // We log but don't THROW yet because we want to try parsing hotinfo metadata 
             // to ensure the technical snapshot reaches the admin even if S3 is down.
-            console.error(`[AttachmentsController] S3 Upload Failed: ${e.message}`);
+            this.logger.error(`[AttachmentsController] S3 Upload Failed: ${e.message}`);
         }
 
         let parsedHotinfo = null;
@@ -80,7 +80,7 @@ export class AttachmentsController {
             try {
                 parsedHotinfo = this.hotinfoParser.parseHotinfo(file.buffer.toString('utf-8'));
             } catch (e) {
-                console.error(`[AttachmentsController] Hotinfo Parsing Failed: ${e.message}`);
+                this.logger.error(`[AttachmentsController] Hotinfo Parsing Failed: ${e.message}`);
             }
         }
 

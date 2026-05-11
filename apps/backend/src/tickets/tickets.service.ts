@@ -459,7 +459,7 @@ export class TicketsService {
                     skipDuplicates: true
                 });
             } catch (err) {
-                console.error(`[TicketsService] Failed to link batch attachments: ${err.message}`);
+                this.logger.error(`[TicketsService] Failed to link batch attachments: ${err.message}`);
             }
         }
 

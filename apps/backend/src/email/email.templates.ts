@@ -10,6 +10,9 @@ const mjml2html = typeof mjmlModule === 'function' ? mjmlModule : ((mjmlModule a
 import * as Handlebars from 'handlebars';
 import { convert } from 'html-to-text';
 import { BaseEmailSchema } from './contracts/base.contract';
+import { Logger } from '@nestjs/common';
+
+const logger = new Logger('EmailTemplates');
 
 export interface EmailPayload {
   template: string;
@@ -61,9 +64,9 @@ export class TemplateService {
     this.localesDir = candidateLocalesPaths.find(p => fs.existsSync(p)) || candidateLocalesPaths[0];
 
     if (!fs.existsSync(this.mjmlBaseDir)) {
-      console.warn(`[TEMPLATE-SERVICE] MJML Base Dir NOT FOUND in any candidates. Tried: ${candidateMjmlPaths.join(', ')}`);
+      logger.warn(`[TEMPLATE-SERVICE] MJML Base Dir NOT FOUND in any candidates. Tried: ${candidateMjmlPaths.join(', ')}`);
     } else {
-      console.log(`[TEMPLATE-SERVICE] MJML template path resolved to: ${this.mjmlBaseDir}`);
+      logger.log(`[TEMPLATE-SERVICE] MJML template path resolved to: ${this.mjmlBaseDir}`);
     }
   }
 
@@ -191,7 +194,7 @@ export class TemplateService {
     // 5. [PILLAR 2] - Contract Validation (Soft validation for now to avoid crashing, but logging issues)
     const validationResult = BaseEmailSchema.safeParse(renderContext);
     if (!validationResult.success) {
-      console.error(`[CTO-AUDIT] Context Data Contract Violation in ${templateName}:`, validationResult.error.format());
+      logger.error(`[CTO-AUDIT] Context Data Contract Violation in ${templateName}:`, validationResult.error.format());
     }
 
     try {
@@ -208,7 +211,7 @@ export class TemplateService {
 
       if (errors && errors.length > 0) {
         const errorMsg = `MJML Compilation Errors for template "${templateName}": ${errors.map((e: any) => `[Line ${e.line}] ${e.message}`).join('; ')}`;
-        console.warn(`[MJML-WARN] ${errorMsg}`);
+        logger.warn(`[MJML-WARN] ${errorMsg}`);
         // We log but don't strictly throw if html is still generated, to avoid breaking mail delivery
         if (!html) throw new Error(errorMsg);
       }
@@ -231,7 +234,7 @@ export class TemplateService {
         subject: data.dynamicSubject || `Aluplan Destek - Yeni Bildirim`
       };
     } catch (e: any) {
-      console.error(`[TEMPLATE-SERVICE] CRITICAL FAILURE in ${templateName}:`, e.message);
+      logger.error(`[TEMPLATE-SERVICE] CRITICAL FAILURE in ${templateName}:`, e.message);
       throw e;
     }
   }

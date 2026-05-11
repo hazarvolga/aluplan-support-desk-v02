@@ -1,10 +1,13 @@
 import { envSchema } from './env-validation.schema';
+import { Logger } from '@nestjs/common';
+
+const logger = new Logger('Bootstrap');
 
 export function validate(config: Record<string, unknown>) {
     const result = envSchema.safeParse(config);
 
     if (result.success === false) {
-        console.error('❌ Invalid environment variables:', result.error.format());
+        logger.error('❌ Invalid environment variables:', result.error.format());
         process.exit(1);
     }
 
@@ -53,7 +56,7 @@ export default () => {
     };
 
     if (isProduction) {
-        console.log(`[Bootstrap] ⚙️ PRODUCTION CONFIG:
+        logger.log(`[Bootstrap] ⚙️ PRODUCTION CONFIG:
         - PORT: ${config.port}
         - DATABASE_HOST: ${config.database.url?.split('@')[1]?.split(':')[0] || 'MISSING'}
         - REDIS_URL: ${config.redis.url.replace(/\/\/.*@/, '//****:****@')}
@@ -70,21 +73,21 @@ export default () => {
                 import('dns').then(dns => {
                     dns.lookup(host, (err) => {
                         if (err) {
-                            console.error(`[Bootstrap] ❌ CRITICAL STORAGE DNS FAILURE: Host "${host}" is NOT resolvable from this container! (Error: ${err.code})`);
-                            console.error(`[Bootstrap] 👉 TROUBLESHOOT: If using Minio, ensure containers share a network. If using R2, verify your endpoint URL.`);
+                            logger.error(`[Bootstrap] ❌ CRITICAL STORAGE DNS FAILURE: Host "${host}" is NOT resolvable from this container! (Error: ${err.code})`);
+                            logger.error(`[Bootstrap] 👉 TROUBLESHOOT: If using Minio, ensure containers share a network. If using R2, verify your endpoint URL.`);
                         } else {
-                            console.log(`[Bootstrap] ✅ Storage Host "${host}" is resolvable.`);
+                            logger.log(`[Bootstrap] ✅ Storage Host "${host}" is resolvable.`);
                         }
                     });
                 });
             } else if (host?.includes('cloudflarestorage.com')) {
-                console.log(`[Bootstrap] ☁️ Cloudflare R2 detected as storage provider.`);
+                logger.log(`[Bootstrap] ☁️ Cloudflare R2 detected as storage provider.`);
             }
         }
 
-        if (!config.database.url) console.error('[Bootstrap] ❌ CRITICAL: DATABASE_URL is missing!');
+        if (!config.database.url) logger.error('[Bootstrap] ❌ CRITICAL: DATABASE_URL is missing!');
         if (!process.env.REDIS_URL && !process.env.REDIS_HOST) {
-            console.warn(`[Bootstrap] ⚠️ WARNING: Both REDIS_URL and REDIS_HOST missing. Using fallback URL: ${config.redis.url}`);
+            logger.warn(`[Bootstrap] ⚠️ WARNING: Both REDIS_URL and REDIS_HOST missing. Using fallback URL: ${config.redis.url}`);
         }
     }
 

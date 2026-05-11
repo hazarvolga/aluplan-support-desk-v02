@@ -404,56 +404,56 @@ export class Dynamics365Adapter implements ICrmAdapter {
     async getDiscoveryData(config: any): Promise<any> {
         const connIdStr = `[Discovery:${config.id?.substring(0, 8) || 'unknown'}]`;
         try {
-            console.log(`${connIdStr} Starting discovery...`);
+            this.logger.log(`${connIdStr} Starting discovery...`);
 
             let token: string;
             try {
                 token = await this.getAccessToken(config);
-                console.log(`${connIdStr} Token acquired ✅`);
+                this.logger.log(`${connIdStr} Token acquired ✅`);
             } catch (tokenErr) {
                 if (tokenErr.message.includes('Missing required Dynamics 365 credentials')) {
-                    console.log(`${connIdStr} CRM credentials not fully configured yet. Returning empty discovery data.`);
+                    this.logger.log(`${connIdStr} CRM credentials not fully configured yet. Returning empty discovery data.`);
                     return { account: [], contact: [] };
                 }
                 const details = tokenErr.response?.data ? JSON.stringify(tokenErr.response.data) : tokenErr.message;
-                console.error(`${connIdStr} [PHASE:TOKEN] Auth rejection: ${details}`);
+                this.logger.error(`${connIdStr} [PHASE:TOKEN] Auth rejection: ${details}`);
                 throw new Error(`Authentication with Microsoft failed: ${tokenErr.message}`);
             }
 
             const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
 
             // 1. Fetch Metadata (Labels) with individual logging
-            console.log(`${connIdStr} Fetching account metadata...`);
+            this.logger.log(`${connIdStr} Fetching account metadata...`);
             let accountFields = [];
             try {
                 accountFields = await this.fetchEntityMetadata(instanceUrl, token, 'account');
             } catch (metaErr) {
-                console.warn(`${connIdStr} [PHASE:ACCOUNT_META] Failed, skipping labels: ${metaErr.message}`);
+                this.logger.warn(`${connIdStr} [PHASE:ACCOUNT_META] Failed, skipping labels: ${metaErr.message}`);
             }
 
-            console.log(`${connIdStr} Fetching contact metadata...`);
+            this.logger.log(`${connIdStr} Fetching contact metadata...`);
             let contactFields = [];
             try {
                 contactFields = await this.fetchEntityMetadata(instanceUrl, token, 'contact');
             } catch (metaErr) {
-                console.warn(`${connIdStr} [PHASE:CONTACT_META] Failed, skipping labels: ${metaErr.message}`);
+                this.logger.warn(`${connIdStr} [PHASE:CONTACT_META] Failed, skipping labels: ${metaErr.message}`);
             }
 
             // 2. Fetch Sample Records with individual logging
-            console.log(`${connIdStr} Fetching account sample record...`);
+            this.logger.log(`${connIdStr} Fetching account sample record...`);
             let accountSample = null;
             try {
                 accountSample = await this.fetchSampleRecord(instanceUrl, token, 'accounts');
             } catch (sampErr) {
-                console.warn(`${connIdStr} [PHASE:ACCOUNT_SAMPLE] Failed, no samples: ${sampErr.message}`);
+                this.logger.warn(`${connIdStr} [PHASE:ACCOUNT_SAMPLE] Failed, no samples: ${sampErr.message}`);
             }
 
-            console.log(`${connIdStr} Fetching contact sample record...`);
+            this.logger.log(`${connIdStr} Fetching contact sample record...`);
             let contactSample = null;
             try {
                 contactSample = await this.fetchSampleRecord(instanceUrl, token, 'contacts');
             } catch (sampErr) {
-                console.warn(`${connIdStr} [PHASE:CONTACT_SAMPLE] Failed, no samples: ${sampErr.message}`);
+                this.logger.warn(`${connIdStr} [PHASE:CONTACT_SAMPLE] Failed, no samples: ${sampErr.message}`);
             }
 
             // 3. Map Samples to Metadata with fallback for missing metadata
@@ -492,14 +492,14 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 return results;
             };
 
-            console.log(`${connIdStr} Discovery complete ✅ (Fields: A:${accountFields.length}, C:${contactFields.length})`);
+            this.logger.log(`${connIdStr} Discovery complete ✅ (Fields: A:${accountFields.length}, C:${contactFields.length})`);
             return {
                 account: mapSampleToFields(accountFields, accountSample),
                 contact: mapSampleToFields(contactFields, contactSample)
             };
         } catch (error) {
             const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-            console.error(`${connIdStr} DISCOVERY SYSTEM ERROR: ${errorDetails}`);
+            this.logger.error(`${connIdStr} DISCOVERY SYSTEM ERROR: ${errorDetails}`);
             throw error;
         }
     }
@@ -520,7 +520,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
             return response.data.value;
         } catch (error) {
             const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-            console.warn(`[PHASE:METADATA_ALT_TRY] ${entityName} alternate fetch failed: ${errorDetails}`);
+            this.logger.warn(`[PHASE:METADATA_ALT_TRY] ${entityName} alternate fetch failed: ${errorDetails}`);
 
             // Fallback to minimal names if metadata fails but samples work
             return [];
@@ -591,7 +591,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
         // Debug Phase: Secure Parameter Verification
         const mask = (str: string) => str ? `${str.substring(0, 4)}...${str.substring(str.length - 4)}` : 'NULL';
-        console.log(`[TOKEN_ACQUISITION] Params: Tenant=${mask(tenantId)} (${tenantId?.length}), ClientID=${mask(clientId)} (${clientId?.length}), Secret=${mask(clientSecret)} (${clientSecret?.length}), Instance=${rawInstanceUrl}`);
+        this.logger.log(`[TOKEN_ACQUISITION] Params: Tenant=${mask(tenantId)} (${tenantId?.length}), ClientID=${mask(clientId)} (${clientId?.length}), Secret=${mask(clientSecret)} (${clientSecret?.length}), Instance=${rawInstanceUrl}`);
 
         if (!tenantId || !clientId || !clientSecret || !rawInstanceUrl) {
             throw new Error(`Missing required Dynamics 365 credentials: T:${!!tenantId}, C:${!!clientId}, S:${!!clientSecret}, U:${!!rawInstanceUrl}`);
@@ -613,7 +613,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
             return response.data.access_token;
         } catch (error) {
             const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-            console.error(`[TOKEN_ACQUISITION_FAILED] URL: ${tokenUrl}, Error: ${errorDetails}`);
+            this.logger.error(`[TOKEN_ACQUISITION_FAILED] URL: ${tokenUrl}, Error: ${errorDetails}`);
             throw error;
         }
     }
