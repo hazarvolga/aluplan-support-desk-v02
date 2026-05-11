@@ -205,6 +205,8 @@ export const api = {
         sync: (id: string) => request<any>(`/knowledge-pool/sources/${id}/sync`, { method: 'POST' }),
         logs: (id: string) => request<any[]>(`/knowledge-pool/sources/${id}/logs`),
         syncDataset: () => request<any>('/knowledge-pool/sync-dataset', { method: 'POST' }),
+        delete: (id: string) => request<{ success: boolean; message: string }>(`/knowledge-pool/sources/${id}`, { method: 'DELETE' }),
+        bulkDelete: (ids: string[]) => request<{ success: boolean; count: number }>('/knowledge-pool/sources/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
     },
     tickets: {
         list: (params?: Record<string, string>) => {

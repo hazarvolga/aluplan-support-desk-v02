@@ -8,7 +8,7 @@ import {
     Database, Globe, FileText, RefreshCw,
     History, CheckCircle2, XCircle, Clock, Search,
     FileIcon, ArrowUpCircle, MousePointer2,
-    ChevronDown, ChevronUp, ChevronsUpDown, PlayCircle
+    ChevronDown, ChevronUp, ChevronsUpDown, PlayCircle, Trash2
 } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
@@ -158,15 +158,46 @@ export default function KnowledgePoolPage() {
     };
 
     const handleSync = async (id: string) => {
-        setIsSyncing(prev => new Set(prev).add(id));
         try {
+            setIsSyncing(prev => new Set(prev).add(id));
             await api.pool.sync(id);
-            toast({ title: t('toasts.sync_started'), description: t('toasts.sync_desc') });
-            loadSources();
-        } catch (err: any) {
-            toast({ title: t('logs.error'), description: err.message, variant: 'destructive' });
+            toast({ title: t('sync.started'), description: t('sync.started_desc'), variant: 'default' });
+            loadSources(); 
+        } catch (error) {
+            toast({ title: t('sync.failed'), description: t('sync.failed_desc'), variant: 'destructive' });
         } finally {
-            setIsSyncing(prev => { const n = new Set(prev); n.delete(id); return n; });
+            setIsSyncing(prev => { const next = new Set(prev); next.delete(id); return next; });
+        }
+    };
+
+    const handleDelete = async (id: string, name: string) => {
+        if (!window.confirm(`Are you sure you want to completely delete "${name}"? This action cannot be undone.`)) {
+            return;
+        }
+        
+        try {
+            await api.pool.delete(id);
+            toast({ title: 'Deleted', description: `Successfully deleted "${name}"`, variant: 'default' });
+            setSources(prev => prev.filter(s => s.id !== id));
+            setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+        } catch (error: any) {
+            toast({ title: 'Delete Failed', description: error.message || 'Something went wrong', variant: 'destructive' });
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`Are you sure you want to completely delete ${selectedIds.size} items? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const ids = Array.from(selectedIds);
+            const res = await api.pool.bulkDelete(ids);
+            toast({ title: 'Deleted', description: `Successfully deleted ${res.count} items`, variant: 'default' });
+            setSources(prev => prev.filter(s => !ids.includes(s.id)));
+            setSelectedIds(new Set());
+        } catch (error: any) {
+            toast({ title: 'Bulk Delete Failed', description: error.message || 'Something went wrong', variant: 'destructive' });
         }
     };
 
@@ -373,6 +404,11 @@ export default function KnowledgePoolPage() {
                                             {isBulkSyncing ? <RefreshCw className="h-3 w-3 animate-spin" /> : <PlayCircle className="h-3 w-3" />}
                                             {t('buttons.bulk_sync', { count: selectedIds.size })}
                                         </Button>
+                                        <Button size="sm" onClick={handleBulkDelete} variant="destructive"
+                                            className="h-7 text-[10px] uppercase font-bold tracking-widest gap-1.5 bg-red-500/20 text-red-500 hover:bg-red-500/30">
+                                            <Trash2 className="h-3 w-3" />
+                                            DELETE
+                                        </Button>
                                         <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}
                                             className="h-7 text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                                             {t('buttons.cancel')}
@@ -401,6 +437,9 @@ export default function KnowledgePoolPage() {
                                             <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-24" onClick={() => toggleSort('type')}>
                                                 <span className="flex items-center gap-1">{t('table.type')} <SortIcon field="type" /></span>
                                             </TableHead>
+                                            <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-32" onClick={() => toggleSort('category')}>
+                                                <span className="flex items-center gap-1">Kategori <SortIcon field="category" /></span>
+                                            </TableHead>
                                             <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-28" onClick={() => toggleSort('status')}>
                                                 <span className="flex items-center gap-1">{t('table.status')} <SortIcon field="status" /></span>
                                             </TableHead>
@@ -416,13 +455,13 @@ export default function KnowledgePoolPage() {
                                     <TableBody>
                                         {loadingSources ? (
                                             <TableRow>
-                                                <TableCell colSpan={7} className="text-center py-16">
+                                                <TableCell colSpan={8} className="text-center py-16">
                                                     <RefreshCw className="h-5 w-5 animate-spin mx-auto text-primary" />
                                                 </TableCell>
                                             </TableRow>
                                         ) : filteredSources.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={7} className="text-center py-16 text-muted-foreground">
+                                                <TableCell colSpan={8} className="text-center py-16 text-muted-foreground">
                                                     <Database className="h-8 w-8 mx-auto mb-3 opacity-20" />
                                                     <p className="text-[10px] uppercase font-mono tracking-widest">{t('table.no_records')}</p>
                                                 </TableCell>
@@ -456,6 +495,11 @@ export default function KnowledgePoolPage() {
                                                         {source.type === 'URL' ? 'URL' : source.type?.replace('FILE_', '') || t('filters.file')}
                                                     </Badge>
                                                 </TableCell>
+                                                <TableCell className="w-32">
+                                                    <span className="text-[10px] font-mono font-medium truncate block w-28" title={(source.metadata as any)?.category || 'General'}>
+                                                        {(source.metadata as any)?.category || 'General'}
+                                                    </span>
+                                                </TableCell>
                                                 <TableCell className="w-28">{statusBadge(source.status)}</TableCell>
                                                 <TableCell className="w-24 text-right">
                                                     <span className="text-[11px] font-mono text-muted-foreground">{source._count?.embeddings ?? 0}</span>
@@ -475,6 +519,10 @@ export default function KnowledgePoolPage() {
                                                         <Button variant="ghost" size="icon" className="h-7 w-7 rounded-none hover:bg-primary/10 hover:text-primary"
                                                             onClick={() => viewLogs(source)}>
                                                             <History className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-none hover:bg-red-500/10 hover:text-red-500"
+                                                            onClick={() => handleDelete(source.id, source.name)}>
+                                                            <Trash2 className="h-3.5 w-3.5" />
                                                         </Button>
                                                     </div>
                                                 </TableCell>

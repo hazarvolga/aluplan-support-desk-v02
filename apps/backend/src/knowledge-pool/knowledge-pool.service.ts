@@ -6,6 +6,7 @@ import { CreateKnowledgeSourceDto } from './dto/create-knowledge-source.dto';
 import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
 import * as path from 'path';
 import * as fs from 'fs';
+import { StorageService } from '../common/services/storage.service';
 
 @Injectable()
 export class KnowledgePoolService {
@@ -13,6 +14,7 @@ export class KnowledgePoolService {
 
     constructor(
         private readonly prisma: PrismaService,
+        private readonly storageService: StorageService,
         @InjectQueue('knowledge-sync') private readonly syncQueue: Queue,
     ) { }
 
@@ -58,6 +60,57 @@ export class KnowledgePoolService {
                 }
             }
         });
+    }
+
+    async deleteSource(id: string): Promise<{ success: boolean; message: string }> {
+        const source = await this.prisma.knowledgeSource.findUnique({
+            where: { id }
+        });
+
+        if (!source) {
+            throw new NotFoundException('Source not found');
+        }
+
+        // 1. Delete physical file from storage if it exists and is not a URL
+        if (source.filePath && source.type !== 'URL') {
+            try {
+                this.logger.log(`🗑️ Deleting physical file from storage: ${source.filePath}`);
+                await this.storageService.deleteFile(source.filePath);
+            } catch (error) {
+                this.logger.warn(`⚠️ Failed to delete physical file (may already be deleted): ${error.message}`);
+                // Proceed with DB deletion anyway to avoid orphan records
+            }
+        }
+
+        // 2. Delete the record from the database.
+        // Due to `onDelete: Cascade` in schema, this will automatically delete:
+        // - KnowledgePoolEmbedding
+        // - KnowledgeSourceSyncLog
+        await this.prisma.knowledgeSource.delete({
+            where: { id }
+        });
+
+        this.logger.log(`✅ Successfully deleted knowledge source and all related data: ${source.name} (${id})`);
+        
+        return { success: true, message: 'Source deleted successfully' };
+    }
+
+    async bulkDeleteSources(ids: string[]): Promise<{ success: boolean; count: number }> {
+        const sources = await this.prisma.knowledgeSource.findMany({
+            where: { id: { in: ids } }
+        });
+
+        let deletedCount = 0;
+        for (const source of sources) {
+            try {
+                await this.deleteSource(source.id);
+                deletedCount++;
+            } catch (error) {
+                this.logger.error(`Failed to bulk delete source ${source.id}: ${error.message}`);
+            }
+        }
+        
+        return { success: true, count: deletedCount };
     }
 
     async triggerSync(id: string) {

@@ -343,25 +343,44 @@ export class AiService implements AiProvider {
         });
     }
 
-    async cleanKnowledgeDocument(content: string): Promise<string | null> {
-        return this.executeWithFallback('chat', 'clean_knowledge', async (provider) => {
-            const prompt = `You are an expert technical writer and AI data engineer. 
-I am providing you with a raw, unstructured technical document (could be a PDF extract, a raw log file, or messy notes).
-Your task is to extract the core technical knowledge, errors, solutions, and symptoms, and format them into a clean, structured Markdown format 
-that is highly optimized for a RAG (Retrieval-Augmented Generation) system.
+    async analyzeAndCleanDocument(content: string, fileName: string): Promise<{ cleanedContent: string; category: string }> {
+        const result = await this.executeWithFallback<{ cleanedContent: string; category: string }>('chat', 'analyze_knowledge', async (provider) => {
+            const prompt = `You are an expert technical writer and AI data engineer for Allplan (BIM software).
+I am providing you with a raw technical document: "${fileName}".
 
-Rules:
-1. Remove all noise (page numbers, headers, footers, irrelevant intro/outro).
-2. Group information logically using Markdown headers (##).
-3. If it contains QA pairs or Errors/Solutions, format them clearly (e.g., **Symptom:** ..., **Solution:** ...).
-4. Do NOT make up information. Only use the provided text.
-5. Provide ONLY the final markdown text without any conversational wrapper.
+Your task is:
+1. **Clean & Structure:** Extract core technical knowledge, errors, solutions, and symptoms. Format in clean Markdown. Remove noise (headers, footers).
+2. **Categorize:** Choose the most appropriate category from this list:
+   - Installation & Setup
+   - Licensing & Wibu
+   - Graphics & Hardware
+   - Export & Import (IFC, DWG, etc.)
+   - Modeling & Architecture
+   - Project & Data Management
+   - Engineering & Reinforcement
+   - General Technical
+3. **Output Format:** You MUST return a valid JSON object with exactly two keys: "cleanedContent" and "category". Do not include any other text.
 
-RAW DOCUMENT:
+RAW DOCUMENT CONTENT:
 ${content}
 `;
-            return provider.generate(prompt, 60000);
+            const result = await provider.generate(prompt, 60000);
+            if (!result) return { cleanedContent: content, category: 'General Technical' };
+
+            try {
+                // Try to parse JSON from the response
+                const jsonStr = result.replace(/```json/g, '').replace(/```/g, '').trim();
+                const parsed = JSON.parse(jsonStr);
+                return {
+                    cleanedContent: parsed.cleanedContent || content,
+                    category: parsed.category || 'General Technical'
+                };
+            } catch (e) {
+                this.logger.warn(`Failed to parse AI categorization JSON: ${e.message}. Using raw output.`);
+                return { cleanedContent: result, category: 'General Technical' };
+            }
         });
+        return result || { cleanedContent: content, category: 'General Technical' };
     }
 
     async analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'> {

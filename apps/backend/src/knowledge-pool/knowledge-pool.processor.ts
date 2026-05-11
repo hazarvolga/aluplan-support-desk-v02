@@ -143,6 +143,8 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
             }
         }
 
+        const category = (source.metadata as any)?.category || 'General';
+
         await this.prisma.knowledgeSource.update({
             where: { id: source.id },
             data: {
@@ -153,7 +155,8 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
                 metadata: {
                     ...((source.metadata as Record<string, unknown>) || {}),
                     lastContentLength: newLength,
-                    isMajorChange
+                    isMajorChange,
+                    category: category
                 }
             }
         });
@@ -223,12 +226,18 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         }
 
         // Apply AI Pre-processing if enabled in metadata
-        if ((source.metadata as Record<string, unknown>)?.useAiPreprocessing) {
-            this.logger.log(`🧠 Applying AI Pre-processing for formatting and noise reduction: ${source.fileName}`);
+        let category = (source.metadata as any)?.category || 'General';
+        
+        if ((source.metadata as Record<string, unknown>)?.useAiPreprocessing || !((source.metadata as any)?.category)) {
+            this.logger.log(`🧠 Applying AI for categorization and cleaning: ${source.fileName}`);
             try {
-                content = (await this.aiService.cleanKnowledgeDocument(content)) ?? content;
+                // 1. Categorize & Clean
+                const aiResult = await this.aiService.analyzeAndCleanDocument(content, source.fileName || source.name || 'document');
+                content = aiResult.cleanedContent ?? content;
+                category = aiResult.category ?? category;
+                this.logger.log(`🏷️ Document categorized as: ${category}`);
             } catch (aiError: any) {
-                this.logger.warn(`⚠️ AI Pre-processing failed (${aiError.message}), falling back to raw content for ${source.fileName}`);
+                this.logger.warn(`⚠️ AI Pre-processing failed: ${aiError.message}. Continuing with raw content.`);
             }
         }
 
@@ -268,7 +277,8 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
                 lastSyncedAt: new Date(),
                 metadata: {
                     ...((source.metadata as Record<string, unknown>) || {}),
-                    lastContentLength: newLength
+                    lastContentLength: newLength,
+                    category: category
                 }
             }
         });

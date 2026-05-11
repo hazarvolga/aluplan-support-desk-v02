@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger, Delete } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
+import * as crypto from 'crypto';
 import { KnowledgePoolService } from './knowledge-pool.service';
 import { CreateKnowledgeSourceDto } from './dto/create-knowledge-source.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -11,6 +12,7 @@ import { Public } from '../auth/decorators/public.decorator';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { KnowledgeSourceType } from '@aluplan/database';
 import { StorageService } from '../common/services/storage.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 // Production Knowledge Base Stabilization Sync v1.0.3 - Final RAG Fixes (Multi-chunk + High-precision 1536 aligned)
 @ApiTags('Knowledge Pool')
@@ -20,17 +22,18 @@ export class KnowledgePoolController {
     constructor(
         private readonly knowledgePoolService: KnowledgePoolService,
         private readonly storageService: StorageService,
+        private readonly prisma: PrismaService,
     ) { }
 
     @Post('sources')
-    @Roles('admin', 'super-admin')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
     @ApiOperation({ summary: 'Add a new knowledge source (URL)' })
     async addSource(@Body() dto: CreateKnowledgeSourceDto): Promise<any> {
         return this.knowledgePoolService.createSource(dto);
     }
 
     @Post('sources/upload')
-    @Roles('admin', 'super-admin')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
     @UseInterceptors(
         FileInterceptor('file', {
             storage: memoryStorage(), // Use memory storage so we can stream to R2/S3
@@ -72,11 +75,30 @@ export class KnowledgePoolController {
 
         const type = this.determineTypeFromExt(ext);
 
+        // Duplicate Check (Hash-based)
+        const hash = crypto.createHash('sha256').update(file.buffer).digest('hex');
+        const existing = await this.prisma.knowledgeSource.findFirst({
+            where: { lastHash: hash }
+        });
+
+        if (existing) {
+            logger.warn(`Duplicate file detected: ${file.originalname} (Already exists as ${existing.name})`);
+            throw new Error(`DUPLICATE_FILE: This file already exists in the knowledge pool as "${existing.name}".`);
+        }
+
         // Upload to R2/S3 and get storage key
         const storageKey = await this.storageService.uploadFile(file, 'knowledge-pool');
         file = { ...file, path: storageKey } as Express.Multer.File;
 
-        return this.knowledgePoolService.createFileSource(name, type, file);
+        const source = await this.knowledgePoolService.createFileSource(name, type, file);
+        
+        // Update hash immediately
+        await this.prisma.knowledgeSource.update({
+            where: { id: source.id },
+            data: { lastHash: hash }
+        });
+
+        return source;
     }
 
     @Get('sources')
@@ -86,8 +108,22 @@ export class KnowledgePoolController {
         return this.knowledgePoolService.getAllSources();
     }
 
+    @Post('sources/bulk-delete')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Delete multiple knowledge sources' })
+    async bulkDeleteSources(@Body() body: { ids: string[] }) {
+        return this.knowledgePoolService.bulkDeleteSources(body.ids);
+    }
+
+    @Delete('sources/:id')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Delete a knowledge source completely' })
+    async deleteSource(@Param('id') id: string) {
+        return this.knowledgePoolService.deleteSource(id);
+    }
+
     @Post('sources/:id/sync')
-    @Roles('admin', 'super-admin')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
     @ApiOperation({ summary: 'Manually trigger a sync for a source' })
     async triggerSync(@Param('id') id: string) {
         console.log(`[DEBUG] Received sync request for ID: ${id}`);
@@ -96,14 +132,14 @@ export class KnowledgePoolController {
     }
 
     @Get('sources/:id/logs')
-    @Roles('admin', 'super-admin')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager', 'agent')
     @ApiOperation({ summary: 'Get sync history for a source' })
     async getLogs(@Param('id') id: string) {
         return this.knowledgePoolService.getSyncLogs(id);
     }
 
     @Post('sync-dataset')
-    @Roles('admin', 'super-admin')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
     @ApiOperation({ summary: 'Manually trigger a sync of the local /dataset folder' })
     async triggerDatasetSync() {
         return this.knowledgePoolService.syncLocalDataset();
