@@ -1,11 +1,11 @@
 # Graph Report - aluplan-support-desk-V02  (2026-05-11)
 
 ## Corpus Check
-- 682 files · ~1,289,121 words
+- 682 files · ~1,289,150 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4150 nodes · 5459 edges · 268 communities detected
+- 4150 nodes · 5458 edges · 268 communities detected
 - Extraction: 72% EXTRACTED · 28% INFERRED · 0% AMBIGUOUS · INFERRED: 1522 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
@@ -307,19 +307,19 @@
 
 ### Community 0 - "Community 0"
 Cohesion: 0.01
-Nodes (43): AiController, AiQueryDto, AiTelemetryDto, FeedbackDto, AiCopilotService, AiDiagnosisService, AiQueryService, callNormalize() (+35 more)
+Nodes (80): AiAutoResolverService, AttachmentsController, AuditService, BusinessHoursService, main(), check(), check(), checkFlags() (+72 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.01
-Nodes (73): AiAutoResolverService, AuditService, AutoAssignmentService, BusinessHoursService, main(), check(), check(), checkFlags() (+65 more)
+Cohesion: 0.02
+Nodes (38): AiCopilotService, AiDiagnosisService, AiQueryService, callNormalize(), callNormalize(), AutoAssignmentService, CustomersService, encrypt() (+30 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.02
-Nodes (112): AgentStatusBadge(), handleSave(), handleTest(), loadData(), handleTestStorage(), triggerWeeklyReport(), validate(), handleSave() (+104 more)
+Nodes (77): apiFetch(), bulkDeleteTickets(), bulkUpdateTickets(), createArticle(), createTicket(), deleteArticle(), deleteTicket(), getAuthHeaders() (+69 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.02
-Nodes (76): apiFetch(), bulkDeleteTickets(), bulkUpdateTickets(), createArticle(), createTicket(), deleteArticle(), deleteTicket(), getAuthHeaders() (+68 more)
+Nodes (111): AgentStatusBadge(), handleSave(), handleTest(), loadData(), handleTestStorage(), triggerWeeklyReport(), validate(), handleSave() (+103 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.02
@@ -327,7 +327,7 @@ Nodes (32): AiQueryProcessor, goToNext(), goToPrevious(), makeCurrent(), toggleC
 
 ### Community 5 - "Community 5"
 Cohesion: 0.02
-Nodes (21): CrmController, CrmProcessor, buildSyncDetails(), CrmService, CrmWebhookController, CrmWebhookGuard, CryptoService, Dynamics365Adapter (+13 more)
+Nodes (112): 2D Drawing Tools, 3D Modeling, 3D PDF Generation, Add-ons and Extensions, Advanced Automation with Python API, Advanced Features, Advanced Finishing Workflows (Allplan 2026), Allplan 2026 Enhancements (+104 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.02
@@ -338,20 +338,20 @@ Cohesion: 0.02
 Nodes (112): 2D Drawing Tools, 3D Modeling, 3D PDF Generation, Add-ons and Extensions, Advanced Automation with Python API, Advanced Features, Advanced Finishing Workflows (Allplan 2026), Allplan 2026 Enhancements (+104 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.02
-Nodes (112): 2D Drawing Tools, 3D Modeling, 3D PDF Generation, Add-ons and Extensions, Advanced Automation with Python API, Advanced Features, Advanced Finishing Workflows (Allplan 2026), Allplan 2026 Enhancements (+104 more)
-
-### Community 9 - "Community 9"
 Cohesion: 0.04
 Nodes (33): apiGet(), apiPatch(), apiPost(), broadcastAnnouncementViaApi(), getApiUrl(), processQueue(), request(), apiGet() (+25 more)
 
-### Community 10 - "Community 10"
+### Community 9 - "Community 9"
 Cohesion: 0.03
 Nodes (25): buildModule(), buildModule(), makeAiService(), makeConfig(), makeEmbeddingService(), makeLangfuse(), makePrisma(), makePromptContext() (+17 more)
 
-### Community 11 - "Community 11"
+### Community 10 - "Community 10"
 Cohesion: 0.02
 Nodes (89): AGENTS.md — aluplan-support-desk-v02, 🤖 Ajan Davranış Tipi, Always Do, Always Do, Architecture quirks agents miss, Backend tests (unit), Backend tests (unit), Backend tests (unit) (+81 more)
+
+### Community 11 - "Community 11"
+Cohesion: 0.03
+Nodes (12): AttachmentsService, getAuthToken(), BrandingController, CustomersController, EmailController, async(), ResendProvider, SettingsController (+4 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.04
@@ -362,12 +362,12 @@ Cohesion: 0.04
 Nodes (7): AuthController, AuthService, CrmEmailValidatorService, KnowledgeBaseController, KnowledgeBaseService, makeSlug(), handleLogout()
 
 ### Community 14 - "Community 14"
-Cohesion: 0.03
-Nodes (67): AI IDE Persistent Memory Architecture, BEST FOR AGENTS, BEST OVERALL, Claude Sonnet 4, code:txt (Conversation history), code:md (# AGENT RULES), code:txt (.ai/session-summary.md), code:md (# Session Summary) (+59 more)
+Cohesion: 0.04
+Nodes (10): CrmController, CrmProcessor, buildSyncDetails(), CrmService, CrmWebhookController, CrmWebhookGuard, CryptoService, Dynamics365Adapter (+2 more)
 
 ### Community 15 - "Community 15"
-Cohesion: 0.04
-Nodes (9): AttachmentsController, AttachmentsService, BrandingController, CustomersController, HotinfoParserService, ResendProvider, StorageService, run() (+1 more)
+Cohesion: 0.03
+Nodes (67): AI IDE Persistent Memory Architecture, BEST FOR AGENTS, BEST OVERALL, Claude Sonnet 4, code:txt (Conversation history), code:md (# AGENT RULES), code:txt (.ai/session-summary.md), code:md (# Session Summary) (+59 more)
 
 ### Community 16 - "Community 16"
 Cohesion: 0.06
@@ -398,24 +398,24 @@ Cohesion: 0.05
 Nodes (40): code:block1 ({ key: 'email.resend.api_key', value: 're_fupJu99g_BM3sewTw2), code:ts (// prisma.service.ts:82), code:ts (const resolved = path.resolve(path.join(process.cwd(), this.), code:ts (const extended = (this as any).$extends({...});), DÜŞÜK ÖNCELİK, GAP-01 — Güvenlik: Canlı API anahtarları kaynak kodunda hardcoded, GAP-02 — Güvenlik: Belirli bir kişinin e-posta adresi kaynak koduna hardcoded (4 ayrı yerde), GAP-03 — Güvenlik: `StorageController` path traversal açığı (+32 more)
 
 ### Community 23 - "Community 23"
+Cohesion: 0.07
+Nodes (8): AiController, AiQueryDto, AiTelemetryDto, FeedbackDto, AiReportingService, loadMetrics(), loadMetrics(), loadData()
+
+### Community 24 - "Community 24"
 Cohesion: 0.08
 Nodes (4): AiCircuitBreakerService, AnnouncementTemplatesService, SentryExceptionFilter, SsrfGuard
 
-### Community 24 - "Community 24"
+### Community 25 - "Community 25"
 Cohesion: 0.07
 Nodes (29): Allplan 2022 BasicsTutl, Sayfa 1, Sayfa 101, Sayfa 11, Sayfa 111, Sayfa 121, Sayfa 131, Sayfa 141 (+21 more)
 
-### Community 25 - "Community 25"
+### Community 26 - "Community 26"
 Cohesion: 0.08
 Nodes (3): FaqController, FaqCronService, FaqService
 
-### Community 26 - "Community 26"
+### Community 27 - "Community 27"
 Cohesion: 0.08
 Nodes (24): 1. BACKEND UNIT + PBT TESTLER, 2. FRONTEND UNIT TESTLER, 3. E2E PLAYWRIGHT TESTLER, 4. KAPATILAN AÇIKLAR, 5. KALAN AÇIKLAR, 6. SORUNLAR VE ÇÖZÜMLER, 7. SONRAKİ ADIMLAR, 8. GERİ DÖNÜŞ (+16 more)
-
-### Community 27 - "Community 27"
-Cohesion: 0.12
-Nodes (3): KnowledgePoolController, KnowledgePoolService, bootstrap()
 
 ### Community 28 - "Community 28"
 Cohesion: 0.1
@@ -438,88 +438,88 @@ Cohesion: 0.1
 Nodes (20): 0. Yönetici Özeti, 1. ✅ KAPATILANLAR, 2. ⚠ KALAN KRİTİK İŞ — Frontend E2E, 3. 📊 Final Test Skorboard, 4. 🚀 Deploy Karar Matrisi (güncel), 5. Yarın için Komut Listesi, 6. Bu Turun Özet İstatistikleri, code:block1 (Backend Unit + PBT (jest --config) ─────────────────────────) (+12 more)
 
 ### Community 33 - "Community 33"
+Cohesion: 0.14
+Nodes (2): KnowledgePoolController, KnowledgePoolService
+
+### Community 34 - "Community 34"
 Cohesion: 0.12
 Nodes (4): DnsValidator, EmailValidatorController, EmailValidatorService, SyntaxValidator
 
-### Community 34 - "Community 34"
+### Community 35 - "Community 35"
 Cohesion: 0.11
 Nodes (18): 1. ÖZET TABLO, 2. KRİTİK AÇIKLAR (Blocker), 3. ORTA RİSK AÇIKLAR, 4. MEVCUT GÜÇLÜ YANLAR, 5. DEPLOY ÖNCESİ ÖNCELİK SIRASI, 6. TAVSİYE, code:block1 (P0 (Blocker)     → GAP-1: Announcement E2E (toast + badge + ), GAP-10 — `email-reply.spec.ts` yarım kalmış (+10 more)
 
-### Community 35 - "Community 35"
+### Community 36 - "Community 36"
 Cohesion: 0.11
 Nodes (17): AI & RAG Pipeline, Announcements & Notifications, Auth & Users, code:bash (# Query the index), CRM & Dynamics, Edge Quality, Execution Flows (241), Files Changed During This Session (+9 more)
 
-### Community 36 - "Community 36"
+### Community 37 - "Community 37"
 Cohesion: 0.12
 Nodes (8): AiQueryExecutedEvent, TicketAssignedEvent, TicketCreatedEvent, TicketMessageAddedEvent, TicketResolvedEvent, TicketStatusChangedEvent, UserLoggedInEvent, UserLoggedOutEvent
 
-### Community 37 - "Community 37"
+### Community 38 - "Community 38"
 Cohesion: 0.12
 Nodes (16): 10. Opsiyonel İyileştirmeler (Backlog), 1. Güvenlik, 2. İzleme & Observability, 3. Health Checks, 4. Veritabanı, 5. CI/CD Pipeline, 6. Docker & Deployment, 7. Ortam Konfigürasyonu (+8 more)
 
-### Community 38 - "Community 38"
+### Community 39 - "Community 39"
 Cohesion: 0.12
 Nodes (16): 1. Hedef, 2. Seçilen Strateji: Option B (Hibrit), 3. Uygulanacak 7 Değişiklik Bloğu, 4. Groq Entegrasyonu (LLM Katmanı), 5. ⚠️ GELECEKTEKİ GEÇİŞ: Option D (Kademeli Hibrit), 6. Dokunulmaması Gereken Yapılar, 7. Test Gereksinimleri, CHANGE 1 — Embedding Modeli Değişikliği (+8 more)
 
-### Community 39 - "Community 39"
+### Community 40 - "Community 40"
 Cohesion: 0.12
 Nodes (15): 🔄 AI İş Akışı: "Sonsuz Bilgi Döngüsü", AI & Intelligence, Backend (Core Engine), code:text (aluplan-support-desk-v02/), code:bash (# 1. Bağımlılıkları Yükleyin), Frontend (User & Admin Interface), 🚀 Kurulum ve Çalıştırma, 🤝 İletişim ve Katkı (+7 more)
 
-### Community 40 - "Community 40"
+### Community 41 - "Community 41"
 Cohesion: 0.12
 Nodes (15): Aluplan Support Desk — Production Readiness Checklist, Architecture, Backend (NestJS), Blockers for Production, Completed Milestones, Database, Documentation, Frontend (Next.js) (+7 more)
 
-### Community 41 - "Community 41"
+### Community 42 - "Community 42"
 Cohesion: 0.36
 Nodes (13): addSearchBox(), addSortIndicators(), enableUI(), getNthColumn(), getTable(), getTableBody(), getTableHeader(), loadColumns() (+5 more)
 
-### Community 42 - "Community 42"
+### Community 43 - "Community 43"
 Cohesion: 0.17
 Nodes (11): 🔍 1. Mevcut Mimari Analizi (Kod Okuma Bulguları), 📂 2. Dataset Entegrasyon Planı, 🚀 3. Gelecek Vizyonu Uygulama Rehberi (A, B, C), A. Makale ve Rehberler (`support_articles/`), B. Q&A Veri Seti (`allplan_qa_dataset.json`), C. Teşhis Ağaçları ve Log Desenleri, 🤖 Option A: Otonom Veri Besleme (Knowledge Scraper), 🧠 Option B: RAG Engine Optimizasyonu (Çözüm Önerisi) (+3 more)
 
-### Community 43 - "Community 43"
+### Community 44 - "Community 44"
 Cohesion: 0.2
 Nodes (2): BasePage, LoginPage
 
-### Community 44 - "Community 44"
+### Community 45 - "Community 45"
 Cohesion: 0.18
 Nodes (1): ProactiveChatController
 
-### Community 45 - "Community 45"
+### Community 46 - "Community 46"
 Cohesion: 0.18
 Nodes (10): ⏳ Açık GAP'ler (5/30), Bu Session'dda Yapılan, code:block1 (Tamamlanan: 25/30 (83%)), Düşük (2), GAP Durum Raporu — 2026-05-10, ✅ Kapatılan GAP'ler (25/30), İlerleme, Öncelik Sırası (+2 more)
 
-### Community 46 - "Community 46"
+### Community 47 - "Community 47"
 Cohesion: 0.18
 Nodes (10): 🛠 1. Mevcut Platform Entegrasyonu, 🚀 2. Gelecek Yol Haritası (İleri Seviye), 📈 3. Kapanış ve Öneri, A. Makale ve Dosya Entegrasyonu, Allplan Destek Zekası: Entegrasyon ve Gelecek Yol Haritası, B. Q&A ve FAQ Besleme, C. Teşhis Ağaçları (Decision Trees), 🤖 Option A: Otonom Veri Besleme (Knowledge Scraper) (+2 more)
 
-### Community 47 - "Community 47"
+### Community 48 - "Community 48"
 Cohesion: 0.18
 Nodes (10): 1. PythonParts Nedir?, 2. Visual Scripting (V.S.) Nedir?, 3. Otomasyon Nasıl Yapılır? (Adım Adım), 4. İleri Seviye: Hibrit Kullanım, Allplan PythonParts ve Visual Scripting ile Otomasyon Rehberi, Etiketler, Giriş, Teknik Kaynaklar ve Tavsiyeler (+2 more)
 
-### Community 48 - "Community 48"
+### Community 49 - "Community 49"
 Cohesion: 0.18
 Nodes (10): 1. Veri Alımı (Ingestion) ve Chunking Altyapısı, 2. Vektör Modelleme ve Veritabanı Mimarisi, 3. RAG Arama ve Geri Getirme (Retrieval) Mantığı, 4. Bağlam İnşası (Context Building) ve Prompting, 5. AI Üretimi ve "Ollama Timeout" Hatasının Gerçek Nedeni, 6. Geri Bildirim ve Otomatik Öğrenme (Continuous Learning), Aluplan Support Desk: RAG ve AI Mimarisi Analiz Raporu, Mimaride Düzeltilmesi Gereken Kritik Noktalar (Tavsiyeler) (+2 more)
 
-### Community 49 - "Community 49"
+### Community 50 - "Community 50"
 Cohesion: 0.2
 Nodes (9): Adım Adım Çözüm, Allplan 2026: Öncelik Tabanlı Bağlantılar (PBC) Etkileşim Sorunları, Belirtiler, Etiketler, Etkilenen Ortam, Kök Neden, İlgili Konular, Önleyici Öneriler (+1 more)
 
-### Community 50 - "Community 50"
+### Community 51 - "Community 51"
 Cohesion: 0.39
 Nodes (8): buildD365Account(), buildD365AccountPage1(), buildD365AccountPage2(), buildD365AccountsResponse(), buildD365Contact(), buildD365ContactPage1(), buildD365ContactPage2(), buildD365ContactsResponse()
 
-### Community 51 - "Community 51"
+### Community 52 - "Community 52"
 Cohesion: 0.22
 Nodes (1): MacrosController
 
-### Community 52 - "Community 52"
+### Community 53 - "Community 53"
 Cohesion: 0.25
 Nodes (1): DocumentAiService
-
-### Community 53 - "Community 53"
-Cohesion: 0.47
-Nodes (1): KnowledgePoolParserService
 
 ### Community 54 - "Community 54"
 Cohesion: 0.22
@@ -1380,15 +1380,15 @@ Nodes (1): Frontend Deployment on Coolify
 ## Knowledge Gaps
 - **1181 isolated node(s):** `Ensure output directories exist.`, `Ask a question to NotebookLM via the skill's ask_question.py script.`, `Load current QA dataset.`, `Load current intent classification data.`, `Extract all categories from QA dataset.` (+1176 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 43`** (11 nodes): `BasePage.ts`, `LoginPage.ts`, `BasePage`, `.constructor()`, `.getErrorMessage()`, `.navigateTo()`, `.waitForLoadingFinished()`, `LoginPage`, `.constructor()`, `.login()`, `.loginWithRetry()`
+- **Thin community `Community 33`** (20 nodes): `knowledge-pool.controller.ts`, `knowledge-pool.service.ts`, `.getLogs()`, `KnowledgePoolController`, `.addSource()`, `.constructor()`, `.determineTypeFromExt()`, `.getLogs()`, `.getSources()`, `.syncExternal()`, `.triggerSync()`, `.uploadKnowledgeFile()`, `KnowledgePoolService`, `.constructor()`, `.createFileSource()`, `.createSource()`, `.getAllSources()`, `.getSyncLogs()`, `.syncExternalDocs()`, `.triggerSync()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 44`** (11 nodes): `proactive-chat.controller.ts`, `ProactiveChatController`, `.acceptSession()`, `.constructor()`, `.convertToTicket()`, `.createSession()`, `.declineSession()`, `.endSession()`, `.getMessages()`, `.listSessions()`, `.sendMessage()`
+- **Thin community `Community 44`** (11 nodes): `BasePage.ts`, `LoginPage.ts`, `BasePage`, `.constructor()`, `.getErrorMessage()`, `.navigateTo()`, `.waitForLoadingFinished()`, `LoginPage`, `.constructor()`, `.login()`, `.loginWithRetry()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 51`** (9 nodes): `macros.controller.ts`, `MacrosController`, `.constructor()`, `.create()`, `.findAll()`, `.findOne()`, `.remove()`, `.renderMacro()`, `.update()`
+- **Thin community `Community 45`** (11 nodes): `proactive-chat.controller.ts`, `ProactiveChatController`, `.acceptSession()`, `.constructor()`, `.convertToTicket()`, `.createSession()`, `.declineSession()`, `.endSession()`, `.getMessages()`, `.listSessions()`, `.sendMessage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 52`** (9 nodes): `document-ai.service.ts`, `DocumentAiService`, `.constructor()`, `.enqueueManualForParsing()`, `.extractLogicalChunks()`, `.extractRowText()`, `.extractTextSegment()`, `.initClient()`, `.parseDocumentSync()`
+- **Thin community `Community 52`** (9 nodes): `macros.controller.ts`, `MacrosController`, `.constructor()`, `.create()`, `.findAll()`, `.findOne()`, `.remove()`, `.renderMacro()`, `.update()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 53`** (9 nodes): `knowledge-pool-parser.service.ts`, `KnowledgePoolParserService`, `.fixEncoding()`, `.parseCsv()`, `.parseFile()`, `.parseMd()`, `.parseMsg()`, `.parsePdf()`, `.parseTxt()`
+- **Thin community `Community 53`** (9 nodes): `document-ai.service.ts`, `DocumentAiService`, `.constructor()`, `.enqueueManualForParsing()`, `.extractLogicalChunks()`, `.extractRowText()`, `.extractTextSegment()`, `.initClient()`, `.parseDocumentSync()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 105`** (6 nodes): `roles.service.ts`, `RolesService`, `.constructor()`, `.findAll()`, `.findRoleWithPermissions()`, `.getPermissions()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -1690,11 +1690,11 @@ Nodes (1): Frontend Deployment on Coolify
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Error()` connect `Community 2` to `Community 0`, `Community 1`, `Community 3`, `Community 4`, `Community 5`, `Community 9`, `Community 10`, `Community 12`, `Community 13`, `Community 15`, `Community 16`, `Community 19`, `Community 52`, `Community 53`, `Community 23`, `Community 25`, `Community 27`?**
+- **Why does `Error()` connect `Community 3` to `Community 0`, `Community 1`, `Community 2`, `Community 33`, `Community 4`, `Community 8`, `Community 9`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 16`, `Community 19`, `Community 53`, `Community 23`, `Community 24`, `Community 26`?**
   _High betweenness centrality (0.065) - this node is a cross-community bridge._
-- **Why does `t()` connect `Community 2` to `Community 5`, `Community 9`, `Community 16`, `Community 28`, `Community 30`?**
+- **Why does `t()` connect `Community 3` to `Community 8`, `Community 11`, `Community 16`, `Community 28`, `Community 30`?**
   _High betweenness centrality (0.011) - this node is a cross-community bridge._
-- **Why does `buildModule()` connect `Community 10` to `Community 3`?**
+- **Why does `buildModule()` connect `Community 9` to `Community 2`?**
   _High betweenness centrality (0.010) - this node is a cross-community bridge._
 - **Are the 226 inferred relationships involving `Error()` (e.g. with `bootstrap()` and `bootstrap()`) actually correct?**
   _`Error()` has 226 INFERRED edges - model-reasoned connections that need verification._
