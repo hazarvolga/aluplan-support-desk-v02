@@ -175,9 +175,19 @@ export default function KnowledgePoolPage() {
         setIsBulkSyncing(true);
         const ids = Array.from(selectedIds);
         let ok = 0, fail = 0;
-        for (const id of ids) {
-            try { await api.pool.sync(id); ok++; }
-            catch { fail++; }
+        
+        // Process in chunks of 5 to avoid overwhelming the browser/backend
+        const chunkSize = 5;
+        for (let i = 0; i < ids.length; i += chunkSize) {
+            const chunk = ids.slice(i, i + chunkSize);
+            await Promise.all(chunk.map(async (id) => {
+                try { 
+                    await api.pool.sync(id); 
+                    ok++; 
+                } catch { 
+                    fail++; 
+                }
+            }));
         }
         toast({
             title: fail === 0 ? t('toasts.bulk_sync_started') : t('toasts.partial_success'),
@@ -458,8 +468,9 @@ export default function KnowledgePoolPage() {
                                                 <TableCell className="w-24 pr-3">
                                                     <div className="flex items-center justify-end gap-1">
                                                         <Button variant="ghost" size="icon" className="h-7 w-7 rounded-none hover:bg-primary/10 hover:text-primary"
-                                                            onClick={() => handleSync(source.id)} disabled={isSyncing.has(source.id)}>
-                                                            <RefreshCw className={`h-3.5 w-3.5 ${isSyncing.has(source.id) ? 'animate-spin' : ''}`} />
+                                                            onClick={() => handleSync(source.id)} 
+                                                            disabled={isSyncing.has(source.id) || source.status === 'SYNCING'}>
+                                                            <RefreshCw className={`h-3.5 w-3.5 ${(isSyncing.has(source.id) || source.status === 'SYNCING') ? 'animate-spin' : ''}`} />
                                                         </Button>
                                                         <Button variant="ghost" size="icon" className="h-7 w-7 rounded-none hover:bg-primary/10 hover:text-primary"
                                                             onClick={() => viewLogs(source)}>
