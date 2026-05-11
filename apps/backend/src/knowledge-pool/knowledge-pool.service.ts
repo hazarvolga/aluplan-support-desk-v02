@@ -133,7 +133,6 @@ export class KnowledgePoolService {
                 else if (filePath.toLowerCase().includes('_en') || filePath.toLowerCase().includes('/en/') || fileName.toLowerCase().includes('english')) language = 'en';
 
                 if (existing) {
-                    // await this.triggerSync(existing.id); // REMOVED: Auto-sync on discovery is too aggressive
                     existingCount++;
                 } else {
                     const source = await this.prisma.knowledgeSource.create({
@@ -149,7 +148,6 @@ export class KnowledgePoolService {
                             }
                         },
                     });
-                    // await this.triggerSync(source.id); // REMOVED: Auto-sync on discovery is too aggressive
                     addedCount++;
                 }
             }
