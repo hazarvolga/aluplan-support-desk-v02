@@ -90,6 +90,7 @@ export class KnowledgePoolController {
     @Roles('admin', 'super-admin')
     @ApiOperation({ summary: 'Manually trigger a sync for a source' })
     async triggerSync(@Param('id') id: string) {
+        console.log(`[DEBUG] Received sync request for ID: ${id}`);
         await this.knowledgePoolService.triggerSync(id);
         return { success: true };
     }
