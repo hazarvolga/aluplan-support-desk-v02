@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 
-type SortField = 'name' | 'status' | 'type' | 'lastSyncedAt' | 'embeddings';
+type SortField = 'name' | 'status' | 'type' | 'lastSyncedAt' | 'embeddings' | 'category';
 type SortDir = 'asc' | 'desc';
 
 export default function KnowledgePoolPage() {

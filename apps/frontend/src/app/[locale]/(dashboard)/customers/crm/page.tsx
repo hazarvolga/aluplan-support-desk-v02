@@ -110,9 +110,9 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
                     clientSecret: conn.clientSecret || '',
                     webhookSecret: conn.webhookSecret || '',
                     instanceUrl: conn.instanceUrl || '',
-                    syncSettings: (conn as unknown as { syncSettings?: object }).syncSettings || {
-                        accountMapping: {},
-                        contactMapping: {},
+                    syncSettings: (conn as any).syncSettings || {
+                        accountMapping: {} as any,
+                        contactMapping: {} as any,
                         displaySettings: { account: [], contact: [] },
                     },
                 });

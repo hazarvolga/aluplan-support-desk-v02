@@ -49,7 +49,7 @@ export default function NewTicketPage() {
     const [interactionId, setInteractionId] = useState<string | null>(null);
 
     const form = useForm<TicketFormValues>({
-        resolver: zodResolver(getTicketSchema(t)) as Parameters<typeof useForm>[0]['resolver'],
+        resolver: zodResolver(getTicketSchema(t)) as any,
         defaultValues: {
             subject: '',
             description: '',
@@ -168,9 +168,9 @@ export default function NewTicketPage() {
             }
 
             setAiAnswer(response.answer);
-            setInteractionId(response.interactionId);
+            setInteractionId(response.interactionId ?? null);
 
-            if (response.confidence === 'NO_MATCH') {
+            if ((response as any).confidence === 'NO_MATCH') {
                 toast.info(t('toasts.ai_no_match'));
             }
         } catch (err: any) {

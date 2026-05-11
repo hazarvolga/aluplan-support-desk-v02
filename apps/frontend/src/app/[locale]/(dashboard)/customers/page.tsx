@@ -161,10 +161,11 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
             { key: 'status', label: 'table.headers.status', visible: true },
         ];
 
-        if (!displaySettings?.contact || displaySettings.contact.length === 0) return defaultCols;
+        const ds = displaySettings as any;
+        if (!ds?.contact || ds.contact.length === 0) return defaultCols;
 
         // Merge with current definitions to ensure labels are present
-        const settings = displaySettings.contact as unknown as Array<{ key: string; label?: string; visible?: boolean }>;
+        const settings = ds.contact as unknown as Array<{ key: string; label?: string; visible?: boolean }>;
         return settings
             .filter(s => s.visible !== false)
             .map(s => ({
@@ -183,9 +184,10 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
             { key: 'crmVerified', label: 'accounts.crm_verification', visible: true },
         ];
 
-        if (!displaySettings?.account || displaySettings.account.length === 0) return defaultCols;
+        const ds = displaySettings as any;
+        if (!ds?.account || ds.account.length === 0) return defaultCols;
 
-        const settings = displaySettings.account as unknown as Array<{ key: string; label?: string; visible?: boolean }>;
+        const settings = ds.account as unknown as Array<{ key: string; label?: string; visible?: boolean }>;
         return settings
             .filter(s => s.visible !== false)
             .map(s => ({
@@ -702,7 +704,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                             label={t(col.label)}
                                             currentSortField={sortField}
                                             currentSortOrder={sortOrder}
-                                            onSort={handleSort as (field: SortField, order?: SortOrder) => void}
+                                            onSort={handleSort as any}
                                             onGroupBy={handleGroupByChange}
                                             isGrouped={groupBy === col.key}
                                             onFilterChange={handleFilterChange}
@@ -934,7 +936,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                             label={t(col.label)}
                                             currentSortField={sortField}
                                             currentSortOrder={sortOrder}
-                                            onSort={handleSort as (field: SortField, order?: SortOrder) => void}
+                                            onSort={handleSort as any}
                                             onGroupBy={handleGroupByChange}
                                             isGrouped={groupBy === col.key}
                                             onFilterChange={handleFilterChange}

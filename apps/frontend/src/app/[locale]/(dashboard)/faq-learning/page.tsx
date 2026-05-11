@@ -60,7 +60,7 @@ export default function FaqLearningPage() {
             ]);
 
             setCandidates(Array.isArray(faqRes) ? faqRes : faqRes.data || []);
-            setStats(healthRes);
+            setStats(healthRes as any);
             setSourceStats(sourceRes);
 
         } catch (error) {
@@ -174,7 +174,7 @@ export default function FaqLearningPage() {
                             <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-4">{t('confidence_distribution')}</h4>
                             <div className="space-y-3">
                                 {['HIGH', 'MEDIUM', 'LOW', 'NO_MATCH'].map(band => {
-                                    const bandData = stats.confidenceDistribution?.find(d => d.band === band) || { count: 0 };
+                                    const bandData = (stats as any).confidenceDistribution?.find((d: any) => d.band === band) || { count: 0 };
                                     const percentage = stats.totalInteractions > 0 ? (bandData.count / stats.totalInteractions) * 100 : 0;
                                     const label = t(`bands.${band.toLowerCase()}`);
                                     return (
