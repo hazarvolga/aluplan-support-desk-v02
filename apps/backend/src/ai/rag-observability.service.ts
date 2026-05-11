@@ -9,6 +9,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { SettingsService } from '../settings/settings.service';
 
 export interface RAGMetrics {
     // Performance
@@ -55,6 +56,7 @@ export class RagObservabilityService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly redis: RedisService,
+        private readonly settings: SettingsService,
     ) { }
 
     /** Record a query execution for metrics */
@@ -208,5 +210,60 @@ export class RagObservabilityService {
         }
 
         return result;
+    }
+
+    /** Get embedding migration status for observability */
+    async getMigrationStatus(): Promise<{
+        isRunning: boolean;
+        activeVersion: string;
+        pendingVersion: string | null;
+        versionDistribution: Record<string, number>;
+    }> {
+        try {
+            const activeVersionSetting = await this.settings.getValue('rag.embedding_active_version');
+            const pendingVersionSetting = await this.settings.getValue('rag.embedding_pending_version');
+
+            const activeVersion = activeVersionSetting || 'v1';
+            const pendingVersion = pendingVersionSetting || null;
+
+            const articleVersions = await this.prisma.$queryRaw<[{ version: string; count: bigint }]>`
+                SELECT embedding_version as version, COUNT(*) as count
+                FROM knowledge_embeddings
+                WHERE embedding_version IS NOT NULL
+                GROUP BY embedding_version
+            `;
+
+            const poolVersions = await this.prisma.$queryRaw<[{ version: string; count: bigint }]>`
+                SELECT embedding_version as version, COUNT(*) as count
+                FROM knowledge_pool_embeddings
+                WHERE embedding_version IS NOT NULL
+                GROUP BY embedding_version
+            `;
+
+            const versionDistribution: Record<string, number> = {};
+            for (const row of articleVersions) {
+                versionDistribution[`articles_${row.version}`] = Number(row.count);
+            }
+            for (const row of poolVersions) {
+                versionDistribution[`pool_${row.version}`] = Number(row.count);
+            }
+
+            const isRunning = pendingVersion !== null && pendingVersion !== activeVersion;
+
+            return {
+                isRunning,
+                activeVersion,
+                pendingVersion,
+                versionDistribution,
+            };
+        } catch (err) {
+            this.logger.error(`Failed to get migration status: ${err}`);
+            return {
+                isRunning: false,
+                activeVersion: 'unknown',
+                pendingVersion: null,
+                versionDistribution: {},
+            };
+        }
     }
 }
