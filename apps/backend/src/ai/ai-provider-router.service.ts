@@ -4,6 +4,7 @@ import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
+import { GeminiService } from './gemini.service';
 import { AiProvider } from './interfaces/ai-provider.interface';
 
 /**
@@ -22,6 +23,7 @@ export class AiProviderRouter {
         private readonly openai: OpenAiService,
         private readonly custom: GenericOpenAiService,
         private readonly llmapi: LlmApiService,
+        private readonly gemini: GeminiService,
     ) {}
 
     /**
@@ -47,6 +49,8 @@ export class AiProviderRouter {
         if (name === 'llmapi') return this.llmapi;
         
         if (name === 'ollama') return this.ollama;
+        
+        if (name === 'gemini') return this.gemini;
         
         this.logger.warn(`Unknown provider: ${providerName}`);
         return null;

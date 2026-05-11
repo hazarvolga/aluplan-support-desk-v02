@@ -3,6 +3,7 @@ import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
+import { GeminiService } from './gemini.service';
 import { AiService } from './ai.service';
 import { EmbeddingService } from './embedding.service';
 import { AiQueryService } from './ai-query.service';
@@ -93,6 +94,7 @@ import { EmbeddingMigrationProcessor } from './embedding-migration.processor';
         AiQueryProcessor,
         EmbeddingVersionRegistry,
         EmbeddingMigrationProcessor,
+        GeminiService,
     ],
     exports: [
         AiService,
@@ -117,6 +119,7 @@ import { EmbeddingMigrationProcessor } from './embedding-migration.processor';
         RagMaintenanceService,
         DocumentAiService,
         EmbeddingVersionRegistry,
+        GeminiService,
     ],
 })
 export class AiModule { }

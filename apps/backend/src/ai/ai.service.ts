@@ -4,6 +4,7 @@ import { SettingsService } from '../settings/settings.service';
 import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
+import { GeminiService } from './gemini.service';
 import { LlmApiService } from './llm-api.service';
 import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
 import { AiCircuitBreakerService } from './ai-circuit-breaker.service';
@@ -20,6 +21,7 @@ export class AiService implements AiProvider {
         private readonly openai: OpenAiService,
         private readonly custom: GenericOpenAiService,
         private readonly llmapi: LlmApiService,
+        private readonly gemini: GeminiService,
         private readonly eventEmitter: EventEmitter2,
         private readonly circuitBreaker: AiCircuitBreakerService,
         private readonly providerRouter: AiProviderRouter,
@@ -399,6 +401,8 @@ ${content}
                 case 'custom':
                     this.custom.setProvider('custom');
                     return await this.custom.testConnection();
+                case 'gemini':
+                    return await this.gemini.testConnection();
                 default:
                     return { success: false, message: 'Bilinmeyen AI sağlayıcısı.' };
             }
@@ -429,6 +433,8 @@ ${content}
                 return ['ai.groq.api_key', 'ai.groq.url', 'ai.groq.chat_model', 'ai.groq.embed_model'];
             case 'custom':
                 return ['ai.custom.api_key', 'ai.custom.url', 'ai.custom.chat_model', 'ai.custom.embed_model'];
+            case 'gemini':
+                return ['ai.gemini.api_key', 'ai.gemini.chat_model', 'ai.gemini.embed_model'];
             default:
                 return [];
         }
@@ -448,7 +454,7 @@ ${content}
         const embedProviderName = await this.settings.getValue('ai.embed_provider') || chatProvider;
         const isClosed = await this.isCircuitClosed();
 
-        const providers = ['ollama', 'openai', 'llmapi', 'xai', 'deepseek', 'groq', 'custom'];
+        const providers = ['ollama', 'openai', 'llmapi', 'xai', 'deepseek', 'groq', 'custom', 'gemini'];
         const healthResults: Record<string, { available: boolean; message: string }> = {};
 
         for (const p of providers) {

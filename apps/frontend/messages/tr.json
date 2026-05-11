@@ -1007,11 +1007,17 @@
         "xai": "xAI (Grok)",
         "groq": "Groq (Hızlı ve Ücretsiz)",
         "deepseek": "DeepSeek",
+        "gemini": "Google Gemini (Studio)",
         "llmapi": "LLMAPI (Önerilen)",
         "custom": "Özel (OpenAI Uyumlu)",
         "custom_info": "Özel (Destekleniyorsa)",
         "other_custom": "Diğer özel servis",
         "groq_no_embed": "Groq (Vektörleme desteklenmiyor)"
+      },
+      "gemini": {
+        "title": "Google Gemini (Studio)",
+        "api_key": "API Anahtarı",
+        "chat_model": "Sohbet Modeli"
       }
     },
     "email": {

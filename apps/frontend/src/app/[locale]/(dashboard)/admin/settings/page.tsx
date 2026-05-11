@@ -476,6 +476,7 @@ export default function AdminSettingsPage() {
                                                         <SelectItem value="xai">{t('ai.providers.xai')}</SelectItem>
                                                         <SelectItem value="groq">{t('ai.providers.groq')}</SelectItem>
                                                         <SelectItem value="deepseek">{t('ai.providers.deepseek')}</SelectItem>
+                                                        <SelectItem value="gemini">{t('ai.providers.gemini')}</SelectItem>
                                                         <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
                                                         <SelectItem value="custom">{t('ai.providers.custom')}</SelectItem>
                                                     </SelectContent>
@@ -491,6 +492,7 @@ export default function AdminSettingsPage() {
                                                         <SelectItem value="vertex">Google Vertex AI</SelectItem>
                                                         <SelectItem value="groq">{t('ai.providers.groq_no_embed')}</SelectItem>
                                                         <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
+                                                        <SelectItem value="gemini">{t('ai.providers.gemini')}</SelectItem>
                                                         <SelectItem value="custom">{t('ai.providers.custom_info')}</SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -515,6 +517,7 @@ export default function AdminSettingsPage() {
                                                         <SelectItem value="xai">{t('ai.providers.xai')}</SelectItem>
                                                         <SelectItem value="groq">{t('ai.providers.groq')}</SelectItem>
                                                         <SelectItem value="deepseek">{t('ai.providers.deepseek')}</SelectItem>
+                                                        <SelectItem value="gemini">{t('ai.providers.gemini')}</SelectItem>
                                                         <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
                                                         <SelectItem value="custom">{t('ai.providers.custom')}</SelectItem>
                                                     </SelectContent>
@@ -530,6 +533,7 @@ export default function AdminSettingsPage() {
                                                         <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
                                                         <SelectItem value="vertex">Google Vertex AI</SelectItem>
                                                         <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
+                                                        <SelectItem value="gemini">{t('ai.providers.gemini')}</SelectItem>
                                                         <SelectItem value="custom">{t('ai.providers.custom_info')}</SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -641,6 +645,39 @@ export default function AdminSettingsPage() {
                                                 <div className="space-y-2">
                                                     <Label className="text-xs">Embed Model</Label>
                                                     <Input value={getSetting('ai.vertex.embed_model')} onChange={e => updateValue('ai.vertex.embed_model', e.target.value)} placeholder="text-multilingual-embedding-002" className="bg-black/50 h-8 text-sm" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {([getSetting('ai.chat_provider'), getSetting('ai.embed_provider'), getSetting('ai.fallback_provider'), getSetting('ai.embed_fallback_provider')].includes('gemini')) && (
+                                        /* Gemini Studio Ayarları */
+                                        <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-teal-500/40 bg-teal-500/5`}>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
+                                                    <Sparkles className="h-4 w-4 text-teal-500" /> {t('ai.gemini.title')}
+                                                </h3>
+                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3 border-teal-500/20 text-teal-500 hover:bg-teal-500/10" onClick={async () => {
+                                                    try {
+                                                        const res = await api.ai.testConnection('gemini');
+                                                        toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || 'Google Gemini Studio bağlantısı başarılı.', variant: res.success ? 'default' : 'destructive' });
+                                                    } catch (e: any) {
+                                                        toast({ title: t('toasts.connection_error'), description: 'Gemini API ulaşılamıyor', variant: 'destructive' });
+                                                    }
+                                                }}>{t('ai.test_btn')}</Button>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">{t('ai.gemini.api_key')}</Label>
+                                                <Input type="password" value={getSetting('ai.gemini.api_key')} onChange={e => updateValue('ai.gemini.api_key', e.target.value)} placeholder="AIza..." className="bg-black/50 h-8 text-sm" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">{t('ai.gemini.chat_model')}</Label>
+                                                    <Input value={getSetting('ai.gemini.chat_model')} onChange={e => updateValue('ai.gemini.chat_model', e.target.value)} placeholder="gemini-1.5-flash" className="bg-black/50 h-8 text-sm" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Vektör Modeli</Label>
+                                                    <Input value={getSetting('ai.gemini.embed_model')} onChange={e => updateValue('ai.gemini.embed_model', e.target.value)} placeholder="text-embedding-004" className="bg-black/50 h-8 text-sm" />
                                                 </div>
                                             </div>
                                         </div>
@@ -891,7 +928,8 @@ export default function AdminSettingsPage() {
                                             'ai.anthropic.api_key',
                                             'ai.anthropic.chat_model',
                                             'ai.gemini.api_key',
-                                            'ai.gemini.chat_model'
+                                            'ai.gemini.chat_model',
+                                            'ai.gemini.embed_model'
                                         ])}
                                         disabled={saving}
                                         className="h-10 px-8 font-bold"

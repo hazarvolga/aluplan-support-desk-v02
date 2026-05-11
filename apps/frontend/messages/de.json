@@ -1007,11 +1007,17 @@
         "xai": "xAI (Grok)",
         "groq": "Groq (Schnell & Kostenlos)",
         "deepseek": "DeepSeek",
+        "gemini": "Google Gemini (Studio)",
         "llmapi": "LLMAPI (Empfohlen)",
         "custom": "Benutzerdefiniert (OpenAI-kompatibel)",
         "custom_info": "Benutzerdefiniert (Falls unterstützt)",
         "other_custom": "Anderer benutzerdefinierter Dienst",
         "groq_no_embed": "Groq (Vektorisierung nicht unterstützt)"
+      },
+      "gemini": {
+        "title": "Google Gemini (Studio)",
+        "api_key": "API-Schlüssel",
+        "chat_model": "Chat-Modell"
       }
     },
     "email": {
