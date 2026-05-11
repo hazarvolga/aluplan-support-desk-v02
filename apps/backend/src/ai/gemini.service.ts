@@ -207,6 +207,11 @@ export class GeminiService implements AiProvider {
         return response ? { response, model } : null;
     }
 
+    async *streamReformat(systemPrompt: string, userQuery: string, kbContent: string, attachments?: AiPart[]): AsyncGenerator<string, void, unknown> {
+        const fullPrompt = `System: ${systemPrompt}\n\nKULLANICI SORUSU:\n${userQuery}\n\nONAYLI BİLGİ KAYNAĞI:\n${kbContent}`;
+        yield* this.streamGenerate(attachments ? [{ text: fullPrompt }, ...attachments] : fullPrompt);
+    }
+
     async suggestCategory(title: string, content: string, categories: string[]): Promise<string | null> {
         const prompt = `Görevin: Aşağıdaki döküman için en uygun kategoriyi seçmek.
 KATEGORİ LİSTESİ: ${categories.join(', ')}
