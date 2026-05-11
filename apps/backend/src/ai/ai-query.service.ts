@@ -17,6 +17,7 @@ import { RAG_CONFIG } from '../config/rag.config';
 import { expandQueryWithSynonyms } from './utils/synonym-dictionary';
 import { rewriteQueryWithHistory } from './utils/conversation-query-rewriter';
 import { generateHypotheticalDocument, detectQueryLanguage } from './utils/hypothetical-document';
+import { checkAnswerConfidence } from './utils/answer-self-check';
 import { RagObservabilityService } from './rag-observability.service';
 import { AiDiagnosisService, DiagnosisResult } from './ai-diagnosis.service';
 import { createHash } from 'crypto';
@@ -503,10 +504,20 @@ export class AiQueryService {
             `🤖 AI Query: "${userQuery.slice(0, 60)}" → ${confidence} (${topResult?.similarity?.toFixed(3) ?? 'n/a'})[Src: ${topResult?.sourceType}]`,
         );
 
-        const finalResult: AiQueryResult = {
-            query: userQuery,
-            answer,
-            confidence,
+        // Self-check: Validate generated answer confidence
+            const selfCheck = checkAnswerConfidence(
+                answer || '',
+                topResult?.similarity,
+                diagnosis?.matchedKeywords
+            );
+            if (!selfCheck.isReliable && selfCheck.concerns.length > 0) {
+                this.logger.warn(`⚠️ Self-check flagged concerns: ${selfCheck.concerns.join(', ')}`);
+            }
+
+            const finalResult: AiQueryResult = {
+                query: userQuery,
+                answer,
+                confidence: selfCheck.shouldEscalate ? 'LOW' : confidence,
             sources: isStaff ? results.slice(0, 3).map((r) => ({
                 articleId: r.articleId,
                 title: r.title,
