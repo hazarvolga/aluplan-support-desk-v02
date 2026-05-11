@@ -15,6 +15,7 @@ import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
 import { RAG_CONFIG } from '../config/rag.config';
 import { expandQueryWithSynonyms } from './utils/synonym-dictionary';
+import { rewriteQueryWithHistory } from './utils/conversation-query-rewriter';
 import { RagObservabilityService } from './rag-observability.service';
 import { AiDiagnosisService, DiagnosisResult } from './ai-diagnosis.service';
 import { createHash } from 'crypto';
@@ -301,8 +302,11 @@ export class AiQueryService {
         }
 
 
+        // 0. Conversation-aware query rewrite (add context from history)
+        const historyEnriched = rewriteQueryWithHistory(expandedQuery, options.history);
+
         // 1. Synonym-based query expansion
-        const { expanded: synonymExpanded, matchedGroups } = expandQueryWithSynonyms(expandedQuery);
+        const { expanded: synonymExpanded, matchedGroups } = expandQueryWithSynonyms(historyEnriched);
         if (matchedGroups.length > 0) {
             this.logger.log(`🔍 Synonym expansion matched: [${matchedGroups.join(', ')}]`);
             expandedQuery = synonymExpanded;
@@ -1535,7 +1539,8 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
             expandedQuery += `\n[Hotinfo]: OS: ${h.osVersion || ''}, GPU: ${h.gpu || ''}, Error: ${h.errorTrace || ''}`;
         }
 
-        const { expanded } = expandQueryWithSynonyms(expandedQuery);
+        const historyEnriched = rewriteQueryWithHistory(expandedQuery, history);
+        const { expanded } = expandQueryWithSynonyms(historyEnriched);
         const searchResponse = await this.embeddingService.search(expanded, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, productId, isStaff);
         let results = searchResponse.results;
 
