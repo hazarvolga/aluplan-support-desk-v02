@@ -51,11 +51,11 @@ export function generateHypotheticalDocument(
 }
 
 export function detectQueryLanguage(query: string): 'tr' | 'en' | 'de' {
-  const turkishChars = /[çğıöşüÇĞİÖŞÜ]/.test(query);
-  if (turkishChars) return 'tr';
+  const hasTurkishSpecific = /[çğışÇĞİŞ]/.test(query);
+  if (hasTurkishSpecific) return 'tr';
 
-  const germanChars = /[äöüßÄÖÜ]/.test(query);
-  if (germanChars) return 'de';
+  const hasGermanOnly = /[äßÄ]/.test(query);
+  if (hasGermanOnly) return 'de';
 
   return 'tr';
 }

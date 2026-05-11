@@ -58,7 +58,7 @@ export interface HistoryMessage {
 function extractKeywords(text: string): string[] {
   const words = text
     .toLowerCase()
-    .replace(/[^\w\sçğıöşüÇĞİÖŞÜ]/g, ' ')
+    .replace(/[^\w\sçğıöşüÇĞİÖŞÜäöüÄÖÜß]/g, ' ')
     .split(/\s+/)
     .filter(w => w.length > 2 && !ALL_STOPWORDS.has(w));
 
