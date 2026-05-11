@@ -7,6 +7,7 @@ import { Queue } from 'bullmq';
 import { EmbeddingService } from '../ai/embedding.service';
 import { AiService } from '../ai/ai.service';
 import { EmbeddingVersionRegistry } from '../ai/embedding-version.registry';
+import { SettingsService } from '../settings/settings.service';
 
 const AUTO_PUBLISH_THRESHOLD = 0.85; // Sorular %85+ eşleşme → direkt yayınla
 
@@ -30,6 +31,7 @@ export class FaqService {
         private readonly embeddingService: EmbeddingService,
         private readonly aiService: AiService,
         private readonly registry: EmbeddingVersionRegistry,
+        private readonly settingsService: SettingsService,
     ) { }
 
     @OnEvent('ticket.kb_summarize')
@@ -343,5 +345,47 @@ export class FaqService {
             orderBy: [{ frequency: 'desc' }, { publishedAt: 'desc' }],
             take: limit,
         });
+    }
+
+    // ─── SINGLE PATTERN PROCESSING (for KB Summarizer) ───────────
+    /**
+     * Process a single KB pattern from ticket summarization.
+     * Single-point entry for FAQ creation from KB Summarizer processor.
+     * Handles deduplication and FAQ entry creation.
+     */
+    async processKbPattern(pattern: ExtractedPattern): Promise<{ created: boolean; faqId?: string }> {
+        const defaultLanguage = await this.settingsService.getValue('kb.default_language') || 'tr';
+
+        // Check for existing FAQ with same question (exact match)
+        const existing = await this.prisma.faqEntry.findFirst({
+            where: { question: pattern.question },
+            select: { id: true }
+        });
+
+        if (existing) {
+            await this.prisma.faqEntry.update({
+                where: { id: existing.id },
+                data: { frequency: { increment: 1 } }
+            });
+            this.logger.log(`FAQ already exists for question: ${pattern.question.substring(0, 50)}...`);
+            return { created: false, faqId: existing.id };
+        }
+
+        // Create new FAQ entry
+        const faq = await this.prisma.faqEntry.create({
+            data: {
+                question: pattern.question,
+                answer: pattern.answer,
+                status: 'PENDING_REVIEW',
+                isInternal: pattern.sourceType === 'ticket',
+                confidenceScore: pattern.confidenceScore,
+                sourceTypes: [pattern.sourceType],
+                tags: pattern.tags,
+                language: pattern.language || defaultLanguage
+            }
+        });
+
+        this.logger.log(`Created FAQ entry ${faq.id} from KB summarization`);
+        return { created: true, faqId: faq.id };
     }
 }

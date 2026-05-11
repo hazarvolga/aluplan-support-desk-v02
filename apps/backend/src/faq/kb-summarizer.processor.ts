@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
-import { SettingsService } from '../settings/settings.service';
+import { FaqService, ExtractedPattern } from './faq.service';
 
 @Processor('kb-summarizer')
 export class KbSummarizerProcessor extends WorkerHost {
@@ -12,13 +12,9 @@ export class KbSummarizerProcessor extends WorkerHost {
     constructor(
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
-        private readonly settings: SettingsService,
+        private readonly faqService: FaqService,
     ) {
         super();
-    }
-
-    private async getDefaultLanguage(): Promise<string> {
-        return (await this.settings.getValue('kb.default_language')) || 'tr';
     }
 
     async process(job: Job<{ ticketId: string }>): Promise<any> {
@@ -75,20 +71,18 @@ export class KbSummarizerProcessor extends WorkerHost {
             answer = parts[1].trim();
         }
 
-        // 4. Save to FaqEntry (as PENDING_REVIEW)
-        const defaultLanguage = await this.getDefaultLanguage();
-        await this.prisma.faqEntry.create({
-            data: {
-                question: question,
-                answer: answer,
-                status: 'PENDING_REVIEW',
-                isInternal: true, // AI summarized tickets are internal by default
-                confidenceScore: 0.90, // CSAT backed!
-                sourceTypes: ['ticket'],
-                tags: ticket.tags,
-                language: defaultLanguage
-            }
-        });
+        // 4. Delegate FAQ creation to FaqService (single point of responsibility)
+        const pattern: ExtractedPattern = {
+            question,
+            answer,
+            confidenceScore: 0.90,
+            sourceType: 'ticket',
+            sourceId: ticketId,
+            tags: ticket.tags || [],
+            language: 'tr' // Default language
+        };
+
+        await this.faqService.processKbPattern(pattern);
 
         // 5. Update Ticket to indicate it was added to KB
         await this.prisma.ticket.update({
