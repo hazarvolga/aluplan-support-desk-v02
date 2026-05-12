@@ -17,6 +17,7 @@ import { LangfuseService } from './langfuse.service';
 import { TrustScoreCalculator } from './utils/trust-score.calculator';
 import { TicketClusteringService } from './ticket-clustering.service';
 import { AiReportingService } from './ai-reporting.service';
+import { AiEvalService } from './ai-eval.service';
 import { RagObservabilityService } from './rag-observability.service';
 import { RagMaintenanceService } from './rag-maintenance.service';
 import { KnowledgePoolModule } from '../knowledge-pool/knowledge-pool.module';
@@ -117,6 +118,7 @@ import { FaqModule } from '../faq/faq.module';
         TrustScoreCalculator,
         TicketClusteringService,
         AiReportingService,
+        AiEvalService,
         RagObservabilityService,
         RagMaintenanceService,
         DocumentAiService,

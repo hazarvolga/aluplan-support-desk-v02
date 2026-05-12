@@ -1169,3 +1169,20 @@ model ProactiveChatMessage {
   @@index([sessionId, createdAt], map: "idx_pcm_session_created")
   @@map("proactive_chat_messages")
 }
+
+// ---------------------------------------------------------------------------
+// Offline RAG Evaluation
+// ---------------------------------------------------------------------------
+
+model EvalDataset {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  query            String
+  relevantChunkIds String[] @map("relevant_chunk_ids")
+  tenantId         String   @map("tenant_id")
+  createdBy        String   @map("created_by")
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId], map: "idx_eval_dataset_tenant")
+  @@map("eval_datasets")
+}
