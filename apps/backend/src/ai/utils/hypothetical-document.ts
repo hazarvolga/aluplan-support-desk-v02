@@ -57,5 +57,9 @@ export function detectQueryLanguage(query: string): 'tr' | 'en' | 'de' {
   const hasGermanOnly = /[äßÄ]/.test(query);
   if (hasGermanOnly) return 'de';
 
-  return 'tr';
+  // English: common function words not present in Turkish/German ASCII text
+  const englishKeywords = /\b(what|how|why|when|where|who|is|are|can|does|do|the|a|an|it|in|on|at|to|for|of|with|this|that|have|has|i|you|we|they)\b/i;
+  if (englishKeywords.test(query)) return 'en';
+
+  return 'tr'; // default Turkish
 }
