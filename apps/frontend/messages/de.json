@@ -2190,8 +2190,29 @@
         "efficiency_summary": "Effizienzzusammenfassung (30 Tage)",
         "efficiency_desc": "AI-Antwortqualität und Systemstabilität.",
         "rag_accuracy": "RAG-Genauigkeit (Hohes Vertrauen)",
-        "deflection_rate": "Savuşturma-Rate (Deflection)",
-        "token_label": "Token"
+        "deflection_rate": "Deflection-Rate",
+        "token_label": "Token",
+        "live_feed": {
+          "title": "Live-Ereignisfeed",
+          "connected": "Live • {count} Ereignisse",
+          "connecting": "Verbinde...",
+          "disconnected": "Getrennt",
+          "error": "Verbindungsfehler",
+          "no_events": "Noch keine Ereignisse",
+          "fallbacks": "Fallbacks",
+          "errors": "Fehler"
+        },
+        "status": {
+          "healthy": "Gesund",
+          "degraded": "Beeinträchtigt",
+          "down": "Ausgefallen",
+          "unknown": "Unbekannt",
+          "chat": "Chat",
+          "embed": "Embed",
+          "circuit_open": "CB Offen",
+          "last_check": "Letzte Prüfung",
+          "refresh": "Aktualisieren"
+        }
       }
     },
     "ai_intelligence": {

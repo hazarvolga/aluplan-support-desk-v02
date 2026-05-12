@@ -2191,7 +2191,28 @@
         "efficiency_desc": "AI response quality and system health.",
         "rag_accuracy": "RAG Accuracy (High Confidence)",
         "deflection_rate": "Deflection Rate",
-        "token_label": "Tokens"
+        "token_label": "Tokens",
+        "live_feed": {
+          "title": "Live Event Feed",
+          "connected": "Live • {count} events",
+          "connecting": "Connecting...",
+          "disconnected": "Disconnected",
+          "error": "Connection error",
+          "no_events": "No events yet",
+          "fallbacks": "fallbacks",
+          "errors": "errors"
+        },
+        "status": {
+          "healthy": "Healthy",
+          "degraded": "Degraded",
+          "down": "Down",
+          "unknown": "Unknown",
+          "chat": "Chat",
+          "embed": "Embed",
+          "circuit_open": "CB Open",
+          "last_check": "Last check",
+          "refresh": "Refresh"
+        }
       }
     },
     "ai_intelligence": {

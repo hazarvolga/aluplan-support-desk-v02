@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Coins, Server, Zap, LineChart, MessageCircle, Globe, Mail, AlertTriangle, Send } from 'lucide-react';
 import { api } from '@/lib/api';
 import { HealthTrendChart } from './HealthTrendChart';
+import { LiveEventFeed } from './LiveEventFeed';
+import { ProviderStatusIndicator } from './ProviderStatusIndicator';
+import { useAiHealthSocket } from '@/hooks/useAiHealthSocket';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 
@@ -17,6 +20,7 @@ export function AiTelemetryDashboard() {
     const [gaps, setGaps] = useState<any[]>([]);
     const [sendingReport, setSendingReport] = useState(false);
     const [testingStorage, setTestingStorage] = useState(false);
+    const { events, connectionState, stats } = useAiHealthSocket();
 
     useEffect(() => {
         loadMetrics();
@@ -112,9 +116,12 @@ export function AiTelemetryDashboard() {
     return (
         <div className="space-y-6 mb-8 mt-2">
             <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                    <LineChart className="h-5 w-5 text-primary" /> {t('dashboard.panel_title')}
-                </h3>
+                <div className="flex items-center gap-4">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                        <LineChart className="h-5 w-5 text-primary" /> {t('dashboard.panel_title')}
+                    </h3>
+                    <ProviderStatusIndicator />
+                </div>
                 <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
@@ -305,6 +312,13 @@ export function AiTelemetryDashboard() {
                     </Card>
                 </div>
             )}
+
+            <LiveEventFeed
+                events={events}
+                connectionState={connectionState}
+                stats={stats}
+                maxVisible={20}
+            />
         </div>
     );
 }

@@ -2191,7 +2191,28 @@
         "efficiency_desc": "AI yanıt kalitesi ve sistem sağlığı.",
         "rag_accuracy": "RAG Doğruluğu (Yüksek Güven)",
         "deflection_rate": "Talep Savuşturma (Deflection)",
-        "token_label": "Token"
+        "token_label": "Token",
+        "live_feed": {
+          "title": "Canlı Olay Akışı",
+          "connected": "Canlı • {count} olay",
+          "connecting": "Bağlanıyor...",
+          "disconnected": "Bağlantı kesildi",
+          "error": "Bağlantı hatası",
+          "no_events": "Henüz olay yok",
+          "fallbacks": "fallback",
+          "errors": "hata"
+        },
+        "status": {
+          "healthy": "Sağlıklı",
+          "degraded": "Kısmen Kapalı",
+          "down": "Kapalı",
+          "unknown": "Bilinmiyor",
+          "chat": "Chat",
+          "embed": "Embed",
+          "circuit_open": "CB Açık",
+          "last_check": "Son kontrol",
+          "refresh": "Yenile"
+        }
       }
     },
     "ai_intelligence": {
