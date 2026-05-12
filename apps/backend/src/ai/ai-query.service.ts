@@ -355,8 +355,10 @@ export class AiQueryService {
         }
         */
 
-        // Heuristic Re-ranking
-        results = this.rerankResults(results);
+        // Heuristic Re-ranking (feedback-weighted)
+        const articleIds = results.map(r => r.articleId).filter(Boolean);
+        const feedbackWeights = await this.fetchArticleFeedbackWeights(articleIds);
+        results = this.rerankResults(results, feedbackWeights);
 
         // Advanced LLM Re-ranking (Cross-Encoder)
         const rankStartTime = Date.now();
@@ -623,7 +625,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
      * Heuristic Re-ranking (Cohort Search)
      * Section 5.3: Re-ranking with weights
      */
-    private rerankResults(results: SearchResult[]): SearchResult[] {
+    private rerankResults(results: SearchResult[], feedbackWeights: Record<string, number> = {}): SearchResult[] {
         if (results.length === 0) return [];
 
         const RERANK = RAG_CONFIG.RERANK.FACTORS;
@@ -651,8 +653,8 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                     recencyScore = Math.max(0, 1 - (daysOld / decay));
                 }
 
-                // 3. Rating Component (Placeholder for future implementation)
-                const ratingScore = 0.7; // Default "trusted" score
+                // 3. Rating Component (feedback-driven; neutral 0.7 when no data)
+                const ratingScore = feedbackWeights[res.articleId] ?? 0.7;
 
                 // Combined Multi-Factor Score
                 const finalSimilarity =
@@ -673,6 +675,47 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             })
             .sort((a, b) => b.similarity - a.similarity)
             .slice(0, RAG_CONFIG.SEARCH.DEFAULT_LIMIT);
+    }
+
+    /**
+     * Load avg InteractionFeedback ratings for the given articleIds, normalized to [0.4, 1.0].
+     * Neutral weight 0.7 is returned for articles with no feedback data.
+     */
+    private async fetchArticleFeedbackWeights(articleIds: string[]): Promise<Record<string, number>> {
+        if (articleIds.length === 0) return {};
+        try {
+            const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const feedbacks = await this.prisma.interactionFeedback.findMany({
+                where: {
+                    interaction: { matchedArticleId: { in: articleIds } },
+                    rating: { not: null },
+                    createdAt: { gte: since },
+                },
+                select: {
+                    rating: true,
+                    interaction: { select: { matchedArticleId: true } },
+                },
+            });
+
+            const ratingMap: Record<string, { sum: number; count: number }> = {};
+            for (const fb of feedbacks) {
+                const articleId = fb.interaction?.matchedArticleId;
+                if (!articleId || fb.rating == null) continue;
+                if (!ratingMap[articleId]) ratingMap[articleId] = { sum: 0, count: 0 };
+                ratingMap[articleId].sum += fb.rating;
+                ratingMap[articleId].count++;
+            }
+
+            // Normalize rating 1–5 → weight 0.4–1.0
+            const weights: Record<string, number> = {};
+            for (const [id, { sum, count }] of Object.entries(ratingMap)) {
+                const avg = sum / count;
+                weights[id] = 0.4 + ((avg - 1) / 4) * 0.6;
+            }
+            return weights;
+        } catch {
+            return {}; // non-blocking: degrade gracefully
+        }
     }
 
     async * streamQuery(options: AiQueryOptions): AsyncGenerator<any, void, unknown> {
@@ -720,8 +763,10 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         const searchResponse = await this.embeddingService.search(hypotheticalDoc, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, null, isStaff);
         let results = searchResponse.results;
 
-        // Apply Re-ranking
-        results = this.rerankResults(results);
+        // Apply Re-ranking (feedback-weighted)
+        const streamArticleIds = results.map(r => r.articleId).filter(Boolean);
+        const streamFeedbackWeights = await this.fetchArticleFeedbackWeights(streamArticleIds);
+        results = this.rerankResults(results, streamFeedbackWeights);
         results = await this.rankResultsWithLLM(userQuery, results);
 
         const topResult = results[0] ?? null;
