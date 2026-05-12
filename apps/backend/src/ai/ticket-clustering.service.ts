@@ -124,11 +124,16 @@ Görevin:
         if (result?.response) {
             try {
                 const parsed = JSON.parse(result.response);
+                const avgCsat = tickets.reduce(
+                    (sum, t) => sum + ((t.satisfactionScore as number) ?? 3), 0
+                ) / tickets.length;
                 await this.faqService.createFromCluster({
                     question: parsed.question,
                     answer: parsed.answer,
                     tags: parsed.tags || [],
                     ticketCount: tickets.length,
+                    avgCsat,
+                    consistencyRatio: 1.0, // All members passed similarity threshold (0.85)
                 });
 
                 // Mark tickets as processed

@@ -358,9 +358,14 @@ export class FaqService {
         answer: string;
         tags: string[];
         ticketCount: number;
+        avgCsat?: number;
+        consistencyRatio?: number;
     }): Promise<void> {
-        // Confidence scales with cluster size: 0.70 at 5 tickets, capped at 0.90
-        const confidenceScore = Math.min(0.90, 0.65 + data.ticketCount * 0.01);
+        // Dynamic confidence: size (30%) + CSAT quality (40%) + cluster consistency (30%)
+        const sizeScore = Math.min(data.ticketCount / 10, 1.0) * 0.3;
+        const csatScore = ((data.avgCsat ?? 3.5) / 5) * 0.4;
+        const consistencyScore = (data.consistencyRatio ?? 0.85) * 0.3;
+        const confidenceScore = Math.min(0.90, sizeScore + csatScore + consistencyScore);
         await this.prisma.faqEntry.create({
             data: {
                 question: data.question,
