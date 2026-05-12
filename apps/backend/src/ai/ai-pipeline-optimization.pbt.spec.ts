@@ -25,6 +25,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
 import { StorageService } from '../common/services/storage.service';
+import { AiSemanticCache } from './ai-semantic-cache.service';
 
 // ---------------------------------------------------------------------------
 // Shared mock factories
@@ -145,6 +146,7 @@ async function buildModule(overrides: {
             { provide: DocumentParserService, useValue: { extractText: jest.fn() } },
             { provide: MetricsService, useValue: { increment: jest.fn(), gauge: jest.fn(), recordCacheOp: jest.fn() } },
             { provide: StorageService, useValue: { getFile: jest.fn().mockResolvedValue(Buffer.from('fake')) } },
+            { provide: AiSemanticCache, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn().mockResolvedValue(undefined) } },
             { provide: getQueueToken('ai-query-processing'), useValue: { add: jest.fn() } },
         ],
     }).compile();

@@ -15,6 +15,7 @@ import { AiDiagnosisService } from './ai-diagnosis.service';
 import { DocumentParserService } from '../common/services/document-parser.service';
 import { MetricsService } from '../metrics/metrics.service';
 import { StorageService } from '../common/services/storage.service';
+import { AiSemanticCache } from './ai-semantic-cache.service';
 import { getQueueToken } from '@nestjs/bullmq';
 
 // ---------------------------------------------------------------------------
@@ -106,6 +107,7 @@ describe('AiQueryService — property tests (normalizeImageAttachments)', () => 
                 { provide: DocumentParserService, useValue: { extractText: jest.fn().mockResolvedValue('') } },
                 { provide: MetricsService, useValue: { recordCacheOp: jest.fn() } },
                 { provide: StorageService, useValue: mockStorage },
+                { provide: AiSemanticCache, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn().mockResolvedValue(undefined) } },
                 { provide: getQueueToken('ai-query-processing'), useValue: {} },
             ],
         }).compile();

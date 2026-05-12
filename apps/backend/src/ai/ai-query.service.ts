@@ -20,6 +20,7 @@ import { generateHypotheticalDocument, detectQueryLanguage } from './utils/hypot
 import { checkAnswerConfidence } from './utils/answer-self-check';
 import { RagObservabilityService } from './rag-observability.service';
 import { AiDiagnosisService, DiagnosisResult } from './ai-diagnosis.service';
+import { AiSemanticCache } from './ai-semantic-cache.service';
 import { createHash } from 'crypto';
 
 // local type with NO_MATCH
@@ -146,6 +147,7 @@ export class AiQueryService {
         @InjectQueue('ai-query-processing') private readonly aiQueue: Queue,
         private readonly metrics: MetricsService,
         private readonly storage: StorageService,
+        private readonly semanticCache: AiSemanticCache,
     ) { }
 
     async query(options: AiQueryOptions): Promise<any> {
@@ -218,6 +220,18 @@ export class AiQueryService {
         // Setup cache key for later saving
         const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
         const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
+
+        // R-P1: Semantic cache lookup — same query within 5 min served from cache
+        const semanticCached = await this.semanticCache.get(userQuery, 'system', {
+            userId: userId ?? undefined,
+            language: lang,
+            hotinfoContext,
+        });
+        if (semanticCached) {
+            this.ragObs.recordQuery(Date.now() - startTime, true);
+            this.logger.log(`🔍 [Semantic Cache Hit] query="${userQuery.slice(0, 40)}"`);
+            return semanticCached;
+        }
 
         // Phase 3: Immediate Adaptive Analysis for Thresholding
         const diagnosisForThreshold = await this.diagnosisService.analyze(userQuery, options.history?.map(h => h.content), options.productId);
@@ -536,6 +550,20 @@ export class AiQueryService {
 
         // Cache with centralized TTL
         await this.redis.set(cacheKey, JSON.stringify(finalResult), RAG_CONFIG.CACHE.DEFAULT_TTL);
+
+        // R-P1: Store in semantic cache for similarity-based future hits
+        this.semanticCache.set(userQuery, 'system', finalResult, {
+            userId: userId ?? undefined,
+            language: lang,
+            hotinfoContext,
+        }).catch(() => {});  // non-blocking, cache failure must not break the query
+
+        // NO_MATCH escalation: queue interaction for admin training review (non-blocking)
+        if (finalResult.confidence === 'NO_MATCH') {
+            this.prisma.trainingQueue.create({
+                data: { interactionId: interaction.id },
+            }).catch(() => {});
+        }
 
         this.ragObs.recordQuery(Date.now() - startTime, false);
 

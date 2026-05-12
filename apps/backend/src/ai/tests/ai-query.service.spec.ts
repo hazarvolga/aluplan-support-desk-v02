@@ -18,6 +18,7 @@ import { MetricsService } from '../../metrics/metrics.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { RagObservabilityService } from '../rag-observability.service';
 import { StorageService } from '../../common/services/storage.service';
+import { AiSemanticCache } from '../ai-semantic-cache.service';
 
 const mockEmbeddingService = {
     search: jest.fn(),
@@ -105,6 +106,7 @@ describe('AiQueryService', () => {
                 { provide: DocumentParserService, useValue: { parse: jest.fn() } },
                 { provide: MetricsService, useValue: { increment: jest.fn(), gauge: jest.fn(), recordCacheOp: jest.fn() } },
                 { provide: StorageService, useValue: { getFile: jest.fn().mockResolvedValue(null) } },
+                { provide: AiSemanticCache, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn().mockResolvedValue(undefined) } },
                 { provide: getQueueToken('ai-query-processing'), useValue: {} },
                 { provide: RagObservabilityService, useValue: { recordQuery: jest.fn(), recordFeedback: jest.fn() } },
             ],

@@ -14,6 +14,7 @@ import { AiDiagnosisService } from './ai-diagnosis.service';
 import { DocumentParserService } from '../common/services/document-parser.service';
 import { MetricsService } from '../metrics/metrics.service';
 import { StorageService } from '../common/services/storage.service';
+import { AiSemanticCache } from './ai-semantic-cache.service';
 import { getQueueToken } from '@nestjs/bullmq';
 
 
@@ -131,6 +132,7 @@ describe('AiQueryService', () => {
                 { provide: DocumentParserService, useValue: { parse: jest.fn(), extractText: jest.fn().mockResolvedValue('') } },
                 { provide: MetricsService, useValue: { increment: jest.fn(), gauge: jest.fn(), recordCacheOp: jest.fn() } },
                 { provide: StorageService, useValue: mockStorageService },
+                { provide: AiSemanticCache, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn().mockResolvedValue(undefined) } },
                 { provide: getQueueToken('ai-query-processing'), useValue: {} },
             ],
         }).compile();
@@ -224,7 +226,7 @@ describe('AiQueryService', () => {
                 ],
                 diagnostics: { topScore: 0.75, passedThreshold: 1, queryEmbeddingModel: 'nomic', thresholdUsed: 0.65 },
             });
-            mockAiService.reformat.mockResolvedValue({ response: 'Medium answer' });
+            mockAiService.reformat.mockResolvedValue({ response: 'This is a medium confidence answer that provides adequate detail for the user query.' });
 
             // Act
             const result = await service.query({ userQuery: 'partial match question', userId: null });

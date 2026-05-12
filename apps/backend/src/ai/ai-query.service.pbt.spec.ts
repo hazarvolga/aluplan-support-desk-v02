@@ -23,6 +23,7 @@ import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { StorageService } from '../common/services/storage.service';
+import { AiSemanticCache } from './ai-semantic-cache.service';
 
 const LOW_CONFIDENCE_THRESHOLD = 0.72;
 
@@ -70,6 +71,7 @@ describe('AiQueryService.streamQuery() — Property-Based Tests', () => {
                 { provide: DocumentParserService, useValue: { parse: jest.fn() } },
                 { provide: MetricsService, useValue: { increment: jest.fn(), gauge: jest.fn(), recordCacheOp: jest.fn() } },
                 { provide: StorageService, useValue: { getFile: jest.fn().mockResolvedValue(null) } },
+                { provide: AiSemanticCache, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn().mockResolvedValue(undefined) } },
                 { provide: getQueueToken('ai-query-processing'), useValue: {} },
             ],
         }).compile();
