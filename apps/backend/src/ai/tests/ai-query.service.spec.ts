@@ -45,6 +45,7 @@ const mockLangfuseService = {
         }),
     }),
     flush: jest.fn(),
+    traceRetrieval: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockConfigService = {

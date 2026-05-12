@@ -52,6 +52,47 @@ export class LangfuseService implements OnModuleInit {
         }
     }
 
+    /**
+     * Record a retrieval span for a RAG search step.
+     * Non-blocking: callers should fire-and-forget with .catch(() => {}).
+     */
+    async traceRetrieval(options: {
+        traceId?: string;
+        query: string;
+        hypotheticalDoc?: string;
+        expandedTerms?: string[];
+        chunksRetrieved: number;
+        topScore: number;
+        cacheHit: boolean;
+        chunkIds: string[];
+    }): Promise<void> {
+        if (!this.langfuse) return;
+        try {
+            const trace = options.traceId
+                ? this.langfuse.trace({ id: options.traceId })
+                : this.langfuse.trace({ name: 'rag-retrieval' });
+
+            const span = trace.span({
+                name: 'retrieval',
+                input: {
+                    query: options.query,
+                    expandedTerms: options.expandedTerms,
+                    hypotheticalDoc: options.hypotheticalDoc?.slice(0, 200),
+                },
+                metadata: {
+                    chunksRetrieved: options.chunksRetrieved,
+                    topScore: options.topScore,
+                    cacheHit: options.cacheHit,
+                    hybridSearchUsed: true,
+                },
+            });
+            span.end({ output: { chunkIds: options.chunkIds.slice(0, 10) } });
+            await this.langfuse.flushAsync();
+        } catch (error) {
+            this.logger.error('Langfuse traceRetrieval error', (error as Error).stack);
+        }
+    }
+
     async addEvent(
         traceId: string,
         eventName: string,

@@ -338,6 +338,16 @@ export class AiQueryService {
         this.logger.log(`🔍 [Phase: Search] Found ${searchResponse.results.length} results in ${Date.now() - searchStartTime}ms. TopScore: ${searchResponse.diagnostics.topScore.toFixed(3)}`);
         let results = searchResponse.results;
 
+        // Langfuse retrieval span (non-blocking)
+        this.langfuse.traceRetrieval({
+            query: userQuery,
+            hypotheticalDoc,
+            chunksRetrieved: results.length,
+            topScore: searchResponse.diagnostics.topScore,
+            cacheHit: false,
+            chunkIds: results.slice(0, 10).map(r => r.articleId),
+        }).catch(() => {});
+
         /* 
         // 3. Vertex AI Data Store Hybrid Merge (DEACTIVATED FOR COST OPTIMIZATION)
         try {

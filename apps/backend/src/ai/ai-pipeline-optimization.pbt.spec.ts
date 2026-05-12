@@ -85,6 +85,7 @@ const makeConfig = () => ({
 const makeLangfuse = () => ({
     trace: jest.fn().mockResolvedValue(undefined),
     addEvent: jest.fn().mockResolvedValue(undefined),
+    traceRetrieval: jest.fn().mockResolvedValue(undefined),
 });
 
 const makePromptContext = () => ({

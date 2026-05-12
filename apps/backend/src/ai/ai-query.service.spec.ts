@@ -100,6 +100,7 @@ describe('AiQueryService', () => {
     const mockLangfuseService = {
         trace: jest.fn().mockResolvedValue(undefined),
         addEvent: jest.fn().mockResolvedValue(undefined),
+        traceRetrieval: jest.fn().mockResolvedValue(undefined),
     };
 
     const mockRagObservabilityService = {
