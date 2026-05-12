@@ -39,6 +39,7 @@ import { AiSemanticCache } from './ai-semantic-cache.service';
 import { AiBudgetMonitor } from './ai-budget-monitor.service';
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { EmbeddingMigrationProcessor } from './embedding-migration.processor';
+import { AiHealthEventService } from './ai-health-event.service';
 import { FaqModule } from '../faq/faq.module';
 
 @Module({
@@ -97,7 +98,9 @@ import { FaqModule } from '../faq/faq.module';
         AiQueryProcessor,
         EmbeddingVersionRegistry,
         EmbeddingMigrationProcessor,
-        GeminiService,
+GeminiService,
+        AiEvalService,
+        AiHealthEventService,
     ],
     exports: [
         AiService,

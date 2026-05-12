@@ -9,10 +9,14 @@ import { ApiProperty, ApiPropertyOptional, ApiResponse, ApiParam, ApiQuery } fro
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
 import { OllamaService } from './ollama.service';
+import { OpenAiService } from './openai.service';
+import { GenericOpenAiService } from './generic-openai.service';
 import { AiService } from './ai.service';
 import { AiCopilotService } from './ai-copilot.service';
 import { AiReportingService } from './ai-reporting.service';
+import { AiHealthEventService } from './ai-health-event.service';
 import { RagObservabilityService } from './rag-observability.service';
+import { GeminiService } from './gemini.service';
 import { StorageService } from '../common/services/storage.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -82,10 +86,14 @@ export class AiController {
         private readonly embeddingService: EmbeddingService,
         private readonly aiService: AiService,
         private readonly aiCopilotService: AiCopilotService,
-        private readonly _ollama: OllamaService,
+        private readonly ollamaService: OllamaService,
+        private readonly openAiService: OpenAiService,
+        private readonly genericOpenAiService: GenericOpenAiService,
         private readonly aiReportingService: AiReportingService,
         private readonly ragObservabilityService: RagObservabilityService,
+        private readonly aiHealthEventService: AiHealthEventService,
         private readonly storageService: StorageService,
+        private readonly geminiService: GeminiService,
         @InjectQueue('ai-query-processing') private readonly aiQueue: Queue,
     ) { }
 
@@ -322,6 +330,29 @@ export class AiController {
         };
     }
 
+    @Post('list-models')
+    @Roles('ADMIN', 'SUPERUSER')
+    @ApiOperation({ summary: 'List available models for a given AI provider' })
+    async listModels(@Body() dto: { provider: string; apiKey?: string; baseUrl?: string }) {
+        switch (dto.provider) {
+            case 'gemini':
+                return this.geminiService.listModels(dto.apiKey);
+            case 'openai':
+                return this.openAiService.listModels(dto.apiKey);
+            case 'ollama':
+                return this.ollamaService.listModels(undefined, dto.baseUrl);
+            case 'groq':
+            case 'generic':
+            case 'lmstudio':
+            case 'custom':
+            case 'xai':
+            case 'deepseek':
+                return this.genericOpenAiService.listModels(dto.apiKey, dto.baseUrl);
+            default:
+                return { chatModels: [], embedModels: [] };
+        }
+    }
+
     @Post('search')
     @Throttle({ default: { limit: 20, ttl: 60000 } }) // Pure semantic search is cheaper
     @ApiOperation({ summary: 'Semantic search Knowledge Pool + Articles with Product filtering' })
@@ -358,5 +389,30 @@ export class AiController {
     @ApiOperation({ summary: 'Generate AI response draft for a ticket' })
     async getCopilotDraft(@Param('ticketId') ticketId: string) {
         return this.aiCopilotService.generateDraft(ticketId);
+    }
+
+    @Get('health-events')
+    @Roles('ADMIN', 'SUPERUSER')
+    @ApiOperation({ summary: 'Get AI health events (fallback, timeout, error, info)' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max events to return (default 50)' })
+    @ApiQuery({ name: 'type', required: false, type: String, description: 'Filter by event type: FALLBACK, TIMEOUT, ERROR, INFO' })
+    @ApiQuery({ name: 'days', required: false, type: Number, description: 'Filter events from last N days' })
+    async getHealthEvents(
+        @Query('limit') limit?: string,
+        @Query('type') type?: string,
+        @Query('days') days?: string,
+    ) {
+        const parsedLimit = limit ? parseInt(limit, 10) : 50;
+        const parsedDays = days ? parseInt(days, 10) : undefined;
+        return this.aiHealthEventService.getRecent(parsedLimit, type as any, parsedDays);
+    }
+
+    @Get('health-stats')
+    @Roles('ADMIN', 'SUPERUSER')
+    @ApiOperation({ summary: 'Get AI health event statistics' })
+    @ApiQuery({ name: 'days', required: false, type: Number, description: 'Stats period in days (default 7)' })
+    async getHealthStats(@Query('days') days?: string) {
+        const parsedDays = days ? parseInt(days, 10) : 7;
+        return this.aiHealthEventService.getStats(parsedDays);
     }
 }

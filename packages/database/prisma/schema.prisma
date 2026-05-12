@@ -1186,3 +1186,31 @@ model EvalDataset {
   @@index([tenantId], map: "idx_eval_dataset_tenant")
   @@map("eval_datasets")
 }
+
+// ---------------------------------------------------------------------------
+// AI Health Event Logging
+// ---------------------------------------------------------------------------
+
+enum AiHealthEventType {
+  FALLBACK
+  TIMEOUT
+  ERROR
+  INFO
+}
+
+model AiHealthEvent {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventType    AiHealthEventType @map("event_type")
+  provider     String            @db.VarChar(50)
+  model        String?           @db.VarChar(100)
+  task         String?
+  errorMessage String?           @map("error_message")
+  latencyMs    Int?              @map("latency_ms")
+  metadata     Json?
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  @@index([createdAt(sort: Desc)], map: "idx_ai_health_events_created")
+  @@index([eventType], map: "idx_ai_health_events_type")
+  @@index([provider], map: "idx_ai_health_events_provider")
+  @@map("ai_health_events")
+}

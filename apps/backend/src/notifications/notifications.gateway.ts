@@ -21,6 +21,8 @@ import { EmailService } from '../email/email.service';
 import { createAdapter } from '@socket.io/redis-adapter';
 import Redis from 'ioredis';
 import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants';
+import { AiHealthEventService } from '../ai/ai-health-event.service';
+import { AiHealthEventType } from '@aluplan/database';
 
 @WebSocketGateway({
     cors: {
@@ -48,6 +50,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         private readonly prisma: PrismaService,
         private readonly redisService: RedisService,
         private readonly emailService: EmailService,
+        private readonly aiHealthEventService: AiHealthEventService,
         @InjectQueue(PROACTIVE_CHAT_QUEUE) private readonly proactiveChatQueue: Queue,
     ) { }
 
@@ -437,7 +440,16 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     async handleAiFallback(payload: { primaryProvider: string, fallbackProvider: string, task: string, error: string }) {
         this.logger.warn(`⚠️ AI Fallback Triggered: ${payload.primaryProvider} -> ${payload.fallbackProvider} (Task: ${payload.task}). Error: ${payload.error}`);
 
-        // 1. Create persistent notifications for admins/agents
+        // 1. Record to database
+        await this.aiHealthEventService.record({
+            eventType: AiHealthEventType.FALLBACK,
+            provider: payload.primaryProvider,
+            model: payload.fallbackProvider,
+            task: payload.task,
+            errorMessage: payload.error,
+        });
+
+        // 2. Create persistent notifications for admins/agents
         const admins = await this.prisma.user.findMany({
             where: {
                 role: {
@@ -460,7 +472,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             });
         }
 
-        // 2. Broadcast to connected admins/agents via WebSocket
+        // 3. Broadcast to connected admins/agents via WebSocket
         this.server.to('role:admin').to('role:super-admin').to('role:department-manager').emit('system:ai_fallback', {
             ...payload,
             timestamp: Date.now()

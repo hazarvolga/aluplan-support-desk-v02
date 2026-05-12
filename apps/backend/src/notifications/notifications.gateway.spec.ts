@@ -7,6 +7,7 @@ import { RedisService } from '../redis/redis.service';
 import { EmailService } from '../email/email.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants';
+import { AiHealthEventService } from '../ai/ai-health-event.service';
 
 describe('NotificationsGateway', () => {
     let gateway: NotificationsGateway;
@@ -15,6 +16,7 @@ describe('NotificationsGateway', () => {
     let mockPrisma: any;
     let mockRedis: any;
     let mockEmail: any;
+    let mockAiHealthEventService: any;
     let mockServer: any;
 
     beforeEach(async () => {
@@ -36,6 +38,7 @@ describe('NotificationsGateway', () => {
             }),
         };
         mockEmail = { cancelEmail: jest.fn() };
+        mockAiHealthEventService = { record: jest.fn() };
         mockServer = {
             to: jest.fn().mockReturnThis(),
             emit: jest.fn(),
@@ -49,6 +52,7 @@ describe('NotificationsGateway', () => {
                 { provide: PrismaService, useValue: mockPrisma },
                 { provide: RedisService, useValue: mockRedis },
                 { provide: EmailService, useValue: mockEmail },
+                { provide: AiHealthEventService, useValue: mockAiHealthEventService },
                 { provide: getQueueToken(PROACTIVE_CHAT_QUEUE), useValue: { add: jest.fn() } },
             ],
         }).compile();
@@ -139,6 +143,13 @@ describe('NotificationsGateway', () => {
 
             await gateway.handleAiFallback(payload);
 
+            expect(mockAiHealthEventService.record).toHaveBeenCalledWith(expect.objectContaining({
+                eventType: 'FALLBACK',
+                provider: 'v1',
+                model: 'v2',
+                task: 't',
+                errorMessage: 'e',
+            }));
             expect(mockPrisma.notification.createMany).toHaveBeenCalled();
             expect(mockServer.to).toHaveBeenCalledWith('role:admin');
             expect(mockServer.emit).toHaveBeenCalledWith('system:ai_fallback', expect.any(Object));

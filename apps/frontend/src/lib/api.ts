@@ -268,6 +268,10 @@ export const api = {
             body: JSON.stringify({ provider }),
         }),
         testStorage: () => request<any>('/ai/test-storage', { method: 'POST' }),
+        listModels: (provider: string, apiKey?: string, baseUrl?: string) => request<{
+            chatModels: Array<{ id: string; displayName: string; recommended: boolean }>;
+            embedModels: Array<{ id: string; displayName: string; recommended: boolean }>;
+        }>('/ai/list-models', { method: 'POST', body: JSON.stringify({ provider, apiKey, baseUrl }) }),
         getCopilotDraft: (ticketId: string) => request<{ draft: string; model: string }>(`/ai/copilot/draft/${ticketId}`),
         getMetrics: (channel?: string) => request<{
             global: {
@@ -324,6 +328,10 @@ export const api = {
             totalSources: number;
         }>('/ai/sources-stats'),
         getIntelligence: (days = 30) => request<any>(`/ai/intelligence?days=${days}`),
+        getHealthEvents: (limit = 50, type?: string, days?: number) =>
+            request<any[]>(`/ai/health-events?limit=${limit}${type ? `&type=${type}` : ''}${days ? `&days=${days}` : ''}`),
+        getHealthStats: (days = 7) =>
+            request<{ total: number; byType: Array<{ type: string; count: number }>; byProvider: Array<{ provider: string; count: number; avgLatencyMs: number | null }>; avgLatencyMs: number | null }>(`/ai/health-stats?days=${days}`),
     },
     kb: {
         listCategories: () => request<any[]>('/kb/categories'),
