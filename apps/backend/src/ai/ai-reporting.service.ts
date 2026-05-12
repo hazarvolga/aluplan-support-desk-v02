@@ -117,6 +117,45 @@ export class AiReportingService {
     }
 
     /**
+     * Intelligence Dashboard — last-24h snapshot for the admin AI health page.
+     */
+    async getIntelligenceDashboard(): Promise<{
+        cacheHitRate: number;
+        avgTopRetrievalScore: number;
+        lowConfidenceRate: number;
+        pendingTrainingQueueCount: number;
+    }> {
+        const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        const [interactions, pendingCount] = await Promise.all([
+            this.prisma.aiInteraction.findMany({
+                where: { createdAt: { gte: last24h } },
+                select: { similarityScore: true, confidenceBand: true, autoAnswered: true },
+            }),
+            this.prisma.trainingQueue.count({ where: { status: 'PENDING' } }),
+        ]);
+
+        const total = interactions.length || 1;
+        const autoAnswered = interactions.filter(i => i.autoAnswered).length;
+        const lowConfidence = interactions.filter(
+            i => i.confidenceBand === 'LOW' || i.confidenceBand === null
+        ).length;
+        const validScores = interactions
+            .filter(i => i.similarityScore != null)
+            .map(i => Number(i.similarityScore));
+        const avgScore = validScores.length > 0
+            ? validScores.reduce((a, b) => a + b, 0) / validScores.length
+            : 0;
+
+        return {
+            cacheHitRate: Math.round((autoAnswered / total) * 100),
+            avgTopRetrievalScore: Math.round(avgScore * 1000) / 1000,
+            lowConfidenceRate: Math.round((lowConfidence / total) * 100),
+            pendingTrainingQueueCount: pendingCount,
+        };
+    }
+
+    /**
      * Manual Trigger for Testing
      */
     async triggerNow() {
