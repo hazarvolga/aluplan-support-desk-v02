@@ -6,6 +6,7 @@ import { RedisService } from '../redis/redis.service';
 import { AiQueryResult } from './ai-query.service';
 import { createHash } from 'crypto';
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
+import { Prisma } from '@aluplan/database';
 
 /**
  * AI Semantic Cache
@@ -104,9 +105,7 @@ export class AiSemanticCache {
      */
     async invalidateTenant(tenantId: string): Promise<void> {
         // Delete semantic cache entries
-        await this.prisma.$executeRawUnsafe(
-            `DELETE FROM "ai_response_cache" WHERE "tenant_id" = '${tenantId}'`
-        );
+        await this.prisma.$executeRaw`DELETE FROM "ai_response_cache" WHERE "tenant_id" = ${tenantId}`;
 
         // Delete exact cache entries (pattern-based)
         const pattern = `ai:query:cache:*:tenant:${tenantId}:*`;
@@ -176,13 +175,15 @@ export class AiSemanticCache {
             );
             const vectorStr = `[${normalized.join(',')}]`;
 
-            const results: any[] = await this.prisma.$queryRawUnsafe(
-                `SELECT id, response, "query_embedding" <=> '${vectorStr}'::vector AS distance
+            const safeVector = this.sanitizeVector(vectorStr);
+            const vectorCast = Prisma.raw(`'${safeVector}'::vector`);
+            const results: any[] = await this.prisma.$queryRaw(
+                Prisma.sql`SELECT id, response, "query_embedding" <=> ${vectorCast} AS distance
                  FROM "ai_response_cache"
-                 WHERE "tenant_id" = '${tenantId}'
-                   AND "embedding_version" = '${config.version}'
+                 WHERE "tenant_id" = ${tenantId}
+                   AND "embedding_version" = ${config.version}
                    AND "expires_at" > NOW()
-                 ORDER BY "query_embedding" <=> '${vectorStr}'::vector
+                 ORDER BY "query_embedding" <=> ${vectorCast}
                  LIMIT 1`
             );
 
@@ -219,15 +220,18 @@ export class AiSemanticCache {
             const hash = createHash('sha256').update(query + tenantId).digest('hex');
             const expiresAt = new Date(Date.now() + this.DEFAULT_TTL_SECONDS * 1000);
 
-            await this.prisma.$executeRawUnsafe(
-                `INSERT INTO "ai_response_cache" (
+            const safeVector = this.sanitizeVector(vectorStr);
+            const vectorCast = Prisma.raw(`'${safeVector}'::vector`);
+            const responseJson = Prisma.raw(`'${JSON.stringify(result).replace(/'/g, "''")}'::jsonb`);
+            await this.prisma.$executeRaw(
+                Prisma.sql`INSERT INTO "ai_response_cache" (
                     "query_hash", "query_embedding", "embedding_version", "embedding_dim", "response", "tenant_id",
                     "confidence", "created_at", "expires_at"
                 ) VALUES (
-                    '${hash}', '${vectorStr}'::vector, '${config.version}', ${config.dimension},
-                    '${JSON.stringify(result).replace(/'/g, "''")}'::jsonb,
-                    '${tenantId}', '${result.confidence}',
-                    NOW(), '${expiresAt.toISOString()}'
+                    ${hash}, ${vectorCast}, ${config.version}, ${config.dimension},
+                    ${responseJson},
+                    ${tenantId}, ${result.confidence},
+                    NOW(), ${expiresAt.toISOString()}
                 )
                 ON CONFLICT ("query_hash") DO UPDATE SET
                     "query_embedding" = EXCLUDED."query_embedding",
@@ -250,6 +254,14 @@ export class AiSemanticCache {
 
     private async recordMiss(): Promise<void> {
         await this.redis.getClient().incr('ai:cache:misses');
+    }
+
+    // Validate vector contains only floats — guards against injection via Prisma.raw
+    private sanitizeVector(vectorStr: string): string {
+        if (!/^\[[\d.,\s\-e+]+\]$/.test(vectorStr)) {
+            throw new Error(`Invalid vector format — potential injection attempt`);
+        }
+        return vectorStr;
     }
 
     private buildExactKey(

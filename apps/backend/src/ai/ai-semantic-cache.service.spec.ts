@@ -3,10 +3,18 @@ import { AiSemanticCache } from './ai-semantic-cache.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
 import { EmbeddingNormalizer } from './embedding-normalizer.service';
+import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { RedisService } from '../redis/redis.service';
 import { mockPrismaService, mockRedisService } from '../test/mock.utils';
 
-describe('AiSemanticCache [TODO: mocks need update for current implementation]', () => {
+const mockVersionConfig = { version: 'v3s', dimension: 3, provider: 'openai', model: 'text-embedding-3-small' };
+
+const mockEmbeddingVersionRegistry = {
+    getActiveVersionConfig: jest.fn().mockResolvedValue(mockVersionConfig),
+    getVersionConfig: jest.fn().mockReturnValue({ version: 'v3s', dimension: 3 }),
+};
+
+describe('AiSemanticCache', () => {
     let cache: AiSemanticCache;
     let prisma: any;
     let embeddingService: any;
@@ -26,6 +34,7 @@ describe('AiSemanticCache [TODO: mocks need update for current implementation]',
                 { provide: PrismaService, useValue: mockPrismaService },
                 { provide: EmbeddingService, useValue: mockEmbeddingService },
                 { provide: RedisService, useValue: mockRedisService },
+                { provide: EmbeddingVersionRegistry, useValue: mockEmbeddingVersionRegistry },
             ],
         }).compile();
 
@@ -63,7 +72,7 @@ describe('AiSemanticCache [TODO: mocks need update for current implementation]',
         it('should return null when no cache exists', async () => {
             // Arrange
             mockRedisService.get.mockResolvedValue(null);
-            mockPrismaService.$queryRawUnsafe.mockResolvedValue([]);
+            mockPrismaService.$queryRaw.mockResolvedValue([]);
             mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
 
             // Act
@@ -77,7 +86,7 @@ describe('AiSemanticCache [TODO: mocks need update for current implementation]',
             // Arrange
             mockRedisService.get.mockResolvedValue(null);
             mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
-            mockPrismaService.$queryRawUnsafe.mockResolvedValue([
+            mockPrismaService.$queryRaw.mockResolvedValue([
                 { id: '1', response: mockResult, distance: '0.02' }, // similarity = 0.98
             ]);
 
@@ -92,7 +101,7 @@ describe('AiSemanticCache [TODO: mocks need update for current implementation]',
             // Arrange
             mockRedisService.get.mockResolvedValue(null);
             mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
-            mockPrismaService.$queryRawUnsafe.mockResolvedValue([
+            mockPrismaService.$queryRaw.mockResolvedValue([
                 { id: '1', response: mockResult, distance: '0.1' }, // similarity = 0.90
             ]);
 
@@ -108,7 +117,7 @@ describe('AiSemanticCache [TODO: mocks need update for current implementation]',
         it('should store in both exact and semantic cache', async () => {
             // Arrange
             mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
-            mockPrismaService.$executeRawUnsafe.mockResolvedValue({ count: 1 });
+            mockPrismaService.$executeRaw.mockResolvedValue({ count: 1 });
             mockRedisService.set.mockResolvedValue('OK');
 
             // Act
@@ -116,7 +125,7 @@ describe('AiSemanticCache [TODO: mocks need update for current implementation]',
 
             // Assert
             expect(mockRedisService.set).toHaveBeenCalled();
-            expect(mockPrismaService.$executeRawUnsafe).toHaveBeenCalled();
+            expect(mockPrismaService.$executeRaw).toHaveBeenCalled();
         });
     });
 
@@ -145,7 +154,7 @@ describe('AiSemanticCache [TODO: mocks need update for current implementation]',
     describe('invalidateTenant', () => {
         it('should clear all cache for a tenant', async () => {
             // Arrange
-            mockPrismaService.$executeRawUnsafe.mockResolvedValue({ count: 5 });
+            mockPrismaService.$executeRaw.mockResolvedValue({ count: 5 });
             mockRedisService.getClient.mockReturnValue({
                 eval: jest.fn().mockResolvedValue(10),
             });
@@ -154,9 +163,7 @@ describe('AiSemanticCache [TODO: mocks need update for current implementation]',
             await cache.invalidateTenant('tenant-1');
 
             // Assert
-            expect(mockPrismaService.$executeRawUnsafe).toHaveBeenCalledWith(
-                expect.stringContaining('DELETE FROM "ai_response_cache"')
-            );
+            expect(mockPrismaService.$executeRaw).toHaveBeenCalled();
         });
     });
 });

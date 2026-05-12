@@ -107,6 +107,7 @@ export const mockPrismaService: any = {
     $transaction: jest.fn((callback: any) => callback(mockPrismaService)),
     $queryRaw: jest.fn(),
     $queryRawUnsafe: jest.fn(),
+    $executeRaw: jest.fn(),
     $executeRawUnsafe: jest.fn(),
 };
 
