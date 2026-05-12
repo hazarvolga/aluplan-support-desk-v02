@@ -42,6 +42,7 @@ export interface FailedQueryPattern {
     query: string;
     count: number;
     lastSeen: string;
+    sampleInteractionId: string;
 }
 
 @Injectable()
@@ -133,12 +134,12 @@ export class RagObservabilityService {
                 confidenceBand: null,
                 createdAt: { gte: since },
             },
-            select: { userQuery: true, createdAt: true },
+            select: { id: true, userQuery: true, createdAt: true },
             orderBy: { createdAt: 'desc' },
         });
 
-        // Group by normalized query
-        const queryMap = new Map<string, { count: number; lastSeen: Date }>();
+        // Group by normalized query, track first interaction ID per pattern
+        const queryMap = new Map<string, { count: number; lastSeen: Date; sampleInteractionId: string }>();
         for (const fq of failedQueries) {
             const normalized = fq.userQuery.toLowerCase().trim().substring(0, 100);
             const existing = queryMap.get(normalized);
@@ -146,12 +147,17 @@ export class RagObservabilityService {
                 existing.count++;
                 if (fq.createdAt > existing.lastSeen) existing.lastSeen = fq.createdAt;
             } else {
-                queryMap.set(normalized, { count: 1, lastSeen: fq.createdAt });
+                queryMap.set(normalized, { count: 1, lastSeen: fq.createdAt, sampleInteractionId: fq.id });
             }
         }
 
         return Array.from(queryMap.entries())
-            .map(([query, data]) => ({ query, count: data.count, lastSeen: data.lastSeen.toISOString() }))
+            .map(([query, data]) => ({
+                query,
+                count: data.count,
+                lastSeen: data.lastSeen.toISOString(),
+                sampleInteractionId: data.sampleInteractionId,
+            }))
             .sort((a, b) => b.count - a.count)
             .slice(0, 20);
     }
@@ -174,6 +180,26 @@ export class RagObservabilityService {
             if (failedPatterns.length > 0) {
                 this.logger.warn(`⚠️ Knowledge gaps detected (${failedPatterns.length} patterns): ` +
                     failedPatterns.slice(0, 3).map(p => `"${p.query}" (${p.count}x)`).join(', '));
+
+                // Push recurring patterns (seen 2+ times) to TrainingQueue for admin review
+                // R-T1: status defaults to PENDING — admin approval required before any action
+                const significant = failedPatterns.filter(p => p.count >= 2);
+                let queued = 0;
+                for (const pattern of significant) {
+                    const already = await this.prisma.trainingQueue.findFirst({
+                        where: { interactionId: pattern.sampleInteractionId },
+                        select: { id: true },
+                    });
+                    if (!already) {
+                        await this.prisma.trainingQueue.create({
+                            data: { interactionId: pattern.sampleInteractionId },
+                        }).catch(err => this.logger.warn(`TrainingQueue create failed: ${err.message}`));
+                        queued++;
+                    }
+                }
+                if (queued > 0) {
+                    this.logger.log(`📚 ${queued} recurring no-match patterns queued for training review`);
+                }
             }
 
             // Reset in-memory counters
