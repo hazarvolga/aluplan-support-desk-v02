@@ -1,19 +1,21 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { EmbeddingService } from './embedding.service';
+import { FaqService } from '../faq/faq.service';
 import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class TicketClusteringService {
     private readonly logger = new Logger(TicketClusteringService.name);
     private readonly SIMILARITY_THRESHOLD = 0.85;
-    private readonly MIN_CLUSTER_SIZE = 3;
+    private readonly MIN_CLUSTER_SIZE = 5; // R-T3 uyumu: CLAUDE.md §4.2
 
     constructor(
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
         private readonly embeddingService: EmbeddingService,
+        @Inject(forwardRef(() => FaqService)) private readonly faqService: FaqService,
     ) { }
 
     /**
@@ -30,7 +32,8 @@ export class TicketClusteringService {
             where: {
                 status: { in: ['RESOLVED', 'CLOSED'] },
                 knowledgeBaseAdded: false,
-                updatedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+                updatedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+                satisfactionScore: { gte: 3 }, // R-T3: CSAT < 3/5 olan ticket FAQ kaynağı olamaz
             },
             include: {
                 messages: { orderBy: { createdAt: 'asc' } },
@@ -121,17 +124,11 @@ Görevin:
         if (result?.response) {
             try {
                 const parsed = JSON.parse(result.response);
-                await this.prisma.faqEntry.create({
-                    data: {
-                        question: parsed.question,
-                        answer: parsed.answer,
-                        status: 'PENDING_REVIEW',
-                        isInternal: true,
-                        confidenceScore: 0.80, // High confidence for manual review
-                        tags: parsed.tags || [],
-                        frequency: tickets.length,
-                        sourceTypes: ['ticket']
-                    }
+                await this.faqService.createFromCluster({
+                    question: parsed.question,
+                    answer: parsed.answer,
+                    tags: parsed.tags || [],
+                    ticketCount: tickets.length,
                 });
 
                 // Mark tickets as processed

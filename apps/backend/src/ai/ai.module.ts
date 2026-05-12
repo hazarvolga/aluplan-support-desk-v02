@@ -38,6 +38,7 @@ import { AiSemanticCache } from './ai-semantic-cache.service';
 import { AiBudgetMonitor } from './ai-budget-monitor.service';
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { EmbeddingMigrationProcessor } from './embedding-migration.processor';
+import { FaqModule } from '../faq/faq.module';
 
 @Module({
     imports: [
@@ -46,6 +47,7 @@ import { EmbeddingMigrationProcessor } from './embedding-migration.processor';
         PrismaModule,
         forwardRef(() => EmailModule),
         forwardRef(() => KnowledgePoolModule),
+        forwardRef(() => FaqModule),
         NotificationsModule,
         BullModule.registerQueue(
             {

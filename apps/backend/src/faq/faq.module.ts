@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { FaqService } from './faq.service';
 import { FaqController } from './faq.controller';
@@ -10,7 +10,7 @@ import { AiModule } from '../ai/ai.module';
 @Module({
     imports: [
         PrismaModule,
-        AiModule,
+        forwardRef(() => AiModule),
         BullModule.registerQueue({
             name: 'kb-summarizer',
         }),

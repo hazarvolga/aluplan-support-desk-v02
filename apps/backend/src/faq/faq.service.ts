@@ -353,6 +353,28 @@ export class FaqService {
      * Single-point entry for FAQ creation from KB Summarizer processor.
      * Handles deduplication and FAQ entry creation.
      */
+    async createFromCluster(data: {
+        question: string;
+        answer: string;
+        tags: string[];
+        ticketCount: number;
+    }): Promise<void> {
+        // Confidence scales with cluster size: 0.70 at 5 tickets, capped at 0.90
+        const confidenceScore = Math.min(0.90, 0.65 + data.ticketCount * 0.01);
+        await this.prisma.faqEntry.create({
+            data: {
+                question: data.question,
+                answer: data.answer,
+                status: 'PENDING_REVIEW',
+                isInternal: true,
+                confidenceScore,
+                tags: data.tags,
+                frequency: data.ticketCount,
+                sourceTypes: ['ticket'],
+            },
+        });
+    }
+
     async processKbPattern(pattern: ExtractedPattern): Promise<{ created: boolean; faqId?: string }> {
         const defaultLanguage = await this.settingsService.getValue('kb.default_language') || 'tr';
 
