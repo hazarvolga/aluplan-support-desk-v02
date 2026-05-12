@@ -703,7 +703,21 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             expandedQuery += `\n[Hotinfo Sistem Özeti]: İşletim Sistemi: ${h.osVersion || ''}, Ekran Kartı: ${h.gpu || ''}, Hata: ${h.errorTrace || ''}, Çakışan İşlemler: ${h.conflictingProcesses?.join(', ') || ''}`;
         }
 
-        const searchResponse = await this.embeddingService.search(expandedQuery, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, null, isStaff);
+        // 0. Conversation-aware query rewrite (add context from history)
+        const historyEnriched = rewriteQueryWithHistory(expandedQuery, options.history);
+
+        // 1. Synonym-based query expansion
+        const { expanded: synonymExpanded, matchedGroups } = expandQueryWithSynonyms(historyEnriched);
+        if (matchedGroups.length > 0) {
+            this.logger.log(`🔍 [Stream] Synonym expansion matched: [${matchedGroups.join(', ')}]`);
+            expandedQuery = synonymExpanded;
+        }
+
+        // 2. HyDE: Generate hypothetical document for better retrieval
+        const queryLanguage = detectQueryLanguage(expandedQuery);
+        const hypotheticalDoc = generateHypotheticalDocument(expandedQuery, { language: queryLanguage });
+
+        const searchResponse = await this.embeddingService.search(hypotheticalDoc, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, null, isStaff);
         let results = searchResponse.results;
 
         // Apply Re-ranking
@@ -778,6 +792,15 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             for await (const chunk of stream) {
                 fullAnswer += chunk;
                 yield { chunk };
+            }
+
+            // Self-check: Validate stream answer confidence
+            const selfCheck = checkAnswerConfidence(fullAnswer, topResult?.similarity, diagnosisForThreshold?.matchedKeywords);
+            if (selfCheck.shouldEscalate) {
+                confidence = 'LOW';
+                this.logger.warn(`⚠️ [Stream] Self-check escalated to LOW: ${selfCheck.concerns.join(', ')}`);
+            } else if (!selfCheck.isReliable && selfCheck.concerns.length > 0) {
+                this.logger.warn(`⚠️ [Stream] Self-check concerns: ${selfCheck.concerns.join(', ')}`);
             }
 
             // Langfuse trace for stream (after completion)

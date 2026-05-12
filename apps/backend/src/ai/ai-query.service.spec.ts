@@ -46,7 +46,7 @@ describe('AiQueryService', () => {
         knowledgeSource: { count: jest.fn() },
         knowledgeArticle: { count: jest.fn() },
         faqEntry: { count: jest.fn() },
-        trainingQueue: { upsert: jest.fn() },
+        trainingQueue: { upsert: jest.fn(), create: jest.fn().mockResolvedValue(undefined) },
         aiShiftDetection: { create: jest.fn().mockResolvedValue({ id: 'shift-id' }) },
     };
 
@@ -511,6 +511,89 @@ describe('AiQueryService', () => {
             ]);
 
             expect(result).toHaveLength(0);
+        });
+    });
+
+    describe('streamQuery', () => {
+        async function* asyncChunks(chunks: string[]) {
+            for (const c of chunks) yield c;
+        }
+
+        beforeEach(() => {
+            // Default: no cache, HIGH confidence search result
+            mockRedisService.get.mockResolvedValue(null);
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [{
+                    articleId: 'a1', title: 'Article', similarity: 0.92,
+                    content: 'relevant context', confidence: 'HIGH', sourceType: 'ARTICLE',
+                }],
+                diagnostics: { topScore: 0.92 },
+            });
+            mockAiService.streamReformat.mockReturnValue(asyncChunks(['hello ', 'world']));
+        });
+
+        it('should yield cached chunk and return early on stream cache hit', async () => {
+            mockRedisService.get.mockResolvedValue('cached stream answer');
+
+            const chunks: any[] = [];
+            for await (const c of service.streamQuery({ userQuery: 'test query' })) {
+                chunks.push(c);
+            }
+
+            expect(chunks).toEqual([{ chunk: 'cached stream answer' }]);
+            expect(mockEmbeddingService.search).not.toHaveBeenCalled();
+        });
+
+        it('should yield done with suggestTicket=true when topScore is below threshold', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [],
+                diagnostics: { topScore: 0.10 },
+            });
+
+            const chunks: any[] = [];
+            for await (const c of service.streamQuery({ userQuery: 'unknown topic' })) {
+                chunks.push(c);
+            }
+
+            const doneChunk = chunks.find(c => c.done === true);
+            expect(doneChunk).toBeDefined();
+            expect(doneChunk.suggestTicket).toBe(true);
+            expect(mockAiService.streamReformat).not.toHaveBeenCalled();
+        });
+
+        it('should stream text chunks then yield done with interactionId on HIGH confidence', async () => {
+            const chunks: any[] = [];
+            for await (const c of service.streamQuery({ userQuery: 'how do I reset my password' })) {
+                chunks.push(c);
+            }
+
+            const textChunks = chunks.filter(c => c.chunk !== undefined && !c.done);
+            const doneChunk = chunks.find(c => c.done === true);
+
+            expect(textChunks.length).toBeGreaterThan(0);
+            expect(textChunks.map(c => c.chunk).join('')).toBe('hello world');
+            expect(doneChunk).toBeDefined();
+            expect(doneChunk.interactionId).toBe('int-1');
+            expect(doneChunk.suggestTicket).toBe(false);
+        });
+
+        it('should pass history through rewriteQueryWithHistory and call embeddingService.search', async () => {
+            const history = [
+                { role: 'user' as const, content: 'previous question' },
+                { role: 'assistant' as const, content: 'previous answer' },
+            ];
+
+            const chunks: any[] = [];
+            for await (const c of service.streamQuery({ userQuery: 'follow up', history })) {
+                chunks.push(c);
+            }
+
+            // embeddingService.search must be called with the HyDE document (not the raw query)
+            expect(mockEmbeddingService.search).toHaveBeenCalledTimes(1);
+            // The search arg is the hypothetical doc — verify it's a non-empty string
+            const searchArg = mockEmbeddingService.search.mock.calls[0][0];
+            expect(typeof searchArg).toBe('string');
+            expect(searchArg.length).toBeGreaterThan(0);
         });
     });
 });
