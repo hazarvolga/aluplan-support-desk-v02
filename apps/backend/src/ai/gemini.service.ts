@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
-import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
+import { AiPart, AiProvider, ChatResult, EmbeddingResult, ModelListResult } from './interfaces/ai-provider.interface';
 
 /**
  * Google Gemini Service (AI Studio)
@@ -75,9 +75,11 @@ export class GeminiService implements AiProvider {
         });
     }
 
-    async generate(prompt: string | AiPart[], timeout = 30_000): Promise<string | null> {
+    async generate(prompt: string | AiPart[], timeout = 30_000): Promise<string> {
         const apiKey = await this.getApiKey();
-        if (!apiKey) return null;
+        if (!apiKey) {
+            throw new Error('GEMINI_API_KEY_NOT_CONFIGURED: Gemini API key is not set in database settings (ai.gemini.api_key) or environment variable (GEMINI_API_KEY)');
+        }
 
         try {
             const model = await this.getChatModel();
@@ -111,15 +113,14 @@ export class GeminiService implements AiProvider {
             return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
         } catch (err: any) {
             this.logger.error(`🚨 Gemini generate failed: ${err.message}`);
-            return null;
+            throw err;
         }
     }
 
     async *streamGenerate(prompt: string | AiPart[], timeout = 30_000): AsyncGenerator<string, void, unknown> {
         const apiKey = await this.getApiKey();
         if (!apiKey) {
-            yield 'Gemini API Key missing.';
-            return;
+            throw new Error('GEMINI_API_KEY_NOT_CONFIGURED: Gemini API key is not set in database settings (ai.gemini.api_key) or environment variable (GEMINI_API_KEY)');
         }
 
         try {
@@ -245,14 +246,57 @@ Yalnızca kategori adını yaz. Başka bir şey yazma.`;
         if (!apiKey) return { success: false, message: 'Gemini API Key bulunamadı.' };
 
         try {
-            // Test by listing models
             const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
             const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
-            
+
             if (response.ok) return { success: true, message: 'Google Gemini bağlantısı başarılı.' };
             return { success: false, message: `Bağlantı hatası: ${response.status}` };
         } catch (error: any) {
             return { success: false, message: `Hata: ${error.message}` };
+        }
+    }
+
+    /**
+     * Lists available Gemini models for the given (or stored) API key.
+     * Returns chat models and embed models separately, with a recommended default each.
+     */
+    async listModels(apiKeyOverride?: string, _baseUrlOverride?: string): Promise<ModelListResult> {
+        const apiKey = apiKeyOverride || await this.getApiKey();
+        if (!apiKey) return { chatModels: [], embedModels: [] };
+
+        const RECOMMENDED_CHAT = 'models/gemini-2.0-flash';
+        const RECOMMENDED_EMBED = 'models/text-embedding-004';
+
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}&pageSize=100`;
+            const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+            if (!response.ok) return { chatModels: [], embedModels: [] };
+
+            const data: any = await response.json();
+            const models: any[] = data.models ?? [];
+
+            const chatModels = models
+                .filter(m => (m.supportedGenerationMethods ?? []).includes('generateContent'))
+                .map(m => ({
+                    id: (m.name as string).replace('models/', ''),
+                    displayName: m.displayName ?? m.name,
+                    recommended: m.name === RECOMMENDED_CHAT,
+                }))
+                .sort((a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0));
+
+            const embedModels = models
+                .filter(m => (m.supportedGenerationMethods ?? []).includes('embedContent'))
+                .map(m => ({
+                    id: (m.name as string).replace('models/', ''),
+                    displayName: m.displayName ?? m.name,
+                    recommended: m.name === RECOMMENDED_EMBED,
+                }))
+                .sort((a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0));
+
+            return { chatModels, embedModels };
+        } catch (err: any) {
+            this.logger.warn(`Failed to list Gemini models: ${err.message}`);
+            return { chatModels: [], embedModels: [] };
         }
     }
 }
