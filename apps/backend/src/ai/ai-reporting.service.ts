@@ -30,6 +30,7 @@ export class AiReportingService {
             const trends = await this.aiQueryService.getHealthTrends(7);
             const gaps = await this.aiQueryService.getKnowledgeGaps(5);
             const metrics = await this.aiQueryService.getHealthMetrics();
+            const resolverMetrics = await this.getAutoResolverMetrics(7);
 
             if (trends.length === 0) {
                 this.logger.warn('No interaction data from the last 7 days. Skipping report.');
@@ -73,7 +74,11 @@ export class AiReportingService {
                         cost: metrics.totalInteractions > 0 ? 'TBD' : '0', // Full cost extraction can be added later
                         topModel: 'llama-3.3-70b',
                         gaps,
-                        dashboardUrl
+                        dashboardUrl,
+                        autoResolverSuccessRate: resolverMetrics.successRate,
+                        autoResolved: resolverMetrics.autoResolved,
+                        escalated: resolverMetrics.escalated,
+                        noMatchCount: resolverMetrics.noMatchCount,
                     }
                 });
             }
@@ -82,6 +87,33 @@ export class AiReportingService {
         } catch (error: any) {
             this.logger.error('❌ Failed to generate weekly AI health report', error.stack);
         }
+    }
+
+    /**
+     * Auto-resolver metrics: how many interactions were auto-answered vs escalated.
+     * Exposes the AiAutoResolverService community's output into the reporting layer.
+     */
+    async getAutoResolverMetrics(days = 7): Promise<{
+        totalInteractions: number;
+        autoResolved: number;
+        escalated: number;
+        noMatchCount: number;
+        successRate: number;
+    }> {
+        const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+        const [total, autoResolved, noMatch] = await Promise.all([
+            this.prisma.aiInteraction.count({ where: { createdAt: { gte: since } } }),
+            this.prisma.aiInteraction.count({ where: { createdAt: { gte: since }, autoAnswered: true } }),
+            this.prisma.aiInteraction.count({ where: { createdAt: { gte: since }, confidenceBand: null } }),
+        ]);
+        const escalated = total - autoResolved;
+        return {
+            totalInteractions: total,
+            autoResolved,
+            escalated,
+            noMatchCount: noMatch,
+            successRate: total > 0 ? Math.round((autoResolved / total) * 100) : 0,
+        };
     }
 
     /**
