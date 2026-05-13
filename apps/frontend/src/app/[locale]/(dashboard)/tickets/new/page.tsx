@@ -128,6 +128,27 @@ export default function NewTicketPage() {
         }
     };
 
+    const waitForDiagnosisResult = async (jobId: string) => {
+        const maxAttempts = 60;
+        const pollIntervalMs = 2000;
+
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const job = await api.ai.getJobStatus(jobId);
+
+            if (job.status === 'COMPLETED') {
+                return job.result ?? null;
+            }
+
+            if (job.status === 'FAILED') {
+                throw new Error(job.error || 'AI_JOB_FAILED');
+            }
+
+            await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+        }
+
+        throw new Error('AI_TIMEOUT');
+    };
+
     const runDiagnosis = async () => {
         const { subject, description } = form.getValues();
         if (!description) return;
@@ -155,22 +176,22 @@ export default function NewTicketPage() {
             // Switch to specialized query endpoint for conversational RAG
             // Passing product context to focus search on relevant knowledge base
             const pId = selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId;
-            const queryPromise = api.ai.query(`${subject} ${description}`, context, pId, locale, [], attachments, true);
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('AI_TIMEOUT')), 45000)
-            );
+            const response = await api.ai.query(`${subject} ${description}`, context, pId, locale, [], attachments, false) as
+                { answer?: string; interactionId?: string; jobId?: string } | null;
 
-            const response = await Promise.race([queryPromise, timeoutPromise]) as unknown as { answer?: string; interactionId?: string } | null;
+            const resolvedResponse = response?.jobId
+                ? await waitForDiagnosisResult(response.jobId) as { answer?: string; interactionId?: string } | null
+                : response;
 
-            if (!response || !response.answer) {
+            if (!resolvedResponse || !resolvedResponse.answer) {
                 toast.warning(t('toasts.ai_unavailable'));
                 return;
             }
 
-            setAiAnswer(response.answer);
-            setInteractionId(response.interactionId ?? null);
+            setAiAnswer(resolvedResponse.answer);
+            setInteractionId(resolvedResponse.interactionId ?? null);
 
-            if ((response as any).confidence === 'NO_MATCH') {
+            if ((resolvedResponse as any).confidence === 'NO_MATCH') {
                 toast.info(t('toasts.ai_no_match'));
             }
         } catch (err: any) {

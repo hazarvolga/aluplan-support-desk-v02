@@ -243,6 +243,13 @@ export const api = {
                 signal: typeof AbortSignal !== 'undefined' ? AbortSignal.timeout(60000) : undefined, // Increased to 60s for sync waits
             });
         },
+        getJobStatus: (jobId: string) =>
+            request<{
+                jobId: string;
+                status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+                result?: { answer?: string; status?: string };
+                error?: string;
+            }>(`/ai/status/${jobId}`),
         search: (query: string, productId?: string | null, limit = 5, language?: string) =>
             request<{
                 results: any[];
