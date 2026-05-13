@@ -1,47 +1,31 @@
 You are working on aluplan-support-desk-v02.
 
-Repository characteristics:
-- Large-scale repository
-- Graph-aware architecture
-- Multi-service backend
-- RAG + AI orchestration
-- CRM integrations
-- WebSocket notifications
+This folder is the project memory system. Use it to recover the current state
+before making assumptions from stale root-level reports or generated notes.
 
-Important architecture:
-- NestJS backend
-- Next.js frontend
-- PostgreSQL
-- OpenAI/Gemini integration
-- Embedding pipeline
-- Semantic retrieval
+Startup reading order:
+1. AGENTS.md
+2. .ai/current-focus.md
+3. .ai/session-summary.md
+4. .ai/architecture-decisions.md
+5. graphify-out/GRAPH_REPORT.md
 
-Critical services:
-- AiService
-- AiQueryService
-- EmbeddingService
-- CrmService
-- NotificationsGateway
-
-Important coding rules:
-- Preserve RBAC decorators
-- Preserve DTO contracts
-- Preserve i18n with t()
-- Preserve toast() notifications
-- Reuse existing abstractions
-- Avoid duplicate utilities
-
-Repository intelligence rules:
-- Prefer GitNexus graph traversal
-- Prefer semantic retrieval
-- Use execution flows before grep
-- Avoid isolated file reasoning
+Truth hierarchy:
+- Prefer code, tests, Git history, GitNexus, and Graphify over root Markdown reports.
+- Treat root-level Markdown documents as potentially stale unless they are explicitly
+  referenced by current code, commits, or .ai memory files.
+- Use .ai/session-summary.md for recent work history.
+- Use .ai/architecture-decisions.md for accepted technical direction.
+- Use .ai/current-focus.md for what to do next and what not to break.
 
 Before coding:
-1. Read AGENTS.md
-2. Read PROJECT_CONTEXT.md
-3. Read .ai/current-focus.md
-4. Read .ai/session-summary.md
+1. Read the startup files above.
+2. Check git status and recent commits.
+3. Use Graphify/GitNexus for architecture and blast-radius context when available.
+4. Keep changes scoped to the active focus unless the user redirects.
 
-Before ending session:
-Update .ai/session-summary.md
+Before ending a meaningful session:
+1. Update .ai/session-summary.md with what changed, verification, and remaining risks.
+2. Update .ai/current-focus.md if the next step changed.
+3. Add or update an ADR in .ai/architecture-decisions.md for any durable architecture decision.
+4. Refresh .ai/summaries/condensed.md after major phase changes.

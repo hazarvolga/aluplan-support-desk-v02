@@ -24,6 +24,8 @@ summaries:
   files:
     - .ai/session-summary.md
     - .ai/current-focus.md
+    - .ai/architecture-decisions.md
+    - .ai/summaries/condensed.md
     - PROJECT_CONTEXT.md
 
 fallback:
@@ -34,3 +36,5 @@ rules:
   avoid_duplicate_utilities: true
   preserve_architecture: true
   preserve_service_boundaries: true
+  prefer_graph_code_session_memory_over_root_markdown: true
+  treat_root_markdown_as_potentially_stale: true

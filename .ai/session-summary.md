@@ -124,6 +124,50 @@ These were left alone deliberately because they look like user/workflow artifact
 - `pnpm --filter @aluplan/backend build` passed
 - Backend restarted successfully on `http://localhost:4000/api/v1`
 
+## Memory System Note - 2026-05-13
+
+The `.ai` folder now acts as the project memory system:
+
+- `.ai/bootstrap.txt`: startup protocol and truth hierarchy for agents.
+- `.ai/current-focus.md`: active work, known risks, and next recommended step.
+- `.ai/session-summary.md`: chronological session history, commits, verification, and follow-up notes.
+- `.ai/architecture-decisions.md`: durable architecture decisions in short ADR form.
+- `.ai/summaries/condensed.md`: five-minute handoff summary for new agents.
+- `.ai/retrieval.yaml`: retrieval priority and memory source policy.
+
+Maintenance rule:
+
+- Update `session-summary.md` after meaningful implementation or debugging work.
+- Update `current-focus.md` when the next active objective changes.
+- Add or revise an ADR when a technical direction should persist across sessions.
+- Refresh `summaries/condensed.md` after major phase changes or stabilization milestones.
+- Prefer code, tests, Git history, GitNexus, Graphify, and `.ai` memory over stale root-level Markdown.
+
+## Follow-up - 2026-05-13 Regression Guard Stabilization
+
+### Root cause
+- Backend regression guard failed because `AuthController` now depends on `ConfigService`, while `auth.controller.spec.ts` still only provided `AuthService`.
+- Frontend targeted test command was initially invoked through the package script with an extra `--`, causing Vitest to run a wider suite than intended.
+- The wider frontend run exposed two independent test harness issues:
+  - `DocBreadcrumb.spec.tsx` expected the Turkish label `Yardım`, but its `next-intl` mock returned raw translation keys.
+  - `customer-properties.pbt.spec.ts` expected null customer sort values to stay last, but the local test helper normalized null to an empty string that sorted first.
+
+### Fix applied
+- Added a `ConfigService` mock to `auth.controller.spec.ts`.
+- Updated the `DocBreadcrumb` test translation mock to return `Yardım` for `help.nav.back`.
+- Updated the local customer sort test helper so empty/null values sort last in both directions.
+
+### Verification
+- Backend must-pass regression set passed:
+  - `pnpm --filter @aluplan/backend test -- auth.controller.spec.ts tickets.controller.spec.ts notifications.gateway.spec.ts ai-query.service.spec.ts`
+  - Result: 5 suites passed, 48 tests passed, 1 skipped.
+- Frontend must-pass regression set passed:
+  - `pnpm --filter @aluplan/frontend exec vitest run src/lib/api.spec.ts src/lib/permissions.spec.ts src/components/help/DocBreadcrumb.spec.tsx 'src/app/[locale]/(dashboard)/customers/customer-properties.pbt.spec.ts'`
+  - Result: 4 files passed, 58 tests passed.
+
+### Note
+- Use `pnpm --filter @aluplan/frontend exec vitest run <files...>` for targeted frontend checks. Avoid adding an extra `--` after `test:unit` because it can widen the run unexpectedly.
+
 ## Follow-up - 2026-05-13 Grounded Fallback + Hotinfo Signals
 
 ### Root cause
