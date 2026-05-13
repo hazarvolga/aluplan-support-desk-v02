@@ -1,6 +1,11 @@
-import { io, Socket } from 'socket.io-client';
+import { io, Socket, Manager } from 'socket.io-client';
 
 let socket: Socket | null = null;
+
+function getAuthToken(): string {
+    if (typeof document === 'undefined') return '';
+    return document.cookie.split('; ').find(row => row.trim().startsWith('alu_at='))?.split('=')[1] || '';
+}
 
 export const getSocket = () => {
     if (!socket) {
@@ -9,9 +14,24 @@ export const getSocket = () => {
         const url = (typeof process !== 'undefined' && process.env ? process.env.NEXT_PUBLIC_WS_URL : '') || defaultWsUrl;
 
         socket = io(url, {
-            withCredentials: true, // HttpOnly cookie sent automatically
+            withCredentials: true,
             transports: ['websocket'],
             autoConnect: false,
+            auth: {
+                token: getAuthToken(),
+            },
+        });
+
+        // Intercept connection to inject fresh token before every connect
+        const manager = (socket as any).io;
+        manager.on('open', () => {
+            const token = getAuthToken();
+            if (token) {
+                (socket as any).auth = { token };
+                // Force reconnect with new token
+                socket?.disconnect();
+                socket?.connect();
+            }
         });
     }
     return socket;

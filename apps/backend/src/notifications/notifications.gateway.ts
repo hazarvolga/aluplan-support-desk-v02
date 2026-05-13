@@ -69,8 +69,15 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     async handleConnection(client: Socket) {
         try {
+            const rawCookies = client.handshake.headers?.cookie || '';
+            const cookieToken = rawCookies
+                .split('; ')
+                .find(c => c.trim().startsWith('alu_at='))
+                ?.split('=')[1];
+
             const token =
                 client.handshake.auth?.token ||
+                cookieToken ||
                 client.handshake.headers?.authorization?.replace('Bearer ', '');
 
             if (!token) {
