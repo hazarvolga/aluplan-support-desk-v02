@@ -194,6 +194,8 @@
     "not_available": "N/V",
     "success_title": "Erfolgreich",
     "error_title": "Fehler",
+    "backend_unavailable_title": "Dienst derzeit nicht erreichbar",
+    "backend_unavailable_desc": "Die Sitzung kann erst geprüft werden, wenn die Verbindung wiederhergestellt ist. Bitte versuchen Sie es in wenigen Sekunden erneut.",
     "unassigned": "Nicht zugewiesen",
     "next_step": "Nächster Schritt",
     "anonymous": "ANONYM",

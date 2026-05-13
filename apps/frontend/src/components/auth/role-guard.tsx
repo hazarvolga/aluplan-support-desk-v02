@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback, createContext, useContext } from 'react';
-import { api } from '@/lib/api';
+import { api, isBackendUnavailableError } from '@/lib/api';
 import { useRouter, usePathname } from 'next/navigation';
 import { routing } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
+import { RefreshCcw, ServerCrash } from 'lucide-react';
 
 /**
  * Strip the locale prefix from a pathname for route matching.
@@ -30,20 +33,25 @@ interface User {
 interface AuthContextType {
     user: User | null;
     loading: boolean;
+    backendUnavailable: boolean;
     login: (user: User) => void;
     logout: () => void;
+    retryAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
     loading: true,
+    backendUnavailable: false,
     login: () => { },
     logout: () => { },
+    retryAuth: async () => { },
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [backendUnavailable, setBackendUnavailable] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
     const isFetchingRef = useRef(false);
@@ -59,8 +67,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
             const data = await api.auth.me();
             setUser(data as unknown as User | null);
+            setBackendUnavailable(false);
         } catch (err) {
             setUser(null);
+            if (isBackendUnavailableError(err)) {
+                setBackendUnavailable(true);
+                return;
+            }
+
             const isPublicRoute =
                 cleanPath === '/' ||
                 cleanPath.startsWith('/login') ||
@@ -90,6 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = (userData: User) => {
         setUser(userData);
+        setBackendUnavailable(false);
         setLoading(false);
     };
 
@@ -111,7 +126,7 @@ const userRoleName = typeof user?.role === 'object' && user.role !== null ? (use
     }, [user, loading, pathname, router]);
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout }}>
+        <AuthContext.Provider value={{ user, loading, backendUnavailable, login, logout, retryAuth: fetchUser }}>
             {children}
         </AuthContext.Provider>
     );
@@ -126,9 +141,10 @@ export function RoleGuard({
     children: React.ReactNode;
     allowedRoles?: string[]
 }) {
-    const { user, loading } = useAuth();
+    const { user, loading, backendUnavailable, retryAuth } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
+    const t = useTranslations('common');
 
     useEffect(() => {
         if (!loading && user) {
@@ -156,6 +172,24 @@ export function RoleGuard({
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
+            </div>
+        );
+    }
+
+    if (backendUnavailable) {
+        return (
+            <div className="flex min-h-screen items-center justify-center p-6">
+                <div className="w-full max-w-md rounded-2xl border border-orange-500/20 bg-orange-500/5 p-6 text-center shadow-lg">
+                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/10 text-orange-400">
+                        <ServerCrash className="h-6 w-6" />
+                    </div>
+                    <h2 className="mb-2 text-lg font-semibold">{t('backend_unavailable_title')}</h2>
+                    <p className="mb-5 text-sm text-muted-foreground">{t('backend_unavailable_desc')}</p>
+                    <Button onClick={() => retryAuth()} variant="outline">
+                        <RefreshCcw className="mr-2 h-4 w-4" />
+                        {t('retry')}
+                    </Button>
+                </div>
             </div>
         );
     }

@@ -194,6 +194,8 @@
     "not_available": "N/A",
     "success_title": "Success",
     "error_title": "Error",
+    "backend_unavailable_title": "Service is currently unreachable",
+    "backend_unavailable_desc": "The session cannot be verified until the connection is restored. Please retry in a few seconds.",
     "unassigned": "Unassigned",
     "next_step": "Next Step",
     "anonymous": "ANONYMOUS",

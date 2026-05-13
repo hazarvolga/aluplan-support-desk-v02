@@ -38,7 +38,7 @@ const safeFetch = async (input: string, init: RequestInit) => {
     try {
         return await fetch(input, init);
     } catch (error) {
-        console.error('API Network Error:', error);
+        console.warn(`API Network Error: ${input}`);
         throw new ApiRequestError('BACKEND_UNAVAILABLE', 'BACKEND_UNAVAILABLE');
     }
 };

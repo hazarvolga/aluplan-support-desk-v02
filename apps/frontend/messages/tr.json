@@ -194,6 +194,8 @@
     "not_available": "YOK",
     "success_title": "Başarılı",
     "error_title": "Hata",
+    "backend_unavailable_title": "Servise şu anda ulaşılamıyor",
+    "backend_unavailable_desc": "Bağlantı yeniden kurulana kadar oturum doğrulanamıyor. Lütfen birkaç saniye sonra tekrar deneyin.",
     "unassigned": "Atanmamış",
     "next_step": "Sonraki Adım",
     "anonymous": "ANONİM",
