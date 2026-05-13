@@ -123,3 +123,23 @@ These were left alone deliberately because they look like user/workflow artifact
 - `pnpm --filter @aluplan/backend typecheck` passed
 - `pnpm --filter @aluplan/backend build` passed
 - Backend restarted successfully on `http://localhost:4000/api/v1`
+
+## Follow-up - 2026-05-13 Grounded Fallback + Hotinfo Signals
+
+### Root cause
+- Skipping sync LLM re-ranking fixed the quota stall, but fallback mode could still surface the wrong top document, e.g. an "Allplan running slow" FAQ for a Turkish graphics-card-driver update question.
+- Turkish UI/questions could receive raw English source text because fallback used source content directly when Gemini was quota-limited.
+- Hotinfo was available but not injected for Turkish phrases like "grafik kartı" and "sürüm güncelleme" because the hardware-query regex missed these variants.
+
+### Fix applied
+- Added query-aware local reranking for sync diagnosis fallback, with stronger signal coverage for graphics card, driver, update, IFC, license, and performance intents.
+- Added deterministic fallback summaries:
+  - Turkish locale now returns a Turkish safe summary plus the original source passage as a source excerpt.
+  - Sync diagnosis generation timeout reduced to 6s so Gemini free-tier quota stalls degrade faster.
+- Replaced duplicated hardware regex checks with normalized hardware/system-query detection that includes Turkish variants such as `grafik kartı`, `ekran kartı`, `sürüm`, and `güncelleme`.
+
+### Verification
+- `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts` passed
+- `pnpm --filter @aluplan/backend typecheck` passed
+- `pnpm --filter @aluplan/backend build` passed
+- Backend restarted successfully on `http://localhost:4000/api/v1`

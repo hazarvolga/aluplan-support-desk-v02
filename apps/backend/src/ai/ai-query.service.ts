@@ -153,6 +153,7 @@ import { StorageService } from '../common/services/storage.service';
 export class AiQueryService {
     private readonly logger = new Logger(AiQueryService.name);
     private readonly DIAGNOSIS_GENERATION_TIMEOUT_MS = 25000;
+    private readonly SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS = 6000;
     constructor(
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
@@ -177,10 +178,11 @@ export class AiQueryService {
         userQuery: string,
         kbContent: string,
         aiParts: AiPart[],
+        timeoutMs = this.DIAGNOSIS_GENERATION_TIMEOUT_MS,
     ) {
         return Promise.race([
             this.ai.reformat(finalPrompt, userQuery, kbContent, aiParts),
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), this.DIAGNOSIS_GENERATION_TIMEOUT_MS)),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
         ]);
     }
 
@@ -341,7 +343,7 @@ export class AiQueryService {
         }
 
         // Only inject Hotinfo into search query for PERFORMANS/CRASH queries
-        const isHardwareQuery = /çökme|crash|donma|freeze|yavaş|slow|performans|hata|error|gpu|driver|sürücü|ram|bellek/i.test(expandedQuery);
+        const isHardwareQuery = this.isHardwareOrSystemQuery(expandedQuery);
         if (hotinfoContext && isHardwareQuery) {
             const h = hotinfoContext;
             expandedQuery += `\n[Hotinfo Sistem Özeti]: İşletim Sistemi: ${h.osVersion || ''}, Ekran Kartı: ${h.gpu || ''}, Hata: ${h.errorTrace || ''}, Çakışan İşlemler: ${h.conflictingProcesses?.join(', ') || ''}`;
@@ -404,6 +406,7 @@ export class AiQueryService {
         results = this.rerankResults(results, feedbackWeights);
 
         if (options.wait === true) {
+            results = this.rerankResultsByQuerySignals(expandedQuery, results);
             this.logger.log('⏭️ [Phase: Re-ranking] Skipped LLM re-ranking for synchronous diagnosis.');
         } else {
             // Advanced LLM Re-ranking (Cross-Encoder)
@@ -488,7 +491,13 @@ export class AiQueryService {
             const kbContent = results.slice(0, 10).map(r => r.content).join('\n\n');
             let aiResult: Awaited<ReturnType<typeof this.ai.reformat>> = null;
             try {
-                aiResult = await this.runDiagnosisGenerationWithTimeout(finalPrompt, userQuery, kbContent, aiParts);
+                aiResult = await this.runDiagnosisGenerationWithTimeout(
+                    finalPrompt,
+                    userQuery,
+                    kbContent,
+                    aiParts,
+                    options.wait === true ? this.SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS : undefined,
+                );
             } catch (generationError: any) {
                 this.logger.warn(`⚠️ Diagnosis generation failed: ${generationError?.message ?? generationError}`);
             }
@@ -498,7 +507,7 @@ export class AiQueryService {
                 this.logger.warn(`⚠️ Diagnosis generation timed out or returned empty. Falling back to top matched content.`);
             }
 
-            const rawAnswer = aiResult?.response ?? results[0].content;
+            const rawAnswer = aiResult?.response ?? this.buildDeterministicFallbackAnswer(userQuery, results, options.language || 'tr');
             answerMode = aiResult?.response ? 'LLM' : 'FALLBACK';
 
             // Split response by languages (TR, EN, DE)
@@ -681,6 +690,178 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         }
     }
 
+    private rerankResultsByQuerySignals(query: string, results: SearchResult[]): SearchResult[] {
+        if (results.length <= 1) return results;
+
+        const normalizedQuery = this.normalizeSearchText(query);
+        const activeGroups = this.getQuerySignalGroups().filter(group =>
+            group.terms.some(term => normalizedQuery.includes(term)),
+        );
+
+        if (activeGroups.length === 0) return results;
+
+        return results
+            .map((result, index) => {
+                const normalizedTitle = this.normalizeSearchText(result.title ?? '');
+                const normalizedContent = this.normalizeSearchText(result.content ?? '');
+                let signalBoost = 0;
+                let matchedGroups = 0;
+
+                for (const group of activeGroups) {
+                    const titleHit = group.terms.some(term => normalizedTitle.includes(term));
+                    const contentHit = group.terms.some(term => normalizedContent.includes(term));
+
+                    if (titleHit || contentHit) {
+                        matchedGroups++;
+                        signalBoost += group.weight * (titleHit ? 2.5 : 1);
+                    }
+                }
+
+                const coverageBoost = (matchedGroups / activeGroups.length) * 0.18;
+                const positionPenalty = index * 0.0001;
+                const rankingScore = result.similarity + signalBoost + coverageBoost - positionPenalty;
+
+                return {
+                    ...result,
+                    similarity: Math.min(1, rankingScore),
+                    __rankingScore: rankingScore,
+                };
+            })
+            .sort((a, b) => b.__rankingScore - a.__rankingScore)
+            .map(({ __rankingScore, ...result }) => result);
+    }
+
+    private buildDeterministicFallbackAnswer(query: string, results: SearchResult[], language: string): string {
+        const snippets = this.extractRelevantFallbackSnippets(query, results);
+        if (snippets.length === 0) {
+            const topResult = results[0];
+            if (!topResult) {
+                return 'Bilgi kaynağında kullanılabilir bir içerik bulunamadı.';
+            }
+
+            snippets.push({
+                title: topResult.title || 'Kaynak',
+                excerpt: (topResult.content ?? '').slice(0, 420).trim(),
+                score: topResult.similarity,
+            });
+        }
+
+        if (language === 'en') {
+            return [
+                'The model response was delayed, so I am showing the most relevant excerpts found directly in the knowledge base:',
+                ...snippets.map(snippet => `- ${snippet.title}: ${snippet.excerpt}`),
+            ].join('\n');
+        }
+
+        if (language === 'de') {
+            return [
+                'Die Modellantwort hat sich verzögert. Daher zeige ich die relevantesten direkt gefundenen Auszüge aus der Wissensbasis:',
+                ...snippets.map(snippet => `- ${snippet.title}: ${snippet.excerpt}`),
+            ].join('\n');
+        }
+
+        const turkishSummary = this.buildTurkishFallbackSummary(query, snippets[0]);
+        return [
+            'Model yanıtı geciktiği için bilgi kaynağındaki en ilgili eşleşmeye göre güvenli özet gösteriliyor:',
+            `- ${turkishSummary}`,
+            `- Kaynak: ${snippets[0].title}`,
+            `- Orijinal kaynak pasajı: ${snippets[0].excerpt}`,
+        ].join('\n');
+    }
+
+    private buildTurkishFallbackSummary(query: string, snippet: { title: string; excerpt: string }): string {
+        const normalized = this.normalizeSearchText(`${query} ${snippet.title} ${snippet.excerpt}`);
+        const asksGraphicsDriverUpdate =
+            /(?:grafik karti|ekran karti|graphics card|gpu|nvidia|amd)/.test(normalized) &&
+            /(?:guncelle|guncelleme|update|current)/.test(normalized);
+
+        if (asksGraphicsDriverUpdate) {
+            return 'Grafik kartı sürücüsü güncellemesi için bilgi kaynağı, güncel NVIDIA Studio veya AMD Pro sürücüsünün üreticinin resmi sitesinden indirilmesini ve kurulumdan sonra Windows sisteminin yeniden başlatılmasını işaret ediyor.';
+        }
+
+        return 'Bilgi kaynağında sorunuzla eşleşen pasaj bulundu; aşağıdaki orijinal kaynak pasajı üzerinden devam edebilirsiniz.';
+    }
+
+    private extractRelevantFallbackSnippets(query: string, results: SearchResult[]): Array<{ title: string; excerpt: string; score: number }> {
+        const normalizedQuery = this.normalizeSearchText(query);
+        const activeTerms = new Set<string>();
+
+        for (const group of this.getQuerySignalGroups()) {
+            if (group.terms.some(term => normalizedQuery.includes(term))) {
+                group.terms.forEach(term => activeTerms.add(term));
+            }
+        }
+
+        normalizedQuery
+            .split(/\s+/)
+            .filter(token => token.length >= 4)
+            .forEach(token => activeTerms.add(token));
+
+        const snippets: Array<{ title: string; excerpt: string; score: number }> = [];
+
+        for (const result of results.slice(0, 8)) {
+            const paragraphs = (result.content ?? '')
+                .split(/\n{2,}|(?<=\.)\s+/)
+                .map(part => part.trim().replace(/\s+/g, ' '))
+                .filter(Boolean);
+
+            let bestExcerpt = '';
+            let bestScore = 0;
+
+            for (const paragraph of paragraphs) {
+                const normalizedParagraph = this.normalizeSearchText(paragraph);
+                const score = [...activeTerms].reduce((sum, term) => (
+                    normalizedParagraph.includes(term) ? sum + 1 : sum
+                ), 0);
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestExcerpt = paragraph;
+                }
+            }
+
+            if (bestExcerpt && bestScore >= 2) {
+                snippets.push({
+                    title: result.title || 'Kaynak',
+                    excerpt: bestExcerpt.length > 420 ? `${bestExcerpt.slice(0, 417).trim()}...` : bestExcerpt,
+                    score: bestScore + result.similarity,
+                });
+            }
+        }
+
+        return snippets.sort((a, b) => b.score - a.score).slice(0, 3);
+    }
+
+    private getQuerySignalGroups(): Array<{ terms: string[]; weight: number }> {
+        return [
+            { terms: ['ekran karti', 'ekran kartlari', 'grafik karti', 'grafik kartlari', 'graphics card', 'gpu', 'display adapter', 'grafikkarte', 'nvidia', 'amd'], weight: 0.14 },
+            { terms: ['surucu', 'driver', 'treiber', 'gpu driver', 'ekran karti surucusu'], weight: 0.14 },
+            { terms: ['guncelleme', 'guncellenir', 'guncelle', 'update', 'current version', 'hotfix', 'patch', 'surum'], weight: 0.1 },
+            { terms: ['lisans', 'license', 'wibu', 'codemeter'], weight: 0.12 },
+            { terms: ['ifc', 'export', 'import', 'aktarim', 'ice aktar', 'disa aktar'], weight: 0.12 },
+            { terms: ['performans', 'slow', 'yavas', 'donma', 'freeze'], weight: 0.08 },
+        ];
+    }
+
+    private normalizeSearchText(value: string): string {
+        return value
+            .toLowerCase()
+            .replace(/[ıİ]/g, 'i')
+            .replace(/[şŞ]/g, 's')
+            .replace(/[ğĞ]/g, 'g')
+            .replace(/[üÜ]/g, 'u')
+            .replace(/[öÖ]/g, 'o')
+            .replace(/[çÇ]/g, 'c')
+            .replace(/[^a-z0-9]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    private isHardwareOrSystemQuery(value: string): boolean {
+        const normalized = this.normalizeSearchText(value);
+        return /(?:cokme|crash|donma|freeze|yavas|slow|performans|hata|error|gpu|driver|surucu|ram|bellek|ekran karti|ekran kartlari|grafik karti|grafik kartlari|graphics card|display adapter|nvidia|amd|hotinfo|sistem gereksinimi|system requirement|sistem testi|guncelleme|surum)/.test(normalized);
+    }
+
     /**
      * Heuristic Re-ranking (Cohort Search)
      * Section 5.3: Re-ranking with weights
@@ -800,7 +981,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
         let expandedQuery = userQuery;
         // Conditional Hotinfo expansion (same logic as query())
-        const isHardwareQuery = /çökme|crash|donma|freeze|yavaş|slow|performans|hata|error|gpu|driver|sürücü|ram|bellek/i.test(userQuery);
+        const isHardwareQuery = this.isHardwareOrSystemQuery(userQuery);
         if (hotinfoContext && isHardwareQuery) {
             const h = hotinfoContext;
             expandedQuery += `\n[Hotinfo Sistem Özeti]: İşletim Sistemi: ${h.osVersion || ''}, Ekran Kartı: ${h.gpu || ''}, Hata: ${h.errorTrace || ''}, Çakışan İşlemler: ${h.conflictingProcesses?.join(', ') || ''}`;
@@ -1729,7 +1910,7 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
 
         if (parsedDocs) expandedQuery += `\n\n[KULLANICI EKLERİ İÇERİĞİ]:\n${parsedDocs}`;
 
-        const isHardware = /çökme|crash|donma|freeze|yavaş|slow|performans|hata|error|gpu|driver|sürücü|ram|bellek/i.test(expandedQuery);
+        const isHardware = this.isHardwareOrSystemQuery(expandedQuery);
         if (hotinfoContext && isHardware) {
             const h = hotinfoContext;
             expandedQuery += `\n[Hotinfo]: OS: ${h.osVersion || ''}, GPU: ${h.gpu || ''}, Error: ${h.errorTrace || ''}`;

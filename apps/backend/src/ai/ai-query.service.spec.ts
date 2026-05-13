@@ -398,6 +398,43 @@ describe('AiQueryService', () => {
             expect(mockAiService.generate).not.toHaveBeenCalled();
             expect(mockAiService.reformat).toHaveBeenCalledTimes(1);
         });
+
+        it('uses query-aware fallback excerpts when synchronous generation is unavailable', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'slow-faq',
+                        sourceType: 'DOCUMENT',
+                        title: 'Allplan is running slow',
+                        content: 'Why is Allplan running so slow? Check the current version. You can find information about graphics cards at https://connect.allplan.com/de/support/grafikkarten.html',
+                        similarity: 0.95,
+                        confidence: 'HIGH',
+                    },
+                    {
+                        articleId: 'gpu-driver',
+                        sourceType: 'ARTICLE',
+                        title: 'Graphics card driver update',
+                        content: 'For graphics card driver updates, download the current NVIDIA Studio or AMD Pro driver from the official vendor website and restart Windows after installation.',
+                        similarity: 0.82,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.95, passedThreshold: 2, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'Allplanda grafik kartları sürüm güncelleme nasıl yapılır?',
+                wait: true,
+                language: 'tr',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('Grafik kartı sürücüsü güncellemesi');
+            expect(result.answer).toContain('NVIDIA Studio');
+            expect(result.answer).toContain('Kaynak: Graphics card driver update');
+            expect(result.answer).not.toContain('Why is Allplan running so slow?');
+        });
     });
 
     describe('submitTelemetry', () => {
