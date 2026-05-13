@@ -8,7 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RedisModule } from '../redis/redis.module';
 import { EmailModule } from '../email/email.module';
 import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants';
-import { AiModule } from '../ai/ai.module';
+import { AiHealthEventService } from '../ai/ai-health-event.service';
 
 @Module({
     imports: [
@@ -17,7 +17,6 @@ import { AiModule } from '../ai/ai.module';
         RedisModule,
         forwardRef(() => EmailModule),
         BullModule.registerQueue({ name: PROACTIVE_CHAT_QUEUE }),
-        forwardRef(() => AiModule),
         JwtModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
@@ -27,7 +26,7 @@ import { AiModule } from '../ai/ai.module';
         }),
     ],
     controllers: [NotificationsController],
-    providers: [NotificationsGateway],
+    providers: [NotificationsGateway, AiHealthEventService],
     exports: [NotificationsGateway],
 })
 export class NotificationsModule { }

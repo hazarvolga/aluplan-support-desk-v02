@@ -25,7 +25,6 @@ import { EmailModule } from '../email/email.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { RedisModule } from '../redis/redis.module';
 import { PrismaModule } from '../prisma/prisma.module';
-
 import { BullModule } from '@nestjs/bullmq';
 import { DocumentAiService } from './document-ai.service';
 import { DocumentParsingProcessor } from './document-parsing.processor';
@@ -39,8 +38,8 @@ import { AiSemanticCache } from './ai-semantic-cache.service';
 import { AiBudgetMonitor } from './ai-budget-monitor.service';
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { EmbeddingMigrationProcessor } from './embedding-migration.processor';
-import { AiHealthEventService } from './ai-health-event.service';
 import { FaqModule } from '../faq/faq.module';
+import { AiHealthEventService } from './ai-health-event.service';
 
 @Module({
     imports: [
@@ -50,11 +49,10 @@ import { FaqModule } from '../faq/faq.module';
         forwardRef(() => EmailModule),
         forwardRef(() => KnowledgePoolModule),
         forwardRef(() => FaqModule),
-        NotificationsModule,
+        forwardRef(() => NotificationsModule),
         BullModule.registerQueue(
             {
                 name: 'document-parsing',
-                // GAP-11: DLQ pattern — retain failed jobs for admin inspection
                 defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 5000 }, removeOnComplete: 100, removeOnFail: false }
             },
             {
@@ -98,7 +96,7 @@ import { FaqModule } from '../faq/faq.module';
         AiQueryProcessor,
         EmbeddingVersionRegistry,
         EmbeddingMigrationProcessor,
-GeminiService,
+        GeminiService,
         AiEvalService,
         AiHealthEventService,
     ],
@@ -127,6 +125,7 @@ GeminiService,
         DocumentAiService,
         EmbeddingVersionRegistry,
         GeminiService,
+        AiHealthEventService,
     ],
 })
 export class AiModule { }
