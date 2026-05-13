@@ -6,11 +6,11 @@
         "assets": [
             {
                 "include": "email/templates/mjml/**/*",
-                "watchAssets": true
+                "watchAssets": false
             },
             {
                 "include": "email/locales/**/*",
-                "watchAssets": true
+                "watchAssets": false
             }
         ]
     }
