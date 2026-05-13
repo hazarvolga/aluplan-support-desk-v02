@@ -187,3 +187,86 @@ Maintenance rule:
 - `pnpm --filter @aluplan/backend typecheck` passed
 - `pnpm --filter @aluplan/backend build` passed
 - Backend restarted successfully on `http://localhost:4000/api/v1`
+
+## Follow-up - 2026-05-13 DevOps Standardization Checkpoints
+
+### Goal
+- Preserve the currently working RAG/ticket system while moving the project toward cleaner DevOps practice.
+- Keep Qdrant out of scope; current direction remains pgvector + Gemini/LLMAPI.
+- Split changes into small, reversible commits rather than mixing docs, product code, tests, and generated graph output.
+
+### Completed checkpoints
+- `54aaefe docs(memory): establish project memory system`
+  - `.ai` now acts as project memory: bootstrap, current focus, ADRs, condensed handoff, retrieval policy, and session summary.
+- `21b8956 test(regression): stabilize guard tests`
+  - Stabilized backend auth/controller guard test setup and targeted frontend regression tests.
+- `0f966a4 fix(ai): align embedding versioning and ingestion safeguards`
+  - Removed stale `model_name` assumptions from embedding writes.
+  - Added `ai_response_cache.embedding_dim` schema/migration alignment.
+  - Moved observability distribution to `embedding_version + embedding_dim`.
+  - Added Gemini 3072-dim registry/default handling and pgvector HNSW limit safeguards.
+  - Added/updated targeted tests for embedding registry, Gemini defaults, RAG maintenance, PDF parsing, and ingestion safeguards.
+- `b4d7d65 ci(config): enforce provider and migration validation`
+  - Unified `validateEnv()` onto the shared Zod env schema.
+  - Added Gemini/LLMAPI, low-rate ingestion, RAG thresholds, and observability env validation.
+  - Added production `ALLOWED_ORIGINS` safety checks.
+  - Replaced Prisma 7-incompatible CI migration diff with a blocking shadow-DB migration drift gate.
+  - Added `LlmApiService` regression coverage for Gemini-compatible OpenAI endpoint defaults.
+- `7485e6a chore(ops): harden rag sync observability`
+  - Removed an Antigravity scratch-file debug write from knowledge pool sync.
+  - Replaced a sync controller `console.log` with Nest logger debug.
+  - Added RAG source health metrics: total, parsed, and failed knowledge sources.
+  - Repaired `ai.controller.spec.ts` provider mocks exposed during targeted tests.
+
+### Verification already run
+- Backend RAG tests:
+  - `pnpm --filter @aluplan/backend test -- embedding.service.spec.ts embedding-version.registry.spec.ts rag-maintenance.service.spec.ts gemini.service.spec.ts ai-query.service.spec.ts`
+- Backend config tests:
+  - `pnpm --filter @aluplan/backend test -- env-validation.spec.ts llm-api.service.spec.ts`
+- Backend ops tests:
+  - `pnpm --filter @aluplan/backend test -- knowledge-pool-job.spec.ts ai.controller.spec.ts`
+- Backend typecheck:
+  - `pnpm --filter @aluplan/backend typecheck`
+- Frontend typecheck:
+  - `pnpm --filter @aluplan/frontend typecheck`
+- Prisma validate:
+  - `pnpm exec prisma validate --schema packages/database/prisma/schema.prisma`
+
+### Current working tree after these commits
+- Still intentionally uncommitted / pending cleanup:
+  - `AGENTS.md`
+  - `CLAUDE.md`
+  - `apps/backend/openapi.json`
+  - `graphify-out/GRAPH_REPORT.md`
+  - `.agents/skills/`
+  - `.github/agents/`
+  - `.kiro/specs/*`
+- Do not mix these with product commits. Next phase should be AGENTS/tooling/docs cleanup.
+
+### Tooling note
+- Graphify hook ran after each commit, but warned that the rebuilt graph has ~5572 nodes while existing `graph.json` has 11474 nodes, so it refused to overwrite the existing graph JSON. `GRAPH_REPORT.md` changed and should be treated as graph-output cleanup, not product code.
+- GitNexus `detect_changes` currently reports only dirty docs/tooling symbols because product code checkpoints are committed.
+
+### Next recommended step
+- Finish Faz 4:
+  - Clean `AGENTS.md` into one concise instruction file with a single GitNexus block.
+  - Keep `.agents`, `.kiro`, `.github/agents`, `CLAUDE.md`, OpenAPI, and Graphify output in separate docs/tooling commits or archive decisions.
+  - Re-run `git status`, Graphify/GitNexus checks, and update this summary again.
+
+## Follow-up - 2026-05-13 AGENTS Cleanup
+
+### Root cause
+- `AGENTS.md` had grown to 2279 lines because multiple AI-agent exports were pasted into the same file.
+- It contained repeated AGENTS blocks, a Gemini/OpenCode chat transcript, n8n-as-code bootstrap text, imported Claude instructions, and duplicate GitNexus blocks.
+- This made the primary startup instruction file noisy and risky for future agents.
+
+### Fix applied
+- Replaced `AGENTS.md` with a concise 215-line project instruction file.
+- Kept the current repo map, command set, truth hierarchy, RAG/Gemini direction, high-blast-radius areas, i18n/testing notes, DevOps commit hygiene, Graphify rules, and exactly one GitNexus block.
+- Removed embedded chat transcripts, duplicate AGENTS sections, n8n generated text, and imported Claude dump from `AGENTS.md`.
+
+### Remaining docs/tooling state
+- `CLAUDE.md` only has a GitNexus index-count refresh and can be committed with AGENTS cleanup.
+- `apps/backend/openapi.json` is currently modified to empty by generated output; do not commit until regenerated or intentionally restored.
+- `graphify-out/GRAPH_REPORT.md` changed after commit hooks, but Graphify warned that rebuilt graph node count is much smaller than existing `graph.json`; do not commit graph output until that warning is resolved.
+- `.agents/skills/`, `.github/agents/`, and new `.kiro/specs/*` remain untracked tooling/spec artifacts and should be reviewed in a separate commit/archive decision.
