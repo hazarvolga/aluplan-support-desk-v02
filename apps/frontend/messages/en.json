@@ -3161,6 +3161,9 @@
         "hide_key": "{name} anahtarını gizle",
         "show_key": "{name} anahtarını göster",
         "model_placeholder": "örn: gpt-4, claude-3-opus...",
+        "list_models": "List Models",
+        "loading_models": "Loading...",
+        "model_list_error": "Could not load model list",
         "total_latency": "Toplam Gecikme",
         "validation": {
           "missing_fields": "Eksik alanlar: {fields}",
@@ -3188,6 +3191,12 @@
           "title": "OpenAI (Bulut)",
           "chat_model": "Sohbet Modeli",
           "embed_model": "Vektör Modeli"
+        },
+        "vertex": {
+          "project_id": "GCP Project ID",
+          "credentials_json": "Google Service Account JSON (Credentials)",
+          "connection_success": "Google Vertex AI integration is working.",
+          "connection_error": "Vertex endpoint is unreachable"
         },
         "providers": {
           "ollama": "Ollama (Yerel)",

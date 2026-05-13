@@ -63,6 +63,10 @@ export default function AdminSettingsPage() {
     const [ollamaModels, setOllamaModels] = useState<ModelList | null>(null);
     const [loadingOllamaModels, setLoadingOllamaModels] = useState(false);
 
+    const getListModelsButtonLabel = (loading: boolean) => (
+        loading ? t('ai.loading_models') : t('ai.list_models')
+    );
+
     // SLA States
     const [policies, setPolicies] = useState<any[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
@@ -582,13 +586,13 @@ export default function AdminSettingsPage() {
                                                                     if (rec) updateValue('ai.ollama.embed_model', rec.id);
                                                                 }
                                                             } catch (e: any) {
-                                                                toast({ title: 'Model listesi alınamadı', description: e.message, variant: 'destructive' });
+                                                                toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
                                                             } finally {
                                                                 setLoadingOllamaModels(false);
                                                             }
                                                         }}
                                                     >
-                                                        {loadingOllamaModels ? '⏳ Yükleniyor...' : '🔍 Modelleri Listele'}
+                                                        {getListModelsButtonLabel(loadingOllamaModels)}
                                                     </Button>
                                                     <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
                                                         try {
@@ -672,13 +676,13 @@ export default function AdminSettingsPage() {
                                                                     if (rec) updateValue('ai.openai.embed_model', rec.id);
                                                                 }
                                                             } catch (e: any) {
-                                                                toast({ title: 'Model listesi alınamadı', description: e.message, variant: 'destructive' });
+                                                                toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
                                                             } finally {
                                                                 setLoadingOpenaiModels(false);
                                                             }
                                                         }}
                                                     >
-                                                        {loadingOpenaiModels ? '⏳ Yükleniyor...' : '🔍 Modelleri Listele'}
+                                                        {getListModelsButtonLabel(loadingOpenaiModels)}
                                                     </Button>
                                                     <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
                                                         try {
@@ -745,18 +749,18 @@ export default function AdminSettingsPage() {
                                                 <Button size="sm" variant="outline" className="h-7 text-xs px-3 border-blue-500/20 text-blue-500 hover:bg-blue-500/10" onClick={async () => {
                                                     try {
                                                         const res = await api.ai.testConnection('vertex');
-                                                        toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || 'Google Vertex AI entegrasyonu başarılı.', variant: res.success ? 'default' : 'destructive' });
+                                                        toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || t('ai.vertex.connection_success'), variant: res.success ? 'default' : 'destructive' });
                                                     } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: 'Vertex Endpoint ulaşılamıyor', variant: 'destructive' });
+                                                        toast({ title: t('toasts.connection_error'), description: t('ai.vertex.connection_error'), variant: 'destructive' });
                                                     }
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">GCP Project ID</Label>
+                                                <Label className="text-xs">{t('ai.vertex.project_id')}</Label>
                                                 <Input value={getSetting('ai.vertex.project_id')} onChange={e => updateValue('ai.vertex.project_id', e.target.value)} placeholder="project-id-12345" className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Google Service Account JSON (Credentials)</Label>
+                                                <Label className="text-xs">{t('ai.vertex.credentials_json')}</Label>
                                                 <Input type="password" value={getSetting('ai.vertex.credentials_json')} onChange={e => updateValue('ai.vertex.credentials_json', e.target.value)} placeholder='{"type": "service_account", ...}' className="bg-black/50 h-8 text-sm" />
                                             </div>
                                             <div className="space-y-2">
@@ -803,13 +807,13 @@ export default function AdminSettingsPage() {
                                                                     if (rec) updateValue('ai.gemini.embed_model', rec.id);
                                                                 }
                                                             } catch (e: any) {
-                                                                toast({ title: 'Model listesi alınamadı', description: e.message, variant: 'destructive' });
+                                                                toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
                                                             } finally {
                                                                 setLoadingGeminiModels(false);
                                                             }
                                                         }}
                                                     >
-                                                        {loadingGeminiModels ? '⏳ Yükleniyor...' : '🔍 Modelleri Listele'}
+                                                        {getListModelsButtonLabel(loadingGeminiModels)}
                                                     </Button>
                                                     <Button size="sm" variant="outline" className="h-7 text-xs px-3 border-teal-500/20 text-teal-500 hover:bg-teal-500/10" onClick={async () => {
                                                         try {
@@ -874,7 +878,7 @@ export default function AdminSettingsPage() {
                                                     )}
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs">Vektör Modeli</Label>
+                                                    <Label className="text-xs">{t('ai.validation.fields.embed_model')}</Label>
                                                     {geminiModels && geminiModels.embedModels.length > 0 ? (
                                                         <select
                                                             value={getSetting('ai.gemini.embed_model')}
@@ -977,13 +981,13 @@ export default function AdminSettingsPage() {
                                                                     if (rec) updateValue('ai.groq.chat_model', rec.id);
                                                                 }
                                                             } catch (e: any) {
-                                                                toast({ title: 'Model listesi alınamadı', description: e.message, variant: 'destructive' });
+                                                                toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
                                                             } finally {
                                                                 setLoadingGroqModels(false);
                                                             }
                                                         }}
                                                     >
-                                                        {loadingGroqModels ? '⏳ Yükleniyor...' : '🔍 Modelleri Listele'}
+                                                        {getListModelsButtonLabel(loadingGroqModels)}
                                                     </Button>
                                                     <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
                                                         try {

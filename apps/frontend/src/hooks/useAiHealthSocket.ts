@@ -45,72 +45,78 @@ export function useAiHealthSocket() {
         mountedRef.current = true;
         let reconnectAttempts = 0;
         const maxReconnectAttempts = 5;
+        const socket = getSocket();
 
         const connect = () => {
             if (!mountedRef.current) return;
-
-            const socket = getSocket();
-
             socket.connect();
-
-            socket.on('connect', () => {
-                if (!mountedRef.current) return;
-                setConnectionState('connected');
-                reconnectAttempts = 0;
-            });
-
-            socket.on('disconnect', (reason) => {
-                if (!mountedRef.current) return;
-                setConnectionState('disconnected');
-                if (reason === 'io server disconnect') {
-                    socket.connect();
-                } else {
-                    reconnectAttempts++;
-                    if (reconnectAttempts <= maxReconnectAttempts) {
-                        reconnectTimeoutRef.current = setTimeout(connect, Math.min(1000 * reconnectAttempts, 10000));
-                    }
-                }
-            });
-
-            socket.on('connect_error', () => {
-                if (!mountedRef.current) return;
-                setConnectionState('error');
-            });
-
-            socket.on('system:ai_fallback', (payload: AiHealthEvent) => {
-                if (!mountedRef.current) return;
-                addEvent({ ...payload, eventType: 'FALLBACK' });
-            });
-
-            socket.on('ai_health:error', (payload: AiHealthEvent) => {
-                if (!mountedRef.current) return;
-                addEvent({ ...payload, eventType: 'ERROR' });
-            });
-
-            socket.on('ai_health:timeout', (payload: AiHealthEvent) => {
-                if (!mountedRef.current) return;
-                addEvent({ ...payload, eventType: 'TIMEOUT' });
-            });
-
-            socket.on('ai_health:info', (payload: AiHealthEvent) => {
-                if (!mountedRef.current) return;
-                addEvent({ ...payload, eventType: 'INFO' });
-            });
         };
+
+        const handleConnect = () => {
+            if (!mountedRef.current) return;
+            setConnectionState('connected');
+            reconnectAttempts = 0;
+        };
+
+        const handleDisconnect = (reason: string) => {
+            if (!mountedRef.current) return;
+            setConnectionState('disconnected');
+            if (reason === 'io server disconnect') {
+                socket.connect();
+                return;
+            }
+
+            reconnectAttempts++;
+            if (reconnectAttempts <= maxReconnectAttempts) {
+                reconnectTimeoutRef.current = setTimeout(connect, Math.min(1000 * reconnectAttempts, 10000));
+            }
+        };
+
+        const handleConnectError = () => {
+            if (!mountedRef.current) return;
+            setConnectionState('error');
+        };
+
+        const handleFallback = (payload: AiHealthEvent) => {
+            if (!mountedRef.current) return;
+            addEvent({ ...payload, eventType: 'FALLBACK' });
+        };
+
+        const handleError = (payload: AiHealthEvent) => {
+            if (!mountedRef.current) return;
+            addEvent({ ...payload, eventType: 'ERROR' });
+        };
+
+        const handleTimeout = (payload: AiHealthEvent) => {
+            if (!mountedRef.current) return;
+            addEvent({ ...payload, eventType: 'TIMEOUT' });
+        };
+
+        const handleInfo = (payload: AiHealthEvent) => {
+            if (!mountedRef.current) return;
+            addEvent({ ...payload, eventType: 'INFO' });
+        };
+
+        socket.off('connect', handleConnect).on('connect', handleConnect);
+        socket.off('disconnect', handleDisconnect).on('disconnect', handleDisconnect);
+        socket.off('connect_error', handleConnectError).on('connect_error', handleConnectError);
+        socket.off('system:ai_fallback', handleFallback).on('system:ai_fallback', handleFallback);
+        socket.off('ai_health:error', handleError).on('ai_health:error', handleError);
+        socket.off('ai_health:timeout', handleTimeout).on('ai_health:timeout', handleTimeout);
+        socket.off('ai_health:info', handleInfo).on('ai_health:info', handleInfo);
 
         connect();
 
         return () => {
             mountedRef.current = false;
             if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-            const socket = getSocket();
-            socket.off('connect');
-            socket.off('disconnect');
-            socket.off('connect_error');
-            socket.off('system:ai_fallback');
-            socket.off('ai_health:error');
-            socket.off('ai_health:timeout');
-            socket.off('ai_health:info');
+            socket.off('connect', handleConnect);
+            socket.off('disconnect', handleDisconnect);
+            socket.off('connect_error', handleConnectError);
+            socket.off('system:ai_fallback', handleFallback);
+            socket.off('ai_health:error', handleError);
+            socket.off('ai_health:timeout', handleTimeout);
+            socket.off('ai_health:info', handleInfo);
             if (!socket.connected) {
                 socket.disconnect();
             }
