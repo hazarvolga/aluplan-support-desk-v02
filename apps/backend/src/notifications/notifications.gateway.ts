@@ -73,14 +73,19 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             const cookieToken = rawCookies
                 .split('; ')
                 .find(c => c.trim().startsWith('alu_at='))
-                ?.split('=')[1];
+                ?.substring(7); // skip 'alu_at=' prefix, keeps full token even with =
 
-            const token =
-                client.handshake.auth?.token ||
-                cookieToken ||
-                client.handshake.headers?.authorization?.replace('Bearer ', '');
+            const authToken = client.handshake.auth?.token || '';
+            const bearerToken = client.handshake.headers?.authorization?.replace('Bearer ', '') || '';
+
+            const token = authToken || cookieToken || bearerToken;
+
+            this.logger.log(
+                `[WS-DIAG] handshake received: auth.token=${authToken ? 'present(' + authToken.substring(0, 20) + '...)' : 'MISSING'} | cookieToken=${cookieToken ? 'present(' + cookieToken.substring(0, 20) + '...)' : 'MISSING'} | bearer=${bearerToken ? 'present' : 'MISSING'} | rawCookies=${rawCookies ? 'present' : 'MISSING'}`
+            );
 
             if (!token) {
+                this.logger.warn(`[WS-DIAG] No token found — disconnecting client. Auth:${!!authToken} Cookie:${!!cookieToken} Bearer:${!!bearerToken} RawCookiesLen:${rawCookies.length}`);
                 client.disconnect();
                 return;
             }
