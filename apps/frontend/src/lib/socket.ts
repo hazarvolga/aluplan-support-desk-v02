@@ -1,4 +1,4 @@
-import { io, Socket, Manager } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
 
@@ -17,22 +17,25 @@ export const getSocket = () => {
             withCredentials: true,
             transports: ['websocket'],
             autoConnect: false,
-            auth: {
-                token: getAuthToken(),
-            },
         });
 
-        // Intercept connection to inject fresh token before every connect
-        const manager = (socket as any).io;
-        manager.on('open', () => {
+        const refreshToken = () => {
             const token = getAuthToken();
             if (token) {
-                (socket as any).auth = { token };
-                // Force reconnect with new token
-                socket?.disconnect();
-                socket?.connect();
+                // Update opts so every new connection uses fresh token
+                (socket as any).io.opts.auth = { token };
             }
-        });
+        };
+
+        // Intercept every connect attempt to inject fresh token
+        socket.on('disconnect', () => refreshToken());
+
+        // Patch connect() to inject token before handshake
+        const originalConnect = socket.connect.bind(socket);
+        socket.connect = () => {
+            refreshToken();
+            originalConnect();
+        };
     }
     return socket;
 };
