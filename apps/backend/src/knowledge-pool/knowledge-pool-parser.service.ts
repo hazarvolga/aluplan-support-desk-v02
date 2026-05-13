@@ -30,21 +30,22 @@ export class KnowledgePoolParserService {
         try {
             const dataBuffer = Buffer.isBuffer(input) ? input : fs.readFileSync(input);
 
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            let pdfParser: any = await import('pdf-parse');
-            // Handle ESM default export in CJS require
-            if (typeof pdfParser !== 'function' && pdfParser.default) {
-                pdfParser = pdfParser.default;
-            }
+            const pdfParseLib: any = await import('pdf-parse');
+            const PDFParse = pdfParseLib.PDFParse;
 
-            if (typeof pdfParser !== 'function') {
-                this.logger.error(`PDF Parser is not a function. Type: ${typeof pdfParser}`);
+            if (typeof PDFParse !== 'function') {
+                this.logger.error(`PDFParse constructor is not available. Type: ${typeof PDFParse}`);
                 return '';
             }
 
-            const data = await pdfParser(dataBuffer);
-            this.logger.debug(`Completed PDF parsing. Extracted length: ${data?.text?.length || 0}`);
-            return this.fixEncoding(data.text || '');
+            const parser = new PDFParse({ data: dataBuffer });
+            try {
+                const data = await parser.getText();
+                this.logger.debug(`Completed PDF parsing. Extracted length: ${data?.text?.length || 0}`);
+                return this.fixEncoding(data.text || '');
+            } finally {
+                await parser.destroy();
+            }
         } catch (error: any) {
             this.logger.error(`Failed to parse PDF: ${error.message}`);
             return '';
@@ -100,4 +101,3 @@ export class KnowledgePoolParserService {
         }
     }
 }
-

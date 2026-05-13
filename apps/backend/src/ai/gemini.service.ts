@@ -32,7 +32,7 @@ export class GeminiService implements AiProvider {
     private async getEmbedModel(): Promise<string> {
         return (await this.settings.getValue('ai.gemini.embed_model')) ||
             this.config.get<string>('GEMINI_EMBED_MODEL') ||
-            'text-embedding-004';
+            'gemini-embedding-2';
     }
 
     getName(): string {
@@ -264,8 +264,8 @@ Yalnızca kategori adını yaz. Başka bir şey yazma.`;
         const apiKey = apiKeyOverride || await this.getApiKey();
         if (!apiKey) return { chatModels: [], embedModels: [] };
 
-        const RECOMMENDED_CHAT = 'models/gemini-2.0-flash';
-        const RECOMMENDED_EMBED = 'models/text-embedding-004';
+        const RECOMMENDED_CHAT = 'models/gemini-2.5-flash';
+        const RECOMMENDED_EMBED = 'models/gemini-embedding-2';
 
         try {
             const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}&pageSize=100`;

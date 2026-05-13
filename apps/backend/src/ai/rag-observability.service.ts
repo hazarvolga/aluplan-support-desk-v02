@@ -29,6 +29,8 @@ export interface RAGMetrics {
     // Knowledge Base Health
     totalArticleEmbeddings: number;
     totalPoolEmbeddings: number;
+    embeddingVersionDistribution: Record<string, number>;
+    /** @deprecated use embeddingVersionDistribution */
     embeddingModelDistribution: Record<string, number>;
 
     // Cache Performance
@@ -94,16 +96,20 @@ export class RagObservabilityService {
             this.prisma.$queryRaw<[{ count: bigint }]>`SELECT COUNT(*) as count FROM knowledge_pool_embeddings`,
         ]);
 
-        // Model distribution
-        const modelDist = await this.prisma.$queryRaw<Array<{ model_name: string; count: bigint }>>`
-      SELECT model_name, COUNT(*) as count FROM knowledge_embeddings GROUP BY model_name
+        // Version/dimension distribution is the source of truth after embedding versioning.
+        const versionDist = await this.prisma.$queryRaw<Array<{ bucket: string; count: bigint }>>`
+      SELECT 'articles:' || embedding_version || ':' || embedding_dim AS bucket, COUNT(*) as count
+      FROM knowledge_embeddings
+      GROUP BY embedding_version, embedding_dim
       UNION ALL
-      SELECT model_name, COUNT(*) as count FROM knowledge_pool_embeddings GROUP BY model_name
+      SELECT 'pool:' || embedding_version || ':' || embedding_dim AS bucket, COUNT(*) as count
+      FROM knowledge_pool_embeddings
+      GROUP BY embedding_version, embedding_dim
     `;
 
-        const embeddingModelDistribution: Record<string, number> = {};
-        for (const row of modelDist) {
-            embeddingModelDistribution[row.model_name] = (embeddingModelDistribution[row.model_name] || 0) + Number(row.count);
+        const embeddingVersionDistribution: Record<string, number> = {};
+        for (const row of versionDist) {
+            embeddingVersionDistribution[row.bucket] = (embeddingVersionDistribution[row.bucket] || 0) + Number(row.count);
         }
 
         const metrics: RAGMetrics = {
@@ -117,7 +123,8 @@ export class RagObservabilityService {
             avgSimilarityScore: Math.round(avgSimilarity * 1000) / 1000,
             totalArticleEmbeddings: Number(articleEmbCount[0]?.count || 0),
             totalPoolEmbeddings: Number(poolEmbCount[0]?.count || 0),
-            embeddingModelDistribution,
+            embeddingVersionDistribution,
+            embeddingModelDistribution: embeddingVersionDistribution,
             cacheHitRate: this.queryCount > 0 ? Math.round((this.cacheHits / this.queryCount) * 100) : 0,
             collectedAt: new Date().toISOString(),
         };

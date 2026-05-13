@@ -64,7 +64,7 @@ export class PreReimportInspectService {
                 { isAutoImported: true },
                 { source: 'notebooklm' },
             ],
-        } as const;
+        };
 
         const [total, samples, autoImportedCount, notebookLmCount] = await Promise.all([
             this.prisma.knowledgeArticle.count({ where }),
@@ -99,7 +99,7 @@ export class PreReimportInspectService {
                 { embeddingVersion: 'v1' },
                 { embeddingDim: 1536 },
             ],
-        } as const;
+        };
 
         const [
             knowledgeEmbeddingsCount,

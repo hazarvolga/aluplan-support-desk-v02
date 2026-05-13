@@ -428,7 +428,6 @@ model KnowledgeEmbedding {
   embedding            Unsupported("vector")
   content              String
   sequence             Int                     @default(0)
-  modelName            String                  @map("model_name") @db.VarChar(100)
   isActive             Boolean                 @default(true) @map("is_active")
   embeddingGeneratedAt DateTime                @default(now()) @map("embedding_generated_at")
   embeddingVersion     String                  @default("v1") @map("embedding_version") @db.VarChar(10)
@@ -502,6 +501,7 @@ model AiResponseCache {
   queryHash        String                 @unique @map("query_hash")
   queryEmbedding   Unsupported("vector")? @map("query_embedding")
   embeddingVersion String?                @map("embedding_version") @db.VarChar(10)
+  embeddingDim     Int                    @default(1536) @map("embedding_dim")
   response         Json
   tenantId         String                 @map("tenant_id") @db.Uuid
   userId           String?                @map("user_id") @db.Uuid

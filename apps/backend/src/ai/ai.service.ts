@@ -14,6 +14,8 @@ import CircuitBreaker from 'opossum';
 @Injectable()
 export class AiService implements AiProvider {
     private readonly logger = new Logger(AiService.name);
+    private readonly RATE_LIMIT_RETRY_ATTEMPTS = 3;
+    private readonly DEFAULT_RATE_LIMIT_DELAY_MS = 5000;
 
     constructor(
         private readonly settings: SettingsService,
@@ -84,17 +86,27 @@ export class AiService implements AiProvider {
                 const is429 = errMsg.includes('429') || errMsg.toLowerCase().includes('rate limit') || errMsg.toLowerCase().includes('too many requests');
 
                 if (is429 && pName === primaryName) {
-                    this.logger.warn(`🔄 Rate limited (429) on primary provider ${primaryName}. Retrying after delay...`);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    try {
-                        const retryProvider = await this.getProvider(pName);
-                        const retryResult = await operation(retryProvider);
-                        if (retryResult !== null && retryResult !== undefined) {
-                            this.logger.log(`✅ Retry succeeded after 429`);
-                            return retryResult as T;
+                    let retryDelayMs = this.extractRetryDelayMs(errMsg);
+                    for (let attempt = 1; attempt <= this.RATE_LIMIT_RETRY_ATTEMPTS; attempt++) {
+                        this.logger.warn(`🔄 Rate limited (429) on primary provider ${primaryName}. Retry ${attempt}/${this.RATE_LIMIT_RETRY_ATTEMPTS} in ${Math.ceil(retryDelayMs / 1000)}s...`);
+                        await this.delay(retryDelayMs);
+                        try {
+                            const retryProvider = await this.getProvider(pName);
+                            const retryResult = await operation(retryProvider);
+                            if (retryResult !== null && retryResult !== undefined) {
+                                this.logger.log(`✅ Retry succeeded after 429`);
+                                return retryResult as T;
+                            }
+                            lastError = new Error('Provider returned null');
+                        } catch (retryErr) {
+                            lastError = retryErr;
+                            const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+                            if (!(retryMsg.includes('429') || retryMsg.toLowerCase().includes('rate limit') || retryMsg.toLowerCase().includes('too many requests'))) {
+                                this.logger.warn(`⚠️ Retry failed after 429: ${retryErr}`);
+                                break;
+                            }
+                            retryDelayMs = this.extractRetryDelayMs(retryMsg, retryDelayMs * 2);
                         }
-                    } catch (retryErr) {
-                        this.logger.warn(`⚠️ Retry failed after 429: ${retryErr}`);
                     }
                 }
 
@@ -115,6 +127,24 @@ export class AiService implements AiProvider {
         this.logger.error(`🚨 SYSTEM ALERT: All AI providers failed for task (${task}).`);
         if (lastError instanceof InternalServerErrorException) throw lastError;
         throw new InternalServerErrorException((lastError instanceof Error ? lastError.message : undefined) || 'All AI providers failed');
+    }
+
+    private extractRetryDelayMs(message: string, fallbackMs: number = this.DEFAULT_RATE_LIMIT_DELAY_MS): number {
+        const retryInfoMatch = message.match(/"retryDelay"\s*:\s*"(\d+)s"/i);
+        if (retryInfoMatch) {
+            return Math.max(1000, Number(retryInfoMatch[1]) * 1000);
+        }
+
+        const proseMatch = message.match(/Please retry in\s+([\d.]+)s/i);
+        if (proseMatch) {
+            return Math.max(1000, Math.ceil(Number(proseMatch[1]) * 1000));
+        }
+
+        return fallbackMs;
+    }
+
+    private async delay(ms: number): Promise<void> {
+        await new Promise(resolve => setTimeout(resolve, ms));
     }
 
     private async getActiveChatProvider(): Promise<AiProvider> {

@@ -12,16 +12,32 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { KnowledgePoolService } from '../knowledge-pool/knowledge-pool.service';
 import { RAG_CONFIG } from '../config/rag.config';
+import { EmbeddingVersionRegistry } from './embedding-version.registry';
 
 @Injectable()
 export class RagMaintenanceService implements OnModuleInit {
     private readonly logger = new Logger(RagMaintenanceService.name);
     private readonly MAINTENANCE_VERSION = 3; // Corresponds to Faz 3 improvements
+    private readonly VECTOR_INDEXES = [
+        {
+            name: 'knowledge_embeddings_vector_hnsw_idx',
+            table: 'knowledge_embeddings',
+        },
+        {
+            name: 'knowledge_pool_embeddings_vector_hnsw_idx',
+            table: 'knowledge_pool_embeddings',
+        },
+        {
+            name: 'ticket_embeddings_vector_hnsw_idx',
+            table: 'ticket_embeddings',
+        },
+    ] as const;
 
     constructor(
         private readonly prisma: PrismaService,
         private readonly settings: SettingsService,
         private readonly poolService: KnowledgePoolService,
+        private readonly registry: EmbeddingVersionRegistry,
     ) { }
 
     async onModuleInit() {
@@ -51,19 +67,11 @@ export class RagMaintenanceService implements OnModuleInit {
             return;
         }
 
-        // Apply HNSW index to main tables if they don't exist
-        // We use raw SQL to ensure precise index definitions matching Faz 3 standards
-        await this.prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS knowledge_embeddings_vector_hnsw_idx 
-      ON knowledge_embeddings USING hnsw (embedding vector_cosine_ops) 
-      WITH (m = 16, ef_construction = 64);
-    `);
-
-        await this.prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS knowledge_pool_embeddings_vector_hnsw_idx 
-      ON knowledge_pool_embeddings USING hnsw (embedding vector_cosine_ops) 
-      WITH (m = 16, ef_construction = 64);
-    `);
+        const config = await this.registry.getActiveVersionConfig();
+        for (const index of this.VECTOR_INDEXES) {
+            await this.ensureVectorColumnDimension(index.table, config.dimension);
+            await this.ensureVectorIndex(index.name, index.table, config.dimension);
+        }
 
         // Ensure content hash indexes for duplicate detection
         await this.prisma.$executeRawUnsafe(`
@@ -91,5 +99,76 @@ export class RagMaintenanceService implements OnModuleInit {
         } else {
             this.logger.log(`🛡️ RAG Infrastructure version is up-to-date (v${currentVersion}).`);
         }
+    }
+
+    private async ensureVectorIndex(indexName: string, tableName: string, expectedDimension: number) {
+        const existing = await this.prisma.$queryRawUnsafe<Array<{ indexdef: string }>>(
+            `
+        SELECT indexdef
+        FROM pg_indexes
+        WHERE schemaname = 'public' AND tablename = $1 AND indexname = $2
+      `,
+            tableName,
+            indexName,
+        );
+
+        const currentDefinition = existing[0]?.indexdef?.toLowerCase() ?? '';
+        if (expectedDimension > 2000) {
+            if (currentDefinition) {
+                this.logger.warn(`🧹 Removing ${indexName}: pgvector HNSW on vector supports up to 2000 dimensions, active model uses ${expectedDimension}`);
+                await this.prisma.$executeRawUnsafe(`DROP INDEX IF EXISTS "${indexName}"`);
+            }
+            this.logger.warn(`⏭️ Skipping ${indexName}: active embedding dimension ${expectedDimension} exceeds pgvector HNSW vector limit. Exact search remains available.`);
+            return;
+        }
+
+        if (currentDefinition.includes('using hnsw')) {
+            return;
+        }
+
+        if (currentDefinition) {
+            this.logger.warn(`♻️ Rebuilding ${indexName}: expected HNSW, found ${currentDefinition}`);
+            await this.prisma.$executeRawUnsafe(`DROP INDEX IF EXISTS "${indexName}"`);
+        }
+
+        await this.prisma.$executeRawUnsafe(`
+      CREATE INDEX "${indexName}"
+      ON "${tableName}" USING hnsw (embedding vector_cosine_ops)
+      WITH (m = 16, ef_construction = 64);
+    `);
+    }
+
+    private async ensureVectorColumnDimension(tableName: string, expectedDimension: number) {
+        const columns = await this.prisma.$queryRawUnsafe<Array<{ formatted_type: string }>>(
+            `
+        SELECT format_type(a.atttypid, a.atttypmod) AS formatted_type
+        FROM pg_attribute a
+        JOIN pg_class c ON c.oid = a.attrelid
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'public'
+          AND c.relname = $1
+          AND a.attname = 'embedding'
+          AND a.attnum > 0
+      `,
+            tableName,
+        );
+
+        const formattedType = columns[0]?.formatted_type?.toLowerCase();
+        if (formattedType === `vector(${expectedDimension})`) {
+            return;
+        }
+
+        const counts = await this.prisma.$queryRawUnsafe<Array<{ total: number }>>(
+            `SELECT COUNT(*)::int AS total FROM "${tableName}"`,
+        );
+        const totalRows = counts[0]?.total ?? 0;
+        if (totalRows > 0) {
+            throw new Error(`Embedding column drift detected on ${tableName}: ${formattedType ?? 'unknown'}. Table contains ${totalRows} rows, refusing automatic dimension rewrite.`);
+        }
+
+        this.logger.warn(`🧱 Rewriting ${tableName}.embedding from ${formattedType ?? 'unknown'} to vector(${expectedDimension})`);
+        await this.prisma.$executeRawUnsafe(
+            `ALTER TABLE "${tableName}" ALTER COLUMN "embedding" TYPE vector(${expectedDimension}) USING embedding::vector(${expectedDimension})`,
+        );
     }
 }

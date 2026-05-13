@@ -319,6 +319,23 @@ describe('AiService', () => {
             expect(result).toBe('AI Response');
         });
 
+        it('should retry a rate-limited primary provider before succeeding', async () => {
+            mockSettingsService.getValue.mockImplementation(async (key) => {
+                if (key === 'ai.chat_provider') return 'ollama';
+                return null;
+            });
+            mockOllamaService.generate
+                .mockRejectedValueOnce(new Error('Gemini API Error 429: {"error":{"details":[{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"1s"}]}}'))
+                .mockResolvedValueOnce('Recovered Response');
+            const delaySpy = jest.spyOn(service as any, 'delay').mockResolvedValue(undefined);
+
+            const result = await service.generate('Hello');
+
+            expect(delaySpy).toHaveBeenCalledWith(1000);
+            expect(mockOllamaService.generate).toHaveBeenCalledTimes(2);
+            expect(result).toBe('Recovered Response');
+        });
+
         it('should increment failure count and throw on error', async () => {
             // Arrange
             mockSettingsService.getValue.mockResolvedValue('ollama');

@@ -19,9 +19,12 @@ export class EmbeddingVersionRegistry {
     'openai:text-embedding-3-large': { version: 'v3l', dimension: 3072 },
     'gemini:text-embedding-004': { version: 'v2', dimension: 768 },
     'gemini:models/text-embedding-004': { version: 'v2', dimension: 768 },
-    'gemini:embedding-001': { version: 'v2_1', dimension: 768 },
-    'gemini:models/embedding-001': { version: 'v2_1', dimension: 768 },
-    'gemini:text-embedding-2-001': { version: 'v2_2', dimension: 768 },
+    'gemini:gemini-embedding-001': { version: 'v2_1', dimension: 3072 },
+    'gemini:models/gemini-embedding-001': { version: 'v2_1', dimension: 3072 },
+    'gemini:gemini-embedding-2': { version: 'v2_2', dimension: 3072 },
+    'gemini:models/gemini-embedding-2': { version: 'v2_2', dimension: 3072 },
+    'gemini:gemini-embedding-2-preview': { version: 'v2_2p', dimension: 3072 },
+    'gemini:models/gemini-embedding-2-preview': { version: 'v2_2p', dimension: 3072 },
     'ollama:nomic-embed-text': { version: 'v_nom', dimension: 768 },
     'ollama:mxbai-embed-large': { version: 'v_mxb', dimension: 1024 }
   };
@@ -37,7 +40,7 @@ export class EmbeddingVersionRegistry {
     let model = await this.settingsService.getValue(`ai.${provider}.embed_model`);
     if (!model) {
       // Basic defaults if DB is missing
-      if (provider === 'gemini') model = 'text-embedding-004';
+      if (provider === 'gemini') model = 'gemini-embedding-2';
       else if (provider === 'openai') model = 'text-embedding-ada-002';
       else model = 'unknown';
     }

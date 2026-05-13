@@ -32,6 +32,7 @@ export interface SearchResponse {
 @Injectable()
 export class EmbeddingService {
     private readonly logger = new Logger(EmbeddingService.name);
+    private readonly POOL_EMBED_PACING_MS = 350;
 
     private readonly SIMILARITY_THRESHOLD = RAG_CONFIG.SIMILARITY.THRESHOLD;
     private readonly LOW_THRESHOLD = RAG_CONFIG.SIMILARITY.LOW;
@@ -52,7 +53,6 @@ export class EmbeddingService {
         const parentMax = RAG_CONFIG.CHUNKING.PARENT_MAX_TOKENS;
         const hierarchies = hierarchicalChunk(content, { title, maxTokens: parentMax });
         const config = await this.registry.getActiveVersionConfig();
-        const modelName = config.model;
 
         await this.prisma.$executeRaw`DELETE FROM knowledge_embeddings WHERE article_version_id = ${versionId}::uuid`;
 
@@ -62,9 +62,9 @@ export class EmbeddingService {
             if (!parentEmb) continue;
 
             await this.prisma.$executeRaw`
-                INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, model_name, parent_id, embedding_version, embedding_dim)
+                INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, parent_id, embedding_version, embedding_dim)
                 VALUES (${parentId}::uuid, ${articleId}::uuid, ${versionId}::uuid,
-                        ${JSON.stringify(parentEmb.embedding)}::vector, ${h.parent}, 0, ${modelName}, NULL, ${config.version}, ${config.dimension})
+                        ${JSON.stringify(parentEmb.embedding)}::vector, ${h.parent}, 0, NULL, ${config.version}, ${config.dimension})
             `;
 
             for (let i = 0; i < h.children.length; i++) {
@@ -72,9 +72,9 @@ export class EmbeddingService {
                 const childEmb = await this.ai.embed(childContent);
                 if (childEmb) {
                     await this.prisma.$executeRaw`
-                        INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, model_name, parent_id, embedding_version, embedding_dim)
+                        INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, parent_id, embedding_version, embedding_dim)
                         VALUES (gen_random_uuid(), ${articleId}::uuid, ${versionId}::uuid,
-                                ${JSON.stringify(childEmb.embedding)}::vector, ${childContent}, ${i + 1}, ${modelName}, ${parentId}::uuid, ${config.version}, ${config.dimension})
+                                ${JSON.stringify(childEmb.embedding)}::vector, ${childContent}, ${i + 1}, ${parentId}::uuid, ${config.version}, ${config.dimension})
                     `;
                 }
             }
@@ -217,7 +217,6 @@ export class EmbeddingService {
         const parentMax = RAG_CONFIG.CHUNKING.PARENT_MAX_TOKENS;
         const contentHash = createHash('md5').update(content).digest('hex');
         const config = await this.registry.getActiveVersionConfig();
-        const modelName = config.model;
 
         // [DEBUG] Log entry
         this.logger.log(`🧬 Starting indexing for source ${sourceId}. Content length: ${content?.length}`);
@@ -229,48 +228,59 @@ export class EmbeddingService {
         );
         this.logger.log(`🗑️ Deleted ${deleted} existing chunks for source ${sourceId}`);
 
-        const hierarchies = hierarchicalChunk(content, { maxTokens: parentMax });
-        this.logger.log(`🧩 Chunker produced ${hierarchies.length} hierarchies for source ${sourceId}`);
+        try {
+            const hierarchies = hierarchicalChunk(content, { maxTokens: parentMax });
+            this.logger.log(`🧩 Chunker produced ${hierarchies.length} hierarchies for source ${sourceId}`);
 
-        let totalInserted = 0;
-        for (const h of hierarchies) {
-            const parentId = crypto.randomUUID();
-            const parentEmb = await this.ai.embed(h.parent);
-            if (!parentEmb) {
-                this.logger.warn(`⚠️ Parent embedding failed for source ${sourceId}`);
-                continue;
-            }
-
-            const parentVector = JSON.stringify(parentEmb.embedding);
-            const parentMeta = JSON.stringify({ ...metadata, hash: contentHash, total_children: h.children.length });
-
-            const res = await this.prisma.$executeRawUnsafe(
-                `INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, model_name, embedding_version, embedding_dim)
-                 VALUES ($1::uuid, $2::uuid, NULL, $3::vector, $4, $5::jsonb, $6, $7, $8)`,
-                parentId, sourceId, parentVector, h.parent, parentMeta, modelName, config.version, config.dimension
-            );
-            this.logger.log(`✅ Parent Insert Res: ${res} | ID: ${parentId}`);
-            totalInserted++;
-
-            for (const childContent of h.children) {
-                const childEmb = await this.ai.embed(childContent);
-                if (childEmb) {
-                    const childVector = JSON.stringify(childEmb.embedding);
-                    const childMeta = JSON.stringify(metadata);
-                    const cRes = await this.prisma.$executeRawUnsafe(
-                        `INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, model_name, embedding_version, embedding_dim)
-                         VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3::vector, $4, $5::jsonb, $6, $7, $8)`,
-                        sourceId, parentId, childVector, childContent, childMeta, modelName, config.version, config.dimension
-                    );
-                    this.logger.log(`✅ Child Insert Res: ${cRes}`);
-                    totalInserted++;
+            let totalInserted = 0;
+            for (const h of hierarchies) {
+                const parentId = crypto.randomUUID();
+                const parentEmb = await this.ai.embed(h.parent);
+                if (!parentEmb) {
+                    this.logger.warn(`⚠️ Parent embedding failed for source ${sourceId}`);
+                    continue;
                 }
-            }
-            await new Promise(resolve => setTimeout(resolve, 300));
-        }
+                await this.delayPoolEmbedding();
 
-        this.logger.log(`📐 FINISHED: Indexed ${totalInserted} chunks for pool source ${sourceId}`);
-        this.eventEmitter.emit('knowledge-pool.synced', { sourceId });
+                const parentVector = JSON.stringify(parentEmb.embedding);
+                const parentMeta = JSON.stringify({ ...metadata, hash: contentHash, total_children: h.children.length });
+
+                const res = await this.prisma.$executeRawUnsafe(
+                    `INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, embedding_version, embedding_dim)
+                     VALUES ($1::uuid, $2::uuid, NULL, $3::vector, $4, $5::jsonb, $6, $7)`,
+                    parentId, sourceId, parentVector, h.parent, parentMeta, config.version, config.dimension
+                );
+                this.logger.log(`✅ Parent Insert Res: ${res} | ID: ${parentId}`);
+                totalInserted++;
+
+                for (const childContent of h.children) {
+                    const childEmb = await this.ai.embed(childContent);
+                    if (childEmb) {
+                        const childVector = JSON.stringify(childEmb.embedding);
+                        const childMeta = JSON.stringify(metadata);
+                        const cRes = await this.prisma.$executeRawUnsafe(
+                            `INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, embedding_version, embedding_dim)
+                             VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3::vector, $4, $5::jsonb, $6, $7)`,
+                            sourceId, parentId, childVector, childContent, childMeta, config.version, config.dimension
+                        );
+                        this.logger.log(`✅ Child Insert Res: ${cRes}`);
+                        totalInserted++;
+                    }
+                    await this.delayPoolEmbedding();
+                }
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+
+            this.logger.log(`📐 FINISHED: Indexed ${totalInserted} chunks for pool source ${sourceId}`);
+            this.eventEmitter.emit('knowledge-pool.synced', { sourceId });
+        } catch (error) {
+            await this.prisma.$executeRawUnsafe(
+                `DELETE FROM knowledge_pool_embeddings WHERE source_id = $1::uuid`,
+                sourceId
+            );
+            this.logger.warn(`🧹 Removed partial embeddings after failure for source ${sourceId}`);
+            throw error;
+        }
     }
 
     async indexTicket(ticketId: string, content: string): Promise<void> {
@@ -279,8 +289,8 @@ export class EmbeddingService {
         const config = await this.registry.getActiveVersionConfig();
 
         await this.prisma.$executeRaw`
-      INSERT INTO ticket_embeddings(id, ticket_id, embedding, model_name, embedding_version, embedding_dim)
-        VALUES(gen_random_uuid(), ${ticketId}:: uuid, ${JSON.stringify(result.embedding)}:: vector, ${result.model}, ${config.version}, ${config.dimension})
+      INSERT INTO ticket_embeddings(id, ticket_id, embedding, embedding_version, embedding_dim)
+        VALUES(gen_random_uuid(), ${ticketId}:: uuid, ${JSON.stringify(result.embedding)}:: vector, ${config.version}, ${config.dimension})
             `;
     }
 
@@ -314,6 +324,10 @@ export class EmbeddingService {
     async embedText(text: string): Promise<number[] | null> {
         const result = await this.ai.embed(text);
         return result ? result.embedding : null;
+    }
+
+    private async delayPoolEmbedding(): Promise<void> {
+        await new Promise(resolve => setTimeout(resolve, this.POOL_EMBED_PACING_MS));
     }
 
     async reindexAll(): Promise<{ indexed: number; failed: number }> {

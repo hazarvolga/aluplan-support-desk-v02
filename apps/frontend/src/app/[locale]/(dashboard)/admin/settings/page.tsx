@@ -897,19 +897,29 @@ export default function AdminSettingsPage() {
                                                                 list="gemini-embed-models"
                                                                 value={getSetting('ai.gemini.embed_model')}
                                                                 onChange={e => updateValue('ai.gemini.embed_model', e.target.value)}
-                                                                placeholder="text-embedding-004"
+                                                                placeholder="gemini-embedding-2"
                                                                 className="bg-black/50 h-8 text-sm"
                                                             />
                                                             <datalist id="gemini-embed-models">
-                                                                <option value="text-embedding-004" />
+                                                                <option value="gemini-embedding-2" />
+                                                                <option value="gemini-embedding-001" />
                                                             </datalist>
-                                                            <Button
-                                                                variant="ghost"
-                                                                className="h-5 px-1.5 text-[9px] w-fit hover:bg-teal-500/20 text-teal-500"
-                                                                onClick={() => updateValue('ai.gemini.embed_model', 'text-embedding-004')}
-                                                            >
-                                                                text-embedding-004
-                                                            </Button>
+                                                            <div className="flex gap-1">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    className="h-5 px-1.5 text-[9px] w-fit hover:bg-teal-500/20 text-teal-500"
+                                                                    onClick={() => updateValue('ai.gemini.embed_model', 'gemini-embedding-2')}
+                                                                >
+                                                                    Embedding 2
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    className="h-5 px-1.5 text-[9px] w-fit hover:bg-teal-500/20 text-teal-500"
+                                                                    onClick={() => updateValue('ai.gemini.embed_model', 'gemini-embedding-001')}
+                                                                >
+                                                                    Embedding 1
+                                                                </Button>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>

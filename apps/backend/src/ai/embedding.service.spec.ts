@@ -146,6 +146,23 @@ describe('EmbeddingService', () => {
 
             // Assert
             expect(mockPrismaService.$executeRawUnsafe).toHaveBeenCalled();
+            const insertCalls = mockPrismaService.$executeRawUnsafe.mock.calls
+                .map((call: unknown[]) => String(call[0]))
+                .filter((sql: string) => sql.includes('INSERT INTO knowledge_pool_embeddings'));
+            expect(insertCalls.every((sql: string) => !sql.includes('model_name'))).toBe(true);
+        });
+
+        it('should clean up partial pool embeddings when indexing fails mid-run', async () => {
+            mockAiService.embed
+                .mockResolvedValueOnce(mockEmbedResult)
+                .mockRejectedValueOnce(new Error('429 rate limit'));
+
+            await expect(service.indexPoolContent('src-1', 'content')).rejects.toThrow('429 rate limit');
+
+            const deleteCalls = mockPrismaService.$executeRawUnsafe.mock.calls
+                .map((call: unknown[]) => String(call[0]))
+                .filter((sql: string) => sql.includes('DELETE FROM knowledge_pool_embeddings'));
+            expect(deleteCalls).toHaveLength(2);
         });
     });
 
@@ -160,6 +177,7 @@ describe('EmbeddingService', () => {
             mockAiService.embed.mockResolvedValue(mockEmbedResult);
             await service.indexTicket('tik-1', 'ticket content');
             expect(mockPrismaService.$executeRaw).toHaveBeenCalledTimes(1);
+            expect(String(mockPrismaService.$executeRaw.mock.calls[0][0])).not.toContain('model_name');
         });
     });
 
