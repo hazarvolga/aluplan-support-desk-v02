@@ -3,10 +3,10 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, isBackendUnavailableError } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, MessageSquare, Clock } from 'lucide-react';
+import { PlusCircle, MessageSquare, Clock, ServerCrash, RefreshCcw } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
@@ -20,6 +20,7 @@ export default function MyTicketsPage() {
     const locale = useLocale();
     const [tickets, setTickets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<'backend_unavailable' | 'unknown' | null>(null);
 
     const dateLocale = locale === 'tr' ? tr : locale === 'de' ? de : enUS;
 
@@ -28,11 +29,14 @@ export default function MyTicketsPage() {
     }, []);
 
     const fetchTickets = async () => {
+        setLoading(true);
+        setLoadError(null);
         try {
             const response = await api.tickets.list();
             setTickets(response.data);
         } catch (error) {
             console.error('Failed to fetch tickets:', error);
+            setLoadError(isBackendUnavailableError(error) ? 'backend_unavailable' : 'unknown');
         } finally {
             setLoading(false);
         }
@@ -69,6 +73,22 @@ export default function MyTicketsPage() {
             <div className="grid gap-4">
                 {loading ? (
                     <div className="text-center py-10">{ct('loading')}</div>
+                ) : loadError ? (
+                    <Card className="border-orange-500/20 bg-orange-500/5">
+                        <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/10 text-orange-400">
+                                <ServerCrash className="h-6 w-6" />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-lg font-medium">{t(`errors.${loadError}.title`)}</p>
+                                <p className="text-sm text-muted-foreground">{t(`errors.${loadError}.desc`)}</p>
+                            </div>
+                            <Button variant="outline" onClick={fetchTickets}>
+                                <RefreshCcw className="mr-2 h-4 w-4" />
+                                {ct('retry')}
+                            </Button>
+                        </CardContent>
+                    </Card>
                 ) : tickets.length === 0 ? (
                     <Card className="bg-card/50 backdrop-blur-xl border-dashed">
                         <CardContent className="flex flex-col items-center justify-center py-12 space-y-4 text-center">

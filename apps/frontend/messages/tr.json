@@ -221,6 +221,7 @@
     "sort": "SIRALA",
     "filter": "FİLTRELE",
     "clear": "Temizle",
+    "retry": "Tekrar Dene",
     "search_placeholder": "Ara...",
     "hotinfo_labels": {
       "allplan_version": "Allplan Versiyon",
@@ -499,13 +500,40 @@
       "ai": {
         "title": "Akıllı Teşhis",
         "loading": "Size özel çözümleri hazırlıyoruz...",
+        "optional_hint": "Yapay zeka önerisi isteğe bağlıdır. İsterseniz doğrudan destek talebi oluşturmaya devam edebilirsiniz.",
+        "assist_label": "İSTEĞE BAĞLI AI DESTEĞİ",
+        "assist_desc": "Önce bilgi havuzundan çözüm önerisi deneyebilir veya hiç beklemeden talebinizi doğrudan oluşturabilirsiniz.",
+        "create_directly": "Doğrudan Talep Oluşturmaya Geç",
+        "create_directly_hint": "AI şu anda gerekli değil. Bu yol her zaman açık kalır.",
         "detail_label": "Sorununuzu detaylandırın",
         "detail_placeholder": "Hata mesajı, gerçekleşen işlem sırası vb...",
         "search_btn": "Çözüm Ara (AI)",
         "result_title": "Yapay Zeka Teşhis Sonucu",
         "feedback_question": "\"Yapay zeka asistanımızın sunduğu bu çözüm sorununuzu gidermeye yardımcı oldu mu?\"",
         "yes_resolved": "Evet, Çözüldü",
-        "no_create_ticket": "Hayır, Talebi Oluştur"
+        "no_create_ticket": "Hayır, Talebi Oluştur",
+        "status": {
+          "running": {
+            "title": "Bilgi havuzunda çözüm aranıyor",
+            "desc": "Eşleşen içerikler taranıyor ve uygun bir yanıt hazırlanıyor."
+          },
+          "ready": {
+            "title": "AI önerisi hazır",
+            "desc": "Yanıt üretildi. Dilerseniz bu çözümü deneyebilir veya talep oluşturmaya devam edebilirsiniz."
+          },
+          "fallback": {
+            "title": "Yedek modla yanıt üretildi",
+            "desc": "Model geciktiği için en güçlü eşleşen içerikten güvenli bir özet gösteriliyor. İsterseniz yine doğrudan talep açabilirsiniz."
+          },
+          "backend_unavailable": {
+            "title": "AI servisi şu anda erişilemiyor",
+            "desc": "Bu durum ticket oluşturmanızı engellemez. Doğrudan destek talebi oluşturmaya devam edebilirsiniz."
+          },
+          "failed": {
+            "title": "AI önerisi tamamlanamadı",
+            "desc": "Teşhis tamamlanamadı. Beklemeden ticket oluşturmaya geçebilirsiniz."
+          }
+        }
       },
       "summary": {
         "title": "Son Kontrol & Ekler",
@@ -528,9 +556,11 @@
         "hotinfo_success": "Sistem bilgileriniz başarıyla güncellendi",
         "upload_error": "Dosya yüklenirken hata oluştu",
         "ai_unavailable": "Yapay zeka servisi şu an cevap veremiyor. Talebinizi oluşturmaya devam edebilirsiniz.",
+        "ai_backend_unavailable": "AI servisine şu anda ulaşılamıyor. Talebinizi doğrudan oluşturmaya devam edebilirsiniz.",
         "ai_no_match": "Sorunuzu tam olarak anlayamadım ama aşağıda genel bir rehber hazırladım.",
         "ai_timeout": "Yapay zeka sunucusu yanıt vermiyor (Timeout). Talebinizi manuel olarak oluşturabilirsiniz.",
         "ai_error": "Yapay zeka teşhis servisine şu anda ulaşılamıyor.",
+        "ticket_backend_unavailable": "Destek servisine şu anda ulaşılamıyor. Lütfen birkaç dakika sonra tekrar deneyin.",
         "success": "Talebiniz başarıyla oluşturuldu",
         "hotinfo_confirmed": "Sistem bilgileri onaylandı",
         "ai_happy": "Harika! Çözüm bulmanıza sevindik. 🎉"
@@ -541,6 +571,16 @@
     "title": "Destek Taleplerim",
     "subtitle": "Açtığınız tüm destek taleplerini buradan takip edebilirsiniz.",
     "new_ticket": "Yeni Talep Oluştur",
+    "errors": {
+      "backend_unavailable": {
+        "title": "Destek servisine şu anda ulaşılamıyor",
+        "desc": "Ticket listenizi yükleyemedik. Servis tekrar erişilebilir olduğunda yeniden deneyin."
+      },
+      "unknown": {
+        "title": "Ticket listesi yüklenemedi",
+        "desc": "Beklenmeyen bir sorun oluştu. Lütfen tekrar deneyin."
+      }
+    },
     "empty": {
       "title": "Henüz bir talebiniz yok",
       "desc": "Herhangi bir konuda yardıma ihtiyacınız olursa yeni bir talep başlatın.",

@@ -221,6 +221,7 @@
     "sort": "SORTIEREN",
     "filter": "FILTERN",
     "clear": "Löschen",
+    "retry": "Erneut versuchen",
     "search_placeholder": "Suchen...",
     "hotinfo_labels": {
       "allplan_version": "Allplan Version",
@@ -499,13 +500,40 @@
       "ai": {
         "title": "Smarte Diagnose",
         "loading": "Wir bereiten maßgeschneiderte Lösungen für Sie vor...",
+        "optional_hint": "KI-Unterstützung ist optional. Sie können jederzeit direkt mit der Ticketerstellung fortfahren.",
+        "assist_label": "OPTIONALE KI-UNTERSTÜTZUNG",
+        "assist_desc": "Sie können zuerst einen Wissensvorschlag ausprobieren oder ohne Wartezeit direkt Ihre Anfrage erstellen.",
+        "create_directly": "Ohne KI fortfahren",
+        "create_directly_hint": "Die Ticketerstellung bleibt immer verfügbar.",
         "detail_label": "Problem detaillieren",
         "detail_placeholder": "Fehlermeldung, Abfolge der Vorgänge, etc...",
         "search_btn": "Lösung suchen (KI)",
         "result_title": "KI-Diagnoseergebnis",
         "feedback_question": "\"Hat diese von unserem KI-Assistenten angebotene Lösung geholfen, Ihr Problem zu lösen?\"",
         "yes_resolved": "Ja, gelöst",
-        "no_create_ticket": "Nein, Anfrage erstellen"
+        "no_create_ticket": "Nein, Anfrage erstellen",
+        "status": {
+          "running": {
+            "title": "Wissensbasis wird durchsucht",
+            "desc": "Passende Inhalte werden geprüft und eine fundierte Antwort wird vorbereitet."
+          },
+          "ready": {
+            "title": "KI-Vorschlag ist bereit",
+            "desc": "Eine Antwort wurde erzeugt. Sie können sie ausprobieren oder direkt mit der Anfrage fortfahren."
+          },
+          "fallback": {
+            "title": "Fallback-Antwort wurde verwendet",
+            "desc": "Das Modell war zu langsam, daher zeigen wir eine sichere Zusammenfassung aus dem stärksten Treffer. Sie können weiterhin direkt ein Ticket erstellen."
+          },
+          "backend_unavailable": {
+            "title": "KI-Dienst ist derzeit nicht erreichbar",
+            "desc": "Das blockiert die Ticketerstellung nicht. Sie können direkt mit dem Support fortfahren."
+          },
+          "failed": {
+            "title": "KI-Vorschlag konnte nicht abgeschlossen werden",
+            "desc": "Die Diagnose konnte nicht erfolgreich beendet werden. Sie können jetzt direkt Ihre Anfrage erstellen."
+          }
+        }
       },
       "summary": {
         "title": "Letzte Prüfung & Anhänge",
@@ -528,9 +556,11 @@
         "hotinfo_success": "Systeminformationen erfolgreich aktualisiert",
         "upload_error": "Fehler beim Hochladen der Datei",
         "ai_unavailable": "KI-Dienst kann derzeit nicht antworten. Sie können mit der Erstellung Ihrer Anfrage fortfahren.",
+        "ai_backend_unavailable": "KI-Dienst ist derzeit nicht erreichbar. Sie können direkt mit der Ticketerstellung fortfahren.",
         "ai_no_match": "Ich konnte Ihre Frage nicht ganz verstehen, habe aber unten einen allgemeinen Leitfaden vorbereitet.",
         "ai_timeout": "KI-Server antwortet nicht (Timeout). Sie können Ihre Anfrage manuell erstellen.",
         "ai_error": "KI-Diagnosedienst zurzeit nicht erreichbar.",
+        "ticket_backend_unavailable": "Support-Dienst ist derzeit nicht erreichbar. Bitte versuchen Sie es in einigen Minuten erneut.",
         "success": "Ihre Anfrage wurde erfolgreich erstellt",
         "hotinfo_confirmed": "Systeminformationen bestätigt",
         "ai_happy": "Großartig! Wir freuen uns, dass Sie eine Lösung gefunden haben. 🎉"
@@ -541,6 +571,16 @@
     "title": "Meine Support-Anfragen",
     "subtitle": "Hier können Sie alle von Ihnen eröffneten Support-Anfragen verfolgen.",
     "new_ticket": "Neue Anfrage erstellen",
+    "errors": {
+      "backend_unavailable": {
+        "title": "Support-Dienst ist derzeit nicht erreichbar",
+        "desc": "Ihre Ticketliste konnte nicht geladen werden. Bitte versuchen Sie es erneut, sobald der Dienst wieder erreichbar ist."
+      },
+      "unknown": {
+        "title": "Ticketliste konnte nicht geladen werden",
+        "desc": "Ein unerwartetes Problem ist aufgetreten. Bitte versuchen Sie es erneut."
+      }
+    },
     "empty": {
       "title": "Sie haben noch keine Anfragen",
       "desc": "Wenn Sie Hilfe bei etwas benötigen, starten Sie eine neue Anfrage.",

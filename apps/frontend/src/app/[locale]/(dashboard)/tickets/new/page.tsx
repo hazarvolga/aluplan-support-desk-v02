@@ -7,14 +7,14 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { api } from '@/lib/api';
+import { api, isBackendUnavailableError } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Paperclip, X, Loader2, ArrowLeft, CheckCircle2, AlertTriangle, Monitor, Sparkles, Box } from 'lucide-react';
+import { Paperclip, X, Loader2, ArrowLeft, CheckCircle2, AlertTriangle, Monitor, Sparkles, Box, ServerCrash, ShieldAlert } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useTranslations, useLocale } from 'next-intl';
@@ -47,6 +47,7 @@ export default function NewTicketPage() {
     const [isDiagnosing, setIsDiagnosing] = useState(false);
     const [aiAnswer, setAiAnswer] = useState<string | null>(null);
     const [interactionId, setInteractionId] = useState<string | null>(null);
+    const [diagnosisState, setDiagnosisState] = useState<'idle' | 'running' | 'ready' | 'fallback' | 'backend_unavailable' | 'failed'>('idle');
 
     const form = useForm<TicketFormValues>({
         resolver: zodResolver(getTicketSchema(t)) as any,
@@ -128,27 +129,6 @@ export default function NewTicketPage() {
         }
     };
 
-    const waitForDiagnosisResult = async (jobId: string) => {
-        const maxAttempts = 60;
-        const pollIntervalMs = 2000;
-
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            const job = await api.ai.getJobStatus(jobId);
-
-            if (job.status === 'COMPLETED') {
-                return job.result ?? null;
-            }
-
-            if (job.status === 'FAILED') {
-                throw new Error(job.error || 'AI_JOB_FAILED');
-            }
-
-            await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
-        }
-
-        throw new Error('AI_TIMEOUT');
-    };
-
     const runDiagnosis = async () => {
         const { subject, description } = form.getValues();
         if (!description) return;
@@ -156,6 +136,7 @@ export default function NewTicketPage() {
         setIsDiagnosing(true);
         setCurrentStep(2);
         setAiAnswer(null);
+        setDiagnosisState('running');
 
         try {
             // Include confirmed hotinfo context for deep diagnostics
@@ -176,29 +157,32 @@ export default function NewTicketPage() {
             // Switch to specialized query endpoint for conversational RAG
             // Passing product context to focus search on relevant knowledge base
             const pId = selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId;
-            const response = await api.ai.query(`${subject} ${description}`, context, pId, locale, [], attachments, false) as
-                { answer?: string; interactionId?: string; jobId?: string } | null;
-
-            const resolvedResponse = response?.jobId
-                ? await waitForDiagnosisResult(response.jobId) as { answer?: string; interactionId?: string } | null
-                : response;
+            const resolvedResponse = await api.ai.query(`${subject} ${description}`, context, pId, locale, [], attachments, true) as
+                { answer?: string; interactionId?: string; answerMode?: 'LLM' | 'FALLBACK' } | null;
 
             if (!resolvedResponse || !resolvedResponse.answer) {
+                setDiagnosisState('failed');
                 toast.warning(t('toasts.ai_unavailable'));
                 return;
             }
 
             setAiAnswer(resolvedResponse.answer);
             setInteractionId(resolvedResponse.interactionId ?? null);
+            setDiagnosisState(resolvedResponse.answerMode === 'FALLBACK' ? 'fallback' : 'ready');
 
             if ((resolvedResponse as any).confidence === 'NO_MATCH') {
                 toast.info(t('toasts.ai_no_match'));
             }
         } catch (err: any) {
             console.error('Diagnosis failed', err);
-            if (err.message === 'AI_TIMEOUT') {
+            if (isBackendUnavailableError(err)) {
+                setDiagnosisState('backend_unavailable');
+                toast.error(t('toasts.ai_backend_unavailable'));
+            } else if (err.message === 'AI_TIMEOUT') {
+                setDiagnosisState('failed');
                 toast.error(t('toasts.ai_timeout'));
             } else {
+                setDiagnosisState('failed');
                 toast.error(t('toasts.ai_error'));
             }
         } finally {
@@ -238,7 +222,11 @@ export default function NewTicketPage() {
             router.push(`/${locale}/tickets/${ticket.id}`);
         } catch (error: any) {
             console.error('Ticket creation failed', error);
-            toast.error(error.message || ct('error'));
+            if (isBackendUnavailableError(error)) {
+                toast.error(t('toasts.ticket_backend_unavailable'));
+            } else {
+                toast.error(error.message || ct('error'));
+            }
         } finally {
             setLoading(false);
         }
@@ -453,11 +441,30 @@ export default function NewTicketPage() {
                 </Button>
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight">{t('ai.title')}</h1>
-                    <p className="text-brand-400 font-medium">{t('ai.loading')}</p>
+                    <p className="text-muted-foreground">{t('ai.optional_hint')}</p>
                 </div>
             </div>
 
             <div className="space-y-6">
+                <Card className="border-white/5 bg-card/50 backdrop-blur-xl">
+                    <CardContent className="grid gap-4 p-5 md:grid-cols-[1.2fr_0.8fr]">
+                        <div className="space-y-2">
+                            <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-400">{t('ai.assist_label')}</p>
+                            <p className="text-sm text-muted-foreground">{t('ai.assist_desc')}</p>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <Button
+                                type="button"
+                                className="w-full bg-brand-600 text-industrial-dark hover:bg-brand-500"
+                                onClick={() => setCurrentStep(3)}
+                            >
+                                {t('ai.create_directly')}
+                            </Button>
+                            <p className="text-[11px] text-muted-foreground">{t('ai.create_directly_hint')}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <div className="space-y-2">
                     <Label className="text-lg">{t('ai.detail_label')}</Label>
                     <Textarea
@@ -467,7 +474,8 @@ export default function NewTicketPage() {
                         onChange={(e) => form.setValue('description', e.target.value)}
                     />
                     <Button
-                        className="w-full bg-brand-600 gap-2 h-12 text-lg text-industrial-dark font-bold"
+                        className="w-full gap-2 h-12 text-lg font-bold"
+                        variant="outline"
                         disabled={isDiagnosing || !form.watch('description')}
                         onClick={runDiagnosis}
                     >
@@ -475,6 +483,44 @@ export default function NewTicketPage() {
                         {t('ai.search_btn')}
                     </Button>
                 </div>
+
+                {diagnosisState !== 'idle' && (
+                    <div className={`rounded-2xl border px-4 py-4 ${
+                        diagnosisState === 'backend_unavailable'
+                            ? 'border-orange-500/20 bg-orange-500/5'
+                            : diagnosisState === 'fallback'
+                                ? 'border-amber-500/20 bg-amber-500/5'
+                                : diagnosisState === 'failed'
+                                    ? 'border-red-500/20 bg-red-500/5'
+                                    : 'border-white/5 bg-slate-950/40'
+                    }`}>
+                        <div className="flex items-start gap-3">
+                            <div className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-full ${
+                                diagnosisState === 'backend_unavailable'
+                                    ? 'bg-orange-500/10 text-orange-400'
+                                    : diagnosisState === 'fallback'
+                                        ? 'bg-amber-500/10 text-amber-400'
+                                        : diagnosisState === 'failed'
+                                            ? 'bg-red-500/10 text-red-400'
+                                            : 'bg-brand-500/10 text-brand-400'
+                            }`}>
+                                {diagnosisState === 'backend_unavailable' ? (
+                                    <ServerCrash className="h-4 w-4" />
+                                ) : diagnosisState === 'fallback' ? (
+                                    <ShieldAlert className="h-4 w-4" />
+                                ) : diagnosisState === 'failed' ? (
+                                    <AlertTriangle className="h-4 w-4" />
+                                ) : (
+                                    <Sparkles className="h-4 w-4" />
+                                )}
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-sm font-semibold">{t(`ai.status.${diagnosisState}.title`)}</p>
+                                <p className="text-sm text-muted-foreground">{t(`ai.status.${diagnosisState}.desc`)}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {aiAnswer && (
                     <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
@@ -521,18 +567,6 @@ export default function NewTicketPage() {
                     </div>
                 )}
 
-                {/* Fallback button if AI fails or user just wants to bypass */}
-                {!aiAnswer && !isDiagnosing && (
-                    <div className="pt-8 text-center animate-in fade-in duration-1000">
-                        <Button
-                            variant="ghost"
-                            className="text-muted-foreground hover:text-brand-400"
-                            onClick={() => setCurrentStep(3)}
-                        >
-                            {t('ai.no_create_ticket')}
-                        </Button>
-                    </div>
-                )}
             </div>
         </div>
     );

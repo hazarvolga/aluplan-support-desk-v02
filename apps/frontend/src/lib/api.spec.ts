@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { api } from './api';
+import { api, isBackendUnavailableError } from './api';
 
 describe('api.ts', () => {
     const originalFetch = global.fetch;
@@ -81,6 +81,20 @@ describe('api.ts', () => {
         });
 
         await expect(api.get('/error')).rejects.toThrow('Server crashed');
+    });
+
+    it('classifies network failures as backend unavailable', async () => {
+        (global.fetch as any).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+        const promise = api.get('/offline');
+
+        await expect(promise).rejects.toMatchObject({
+            message: 'BACKEND_UNAVAILABLE',
+            code: 'BACKEND_UNAVAILABLE',
+        });
+
+        const error = await promise.catch((err) => err);
+        expect(isBackendUnavailableError(error)).toBe(true);
     });
 
     describe('api.pool', () => {

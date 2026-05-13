@@ -221,6 +221,7 @@
     "sort": "SORT",
     "filter": "FILTER",
     "clear": "Clear",
+    "retry": "Retry",
     "search_placeholder": "Search...",
     "hotinfo_labels": {
       "allplan_version": "Allplan Version",
@@ -499,13 +500,40 @@
       "ai": {
         "title": "Smart Diagnosis",
         "loading": "Preparing custom solutions for you...",
+        "optional_hint": "AI help is optional. You can continue directly to ticket creation at any time.",
+        "assist_label": "OPTIONAL AI ASSIST",
+        "assist_desc": "You can try a knowledge-based suggestion first, or skip the wait and create your request directly.",
+        "create_directly": "Continue Without AI",
+        "create_directly_hint": "Ticket creation always stays available.",
         "detail_label": "Detail your issue",
         "detail_placeholder": "Error message, sequence of operations, etc...",
         "search_btn": "Search Solution (AI)",
         "result_title": "AI Diagnosis Result",
         "feedback_question": "\"Did this solution provided by our AI assistant help resolve your issue?\"",
         "yes_resolved": "Yes, Resolved",
-        "no_create_ticket": "No, Create Request"
+        "no_create_ticket": "No, Create Request",
+        "status": {
+          "running": {
+            "title": "Searching the knowledge base",
+            "desc": "We are scanning matching content and preparing a grounded response."
+          },
+          "ready": {
+            "title": "AI suggestion is ready",
+            "desc": "A response was generated. You can try it now or keep going with ticket creation."
+          },
+          "fallback": {
+            "title": "Fallback answer was used",
+            "desc": "The model took too long, so we showed a safe summary from the strongest matching content. You can still create a ticket directly."
+          },
+          "backend_unavailable": {
+            "title": "AI service is currently unavailable",
+            "desc": "This does not block ticket creation. You can continue directly with support."
+          },
+          "failed": {
+            "title": "AI suggestion could not be completed",
+            "desc": "Diagnosis did not finish successfully. You can move on and create your request now."
+          }
+        }
       },
       "summary": {
         "title": "Final Check & Attachments",
@@ -528,9 +556,11 @@
         "hotinfo_success": "System information updated successfully",
         "upload_error": "Error occurred while uploading file",
         "ai_unavailable": "AI service is currently unable to respond. You can continue creating your request.",
+        "ai_backend_unavailable": "AI service is currently unreachable. You can continue directly with ticket creation.",
         "ai_no_match": "I couldn't fully understand your question, but I've prepared a general guide below.",
         "ai_timeout": "AI server is not responding (Timeout). You can create your request manually.",
         "ai_error": "AI diagnosis service is currently unreachable.",
+        "ticket_backend_unavailable": "Support service is currently unreachable. Please try again in a few minutes.",
         "success": "Your request has been successfully created",
         "hotinfo_confirmed": "System information confirmed",
         "ai_happy": "Great! We're glad you found a solution. 🎉"
@@ -541,6 +571,16 @@
     "title": "My Support Requests",
     "subtitle": "You can follow all the support requests you have opened here.",
     "new_ticket": "Create New Request",
+    "errors": {
+      "backend_unavailable": {
+        "title": "Support service is currently unavailable",
+        "desc": "We couldn't load your ticket list. Please retry when the service is reachable again."
+      },
+      "unknown": {
+        "title": "Ticket list could not be loaded",
+        "desc": "An unexpected issue occurred. Please try again."
+      }
+    },
     "empty": {
       "title": "You don't have any requests yet",
       "desc": "If you need help with anything, start a new request.",

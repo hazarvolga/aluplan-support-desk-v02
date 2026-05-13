@@ -10,6 +10,19 @@ const getApiUrl = () => {
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (value?: any) => void; reject: (reason?: any) => void }> = [];
 
+export class ApiRequestError extends Error {
+    constructor(
+        message: string,
+        public readonly code: 'BACKEND_UNAVAILABLE' | 'SESSION_EXPIRED' | 'API_ERROR',
+    ) {
+        super(message);
+        this.name = 'ApiRequestError';
+    }
+}
+
+export const isBackendUnavailableError = (error: unknown): error is ApiRequestError =>
+    error instanceof ApiRequestError && error.code === 'BACKEND_UNAVAILABLE';
+
 const processQueue = (error: Error | null, token: string | null = null) => {
     failedQueue.forEach(prom => {
         if (error) {
@@ -19,6 +32,15 @@ const processQueue = (error: Error | null, token: string | null = null) => {
         }
     });
     failedQueue = [];
+};
+
+const safeFetch = async (input: string, init: RequestInit) => {
+    try {
+        return await fetch(input, init);
+    } catch (error) {
+        console.error('API Network Error:', error);
+        throw new ApiRequestError('BACKEND_UNAVAILABLE', 'BACKEND_UNAVAILABLE');
+    }
 };
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -46,7 +68,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         credentials: 'include',
     };
 
-    let res = await fetch(`${getApiUrl()}${path}`, fetchOptions);
+    let res = await safeFetch(`${getApiUrl()}${path}`, fetchOptions);
 
     if (res.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
         if (isRefreshing) {
@@ -55,18 +77,18 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
                     failedQueue.push({ resolve, reject });
                 });
 
-                res = await fetch(`${getApiUrl()}${path}`, fetchOptions);
+                res = await safeFetch(`${getApiUrl()}${path}`, fetchOptions);
                 if (res.ok) {
                     const text = await res.text();
                     return text ? JSON.parse(text) : {} as T;
                 }
             } catch (e) {
-                throw new Error('common.session_expired');
+                throw new ApiRequestError('common.session_expired', 'SESSION_EXPIRED');
             }
         } else {
             isRefreshing = true;
             try {
-                const refreshRes = await fetch(`${getApiUrl()}/auth/refresh`, {
+                const refreshRes = await safeFetch(`${getApiUrl()}/auth/refresh`, {
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' }
@@ -74,18 +96,21 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
                 if (refreshRes.ok) {
                     processQueue(null);
-                    res = await fetch(`${getApiUrl()}${path}`, fetchOptions);
+                    res = await safeFetch(`${getApiUrl()}${path}`, fetchOptions);
                     if (res.ok) {
                         const text = await res.text();
                         return text ? JSON.parse(text) : {} as T;
                     }
                 } else {
                     processQueue(new Error('Session expired'));
-                    throw new Error('common.session_expired');
+                    throw new ApiRequestError('common.session_expired', 'SESSION_EXPIRED');
                 }
             } catch (err) {
                 processQueue(err as Error);
-                throw new Error('common.session_expired');
+                if (isBackendUnavailableError(err)) {
+                    throw err;
+                }
+                throw new ApiRequestError('common.session_expired', 'SESSION_EXPIRED');
             } finally {
                 isRefreshing = false;
             }
@@ -240,7 +265,9 @@ export const api = {
             }>(url, {
                 method: 'POST',
                 body: JSON.stringify({ query, hotinfoContext, productId, language, history, attachments }),
-                signal: typeof AbortSignal !== 'undefined' ? AbortSignal.timeout(60000) : undefined, // Increased to 60s for sync waits
+                signal: typeof AbortSignal !== 'undefined'
+                    ? AbortSignal.timeout(wait ? 180000 : 60000)
+                    : undefined,
             });
         },
         getJobStatus: (jobId: string) =>
