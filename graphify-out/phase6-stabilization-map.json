@@ -1,0 +1,1242 @@
+{
+  "nodes": [
+    {
+      "id": "apps_backend_src_notifications_notifications_gateway_ts",
+      "label": "notifications.gateway.ts",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "notifications_gateway_resolveallowedorigins",
+      "label": "resolveAllowedOrigins()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L27"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway",
+      "label": "NotificationsGateway",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L52"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L57"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_isproduction",
+      "label": ".isProduction()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L67"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_afterinit",
+      "label": ".afterInit()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L72"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_handleconnection",
+      "label": ".handleConnection()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L84"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_handledisconnect",
+      "label": ".handleDisconnect()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L158"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_updatepresence",
+      "label": ".updatePresence()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L208"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_jointicket",
+      "label": ".joinTicket()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L219"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_leaveticket",
+      "label": ".leaveTicket()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L250"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_announcetyping",
+      "label": ".announceTyping()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L265"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_markasread",
+      "label": ".markAsRead()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L273"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_joinproactivechatsession",
+      "label": ".joinProactiveChatSession()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L289"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_leaveproactivechatsession",
+      "label": ".leaveProactiveChatSession()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L313"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_proactivechattyping",
+      "label": ".proactiveChatTyping()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L322"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_emitticketcreated",
+      "label": ".emitTicketCreated()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L335"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_emitticketupdated",
+      "label": ".emitTicketUpdated()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L376"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_emitticketescalated",
+      "label": ".emitTicketEscalated()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L398"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_emitslabreached",
+      "label": ".emitSlaBreached()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L411"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_emitnewmessage",
+      "label": ".emitNewMessage()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L447"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_emitattachmentadded",
+      "label": ".emitAttachmentAdded()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L455"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_emitbulkupdate",
+      "label": ".emitBulkUpdate()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L459"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_handleaifallback",
+      "label": ".handleAiFallback()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L468"
+    },
+    {
+      "id": "notifications_gateway_notificationsgateway_sendtouser",
+      "label": ".sendToUser()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L510"
+    },
+    {
+      "id": "apps_backend_src_products_products_controller_ts",
+      "label": "products.controller.ts",
+      "file_type": "code",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "products_controller_productscontroller",
+      "label": "ProductsController",
+      "file_type": "code",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L9"
+    },
+    {
+      "id": "products_controller_productscontroller_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L10"
+    },
+    {
+      "id": "products_controller_productscontroller_findall",
+      "label": ".findAll()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L14"
+    },
+    {
+      "id": "products_controller_productscontroller_create",
+      "label": ".create()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L21"
+    },
+    {
+      "id": "products_controller_productscontroller_findone",
+      "label": ".findOne()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L27"
+    },
+    {
+      "id": "products_controller_productscontroller_createcategory",
+      "label": ".createCategory()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L34"
+    },
+    {
+      "id": "products_controller_productscontroller_updatecategory",
+      "label": ".updateCategory()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L41"
+    },
+    {
+      "id": "products_controller_productscontroller_deletecategory",
+      "label": ".deleteCategory()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L48"
+    },
+    {
+      "id": "products_controller_productscontroller_restorefaqs",
+      "label": ".restoreFaqs()",
+      "file_type": "code",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L55"
+    },
+    {
+      "id": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "label": "page.tsx",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "page_getlistmodelsbuttonlabel",
+      "label": "getListModelsButtonLabel()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L66"
+    },
+    {
+      "id": "page_loadsettings",
+      "label": "loadSettings()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L103"
+    },
+    {
+      "id": "page_loadaihealth",
+      "label": "loadAiHealth()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L119"
+    },
+    {
+      "id": "page_getsetting",
+      "label": "getSetting()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L128"
+    },
+    {
+      "id": "page_updatevalue",
+      "label": "updateValue()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L130"
+    },
+    {
+      "id": "page_handlelogoselect",
+      "label": "handleLogoSelect()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L142"
+    },
+    {
+      "id": "page_handlesave",
+      "label": "handleSave()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L164"
+    },
+    {
+      "id": "page_loadsladata",
+      "label": "loadSlaData()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L264"
+    },
+    {
+      "id": "page_handlesavepolicy",
+      "label": "handleSavePolicy()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L277"
+    },
+    {
+      "id": "page_handledeletepolicy",
+      "label": "handleDeletePolicy()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L297"
+    },
+    {
+      "id": "page_openeditpolicy",
+      "label": "openEditPolicy()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L308"
+    },
+    {
+      "id": "page_async",
+      "label": "async()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L1380"
+    },
+    {
+      "id": "apps_frontend_src_hooks_useaihealthsocket_ts",
+      "label": "useAiHealthSocket.ts",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/hooks/useAiHealthSocket.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "useaihealthsocket_useaihealthsocket",
+      "label": "useAiHealthSocket()",
+      "file_type": "code",
+      "source_file": "apps/frontend/src/hooks/useAiHealthSocket.ts",
+      "source_location": "L19"
+    }
+  ],
+  "edges": [
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "websockets",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "socket_io",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "common",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "jwt",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "config",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "event_emitter",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "bullmq",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "bullmq",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L17",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "apps_backend_src_prisma_prisma_service",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L18",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "apps_backend_src_redis_redis_service",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "apps_backend_src_email_email_service",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "redis_adapter",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "ioredis",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "apps_backend_src_proactive_chat_proactive_chat_constants",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L23",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "apps_backend_src_ai_ai_health_event_service",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "database",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "notifications_gateway_resolveallowedorigins",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_notifications_notifications_gateway_ts",
+      "target": "notifications_gateway_notificationsgateway",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L52",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L57",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_isproduction",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L67",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_afterinit",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L72",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_handleconnection",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L84",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_handledisconnect",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L158",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_updatepresence",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L208",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_jointicket",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L219",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_leaveticket",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L250",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_announcetyping",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L265",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_markasread",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L273",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_joinproactivechatsession",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L289",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_leaveproactivechatsession",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L313",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_proactivechattyping",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L322",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_emitticketcreated",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L335",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_emitticketupdated",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L376",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_emitticketescalated",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L398",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_emitslabreached",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L411",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_emitnewmessage",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L447",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_emitattachmentadded",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L455",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_emitbulkupdate",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L459",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_handleaifallback",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L468",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway",
+      "target": "notifications_gateway_notificationsgateway_sendtouser",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L510",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway_handledisconnect",
+      "target": "notifications_gateway_notificationsgateway_updatepresence",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L169",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway_jointicket",
+      "target": "notifications_gateway_notificationsgateway_updatepresence",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L243",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway_leaveticket",
+      "target": "notifications_gateway_notificationsgateway_updatepresence",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L258",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_products_products_controller_ts",
+      "target": "common",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_products_products_controller_ts",
+      "target": "apps_backend_src_products_products_service",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_products_products_controller_ts",
+      "target": "apps_backend_src_auth_guards_jwt_auth_guard",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_products_products_controller_ts",
+      "target": "apps_backend_src_rbac_rbac_guard",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_products_products_controller_ts",
+      "target": "apps_backend_src_rbac_decorators_rbac_decorators",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_products_products_controller_ts",
+      "target": "apps_backend_src_auth_decorators_public_decorator",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_backend_src_products_products_controller_ts",
+      "target": "products_controller_productscontroller",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "products_controller_productscontroller",
+      "target": "products_controller_productscontroller_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "products_controller_productscontroller",
+      "target": "products_controller_productscontroller_findall",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "products_controller_productscontroller",
+      "target": "products_controller_productscontroller_create",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "products_controller_productscontroller",
+      "target": "products_controller_productscontroller_findone",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "products_controller_productscontroller",
+      "target": "products_controller_productscontroller_createcategory",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L34",
+      "weight": 1.0
+    },
+    {
+      "source": "products_controller_productscontroller",
+      "target": "products_controller_productscontroller_updatecategory",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L41",
+      "weight": 1.0
+    },
+    {
+      "source": "products_controller_productscontroller",
+      "target": "products_controller_productscontroller_deletecategory",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L48",
+      "weight": 1.0
+    },
+    {
+      "source": "products_controller_productscontroller",
+      "target": "products_controller_productscontroller_restorefaqs",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/src/products/products.controller.ts",
+      "source_location": "L55",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "react",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "navigation",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "api",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "card",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "button",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "input",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "label",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "tabs",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "select",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "use_toast",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "lucide_react",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "badge",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "dialog",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "table",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "aitelemetrydashboard",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L30",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "next_intl",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L31",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "systemrequirementsform",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L32",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_getlistmodelsbuttonlabel",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L66",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_loadsettings",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L103",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_loadaihealth",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L119",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_getsetting",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L128",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_updatevalue",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L130",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_handlelogoselect",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L142",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_handlesave",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L164",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_loadsladata",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L264",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_handlesavepolicy",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L277",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_handledeletepolicy",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L297",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_openeditpolicy",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L308",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_async",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L1380",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_async",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L1413",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_app_locale_dashboard_admin_settings_page_tsx",
+      "target": "page_async",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L1509",
+      "weight": 1.0
+    },
+    {
+      "source": "page_handlelogoselect",
+      "target": "page_updatevalue",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L149",
+      "weight": 1.0
+    },
+    {
+      "source": "page_handlesave",
+      "target": "page_getsetting",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L171",
+      "weight": 1.0
+    },
+    {
+      "source": "page_handlesavepolicy",
+      "target": "page_loadsladata",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L289",
+      "weight": 1.0
+    },
+    {
+      "source": "page_handledeletepolicy",
+      "target": "page_loadsladata",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L302",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_hooks_useaihealthsocket_ts",
+      "target": "react",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/hooks/useAiHealthSocket.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_hooks_useaihealthsocket_ts",
+      "target": "socket",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/hooks/useAiHealthSocket.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_frontend_src_hooks_useaihealthsocket_ts",
+      "target": "useaihealthsocket_useaihealthsocket",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/frontend/src/hooks/useAiHealthSocket.ts",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "notifications_gateway_notificationsgateway_emitticketupdated",
+      "target": "products_controller_productscontroller_create",
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "apps/backend/src/notifications/notifications.gateway.ts",
+      "source_location": "L379",
+      "weight": 1.0
+    },
+    {
+      "source": "page_handlesavepolicy",
+      "target": "products_controller_productscontroller_create",
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "apps/frontend/src/app/[locale]/(dashboard)/admin/settings/page.tsx",
+      "source_location": "L284",
+      "weight": 1.0
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}
