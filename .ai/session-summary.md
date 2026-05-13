@@ -105,3 +105,21 @@ These were left alone deliberately because they look like user/workflow artifact
 ### Important notes
 - `graphify update .` was attempted after each phase but the `graphify` binary is still unavailable in PATH in this shell.
 - `gitnexus detect_changes` reports HIGH risk because the repository already contains unrelated modified files from prior RAG/indexing work; phase commits were staged narrowly to avoid pulling unrelated changes into the new commits.
+
+## Follow-up - 2026-05-13 Sync Diagnosis Spinner
+
+### Root cause
+- A customer `POST /api/v1/ai/query?wait=true` reached backend and retrieval finished quickly.
+- The request then hung in LLM re-ranking because Gemini free-tier returned `429 RESOURCE_EXHAUSTED` for `gemini-2.5-flash`, including retry delays up to ~59s.
+- The existing 25s diagnosis fallback guarded the final answer generation, but not the earlier LLM re-ranking step.
+
+### Fix applied
+- Propagated the resolved `wait` flag from `AiQueryService.query()` into `queryInternal()`.
+- For synchronous `wait=true` diagnosis calls, skipped LLM re-ranking and kept deterministic retrieval + heuristic re-ranking.
+- Added a regression test proving synchronous wait queries do not call `ai.generate()` for re-ranking.
+
+### Verification
+- `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts` passed
+- `pnpm --filter @aluplan/backend typecheck` passed
+- `pnpm --filter @aluplan/backend build` passed
+- Backend restarted successfully on `http://localhost:4000/api/v1`

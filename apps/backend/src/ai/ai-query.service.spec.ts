@@ -367,6 +367,37 @@ describe('AiQueryService', () => {
                 }),
             }));
         });
+
+        it('skips LLM re-ranking for synchronous wait queries', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'art-1',
+                        sourceType: 'ARTICLE',
+                        title: 'Graphics Driver Guide',
+                        content: 'Use the certified graphics driver package.',
+                        similarity: 0.95,
+                        confidence: 'HIGH',
+                    },
+                    {
+                        articleId: 'art-2',
+                        sourceType: 'DOCUMENT',
+                        title: 'Display Troubleshooting',
+                        content: 'Check display settings and certified hardware.',
+                        similarity: 0.9,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.95, passedThreshold: 2, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue({ response: 'Use the certified GPU driver package.' });
+
+            const result = await service.query({ userQuery: 'How do I update the graphics driver?', wait: true });
+
+            expect(result.answerMode).toBe('LLM');
+            expect(mockAiService.generate).not.toHaveBeenCalled();
+            expect(mockAiService.reformat).toHaveBeenCalledTimes(1);
+        });
     });
 
     describe('submitTelemetry', () => {

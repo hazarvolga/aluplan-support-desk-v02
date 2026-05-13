@@ -237,7 +237,7 @@ export class AiQueryService {
         }
 
         // Otherwise process directly
-        return this.queryInternal(options);
+        return this.queryInternal({ ...options, wait });
     }
 
     /**
@@ -403,10 +403,14 @@ export class AiQueryService {
         const feedbackWeights = await this.fetchArticleFeedbackWeights(articleIds);
         results = this.rerankResults(results, feedbackWeights);
 
-        // Advanced LLM Re-ranking (Cross-Encoder)
-        const rankStartTime = Date.now();
-        results = await this.rankResultsWithLLM(userQuery, results);
-        this.logger.log(`🔍 [Phase: Re-ranking] Completed in ${Date.now() - rankStartTime}ms.`);
+        if (options.wait === true) {
+            this.logger.log('⏭️ [Phase: Re-ranking] Skipped LLM re-ranking for synchronous diagnosis.');
+        } else {
+            // Advanced LLM Re-ranking (Cross-Encoder)
+            const rankStartTime = Date.now();
+            results = await this.rankResultsWithLLM(userQuery, results);
+            this.logger.log(`🔍 [Phase: Re-ranking] Completed in ${Date.now() - rankStartTime}ms.`);
+        }
 
         // Lowered floor for response generation
         // Ensure threshold alignment: topScore must be >= search floor to be valid
