@@ -5,7 +5,7 @@ import type { BreadcrumbItem } from './types';
 
 // Mock next-intl
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string) => key === 'help.nav.back' ? 'Yardım' : key,
 }));
 
 describe('DocBreadcrumb component (task 8.3)', () => {

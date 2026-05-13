@@ -23,6 +23,9 @@ function sortCustomers(
   return [...customers].sort((a, b) => {
     const aVal = normalizeEmptyValue(a[field]);
     const bVal = normalizeEmptyValue(b[field]);
+    if (!aVal && !bVal) return 0;
+    if (!aVal) return 1;
+    if (!bVal) return -1;
     const comparison = aVal.localeCompare(bVal);
     return direction === 'asc' ? comparison : -comparison;
   });

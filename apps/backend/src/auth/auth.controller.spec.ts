@@ -3,6 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ConfigService } from '@nestjs/config';
 
 describe('AuthController', () => {
     let controller: AuthController;
@@ -19,6 +20,9 @@ describe('AuthController', () => {
         getProfile: jest.fn(),
         verifyEmail: jest.fn(),
     };
+    const mockConfigService = {
+        get: jest.fn().mockReturnValue('test'),
+    };
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -27,6 +31,10 @@ describe('AuthController', () => {
                 {
                     provide: AuthService,
                     useValue: mockAuthService,
+                },
+                {
+                    provide: ConfigService,
+                    useValue: mockConfigService,
                 },
             ],
         }).compile();
