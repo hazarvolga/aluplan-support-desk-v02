@@ -148,3 +148,9 @@ dataset.zip
 .agent/
 .next/
 .gitnexus
+
+# Local agent/worktree artifacts
+.claude/worktrees/
+.n8nac/
+graphify-out/.graphify_ast.json
+graphify-out/.graphify_incremental.json
