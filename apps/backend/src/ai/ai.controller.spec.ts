@@ -6,10 +6,15 @@ import { AiController } from './ai.controller';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
 import { OllamaService } from './ollama.service';
+import { OpenAiService } from './openai.service';
+import { GenericOpenAiService } from './generic-openai.service';
 import { AiService } from './ai.service';
 import { AiCopilotService } from './ai-copilot.service';
 import { AiReportingService } from './ai-reporting.service';
+import { AiHealthEventService } from './ai-health-event.service';
 import { RagObservabilityService } from './rag-observability.service';
+import { GeminiService } from './gemini.service';
+import { PreReimportInspectService } from './pre-reimport-inspect.service';
 import { StorageService } from '../common/services/storage.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -37,11 +42,16 @@ function makeMockJob(state: string, returnvalue: unknown = null, failedReason = 
 const mockAiQueryService = { query: jest.fn(), getTelemetryMetrics: jest.fn() };
 const mockEmbeddingService = { search: jest.fn(), reindexAll: jest.fn() };
 const mockOllamaService = {};
+const mockOpenAiService = {};
+const mockGenericOpenAiService = {};
 const mockAiService = { isAvailable: jest.fn(), getHealthStatus: jest.fn(), testProvider: jest.fn(), translate: jest.fn() };
 const mockAiCopilotService = { generateDraft: jest.fn() };
 const mockAiReportingService = { triggerNow: jest.fn() };
 const mockRagObservabilityService = { getMetrics: jest.fn(), recordQuery: jest.fn() };
+const mockAiHealthEventService = { listEvents: jest.fn(), getStats: jest.fn() };
+const mockPreReimportInspectService = { inspect: jest.fn() };
 const mockStorageService = { testConnection: jest.fn() };
+const mockGeminiService = {};
 const mockAiQueue = { getJob: jest.fn() };
 
 // Guard that always allows — used to bypass auth/throttle in unit tests
@@ -54,11 +64,16 @@ async function buildModule(): Promise<TestingModule> {
             { provide: AiQueryService, useValue: mockAiQueryService },
             { provide: EmbeddingService, useValue: mockEmbeddingService },
             { provide: OllamaService, useValue: mockOllamaService },
+            { provide: OpenAiService, useValue: mockOpenAiService },
+            { provide: GenericOpenAiService, useValue: mockGenericOpenAiService },
             { provide: AiService, useValue: mockAiService },
             { provide: AiCopilotService, useValue: mockAiCopilotService },
             { provide: AiReportingService, useValue: mockAiReportingService },
             { provide: RagObservabilityService, useValue: mockRagObservabilityService },
+            { provide: AiHealthEventService, useValue: mockAiHealthEventService },
+            { provide: PreReimportInspectService, useValue: mockPreReimportInspectService },
             { provide: StorageService, useValue: mockStorageService },
+            { provide: GeminiService, useValue: mockGeminiService },
             { provide: getQueueToken('ai-query-processing'), useValue: mockAiQueue },
         ],
     })

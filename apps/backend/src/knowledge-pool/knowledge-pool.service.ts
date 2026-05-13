@@ -123,10 +123,6 @@ export class KnowledgePoolService {
     }
 
     async triggerSync(id: string) {
-        const fs = require('fs');
-        const logPath = '/Users/hazarekiz/Projects/aluplan-support-desk-V02/.gemini/antigravity/brain/90ab88df-1157-4f6c-b860-2c8ed9e88056/scratch/sync_requests.log';
-        fs.appendFileSync(logPath, `${new Date().toISOString()} - Request for ID: ${id}\n`);
-
         const source = await this.prisma.knowledgeSource.findUnique({ where: { id } });
         if (!source) throw new NotFoundException('Source not found');
 

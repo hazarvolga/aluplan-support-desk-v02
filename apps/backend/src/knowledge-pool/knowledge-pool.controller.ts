@@ -19,6 +19,8 @@ import { PrismaService } from '../prisma/prisma.service';
 @Controller('knowledge-pool')
 @UseGuards(JwtAuthGuard, RbacGuard)
 export class KnowledgePoolController {
+    private readonly logger = new Logger(KnowledgePoolController.name);
+
     constructor(
         private readonly knowledgePoolService: KnowledgePoolService,
         private readonly storageService: StorageService,
@@ -148,7 +150,7 @@ export class KnowledgePoolController {
     @Roles('admin', 'super-admin', 'manager', 'support-manager')
     @ApiOperation({ summary: 'Manually trigger a sync for a source' })
     async triggerSync(@Param('id') id: string) {
-        console.log(`[DEBUG] Received sync request for ID: ${id}`);
+        this.logger.debug(`Received sync request for source ${id}`);
         await this.knowledgePoolService.triggerSync(id);
         return { success: true };
     }
@@ -188,4 +190,3 @@ export class KnowledgePoolController {
         }
     }
 }
-

@@ -27,6 +27,9 @@ export interface RAGMetrics {
     avgSimilarityScore: number;
 
     // Knowledge Base Health
+    totalKnowledgeSources: number;
+    parsedKnowledgeSources: number;
+    failedKnowledgeSources: number;
     totalArticleEmbeddings: number;
     totalPoolEmbeddings: number;
     embeddingVersionDistribution: Record<string, number>;
@@ -90,8 +93,19 @@ export class RagObservabilityService {
             .filter(i => i.similarityScore)
             .reduce((sum, i) => sum + Number(i.similarityScore), 0) / (interactions.filter(i => i.similarityScore).length || 1);
 
-        // Embedding counts
-        const [articleEmbCount, poolEmbCount] = await Promise.all([
+        // Knowledge pool and embedding health
+        const [sourceHealth, articleEmbCount, poolEmbCount] = await Promise.all([
+            this.prisma.$queryRaw<Array<{
+                total_sources: bigint;
+                parsed_sources: bigint;
+                failed_sources: bigint;
+            }>>`
+                SELECT
+                    COUNT(*) as total_sources,
+                    COUNT(*) FILTER (WHERE last_synced_at IS NOT NULL AND status IN ('ACTIVE', 'PENDING_REVIEW')) as parsed_sources,
+                    COUNT(*) FILTER (WHERE status = 'FAILED') as failed_sources
+                FROM knowledge_sources
+            `,
             this.prisma.$queryRaw<[{ count: bigint }]>`SELECT COUNT(*) as count FROM knowledge_embeddings`,
             this.prisma.$queryRaw<[{ count: bigint }]>`SELECT COUNT(*) as count FROM knowledge_pool_embeddings`,
         ]);
@@ -121,6 +135,9 @@ export class RagObservabilityService {
             noMatchRate: Math.round((noMatch / total) * 100),
             deflectionRate: Math.round((autoAnswered / total) * 100),
             avgSimilarityScore: Math.round(avgSimilarity * 1000) / 1000,
+            totalKnowledgeSources: Number(sourceHealth[0]?.total_sources || 0),
+            parsedKnowledgeSources: Number(sourceHealth[0]?.parsed_sources || 0),
+            failedKnowledgeSources: Number(sourceHealth[0]?.failed_sources || 0),
             totalArticleEmbeddings: Number(articleEmbCount[0]?.count || 0),
             totalPoolEmbeddings: Number(poolEmbCount[0]?.count || 0),
             embeddingVersionDistribution,
