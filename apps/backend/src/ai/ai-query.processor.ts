@@ -28,21 +28,15 @@ export class AiQueryProcessor extends WorkerHost {
         try {
             // Standardize channel to queue tracking
             options.channel = options.channel || 'WEB_ASYNC';
-
-            let fullText = '';
-            const generator = this.aiQueryService.queryInternalStream(options);
-
-            for await (const chunk of generator) {
-                fullText += chunk;
-                if (options.userId) {
-                    this.notifications.sendToUser(options.userId, 'AI_CHUNK', {
-                        jobId,
-                        chunk
-                    });
-                }
-            }
-
-            const result = { answer: fullText, status: 'COMPLETED' };
+            const response = await this.aiQueryService.queryInternal(options);
+            const result = {
+                answer: response.answer,
+                answerMode: response.answerMode,
+                interactionId: response.interactionId,
+                confidence: response.confidence,
+                suggestTicket: response.suggestTicket,
+                status: 'COMPLETED',
+            };
 
             // Notify client via WebSocket completion
             if (options.userId) {

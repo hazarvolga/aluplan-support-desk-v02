@@ -42,6 +42,7 @@ export interface AiQueryOptions {
 export interface AiQueryResult {
     query: string;
     answer: string | null;
+    answerMode?: 'LLM' | 'FALLBACK';
     confidence: LocalConfidenceBand;
     sources: Array<{ articleId: string; title: string; similarity: number }>;
     interactionId: string;
@@ -151,6 +152,7 @@ import { StorageService } from '../common/services/storage.service';
 @Injectable()
 export class AiQueryService {
     private readonly logger = new Logger(AiQueryService.name);
+    private readonly DIAGNOSIS_GENERATION_TIMEOUT_MS = 25000;
     constructor(
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
@@ -169,6 +171,18 @@ export class AiQueryService {
         private readonly storage: StorageService,
         private readonly semanticCache: AiSemanticCache,
     ) { }
+
+    private async runDiagnosisGenerationWithTimeout(
+        finalPrompt: string,
+        userQuery: string,
+        kbContent: string,
+        aiParts: AiPart[],
+    ) {
+        return Promise.race([
+            this.ai.reformat(finalPrompt, userQuery, kbContent, aiParts),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), this.DIAGNOSIS_GENERATION_TIMEOUT_MS)),
+        ]);
+    }
 
     async query(options: AiQueryOptions): Promise<any> {
         const { userQuery, userId, channel = 'WEB', hotinfoContext, wait = true } = options;
@@ -216,7 +230,6 @@ export class AiQueryService {
             const jobId = `ai-query-${Date.now()}-${userId || 'guest'}`;
             await this.aiQueue.add('process-query', { options, jobId }, {
                 jobId,
-                removeOnComplete: true,
                 attempts: 2
             });
             this.logger.log(`🚀 AI Query Enqueued: ${jobId}`);
@@ -437,6 +450,7 @@ export class AiQueryService {
         const topResult = results[0] ?? null;
         let confidence: LocalConfidenceBand = 'NO_MATCH';
         let answer: string | null = null;
+        let answerMode: 'LLM' | 'FALLBACK' | undefined;
         let translations: Record<string, string> | undefined;
         let diagnosis: DiagnosisResult | undefined;
 
@@ -467,10 +481,21 @@ export class AiQueryService {
             const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
 
             const genStartTime = Date.now();
-            const aiResult = await this.ai.reformat(finalPrompt, userQuery, results.slice(0, 10).map(r => r.content).join('\n\n'), aiParts);
+            const kbContent = results.slice(0, 10).map(r => r.content).join('\n\n');
+            let aiResult: Awaited<ReturnType<typeof this.ai.reformat>> = null;
+            try {
+                aiResult = await this.runDiagnosisGenerationWithTimeout(finalPrompt, userQuery, kbContent, aiParts);
+            } catch (generationError: any) {
+                this.logger.warn(`⚠️ Diagnosis generation failed: ${generationError?.message ?? generationError}`);
+            }
             this.logger.log(`🔍 [Phase: Generation] Completed in ${Date.now() - genStartTime}ms.`);
 
+            if (!aiResult?.response) {
+                this.logger.warn(`⚠️ Diagnosis generation timed out or returned empty. Falling back to top matched content.`);
+            }
+
             const rawAnswer = aiResult?.response ?? results[0].content;
+            answerMode = aiResult?.response ? 'LLM' : 'FALLBACK';
 
             // Split response by languages (TR, EN, DE)
             const splitResponse = this.parseMultiLangResponse(rawAnswer, options.language || 'auto');
@@ -525,6 +550,7 @@ export class AiQueryService {
                 totalTokens,
                 estimatedCost,
                 userContext: {
+                    answerMode,
                     translations,
                     diagnosis,
                     chunkAnalytics: {
@@ -567,6 +593,7 @@ export class AiQueryService {
             const finalResult: AiQueryResult = {
                 query: userQuery,
                 answer,
+                answerMode,
                 confidence: selfCheck.shouldEscalate ? 'LOW' : confidence,
             sources: isStaff ? results.slice(0, 3).map((r) => ({
                 articleId: r.articleId,

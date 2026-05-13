@@ -317,6 +317,58 @@ describe('AiQueryService', () => {
         });
     });
 
+    describe('queryInternal — answer mode', () => {
+        beforeEach(() => {
+            mockPrismaService.user.findUnique.mockResolvedValue(null);
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [{
+                    articleId: 'art-1',
+                    sourceType: 'ARTICLE',
+                    title: 'Graphics Driver Guide',
+                    content: 'Use the certified graphics driver package.',
+                    similarity: 0.95,
+                    confidence: 'HIGH',
+                }],
+                diagnostics: { topScore: 0.95, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.generate.mockResolvedValue('{"rankings":[{"id":0,"score":95}]}');
+            jest.spyOn(diagnosisService, 'analyze').mockResolvedValue({
+                isProblemShift: false,
+                categoryNames: ['Performance'],
+                matchedKeywords: ['driver'],
+                productName: 'Allplan',
+            } as any);
+        });
+
+        it('returns answerMode=LLM when diagnosis generation succeeds', async () => {
+            mockAiService.reformat.mockResolvedValue({ response: 'Install the latest certified GPU driver.', model: 'gpt-4o-mini' });
+
+            const result = await service.queryInternal({ userQuery: 'How do I update the graphics driver?' });
+
+            expect(result.answerMode).toBe('LLM');
+            expect(result.answer).toContain('Install the latest certified GPU driver.');
+            expect(mockPrismaService.aiInteraction.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    userContext: expect.objectContaining({ answerMode: 'LLM' }),
+                }),
+            }));
+        });
+
+        it('returns answerMode=FALLBACK when diagnosis generation times out or returns null', async () => {
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.queryInternal({ userQuery: 'How do I update the graphics driver?' });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('Use the certified graphics driver package.');
+            expect(mockPrismaService.aiInteraction.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    userContext: expect.objectContaining({ answerMode: 'FALLBACK' }),
+                }),
+            }));
+        });
+    });
+
     describe('submitTelemetry', () => {
         it('should update aiInteraction with accepted status', async () => {
             mockPrismaService.aiInteraction.update.mockResolvedValue({ id: 'int-1', isAccepted: true });
