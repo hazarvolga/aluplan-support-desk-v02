@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Monitor, Cpu, HardDrive, Smartphone, Globe, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { env } from '@/lib/env';
 
 interface Section {
     name: string;
@@ -19,6 +20,17 @@ interface RequirementAccordionProps {
     locale: string;
 }
 
+function getRequirementsEndpoint(locale: string): string {
+    const base = env.apiUrl.replace(/\/+$/, '');
+    const baseWithPrefix = /\/api\/v\d+$/.test(base)
+        ? base
+        : base.endsWith('/api')
+            ? `${base}/v1`
+            : `${base}/api/v1`;
+
+    return `${baseWithPrefix}/auth/system-requirements?locale=${encodeURIComponent(locale)}`;
+}
+
 const RequirementAccordion: React.FC<RequirementAccordionProps> = ({ locale }) => {
     const [requirements, setRequirements] = useState<Requirement[]>([]);
     const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
@@ -27,8 +39,10 @@ const RequirementAccordion: React.FC<RequirementAccordionProps> = ({ locale }) =
     useEffect(() => {
         const fetchRequirements = async () => {
             try {
-                const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-                const res = await fetch(`${baseUrl}/auth/system-requirements?locale=${locale}`);
+                const res = await fetch(getRequirementsEndpoint(locale));
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
                 const data = await res.json();
                 setRequirements(data);
             } catch (error) {

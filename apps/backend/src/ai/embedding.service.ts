@@ -89,7 +89,13 @@ export class EmbeddingService {
      * Semantic similarity search using pgvector with Trust Score re-ranking.
      */
     async search(query: string, limit = 5, productId?: string | null, includeInternal = false): Promise<SearchResponse> {
-        const embResult = await this.ai.embed(query);
+        let embResult: Awaited<ReturnType<typeof this.ai.embed>>;
+        try {
+            embResult = await this.ai.embed(query);
+        } catch (err: any) {
+            this.logger.warn(`Semantic search unavailable — embed failed: ${err?.message ?? err}`);
+            return { results: [], diagnostics: { topScore: 0, passedThreshold: 0, queryEmbeddingModel: 'unknown', thresholdUsed: 0 } };
+        }
         if (!embResult) {
             this.logger.warn('Semantic search unavailable — AI offline');
             return { results: [], diagnostics: { topScore: 0, passedThreshold: 0, queryEmbeddingModel: 'unknown', thresholdUsed: 0 } };
@@ -279,7 +285,13 @@ export class EmbeddingService {
     }
 
     async searchTickets(query: string, limit = 3): Promise<Array<{ ticketId: string; subject: string; similarity: number }>> {
-        const embResult = await this.ai.embed(query);
+        let embResult: Awaited<ReturnType<typeof this.ai.embed>>;
+        try {
+            embResult = await this.ai.embed(query);
+        } catch (err: any) {
+            this.logger.warn(`Ticket search unavailable — embed failed: ${err?.message ?? err}`);
+            return [];
+        }
         if (!embResult) return [];
         const config = await this.registry.getActiveVersionConfig();
 

@@ -2,6 +2,7 @@ import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Request, 
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -14,7 +15,10 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService) { }
+    constructor(
+        private readonly authService: AuthService,
+        private readonly config: ConfigService,
+    ) { }
 
     @Public()
     @Post('login')
@@ -26,7 +30,7 @@ export class AuthController {
     async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
         const tokens = await this.authService.login(dto);
 
-        const isProd = process.env.NODE_ENV === 'production';
+        const isProd = this.config.get('NODE_ENV') === 'production';
         const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
 
         res.cookie('alu_at', tokens.access_token, {
@@ -61,7 +65,7 @@ export class AuthController {
     async refresh(@Request() req: any, @Res({ passthrough: true }) res: Response) {
         const tokens = await this.authService.refreshTokens(req.user.sub, req.user.refreshToken);
 
-        const isProd = process.env.NODE_ENV === 'production';
+        const isProd = this.config.get('NODE_ENV') === 'production';
         const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
 
         res.cookie('alu_at', tokens.access_token, {
@@ -95,7 +99,7 @@ export class AuthController {
     async logout(@Request() req: any, @Res({ passthrough: true }) res: Response) {
         const result = await this.authService.logout(req.user.sub, req.user.jti);
 
-        const isProd = process.env.NODE_ENV === 'production';
+        const isProd = this.config.get('NODE_ENV') === 'production';
         const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
         res.clearCookie('alu_at', { path: '/', sameSite: 'lax', secure: isProd, domain: cookieDomain });
         res.clearCookie('alu_rt', { path: '/api/v1/auth/refresh', sameSite: 'lax', secure: isProd, domain: cookieDomain });

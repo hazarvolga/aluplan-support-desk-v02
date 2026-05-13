@@ -44,8 +44,8 @@ export class PromptsService {
                 });
             } else if (name === 'SYSTEM_PROMPT_SUPPORT') {
                 // FORCE UPDATE: Auto-heal the DB prompt when it's outdated
-                // Check for the new diagnosis engine strategy as version marker
-                if (!exists.content.includes('DIAGNOSIS STRATEGY')) {
+                // Marker: CHECK B — Topic Coverage (CRITICAL GATE) is the v2 indicator
+                if (!exists.content.includes('CHECK B — Topic Coverage (CRITICAL GATE)')) {
                     this.logger.warn(`⚠️ Prompt '${name}' in DB is outdated. Auto-healing with latest version.`);
                     await this.prisma.promptTemplate.update({
                         where: { id: exists.id },

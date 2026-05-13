@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SettingsService } from '../settings.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CryptoService } from '../../utils/crypto.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('SettingsService', () => {
     let service: SettingsService;
@@ -29,6 +30,7 @@ describe('SettingsService', () => {
                 SettingsService,
                 { provide: PrismaService, useValue: mockPrismaService },
                 { provide: CryptoService, useValue: mockCryptoService },
+                { provide: EventEmitter2, useValue: { emit: jest.fn() } },
             ],
         }).compile();
 

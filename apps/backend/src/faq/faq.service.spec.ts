@@ -4,7 +4,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { AiService } from '../ai/ai.service';
 import { EmbeddingService } from '../ai/embedding.service';
+import { EmbeddingVersionRegistry } from '../ai/embedding-version.registry';
+import { SettingsService } from '../settings/settings.service';
 import { mockPrismaService } from '../test/mock.utils';
+
+const mockEmbeddingVersionRegistry = {
+    getActiveVersionConfig: jest.fn().mockResolvedValue({ version: 'v3s', dimension: 1536, provider: 'openai', model: 'text-embedding-3-small' }),
+    getVersionConfig: jest.fn().mockReturnValue({ version: 'v3s', dimension: 1536 }),
+};
+
+const mockSettingsService = {
+    getValue: jest.fn().mockResolvedValue(null),
+};
 
 describe('FaqService - Knowledge Base CRUD', () => {
     let service: FaqService;
@@ -36,6 +47,8 @@ describe('FaqService - Knowledge Base CRUD', () => {
                 { provide: getQueueToken('kb-summarizer'), useValue: mockQueue },
                 { provide: AiService, useValue: mockAiService },
                 { provide: EmbeddingService, useValue: { indexPoolContent: jest.fn() } },
+                { provide: EmbeddingVersionRegistry, useValue: mockEmbeddingVersionRegistry },
+                { provide: SettingsService, useValue: mockSettingsService },
             ],
         }).compile();
 

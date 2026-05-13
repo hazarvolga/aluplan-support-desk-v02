@@ -80,6 +80,7 @@
         "html-to-text": "^9.0.5",
         "imap-simple": "^5.1.0",
         "ioredis": "^5.9.3",
+        "js-tiktoken": "^1.0.21",
         "jsdom": "^28.1.0",
         "jsonwebtoken": "^9.0.3",
         "langfuse": "^3.38.6",

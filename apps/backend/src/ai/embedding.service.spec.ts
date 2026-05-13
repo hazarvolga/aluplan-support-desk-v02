@@ -2,9 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EmbeddingService, SearchResponse } from './embedding.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
+import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-describe('EmbeddingService [TODO: mocks need update for current implementation]', () => {
+const mockEmbeddingVersionRegistry = {
+    getActiveVersionConfig: jest.fn().mockResolvedValue({
+        version: 'v3s', dimension: 1536, provider: 'openai', model: 'text-embedding-3-small',
+    }),
+    getVersionConfig: jest.fn().mockReturnValue({ version: 'v3s', dimension: 1536 }),
+};
+
+describe('EmbeddingService', () => {
     let service: EmbeddingService;
     let mockPrismaService: any;
     let mockAiService: any;
@@ -42,6 +50,7 @@ describe('EmbeddingService [TODO: mocks need update for current implementation]'
                 { provide: PrismaService, useValue: mockPrismaService },
                 { provide: AiService, useValue: mockAiService },
                 { provide: EventEmitter2, useValue: mockEventEmitter },
+                { provide: EmbeddingVersionRegistry, useValue: mockEmbeddingVersionRegistry },
             ],
         }).compile();
 
@@ -94,7 +103,7 @@ describe('EmbeddingService [TODO: mocks need update for current implementation]'
             expect(result.results[0].articleId).toBe('art-1');
             expect(result.results[0].confidence).toBe('HIGH');
             expect(result.diagnostics.topScore).toBeCloseTo(0.92);
-            expect(result.diagnostics.queryEmbeddingModel).toBe('nomic-embed-text');
+            expect(result.diagnostics.queryEmbeddingModel).toBe('text-embedding-3-small');
         });
 
         it('should apply confidence tiers correctly', async () => {

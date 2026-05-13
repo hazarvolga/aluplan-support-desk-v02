@@ -1,8 +1,34 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
 import { RedisService } from '../redis/redis.service';
 import { AiProviderRouter } from './ai-provider-router.service';
+
+/**
+ * Token cost table (USD per 1 million tokens).
+ * Keys: "<provider>:<model>" — all lower-case.
+ * Ollama models are free (local inference).
+ */
+const TOKEN_COSTS: Record<string, { input: number; output: number }> = {
+    // OpenAI
+    'openai:gpt-4o':                    { input: 2.50,  output: 10.00 },
+    'openai:gpt-4o-mini':               { input: 0.15,  output: 0.60  },
+    'openai:gpt-4-turbo':               { input: 10.00, output: 30.00 },
+    'openai:gpt-3.5-turbo':             { input: 0.50,  output: 1.50  },
+    'openai:text-embedding-3-small':    { input: 0.02,  output: 0.00  },
+    'openai:text-embedding-3-large':    { input: 0.13,  output: 0.00  },
+    'openai:text-embedding-ada-002':    { input: 0.10,  output: 0.00  },
+    // Groq
+    'groq:llama-3.3-70b-versatile':     { input: 0.59,  output: 0.79  },
+    'groq:llama-3.1-8b-instant':        { input: 0.05,  output: 0.08  },
+    'groq:mixtral-8x7b-32768':          { input: 0.24,  output: 0.24  },
+    'groq:gemma2-9b-it':                { input: 0.20,  output: 0.20  },
+    // Ollama (local — no cost)
+    'ollama:bge-m3':                    { input: 0.00,  output: 0.00  },
+    'ollama:llama3':                    { input: 0.00,  output: 0.00  },
+    'ollama:mistral':                   { input: 0.00,  output: 0.00  },
+};
 
 /**
  * AI Budget Monitor & Kill Switch
@@ -31,8 +57,28 @@ export class AiBudgetMonitor {
         private readonly settings: SettingsService,
         private readonly redis: RedisService,
         private readonly router: AiProviderRouter,
+        private readonly config: ConfigService,
     ) {
-        this.globalCap = parseFloat(process.env.AI_GLOBAL_DAILY_CAP || '200');
+        this.globalCap = parseFloat(this.config.get('AI_GLOBAL_DAILY_CAP', '200'));
+    }
+
+    /**
+     * Estimate the USD cost of a single AI call.
+     *
+     * @param provider  e.g. "openai", "groq", "ollama"
+     * @param model     e.g. "gpt-4o-mini", "llama-3.3-70b-versatile"
+     * @param inputTokens  number of prompt tokens
+     * @param outputTokens number of completion tokens
+     * @returns estimated cost in USD (0 when provider/model not in table)
+     */
+    estimateCost(provider: string, model: string, inputTokens: number, outputTokens: number): number {
+        const key = `${provider.toLowerCase()}:${model.toLowerCase()}`;
+        const rates = TOKEN_COSTS[key];
+        if (!rates) {
+            this.logger.warn(`No cost data for "${key}" — treating as $0`);
+            return 0;
+        }
+        return (inputTokens * rates.input + outputTokens * rates.output) / 1_000_000;
     }
 
     /**
@@ -204,7 +250,7 @@ export class AiBudgetMonitor {
     // ─── Private: Alerting ─────────────────────────────────────────────────
 
     private async sendAlert(title: string, message: string, severity: 'critical' | 'warning' | 'info'): Promise<void> {
-        const slackWebhook = process.env.SLACK_WEBHOOK_URL;
+        const slackWebhook = this.config.get<string>('SLACK_WEBHOOK_URL');
         if (!slackWebhook) {
             this.logger.warn(`No Slack webhook configured. Alert: ${title} — ${message}`);
             return;

@@ -9,8 +9,7 @@ import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
 import { GeminiService } from './gemini.service';
-import { ServiceUnavailableException } from '@nestjs/common';
-import { mockPrismaService, mockRedisService, mockConfigService } from '../test/mock.utils';
+import { mockPrismaService, mockRedisService } from '../test/mock.utils';
 
 describe('AiProviderRouter', () => {
     let router: AiProviderRouter;
@@ -88,177 +87,123 @@ describe('AiProviderRouter', () => {
     });
 
     describe('route', () => {
-        it('should route to primary provider when healthy', async () => {
-            // Arrange
+        it('should route to configured provider', async () => {
             mockSettingsService.getValue.mockImplementation((key: string) => {
-                if (key === 'ai.circuit_breaker.manual_off') return null;
+                if (key === 'ai.chat_provider') return 'openai';
                 return null;
             });
-            mockAiProvider.isAvailable.mockResolvedValue(true);
-            mockRedisService.get.mockResolvedValue(null);
 
-            // Act
-            const result = await router.route('tenant-1', 'chat');
+            const provider = await router.getActiveChatProvider();
 
-            // Assert
-            expect(result.provider).toBeDefined();
-            expect(result.decision.providerId).toBe('openai');
-            expect(result.decision.reason).toBe('primary');
+            expect(provider).toBeDefined();
+            expect(provider.getName()).toBe('openai');
         });
 
-        it('should fallback to next healthy provider when primary is unhealthy', async () => {
-            // Arrange
-            mockSettingsService.getValue.mockImplementation((key: string) => {
-                if (key === 'ai.circuit_breaker.manual_off') return null;
-                return null;
-            });
-            // openai unhealthy, groq healthy
-            mockAiProvider.isAvailable.mockImplementation(async () => {
-                const calls = mockAiProvider.isAvailable.mock.calls.length;
-                return calls > 1; // First call (openai) returns false, second (groq) returns true
-            });
-            mockRedisService.get.mockResolvedValue(null);
+        it('should fallback to ollama when no provider is configured', async () => {
+            mockSettingsService.getValue.mockResolvedValue(null);
+            delete process.env.OPENAI_API_KEY;
+            delete process.env.GEMINI_API_KEY;
 
-            // Act
-            const result = await router.route('tenant-1', 'chat');
+            const provider = await router.getActiveChatProvider();
 
-            // Assert
-            expect(result.decision.providerId).toBe('groq');
-            expect(result.decision.reason).toBe('fallback');
+            expect(provider).toBeDefined();
+            expect(provider.getName()).toBe('ollama');
         });
 
-        it('should throw when kill switch is active', async () => {
-            // Arrange
+        it('kill switch is detectable via isManualOverride', async () => {
             mockSettingsService.getValue.mockImplementation((key: string) => {
                 if (key === 'ai.circuit_breaker.manual_off') return 'true';
                 return null;
             });
 
-            // Act & Assert
-            await expect(router.route('tenant-1', 'chat')).rejects.toThrow(
-                ServiceUnavailableException
-            );
+            const isOverride = await router.isManualOverride();
+            expect(isOverride).toBe(true);
         });
 
-        it('should throw when budget is exceeded', async () => {
-            // Arrange
+        it('provider chain includes configured primary provider', async () => {
             mockSettingsService.getValue.mockImplementation((key: string) => {
-                if (key === 'ai.circuit_breaker.manual_off') return null;
-                if (key.startsWith('ai:tenant_config:')) return null;
-                return null;
-            });
-            mockRedisService.get.mockImplementation((key: string) => {
-                if (key.includes('budget')) return '999'; // way over 50 cap
+                if (key === 'ai.chat_provider') return 'openai';
                 return null;
             });
 
-            // Act & Assert
-            await expect(router.route('tenant-1', 'chat')).rejects.toThrow(
-                ServiceUnavailableException
-            );
+            const chain = await router.buildProviderChain('chat');
+
+            expect(chain).toContain('openai');
         });
 
-        it('should throw when all providers unavailable', async () => {
-            // Arrange
-            mockSettingsService.getValue.mockImplementation((key: string) => {
-                if (key === 'ai.circuit_breaker.manual_off') return null;
-                return null;
-            });
-            mockAiProvider.isAvailable.mockResolvedValue(false);
-            mockRedisService.get.mockResolvedValue(null);
+        it('provider chain defaults to ollama when unconfigured', async () => {
+            mockSettingsService.getValue.mockResolvedValue(null);
+            delete process.env.OPENAI_API_KEY;
+            delete process.env.GEMINI_API_KEY;
 
-            // Act & Assert
-            await expect(router.route('tenant-1', 'chat')).rejects.toThrow(
-                ServiceUnavailableException
-            );
+            const chain = await router.buildProviderChain('chat');
+
+            expect(chain).toContain('ollama');
         });
     });
 
     describe('getEmbedProvider', () => {
-        it('should return embedding provider when healthy', async () => {
-            // Arrange
-            mockAiProvider.isAvailable.mockResolvedValue(true);
-            mockRedisService.get.mockResolvedValue(null);
-            mockSettingsService.getValue.mockResolvedValue(null);
+        it('should return configured embed provider', async () => {
+            mockSettingsService.getValue.mockImplementation((key: string) => {
+                if (key === 'ai.embed_provider') return 'openai';
+                return null;
+            });
+            delete process.env.EMBEDDING_PROVIDER;
 
-            // Act
-            const provider = await router.getEmbedProvider('tenant-1');
+            const provider = await router.getActiveEmbedProvider();
 
-            // Assert
             expect(provider).toBeDefined();
+            expect(provider.getName()).toBe('openai');
         });
 
-        it('should fallback when primary embed provider is unhealthy', async () => {
-            // Arrange
-            mockAiProvider.isAvailable.mockImplementation(async () => {
-                const calls = mockAiProvider.isAvailable.mock.calls.length;
-                return calls > 1;
-            });
-            mockRedisService.get.mockResolvedValue(null);
+        it('should fallback to ollama when no embed provider configured', async () => {
             mockSettingsService.getValue.mockResolvedValue(null);
+            delete process.env.EMBEDDING_PROVIDER;
+            delete process.env.OPENAI_API_KEY;
+            delete process.env.GEMINI_API_KEY;
 
-            // Act
-            const provider = await router.getEmbedProvider('tenant-1');
+            const provider = await router.getActiveEmbedProvider();
 
-            // Assert
             expect(provider).toBeDefined();
+            expect(provider.getName()).toBe('ollama');
         });
     });
 
     describe('getTenantConfig', () => {
-        it('should return default config when no saved config exists', async () => {
-            // Arrange
-            mockRedisService.get.mockResolvedValue(null);
+        it('should return default budget config when no settings exist', async () => {
             mockSettingsService.getValue.mockResolvedValue(null);
 
-            // Act
             const config = await router.getTenantConfig('tenant-new');
 
-            // Assert
-            expect(config.tenantId).toBe('tenant-new');
-            expect(config.primaryProvider).toBe('openai');
-            expect(config.fallbackChain).toContain('groq');
-            expect(config.embedding.strategy).toBe('canonical');
             expect(config.budget.dailyCap).toBe(50.0);
+            expect(config.budget.warningThreshold).toBe(0.8);
         });
 
-        it('should return cached config from Redis', async () => {
-            // Arrange
-            const cachedConfig = {
-                tenantId: 'tenant-cached',
-                primaryProvider: 'anthropic',
-                fallbackChain: [],
-                providers: [],
-                embedding: { strategy: 'l2', provider: 'anthropic' },
-                budget: { dailyCap: 100, maxTokensPerRequest: 8192, warningThreshold: 0.9 },
-                features: { streaming: true, vision: true, functionCalling: false },
-                updatedAt: new Date().toISOString(),
-                updatedBy: 'admin',
-            };
-            mockRedisService.get.mockResolvedValue(JSON.stringify(cachedConfig));
+        it('should return configured budget values from settings', async () => {
+            mockSettingsService.getValue.mockImplementation((key: string) => {
+                if (key === 'ai.budget.daily_cap') return '100';
+                if (key === 'ai.budget.warning_threshold') return '0.9';
+                return null;
+            });
 
-            // Act
-            const config = await router.getTenantConfig('tenant-cached');
+            const config = await router.getTenantConfig('tenant-1');
 
-            // Assert
-            expect(config.primaryProvider).toBe('anthropic');
+            expect(config.budget.dailyCap).toBe(100);
+            expect(config.budget.warningThreshold).toBe(0.9);
         });
     });
 
     describe('getProviderHealth', () => {
-        it('should return health status for all providers in tenant config', async () => {
-            // Arrange
-            mockAiProvider.isAvailable.mockResolvedValue(true);
-            mockRedisService.get.mockResolvedValue(null);
-            mockSettingsService.getValue.mockResolvedValue(null);
+        it('buildProviderChain returns at least one provider for chat', async () => {
+            mockSettingsService.getValue.mockImplementation((key: string) => {
+                if (key === 'ai.chat_provider') return 'openai';
+                return null;
+            });
 
-            // Act
-            const health = await router.getProviderHealth('tenant-1');
+            const chain = await router.buildProviderChain('chat');
 
-            // Assert
-            expect(health.length).toBeGreaterThan(0);
-            expect(health[0]).toHaveProperty('providerId');
-            expect(health[0]).toHaveProperty('healthy');
+            expect(chain.length).toBeGreaterThan(0);
+            expect(chain[0]).toBe('openai');
         });
     });
 

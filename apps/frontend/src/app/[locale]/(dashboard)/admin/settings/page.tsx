@@ -50,6 +50,18 @@ export default function AdminSettingsPage() {
     const [imapTesting, setImapTesting] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [aiHealth, setAiHealth] = useState<any>(null);
+    type ModelList = {
+        chatModels: Array<{ id: string; displayName: string; recommended: boolean }>;
+        embedModels: Array<{ id: string; displayName: string; recommended: boolean }>;
+    };
+    const [geminiModels, setGeminiModels] = useState<ModelList | null>(null);
+    const [loadingGeminiModels, setLoadingGeminiModels] = useState(false);
+    const [openaiModels, setOpenaiModels] = useState<ModelList | null>(null);
+    const [loadingOpenaiModels, setLoadingOpenaiModels] = useState(false);
+    const [groqModels, setGroqModels] = useState<ModelList | null>(null);
+    const [loadingGroqModels, setLoadingGroqModels] = useState(false);
+    const [ollamaModels, setOllamaModels] = useState<ModelList | null>(null);
+    const [loadingOllamaModels, setLoadingOllamaModels] = useState(false);
 
     // SLA States
     const [policies, setPolicies] = useState<any[]>([]);
@@ -550,14 +562,43 @@ export default function AdminSettingsPage() {
                                                 <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
                                                     <Bot className="h-4 w-4" /> {t('ai.ollama.title')}
                                                 </h3>
-                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                    try {
-                                                        const res = await api.ai.testConnection('ollama');
-                                                        toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || (res.success ? t('toasts.ollama_ok') : t('toasts.ollama_fail')), variant: res.success ? 'default' : 'destructive' });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
-                                                    }
-                                                }}>{t('ai.test_btn')}</Button>
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 px-2 text-[10px] text-blue-400 hover:bg-blue-500/10"
+                                                        disabled={loadingOllamaModels}
+                                                        onClick={async () => {
+                                                            setLoadingOllamaModels(true);
+                                                            try {
+                                                                const result = await api.ai.listModels('ollama', undefined, getSetting('ai.ollama.url'));
+                                                                setOllamaModels(result);
+                                                                if (!getSetting('ai.ollama.chat_model')) {
+                                                                    const rec = result.chatModels.find((m: { recommended: boolean }) => m.recommended);
+                                                                    if (rec) updateValue('ai.ollama.chat_model', rec.id);
+                                                                }
+                                                                if (!getSetting('ai.ollama.embed_model')) {
+                                                                    const rec = result.embedModels.find((m: { recommended: boolean }) => m.recommended);
+                                                                    if (rec) updateValue('ai.ollama.embed_model', rec.id);
+                                                                }
+                                                            } catch (e: any) {
+                                                                toast({ title: 'Model listesi alınamadı', description: e.message, variant: 'destructive' });
+                                                            } finally {
+                                                                setLoadingOllamaModels(false);
+                                                            }
+                                                        }}
+                                                    >
+                                                        {loadingOllamaModels ? '⏳ Yükleniyor...' : '🔍 Modelleri Listele'}
+                                                    </Button>
+                                                    <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                        try {
+                                                            const res = await api.ai.testConnection('ollama');
+                                                            toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || (res.success ? t('toasts.ollama_ok') : t('toasts.ollama_fail')), variant: res.success ? 'default' : 'destructive' });
+                                                        } catch (e: any) {
+                                                            toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                        }
+                                                    }}>{t('ai.test_btn')}</Button>
+                                                </div>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs">{t('ai.base_url')}</Label>
@@ -566,11 +607,39 @@ export default function AdminSettingsPage() {
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
                                                     <Label className="text-xs">{t('ai.ollama.chat_model')}</Label>
-                                                    <Input value={getSetting('ai.ollama.chat_model')} onChange={e => updateValue('ai.ollama.chat_model', e.target.value)} placeholder="llama3.2:3b" className="bg-black/50 h-8 text-sm" />
+                                                    {ollamaModels && ollamaModels.chatModels.length > 0 ? (
+                                                        <select
+                                                            value={getSetting('ai.ollama.chat_model')}
+                                                            onChange={e => updateValue('ai.ollama.chat_model', e.target.value)}
+                                                            className="bg-black/50 h-8 text-sm rounded border border-border/50 w-full px-2"
+                                                        >
+                                                            {ollamaModels.chatModels.map(m => (
+                                                                <option key={m.id} value={m.id}>
+                                                                    {m.recommended ? `⭐ ${m.displayName}` : m.displayName}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <Input value={getSetting('ai.ollama.chat_model')} onChange={e => updateValue('ai.ollama.chat_model', e.target.value)} placeholder="llama3.2:3b" className="bg-black/50 h-8 text-sm" />
+                                                    )}
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-xs">{t('ai.ollama.embed_model')}</Label>
-                                                    <Input value={getSetting('ai.ollama.embed_model')} onChange={e => updateValue('ai.ollama.embed_model', e.target.value)} placeholder="nomic-embed-text" className="bg-black/50 h-8 text-sm" />
+                                                    {ollamaModels && ollamaModels.embedModels.length > 0 ? (
+                                                        <select
+                                                            value={getSetting('ai.ollama.embed_model')}
+                                                            onChange={e => updateValue('ai.ollama.embed_model', e.target.value)}
+                                                            className="bg-black/50 h-8 text-sm rounded border border-border/50 w-full px-2"
+                                                        >
+                                                            {ollamaModels.embedModels.map(m => (
+                                                                <option key={m.id} value={m.id}>
+                                                                    {m.recommended ? `⭐ ${m.displayName}` : m.displayName}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <Input value={getSetting('ai.ollama.embed_model')} onChange={e => updateValue('ai.ollama.embed_model', e.target.value)} placeholder="nomic-embed-text" className="bg-black/50 h-8 text-sm" />
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -583,14 +652,43 @@ export default function AdminSettingsPage() {
                                                 <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
                                                     <Globe className="h-4 w-4" /> {t('ai.openai.title')}
                                                 </h3>
-                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                    try {
-                                                        const res = await api.ai.testConnection('openai');
-                                                        toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || (res.success ? t('toasts.openai_ok') : t('toasts.openai_fail')), variant: res.success ? 'default' : 'destructive' });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
-                                                    }
-                                                }}>{t('ai.test_btn')}</Button>
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 px-2 text-[10px] text-blue-400 hover:bg-blue-500/10"
+                                                        disabled={loadingOpenaiModels}
+                                                        onClick={async () => {
+                                                            setLoadingOpenaiModels(true);
+                                                            try {
+                                                                const result = await api.ai.listModels('openai', getSetting('ai.openai.api_key'));
+                                                                setOpenaiModels(result);
+                                                                if (!getSetting('ai.openai.chat_model')) {
+                                                                    const rec = result.chatModels.find((m: { recommended: boolean }) => m.recommended);
+                                                                    if (rec) updateValue('ai.openai.chat_model', rec.id);
+                                                                }
+                                                                if (!getSetting('ai.openai.embed_model')) {
+                                                                    const rec = result.embedModels.find((m: { recommended: boolean }) => m.recommended);
+                                                                    if (rec) updateValue('ai.openai.embed_model', rec.id);
+                                                                }
+                                                            } catch (e: any) {
+                                                                toast({ title: 'Model listesi alınamadı', description: e.message, variant: 'destructive' });
+                                                            } finally {
+                                                                setLoadingOpenaiModels(false);
+                                                            }
+                                                        }}
+                                                    >
+                                                        {loadingOpenaiModels ? '⏳ Yükleniyor...' : '🔍 Modelleri Listele'}
+                                                    </Button>
+                                                    <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                        try {
+                                                            const res = await api.ai.testConnection('openai');
+                                                            toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || (res.success ? t('toasts.openai_ok') : t('toasts.openai_fail')), variant: res.success ? 'default' : 'destructive' });
+                                                        } catch (e: any) {
+                                                            toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                        }
+                                                    }}>{t('ai.test_btn')}</Button>
+                                                </div>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs">{t('ai.api_key')}</Label>
@@ -599,11 +697,39 @@ export default function AdminSettingsPage() {
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
                                                     <Label className="text-xs">{t('ai.openai.chat_model')}</Label>
-                                                    <Input value={getSetting('ai.openai.chat_model')} onChange={e => updateValue('ai.openai.chat_model', e.target.value)} placeholder="gpt-4o-mini" className="bg-black/50 h-8 text-sm" />
+                                                    {openaiModels && openaiModels.chatModels.length > 0 ? (
+                                                        <select
+                                                            value={getSetting('ai.openai.chat_model')}
+                                                            onChange={e => updateValue('ai.openai.chat_model', e.target.value)}
+                                                            className="bg-black/50 h-8 text-sm rounded border border-border/50 w-full px-2"
+                                                        >
+                                                            {openaiModels.chatModels.map(m => (
+                                                                <option key={m.id} value={m.id}>
+                                                                    {m.recommended ? `⭐ ${m.displayName}` : m.displayName}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <Input value={getSetting('ai.openai.chat_model')} onChange={e => updateValue('ai.openai.chat_model', e.target.value)} placeholder="gpt-4o-mini" className="bg-black/50 h-8 text-sm" />
+                                                    )}
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-xs">{t('ai.openai.embed_model')}</Label>
-                                                    <Input value={getSetting('ai.openai.embed_model')} onChange={e => updateValue('ai.openai.embed_model', e.target.value)} placeholder="text-embedding-3-small" className="bg-black/50 h-8 text-sm" />
+                                                    {openaiModels && openaiModels.embedModels.length > 0 ? (
+                                                        <select
+                                                            value={getSetting('ai.openai.embed_model')}
+                                                            onChange={e => updateValue('ai.openai.embed_model', e.target.value)}
+                                                            className="bg-black/50 h-8 text-sm rounded border border-border/50 w-full px-2"
+                                                        >
+                                                            {openaiModels.embedModels.map(m => (
+                                                                <option key={m.id} value={m.id}>
+                                                                    {m.recommended ? `⭐ ${m.displayName}` : m.displayName}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <Input value={getSetting('ai.openai.embed_model')} onChange={e => updateValue('ai.openai.embed_model', e.target.value)} placeholder="text-embedding-3-small" className="bg-black/50 h-8 text-sm" />
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -657,14 +783,43 @@ export default function AdminSettingsPage() {
                                                 <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
                                                     <Sparkles className="h-4 w-4 text-teal-500" /> {t('ai.gemini.title')}
                                                 </h3>
-                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3 border-teal-500/20 text-teal-500 hover:bg-teal-500/10" onClick={async () => {
-                                                    try {
-                                                        const res = await api.ai.testConnection('gemini');
-                                                        toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || 'Google Gemini Studio bağlantısı başarılı.', variant: res.success ? 'default' : 'destructive' });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: 'Gemini API ulaşılamıyor', variant: 'destructive' });
-                                                    }
-                                                }}>{t('ai.test_btn')}</Button>
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 px-2 text-[10px] text-blue-400 hover:bg-blue-500/10"
+                                                        disabled={loadingGeminiModels}
+                                                        onClick={async () => {
+                                                            setLoadingGeminiModels(true);
+                                                            try {
+                                                                const result = await api.ai.listModels('gemini', getSetting('ai.gemini.api_key'));
+                                                                setGeminiModels(result);
+                                                                if (!getSetting('ai.gemini.chat_model')) {
+                                                                    const rec = result.chatModels.find((m: { recommended: boolean }) => m.recommended);
+                                                                    if (rec) updateValue('ai.gemini.chat_model', rec.id);
+                                                                }
+                                                                if (!getSetting('ai.gemini.embed_model')) {
+                                                                    const rec = result.embedModels.find((m: { recommended: boolean }) => m.recommended);
+                                                                    if (rec) updateValue('ai.gemini.embed_model', rec.id);
+                                                                }
+                                                            } catch (e: any) {
+                                                                toast({ title: 'Model listesi alınamadı', description: e.message, variant: 'destructive' });
+                                                            } finally {
+                                                                setLoadingGeminiModels(false);
+                                                            }
+                                                        }}
+                                                    >
+                                                        {loadingGeminiModels ? '⏳ Yükleniyor...' : '🔍 Modelleri Listele'}
+                                                    </Button>
+                                                    <Button size="sm" variant="outline" className="h-7 text-xs px-3 border-teal-500/20 text-teal-500 hover:bg-teal-500/10" onClick={async () => {
+                                                        try {
+                                                            const res = await api.ai.testConnection('gemini');
+                                                            toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || 'Google Gemini Studio bağlantısı başarılı.', variant: res.success ? 'default' : 'destructive' });
+                                                        } catch (e: any) {
+                                                            toast({ title: t('toasts.connection_error'), description: 'Gemini API ulaşılamıyor', variant: 'destructive' });
+                                                        }
+                                                    }}>{t('ai.test_btn')}</Button>
+                                                </div>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs">{t('ai.gemini.api_key')}</Label>
@@ -673,58 +828,86 @@ export default function AdminSettingsPage() {
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
                                                     <Label className="text-xs">{t('ai.gemini.chat_model')}</Label>
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <Input 
-                                                            list="gemini-chat-models"
-                                                            value={getSetting('ai.gemini.chat_model')} 
-                                                            onChange={e => updateValue('ai.gemini.chat_model', e.target.value)} 
-                                                            placeholder="gemini-1.5-flash" 
-                                                            className="bg-black/50 h-8 text-sm" 
-                                                        />
-                                                        <datalist id="gemini-chat-models">
-                                                            <option value="gemini-1.5-flash" />
-                                                            <option value="gemini-1.5-pro" />
-                                                            <option value="gemini-2.0-flash-exp" />
-                                                        </datalist>
-                                                        <div className="flex gap-1">
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                className="h-5 px-1.5 text-[9px] hover:bg-teal-500/20 text-teal-500"
-                                                                onClick={() => updateValue('ai.gemini.chat_model', 'gemini-1.5-flash')}
-                                                            >
-                                                                Flash 1.5
-                                                            </Button>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                className="h-5 px-1.5 text-[9px] hover:bg-teal-500/20 text-teal-500"
-                                                                onClick={() => updateValue('ai.gemini.chat_model', 'gemini-2.0-flash-exp')}
-                                                            >
-                                                                Flash 2.0 (Exp)
-                                                            </Button>
+                                                    {geminiModels && geminiModels.chatModels.length > 0 ? (
+                                                        <select
+                                                            value={getSetting('ai.gemini.chat_model')}
+                                                            onChange={e => updateValue('ai.gemini.chat_model', e.target.value)}
+                                                            className="bg-black/50 h-8 text-sm rounded border border-border/50 w-full px-2"
+                                                        >
+                                                            {geminiModels.chatModels.map(m => (
+                                                                <option key={m.id} value={m.id}>
+                                                                    {m.recommended ? `⭐ ${m.displayName}` : m.displayName}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <Input
+                                                                list="gemini-chat-models"
+                                                                value={getSetting('ai.gemini.chat_model')}
+                                                                onChange={e => updateValue('ai.gemini.chat_model', e.target.value)}
+                                                                placeholder="gemini-1.5-flash"
+                                                                className="bg-black/50 h-8 text-sm"
+                                                            />
+                                                            <datalist id="gemini-chat-models">
+                                                                <option value="gemini-1.5-flash" />
+                                                                <option value="gemini-1.5-pro" />
+                                                                <option value="gemini-2.0-flash-exp" />
+                                                            </datalist>
+                                                            <div className="flex gap-1">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    className="h-5 px-1.5 text-[9px] hover:bg-teal-500/20 text-teal-500"
+                                                                    onClick={() => updateValue('ai.gemini.chat_model', 'gemini-1.5-flash')}
+                                                                >
+                                                                    Flash 1.5
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    className="h-5 px-1.5 text-[9px] hover:bg-teal-500/20 text-teal-500"
+                                                                    onClick={() => updateValue('ai.gemini.chat_model', 'gemini-2.0-flash-exp')}
+                                                                >
+                                                                    Flash 2.0 (Exp)
+                                                                </Button>
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    )}
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-xs">Vektör Modeli</Label>
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <Input 
-                                                            list="gemini-embed-models"
-                                                            value={getSetting('ai.gemini.embed_model')} 
-                                                            onChange={e => updateValue('ai.gemini.embed_model', e.target.value)} 
-                                                            placeholder="text-embedding-004" 
-                                                            className="bg-black/50 h-8 text-sm" 
-                                                        />
-                                                        <datalist id="gemini-embed-models">
-                                                            <option value="text-embedding-004" />
-                                                        </datalist>
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            className="h-5 px-1.5 text-[9px] w-fit hover:bg-teal-500/20 text-teal-500"
-                                                            onClick={() => updateValue('ai.gemini.embed_model', 'text-embedding-004')}
+                                                    {geminiModels && geminiModels.embedModels.length > 0 ? (
+                                                        <select
+                                                            value={getSetting('ai.gemini.embed_model')}
+                                                            onChange={e => updateValue('ai.gemini.embed_model', e.target.value)}
+                                                            className="bg-black/50 h-8 text-sm rounded border border-border/50 w-full px-2"
                                                         >
-                                                            text-embedding-004
-                                                        </Button>
-                                                    </div>
+                                                            {geminiModels.embedModels.map(m => (
+                                                                <option key={m.id} value={m.id}>
+                                                                    {m.recommended ? `⭐ ${m.displayName}` : m.displayName}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <Input
+                                                                list="gemini-embed-models"
+                                                                value={getSetting('ai.gemini.embed_model')}
+                                                                onChange={e => updateValue('ai.gemini.embed_model', e.target.value)}
+                                                                placeholder="text-embedding-004"
+                                                                className="bg-black/50 h-8 text-sm"
+                                                            />
+                                                            <datalist id="gemini-embed-models">
+                                                                <option value="text-embedding-004" />
+                                                            </datalist>
+                                                            <Button
+                                                                variant="ghost"
+                                                                className="h-5 px-1.5 text-[9px] w-fit hover:bg-teal-500/20 text-teal-500"
+                                                                onClick={() => updateValue('ai.gemini.embed_model', 'text-embedding-004')}
+                                                            >
+                                                                text-embedding-004
+                                                            </Button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -778,18 +961,43 @@ export default function AdminSettingsPage() {
                                                 <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
                                                     <Bot className="h-4 w-4" /> {t('ai.providers.groq')}
                                                 </h3>
-                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                    try {
-                                                        const res = await api.ai.testConnection('groq');
-                                                        toast({
-                                                            title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'),
-                                                            description: res.message || (res.success ? t('toasts.groq_ok') : t('toasts.groq_fail')),
-                                                            variant: res.success ? 'default' : 'destructive'
-                                                        });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
-                                                    }
-                                                }}>{t('ai.test_btn')}</Button>
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 px-2 text-[10px] text-blue-400 hover:bg-blue-500/10"
+                                                        disabled={loadingGroqModels}
+                                                        onClick={async () => {
+                                                            setLoadingGroqModels(true);
+                                                            try {
+                                                                const result = await api.ai.listModels('groq', getSetting('ai.groq.api_key'), getSetting('ai.groq.url'));
+                                                                setGroqModels(result);
+                                                                if (!getSetting('ai.groq.chat_model')) {
+                                                                    const rec = result.chatModels.find((m: { recommended: boolean }) => m.recommended);
+                                                                    if (rec) updateValue('ai.groq.chat_model', rec.id);
+                                                                }
+                                                            } catch (e: any) {
+                                                                toast({ title: 'Model listesi alınamadı', description: e.message, variant: 'destructive' });
+                                                            } finally {
+                                                                setLoadingGroqModels(false);
+                                                            }
+                                                        }}
+                                                    >
+                                                        {loadingGroqModels ? '⏳ Yükleniyor...' : '🔍 Modelleri Listele'}
+                                                    </Button>
+                                                    <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
+                                                        try {
+                                                            const res = await api.ai.testConnection('groq');
+                                                            toast({
+                                                                title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'),
+                                                                description: res.message || (res.success ? t('toasts.groq_ok') : t('toasts.groq_fail')),
+                                                                variant: res.success ? 'default' : 'destructive'
+                                                            });
+                                                        } catch (e: any) {
+                                                            toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                        }
+                                                    }}>{t('ai.test_btn')}</Button>
+                                                </div>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs">{t('ai.api_key')}</Label>
@@ -802,7 +1010,21 @@ export default function AdminSettingsPage() {
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Model</label>
-                                                    <Input value={getSetting('ai.groq.chat_model')} onChange={e => updateValue('ai.groq.chat_model', e.target.value)} placeholder="llama-3.1-8b-instant" className="bg-black/50 h-8 text-sm" />
+                                                    {groqModels && groqModels.chatModels.length > 0 ? (
+                                                        <select
+                                                            value={getSetting('ai.groq.chat_model')}
+                                                            onChange={e => updateValue('ai.groq.chat_model', e.target.value)}
+                                                            className="bg-black/50 h-8 text-sm rounded border border-border/50 w-full px-2"
+                                                        >
+                                                            {groqModels.chatModels.map(m => (
+                                                                <option key={m.id} value={m.id}>
+                                                                    {m.recommended ? `⭐ ${m.displayName}` : m.displayName}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <Input value={getSetting('ai.groq.chat_model')} onChange={e => updateValue('ai.groq.chat_model', e.target.value)} placeholder="llama-3.1-8b-instant" className="bg-black/50 h-8 text-sm" />
+                                                    )}
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-xs text-muted-foreground">{t('ai.embedding')}</Label>

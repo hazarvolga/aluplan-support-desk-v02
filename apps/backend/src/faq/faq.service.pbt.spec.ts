@@ -11,8 +11,15 @@ import * as fc from 'fast-check';
 import { FaqService, ExtractedPattern } from './faq.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../ai/embedding.service';
+import { EmbeddingVersionRegistry } from '../ai/embedding-version.registry';
+import { SettingsService } from '../settings/settings.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { AiService } from '../ai/ai.service';
+
+const mockEmbeddingVersionRegistry = {
+    getActiveVersionConfig: jest.fn().mockResolvedValue({ version: 'v3s', dimension: 1536, provider: 'openai', model: 'text-embedding-3-small' }),
+    getVersionConfig: jest.fn().mockReturnValue({ version: 'v3s', dimension: 1536 }),
+};
 
 const DEFAULT_THRESHOLD = 0.90;
 
@@ -65,6 +72,8 @@ describe('FaqService — Property-Based Tests', () => {
                     provide: AiService,
                     useValue: { reformat: jest.fn() },
                 },
+                { provide: EmbeddingVersionRegistry, useValue: mockEmbeddingVersionRegistry },
+                { provide: SettingsService, useValue: { getValue: jest.fn().mockResolvedValue(null) } },
             ],
         }).compile();
 

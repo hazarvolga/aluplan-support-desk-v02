@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KnowledgePoolService } from './knowledge-pool.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../common/services/storage.service';
 import { Queue } from 'bullmq';
 import { getQueueToken } from '@nestjs/bullmq';
 import { mockPrismaService } from '../test/mock.utils';
@@ -28,6 +29,7 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
             providers: [
                 KnowledgePoolService,
                 { provide: PrismaService, useValue: localMockPrismaService },
+                { provide: StorageService, useValue: { uploadFile: jest.fn(), deleteFile: jest.fn(), getSignedUrl: jest.fn(), testConnection: jest.fn() } },
                 { provide: getQueueToken('knowledge-sync'), useValue: mockQueue },
             ],
         }).compile();

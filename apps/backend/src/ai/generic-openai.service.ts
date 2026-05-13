@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
-import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
+import { AiPart, AiProvider, ChatResult, EmbeddingResult, ModelListResult } from './interfaces/ai-provider.interface';
 import { mapPartsToOpenAi } from './utils/map-parts-to-openai';
 
 @Injectable()
@@ -332,6 +332,38 @@ SONUÇ (YALNIZCA KELİME):`;
         const baseUrl = await this.getBaseUrl();
         const apiKey = await this.getApiKey();
         return !!(baseUrl && apiKey);
+    }
+
+    async listModels(apiKeyOverride?: string, baseUrlOverride?: string): Promise<ModelListResult> {
+        const EMPTY: ModelListResult = { chatModels: [], embedModels: [] };
+        const apiKey = apiKeyOverride || await this.getApiKey();
+        const baseUrl = baseUrlOverride || await this.getBaseUrl();
+        if (!apiKey || !baseUrl) return EMPTY;
+
+        const isGroq = baseUrl.includes('groq.com');
+        const RECOMMENDED_GROQ_CHAT = 'llama-3.3-70b-versatile';
+
+        try {
+            const response = await fetch(`${baseUrl}/models`, {
+                headers: { 'Authorization': `Bearer ${apiKey}` },
+                signal: AbortSignal.timeout(8000),
+            });
+            if (!response.ok) return EMPTY;
+
+            const data: any = await response.json();
+            const models: any[] = data.data ?? [];
+
+            const chatModels = models.map(m => ({
+                id: m.id as string,
+                displayName: m.id as string,
+                recommended: isGroq ? m.id === RECOMMENDED_GROQ_CHAT : false,
+            })).sort((a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0));
+
+            return { chatModels, embedModels: [] };
+        } catch (err: any) {
+            this.logger.warn(`Failed to list models for ${baseUrl}: ${err.message}`);
+            return EMPTY;
+        }
     }
 
     async testConnection(): Promise<{ success: boolean; message: string }> {

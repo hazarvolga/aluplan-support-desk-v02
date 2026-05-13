@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger, Delete, ConflictException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
@@ -75,28 +75,50 @@ export class KnowledgePoolController {
 
         const type = this.determineTypeFromExt(ext);
 
-        // Duplicate Check (Hash-based)
-        const hash = crypto.createHash('sha256').update(file.buffer).digest('hex');
-        const existing = await this.prisma.knowledgeSource.findFirst({
-            where: { lastHash: hash }
+        // Fast pre-check: block re-uploads of the same filename before wasting storage bandwidth.
+        // Covers both old records (broken hash) and new records (correct hash).
+        // Users who want to replace a file should delete the existing one first.
+        const existingByName = await this.prisma.knowledgeSource.findFirst({
+            where: { fileName: file.originalname }
         });
-
-        if (existing) {
-            logger.warn(`Duplicate file detected: ${file.originalname} (Already exists as ${existing.name})`);
-            throw new Error(`DUPLICATE_FILE: This file already exists in the knowledge pool as "${existing.name}".`);
+        if (existingByName) {
+            logger.warn(`Duplicate detected by filename: ${file.originalname} → already stored as "${existingByName.name}"`);
+            throw new ConflictException(`DUPLICATE_FILE: "${existingByName.name}" adıyla aynı dosya zaten Knowledge Pool'da mevcut.`);
         }
 
         // Upload to R2/S3 and get storage key
         const storageKey = await this.storageService.uploadFile(file, 'knowledge-pool');
         file = { ...file, path: storageKey } as Express.Multer.File;
 
+        // Compute hash from the stored file — multer v2 with memoryStorage populates file.buffer
+        // asynchronously, so by the time the async upload resolves the stored bytes are reliable.
+        const storedBuffer = await this.storageService.getFile(storageKey);
+        const hash = (storedBuffer && storedBuffer.length > 0)
+            ? crypto.createHash('sha256').update(storedBuffer).digest('hex')
+            : null;
+
+        // Content-hash duplicate check (catches same file uploaded under a different name)
+        if (hash) {
+            const existingByHash = await this.prisma.knowledgeSource.findFirst({
+                where: { lastHash: hash }
+            });
+            if (existingByHash) {
+                // Clean up the orphaned storage object we just wrote
+                await this.storageService.deleteFile(storageKey).catch(() => { /* best-effort */ });
+                logger.warn(`Duplicate by content-hash: ${file.originalname} matches existing "${existingByHash.name}"`);
+                throw new ConflictException(`DUPLICATE_FILE: "${existingByHash.name}" adıyla aynı içerik zaten Knowledge Pool'da mevcut.`);
+            }
+        }
+
         const source = await this.knowledgePoolService.createFileSource(name, type, file);
-        
-        // Update hash immediately
-        await this.prisma.knowledgeSource.update({
-            where: { id: source.id },
-            data: { lastHash: hash }
-        });
+
+        // Persist the hash so future uploads can be checked against it
+        if (hash) {
+            await this.prisma.knowledgeSource.update({
+                where: { id: source.id },
+                data: { lastHash: hash }
+            });
+        }
 
         return source;
     }

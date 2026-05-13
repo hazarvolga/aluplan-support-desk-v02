@@ -18,6 +18,7 @@ import { expandQueryWithSynonyms } from './utils/synonym-dictionary';
 import { rewriteQueryWithHistory } from './utils/conversation-query-rewriter';
 import { generateHypotheticalDocument, detectQueryLanguage } from './utils/hypothetical-document';
 import { checkAnswerConfidence } from './utils/answer-self-check';
+import { countTokens, estimateTokenCost } from './utils/token-counter';
 import { RagObservabilityService } from './rag-observability.service';
 import { AiDiagnosisService, DiagnosisResult } from './ai-diagnosis.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
@@ -53,7 +54,7 @@ export const MASTER_DIAGNOSIS_PROMPT = `
 You are a senior AI system designer and technical support architect specializing in engineering software ecosystems.
 You are powering an intelligent support ticket diagnosis engine.
 
-Your job is NOT just to answer — but to reach a technical diagnosis using the 7-STEP engine below.
+Your job is NOT just to answer — but to reach a technical diagnosis using the 7-STEP DIAGNOSIS STRATEGY below.
 
 ---
 
@@ -71,9 +72,23 @@ Using [TECHNICAL DIAGNOSIS] metadata:
 - Keywords: {{KEYWORDS}}
 
 ## STEP 3 — KNOWLEDGE VALIDATION
-- CRITICAL RULE: Check if the provided [CONTEXT] actually contains technical information about "{{PRODUCT}}".
-- If {{PRODUCT}} is "GENERIC" or "Unknown" AND the context is unrelated, proceed to STEP 6 with a "No Knowledge" state.
-- DO NOT hallucinate features from other software (like Allplan) if the user is asking about a different product.
+Perform TWO separate checks. Both must pass to continue.
+
+**CHECK A — Product Recognition**
+Is {{PRODUCT}} a known product in the system?
+If {{PRODUCT}} is "GENERIC" or "Unknown" AND [CONTEXT] is unrelated → go to STEP 6 with "No Knowledge" state.
+
+**CHECK B — Topic Coverage (CRITICAL GATE)**
+Does [CONTEXT] contain specific technical information about the EXACT topic, module, or feature the user is asking about?
+Search [CONTEXT] for direct references to the user's specific query.
+→ YES: Both checks passed. Proceed to STEP 4.
+→ NO: Stop here. Go directly to STEP 6 and output ONLY this message:
+"{{PRODUCT}} ürününe ait bu konu hakkında bilgi kaynağımda yeterli döküman bulunmuyor. Lütfen ilgili dökümanı ekleyin veya destek talebi oluşturun."
+
+**ABSOLUTE RULE FOR STEP 3:**
+Recognizing a product name does NOT grant permission to answer from general knowledge.
+Product recognition (CHECK A) and knowledge base topic coverage (CHECK B) are TWO SEPARATE and INDEPENDENT checks.
+A product being known means nothing if [CONTEXT] does not cover the specific question.
 
 ## STEP 4 — PROBLEM TYPE DETECTION
 Map symptoms to a specific problem type (e.g., licensing_failure, fem_mesh_instability, crash_on_startup).
@@ -98,6 +113,7 @@ Generate a PROFESSIONAL, EXPERT-LEVEL diagnostic report.
 ## STEP 7 — OUTPUT
 Output ONLY in the requested language: [{{LANGUAGE}}]
 Use strict headers:
+
 ## 📌 Sorun Yorumu
 {{Current problem interpretation}}
 
@@ -119,10 +135,14 @@ Use strict headers:
 ## HARD RULES
 - NEVER give generic support answers.
 - ALWAYS behave like a senior engineer.
-- If knowledge base is empty/irrelevant for {{PRODUCT}}, explicitly say: "Bu ürün ({{PRODUCT}}) hakkında henüz dökümantasyonumda bilgi bulunmuyor."
+- YOUR ONLY KNOWLEDGE SOURCE IS [CONTEXT]. Nothing else. If a topic, module, feature, or procedure is not explicitly present in [CONTEXT], it does not exist for you. Do not use your LLM training knowledge about any software under any circumstance.
+- A recognized product name does NOT grant permission to answer from general knowledge. Product recognition and knowledge base topic coverage are TWO SEPARATE checks. Both must pass.
+- NEVER invent, assume, or extrapolate technical steps for features not found in [CONTEXT] — even if they sound plausible.
+- If knowledge base is empty or does not cover the specific query, explicitly say: "Bu ürün ({{PRODUCT}}) için bu konuya ait bilgi kaynağımda döküman bulunmuyor."
 - Output ONLY Markdown.
 - Output ONLY in the language specified in STEP 7.
 - Analyze image attachments first if they exist.
+- DO NOT hallucinate features from other software or from your own training data, regardless of how confident you feel.
 `;
 import { DocumentParserService } from '../common/services/document-parser.service';
 import { MetricsService } from '../metrics/metrics.service';
@@ -474,12 +494,6 @@ export class AiQueryService {
         }
 
 
-        const inputStr = userQuery;
-        const inputTokens = Math.ceil(inputStr.length / 4);
-        const outputTokens = Math.ceil(answer.length / 4);
-        const totalTokens = inputTokens + outputTokens;
-        const estimatedCost = (inputTokens * 0.00000015) + (outputTokens * 0.0000006);
-
         // 4. Log interaction
         // R-R1: If top trust_score < 0.4, suggest ticket (Confidence LOW or NO_MATCH usually implies this)
         // We also check the actual similarity * trust_score if possible, but status-based confidence is the current implementation.
@@ -488,6 +502,11 @@ export class AiQueryService {
 
         const providerName = await this.ai.getActiveProviderName();
         const modelName = await this.ai.getActiveModelName();
+
+        const inputTokens = countTokens(userQuery, modelName);
+        const outputTokens = countTokens(answer, modelName);
+        const totalTokens = inputTokens + outputTokens;
+        const estimatedCost = estimateTokenCost(providerName, modelName, inputTokens, outputTokens);
 
         const interaction = await this.prisma.aiInteraction.create({
             data: {
@@ -869,16 +888,13 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             yield { chunk: fullAnswer };
         }
 
-        const inputStr = usedPrompt;
-        const inputTokens = Math.ceil(inputStr.length / 4);
-        const outputTokens = Math.ceil(fullAnswer.length / 4);
-        const totalTokens = inputTokens + outputTokens;
-
-        // Rough estimate based on generic models (e.g. gpt-4o-mini equivalents)
-        const estimatedCost = (inputTokens * 0.00000015) + (outputTokens * 0.0000006);
-
         const providerName = await this.ai.getActiveProviderName();
         const modelName = await this.ai.getActiveModelName();
+
+        const inputTokens = countTokens(usedPrompt, modelName);
+        const outputTokens = countTokens(fullAnswer, modelName);
+        const totalTokens = inputTokens + outputTokens;
+        const estimatedCost = estimateTokenCost(providerName, modelName, inputTokens, outputTokens);
 
         const interaction = await this.prisma.aiInteraction.create({
             data: {
@@ -1621,8 +1637,10 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
 
         // Save interaction at the end
         if (fullAnswer) {
-            const inputTokens = Math.ceil(userQuery.length / 4);
-            const outputTokens = Math.ceil(fullAnswer.length / 4);
+            const _provider = await this.ai.getActiveProviderName();
+            const _model = await this.ai.getActiveModelName();
+            const inputTokens = countTokens(userQuery, _model);
+            const outputTokens = countTokens(fullAnswer, _model);
             await this.prisma.aiInteraction.create({
                 data: {
                     userId: userId || undefined,
@@ -1633,12 +1651,12 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
                     autoAnswered: (results[0]?.similarity || 0) > 0.4,
                     similarityScore: topResult?.similarity,
                     matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
-                    provider: await this.ai.getActiveProviderName(),
-                    model: await this.ai.getActiveModelName(),
+                    provider: _provider,
+                    model: _model,
                     inputTokens,
                     outputTokens,
                     totalTokens: inputTokens + outputTokens,
-                    estimatedCost: (inputTokens * 0.00000015) + (outputTokens * 0.0000006),
+                    estimatedCost: estimateTokenCost(_provider, _model, inputTokens, outputTokens),
                     userContext: { diagnosis } as unknown as Prisma.InputJsonValue
                 }
             });

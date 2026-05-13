@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
-import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
+import { AiPart, AiProvider, ChatResult, EmbeddingResult, ModelListResult } from './interfaces/ai-provider.interface';
 
 @Injectable()
 export class OllamaService implements AiProvider {
@@ -282,6 +282,31 @@ SONUÇ (YALNIZCA KELİME):`;
             return response.ok;
         } catch {
             return false;
+        }
+    }
+
+    async listModels(_apiKeyOverride?: string, baseUrlOverride?: string): Promise<ModelListResult> {
+        const EMPTY: ModelListResult = { chatModels: [], embedModels: [] };
+        try {
+            const baseUrl = baseUrlOverride || await this.getBaseUrl();
+            const response = await fetch(`${baseUrl}/api/tags`, {
+                signal: AbortSignal.timeout(8000),
+            });
+            if (!response.ok) return EMPTY;
+
+            const data: any = await response.json();
+            const models: any[] = data.models ?? [];
+
+            const chatModels = models.map(m => ({
+                id: m.name as string,
+                displayName: m.name as string,
+                recommended: false,
+            }));
+
+            return { chatModels, embedModels: chatModels };
+        } catch (err: any) {
+            this.logger.warn(`Failed to list Ollama models: ${err.message}`);
+            return EMPTY;
         }
     }
 

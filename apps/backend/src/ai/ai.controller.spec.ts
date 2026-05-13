@@ -9,6 +9,7 @@ import { OllamaService } from './ollama.service';
 import { AiService } from './ai.service';
 import { AiCopilotService } from './ai-copilot.service';
 import { AiReportingService } from './ai-reporting.service';
+import { RagObservabilityService } from './rag-observability.service';
 import { StorageService } from '../common/services/storage.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -39,6 +40,7 @@ const mockOllamaService = {};
 const mockAiService = { isAvailable: jest.fn(), getHealthStatus: jest.fn(), testProvider: jest.fn(), translate: jest.fn() };
 const mockAiCopilotService = { generateDraft: jest.fn() };
 const mockAiReportingService = { triggerNow: jest.fn() };
+const mockRagObservabilityService = { getMetrics: jest.fn(), recordQuery: jest.fn() };
 const mockStorageService = { testConnection: jest.fn() };
 const mockAiQueue = { getJob: jest.fn() };
 
@@ -55,6 +57,7 @@ async function buildModule(): Promise<TestingModule> {
             { provide: AiService, useValue: mockAiService },
             { provide: AiCopilotService, useValue: mockAiCopilotService },
             { provide: AiReportingService, useValue: mockAiReportingService },
+            { provide: RagObservabilityService, useValue: mockRagObservabilityService },
             { provide: StorageService, useValue: mockStorageService },
             { provide: getQueueToken('ai-query-processing'), useValue: mockAiQueue },
         ],

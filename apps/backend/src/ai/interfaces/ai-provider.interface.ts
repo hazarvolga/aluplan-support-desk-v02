@@ -1,3 +1,8 @@
+export interface ModelListResult {
+    chatModels: Array<{ id: string; displayName: string; recommended: boolean }>;
+    embedModels: Array<{ id: string; displayName: string; recommended: boolean }>;
+}
+
 export interface EmbeddingResult {
     embedding: number[];
     model: string;
@@ -82,4 +87,5 @@ export interface AiProvider {
     testConnection(): Promise<{ success: boolean; message: string }>;
     getName(): string;
     getActiveModelName(): Promise<string>;
+    listModels?(apiKeyOverride?: string, baseUrlOverride?: string): Promise<ModelListResult>;
 }

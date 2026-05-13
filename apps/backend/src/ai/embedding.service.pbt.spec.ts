@@ -9,7 +9,15 @@ import * as fc from 'fast-check';
 import { EmbeddingService } from './embedding.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
+import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+
+const mockEmbeddingVersionRegistry = {
+    getActiveVersionConfig: jest.fn().mockResolvedValue({
+        version: 'v3s', dimension: 1536, provider: 'openai', model: 'text-embedding-3-small',
+    }),
+    getVersionConfig: jest.fn().mockReturnValue({ version: 'v3s', dimension: 1536 }),
+};
 
 const mockEmbedding = Array(1536).fill(0.1);
 
@@ -48,6 +56,7 @@ describe('EmbeddingService — Property-Based Tests', () => {
                 { provide: PrismaService, useValue: mockPrisma },
                 { provide: AiService, useValue: mockAiService },
                 { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+                { provide: EmbeddingVersionRegistry, useValue: mockEmbeddingVersionRegistry },
             ],
         }).compile();
 

@@ -154,7 +154,7 @@ export default function NewTicketPage() {
 
             // Switch to specialized query endpoint for conversational RAG
             // Passing product context to focus search on relevant knowledge base
-            const pId = selectedProductId === 'general' || selectedProductId === '' ? null : selectedProductId;
+            const pId = selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId;
             const queryPromise = api.ai.query(`${subject} ${description}`, context, pId, locale, [], attachments, true);
             const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('AI_TIMEOUT')), 45000)
@@ -190,9 +190,9 @@ export default function NewTicketPage() {
         try {
             const ticket = await api.tickets.create({
                 ...values,
-                productId: selectedProductId === 'general' || selectedProductId === '' ? null : selectedProductId,
-                hotinfoContext: isHotinfoConfirmed ? hotinfoData : null,
-                interactionId: interactionId
+                productId: selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId,
+                hotinfoContext: isHotinfoConfirmed && hotinfoData ? hotinfoData : undefined,
+                interactionId: interactionId ?? undefined,
             });
 
             const message = await api.tickets.addMessage(ticket.id, {

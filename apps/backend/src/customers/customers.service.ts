@@ -265,7 +265,7 @@ export class CustomersService {
                     customerName: `${dto.firstName} ${dto.lastName}`,
                     email: dto.email,
                     password: dto.password,
-                    loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
+                    loginUrl: `${this.config.get('FRONTEND_URL', 'http://localhost:3000')}/login`,
                     verifyUrl: verifyUrl,
                 }
             });
