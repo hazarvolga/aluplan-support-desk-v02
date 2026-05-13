@@ -24,15 +24,25 @@ import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants
 import { AiHealthEventService } from '../ai/ai-health-event.service';
 import { AiHealthEventType } from '@aluplan/database';
 
+const resolveAllowedOrigins = (): string[] => {
+    const configuredOrigins = [
+        process.env.FRONTEND_URL || 'http://localhost:3000',
+        ...(process.env.ALLOWED_ORIGINS?.split(',') ?? []),
+    ];
+
+    return configuredOrigins
+        .map(origin => origin.trim())
+        .filter(Boolean);
+};
+
 @WebSocketGateway({
     cors: {
         origin: (origin: string, callback: (err: Error | null, allowed?: boolean) => void) => {
             // Allow connections without origin (e.g., server-side, mobile apps)
             if (!origin) return callback(null, true);
-            // In production, restrict to configured frontend URL
-            const allowed = process.env.FRONTEND_URL
-                ? origin === process.env.FRONTEND_URL
-                : true;
+
+            const allowedOrigins = resolveAllowedOrigins();
+            const allowed = allowedOrigins.includes(origin);
             callback(null, allowed);
         },
         credentials: true,
@@ -53,6 +63,10 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         private readonly aiHealthEventService: AiHealthEventService,
         @InjectQueue(PROACTIVE_CHAT_QUEUE) private readonly proactiveChatQueue: Queue,
     ) { }
+
+    private get isProduction(): boolean {
+        return this.config.get<string>('NODE_ENV') === 'production';
+    }
 
     // GAP-09: Socket.io Redis Adapter for horizontal scaling
     afterInit(server: Server) {
@@ -80,12 +94,14 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
             const token = authToken || cookieToken || bearerToken;
 
-            this.logger.log(
-                `[WS-DIAG] handshake received: auth.token=${authToken ? 'present(' + authToken.substring(0, 20) + '...)' : 'MISSING'} | cookieToken=${cookieToken ? 'present(' + cookieToken.substring(0, 20) + '...)' : 'MISSING'} | bearer=${bearerToken ? 'present' : 'MISSING'} | rawCookies=${rawCookies ? 'present' : 'MISSING'}`
-            );
+            if (!this.isProduction) {
+                this.logger.debug(
+                    `[WS-DIAG] handshake received: auth.token=${authToken ? 'present' : 'MISSING'} | cookieToken=${cookieToken ? 'present' : 'MISSING'} | bearer=${bearerToken ? 'present' : 'MISSING'} | rawCookies=${rawCookies ? 'present' : 'MISSING'}`
+                );
+            }
 
             if (!token) {
-                this.logger.warn(`[WS-DIAG] No token found — disconnecting client. Auth:${!!authToken} Cookie:${!!cookieToken} Bearer:${!!bearerToken} RawCookiesLen:${rawCookies.length}`);
+                this.logger.warn(`[WS-DIAG] No token found — disconnecting client. Auth:${!!authToken} Cookie:${!!cookieToken} Bearer:${!!bearerToken} RawCookies:${!!rawCookies}`);
                 client.disconnect();
                 return;
             }

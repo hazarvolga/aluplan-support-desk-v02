@@ -50,7 +50,8 @@ export class ProductsController {
     }
 
     @Post('internal/restore-faqs')
-    @Public()
+    @UseGuards(JwtAuthGuard, RbacGuard)
+    @Roles('admin')
     restoreFaqs() {
         return this.productsService.restoreAllplanFaqs();
     }
