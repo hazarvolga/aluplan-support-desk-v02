@@ -78,3 +78,30 @@ These were left alone deliberately because they look like user/workflow artifact
   1. broader backend Jest sweep
   2. frontend AI settings interaction smoke test
   3. remaining direct `process.env` cleanup in backend
+
+## Follow-up - 2026-05-13 Ticket Diagnosis Stabilization
+
+### What changed
+- Frontend ticket creation is now explicitly **AI-optional**:
+  - users can continue directly to ticket creation without waiting for diagnosis
+  - `my-tickets` now shows a retryable degraded state when backend fetch fails
+  - API network failures are classified as `BACKEND_UNAVAILABLE` instead of leaking raw `Failed to fetch`
+- Backend diagnosis now surfaces whether the answer came from:
+  - `LLM`
+  - `FALLBACK` (top grounded content used after bounded generation timeout / empty response)
+
+### Commits
+- `91777bb fix(frontend): make ai diagnosis optional for ticket creation`
+- `8e61383 fix(ai): surface bounded diagnosis fallback mode`
+
+### Verification
+- Frontend:
+  - `./node_modules/.bin/tsc --noEmit -p tsconfig.json` passed in `apps/frontend`
+  - `./node_modules/.bin/vitest run src/lib/api.spec.ts` passed
+- Backend:
+  - `pnpm --filter @aluplan/backend typecheck` passed
+  - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts` passed
+
+### Important notes
+- `graphify update .` was attempted after each phase but the `graphify` binary is still unavailable in PATH in this shell.
+- `gitnexus detect_changes` reports HIGH risk because the repository already contains unrelated modified files from prior RAG/indexing work; phase commits were staged narrowly to avoid pulling unrelated changes into the new commits.
