@@ -67,8 +67,36 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
             expect(mockQueue.add).toHaveBeenCalledWith(
                 'sync-source',
                 { sourceId: 'source-1' },
-                expect.objectContaining({ attempts: 3, backoff: { type: 'exponential', delay: 5000 } })
+                expect.objectContaining({ attempts: 3, backoff: { type: 'exponential', delay: 5000 }, delay: 0 })
             );
+        });
+
+        it('should add a pacing delay for bulk-safe ingestion jobs', async () => {
+            const original = process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS;
+            process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS = '20000';
+
+            const source = {
+                id: 'source-2',
+                name: 'Bulk Safe Source',
+                status: KnowledgeSourceStatus.ACTIVE,
+                metadata: { ingestionMode: 'bulk-safe' },
+            };
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue({ ...source, status: KnowledgeSourceStatus.SYNCING });
+
+            await service.triggerSync('source-2');
+
+            expect(mockQueue.add).toHaveBeenCalledWith(
+                'sync-source',
+                { sourceId: 'source-2' },
+                expect.objectContaining({ delay: 20000 })
+            );
+
+            if (original === undefined) {
+                delete process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS;
+            } else {
+                process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS = original;
+            }
         });
     });
 });

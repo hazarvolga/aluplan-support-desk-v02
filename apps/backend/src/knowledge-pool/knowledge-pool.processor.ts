@@ -15,7 +15,20 @@ import { hierarchicalChunk } from '../knowledge-base/utils/smart-chunker';
 import { AiService } from '../ai/ai.service';
 import { OnModuleInit } from '@nestjs/common';
 
-@Processor('knowledge-sync')
+const parseWorkerNumber = (value: string | undefined, fallback: number): number => {
+    const parsed = Number.parseInt(value ?? '', 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+export const buildKnowledgeSyncWorkerOptions = (env: NodeJS.ProcessEnv = process.env) => ({
+    concurrency: parseWorkerNumber(env.KNOWLEDGE_SYNC_QUEUE_CONCURRENCY, 1),
+    limiter: {
+        max: parseWorkerNumber(env.KNOWLEDGE_SYNC_RATE_MAX, 1),
+        duration: parseWorkerNumber(env.KNOWLEDGE_SYNC_RATE_DURATION_MS, 15000),
+    },
+});
+
+@Processor('knowledge-sync', buildKnowledgeSyncWorkerOptions())
 export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
     private readonly logger = new Logger(KnowledgePoolProcessor.name);
     private turndown: any;
@@ -115,33 +128,13 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         const hierarchies = hierarchicalChunk(content, { title });
         this.logger.log(`🧩 Content split into ${hierarchies.length} hierarchies for ${source.url}`);
 
-        await this.prisma.$executeRaw`DELETE FROM knowledge_pool_embeddings WHERE source_id = ${source.id}::uuid`;
-        this.logger.log(`🗑️ Existing embeddings cleared for source ${source.id}`);
-
-        let totalChunks = 0;
-        for (const h of hierarchies) {
-            // Index the parent (full context)
-            await this.embeddingService.indexPoolContent(source.id, h.parent, {
-                url: source.url,
-                title,
-                type: 'parent',
-                status: isMajorChange ? 'PENDING_REVIEW' : 'ACTIVE'
-            });
-
-            // Index each child (precise search)
-            for (const child of h.children) {
-                await this.embeddingService.indexPoolContent(source.id, child, {
-                    url: source.url,
-                    title,
-                    type: 'child',
-                    status: isMajorChange ? 'PENDING_REVIEW' : 'ACTIVE'
-                });
-                totalChunks++;
-                if (totalChunks % 10 === 0) {
-                    this.logger.log(`⏳ Indexed ${totalChunks} chunks so far...`);
-                }
-            }
-        }
+        const totalChunks = hierarchies.reduce((sum, h) => sum + h.children.length, 0);
+        await this.embeddingService.indexPoolContent(source.id, content, {
+            url: source.url,
+            title,
+            sourceType: 'url',
+            status: isMajorChange ? 'PENDING_REVIEW' : 'ACTIVE',
+        });
 
         const category = (source.metadata as any)?.category || 'General';
 
@@ -212,6 +205,9 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
 
         if (!source.type) throw new Error('Source type is required for file sync');
         let content = await this.parserService.parseFile(source.type, fileBuffer);
+        if (!content || content.trim().length === 0) {
+            throw new Error(`Parsed content is empty for source ${source.fileName || source.id}`);
+        }
         const hash = crypto.createHash('sha256').update(content).digest('hex');
 
         if (hash === source.lastHash) {
@@ -228,7 +224,7 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         // Apply AI Pre-processing if enabled in metadata
         let category = (source.metadata as any)?.category || 'General';
         
-        if ((source.metadata as Record<string, unknown>)?.useAiPreprocessing || !((source.metadata as any)?.category)) {
+        if ((source.metadata as Record<string, unknown>)?.useAiPreprocessing === true) {
             this.logger.log(`🧠 Applying AI for categorization and cleaning: ${source.fileName}`);
             try {
                 // 1. Categorize & Clean
@@ -242,27 +238,15 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         }
 
         const hierarchies = hierarchicalChunk(content, { title: source.name || source.fileName || 'Untitled' });
+        const totalChunks = hierarchies.reduce((sum, h) => sum + h.children.length, 0);
 
-        await this.prisma.$executeRaw`DELETE FROM knowledge_pool_embeddings WHERE source_id = ${source.id}::uuid`;
-
-        let totalChunks = 0;
-        for (const h of hierarchies) {
-            await this.embeddingService.indexPoolContent(source.id, h.parent, {
-                fileName: source.fileName,
-                type: 'parent',
-                status: 'ACTIVE',
-                language: source.language
-            });
-            for (const child of h.children) {
-                await this.embeddingService.indexPoolContent(source.id, child, {
-                    fileName: source.fileName,
-                    type: 'child',
-                    status: 'ACTIVE',
-                    language: source.language
-                });
-                totalChunks++;
-            }
-        }
+        await this.embeddingService.indexPoolContent(source.id, content, {
+            fileName: source.fileName,
+            sourceType: 'file',
+            status: 'ACTIVE',
+            language: source.language,
+            category,
+        });
 
 
         // Section 3.5.3: Change Monitor (Partial for files - size track)

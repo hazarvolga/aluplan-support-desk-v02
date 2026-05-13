@@ -68,6 +68,10 @@ export const envSchema = z.object({
     RERANK_URL_HARD_FLOOR: z.coerce.number().optional(),
     AI_QUEUE_RATE_MAX: z.coerce.number().optional(),
     AI_QUEUE_RATE_DURATION_MS: z.coerce.number().optional(),
+    KNOWLEDGE_SYNC_RATE_MAX: z.coerce.number().optional(),
+    KNOWLEDGE_SYNC_RATE_DURATION_MS: z.coerce.number().optional(),
+    KNOWLEDGE_SYNC_QUEUE_CONCURRENCY: z.coerce.number().optional(),
+    KNOWLEDGE_SYNC_BULK_DELAY_MS: z.coerce.number().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

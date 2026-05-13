@@ -8,6 +8,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { StorageService } from '../common/services/storage.service';
 
+const parseJobDelay = (value: string | undefined, fallback: number): number => {
+    const parsed = Number.parseInt(value ?? '', 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+};
+
 @Injectable()
 export class KnowledgePoolService {
     private readonly logger = new Logger(KnowledgePoolService.name);
@@ -41,6 +46,10 @@ export class KnowledgePoolService {
                 fileName: file.originalname,
                 filePath: file.path, // Now stores MinIO object key (e.g., 'knowledge-pool/1234-doc.pdf')
                 status: KnowledgeSourceStatus.ACTIVE,
+                metadata: {
+                    useAiPreprocessing: false,
+                    ingestionMode: 'bulk-safe',
+                },
             },
         });
 
@@ -121,6 +130,11 @@ export class KnowledgePoolService {
         const source = await this.prisma.knowledgeSource.findUnique({ where: { id } });
         if (!source) throw new NotFoundException('Source not found');
 
+        const isBulkSafe = (source.metadata as Record<string, unknown> | null)?.ingestionMode === 'bulk-safe';
+        const delay = isBulkSafe
+            ? parseJobDelay(process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS, 15000)
+            : 0;
+
         await this.prisma.knowledgeSource.update({
             where: { id },
             data: { status: KnowledgeSourceStatus.SYNCING },
@@ -130,9 +144,10 @@ export class KnowledgePoolService {
             attempts: 3,
             backoff: { type: 'exponential', delay: 5000 },
             removeOnComplete: true,
+            delay,
         });
 
-        this.logger.log(`🔄 Enqueued sync job for source: ${source.name} (${id})`);
+        this.logger.log(`🔄 Enqueued sync job for source: ${source.name} (${id})${delay > 0 ? ` with ${delay}ms pacing delay` : ''}`);
     }
 
     async syncLocalDataset() {
@@ -201,7 +216,8 @@ export class KnowledgePoolService {
                             status: KnowledgeSourceStatus.ACTIVE,
                             language,
                             metadata: {
-                                useAiPreprocessing: true,
+                                useAiPreprocessing: false,
+                                ingestionMode: 'bulk-safe',
                             }
                         },
                     });
