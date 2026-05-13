@@ -17,6 +17,7 @@ import { AiReportingService } from './ai-reporting.service';
 import { AiHealthEventService } from './ai-health-event.service';
 import { RagObservabilityService } from './rag-observability.service';
 import { GeminiService } from './gemini.service';
+import { PreReimportInspectService } from './pre-reimport-inspect.service';
 import { StorageService } from '../common/services/storage.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -92,6 +93,7 @@ export class AiController {
         private readonly aiReportingService: AiReportingService,
         private readonly ragObservabilityService: RagObservabilityService,
         private readonly aiHealthEventService: AiHealthEventService,
+        private readonly preReimportInspectService: PreReimportInspectService,
         private readonly storageService: StorageService,
         private readonly geminiService: GeminiService,
         @InjectQueue('ai-query-processing') private readonly aiQueue: Queue,
@@ -316,6 +318,14 @@ export class AiController {
     @ApiOperation({ summary: 'Get embedding migration status and version distribution' })
     async getMigrationStatus() {
         return this.ragObservabilityService.getMigrationStatus();
+    }
+
+    @Get('cleanup/pre-reimport-inspect')
+    @Roles('ADMIN', 'SUPERUSER')
+    @ApiOperation({ summary: 'Inspect legacy RAG state before document re-import' })
+    async getPreReimportInspectReport(@Query('sampleSize') sampleSize?: string) {
+        const parsedSampleSize = sampleSize ? parseInt(sampleSize, 10) : undefined;
+        return this.preReimportInspectService.inspect(parsedSampleSize);
     }
 
     @Post('test-connection')

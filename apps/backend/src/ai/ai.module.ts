@@ -40,6 +40,7 @@ import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { EmbeddingMigrationProcessor } from './embedding-migration.processor';
 import { FaqModule } from '../faq/faq.module';
 import { AiHealthEventService } from './ai-health-event.service';
+import { PreReimportInspectService } from './pre-reimport-inspect.service';
 
 @Module({
     imports: [
@@ -99,6 +100,7 @@ import { AiHealthEventService } from './ai-health-event.service';
         GeminiService,
         AiEvalService,
         AiHealthEventService,
+        PreReimportInspectService,
     ],
     exports: [
         AiService,
@@ -126,6 +128,7 @@ import { AiHealthEventService } from './ai-health-event.service';
         EmbeddingVersionRegistry,
         GeminiService,
         AiHealthEventService,
+        PreReimportInspectService,
     ],
 })
 export class AiModule { }
