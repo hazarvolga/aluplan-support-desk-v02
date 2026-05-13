@@ -1,48 +1,80 @@
-# Session Summary - 2026-05-12
+# Session Summary - 2026-05-13
 
 ## Goal
-Implement AI health live monitoring infrastructure for real-time dashboard and event logging.
+Stabilize the backend startup path, harden a few real code risks, reduce repo-root noise, and clean up frontend AI settings debt without trusting stale root markdown reports.
 
 ## What Was Done
 
-### Circular Dependency Resolution (Faz 3 - COMPLETED)
-- Root cause: `NotificationsModule` imported `AiHealthEventModule`, creating a dependency chain back through the module tree
-- Fix: Removed `AiHealthEventModule` import from `NotificationsModule`, added `AiHealthEventService` directly as a provider in `NotificationsModule` (it only needs `PrismaService` which is available)
-- Added missing `forwardRef` import in `ai.module.ts`
-- Backend now starts successfully on port 4000 ✅
+### Faz 0 - Checkpoint
+- Commit: `137309c chore: checkpoint pending product code changes`
+- Preserved existing uncommitted product work before starting focused cleanup.
 
-### Database Migration Applied
-- Manual SQL migration `20260512000001_add_ai_health_events` applied via `psql` directly
-- Created `AiHealthEvent` table + indexes + `AiHealthEventType` enum
-- All constraints, comments, and indexes applied successfully ✅
+### Faz 1 - Backend startup blocker
+- Root cause reproduced: `nest build` failed with `EMFILE: too many open files, watch`
+- Fix: disabled asset watchers in `apps/backend/nest-cli.json`
+- Commit: `10a5d1e fix(backend): disable asset watchers during build`
+- Verification:
+  - Backend build: passed
+  - Backend startup: passed
+  - App booted successfully on `http://localhost:4000/api/v1`
 
-### Verification
-- Backend build: ✅ PASSED
-- Backend startup: ✅ PASSED — `🚀 Backend running on http://localhost:4000/api/v1`
-- Routes confirmed: `GET /api/v1/ai/health-events`, `GET /api/v1/ai/health-stats`, `GET /api/v1/ai/health-status` all mapped
-- DB migration: ✅ APPLIED
+### Faz 2 - Security / ops hardening
+- Locked down `POST /products/internal/restore-faqs` behind `JwtAuthGuard + RbacGuard + Roles('admin')`
+- Tightened WebSocket CORS origin handling to configured origins only
+- Reduced handshake diagnostics so token prefixes are no longer logged
+- Commit: `6aebabe fix(backend): harden restore endpoint and ws origins`
 
-## Prior Work (same goal)
-- **Faz 0** — Fixed `GeminiService.generate()` line 78: `return null` → `throw new Error('GEMINI_API_KEY_NOT_CONFIGURED: ...')`. Commit `421e6a2`
-- **Faz 1** — Created DB model, event service, API endpoints. Commit `546ea15`
-- **Faz 2** — Created frontend `useAiHealthSocket`, `LiveEventFeed`, `ProviderStatusIndicator`, `AiTelemetryDashboard`. Commit `f656016`
+### Faz 3 - Repo hygiene / archival cleanup
+- Moved misleading root-level legacy reports and artifacts into:
+  - `archive/legacy-root-docs/2026-05-13/`
+  - `archive/legacy-artifacts/2026-05-13/`
+- Added a short archive README to mark them as historical only
+- Ignored local worktree / graphify scratch artifacts in `.gitignore`
+- Commit: `6e3f81f chore(repo): archive legacy root reports`
 
-## Next Steps
-1. Start backend with `pnpm dev` (or `node dist/main.js` in background)
-2. Start frontend with `pnpm dev`
-3. Login as admin@aluplan.com.tr
-4. Visit `/admin/ai-health` — verify live feed + provider status appear
-5. Trigger a fallback event to see real-time feed update
-6. Check WebSocket connection status indicator
+### Faz 4 - Frontend stabilization
+- Fixed `useAiHealthSocket()` listener duplication on reconnect by binding handlers once per hook lifecycle
+- Replaced hardcoded AI settings strings with `next-intl` keys
+- Added new translation keys to `tr.json`, `en.json`, and `de.json`
+- Commit: `0f44840 fix(frontend): stabilize ai settings socket and i18n`
 
-## Critical Context
-- Backend is RUNNING on port 4000 (was broken by circular dependency, now fixed)
-- Migration applied — DB table `AiHealthEvent` exists
-- Frontend components (`LiveEventFeed`, `ProviderStatusIndicator`, `AiTelemetryDashboard`, `useAiHealthSocket`) were created in Faz 2
-- `handleAiFallback` in `NotificationsGateway` now records events to DB before broadcasting via WebSocket
-- `pnpm db:migrate` uses `prisma migrate dev` (not `deploy`) — apply manual SQL migrations directly with `psql`
+### Faz 5 - Verification / test reliability
+- Backend typecheck: passed
+- Backend build: passed
+- Frontend typecheck: passed
+- Targeted backend Jest run passed:
+  - `src/notifications/notifications.gateway.spec.ts`
+- Important note:
+  - Earlier “SWC native binding” suspicion was not reproduced in the current shell path
+  - The bigger issue here was flaky command streaming in this environment; `spawnSync` produced reliable verification output
 
-## Relevant Files
-- `apps/backend/src/notifications/notifications.module.ts` — fixed circular dep
-- `apps/backend/src/ai/ai.module.ts` — added `forwardRef` import
-- `packages/database/prisma/migrations/20260512000001_add_ai_health_events/migration.sql` — applied
+## Current Clean State
+- New commits in order:
+  1. `10a5d1e fix(backend): disable asset watchers during build`
+  2. `6aebabe fix(backend): harden restore endpoint and ws origins`
+  3. `6e3f81f chore(repo): archive legacy root reports`
+  4. `0f44840 fix(frontend): stabilize ai settings socket and i18n`
+
+## Remaining Local Noise Not Touched
+- Modified:
+  - `AGENTS.md`
+  - `CLAUDE.md`
+  - `graphify-out/GRAPH_REPORT.md`
+- Untracked:
+  - `.agents/skills/`
+  - `.github/agents/`
+  - `.kiro/specs/ai-pipeline-data-cleanup/`
+  - `.kiro/specs/crm-realtime-sync/`
+  - `.kiro/specs/rich-text-editor/`
+  - `.kiro/specs/ui-contrast-accessibility/`
+
+These were left alone deliberately because they look like user/workflow artifacts rather than product-code fixes.
+
+## Blockers / Follow-up
+- `graphify` CLI was not available in PATH during this session, so the requested post-phase graph refresh could not be executed here
+- If phase-by-phase graph updates are mandatory, install or expose `graphify` in PATH and run:
+  - `graphify update .`
+- Good next targets:
+  1. broader backend Jest sweep
+  2. frontend AI settings interaction smoke test
+  3. remaining direct `process.env` cleanup in backend
