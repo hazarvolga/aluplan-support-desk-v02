@@ -47,6 +47,23 @@ jobs:
   typecheck-and-build:
     name: Build (Backend & Frontend)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: aluplan_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d aluplan_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aluplan_ci
+      SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aluplan_shadow
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v3
@@ -59,9 +76,28 @@ jobs:
       - run: pnpm install
       - name: Prisma Generate
         run: npx prisma generate
-      - name: Prisma Migration Check (GAP-07)
-        run: npx prisma migrate diff --from-migrations packages/database/prisma/migrations --to-schema-datamodel packages/database/prisma/schema.prisma --script
-        continue-on-error: true
+      - name: Create Prisma shadow database
+        run: |
+          node - <<'NODE'
+          const { Client } = require('pg');
+
+          async function main() {
+            const client = new Client({ connectionString: process.env.DATABASE_URL });
+            await client.connect();
+            const exists = await client.query("SELECT 1 FROM pg_database WHERE datname = 'aluplan_shadow'");
+            if (exists.rowCount === 0) {
+              await client.query('CREATE DATABASE aluplan_shadow');
+            }
+            await client.end();
+          }
+
+          main().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+      - name: Prisma Migration Check (blocking)
+        run: cd packages/database && pnpm exec prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --script --exit-code
       - name: Build Backend
         run: cd apps/backend && pnpm run build
       - name: Build Frontend
@@ -161,4 +197,3 @@ jobs:
             -d '{"branch":"main","commit":"'"${{ github.sha }}"'"}' \
             --fail-with-body || echo "Webhook failed — check Coolify staging stack"
           echo "✅ Staging deployment triggered for commit ${{ github.sha }}"
-

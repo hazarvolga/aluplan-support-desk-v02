@@ -104,7 +104,7 @@ export const RAG_CONFIG = {
         /** Migration batch size */
         MIGRATION_BATCH_SIZE: 50,
         /** Gemini embedding model dimensions */
-        GEMINI_DIM: 768,
+        GEMINI_DIM: 3072,
         /** OpenAI embedding dimensions */
         OPENAI_DIM: 1536,
         /** Ollama default dimensions */

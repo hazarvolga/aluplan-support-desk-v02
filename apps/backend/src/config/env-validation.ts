@@ -1,19 +1,5 @@
-import { z } from 'zod';
 import { Logger } from '@nestjs/common';
-
-const envSchema = z.object({
-    NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-    PORT: z.coerce.number().default(4000),
-    DATABASE_URL: z.string().url(),
-    REDIS_URL: z.string().url(),
-    JWT_SECRET: z.string().min(32),
-    JWT_REFRESH_SECRET: z.string().min(32),
-    ENCRYPTION_KEY: z.string().min(32),
-    FRONTEND_URL: z.string().url(),
-    SWAGGER_PASSWORD: z.string().min(8).optional(),
-});
-
-export type Env = z.infer<typeof envSchema>;
+import { Env, envSchema } from './env-validation.schema';
 
 export function validateEnv() {
     const logger = new Logger('EnvValidation');
