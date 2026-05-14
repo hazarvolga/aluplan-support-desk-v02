@@ -1126,3 +1126,119 @@ Maintenance rule:
 
 ### Next step
 - Execute the acceptance set against localhost and classify failures by root cause before touching more retrieval code.
+
+## Interrupt Summary - 2026-05-14 Session Limit Checkpoint
+
+### User request
+- User warned that session limit is around 30% and asked for an intermediate summary.
+- This note captures the current state so the next session can continue without losing context.
+
+### Completed commits this session
+- `65d8a54 fix(rag): improve grounded retrieval relevance and cache invalidation`
+  - Neutralized HyDE so it no longer injects generic license/performance/plugin causes.
+  - Removed Hotinfo raw trace pollution from retrieval query.
+  - Added lexical/hybrid retrieval widening and query signal reranking.
+  - Strengthened network/startup intent so license sources are demoted when the query is not about licensing.
+  - Added exact/semantic cache version guards and bumped cache version to `v8`.
+  - Fixed frontend duplicate diagnosis-query construction.
+  - Verified with targeted backend tests, backend typecheck/build, frontend typecheck, GitNexus, and live 3-question smoke.
+- `6a48060 docs(rag): add acceptance question set`
+  - Added `.ai/rag-quality/README.md`.
+  - Added `.ai/rag-quality/acceptance-questions.json`.
+  - 25 multilingual customer-like RAG acceptance questions are now the active quality gate.
+
+### Current working tree
+- Only known uncommitted file:
+  - `apps/backend/openapi.json`
+- This file was already identified as an unrelated generated artifact and must not be mixed into RAG quality commits unless intentionally regenerated/restored.
+
+### Graphify / GitNexus status
+- `graphify update .` was run after phases, but it repeatedly warned:
+  - new graph: 5605 nodes
+  - existing graph: 11474 nodes
+  - possible missing chunk/session state.
+- Because of this, `graphify-out/GRAPH_REPORT.md` was restored and not committed.
+- GitNexus after Faz 1:
+  - 15 files, 55 symbols, 9 affected flows, risk high.
+- GitNexus after Faz 2 docs/memory:
+  - No changes detected.
+
+### Services
+- Backend was rebuilt and restarted from `dist/main`.
+- Backend was running on `localhost:4000` at the time of the checkpoint.
+- Redis and Postgres were reachable.
+- Frontend status was not changed in this checkpoint.
+
+### Acceptance run state
+- Faz 3 started as retrieval-only dry-run through `/api/v1/ai/search`.
+- First run:
+  - 25 total
+  - first 10 passed
+  - remaining 15 initially failed with HTTP `429` because the search endpoint throttle window was hit.
+- Retry for the 15 throttled questions used a slower pace:
+  - 15 total
+  - 7 passed
+  - 8 failed
+
+### Combined acceptance signal so far
+- Non-throttle passes observed:
+  - TR network/startup
+  - TR performance
+  - TR graphics driver
+  - TR license offline
+  - TR license server/add license
+  - TR installation
+  - TR workgroup add computer
+  - TR home-office
+  - TR IFC export
+  - TR DWG export
+  - EN performance
+  - EN name resolution
+  - EN graphics driver
+  - EN license server
+  - EN workgroup
+  - DE performance
+  - DE graphics driver
+- Real retrieval/metadata failures observed:
+  - `rag-tr-project-backup-001`
+    - Top: `[Dataset] FAQ_TR_Lisansı_yeni_bir_bilgisayara_veya_baska_bir_bilgisayara_aktarma.pdf`
+    - Category: `License & Activation`
+    - Likely root cause: dataset gap or acceptance expectation too broad; project backup/data migration content may not exist or is hidden behind license-transfer wording.
+  - `rag-tr-share-cloud-001`
+    - Top: `[Dataset] ifc_aktarim_el_kitabi.pdf`
+    - Category: `Export Import & IFC DWG`
+    - Likely root cause: Allplan Share/Cloud source gap or weak category/source coverage.
+  - `rag-tr-hotinfo-001`
+    - Top: `Allplan_2023_New_Features`
+    - Category: `General`
+    - Likely root cause: Hotinfo support source gap and legacy `General` source outranking/noise.
+- Still unresolved because retry hit `429` again:
+  - `rag-de-ifc-001`
+  - `rag-tr-cross-lingual-001`
+  - `rag-tr-no-ai-ticket-001`
+  - `rag-tr-general-demotion-001`
+  - `rag-tr-duplicate-canonical-001`
+
+### Important interpretation
+- Current failures are not the original critical bug.
+- The original critical bug was Turkish network/startup query receiving license-contaminated answer sources. That is fixed in live smoke after cache v8:
+  - top source: `[Dataset] FAQ_EN_Allplan_is_running_slow.pdf`
+  - answer excerpt: `Name resolution on the network If Allplan takes several minutes to start...`
+  - license source no longer appears in answer sources.
+- The next quality problem is now broader:
+  - endpoint throttle makes acceptance execution unreliable,
+  - some domain areas have source gaps,
+  - legacy `General` sources still leak into retrieval,
+  - duplicate/pilot canonical preference needs a measured check.
+
+### Recommended next step after resume
+1. Do not change retrieval code immediately.
+2. Finish Faz 3 by rerunning only the 5 unresolved `429` questions after throttle cooldown, one by one or with a larger delay.
+3. Write a small local acceptance runner script or npm task that:
+   - respects endpoint throttle,
+   - records JSON results,
+   - separates `429` infrastructure failures from RAG quality failures.
+4. Then start Faz 4 with the smallest fix:
+   - either source-gap/reporting for missing Allplan Share/Hotinfo/project-backup docs,
+   - or metadata/category cleanup for legacy `General` noise,
+   - or duplicate/canonical demotion if the unresolved duplicate test confirms it.
