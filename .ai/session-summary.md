@@ -779,3 +779,44 @@ Maintenance rule:
 - Watch capped-score ties among very similar license-server FAQs; source title/metadata still resolves the specific document when the query is explicit.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
+
+## Follow-up - 2026-05-14 PDF Batch 010 Completed
+
+### Batch 010 files
+- DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzservereinstellungen_auf_mehrere_Rechner_verteilen.pdf`
+- DE / `License Server & CodeMeter`: `FAQ_DE_Rueckgabe_von_Einzelplatzlizenzen_am_Lizenzserver.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_Updating_license_server_and_licenses_.pdf`
+- DE / `Performance & Hardware`: `FAQ_DE_Grafikkartentreiber_aktualisieren.pdf`
+- EN / `Performance & Hardware`: `FAQ_EN_Updating_the_driver_of_the_graphics_card.pdf`
+
+### Result
+- Dataset scan result:
+  - discovered 5 new files
+  - checked 55 existing files
+  - updated 0 existing files
+  - total local dataset files: 60
+- Sync result:
+  - 5/5 sources `ACTIVE`
+  - 5/5 latest sync logs `SUCCESS`
+  - total Batch 010 embeddings: 16
+  - embedding distribution: `3072 / v2_2` only
+- Corpus totals after Batch 010:
+  - total knowledge sources: 74
+  - total knowledge pool embeddings: 664
+  - corpus embedding distribution: `3072 / v2_2` only
+
+### Search smoke
+- DE license-server settings distribution query returned `FAQ_DE_Lizenzservereinstellungen_auf_mehrere_Rechner_verteilen.pdf` first.
+- DE return standalone licenses at license server query returned `FAQ_DE_Rueckgabe_von_Einzelplatzlizenzen_am_Lizenzserver.pdf` first.
+- EN update license server and licenses query returned `FAQ_EN_Updating_license_server_and_licenses_.pdf` first.
+- DE graphics-card-driver update query returned `FAQ_DE_Grafikkartentreiber_aktualisieren.pdf` first.
+- EN graphics-card-driver update query returned `FAQ_EN_Updating_the_driver_of_the_graphics_card.pdf` first.
+
+### Note
+- A legacy `General` category source for `FAQ_EN_Updating_the_driver_of_the_graphics_card` still appears behind the new categorized dataset source for English graphics-driver queries. The top result is correct, but legacy source cleanup/reclassification remains a future RAG quality task.
+
+### Remaining
+- Continue with Batch 011 using the same sequential, low-rate import pattern.
+- Prefer remaining support-first FAQ sources, especially installation, network/workgroup, export/import, and practical license/activation issues.
+- Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
+- `apps/backend/openapi.json` remains an unrelated modified artifact.
