@@ -702,3 +702,36 @@ Maintenance rule:
 - Continue with Batch 008 using the same sequential, low-rate import pattern.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
+
+## Follow-up - 2026-05-14 PDF Batch 008 Completed
+
+### Batch 008 files
+- DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_-_Lizenz_offline_am_Server_aktualisieren.pdf`
+- DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_-_Lizenzen_ueber_VPN_beziehen_.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_License_server_-_updating_a_license_offline_on_the_server.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_License_server_settings_used_by_several_computers.pdf`
+- TR / `License & Activation`: `faq-softlock-Softlock-Destek-2006.pdf`
+
+### Result
+- Dataset scan result:
+  - discovered 5 new files
+  - checked 45 existing files
+  - updated 0 existing files
+  - total local dataset files: 50
+- Sync result:
+  - 5/5 sources `ACTIVE`
+  - 5/5 latest sync logs `SUCCESS`
+  - total Batch 008 embeddings: 23
+  - embedding distribution: `3072 / v2_2` only
+
+### Search smoke
+- DE license-server offline update query returned `FAQ_DE_Lizenzserver_-_Lizenz_offline_am_Server_aktualisieren.pdf` first.
+- DE license server via VPN query returned `FAQ_DE_Lizenzserver_-_Lizenzen_ueber_VPN_beziehen_.pdf` first.
+- EN license-server offline update query returned `FAQ_EN_License_server_-_updating_a_license_offline_on_the_server.pdf` first.
+- EN shared license-server settings query returned `FAQ_EN_License_server_settings_used_by_several_computers.pdf` first.
+- TR Softlock support query returned `faq-softlock-Softlock-Destek-2006.pdf` first.
+
+### Remaining
+- Continue with Batch 009 using the same sequential, low-rate import pattern.
+- Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
+- `apps/backend/openapi.json` remains an unrelated modified artifact.
