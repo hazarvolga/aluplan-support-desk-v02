@@ -913,3 +913,35 @@ Maintenance rule:
 - Keep OpenAI disabled for embedding fallback; OpenAI may remain chat fallback only.
 - Keep using the sequential low-rate import pattern for any future batch.
 - `apps/backend/openapi.json` remains an unrelated modified artifact and should not be mixed into RAG/memory commits.
+
+## Follow-up - 2026-05-14 Local Browser CSP Fix
+
+### Root cause
+- Backend auth was healthy: `POST /api/v1/auth/login` returned 200, set `alu_at`/`alu_rt`, and `/auth/me` returned 200 after login.
+- Frontend middleware saw auth cookies correctly; `curl` with the same cookie reached `/tr/dashboard` with 200.
+- The browser flow was broken by CSP in local dev:
+  - `upgrade-insecure-requests` caused Next.js RSC navigation from `http://localhost:3000/dashboard` to attempt HTTPS and fail with `ERR_SSL_PROTOCOL_ERROR`.
+  - `connect-src` allowed `http://localhost:4000` but not `ws://localhost:4000`, so Socket.io WebSocket was blocked.
+
+### Fix
+- Commit: `c99076f fix(frontend): allow local websocket and http navigation in csp`
+- Changed `apps/frontend/src/middleware.ts`:
+  - added websocket origin derived from `NEXT_PUBLIC_API_URL`
+  - allowed `ws://localhost:4000` in `connect-src`
+  - limited `upgrade-insecure-requests` to production only
+
+### Verification
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- GitNexus detect changes:
+  - risk level: medium
+  - affected flow: Middleware -> Set
+- Browser automation with API-auth cookies verified:
+  - `/tr/dashboard` renders admin dashboard.
+  - `/tr/admin/ai-intelligence` renders AI strategic intelligence page.
+  - `/tr/tickets/new` renders customer new ticket page.
+  - console shows `[WS] Connected to http://localhost:4000/ws`.
+
+### Notes
+- The in-app Browser and Chrome plugin bridges timed out in this session, so Playwright was used as the fallback browser automation path.
+- Graphify hook ran during commit and warned that the rebuilt graph is much smaller than the existing graph; hook-generated `graphify-out/GRAPH_REPORT.md` was restored and not committed.
+- `apps/backend/openapi.json` remains the only unrelated modified artifact.
