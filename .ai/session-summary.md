@@ -567,3 +567,36 @@ Maintenance rule:
 - Continue with Batch 004 using the same sequential, low-rate import pattern.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
+
+## Follow-up - 2026-05-14 PDF Batch 004 Completed
+
+### Batch 004 files
+- DE / `License & Activation`: `FAQ_DE_Dienst_fuer_die_Lizenzierung_laeuft_nicht.pdf`
+- DE / `License & Activation`: `FAQ_DE_Lizenz_offline_aktivieren_und_zurueckgeben_(ohne_Internet.pdf`
+- DE / `License Server & CodeMeter`: `FAQ_DE_Fehlermeldung_CodeMeter_ist_nicht_installiert_CodeMeter_n.pdf`
+- EN / `License & Activation`: `FAQ_EN_Controlling_license_selection.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_Finding_license_server_automatically_or_entering_addition.pdf`
+
+### Result
+- Dataset scan result:
+  - discovered 5 new files
+  - checked 25 existing files
+  - updated 0 existing files
+  - total local dataset files: 30
+- Sync result:
+  - 5/5 sources `ACTIVE`
+  - 5/5 latest sync logs `SUCCESS`
+  - total Batch 004 embeddings: 29
+  - embedding distribution: `3072 / v2_2` only
+
+### Search smoke
+- DE licensing service query returned `FAQ_DE_Dienst_fuer_die_Lizenzierung_laeuft_nicht.pdf` first.
+- DE offline license activate/return query returned `FAQ_DE_Lizenz_offline_aktivieren_und_zurueckgeben_(ohne_Internet.pdf` first.
+- DE CodeMeter not-installed query returned `FAQ_DE_Fehlermeldung_CodeMeter_ist_nicht_installiert_CodeMeter_n.pdf` first.
+- EN controlling license selection query returned `FAQ_EN_Controlling_license_selection.pdf` first.
+- EN finding license server query returned `FAQ_EN_Finding_license_server_automatically_or_entering_addition.pdf` first.
+
+### Remaining
+- Continue with Batch 005 using the same sequential, low-rate import pattern.
+- Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
+- `apps/backend/openapi.json` remains an unrelated modified artifact.

@@ -6,7 +6,7 @@
 - Keep `dataset/` as the clean import surface and `.archive/rag-incoming/pdf/` as the raw PDF inbox.
 - Preserve Gemini/LLMAPI + pgvector and low-rate ingestion while importing in small validated batches.
 - Ensure Knowledge Pool sources carry useful `metadata.category` values from both dataset scan and UI upload.
-- Continue controlled 5-file PDF support batches. Batch 001, Batch 002, and Batch 003 completed successfully.
+- Continue controlled 5-file PDF support batches. Batch 001, Batch 002, Batch 003, and Batch 004 completed successfully.
 - Keep title-specific retrieval boosting in place so near-duplicate FAQ topics rank by the most specific PDF title, not only vector similarity.
 - Keep OpenAI as chat fallback only. Do not use OpenAI as embedding fallback while the active corpus is Gemini `3072/v2_2`.
 - Ensure unchanged dataset files with zero embeddings are re-indexed or fail clearly; never mark them as successful with an empty vector set.
@@ -34,4 +34,4 @@
 
 ## Next Recommended Step
 
-Prepare PDF Batch 004 from `.archive/rag-staging/pdf-first/ready/manifest-ready.json`. Keep the same 5-file, sequential, low-rate sync pattern. After each source, verify `SUCCESS`, `ACTIVE`, embeddings > 0, and embedding distribution only `3072/v2_2`. After the batch, run language/category search smoke before moving on.
+Prepare PDF Batch 005 from `.archive/rag-staging/pdf-first/ready/manifest-ready.json`. Keep the same 5-file, sequential, low-rate sync pattern. Prefer remaining support-first FAQ sources before manuals, release/package files, or broad project-data documents. After each source, verify `SUCCESS`, `ACTIVE`, embeddings > 0, and embedding distribution only `3072/v2_2`. After the batch, run language/category search smoke before moving on.
