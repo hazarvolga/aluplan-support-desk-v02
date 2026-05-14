@@ -15,6 +15,7 @@ describe('SettingsService', () => {
                 findUnique: jest.fn(),
                 findMany: jest.fn(),
                 upsert: jest.fn(),
+                update: jest.fn(),
                 delete: jest.fn(),
             },
             $transaction: jest.fn(),
@@ -68,6 +69,28 @@ describe('SettingsService', () => {
                 },
             });
         });
+
+        it('should force API keys to be stored as encrypted secrets', async () => {
+            prisma.setting.upsert.mockResolvedValue({ id: 's1', key: 'ai.gemini.api_key', value: 'encrypted-gemini-key', isSecret: true });
+
+            await service.upsert({ key: 'ai.gemini.api_key', value: 'gemini-key', isSecret: false });
+
+            expect(crypto.encrypt).toHaveBeenCalledWith('gemini-key');
+            expect(prisma.setting.upsert).toHaveBeenCalledWith({
+                where: { key: 'ai.gemini.api_key' },
+                update: {
+                    value: 'encrypted-gemini-key',
+                    isSecret: true,
+                    updatedBy: undefined,
+                },
+                create: {
+                    key: 'ai.gemini.api_key',
+                    value: 'encrypted-gemini-key',
+                    isSecret: true,
+                    updatedBy: undefined,
+                },
+            });
+        });
     });
 
     describe('getValue', () => {
@@ -78,6 +101,23 @@ describe('SettingsService', () => {
             const result = await service.getValue('val.key');
 
             expect(result).toBe('plain');
+        });
+
+        it('should migrate plaintext API keys to encrypted secret storage on read', async () => {
+            const dbSetting = { id: 's1', key: 'ai.gemini.api_key', value: 'plain-key', isSecret: false };
+            prisma.setting.findUnique.mockResolvedValue(dbSetting);
+            prisma.setting.update.mockResolvedValue({ ...dbSetting, value: 'encrypted-plain-key', isSecret: true });
+
+            const result = await service.getValue('ai.gemini.api_key');
+
+            expect(result).toBe('plain-key');
+            expect(prisma.setting.update).toHaveBeenCalledWith({
+                where: { key: 'ai.gemini.api_key' },
+                data: {
+                    value: 'encrypted-plain-key',
+                    isSecret: true,
+                },
+            });
         });
 
         it('should return null if setting does not exist', async () => {

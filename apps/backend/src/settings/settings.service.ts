@@ -10,6 +10,15 @@ export class SettingsService {
     private readonly logger = new Logger(SettingsService.name);
     private cache = new Map<string, string>();
     private secretCache = new Map<string, boolean>();
+    private readonly secretKeyPatterns = [
+        /\.api_key$/,
+        /\.secret_key$/,
+        /\.client_secret$/,
+        /\.webhook_secret$/,
+        /\.credentials_json$/,
+        /\.token$/,
+        /^resend_api_key$/,
+    ];
 
     constructor(
         private prisma: PrismaService,
@@ -33,8 +42,9 @@ export class SettingsService {
             if (existing) return existing;
         }
 
+        const isSecret = this.resolveSecretFlag(dto.key, dto.isSecret);
         let finalValue = dto.value;
-        if (dto.isSecret) {
+        if (isSecret) {
             finalValue = this.crypto.encrypt(dto.value);
         }
 
@@ -42,26 +52,60 @@ export class SettingsService {
             where: { key: dto.key },
             update: {
                 value: finalValue,
-                isSecret: dto.isSecret ?? false,
+                isSecret,
                 updatedBy: userId,
             },
             create: {
                 key: dto.key,
                 value: finalValue,
-                isSecret: dto.isSecret ?? false,
+                isSecret,
                 updatedBy: userId,
             },
         });
 
         // Update cache
         this.cache.set(dto.key, dto.value); // Store plaintext in cache for internal use
-        this.secretCache.set(dto.key, dto.isSecret ?? false);
+        this.secretCache.set(dto.key, isSecret);
 
         if ((dto.key === 'ai.embed_provider' || dto.key.endsWith('.embed_model')) && oldValue !== finalValue) {
             this.eventEmitter.emit('ai.embedding.provider_changed', { key: dto.key, newValue: finalValue, oldValue });
         }
 
         return setting;
+    }
+
+    private isSecretKey(key: string): boolean {
+        return this.secretKeyPatterns.some((pattern) => pattern.test(key));
+    }
+
+    private resolveSecretFlag(key: string, requested?: boolean): boolean {
+        return requested === true || this.isSecretKey(key);
+    }
+
+    private async securePlaintextSecret<T extends { key: string; value: string; isSecret: boolean }>(setting: T): Promise<T> {
+        if (setting.isSecret || !this.isSecretKey(setting.key)) {
+            return setting;
+        }
+
+        const plaintext = setting.value ?? '';
+        const encryptedValue = this.crypto.encrypt(plaintext);
+        await this.prisma.setting.update({
+            where: { key: setting.key },
+            data: {
+                value: encryptedValue,
+                isSecret: true,
+            },
+        });
+
+        this.logger.warn(`Secured plaintext secret setting: ${setting.key}`);
+        this.cache.set(setting.key, plaintext);
+        this.secretCache.set(setting.key, true);
+
+        return {
+            ...setting,
+            value: encryptedValue,
+            isSecret: true,
+        };
     }
 
     private async validateAiSetting(key: string, value: string, context?: Map<string, string>) {
@@ -150,23 +194,26 @@ export class SettingsService {
     async get(key: string, decrypt = false): Promise<any> {
         // Return from cache if available (plaintext internal cache)
         if (this.cache.has(key)) {
-            const isSecret = this.secretCache.get(key);
+            const isSecret = this.resolveSecretFlag(key, this.secretCache.get(key));
             let value = this.cache.get(key) || '';
 
             if (isSecret && !decrypt) {
                 value = '********';
             }
 
+            this.secretCache.set(key, isSecret);
             return { key, value, isSecret };
         }
 
-        const setting = await this.prisma.setting.findUnique({
+        let setting = await this.prisma.setting.findUnique({
             where: { key },
         });
 
         if (!setting) {
             return null;
         }
+
+        setting = await this.securePlaintextSecret(setting);
 
         let plaintext = setting.value;
         if (setting.isSecret) {
@@ -208,8 +255,9 @@ export class SettingsService {
 
     async getAll(decrypt = false) {
         const settings = await this.prisma.setting.findMany();
+        const securedSettings = await Promise.all(settings.map((s) => this.securePlaintextSecret(s)));
 
-        return settings.map((s) => {
+        return securedSettings.map((s) => {
             let value = s.value;
             if (s.isSecret) {
                 try {
@@ -252,7 +300,7 @@ export class SettingsService {
         const results = await this.prisma.$transaction(
             dto.settings.map((item) => {
                 let finalValue = item.value;
-                const isSecret = item.isSecret ?? false;
+                const isSecret = this.resolveSecretFlag(item.key, item.isSecret);
 
                 // Handle masked secrets
                 if (item.value === '********') {
@@ -286,7 +334,7 @@ export class SettingsService {
         for (const item of dto.settings) {
             if (item.value !== '********') {
                 this.cache.set(item.key, item.value);
-                this.secretCache.set(item.key, item.isSecret ?? false);
+                this.secretCache.set(item.key, this.resolveSecretFlag(item.key, item.isSecret));
                 
                 const oldVal = existingMap.get(item.key);
                 if ((item.key === 'ai.embed_provider' || item.key.endsWith('.embed_model')) && oldVal !== item.value) {
