@@ -213,12 +213,20 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         if (hash === source.lastHash) {
             this.logger.log(`⏩ File unchanged (Hash match): ${source.fileName}`);
 
-            // Still update status to ACTIVE if it was SYNCING
-            await this.prisma.knowledgeSource.update({
-                where: { id: source.id },
-                data: { status: KnowledgeSourceStatus.ACTIVE, lastSyncedAt: new Date() }
+            const existingEmbeddingCount = await this.prisma.knowledgePoolEmbedding.count({
+                where: { sourceId: source.id },
             });
-            return;
+
+            if (existingEmbeddingCount === 0) {
+                this.logger.warn(`⚠️ File unchanged but has no embeddings; forcing re-index for ${source.fileName}`);
+            } else {
+                // Still update status to ACTIVE if it was SYNCING
+                await this.prisma.knowledgeSource.update({
+                    where: { id: source.id },
+                    data: { status: KnowledgeSourceStatus.ACTIVE, lastSyncedAt: new Date() }
+                });
+                return;
+            }
         }
 
         // Apply AI Pre-processing if enabled in metadata

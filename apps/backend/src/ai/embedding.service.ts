@@ -7,6 +7,7 @@ import { createHash } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { classifyDatasetFile } from '../knowledge-pool/dataset-classifier';
+import { EmbeddingResult } from './interfaces/ai-provider.interface';
 
 export interface SearchResult {
     articleId: string;
@@ -114,7 +115,7 @@ export class EmbeddingService {
 
         for (const h of hierarchies) {
             const parentId = crypto.randomUUID();
-            const parentEmb = await this.ai.embed(h.parent);
+            const parentEmb = this.ensureEmbeddingCompatibility(await this.ai.embed(h.parent), config, `article parent ${articleId}`);
             if (!parentEmb) continue;
 
             await this.prisma.$executeRaw`
@@ -125,7 +126,7 @@ export class EmbeddingService {
 
             for (let i = 0; i < h.children.length; i++) {
                 const childContent = h.children[i];
-                const childEmb = await this.ai.embed(childContent);
+                const childEmb = this.ensureEmbeddingCompatibility(await this.ai.embed(childContent), config, `article child ${articleId}`);
                 if (childEmb) {
                     await this.prisma.$executeRaw`
                         INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, parent_id, embedding_version, embedding_dim)
@@ -145,9 +146,10 @@ export class EmbeddingService {
      * Semantic similarity search using pgvector with Trust Score re-ranking.
      */
     async search(query: string, limit = 5, productId?: string | null, includeInternal = false): Promise<SearchResponse> {
+        const config = await this.registry.getActiveVersionConfig();
         let embResult: Awaited<ReturnType<typeof this.ai.embed>>;
         try {
-            embResult = await this.ai.embed(query);
+            embResult = this.ensureEmbeddingCompatibility(await this.ai.embed(query), config, 'semantic search query');
         } catch (err: any) {
             this.logger.warn(`Semantic search unavailable — embed failed: ${err?.message ?? err}`);
             return { results: [], diagnostics: { topScore: 0, passedThreshold: 0, queryEmbeddingModel: 'unknown', thresholdUsed: 0 } };
@@ -157,7 +159,6 @@ export class EmbeddingService {
             return { results: [], diagnostics: { topScore: 0, passedThreshold: 0, queryEmbeddingModel: 'unknown', thresholdUsed: 0 } };
         }
 
-        const config = await this.registry.getActiveVersionConfig();
         const vectorStr = JSON.stringify(embResult.embedding);
         const cleanQuery = query.replace(/['"\\;]/g, '');
         const normalizedLimit = normalizeSearchLimit(limit);
@@ -344,7 +345,11 @@ export class EmbeddingService {
             let totalInserted = 0;
             for (const h of hierarchies) {
                 const parentId = crypto.randomUUID();
-                const parentEmb = await this.ai.embed(h.parent);
+                const parentEmb = this.ensureEmbeddingCompatibility(
+                    await this.ai.embed(h.parent),
+                    config,
+                    `knowledge pool parent ${sourceId}`,
+                );
                 if (!parentEmb) {
                     this.logger.warn(`⚠️ Parent embedding failed for source ${sourceId}`);
                     continue;
@@ -363,7 +368,11 @@ export class EmbeddingService {
                 totalInserted++;
 
                 for (const childContent of h.children) {
-                    const childEmb = await this.ai.embed(childContent);
+                    const childEmb = this.ensureEmbeddingCompatibility(
+                        await this.ai.embed(childContent),
+                        config,
+                        `knowledge pool child ${sourceId}`,
+                    );
                     if (childEmb) {
                         const childVector = JSON.stringify(childEmb.embedding);
                         const childMeta = JSON.stringify(metadata);
@@ -380,6 +389,10 @@ export class EmbeddingService {
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
 
+            if (totalInserted === 0) {
+                throw new Error(`No embeddings generated for pool source ${sourceId}`);
+            }
+
             this.logger.log(`📐 FINISHED: Indexed ${totalInserted} chunks for pool source ${sourceId}`);
             this.eventEmitter.emit('knowledge-pool.synced', { sourceId });
         } catch (error) {
@@ -393,9 +406,9 @@ export class EmbeddingService {
     }
 
     async indexTicket(ticketId: string, content: string): Promise<void> {
-        const result = await this.ai.embed(content);
-        if (!result) return;
         const config = await this.registry.getActiveVersionConfig();
+        const result = this.ensureEmbeddingCompatibility(await this.ai.embed(content), config, `ticket ${ticketId}`);
+        if (!result) return;
 
         await this.prisma.$executeRaw`
       INSERT INTO ticket_embeddings(id, ticket_id, embedding, embedding_version, embedding_dim)
@@ -404,15 +417,15 @@ export class EmbeddingService {
     }
 
     async searchTickets(query: string, limit = 3): Promise<Array<{ ticketId: string; subject: string; similarity: number }>> {
+        const config = await this.registry.getActiveVersionConfig();
         let embResult: Awaited<ReturnType<typeof this.ai.embed>>;
         try {
-            embResult = await this.ai.embed(query);
+            embResult = this.ensureEmbeddingCompatibility(await this.ai.embed(query), config, 'ticket search query');
         } catch (err: any) {
             this.logger.warn(`Ticket search unavailable — embed failed: ${err?.message ?? err}`);
             return [];
         }
         if (!embResult) return [];
-        const config = await this.registry.getActiveVersionConfig();
 
         const vectorStr = JSON.stringify(embResult.embedding);
         const rows = await this.prisma.$queryRaw<Array<{ ticket_id: string; subject: string; similarity: number }>>`
@@ -431,12 +444,32 @@ export class EmbeddingService {
      * Used by FaqService for semantic deduplication.
      */
     async embedText(text: string): Promise<number[] | null> {
-        const result = await this.ai.embed(text);
+        const config = await this.registry.getActiveVersionConfig();
+        const result = this.ensureEmbeddingCompatibility(await this.ai.embed(text), config, 'standalone text');
         return result ? result.embedding : null;
     }
 
     private async delayPoolEmbedding(): Promise<void> {
         await new Promise(resolve => setTimeout(resolve, this.POOL_EMBED_PACING_MS));
+    }
+
+    private ensureEmbeddingCompatibility(result: EmbeddingResult | null, config: { dimension: number; model: string }, context: string): EmbeddingResult | null {
+        if (!result) return null;
+
+        const actualDimension = result.embedding.length;
+        if (actualDimension !== config.dimension) {
+            throw new Error(`Embedding dimension mismatch for ${context}: expected ${config.dimension}, got ${actualDimension} from ${result.model}`);
+        }
+
+        if (this.normalizeEmbeddingModel(result.model) !== this.normalizeEmbeddingModel(config.model)) {
+            throw new Error(`Embedding model mismatch for ${context}: expected ${config.model}, got ${result.model}`);
+        }
+
+        return result;
+    }
+
+    private normalizeEmbeddingModel(model: string): string {
+        return model.replace(/^models\//, '').toLowerCase();
     }
 
     async reindexAll(): Promise<{ indexed: number; failed: number }> {

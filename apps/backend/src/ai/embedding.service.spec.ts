@@ -19,7 +19,7 @@ describe('EmbeddingService', () => {
 
     const mockEmbedResult = {
         embedding: Array.from({ length: 1536 }, () => Math.random()),
-        model: 'nomic-embed-text',
+        model: 'text-embedding-3-small',
     };
 
     beforeEach(async () => {
@@ -201,15 +201,20 @@ describe('EmbeddingService', () => {
     });
 
     describe('indexPoolContent', () => {
-        it('should skip indexing when AI embed returns null', async () => {
+        it('should fail pool indexing when AI embed returns null for every chunk', async () => {
             // Arrange
             mockAiService.embed.mockResolvedValue(null);
 
             // Act
-            await service.indexPoolContent('src-1', 'some content');
+            await expect(service.indexPoolContent('src-1', 'some content')).rejects.toThrow(
+                'No embeddings generated for pool source src-1',
+            );
 
             // Assert
-            expect(mockPrismaService.$executeRawUnsafe).toHaveBeenCalledTimes(1);
+            const deleteCalls = mockPrismaService.$executeRawUnsafe.mock.calls
+                .map((call: unknown[]) => String(call[0]))
+                .filter((sql: string) => sql.includes('DELETE FROM knowledge_pool_embeddings'));
+            expect(deleteCalls).toHaveLength(2);
         });
 
         it('should execute raw insert when embed succeeds', async () => {
@@ -238,6 +243,43 @@ describe('EmbeddingService', () => {
                 .map((call: unknown[]) => String(call[0]))
                 .filter((sql: string) => sql.includes('DELETE FROM knowledge_pool_embeddings'));
             expect(deleteCalls).toHaveLength(2);
+        });
+
+        it('should reject mismatched embedding dimensions before writing pool vectors', async () => {
+            mockAiService.embed.mockResolvedValue({
+                embedding: [0.1, 0.2, 0.3],
+                model: 'wrong-dimension-model',
+            });
+
+            await expect(service.indexPoolContent('src-1', 'content')).rejects.toThrow(
+                'Embedding dimension mismatch for knowledge pool parent src-1: expected 1536, got 3 from wrong-dimension-model',
+            );
+
+            const insertCalls = mockPrismaService.$executeRawUnsafe.mock.calls
+                .map((call: unknown[]) => String(call[0]))
+                .filter((sql: string) => sql.includes('INSERT INTO knowledge_pool_embeddings'));
+            expect(insertCalls).toHaveLength(0);
+
+            const deleteCalls = mockPrismaService.$executeRawUnsafe.mock.calls
+                .map((call: unknown[]) => String(call[0]))
+                .filter((sql: string) => sql.includes('DELETE FROM knowledge_pool_embeddings'));
+            expect(deleteCalls).toHaveLength(2);
+        });
+
+        it('should reject same-dimension embeddings from a different model space', async () => {
+            mockAiService.embed.mockResolvedValue({
+                embedding: Array.from({ length: 1536 }, () => 0.1),
+                model: 'text-embedding-3-large',
+            });
+
+            await expect(service.indexPoolContent('src-1', 'content')).rejects.toThrow(
+                'Embedding model mismatch for knowledge pool parent src-1: expected text-embedding-3-small, got text-embedding-3-large',
+            );
+
+            const insertCalls = mockPrismaService.$executeRawUnsafe.mock.calls
+                .map((call: unknown[]) => String(call[0]))
+                .filter((sql: string) => sql.includes('INSERT INTO knowledge_pool_embeddings'));
+            expect(insertCalls).toHaveLength(0);
         });
     });
 
