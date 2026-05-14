@@ -128,7 +128,7 @@ const inferCategorySlug = (filePath: string, fileName: string): keyof typeof DAT
         return 'installation-setup';
     }
 
-    if (hasAny(lower, ['workgroup', 'network', 'netzwerk', 'server', 'loopback', 'home-office', 'home office'])) {
+    if (hasAny(lower, ['workgroup', 'network', 'netzwerk', 'server', 'loopback', 'home-office', 'home office', 'name resolution', 'isim cozumleme', 'isim çözümleme', 'dns'])) {
         return 'network-workgroup';
     }
 

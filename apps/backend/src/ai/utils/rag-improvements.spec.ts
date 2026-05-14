@@ -46,18 +46,21 @@ describe('hypothetical-document', () => {
     describe('generateHypotheticalDocument', () => {
         it('should generate Turkish template by default', () => {
             const result = generateHypotheticalDocument('Allplan crash');
-            expect(result).toContain('Allplan hakkında bir destek makalesi');
+            expect(result).toContain('Allplan destek bilgi kaynağı');
             expect(result).toContain('Başlık');
+            expect(result).not.toContain('Lisans veya yetkilendirme');
         });
 
         it('should generate English template when language is en', () => {
             const result = generateHypotheticalDocument('Allplan crash', { language: 'en' });
-            expect(result).toContain('Allplan support article');
+            expect(result).toContain('Allplan support knowledge source');
+            expect(result).not.toContain('License or authorization');
         });
 
         it('should generate German template when language is de', () => {
             const result = generateHypotheticalDocument('Allplan crash', { language: 'de' });
-            expect(result).toContain('Allplan-Supportartikel');
+            expect(result).toContain('Allplan Support-Wissensquelle');
+            expect(result).not.toContain('Lizenz- oder Autorisierungsproblem');
         });
 
         it('should respect maxLength', () => {

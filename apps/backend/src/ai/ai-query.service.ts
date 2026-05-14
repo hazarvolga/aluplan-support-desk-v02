@@ -49,6 +49,7 @@ export interface AiQueryResult {
     suggestTicket: boolean;
     translations?: Record<string, string>;
     diagnosis?: DiagnosisResult;
+    cacheVersion?: string;
 }
 
 export const MASTER_DIAGNOSIS_PROMPT = `
@@ -220,7 +221,7 @@ export class AiQueryService {
         if (cached) {
             const result = JSON.parse(cached);
             this.metrics.recordCacheOp('AI_QUERY', 'HIT');
-            this.logger.log(`⚡ [Cache Hit] interactionId=${result.interactionId} (v5)`);
+            this.logger.log(`⚡ [Cache Hit] interactionId=${result.interactionId} (${RAG_CONFIG.CACHE.VERSION})`);
             return result;
         }
 
@@ -342,12 +343,13 @@ export class AiQueryService {
             expandedQuery += `\n\n[KULLANICI EKLERİ İÇERİĞİ]:\n${parsedDocumentTexts}`;
         }
 
-        // Only inject Hotinfo into search query for PERFORMANS/CRASH queries
+        // Hotinfo is valuable context for answer generation, but raw traces can
+        // pollute retrieval intent (for example a performance query with a
+        // license trace can wrongly retrieve license-transfer PDFs).
         const isHardwareQuery = this.isHardwareOrSystemQuery(expandedQuery);
         if (hotinfoContext && isHardwareQuery) {
             const h = hotinfoContext;
-            expandedQuery += `\n[Hotinfo Sistem Özeti]: İşletim Sistemi: ${h.osVersion || ''}, Ekran Kartı: ${h.gpu || ''}, Hata: ${h.errorTrace || ''}, Çakışan İşlemler: ${h.conflictingProcesses?.join(', ') || ''}`;
-            this.logger.log(`🔍 AI Query Expanded with Hotinfo (hardware query detected): Error [${h.errorTrace || 'None'}]`);
+            this.logger.log(`ℹ️ Hotinfo kept for prompt context, not retrieval query (OS=${h.osVersion || 'N/A'}, GPU=${h.gpu || 'N/A'}, Error=${h.errorTrace ? 'present' : 'none'})`);
         } else if (hotinfoContext) {
             this.logger.log(`ℹ️ Hotinfo available but NOT injected into search query (non-hardware query)`);
         }
@@ -403,10 +405,10 @@ export class AiQueryService {
         // Heuristic Re-ranking (feedback-weighted)
         const articleIds = results.map(r => r.articleId).filter(Boolean);
         const feedbackWeights = await this.fetchArticleFeedbackWeights(articleIds);
-        results = this.rerankResults(results, feedbackWeights);
+        results = this.rerankResults(results, feedbackWeights, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT);
 
         if (options.wait === true) {
-            results = this.rerankResultsByQuerySignals(expandedQuery, results);
+            results = this.rerankResultsByQuerySignals(expandedQuery, results).slice(0, RAG_CONFIG.SEARCH.DEFAULT_LIMIT);
             this.logger.log('⏭️ [Phase: Re-ranking] Skipped LLM re-ranking for synchronous diagnosis.');
         } else {
             // Advanced LLM Re-ranking (Cross-Encoder)
@@ -704,6 +706,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             .map((result, index) => {
                 const normalizedTitle = this.normalizeSearchText(result.title ?? '');
                 const normalizedContent = this.normalizeSearchText(result.content ?? '');
+                const normalizedCategory = this.normalizeSearchText(result.category ?? '');
                 let signalBoost = 0;
                 let matchedGroups = 0;
 
@@ -718,8 +721,28 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                 }
 
                 const coverageBoost = (matchedGroups / activeGroups.length) * 0.18;
+                const asksNetworkStartup =
+                    activeGroups.some(group => group.name === 'startup') &&
+                    activeGroups.some(group => group.name === 'network');
+                const asksLicense = activeGroups.some(group => group.name === 'license');
+                const isLicenseSource =
+                    normalizedCategory.includes('license') ||
+                    normalizedTitle.includes('license') ||
+                    normalizedTitle.includes('lisans') ||
+                    normalizedTitle.includes('softlock') ||
+                    normalizedTitle.includes('codemeter');
+                const preciseNameResolutionBoost =
+                    asksNetworkStartup &&
+                    (
+                        normalizedContent.includes('name resolution on the network') ||
+                        normalizedContent.includes('takes several minutes to start') ||
+                        normalizedContent.includes('several minutes to start')
+                    )
+                        ? 0.42
+                        : 0;
+                const intentPenalty = asksNetworkStartup && !asksLicense && isLicenseSource ? 0.9 : 0;
                 const positionPenalty = index * 0.0001;
-                const rankingScore = result.similarity + signalBoost + coverageBoost - positionPenalty;
+                const rankingScore = result.similarity + signalBoost + coverageBoost + preciseNameResolutionBoost - intentPenalty - positionPenalty;
 
                 return {
                     ...result,
@@ -832,14 +855,16 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         return snippets.sort((a, b) => b.score - a.score).slice(0, 3);
     }
 
-    private getQuerySignalGroups(): Array<{ terms: string[]; weight: number }> {
+    private getQuerySignalGroups(): Array<{ name: string; terms: string[]; weight: number }> {
         return [
-            { terms: ['ekran karti', 'ekran kartlari', 'grafik karti', 'grafik kartlari', 'graphics card', 'gpu', 'display adapter', 'grafikkarte', 'nvidia', 'amd'], weight: 0.14 },
-            { terms: ['surucu', 'driver', 'treiber', 'gpu driver', 'ekran karti surucusu'], weight: 0.14 },
-            { terms: ['guncelleme', 'guncellenir', 'guncelle', 'update', 'current version', 'hotfix', 'patch', 'surum'], weight: 0.1 },
-            { terms: ['lisans', 'license', 'wibu', 'codemeter'], weight: 0.12 },
-            { terms: ['ifc', 'export', 'import', 'aktarim', 'ice aktar', 'disa aktar'], weight: 0.12 },
-            { terms: ['performans', 'slow', 'yavas', 'donma', 'freeze'], weight: 0.08 },
+            { name: 'graphics', terms: ['ekran karti', 'ekran kartlari', 'grafik karti', 'grafik kartlari', 'graphics card', 'gpu', 'display adapter', 'grafikkarte', 'nvidia', 'amd'], weight: 0.14 },
+            { name: 'driver', terms: ['surucu', 'driver', 'treiber', 'gpu driver', 'ekran karti surucusu'], weight: 0.14 },
+            { name: 'update', terms: ['guncelleme', 'guncellenir', 'guncelle', 'update', 'current version', 'hotfix', 'patch', 'surum'], weight: 0.1 },
+            { name: 'license', terms: ['lisans', 'license', 'wibu', 'codemeter'], weight: 0.12 },
+            { name: 'exchange', terms: ['ifc', 'export', 'import', 'aktarim', 'ice aktar', 'disa aktar'], weight: 0.12 },
+            { name: 'performance', terms: ['performans', 'slow', 'yavas', 'donma', 'freeze'], weight: 0.08 },
+            { name: 'startup', terms: ['acilis', 'baslangic', 'baslatma', 'startup', 'start', 'starting', 'startet', 'bekliyor', 'waiting'], weight: 0.1 },
+            { name: 'network', terms: ['ag', 'network', 'netzwerk', 'isim cozumleme', 'name resolution', 'dns', 'server', 'sunucu'], weight: 0.1 },
         ];
     }
 
@@ -866,7 +891,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
      * Heuristic Re-ranking (Cohort Search)
      * Section 5.3: Re-ranking with weights
      */
-    private rerankResults(results: SearchResult[], feedbackWeights: Record<string, number> = {}): SearchResult[] {
+    private rerankResults(results: SearchResult[], feedbackWeights: Record<string, number> = {}, limit: number = RAG_CONFIG.SEARCH.DEFAULT_LIMIT): SearchResult[] {
         if (results.length === 0) return [];
 
         const RERANK = RAG_CONFIG.RERANK.FACTORS;
@@ -915,7 +940,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                 return true;
             })
             .sort((a, b) => b.similarity - a.similarity)
-            .slice(0, RAG_CONFIG.SEARCH.DEFAULT_LIMIT);
+            .slice(0, limit);
     }
 
     /**
@@ -1007,7 +1032,8 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         // Apply Re-ranking (feedback-weighted)
         const streamArticleIds = results.map(r => r.articleId).filter(Boolean);
         const streamFeedbackWeights = await this.fetchArticleFeedbackWeights(streamArticleIds);
-        results = this.rerankResults(results, streamFeedbackWeights);
+        results = this.rerankResults(results, streamFeedbackWeights, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT);
+        results = this.rerankResultsByQuerySignals(expandedQuery, results);
         results = await this.rankResultsWithLLM(userQuery, results);
 
         const topResult = results[0] ?? null;

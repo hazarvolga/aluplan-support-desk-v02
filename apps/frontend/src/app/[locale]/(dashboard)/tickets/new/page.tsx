@@ -28,6 +28,18 @@ const getTicketSchema = (t: any) => z.object({
 
 type TicketFormValues = z.infer<ReturnType<typeof getTicketSchema>>;
 
+const normalizeQuestionText = (value: string) => value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('tr-TR');
+
+const buildDiagnosisQuery = (subject: string, description: string) => {
+    const normalizedSubject = normalizeQuestionText(subject);
+    const normalizedDescription = normalizeQuestionText(description);
+
+    if (!normalizedDescription) return subject.trim();
+    if (normalizedSubject === normalizedDescription) return subject.trim();
+
+    return `${subject.trim()}\n\n${description.trim()}`;
+};
+
 export default function NewTicketPage() {
     const t = useTranslations('tickets.new');
     const ct = useTranslations('common');
@@ -157,7 +169,7 @@ export default function NewTicketPage() {
             // Switch to specialized query endpoint for conversational RAG
             // Passing product context to focus search on relevant knowledge base
             const pId = selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId;
-            const resolvedResponse = await api.ai.query(`${subject} ${description}`, context, pId, locale, [], attachments, true) as
+            const resolvedResponse = await api.ai.query(buildDiagnosisQuery(subject, description), context, pId, locale, [], attachments, true) as
                 { answer?: string; interactionId?: string; answerMode?: 'LLM' | 'FALLBACK' } | null;
 
             if (!resolvedResponse || !resolvedResponse.answer) {

@@ -43,7 +43,7 @@ export const SYNONYM_GROUPS: SynonymEntry[] = [
     { canonical: 'graphics_card', variants: ['ekran kartı', 'gpu', 'graphics card', 'grafikkarte', 'nvidia', 'amd', 'display adapter'] },
     { canonical: 'driver', variants: ['sürücü', 'driver', 'treiber', 'ekran kartı sürücüsü', 'gpu driver'] },
     { canonical: 'memory', variants: ['bellek', 'ram', 'memory', 'arbeitsspeicher', 'speicher'] },
-    { canonical: 'network', variants: ['ağ', 'network', 'netzwerk', 'internet', 'bağlantı', 'connection', 'verbindung'] },
+    { canonical: 'network', variants: ['ağ', 'network', 'netzwerk', 'internet', 'bağlantı', 'connection', 'verbindung', 'isim çözümleme', 'isim cozumleme', 'name resolution', 'dns'] },
 
     // --- Project & Data ---
     { canonical: 'project', variants: ['proje', 'project', 'projekt', 'dosya', 'file', 'datei'] },

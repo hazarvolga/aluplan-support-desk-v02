@@ -8,6 +8,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { classifyDatasetFile } from '../knowledge-pool/dataset-classifier';
 import { EmbeddingResult } from './interfaces/ai-provider.interface';
+import { expandQueryWithSynonyms } from './utils/synonym-dictionary';
 
 export interface SearchResult {
     articleId: string;
@@ -86,6 +87,45 @@ const calculateTitleTokenBoost = (queryTokens: string[], title: string | null | 
     return Math.min(1 + matchCount * 0.06, 1.3);
 };
 
+const hasSignal = (normalizedQuery: string, signals: string[]): boolean =>
+    signals.some((signal) => normalizedQuery.includes(signal));
+
+const calculateIntentCategoryMultiplier = (query: string, category: string | null | undefined): number => {
+    if (!category) return 1;
+
+    const normalizedQuery = normalizeSearchText(query);
+    const hasLicenseIntent = hasSignal(normalizedQuery, ['license', 'lisans', 'softlock', 'codemeter', 'product key', 'aktivasyon', 'activation', 'lizenz']);
+    const hasNetworkIntent = hasSignal(normalizedQuery, ['network', 'netzwerk', 'server', 'sunucu', 'isim cozumleme', 'name resolution', 'dns', 'workgroup', 'ag']);
+    const hasStartupIntent = hasSignal(normalizedQuery, ['acilis', 'baslangic', 'startup', 'start', 'bekliyor', 'waiting']);
+    const hasPerformanceIntent = hasSignal(normalizedQuery, ['performans', 'performance', 'yavas', 'slow', 'langsam', 'grafik', 'graphics', 'driver', 'surucu']);
+
+    if ((hasNetworkIntent || hasStartupIntent) && category === 'License & Activation' && !hasLicenseIntent) return 0.72;
+    if (hasPerformanceIntent && category === 'License & Activation' && !hasLicenseIntent) return 0.78;
+    if (hasLicenseIntent && category === 'License & Activation') return 1.18;
+    if ((hasNetworkIntent || hasStartupIntent) && category === 'Network & Workgroup') return 1.22;
+    if (hasPerformanceIntent && category === 'Performance & Hardware') return 1.18;
+
+    return 1;
+};
+
+const calculateContentSignalBoost = (query: string, title: string | null | undefined, content: string | null | undefined): number => {
+    const normalizedQuery = normalizeSearchText(query);
+    const normalizedSource = normalizeSearchText(`${title ?? ''} ${content ?? ''}`);
+
+    const asksNetworkStartup =
+        hasSignal(normalizedQuery, ['acilis', 'baslangic', 'startup', 'start', 'bekliyor', 'waiting']) &&
+        hasSignal(normalizedQuery, ['isim cozumleme', 'name resolution', 'dns', 'network', 'netzwerk', 'server', 'sunucu', 'ag']);
+
+    if (
+        asksNetworkStartup &&
+        hasSignal(normalizedSource, ['name resolution on the network', 'takes several minutes to start', 'several minutes to start'])
+    ) {
+        return 1.42;
+    }
+
+    return 1;
+};
+
 @Injectable()
 export class EmbeddingService {
     private readonly logger = new Logger(EmbeddingService.name);
@@ -160,8 +200,10 @@ export class EmbeddingService {
         }
 
         const vectorStr = JSON.stringify(embResult.embedding);
-        const cleanQuery = query.replace(/['"\\;]/g, '');
+        const expandedForSearch = expandQueryWithSynonyms(query).expanded;
+        const cleanQuery = expandedForSearch.replace(/['"\\;]/g, '');
         const normalizedLimit = normalizeSearchLimit(limit);
+        const candidateLimit = Math.min(Math.max(normalizedLimit * 12, 80), 200);
         const queryClassification = classifyDatasetFile(`${cleanQuery}.pdf`);
         const queryLanguage = queryClassification.language;
         const queryCategory = queryClassification.category;
@@ -193,7 +235,18 @@ export class EmbeddingService {
             ts_rank_cd(to_tsvector('simple', ka.title || ' ' || kav.content_plain), websearch_to_tsquery('simple', ${cleanQuery})) as rank
         FROM knowledge_articles ka
         JOIN knowledge_article_versions kav ON ka.id = kav.article_id AND ka.current_version = kav.version
-        WHERE to_tsvector('simple', ka.title || ' ' || kav.content_plain) @@ websearch_to_tsquery('simple', ${cleanQuery})
+          WHERE to_tsvector('simple', ka.title || ' ' || kav.content_plain) @@ websearch_to_tsquery('simple', ${cleanQuery})
+      ),
+      pool_keyword_search AS (
+        SELECT
+            ks.id,
+            MAX(ts_rank_cd(to_tsvector('simple', ks.name || ' ' || kpe.content), websearch_to_tsquery('simple', ${cleanQuery}))) AS rank
+        FROM knowledge_sources ks
+        JOIN knowledge_pool_embeddings kpe ON kpe.source_id = ks.id
+        WHERE ks.status = 'ACTIVE'
+          AND kpe.embedding_version = ${config.version}
+          AND to_tsvector('simple', ks.name || ' ' || kpe.content) @@ websearch_to_tsquery('simple', ${cleanQuery})
+        GROUP BY ks.id
       ),
       combined_search AS (
         SELECT 
@@ -236,7 +289,10 @@ export class EmbeddingService {
             END AS source_type, 
             ks.name AS title, 
             COALESCE(parent_kpe.content, kpe.content) AS content,
-            1 - (kpe.embedding <=> ${vectorStr}::vector) AS similarity,
+            (
+                (1 - (kpe.embedding <=> ${vectorStr}::vector)) * 0.75 +
+                COALESCE((SELECT rank FROM pool_keyword_search WHERE id = ks.id LIMIT 1), 0.0) * 0.25
+            ) AS similarity,
             ks.trust_score,
             ks.language,
             ks.metadata->>'category' AS category,
@@ -247,7 +303,11 @@ export class EmbeddingService {
         WHERE ks.status = 'ACTIVE' 
           AND (${validProductId}::uuid IS NULL OR ks.product_id = ${validProductId}::uuid OR ks.product_id IS NULL) 
           AND kpe.embedding_version = ${config.version}
-          AND 1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.SIMILARITY_THRESHOLD}
+          AND (
+              1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.SIMILARITY_THRESHOLD}
+              OR EXISTS (SELECT 1 FROM pool_keyword_search WHERE id = ks.id)
+              OR ks.name ILIKE '%' || ${query} || '%'
+          )
           AND kpe.parent_id IS NOT NULL
       )
       SELECT * 
@@ -266,7 +326,7 @@ export class EmbeddingService {
             ELSE 0.98
           END
       ) DESC
-      LIMIT ${normalizedLimit * 4} -- Fetch more for language/category-aware de-duplication
+      LIMIT ${candidateLimit} -- Fetch enough candidates for intent-aware re-ranking
     `;
 
         const scoredRows = rows
@@ -274,8 +334,10 @@ export class EmbeddingService {
                 const rawSimilarity = Number(row.similarity);
                 const languageMultiplier = row.language === queryLanguage ? 1.14 : row.language && ['tr', 'en', 'de'].includes(row.language) ? 0.97 : 1.0;
                 const categoryMultiplier = row.category === queryCategory ? 1.18 : row.category ? 0.98 : 1.0;
+                const intentCategoryMultiplier = calculateIntentCategoryMultiplier(query, row.category);
                 const titleBoost = calculateTitleTokenBoost(queryTokens, row.title);
-                const rankScore = rawSimilarity * languageMultiplier * categoryMultiplier * titleBoost;
+                const contentSignalBoost = calculateContentSignalBoost(query, row.title, row.content);
+                const rankScore = rawSimilarity * languageMultiplier * categoryMultiplier * intentCategoryMultiplier * titleBoost * contentSignalBoost;
                 const adjustedSimilarity = Math.min(rankScore, 1);
 
                 return {

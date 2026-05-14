@@ -6,6 +6,7 @@ import { EmbeddingNormalizer } from './embedding-normalizer.service';
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { RedisService } from '../redis/redis.service';
 import { mockPrismaService, mockRedisService } from '../test/mock.utils';
+import { RAG_CONFIG } from '../config/rag.config';
 
 const mockVersionConfig = { version: 'v3s', dimension: 3, provider: 'openai', model: 'text-embedding-3-small' };
 
@@ -54,6 +55,7 @@ describe('AiSemanticCache', () => {
         sources: [],
         interactionId: 'int-1',
         suggestTicket: false,
+        cacheVersion: RAG_CONFIG.CACHE.VERSION,
     };
 
     describe('get', () => {
@@ -95,6 +97,17 @@ describe('AiSemanticCache', () => {
 
             // Assert
             expect(result).toEqual(mockResult);
+        });
+
+        it('should normalize non-UUID tenants for semantic cache storage', async () => {
+            mockRedisService.get.mockResolvedValue(null);
+            mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
+            mockPrismaService.$queryRaw.mockResolvedValue([]);
+
+            await cache.get('test query', 'system');
+
+            const sqlCall = mockPrismaService.$queryRaw.mock.calls[0]?.[0];
+            expect(String(sqlCall.values ?? sqlCall)).toContain('00000000-0000-0000-0000-000000000000');
         });
 
         it('should reject semantic match below threshold', async () => {

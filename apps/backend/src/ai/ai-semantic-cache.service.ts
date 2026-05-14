@@ -7,6 +7,7 @@ import { AiQueryResult } from './ai-query.service';
 import { createHash } from 'crypto';
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { Prisma } from '@aluplan/database';
+import { RAG_CONFIG } from '../config/rag.config';
 
 /**
  * AI Semantic Cache
@@ -33,6 +34,7 @@ export class AiSemanticCache {
     private readonly logger = new Logger(AiSemanticCache.name);
     private readonly SEMANTIC_THRESHOLD = 0.95;
     private readonly DEFAULT_TTL_SECONDS = 3600; // 1 hour
+    private readonly SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000000';
 
     constructor(
         private readonly prisma: PrismaService,
@@ -105,7 +107,7 @@ export class AiSemanticCache {
      */
     async invalidateTenant(tenantId: string): Promise<void> {
         // Delete semantic cache entries
-        await this.prisma.$executeRaw`DELETE FROM "ai_response_cache" WHERE "tenant_id" = ${tenantId}`;
+        await this.prisma.$executeRaw`DELETE FROM "ai_response_cache" WHERE "tenant_id" = ${this.resolveSemanticTenantId(tenantId)}::uuid`;
 
         // Delete exact cache entries (pattern-based)
         const pattern = `ai:query:cache:*:tenant:${tenantId}:*`;
@@ -147,14 +149,15 @@ export class AiSemanticCache {
         const cached = await this.redis.get(key);
         if (!cached) return null;
         try {
-            return JSON.parse(cached);
+            const parsed = JSON.parse(cached);
+            return parsed?.cacheVersion === RAG_CONFIG.CACHE.VERSION ? parsed : null;
         } catch {
             return null;
         }
     }
 
     private async setExact(key: string, result: AiQueryResult): Promise<void> {
-        await this.redis.set(key, JSON.stringify(result), this.DEFAULT_TTL_SECONDS);
+        await this.redis.set(key, JSON.stringify({ ...result, cacheVersion: RAG_CONFIG.CACHE.VERSION }), this.DEFAULT_TTL_SECONDS);
     }
 
     // ─── Private: Semantic Match (pgvector) ─────────────────────────────────
@@ -165,6 +168,7 @@ export class AiSemanticCache {
     ): Promise<AiQueryResult | null> {
         try {
             const config = await this.registry.getActiveVersionConfig();
+            const semanticTenantId = this.resolveSemanticTenantId(tenantId);
             const embedding = await this.embeddingService.embedText(query);
             if (!embedding) return null;
 
@@ -180,7 +184,7 @@ export class AiSemanticCache {
             const results: any[] = await this.prisma.$queryRaw(
                 Prisma.sql`SELECT id, response, "query_embedding" <=> ${vectorCast} AS distance
                  FROM "ai_response_cache"
-                 WHERE "tenant_id" = ${tenantId}
+                 WHERE "tenant_id" = ${semanticTenantId}::uuid
                    AND "embedding_version" = ${config.version}
                    AND "expires_at" > NOW()
                  ORDER BY "query_embedding" <=> ${vectorCast}
@@ -191,7 +195,8 @@ export class AiSemanticCache {
 
             const similarity = 1 - parseFloat(results[0].distance);
             if (similarity >= this.SEMANTIC_THRESHOLD) {
-                return results[0].response as AiQueryResult;
+                const response = results[0].response as AiQueryResult;
+                return response?.cacheVersion === RAG_CONFIG.CACHE.VERSION ? response : null;
             }
 
             return null;
@@ -208,6 +213,7 @@ export class AiSemanticCache {
     ): Promise<void> {
         try {
             const config = await this.registry.getActiveVersionConfig();
+            const semanticTenantId = this.resolveSemanticTenantId(tenantId);
             const embedding = await this.embeddingService.embedText(query);
             if (!embedding) return;
 
@@ -222,7 +228,8 @@ export class AiSemanticCache {
 
             const safeVector = this.sanitizeVector(vectorStr);
             const vectorCast = Prisma.raw(`'${safeVector}'::vector`);
-            const responseJson = Prisma.raw(`'${JSON.stringify(result).replace(/'/g, "''")}'::jsonb`);
+            const versionedResult = { ...result, cacheVersion: RAG_CONFIG.CACHE.VERSION };
+            const responseJson = Prisma.raw(`'${JSON.stringify(versionedResult).replace(/'/g, "''")}'::jsonb`);
             await this.prisma.$executeRaw(
                 Prisma.sql`INSERT INTO "ai_response_cache" (
                     "query_hash", "query_embedding", "embedding_version", "embedding_dim", "response", "tenant_id",
@@ -230,7 +237,7 @@ export class AiSemanticCache {
                 ) VALUES (
                     ${hash}, ${vectorCast}, ${config.version}, ${config.dimension},
                     ${responseJson},
-                    ${tenantId}, ${result.confidence},
+                    ${semanticTenantId}::uuid, ${result.confidence},
                     NOW(), ${expiresAt.toISOString()}
                 )
                 ON CONFLICT ("query_hash") DO UPDATE SET
@@ -272,6 +279,12 @@ export class AiSemanticCache {
         const hash = createHash('sha256')
             .update(query + tenantId + (options?.language || '') + JSON.stringify(options?.hotinfoContext || ''))
             .digest('hex');
-        return `ai:query:cache:v6:exact:${tenantId}:${hash}`;
+        return `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:exact:${tenantId}:${hash}`;
+    }
+
+    private resolveSemanticTenantId(tenantId: string): string {
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)
+            ? tenantId
+            : this.SYSTEM_TENANT_ID;
     }
 }

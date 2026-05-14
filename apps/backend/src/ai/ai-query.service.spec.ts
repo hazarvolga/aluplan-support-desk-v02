@@ -435,6 +435,88 @@ describe('AiQueryService', () => {
             expect(result.answer).toContain('Kaynak: Graphics card driver update');
             expect(result.answer).not.toContain('Why is Allplan running so slow?');
         });
+
+        it('keeps Hotinfo error traces out of the retrieval query', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [{
+                    articleId: 'slow-faq',
+                    sourceType: 'DOCUMENT',
+                    title: 'Allplan is running slow',
+                    content: 'If Allplan takes several minutes to start, name resolution on the network may not work.',
+                    similarity: 0.95,
+                    confidence: 'HIGH',
+                }],
+                diagnostics: { topScore: 0.95, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            await service.query({
+                userQuery: 'Allplan açılışta birkaç dakika bekliyor, ağ veya isim çözümleme kaynaklı olabilir mi?',
+                wait: true,
+                language: 'tr',
+                hotinfoContext: {
+                    osVersion: 'Windows 11',
+                    gpu: 'NVIDIA RTX',
+                    errorTrace: 'SEC Hata: C:\\ProgramData\\Nemetschek\\Allplan\\2026\\License\\_SEC.NSE',
+                },
+            });
+
+            const searchArg = mockEmbeddingService.search.mock.calls[0][0] as string;
+            expect(searchArg).not.toContain('_SEC.NSE');
+            expect(searchArg).not.toContain('License');
+            expect(searchArg).not.toContain('Lisans');
+            expect(searchArg).toContain('isim çözümleme');
+        });
+
+        it('demotes license sources for network startup questions when the query is not about licensing', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue({ role: { name: 'ADMIN' } });
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'license-offline',
+                        sourceType: 'DOCUMENT',
+                        title: 'License server activating a license offline',
+                        category: 'License & Activation',
+                        content: 'License server setup and CodeMeter activation instructions for offline licensing.',
+                        similarity: 0.93,
+                        confidence: 'HIGH',
+                    },
+                    {
+                        articleId: 'network-startup',
+                        sourceType: 'DOCUMENT',
+                        title: 'Allplan is running slow',
+                        category: 'Performance & Hardware',
+                        content: 'Name resolution on the network If Allplan takes several minutes to start, name resolution may not work.',
+                        similarity: 0.88,
+                        confidence: 'HIGH',
+                    },
+                    {
+                        articleId: 'workgroup-network',
+                        sourceType: 'DOCUMENT',
+                        title: 'Workgroup manager network setup',
+                        category: 'Network & Workgroup',
+                        content: 'Network server and DNS checks for Allplan startup in workgroup environments.',
+                        similarity: 0.82,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.93, passedThreshold: 3, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'Allplan açılışta birkaç dakika bekliyor, ağ veya isim çözümleme kaynaklı olabilir mi?',
+                wait: true,
+                language: 'tr',
+                userId: 'admin-1',
+            });
+
+            expect(result.sources.map(source => source.articleId)).toEqual([
+                'network-startup',
+                'workgroup-network',
+                'license-offline',
+            ]);
+        });
     });
 
     describe('submitTelemetry', () => {

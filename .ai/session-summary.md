@@ -945,3 +945,156 @@ Maintenance rule:
 - The in-app Browser and Chrome plugin bridges timed out in this session, so Playwright was used as the fallback browser automation path.
 - Graphify hook ran during commit and warned that the rebuilt graph is much smaller than the existing graph; hook-generated `graphify-out/GRAPH_REPORT.md` was restored and not committed.
 - `apps/backend/openapi.json` remains the only unrelated modified artifact.
+
+## Follow-up - 2026-05-14 RAG Quality Root Fix In Progress
+
+### User-facing problem
+- During live RAG testing, Turkish customer questions could still receive weak or wrong grounded fallback answers.
+- Example problematic question:
+  - `Allplan açılışta birkaç dakika bekliyor, ağ veya isim çözümleme kaynaklı olabilir mi?`
+- Earlier behavior:
+  - Retrieval/fallback could drift to license, home-office, or generic network docs instead of the best source passage.
+  - Cached old answers could continue serving stale wrong results even after retrieval logic improved.
+
+### Root causes found
+- `generateHypotheticalDocument()` injected generic causes into HyDE text, including license-related wording, which polluted non-license queries.
+- Hotinfo raw context was previously appended into retrieval text for hardware/system queries, so traces containing license paths could pull license PDFs into unrelated searches.
+- Knowledge pool search was mostly vector-led; keyword/lexical evidence from `knowledge_pool_embeddings.content` did not strongly help exact phrases like `name resolution`.
+- `/ai/search` could find the right candidate at a wider limit, but `/ai/query` cut candidates too early in `rerankResults()`, before query-signal reranking could rescue the best source.
+- Exact and semantic AI caches could keep returning stale pre-fix answers; cache versioning was inconsistent between `RAG_CONFIG.CACHE.VERSION` and `AiSemanticCache` exact keys.
+
+### Code changes made in this session
+- `apps/backend/src/ai/utils/hypothetical-document.ts`
+  - Made HyDE templates neutral and source-intent focused.
+  - Removed generic license/performance/plugin cause injection.
+- `apps/backend/src/ai/ai-query.service.ts`
+  - Stopped injecting raw Hotinfo into the retrieval query; Hotinfo remains answer context only.
+  - Added startup/network query signal handling.
+  - Kept more candidates through feedback reranking before final sync rerank.
+  - Added query-signal reranking for stream path too.
+  - Added intent penalties/boosts so network-startup questions do not rank license sources above precise name-resolution passages.
+  - Cache hit log now uses `RAG_CONFIG.CACHE.VERSION` instead of stale hardcoded `v5`.
+- `apps/backend/src/ai/embedding.service.ts`
+  - Expanded knowledge pool hybrid search with lexical keyword matching over source name + chunk content.
+  - Added candidate pool widening for reranking.
+  - Added category/intent scoring:
+    - network/startup query -> boost `Network & Workgroup`
+    - performance query -> boost `Performance & Hardware`
+    - network/startup query without license intent -> demote `License & Activation`
+  - Added precise content signal boost for `name resolution on the network` / `takes several minutes to start`.
+- `apps/backend/src/ai/ai-semantic-cache.service.ts`
+  - Exact cache key now uses `RAG_CONFIG.CACHE.VERSION`.
+  - Exact and semantic cache responses now require matching `cacheVersion`.
+  - Stored cache payloads now include the active cache version.
+  - Non-UUID semantic tenant mapping to system UUID remains in place.
+- `apps/backend/src/config/rag.config.ts`
+  - Bumped AI cache version from `v6` to `v7` to bypass stale wrong answers.
+- `apps/frontend/src/app/[locale]/(dashboard)/tickets/new/page.tsx`
+  - Diagnosis query construction now avoids sending duplicated text when subject and description are the same.
+- `apps/backend/src/ai/utils/synonym-dictionary.ts`
+  - Added network/name-resolution synonyms.
+- `apps/backend/src/knowledge-pool/dataset-classifier.ts`
+  - Added name-resolution/DNS signals to `Network & Workgroup` classification.
+
+### Tests / verification run
+- Backend targeted RAG/cache tests passed:
+  - `pnpm --filter @aluplan/backend test -- ai-semantic-cache.service.spec.ts ai-query.service.spec.ts embedding.service.spec.ts rag-improvements.spec.ts`
+  - Result: 5 suites passed, 72 passed, 1 skipped.
+- Backend broader targeted set passed earlier in this fix:
+  - `embedding.service.spec.ts`
+  - `dataset-classifier.spec.ts`
+  - `rag-improvements.spec.ts`
+  - `ai-query.service.spec.ts`
+  - `ai-semantic-cache.service.spec.ts`
+  - Result: 6 suites passed, 80 passed, 1 skipped.
+- Backend typecheck passed:
+  - `pnpm --filter @aluplan/backend typecheck`
+- Backend build passed:
+  - `pnpm --filter @aluplan/backend build`
+- Backend was restarted from `dist/main` on port `4000`.
+
+### Live smoke results
+- `/api/v1/ai/search` for the startup/name-resolution question now ranks:
+  1. `[Dataset] FAQ_EN_Allplan_is_running_slow.pdf`
+  2. `[Dataset] FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf`
+  3. `[Dataset] FAQ_EN_Allplan_in_the_home-office.pdf`
+- `/api/v1/ai/query?wait=true` after cache-version/cache-guard changes now returns the correct top source:
+  - `[Dataset] FAQ_EN_Allplan_is_running_slow.pdf`
+  - fallback excerpt:
+    - `Name resolution on the network If Allplan takes several minutes to start, name resolution on the network may not work.`
+
+### Current status / caution
+- This fix is **not committed yet**.
+- Important modified files currently include:
+  - `apps/backend/src/config/rag.config.ts`
+  - `apps/backend/src/ai/ai-query.service.ts`
+  - `apps/backend/src/ai/ai-query.service.spec.ts`
+  - `apps/backend/src/ai/ai-semantic-cache.service.ts`
+  - `apps/backend/src/ai/ai-semantic-cache.service.spec.ts`
+  - `apps/backend/src/ai/embedding.service.ts`
+  - `apps/backend/src/ai/embedding.service.spec.ts`
+  - `apps/backend/src/ai/utils/hypothetical-document.ts`
+  - `apps/backend/src/ai/utils/rag-improvements.spec.ts`
+  - `apps/backend/src/ai/utils/synonym-dictionary.ts`
+  - `apps/backend/src/knowledge-pool/dataset-classifier.ts`
+  - `apps/frontend/src/app/[locale]/(dashboard)/tickets/new/page.tsx`
+- Existing unrelated artifact still present:
+  - `apps/backend/openapi.json`
+- Do not mix `apps/backend/openapi.json` into the RAG quality commit unless intentionally regenerated.
+
+### Next step after resume
+- Re-run final quick verification:
+  - backend typecheck
+  - targeted RAG/cache tests
+  - live `/ai/search` and `/ai/query?wait=true` smoke for the 3 known questions
+- If still green, commit as a focused product-code fix, likely:
+  - `fix(rag): improve grounded retrieval relevance and cache invalidation`
+- Then update Graphify/GitNexus only after commit; keep generated graph output separate if it changes.
+
+## Follow-up - 2026-05-14 Faz 1 Final Verification
+
+### Additional fix before commit
+- `RAG_CONFIG.CACHE.VERSION` was bumped from `v7` to `v8` after the last source-reranking tweak.
+- Reason: the live endpoint returned the old `v7` exact-cache result with the previous source list, including a license source for a network/startup question.
+- The network/startup reranker now applies a stronger license-source penalty only when the query itself is not about licensing.
+
+### Final verification run
+- `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts ai-semantic-cache.service.spec.ts`
+  - 3 suites passed, 39 passed, 1 skipped.
+- `pnpm --filter @aluplan/backend build`
+  - Passed.
+- Backend restarted from the fresh `dist/main` build on port `4000`.
+
+### Live smoke after cache v8
+- Startup/network Turkish query:
+  - Search top 3:
+    1. `[Dataset] FAQ_EN_Allplan_is_running_slow.pdf`
+    2. `[Dataset] FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf`
+    3. `[Dataset] FAQ_EN_Allplan_in_the_home-office.pdf`
+  - AI answer source:
+    - `[Dataset] FAQ_EN_Allplan_is_running_slow.pdf`
+  - Fallback excerpt correctly contains:
+    - `Name resolution on the network If Allplan takes several minutes to start...`
+  - License source no longer appears in the top answer sources.
+- Performance Turkish query:
+  - Search/answer top source remains `[Dataset] FAQ_EN_Allplan_is_running_slow.pdf`.
+- Graphics driver Turkish query:
+  - Search returns graphics driver sources.
+  - Answer remains Turkish fallback summary and cites graphics driver source.
+
+### Residual quality note
+- One non-license but off-intent source (`FAQ_DE_Export_Plaene_aufgeloest_uebertragen`) still appeared as the third answer source for the startup/network query.
+- This is not the original critical license contamination bug; it should be handled in the next quality phases with an acceptance query set, metadata cleanup, and stricter final source diversity/filtering.
+
+### Graphify / GitNexus phase-end check
+- `graphify update .` ran successfully but warned:
+  - new graph: 5605 nodes
+  - existing graph: 11474 nodes
+  - Graphify refused overwrite due possible missing chunks/session state.
+- Because of that warning, `graphify-out/GRAPH_REPORT.md` must not be committed for this phase.
+- `npx gitnexus detect_changes --repo aluplan-support-desk-v02` ran successfully:
+  - 15 files changed
+  - 55 symbols changed
+  - 9 affected processes
+  - risk level: high
+- High-risk flows include `AiQueryService.queryInternal`, `streamQuery`, and `NewTicketPage`, so this phase is guarded by targeted backend tests, backend build, frontend typecheck, and live RAG smoke.
