@@ -168,6 +168,36 @@ describe('EmbeddingService', () => {
             }));
             expect(results[0].similarity).toBeGreaterThan(0.82);
         });
+
+        it('should prefer title-specific FAQ matches within the same language and category', async () => {
+            mockAiService.embed.mockResolvedValue(mockEmbedResult);
+            mockPrismaService.$queryRaw.mockResolvedValue([
+                {
+                    article_id: 'src-transfer',
+                    source_type: 'DOCUMENT',
+                    title: 'FAQ_TR_Lisansı_yeni_bir_bilgisayara_veya_baska_bir_bilgisayara_aktarma.pdf',
+                    content: 'Lisansı yeni bilgisayara aktarma...',
+                    similarity: 0.89,
+                    trust_score: 0.85,
+                    language: 'tr',
+                    category: 'License & Activation',
+                },
+                {
+                    article_id: 'src-format',
+                    source_type: 'DOCUMENT',
+                    title: 'faq-softlock-SSS-Bilgisayarimi-formatladim-lisansimi-nasil-geri-alirim.pdf',
+                    content: 'Bilgisayarı formatladıktan sonra lisansı geri alma...',
+                    similarity: 0.86,
+                    trust_score: 0.85,
+                    language: 'tr',
+                    category: 'License & Activation',
+                },
+            ]);
+
+            const { results } = await service.search('Bilgisayarımı formatladım lisansımı nasıl geri alırım?', 2);
+
+            expect(results.map((result) => result.articleId)).toEqual(['src-format', 'src-transfer']);
+        });
     });
 
     describe('indexPoolContent', () => {

@@ -34,6 +34,57 @@ export interface SearchResponse {
 
 const normalizeSearchLimit = (limit: number): number => Math.min(Math.max(Math.floor(limit || 5), 1), 20);
 
+const SEARCH_STOP_WORDS = new Set([
+    'allplan',
+    'nasil',
+    'nedir',
+    'icin',
+    'geri',
+    'how',
+    'what',
+    'when',
+    'where',
+    'which',
+    'with',
+    'the',
+    'und',
+    'oder',
+    'eine',
+    'einen',
+    'einer',
+    'einem',
+    'wie',
+    'was',
+]);
+
+const normalizeSearchText = (value: string | null | undefined): string => (value ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ı/g, 'i')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+const tokenizeSearchText = (value: string | null | undefined): string[] => {
+    const tokens = normalizeSearchText(value)
+        .split(/\s+/)
+        .filter((token) => token.length >= 4 && !SEARCH_STOP_WORDS.has(token));
+    return Array.from(new Set(tokens));
+};
+
+const calculateTitleTokenBoost = (queryTokens: string[], title: string | null | undefined): number => {
+    if (queryTokens.length < 2) return 1;
+
+    const normalizedTitle = normalizeSearchText(title);
+    if (!normalizedTitle) return 1;
+
+    const matchCount = queryTokens.filter((token) => normalizedTitle.includes(token)).length;
+    if (matchCount === 0) return 1;
+
+    return Math.min(1 + matchCount * 0.06, 1.3);
+};
+
 @Injectable()
 export class EmbeddingService {
     private readonly logger = new Logger(EmbeddingService.name);
@@ -113,6 +164,7 @@ export class EmbeddingService {
         const queryClassification = classifyDatasetFile(`${cleanQuery}.pdf`);
         const queryLanguage = queryClassification.language;
         const queryCategory = queryClassification.category;
+        const queryTokens = tokenizeSearchText(cleanQuery);
 
         const isValidUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
         const validProductId = (productId && isValidUuid(productId)) ? productId : null;
@@ -216,24 +268,32 @@ export class EmbeddingService {
       LIMIT ${normalizedLimit * 4} -- Fetch more for language/category-aware de-duplication
     `;
 
-        const results = this.dedupeSearchRows(rows, normalizedLimit).map((row) => {
-            const rawSimilarity = Number(row.similarity);
-            const languageMultiplier = row.language === queryLanguage ? 1.14 : row.language && ['tr', 'en', 'de'].includes(row.language) ? 0.97 : 1.0;
-            const categoryMultiplier = row.category === queryCategory ? 1.18 : row.category ? 0.98 : 1.0;
-            const adjustedSimilarity = Math.min(rawSimilarity * languageMultiplier * categoryMultiplier, 1);
+        const scoredRows = rows
+            .map((row) => {
+                const rawSimilarity = Number(row.similarity);
+                const languageMultiplier = row.language === queryLanguage ? 1.14 : row.language && ['tr', 'en', 'de'].includes(row.language) ? 0.97 : 1.0;
+                const categoryMultiplier = row.category === queryCategory ? 1.18 : row.category ? 0.98 : 1.0;
+                const titleBoost = calculateTitleTokenBoost(queryTokens, row.title);
+                const rankScore = rawSimilarity * languageMultiplier * categoryMultiplier * titleBoost;
+                const adjustedSimilarity = Math.min(rankScore, 1);
 
-            return {
-                articleId: row.article_id,
-                sourceType: row.source_type as any,
-                title: row.title,
-                content: row.content,
-                similarity: adjustedSimilarity,
-                confidence: getConfidenceBand(adjustedSimilarity),
-                language: row.language,
-                category: row.category,
-                updatedAt: row.updated_at,
-            };
-        });
+                return {
+                    articleId: row.article_id,
+                    sourceType: row.source_type as any,
+                    title: row.title,
+                    content: row.content,
+                    similarity: adjustedSimilarity,
+                    confidence: getConfidenceBand(adjustedSimilarity),
+                    language: row.language,
+                    category: row.category,
+                    updatedAt: row.updated_at,
+                    rankScore,
+                };
+            })
+            .sort((a, b) => b.rankScore - a.rankScore);
+
+        const results = this.dedupeSearchResults(scoredRows, normalizedLimit)
+            .map(({ rankScore: _rankScore, ...result }) => result);
 
         const diagnostics: SearchDiagnostics = {
             topScore: results.length > 0 ? results[0].similarity : 0,
@@ -247,12 +307,12 @@ export class EmbeddingService {
         return { results, diagnostics };
     }
 
-    private dedupeSearchRows<T extends { article_id: string; source_type: string }>(rows: T[], limit: number): T[] {
+    private dedupeSearchResults<T extends { articleId: string; sourceType: string }>(rows: T[], limit: number): T[] {
         const seen = new Set<string>();
         const deduped: T[] = [];
 
         for (const row of rows) {
-            const key = `${row.source_type}:${row.article_id}`;
+            const key = `${row.sourceType}:${row.articleId}`;
             if (seen.has(key)) continue;
             seen.add(key);
             deduped.push(row);
