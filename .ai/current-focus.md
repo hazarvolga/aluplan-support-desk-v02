@@ -2,6 +2,8 @@
 
 ## Active Work
 
+- Phase 1 RAG relevance/cache fix is committed. Continue with a measured RAG quality program, not ad-hoc browser questions.
+- Use `.ai/rag-quality/acceptance-questions.json` as the active acceptance set before importing more files or changing retrieval logic.
 - Pause the PDF-first import after the support-first seed corpus and validate real RAG quality before importing more files.
 - Build the PDF-first RAG dataset import path without polluting the knowledge pool with generated MD duplicates.
 - Keep `dataset/` as the clean import surface and `.archive/rag-incoming/pdf/` as the raw PDF inbox.
@@ -35,4 +37,4 @@
 
 ## Next Recommended Step
 
-Do not continue bulk import blindly. First run a real RAG acceptance test with 20-30 customer-like questions across Turkish, English, and German. Measure whether the top source is correct, the answer language follows locale/query intent, legacy `General` sources do not outrank categorized PDF sources, and multilingual near-duplicate ties do not degrade the answer. After that, resume selective imports with Batch 012 only for gaps revealed by the test set.
+Run the 25-question RAG acceptance set in `.ai/rag-quality/acceptance-questions.json` against localhost and record failures by root cause: retrieval, metadata/category, cache, generation, or dataset quality. After that, implement the smallest failing-category fix and commit it as the next phase.

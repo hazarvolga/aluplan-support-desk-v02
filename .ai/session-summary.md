@@ -1098,3 +1098,31 @@ Maintenance rule:
   - 9 affected processes
   - risk level: high
 - High-risk flows include `AiQueryService.queryInternal`, `streamQuery`, and `NewTicketPage`, so this phase is guarded by targeted backend tests, backend build, frontend typecheck, and live RAG smoke.
+
+## Follow-up - 2026-05-14 Faz 2 Started
+
+### Acceptance set created
+- Added `.ai/rag-quality/README.md`.
+- Added `.ai/rag-quality/acceptance-questions.json`.
+- The acceptance set currently contains 25 customer-like questions across Turkish, English, and German.
+- Each question records:
+  - expected answer language
+  - expected categories
+  - expected source hints
+  - forbidden source hints
+  - answer hints that should be mentioned
+
+### Validation
+- JSON parse and shape validation passed:
+  - 25 questions
+  - no duplicate IDs
+  - required fields present
+- `graphify update .` ran but produced the same node-count warning:
+  - new graph: 5605 nodes
+  - existing graph: 11474 nodes
+  - graph output was not committed.
+- `npx gitnexus detect_changes --repo aluplan-support-desk-v02` reported:
+  - No changes detected.
+
+### Next step
+- Execute the acceptance set against localhost and classify failures by root cause before touching more retrieval code.

@@ -1,0 +1,246 @@
+{
+  "version": "2026-05-14-phase-2",
+  "description": "Customer-like RAG acceptance questions for pgvector + Gemini/LLMAPI support knowledge pool.",
+  "defaults": {
+    "expectedAnswerLanguage": "tr",
+    "minSearchTopK": 3,
+    "minQueryConfidence": "MEDIUM",
+    "forbidNoMatch": true
+  },
+  "questions": [
+    {
+      "id": "rag-tr-network-startup-001",
+      "language": "tr",
+      "query": "Allplan açılışta birkaç dakika bekliyor, ağ veya isim çözümleme kaynaklı olabilir mi?",
+      "expectedCategories": ["Performance & Hardware", "Network & Workgroup"],
+      "expectedSourceHints": ["Allplan_is_running_slow", "name resolution", "network"],
+      "forbiddenSourceHints": ["License-server", "license offline", "CodeMeter"],
+      "mustMentionHints": ["isim çözümleme", "ağ", "Nslookup"],
+      "notes": "Observed critical regression: license source appeared in answer sources for network/startup intent."
+    },
+    {
+      "id": "rag-tr-performance-001",
+      "language": "tr",
+      "query": "Allplan yavaş çalışıyor, performans için ilk hangi kontrolleri yapmalıyım?",
+      "expectedCategories": ["Performance & Hardware"],
+      "expectedSourceHints": ["Allplan_is_running_slow", "Geschwindigkeit_von_Allplan"],
+      "forbiddenSourceHints": ["License-server", "activation offline"],
+      "mustMentionHints": ["güncel sürüm", "sistem gereksinimleri", "virüs tarayıcı"]
+    },
+    {
+      "id": "rag-tr-graphics-driver-001",
+      "language": "tr",
+      "query": "Grafik kartı sürücüsünü güncellemem gerekiyor mu, nasıl yapmalıyım?",
+      "expectedCategories": ["Performance & Hardware"],
+      "expectedSourceHints": ["graphics_card", "Grafikkartentreiber", "driver"],
+      "forbiddenSourceHints": ["IFC", "License-server"],
+      "mustMentionHints": ["NVIDIA", "AMD", "yeniden başlat"]
+    },
+    {
+      "id": "rag-tr-license-offline-001",
+      "language": "tr",
+      "query": "Allplan lisansını internet olmadan offline nasıl etkinleştiririm?",
+      "expectedCategories": ["License & Activation", "License Server & CodeMeter"],
+      "expectedSourceHints": ["License-server", "offline", "CodeMeter"],
+      "forbiddenSourceHints": ["Name resolution", "graphics card"],
+      "mustMentionHints": ["lisans", "offline", "CodeMeter"]
+    },
+    {
+      "id": "rag-tr-license-server-add-001",
+      "language": "tr",
+      "query": "License Server'da yeni lisans eklemek ve istemcilerin görmesini sağlamak için ne yapmalıyım?",
+      "expectedCategories": ["License Server & CodeMeter"],
+      "expectedSourceHints": ["License-server", "CodeMeter"],
+      "forbiddenSourceHints": ["IFC", "graphics card"],
+      "mustMentionHints": ["License Server", "istemci", "CodeMeter"]
+    },
+    {
+      "id": "rag-tr-installation-001",
+      "language": "tr",
+      "query": "Allplan kurulumu sırasında nelere dikkat etmeliyim, güncel kurulum paketi nereden alınır?",
+      "expectedCategories": ["Installation & Setup", "Release Package Info"],
+      "expectedSourceHints": ["Installation", "Setup", "Release"],
+      "forbiddenSourceHints": ["Grafikkartentreiber", "IFC"],
+      "mustMentionHints": ["kurulum", "güncel", "paket"]
+    },
+    {
+      "id": "rag-tr-workgroup-add-computer-001",
+      "language": "tr",
+      "query": "Workgroup Manager'da bilgisayar ekleyemiyorum, hangi ağ kontrollerini yapmalıyım?",
+      "expectedCategories": ["Network & Workgroup"],
+      "expectedSourceHints": ["Workgroupmanager", "Adding_the_computer"],
+      "forbiddenSourceHints": ["License-server", "graphics card"],
+      "mustMentionHints": ["Workgroup", "ağ", "bilgisayar"]
+    },
+    {
+      "id": "rag-tr-home-office-001",
+      "language": "tr",
+      "query": "Allplan home-office kullanımında proje verilerine erişim için önerilen yöntem nedir?",
+      "expectedCategories": ["Network & Workgroup", "Allplan Share & Cloud"],
+      "expectedSourceHints": ["home-office", "Allplan_Share"],
+      "forbiddenSourceHints": ["License offline", "graphics card"],
+      "mustMentionHints": ["home-office", "VPN", "Share"]
+    },
+    {
+      "id": "rag-tr-ifc-export-001",
+      "language": "tr",
+      "query": "IFC dışa aktarımında model elemanları doğru gitmiyorsa hangi ayarları kontrol etmeliyim?",
+      "expectedCategories": ["Export Import & IFC DWG"],
+      "expectedSourceHints": ["IFC", "Export"],
+      "forbiddenSourceHints": ["License-server", "graphics card"],
+      "mustMentionHints": ["IFC", "dışa aktar", "ayar"]
+    },
+    {
+      "id": "rag-tr-dwg-export-001",
+      "language": "tr",
+      "query": "DWG export yaparken planları çözülmüş olarak aktarmak istiyorum, hangi seçenekleri kullanmalıyım?",
+      "expectedCategories": ["Export Import & IFC DWG"],
+      "expectedSourceHints": ["DWG", "Export_Plaene", "aufgeloest"],
+      "forbiddenSourceHints": ["name resolution", "license offline"],
+      "mustMentionHints": ["DWG", "export", "çözülmüş"]
+    },
+    {
+      "id": "rag-tr-project-backup-001",
+      "language": "tr",
+      "query": "Allplan proje yedeği almak ve başka bilgisayara taşımak için güvenli yöntem nedir?",
+      "expectedCategories": ["Project Data Management"],
+      "expectedSourceHints": ["Project", "backup", "data"],
+      "forbiddenSourceHints": ["graphics driver", "License-server"],
+      "mustMentionHints": ["proje", "yedek", "geri yükle"]
+    },
+    {
+      "id": "rag-tr-share-cloud-001",
+      "language": "tr",
+      "query": "Allplan Share ile proje paylaşımı yaparken nelere dikkat etmeliyim?",
+      "expectedCategories": ["Allplan Share & Cloud"],
+      "expectedSourceHints": ["Allplan_Share", "Cloud"],
+      "forbiddenSourceHints": ["CodeMeter", "Grafikkartentreiber"],
+      "mustMentionHints": ["Share", "proje", "bulut"]
+    },
+    {
+      "id": "rag-tr-hotinfo-001",
+      "language": "tr",
+      "query": "Hotinfo raporunda hata izleri var, AI cevabı bunları doğrudan arama sorgusuna karıştırmadan nasıl değerlendirmeli?",
+      "expectedCategories": ["Turkish Local Support", "Performance & Hardware"],
+      "expectedSourceHints": ["Hotinfo", "support", "Allplan"],
+      "forbiddenSourceHints": ["License offline"],
+      "mustMentionHints": ["Hotinfo", "destek", "özet"]
+    },
+    {
+      "id": "rag-en-performance-001",
+      "language": "en",
+      "query": "Allplan is running very slow. What should I check first?",
+      "expectedAnswerLanguage": "en",
+      "expectedCategories": ["Performance & Hardware"],
+      "expectedSourceHints": ["Allplan_is_running_slow"],
+      "forbiddenSourceHints": ["License-server"],
+      "mustMentionHints": ["current version", "system requirements", "virus scanner"]
+    },
+    {
+      "id": "rag-en-name-resolution-001",
+      "language": "en",
+      "query": "Allplan takes several minutes to start. Could name resolution on the network be the reason?",
+      "expectedAnswerLanguage": "en",
+      "expectedCategories": ["Performance & Hardware", "Network & Workgroup"],
+      "expectedSourceHints": ["Allplan_is_running_slow", "name resolution"],
+      "forbiddenSourceHints": ["License-server"],
+      "mustMentionHints": ["name resolution", "Nslookup", "data server"]
+    },
+    {
+      "id": "rag-en-graphics-driver-001",
+      "language": "en",
+      "query": "How do I update the graphics card driver for Allplan?",
+      "expectedAnswerLanguage": "en",
+      "expectedCategories": ["Performance & Hardware"],
+      "expectedSourceHints": ["Updating_the_driver_of_the_graphics_card", "graphics_card"],
+      "forbiddenSourceHints": ["IFC", "License-server"],
+      "mustMentionHints": ["NVIDIA", "AMD", "restart"]
+    },
+    {
+      "id": "rag-en-license-server-001",
+      "language": "en",
+      "query": "How can I activate a license offline with License Server?",
+      "expectedAnswerLanguage": "en",
+      "expectedCategories": ["License Server & CodeMeter", "License & Activation"],
+      "expectedSourceHints": ["License-server", "offline"],
+      "forbiddenSourceHints": ["name resolution", "graphics card"],
+      "mustMentionHints": ["license", "offline", "CodeMeter"]
+    },
+    {
+      "id": "rag-en-workgroup-001",
+      "language": "en",
+      "query": "I cannot add a computer in Workgroup Manager. What should I check?",
+      "expectedAnswerLanguage": "en",
+      "expectedCategories": ["Network & Workgroup"],
+      "expectedSourceHints": ["Workgroupmanager_Adding_the_computer"],
+      "forbiddenSourceHints": ["graphics card", "License-server"],
+      "mustMentionHints": ["Workgroup Manager", "computer", "network"]
+    },
+    {
+      "id": "rag-de-performance-001",
+      "language": "de",
+      "query": "Allplan ist langsam. Welche Punkte soll ich zuerst prüfen?",
+      "expectedAnswerLanguage": "de",
+      "expectedCategories": ["Performance & Hardware"],
+      "expectedSourceHints": ["Geschwindigkeit_von_Allplan", "Allplan_is_running_slow"],
+      "forbiddenSourceHints": ["License-server"],
+      "mustMentionHints": ["Version", "Systemvoraussetzungen", "Virenscanner"]
+    },
+    {
+      "id": "rag-de-graphics-driver-001",
+      "language": "de",
+      "query": "Wie aktualisiere ich den Grafikkartentreiber für Allplan?",
+      "expectedAnswerLanguage": "de",
+      "expectedCategories": ["Performance & Hardware"],
+      "expectedSourceHints": ["Grafikkartentreiber_aktualisieren"],
+      "forbiddenSourceHints": ["IFC", "License-server"],
+      "mustMentionHints": ["NVIDIA", "AMD", "Treiber"]
+    },
+    {
+      "id": "rag-de-ifc-001",
+      "language": "de",
+      "query": "Beim IFC Export werden Bauteile nicht korrekt übertragen. Welche Einstellungen sind relevant?",
+      "expectedAnswerLanguage": "de",
+      "expectedCategories": ["Export Import & IFC DWG"],
+      "expectedSourceHints": ["IFC", "Export"],
+      "forbiddenSourceHints": ["Grafikkartentreiber", "License-server"],
+      "mustMentionHints": ["IFC", "Export", "Einstellungen"]
+    },
+    {
+      "id": "rag-tr-cross-lingual-001",
+      "language": "tr",
+      "query": "Türkçe dokümanda yoksa İngilizce veya Almanca kaynaktan performans cevabı verebilir misin?",
+      "expectedCategories": ["Performance & Hardware"],
+      "expectedSourceHints": ["Allplan_is_running_slow", "Geschwindigkeit_von_Allplan"],
+      "forbiddenSourceHints": ["License-server"],
+      "mustMentionHints": ["performans", "kaynak", "Allplan"]
+    },
+    {
+      "id": "rag-tr-no-ai-ticket-001",
+      "language": "tr",
+      "query": "AI kullanmadan doğrudan destek talebi açmak istiyorum, bu mümkün mü?",
+      "expectedCategories": ["Turkish Local Support"],
+      "expectedSourceHints": ["support", "ticket", "talep"],
+      "forbiddenSourceHints": ["graphics card", "IFC"],
+      "mustMentionHints": ["talep", "destek", "AI"]
+    },
+    {
+      "id": "rag-tr-general-demotion-001",
+      "language": "tr",
+      "query": "Allplan ağ üzerinden açılırken çok bekliyor, lisans değil isim çözümleme olabilir mi?",
+      "expectedCategories": ["Performance & Hardware", "Network & Workgroup"],
+      "expectedSourceHints": ["name resolution", "network"],
+      "forbiddenSourceHints": ["License-server", "activation offline"],
+      "mustMentionHints": ["isim çözümleme", "ağ", "sunucu"]
+    },
+    {
+      "id": "rag-tr-duplicate-canonical-001",
+      "language": "tr",
+      "query": "Grafik kartı sürücüsü konusunda pilot veya duplicate kaynak yerine canonical FAQ kaynağı kullanılmalı mı?",
+      "expectedCategories": ["Performance & Hardware"],
+      "expectedSourceHints": ["Grafikkartentreiber", "Updating_the_driver_of_the_graphics_card"],
+      "forbiddenSourceHints": ["pilot-de-grafikkartentreiber"],
+      "mustMentionHints": ["canonical", "FAQ", "grafik kartı"]
+    }
+  ]
+}
