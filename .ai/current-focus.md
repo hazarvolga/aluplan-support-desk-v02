@@ -6,7 +6,7 @@
 - Keep `dataset/` as the clean import surface and `.archive/rag-incoming/pdf/` as the raw PDF inbox.
 - Preserve Gemini/LLMAPI + pgvector and low-rate ingestion while importing in small validated batches.
 - Ensure Knowledge Pool sources carry useful `metadata.category` values from both dataset scan and UI upload.
-- Continue controlled 5-file PDF support batches. Batch 001 and Batch 002 completed; Batch 003 is currently 4/5 synced because the final Gemini embedding attempt hit quota.
+- Continue controlled 5-file PDF support batches. Batch 001, Batch 002, and Batch 003 completed successfully.
 - Keep title-specific retrieval boosting in place so near-duplicate FAQ topics rank by the most specific PDF title, not only vector similarity.
 - Keep OpenAI as chat fallback only. Do not use OpenAI as embedding fallback while the active corpus is Gemini `3072/v2_2`.
 - Ensure unchanged dataset files with zero embeddings are re-indexed or fail clearly; never mark them as successful with an empty vector set.
@@ -34,4 +34,4 @@
 
 ## Next Recommended Step
 
-Retry the failed Batch 003 source only after Gemini embedding quota recovers. Do not enable OpenAI embedding fallback for the retry. After it succeeds, verify Batch 003 has 5/5 sources `SUCCESS`, embeddings only `3072/v2_2`, admin UI categories, and language-specific search. If quota is still exhausted, leave the source failed rather than polluting the pool.
+Prepare PDF Batch 004 from `.archive/rag-staging/pdf-first/ready/manifest-ready.json`. Keep the same 5-file, sequential, low-rate sync pattern. After each source, verify `SUCCESS`, `ACTIVE`, embeddings > 0, and embedding distribution only `3072/v2_2`. After the batch, run language/category search smoke before moving on.

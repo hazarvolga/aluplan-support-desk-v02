@@ -545,3 +545,25 @@ Maintenance rule:
 - Retry the failed Batch 003 source after Gemini embedding quota recovers.
 - Do not enable OpenAI embedding fallback unless a new embedding version and full re-embedding plan are created.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
+
+## Follow-up - 2026-05-14 PDF Batch 003 Completed
+
+### Result
+- The previously failed Batch 003 source was retried after Gemini embedding quota recovered.
+- Batch 003 is now fully synced:
+  - 5/5 sources `ACTIVE`
+  - 5/5 latest sync logs `SUCCESS`
+  - total Batch 003 embeddings: 25
+  - embedding distribution: `3072 / v2_2` only
+
+### Search smoke
+- TR Softlock computer-change query returned `faq-softlock-SSS-Bilgisayar-değişikliği-yapmak-istiyorum-Softlock-2013.pdf` first.
+- TR temporary online license-transfer query returned `faq-softlock-SSS-Geçici-lisans-transferi-Online.pdf` first.
+- EN offline activation query returned `FAQ_EN_Activating_license_offline_(without_Internet_access).pdf` first.
+- DE CodeMeter manual install query returned `FAQ_DE_Codemeter_Kontrollzentrum_manuell_installieren.pdf` first.
+- DE license-server no-license query returned `FAQ_DE_Lizenzserver_-_Es_wird_keine_Lizenz_gefunden_.pdf` first.
+
+### Remaining
+- Continue with Batch 004 using the same sequential, low-rate import pattern.
+- Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
+- `apps/backend/openapi.json` remains an unrelated modified artifact.
