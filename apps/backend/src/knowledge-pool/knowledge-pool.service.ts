@@ -3,15 +3,30 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateKnowledgeSourceDto } from './dto/create-knowledge-source.dto';
-import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
+import { KnowledgeSourceStatus, KnowledgeSourceType, Prisma } from '@aluplan/database';
 import * as path from 'path';
 import * as fs from 'fs';
 import { StorageService } from '../common/services/storage.service';
+import { classifyDatasetFile, DatasetFileClassification } from './dataset-classifier';
 
 const parseJobDelay = (value: string | undefined, fallback: number): number => {
     const parsed = Number.parseInt(value ?? '', 10);
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 };
+
+const buildDatasetMetadata = (
+    classification: DatasetFileClassification,
+    existing?: Record<string, unknown> | null,
+): Prisma.InputJsonObject => ({
+    ...(existing ?? {}),
+    useAiPreprocessing: existing?.useAiPreprocessing ?? false,
+    ingestionMode: existing?.ingestionMode ?? 'bulk-safe',
+    category: classification.category,
+    categorySlug: classification.categorySlug,
+    sourceClass: classification.sourceClass,
+    canonicalSource: classification.canonicalSource,
+    importBatch: classification.importBatch,
+});
 
 @Injectable()
 export class KnowledgePoolService {
@@ -179,6 +194,7 @@ export class KnowledgePoolService {
 
             let addedCount = 0;
             let existingCount = 0;
+            let updatedCount = 0;
 
             for (const filePath of filesToSync) {
                 const ext = path.extname(filePath).toLowerCase();
@@ -190,31 +206,43 @@ export class KnowledgePoolService {
                 if (ext === '.msg') type = KnowledgeSourceType.FILE_MSG;
 
                 const fileName = path.basename(filePath);
+                const classification = classifyDatasetFile(filePath);
 
                 const existing = await this.prisma.knowledgeSource.findFirst({
                     where: { filePath }
                 });
-
-                // Basic language detection from filename or directory
-                let language = 'tr';
-                if (filePath.toLowerCase().includes('_de') || filePath.toLowerCase().includes('/de/') || fileName.toLowerCase().includes('germany')) language = 'de';
-                else if (filePath.toLowerCase().includes('_en') || filePath.toLowerCase().includes('/en/') || fileName.toLowerCase().includes('english')) language = 'en';
+                const existingMetadata = (existing?.metadata as Record<string, unknown> | null) ?? null;
+                const metadata = buildDatasetMetadata(classification, existingMetadata);
 
                 if (existing) {
                     existingCount++;
+                    if (
+                        existing.language !== classification.language ||
+                        existingMetadata?.category !== classification.category ||
+                        existingMetadata?.categorySlug !== classification.categorySlug ||
+                        existingMetadata?.sourceClass !== classification.sourceClass ||
+                        existingMetadata?.canonicalSource !== classification.canonicalSource ||
+                        existingMetadata?.importBatch !== classification.importBatch
+                    ) {
+                        await this.prisma.knowledgeSource.update({
+                            where: { id: existing.id },
+                            data: {
+                                language: classification.language,
+                                metadata,
+                            },
+                        });
+                        updatedCount++;
+                    }
                 } else {
-                    const source = await this.prisma.knowledgeSource.create({
+                    await this.prisma.knowledgeSource.create({
                         data: {
                             name: `[Dataset] ${fileName.substring(0, 200)}`,
                             type,
                             fileName: fileName.substring(0, 255),
                             filePath,
                             status: KnowledgeSourceStatus.ACTIVE,
-                            language,
-                            metadata: {
-                                useAiPreprocessing: false,
-                                ingestionMode: 'bulk-safe',
-                            }
+                            language: classification.language,
+                            metadata,
                         },
                     });
                     addedCount++;
@@ -224,7 +252,7 @@ export class KnowledgePoolService {
 
             return {
                 success: true,
-                message: `Dataset scan complete. Discovered ${addedCount} new files. Checked ${existingCount} existing files. Sync must be started manually from the UI for specific items.`,
+                message: `Dataset scan complete. Discovered ${addedCount} new files. Checked ${existingCount} existing files. Updated ${updatedCount} existing files. Sync must be started manually from the UI for specific items.`,
                 totalFiles: filesToSync.length
             };
         } catch (error: any) {

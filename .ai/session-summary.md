@@ -326,6 +326,55 @@ Maintenance rule:
 ### Remaining
 - Email retry noise and failed background jobs remain unrelated operational cleanup items.
 
+## Follow-up - 2026-05-14 PDF-First RAG Dataset Pilot
+
+### Decision
+- Use PDF as the canonical source for the next RAG import; keep generated MD files out unless a PDF parses poorly or no PDF exists.
+- Keep raw incoming PDFs under `.archive/rag-incoming/pdf/` and copy only curated, deduped files into `dataset/`.
+- Categorize Knowledge Pool sources before import so the admin UI does not show all FAQ data as `General`.
+
+### Fix applied
+- Added a dataset classifier for local Knowledge Pool imports:
+  - language detection: `tr`, `en`, `de`
+  - category metadata: license, license server, installation, performance, network, export/import, share/cloud, project data, release info, manuals, review backlog
+  - import metadata: `categorySlug`, `sourceClass`, `canonicalSource`, `importBatch`
+- Updated local dataset scan to enrich new and existing dataset sources with classifier metadata.
+- Generated ignored staging manifests under `.archive/rag-staging/pdf-first/`:
+  - 327 raw PDFs
+  - 176 exact-unique PDFs
+  - 151 exact duplicate drops
+  - 123 support-first ready PDFs
+  - 52 manual/review backlog PDFs
+- Copied three pilot PDFs into categorized `dataset/` paths and scanned them:
+  - TR: `License & Activation`
+  - EN: `License Server & CodeMeter`
+  - DE: `Performance & Hardware`
+
+### Verification
+- Backend tests passed:
+  - `pnpm --filter @aluplan/backend test -- dataset-classifier.spec.ts knowledge-pool-job.spec.ts`
+- Backend typecheck passed:
+  - `pnpm --filter @aluplan/backend typecheck`
+- Local services were started successfully:
+  - backend health: database, redis, bullmq, storage all `up`
+  - frontend: `http://localhost:3000`
+- Dataset scan result:
+  - discovered 3 new files
+  - checked 7 existing files
+  - updated 7 existing source metadata records
+- Pilot sync result:
+  - all 3 pilot sources `SUCCESS`
+  - embeddings: 20 total, all `3072 / v2_2`
+- Search smoke:
+  - EN license-server query returns the EN pilot source.
+  - DE real-time scanner query returns the DE pilot source.
+  - Targeted TR license-transfer queries return the TR pilot source first.
+
+### Remaining
+- Broad Turkish wording such as “Allplan lisansını yeni bilgisayara nasıl aktarırım?” can still retrieve adjacent EN license-server content first; treat this as a retrieval tuning issue, not an import failure.
+- Do not commit `apps/backend/openapi.json` unless intentionally regenerated or restored.
+- Continue imports in 5-file support batches from `.archive/rag-staging/pdf-first/ready/manifest-ready.json`.
+
 ## Follow-up - 2026-05-14 Settings Secret Hardening
 
 ### Decision
