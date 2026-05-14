@@ -600,3 +600,36 @@ Maintenance rule:
 - Continue with Batch 005 using the same sequential, low-rate import pattern.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
+
+## Follow-up - 2026-05-14 PDF Batch 005 Completed
+
+### Batch 005 files
+- DE / `License Server & CodeMeter`: `FAQ_DE_Installation_und_Konfiguration_des_Lizenzservers.pdf`
+- DE / `License Server & CodeMeter`: `FAQ_DE_Keine_Lizenz_am_Client_nach_Update_von_Codemeter_Runtime.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_License_server_-_borrowing_licenses_temporarily.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_Moving_license_server_to_a_new_server.pdf`
+- TR / `License & Activation`: `faq-softlock-SSS-Geçici-lisans-transferi-Manuel.pdf`
+
+### Result
+- Dataset scan result:
+  - discovered 5 new files
+  - checked 30 existing files
+  - updated 0 existing files
+  - total local dataset files: 35
+- Sync result:
+  - 5/5 sources `ACTIVE`
+  - 5/5 latest sync logs `SUCCESS`
+  - total Batch 005 embeddings: 31
+  - embedding distribution: `3072 / v2_2` only
+
+### Search smoke
+- DE license-server install/config query returned `FAQ_DE_Installation_und_Konfiguration_des_Lizenzservers.pdf` first.
+- DE no-license-after-CodeMeter-update query returned `FAQ_DE_Keine_Lizenz_am_Client_nach_Update_von_Codemeter_Runtime.pdf` first.
+- EN temporary license borrowing query returned `FAQ_EN_License_server_-_borrowing_licenses_temporarily.pdf` first.
+- EN move license server query returned `FAQ_EN_Moving_license_server_to_a_new_server.pdf` first.
+- TR manual temporary license transfer query returned `faq-softlock-SSS-Geçici-lisans-transferi-Manuel.pdf` first.
+
+### Remaining
+- Continue with Batch 006 using the same sequential, low-rate import pattern.
+- Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
+- `apps/backend/openapi.json` remains an unrelated modified artifact.
