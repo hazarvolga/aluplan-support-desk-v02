@@ -11,19 +11,21 @@ export default async function middleware(request: NextRequest) {
     const apiOrigin = process.env.NEXT_PUBLIC_API_URL
         ? new URL(process.env.NEXT_PUBLIC_API_URL).origin
         : 'http://localhost:4000';
+    const wsApiOrigin = apiOrigin.replace(/^http/, 'ws');
+    const isProduction = process.env.NODE_ENV === 'production';
 
     const cspHeader = `
       default-src 'self';
-      script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ''};
+      script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${!isProduction ? "'unsafe-eval'" : ''};
       style-src 'self' 'unsafe-inline';
       img-src 'self' blob: data: https:;
       font-src 'self';
       object-src 'none';
       base-uri 'none';
-      connect-src 'self' ${apiOrigin};
+      connect-src 'self' ${apiOrigin} ${wsApiOrigin};
       form-action 'self';
       frame-ancestors 'none';
-      upgrade-insecure-requests;
+      ${isProduction ? 'upgrade-insecure-requests;' : ''}
     `.replace(/\s{2,}/g, ' ').trim();
 
     request.headers.set('x-nonce', nonce);
