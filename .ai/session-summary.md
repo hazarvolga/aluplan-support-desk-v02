@@ -510,3 +510,38 @@ Maintenance rule:
 - Backend typecheck passed:
   - `pnpm --filter @aluplan/backend typecheck`
 - `git diff --check` passed.
+
+## Follow-up - 2026-05-14 PDF Batch 003 Safety Fix
+
+### Decision
+- OpenAI remains enabled as chat fallback, but embedding fallback is disabled for the active Gemini corpus.
+- Embedding compatibility must check both vector dimension and embedding model identity; same dimension is not enough.
+- An unchanged source hash is not sufficient for sync success when the source has zero embeddings.
+
+### Batch 003 status
+- 5 files were discovered under `dataset/.../batch-003`.
+- 4/5 sources synced successfully and are `ACTIVE`.
+- Successful Batch 003 embeddings: 15 rows, all `3072 / v2_2`.
+- The remaining source, `FAQ_DE_Lizenzserver_-_Es_wird_keine_Lizenz_gefunden_.pdf`, is intentionally `FAILED` with 0 embeddings because Gemini embedding quota returned 429.
+- Earlier bad OpenAI fallback embeddings for this source were removed; the pool is not polluted by mixed-provider vectors.
+
+### Fix applied
+- `EmbeddingService` now rejects embedding results whose dimension or model does not match the active embedding version config.
+- `EmbeddingService.indexPoolContent()` now fails if no embeddings are generated for a source.
+- `KnowledgePoolProcessor` now re-indexes unchanged files when their embedding count is zero instead of marking them successful.
+- `.env.example` now documents the active 3072-dim expectation.
+
+### Verification
+- Backend tests passed:
+  - `pnpm --filter @aluplan/backend test -- embedding.service.spec.ts`
+  - `pnpm --filter @aluplan/backend test -- knowledge-pool.processor.spec.ts`
+- Backend typecheck passed:
+  - `pnpm --filter @aluplan/backend typecheck`
+- Backend build passed:
+  - `pnpm --filter @aluplan/backend build`
+- Backend restarted from `dist/main.js` and `/api/v1/health` is green.
+
+### Remaining
+- Retry the failed Batch 003 source after Gemini embedding quota recovers.
+- Do not enable OpenAI embedding fallback unless a new embedding version and full re-embedding plan are created.
+- `apps/backend/openapi.json` remains an unrelated modified artifact.

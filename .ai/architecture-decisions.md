@@ -42,3 +42,11 @@ and consequence. Use session summaries for implementation history.
 - Context: The RAG system was revised significantly, and stale embeddings or old source records can pollute new retrieval results.
 - Decision: Before uploading the full document set again, inspect and clean old RAG/knowledge-pool data that belongs to previous pipeline versions.
 - Consequence: Re-import work must include pre-cleanup inspection, safe deletion criteria, and verification that new documents are truly parsed, embedded, and searchable.
+
+## ADR-006 - Do Not Mix Embedding Providers Within One Corpus Version
+
+- Date: 2026-05-14
+- Status: Accepted
+- Context: During PDF Batch 003, OpenAI embedding fallback produced same-dimension vectors for a Gemini-indexed corpus, but retrieval quality was corrupted because the embedding spaces were different.
+- Decision: Keep OpenAI as chat fallback only. Do not use OpenAI as embedding fallback for the active Gemini `3072/v2_2` corpus unless a new embedding version and full re-embedding plan are created.
+- Consequence: Gemini embedding quota exhaustion should fail or pause ingestion clearly. It must not silently fall back to a different embedding model space inside the same `embedding_version`.
