@@ -414,6 +414,42 @@ Maintenance rule:
 - Older sources with `General` category still appear lower in result lists; clean/reclassify them separately if they continue to add noise.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
 
+## Follow-up - 2026-05-14 PDF Batch 001 Import
+
+### Decision
+- Continue imports with small support-first batches instead of bulk-loading all PDFs.
+- Keep sync sequential to avoid provider quota pressure; trigger the next file only after the previous source is `ACTIVE` with embeddings.
+
+### Batch 001 files
+- TR / `Export Import & IFC DWG`: `FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-).pdf`
+- TR / `License & Activation`: `faq-softlock-SSS-Allplan-da-Lisans-Nasil-Kayitlandirabilirim-(Register).pdf`
+- EN / `Network & Workgroup`: `FAQ_EN_Allplan_in_the_home-office.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_License_server_-_cannot_find_a_license_.pdf`
+- DE / `Performance & Hardware`: `FAQ_DE_Geschwindigkeit_von_Allplan_verbessern_bzw_analysieren.pdf`
+
+### Verification
+- Dataset scan result:
+  - discovered 5 new files
+  - checked 10 existing files
+  - updated 0 existing files
+  - total local dataset files: 15
+- Sync result:
+  - 5/5 sources `SUCCESS`
+  - 5/5 sources `ACTIVE`
+  - total new embeddings: 36
+  - embedding distribution: `3072 / v2_2`
+- Backend health remained green after sync.
+- Search smoke:
+  - TR X-Ref/export query returns the new PDF in the top results.
+  - TR license registration query returns the new license PDF first.
+  - EN home-office query returns the new home-office PDF first.
+  - EN license-server missing-license query returns the new license-server PDF first.
+  - DE performance query returns the new performance PDF first.
+
+### Remaining
+- Continue with Batch 002 using the same sequential sync pattern.
+- Watch legacy `General` category results; they may need separate cleanup/reclassification after enough PDF sources are imported.
+
 ## Follow-up - 2026-05-14 Settings Secret Hardening
 
 ### Decision

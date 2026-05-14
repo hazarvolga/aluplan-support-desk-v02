@@ -6,7 +6,7 @@
 - Keep `dataset/` as the clean import surface and `.archive/rag-incoming/pdf/` as the raw PDF inbox.
 - Preserve Gemini/LLMAPI + pgvector and low-rate ingestion while importing in small validated batches.
 - Ensure Knowledge Pool sources carry useful `metadata.category` values from both dataset scan and UI upload.
-- Continue controlled 5-file PDF support batches now that language/category-aware retrieval is in place.
+- Continue controlled 5-file PDF support batches now that Batch 001 completed successfully.
 
 ## Avoid Breaking
 
@@ -28,4 +28,4 @@
 
 ## Next Recommended Step
 
-Continue with the first 5-file PDF support batch from `.archive/rag-staging/pdf-first/ready/manifest-ready.json`. After each batch, verify sync `SUCCESS`, embeddings `3072/v2_2`, admin UI category, and one language-specific search query.
+Continue with PDF Batch 002 from `.archive/rag-staging/pdf-first/ready/manifest-ready.json`. Use the same sequential sync pattern, then verify sync `SUCCESS`, embeddings `3072/v2_2`, admin UI category, and one language-specific search query.
