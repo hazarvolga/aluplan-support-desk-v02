@@ -324,5 +324,23 @@ Maintenance rule:
 - `git diff --check` passed.
 
 ### Remaining
-- `ai.gemini.api_key` is currently stored in settings as non-secret; review and migrate it to secret storage in a separate security-focused change.
 - Email retry noise and failed background jobs remain unrelated operational cleanup items.
+
+## Follow-up - 2026-05-14 Settings Secret Hardening
+
+### Decision
+- Secret classification for provider credentials must be enforced on the backend, not trusted from UI payloads.
+- Existing plaintext secret-like settings should be remediated safely without printing secret values.
+
+### Fix applied
+- `SettingsService` now forces secret storage for keys matching credential patterns such as `.api_key`, `.secret_key`, `.client_secret`, `.webhook_secret`, `.credentials_json`, `.token`, and legacy `resend_api_key`.
+- Existing plaintext secret-like settings are encrypted and flipped to `isSecret=true` when read through `get` / `getValue` / `getAll`.
+- Added regression coverage for forced encrypted API key storage and read-time plaintext secret migration.
+- Checked live DB metadata for `ai.gemini.api_key` without printing the value; it is currently `is_secret=true`.
+
+### Verification
+- Backend provider/settings tests passed:
+  - `pnpm --filter @aluplan/backend test -- settings.service.spec.ts gemini.service.spec.ts llm-api.service.spec.ts ai.service.spec.ts ai-provider-router.service.spec.ts`
+- Backend typecheck passed:
+  - `pnpm --filter @aluplan/backend typecheck`
+- `git diff --check` passed.
