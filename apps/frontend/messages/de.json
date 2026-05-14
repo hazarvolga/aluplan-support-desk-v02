@@ -2271,7 +2271,8 @@
         "accuracy_funnel": "Genauigkeitshierarchie",
         "drift_analysis": "Drift-Analyse",
         "context_roi": "Kontexteffizienz (ROI)"
-      }
+      },
+      "knowledge_gaps": "Wissenslücken"
     },
     "email_validation": {
       "title": "E-Mail-Validierung",

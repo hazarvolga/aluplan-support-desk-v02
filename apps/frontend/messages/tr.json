@@ -2271,7 +2271,8 @@
         "accuracy_funnel": "İsabet Hiyerarşisi",
         "drift_analysis": "Konu Değişimi (Drift)",
         "context_roi": "Bağlam Verimliliği (ROI)"
-      }
+      },
+      "knowledge_gaps": "Bilgi Boşlukları"
     },
     "email_validation": {
       "title": "E-Posta Doğrulama",
