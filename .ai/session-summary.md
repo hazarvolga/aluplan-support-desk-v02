@@ -270,3 +270,31 @@ Maintenance rule:
 - `apps/backend/openapi.json` is currently modified to empty by generated output; do not commit until regenerated or intentionally restored.
 - `graphify-out/GRAPH_REPORT.md` changed after commit hooks, but Graphify warned that rebuilt graph node count is much smaller than existing `graph.json`; do not commit graph output until that warning is resolved.
 - `.agents/skills/`, `.github/agents/`, and new `.kiro/specs/*` remain untracked tooling/spec artifacts and should be reviewed in a separate commit/archive decision.
+
+## Follow-up - 2026-05-14 Artifact Cleanup
+
+### Decision
+- Preserve the currently working product behavior; no public API, backend, frontend, Prisma schema, or migration changes in this cleanup phase.
+- Keep Qdrant out of scope. Continue with the existing pgvector + Gemini/LLMAPI direction.
+- Treat generated outputs and local agent tooling separately from product commits.
+
+### Fix applied
+- Restored generated `apps/backend/openapi.json` output instead of committing an accidental artifact diff.
+- Restored `graphify-out/GRAPH_REPORT.md` after commit hooks because Graphify still warns that the rebuilt graph has 5572 nodes while the existing graph has 11474 nodes.
+- Committed local agent-tool ignore rules in `042fe81 chore(tooling): ignore local agent artifacts`:
+  - `.agents/skills/`
+  - `.github/agents/`
+- Committed pending Kiro specs in `704189b docs(specs): track pending kiro specs`:
+  - `.kiro/specs/ai-pipeline-data-cleanup/`
+  - `.kiro/specs/crm-realtime-sync/`
+  - `.kiro/specs/rich-text-editor/`
+  - `.kiro/specs/ui-contrast-accessibility/`
+
+### Verification
+- Confirmed the Kiro spec commit contains docs/spec files only.
+- Checked new Kiro specs for obvious secret patterns such as API keys, tokens, passwords, private keys, and database URLs; no real secrets were found.
+- Kept Graphify output uncommitted until the graph node-count mismatch is investigated.
+
+### Remaining
+- Investigate the Graphify source/chunk mismatch before accepting any regenerated graph output.
+- Run non-mutating gates after this memory update: `git status --short`, typechecks, targeted backend RAG/config tests, and Prisma schema validation.
