@@ -298,3 +298,31 @@ Maintenance rule:
 ### Remaining
 - Investigate the Graphify source/chunk mismatch before accepting any regenerated graph output.
 - Run non-mutating gates after this memory update: `git status --short`, typechecks, targeted backend RAG/config tests, and Prisma schema validation.
+
+## Follow-up - 2026-05-14 AI Quota-Safe Fallback
+
+### Decision
+- Keep Gemini as the primary provider and OpenAI as fallback.
+- Do not spend OpenAI credits during normal operation unless the primary provider is unavailable or a quota-safe fallback path is needed.
+- Treat daily Gemini quota exhaustion differently from short transient rate limits: daily quota should skip retry loops and move to fallback/cooldown; transient 429s should keep the existing retry behavior.
+
+### Fix applied
+- Added provider/task scoped quota cooldown in `AiService` using `AI_PROVIDER_QUOTA_COOLDOWN_MS` with a one-hour default.
+- Recorded explicit AI health events when daily quota exhaustion is detected.
+- Disabled optional automatic sentiment and context-suggestion AI calls by default behind settings flags:
+  - `ai.auto_sentiment.enabled`
+  - `ai.auto_context_suggestion.enabled`
+- Kept required ticket AI diagnosis/auto-resolution behavior intact.
+
+### Verification
+- Live OpenAI fallback credential smoke test succeeded with `gpt-4o-mini` and used only 13 tokens.
+- Backend focused tests passed:
+  - `pnpm --filter @aluplan/backend test -- ai.service.spec.ts ai-auto-resolver.service.spec.ts env-validation.spec.ts`
+  - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts embedding.service.spec.ts embedding-version.registry.spec.ts rag-maintenance.service.spec.ts gemini.service.spec.ts llm-api.service.spec.ts ai.service.spec.ts ai-auto-resolver.service.spec.ts env-validation.spec.ts`
+- Backend typecheck passed:
+  - `pnpm --filter @aluplan/backend typecheck`
+- `git diff --check` passed.
+
+### Remaining
+- `ai.gemini.api_key` is currently stored in settings as non-secret; review and migrate it to secret storage in a separate security-focused change.
+- Email retry noise and failed background jobs remain unrelated operational cleanup items.
