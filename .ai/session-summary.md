@@ -735,3 +735,47 @@ Maintenance rule:
 - Continue with Batch 009 using the same sequential, low-rate import pattern.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
+
+## Follow-up - 2026-05-14 PDF Batch 009 Completed
+
+### Runtime restart
+- After a local machine restart, both backend and frontend were down.
+- Backend restarted with `pnpm --filter @aluplan/backend start`.
+- Frontend restarted on `http://localhost:3000`.
+- Backend health returned `ok` with database, Redis, and BullMQ all up.
+
+### Batch 009 files
+- DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_-_Zugriffsrechte_von_Arbeitsplaetzen_fuer_ei.pdf`
+- DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_automatisch_finden_oder_zusaetzlichen_Server.pdf`
+- DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_und_oder_Lizenzen_aktualisieren_.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_License_server_-_obtain_licenses_via_VPN_.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_License_server_installation_failed.pdf`
+
+### Result
+- Dataset scan result:
+  - discovered 5 new files
+  - checked 50 existing files
+  - updated 0 existing files
+  - total local dataset files: 55
+- Sync result:
+  - 5/5 sources `ACTIVE`
+  - 5/5 latest sync logs `SUCCESS`
+  - total Batch 009 embeddings: 24
+  - embedding distribution: `3072 / v2_2` only
+- Corpus totals after Batch 009:
+  - total knowledge sources: 69
+  - total knowledge pool embeddings: 648
+  - corpus embedding distribution: `3072 / v2_2` only
+
+### Search smoke
+- DE license-server access-rights query returned `FAQ_DE_Lizenzserver_-_Zugriffsrechte_von_Arbeitsplaetzen_fuer_ei.pdf` first.
+- DE license-server update query returned `FAQ_DE_Lizenzserver_und_oder_Lizenzen_aktualisieren_.pdf` first.
+- EN obtain-license-via-VPN query returned `FAQ_EN_License_server_-_obtain_licenses_via_VPN_.pdf` first.
+- EN license-server-installation-failed query returned `FAQ_EN_License_server_installation_failed.pdf` first.
+- DE automatic/additional license-server query initially tied with other license-server docs at capped score `1`; title/keyword-specific queries returned `FAQ_DE_Lizenzserver_automatisch_finden_oder_zusaetzlichen_Server.pdf` first.
+
+### Remaining
+- Continue with Batch 010 using the same sequential, low-rate import pattern.
+- Watch capped-score ties among very similar license-server FAQs; source title/metadata still resolves the specific document when the query is explicit.
+- Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
+- `apps/backend/openapi.json` remains an unrelated modified artifact.
