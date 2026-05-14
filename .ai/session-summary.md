@@ -820,3 +820,45 @@ Maintenance rule:
 - Prefer remaining support-first FAQ sources, especially installation, network/workgroup, export/import, and practical license/activation issues.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
+
+## Follow-up - 2026-05-14 PDF Batch 011 Completed
+
+### Batch 011 files
+- DE / `Installation & Setup`: `FAQ_DE_Allplan_Silent-Installation_ab_Allplan_2017-2021.pdf`
+- DE / `Installation & Setup`: `FAQ_DE_Infos_zur_laenderspezifischen_Installation_Allplan_2019.pdf`
+- EN / `Installation & Setup`: `FAQ_EN_Installing_loopback_adapter_for_a_stand-alone_version_wit.pdf`
+- DE / `Network & Workgroup`: `FAQ_DE_Workgroupmanager_Rechner_aufnehmen_nicht_moeglich.pdf`
+- EN / `Network & Workgroup`: `FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf`
+
+### Result
+- Dataset scan result:
+  - discovered 5 new files
+  - checked 60 existing files
+  - updated 0 existing files
+  - total local dataset files: 65
+- Sync result:
+  - 5/5 sources `ACTIVE`
+  - 5/5 latest sync logs `SUCCESS`
+  - total Batch 011 embeddings: 32
+  - embedding distribution: `3072 / v2_2` only
+- Corpus totals after Batch 011:
+  - total knowledge sources: 79
+  - total knowledge pool embeddings: 696
+  - corpus embedding distribution: `3072 / v2_2` only
+
+### Search smoke
+- DE country-specific installation query returned `FAQ_DE_Infos_zur_laenderspezifischen_Installation_Allplan_2019.pdf` first.
+- EN loopback adapter standalone query returned `FAQ_EN_Installing_loopback_adapter_for_a_stand-alone_version_wit.pdf` first.
+- DE workgroup-manager computer-add query returned `FAQ_DE_Workgroupmanager_Rechner_aufnehmen_nicht_moeglich.pdf` first.
+- EN workgroup-manager computer-add query returned `FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf` first.
+- DE silent-installation title query returned `FAQ_DE_Allplan_Silent-Installation_ab_Allplan_2017-2021.pdf` first.
+
+### Note
+- A broader silent-installation query tied with the already-imported English silent-installation source at score `1`, so the English counterpart appeared first and the new German source second. Explicit title/source wording resolves the German source first.
+- The word `deutsch` alone does not currently force German source preference in raw search results; locale-aware answer generation may still choose Turkish/German response language separately.
+
+### Remaining
+- Continue with Batch 012 using the same sequential, low-rate import pattern.
+- Watch multilingual near-duplicate ties when English and German FAQs cover the same topic.
+- Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
+- `apps/backend/openapi.json` remains an unrelated modified artifact.
