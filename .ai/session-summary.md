@@ -633,3 +633,36 @@ Maintenance rule:
 - Continue with Batch 006 using the same sequential, low-rate import pattern.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
+
+## Follow-up - 2026-05-14 PDF Batch 006 Completed
+
+### Batch 006 files
+- DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_-_Lizenz_ausleihen_temporaer.pdf`
+- DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_auf_neuen_Server_umziehen.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_License_server_-_assigning_access_rights_for_seats_to_ind.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_License_server_-_getting_licenses_by_using_VPN.pdf`
+- TR / `License & Activation`: `faq-softlock-SSS-Lisansimi-artik-başka-bir-bilgisayarda-kullanmak-istiyorum.pdf`
+
+### Result
+- Dataset scan result:
+  - discovered 5 new files
+  - checked 35 existing files
+  - updated 0 existing files
+  - total local dataset files: 40
+- Sync result:
+  - 5/5 sources `ACTIVE`
+  - 5/5 latest sync logs `SUCCESS`
+  - total Batch 006 embeddings: 26
+  - embedding distribution: `3072 / v2_2` only
+
+### Search smoke
+- DE temporary license borrowing query returned `FAQ_DE_Lizenzserver_-_Lizenz_ausleihen_temporaer.pdf` first.
+- DE move license server query returned `FAQ_DE_Lizenzserver_auf_neuen_Server_umziehen.pdf` first.
+- EN assign license-server seat access rights query returned `FAQ_EN_License_server_-_assigning_access_rights_for_seats_to_ind.pdf` first.
+- EN license server over VPN query returned `FAQ_EN_License_server_-_getting_licenses_by_using_VPN.pdf` first.
+- TR use license on another computer query returned `faq-softlock-SSS-Lisansimi-artik-başka-bir-bilgisayarda-kullanmak-istiyorum.pdf` first.
+
+### Remaining
+- Continue with Batch 007 using the same sequential, low-rate import pattern.
+- Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
+- `apps/backend/openapi.json` remains an unrelated modified artifact.
