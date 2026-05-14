@@ -6,12 +6,14 @@ import { EmbeddingService } from './embedding.service';
 import { AiQueryService } from './ai-query.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { mockPrismaService } from '../test/mock.utils';
+import { SettingsService } from '../settings/settings.service';
 
 describe('AiAutoResolverService - Auto Learning', () => {
     let service: AiAutoResolverService;
 
     const mockAiService = {
         generate: jest.fn(),
+        analyzeSentiment: jest.fn(),
     };
 
     const mockEmbeddingService = {
@@ -22,7 +24,13 @@ describe('AiAutoResolverService - Auto Learning', () => {
         query: jest.fn(),
     };
 
+    const mockSettingsService = {
+        getValue: jest.fn(),
+    };
+
     beforeEach(async () => {
+        mockPrismaService.ticketMessage.update ??= jest.fn();
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 AiAutoResolverService,
@@ -31,6 +39,7 @@ describe('AiAutoResolverService - Auto Learning', () => {
                 { provide: EmbeddingService, useValue: mockEmbeddingService },
                 { provide: AiQueryService, useValue: mockAiQueryService },
                 { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+                { provide: SettingsService, useValue: mockSettingsService },
             ],
         }).compile();
 
@@ -69,6 +78,66 @@ describe('AiAutoResolverService - Auto Learning', () => {
             const mockTicket = { id: 'tik-low', satisfactionScore: 3 };
             await service.handleTicketSummarize(mockTicket as any);
             expect(mockPrismaService.ticketMessage.findMany).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('handleMessageAdded quota guards', () => {
+        it('should skip optional sentiment and context suggestions by default', async () => {
+            mockSettingsService.getValue.mockResolvedValue(null);
+
+            await service.handleMessageAdded({
+                ticket: {
+                    id: 'tik-1',
+                    userId: 'user-1',
+                    ticketNumber: 'SUP-001',
+                    status: 'OPEN',
+                },
+                message: {
+                    id: 'msg-1',
+                    ticketId: 'tik-1',
+                    senderId: 'user-1',
+                    message: 'Allplan is slow',
+                    isInternal: false,
+                },
+            } as any);
+
+            expect(mockAiService.analyzeSentiment).not.toHaveBeenCalled();
+            expect(mockAiQueryService.query).not.toHaveBeenCalled();
+        });
+
+        it('should run sentiment only when auto sentiment is explicitly enabled', async () => {
+            mockSettingsService.getValue.mockImplementation(async (key: string) => {
+                if (key === 'ai.auto_sentiment.enabled') return 'true';
+                return null;
+            });
+            mockAiService.analyzeSentiment.mockResolvedValue('NEGATIVE');
+            mockPrismaService.ticketMessage.update.mockResolvedValue({});
+            mockPrismaService.ticket.update.mockResolvedValue({});
+
+            await service.handleMessageAdded({
+                ticket: {
+                    id: 'tik-1',
+                    userId: 'user-1',
+                    ticketNumber: 'SUP-001',
+                    status: 'OPEN',
+                    priority: 'MEDIUM',
+                    channel: 'WEB',
+                },
+                message: {
+                    id: 'msg-1',
+                    ticketId: 'tik-1',
+                    senderId: 'user-1',
+                    message: 'Allplan is slow',
+                    isInternal: false,
+                },
+            } as any);
+
+            expect(mockAiService.analyzeSentiment).toHaveBeenCalledWith('Allplan is slow');
+            expect(mockPrismaService.ticketMessage.update).toHaveBeenCalledWith(expect.objectContaining({
+                where: { id: 'msg-1' },
+                data: { sentiment: 'NEGATIVE' },
+            }));
+            expect(mockAiQueryService.query).not.toHaveBeenCalled();
         });
     });
 });

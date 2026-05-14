@@ -5,6 +5,7 @@ import { AiQueryService } from './ai-query.service';
 import { AiService } from './ai.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class AiAutoResolverService {
@@ -15,7 +16,15 @@ export class AiAutoResolverService {
         private readonly aiService: AiService,
         private readonly prisma: PrismaService,
         private readonly embeddingService: EmbeddingService,
+        private readonly settings: SettingsService,
     ) { }
+
+    private async isFeatureEnabled(key: string, defaultValue = false): Promise<boolean> {
+        const value = await this.settings.getValue(key);
+        if (value === null || value === undefined || value === '') return defaultValue;
+        return value.toString().toLowerCase() === 'true';
+    }
+
     @OnEvent('ticket.created', { async: true })
     async handleTicketCreated(ticket: Ticket) {
         // Skip if already has interaction or if it's not a NEW ticket
@@ -89,28 +98,30 @@ export class AiAutoResolverService {
         if (message.isInternal || message.senderId !== ticket.userId) return;
 
         try {
-            const sentiment = await this.aiService.analyzeSentiment(message.message);
-            if (sentiment) {
-                await this.prisma.ticketMessage.update({
-                    where: { id: message.id },
-                    data: { sentiment }
-                });
-                this.logger.log(`🎭 Sentimenent of message ${message.id} is ${sentiment}.`);
-
-                if (sentiment === 'NEGATIVE' && ticket.priority !== 'URGENT') {
-                    this.logger.warn(`😠 Negative sentiment detected in ticket ${ticket.ticketNumber}. Elevating priority.`);
-
-                    await this.prisma.ticket.update({
-                        where: { id: ticket.id },
-                        data: { priority: 'URGENT' }
+            if (await this.isFeatureEnabled('ai.auto_sentiment.enabled')) {
+                const sentiment = await this.aiService.analyzeSentiment(message.message);
+                if (sentiment) {
+                    await this.prisma.ticketMessage.update({
+                        where: { id: message.id },
+                        data: { sentiment }
                     });
+                    this.logger.log(`🎭 Sentiment of message ${message.id} is ${sentiment}.`);
+
+                    if (sentiment === 'NEGATIVE' && ticket.priority !== 'URGENT') {
+                        this.logger.warn(`😠 Negative sentiment detected in ticket ${ticket.ticketNumber}. Elevating priority.`);
+
+                        await this.prisma.ticket.update({
+                            where: { id: ticket.id },
+                            data: { priority: 'URGENT' }
+                        });
+                    }
                 }
             }
 
             // --- CONVERSATION AWARE AUTO-REPLY DRAFT ---
             // If the ticket is in a state where AI can assist
             const activeStates: TicketStatus[] = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS, TicketStatus.PENDING_CUSTOMER];
-            if (activeStates.includes(ticket.status)) {
+            if (activeStates.includes(ticket.status) && await this.isFeatureEnabled('ai.auto_context_suggestion.enabled')) {
                 const messages = await this.prisma.ticketMessage.findMany({
                     where: { ticketId: ticket.id },
                     orderBy: { createdAt: 'asc' },

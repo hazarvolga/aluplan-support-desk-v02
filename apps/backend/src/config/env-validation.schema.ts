@@ -84,6 +84,7 @@ export const envSchema = z.object({
     AI_USER_DAILY_QUOTA: z.coerce.number().int().positive().optional(),
     AI_QUEUE_RATE_MAX: z.coerce.number().int().positive().optional(),
     AI_QUEUE_RATE_DURATION_MS: z.coerce.number().int().positive().optional(),
+    AI_PROVIDER_QUOTA_COOLDOWN_MS: z.coerce.number().int().positive().optional(),
     KNOWLEDGE_SYNC_RATE_MAX: z.coerce.number().int().positive().optional(),
     KNOWLEDGE_SYNC_RATE_DURATION_MS: z.coerce.number().int().positive().optional(),
     KNOWLEDGE_SYNC_QUEUE_CONCURRENCY: z.coerce.number().int().positive().optional(),

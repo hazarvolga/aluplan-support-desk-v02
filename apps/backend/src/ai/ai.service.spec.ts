@@ -9,6 +9,7 @@ import { GeminiService } from './gemini.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiCircuitBreakerService } from './ai-circuit-breaker.service';
 import { AiProviderRouter } from './ai-provider-router.service';
+import { AiHealthEventService } from './ai-health-event.service';
 
 describe('AiService — VertexAI Removal', () => {
     let service: AiService;
@@ -89,6 +90,10 @@ describe('AiService — VertexAI Removal', () => {
         emit: jest.fn(),
     };
 
+    const mockAiHealthEventService = {
+        record: jest.fn(),
+    };
+
     const mockCircuitBreakerService = {
         getBreaker: jest.fn().mockReturnValue({
             fire: jest.fn((fn) => fn()),
@@ -126,6 +131,7 @@ describe('AiService — VertexAI Removal', () => {
                 { provide: EventEmitter2, useValue: mockEventEmitter },
                 { provide: AiCircuitBreakerService, useValue: mockCircuitBreakerService },
                 { provide: AiProviderRouter, useValue: mockProviderRouter },
+                { provide: AiHealthEventService, useValue: mockAiHealthEventService },
             ],
         }).compile();
 
@@ -176,6 +182,7 @@ describe('AiService — VertexAI Removal', () => {
                 { provide: EventEmitter2, useValue: mockEventEmitter },
                 { provide: AiCircuitBreakerService, useValue: mockCircuitBreakerService },
                 { provide: AiProviderRouter, useValue: mockProviderRouter },
+                { provide: AiHealthEventService, useValue: mockAiHealthEventService },
             ],
         });
 
@@ -233,6 +240,10 @@ describe('AiService', () => {
         isManualOverride: jest.fn().mockResolvedValue(false),
     };
 
+    const mockAiHealthEventService = {
+        record: jest.fn(),
+    };
+
     const mockOllamaService = {
         embed: jest.fn(),
         generate: jest.fn(),
@@ -261,6 +272,7 @@ describe('AiService', () => {
                 { provide: EventEmitter2, useValue: { emit: jest.fn() } },
                 { provide: AiCircuitBreakerService, useValue: mockCircuitBreakerService },
                 { provide: AiProviderRouter, useValue: mockProviderRouter },
+                { provide: AiHealthEventService, useValue: mockAiHealthEventService },
             ],
         }).compile();
 
@@ -334,6 +346,29 @@ describe('AiService', () => {
             expect(delaySpy).toHaveBeenCalledWith(1000);
             expect(mockOllamaService.generate).toHaveBeenCalledTimes(2);
             expect(result).toBe('Recovered Response');
+        });
+
+        it('should skip retries and use fallback when daily quota is exhausted', async () => {
+            mockSettingsService.getValue.mockImplementation(async (key) => {
+                if (key === 'ai.chat_provider') return 'ollama';
+                if (key === 'ai.fallback_provider') return 'openai';
+                return null;
+            });
+            mockOllamaService.generate.mockRejectedValueOnce(new Error('Gemini API Error 429: {"error":{"status":"RESOURCE_EXHAUSTED","message":"Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests","details":[{"quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier"}]}}'));
+            mockOtherProviders.generate.mockResolvedValueOnce('Fallback Response');
+            const delaySpy = jest.spyOn(service as any, 'delay').mockResolvedValue(undefined);
+
+            const result = await service.generate('Hello');
+
+            expect(delaySpy).not.toHaveBeenCalled();
+            expect(mockOllamaService.generate).toHaveBeenCalledTimes(1);
+            expect(mockOtherProviders.generate).toHaveBeenCalledTimes(1);
+            expect(mockAiHealthEventService.record).toHaveBeenCalledWith(expect.objectContaining({
+                eventType: 'ERROR',
+                provider: 'ollama',
+                task: 'general',
+            }));
+            expect(result).toBe('Fallback Response');
         });
 
         it('should increment failure count and throw on error', async () => {

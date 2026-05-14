@@ -9,13 +9,17 @@ import { LlmApiService } from './llm-api.service';
 import { AiPart, AiProvider, ChatResult, EmbeddingResult } from './interfaces/ai-provider.interface';
 import { AiCircuitBreakerService } from './ai-circuit-breaker.service';
 import { AiProviderRouter } from './ai-provider-router.service';
+import { AiHealthEventService } from './ai-health-event.service';
 import CircuitBreaker from 'opossum';
+import { AiHealthEventType } from '@aluplan/database';
 
 @Injectable()
 export class AiService implements AiProvider {
     private readonly logger = new Logger(AiService.name);
     private readonly RATE_LIMIT_RETRY_ATTEMPTS = 3;
     private readonly DEFAULT_RATE_LIMIT_DELAY_MS = 5000;
+    private readonly DEFAULT_QUOTA_COOLDOWN_MS = 60 * 60 * 1000;
+    private readonly quotaCooldowns = new Map<string, number>();
 
     constructor(
         private readonly settings: SettingsService,
@@ -27,6 +31,7 @@ export class AiService implements AiProvider {
         private readonly eventEmitter: EventEmitter2,
         private readonly circuitBreaker: AiCircuitBreakerService,
         private readonly providerRouter: AiProviderRouter,
+        private readonly aiHealthEventService: AiHealthEventService,
     ) { }
 
     private getBreaker(providerName: string): CircuitBreaker {
@@ -64,6 +69,24 @@ export class AiService implements AiProvider {
         let lastError = null;
 
         for (const pName of providersToTry) {
+            const quotaKey = this.getQuotaKey(type, pName, task);
+            const cooldownUntil = this.quotaCooldowns.get(quotaKey) ?? 0;
+            if (cooldownUntil > Date.now()) {
+                const errMsg = `${pName} is in quota cooldown for task "${task}" until ${new Date(cooldownUntil).toISOString()}`;
+                lastError = new Error(errMsg);
+                this.logger.warn(`⏸️ ${errMsg}`);
+
+                if (pName === primaryName && fallbackName && fallbackName !== primaryName) {
+                    this.eventEmitter.emit('system.ai_fallback', {
+                        primaryProvider: primaryName,
+                        fallbackProvider: fallbackName,
+                        task,
+                        error: errMsg
+                    });
+                }
+                continue;
+            }
+
             try {
                 const provider = await this.getProvider(pName);
                 const breaker = this.getBreaker(pName);
@@ -86,26 +109,39 @@ export class AiService implements AiProvider {
                 const is429 = errMsg.includes('429') || errMsg.toLowerCase().includes('rate limit') || errMsg.toLowerCase().includes('too many requests');
 
                 if (is429 && pName === primaryName) {
-                    let retryDelayMs = this.extractRetryDelayMs(errMsg);
-                    for (let attempt = 1; attempt <= this.RATE_LIMIT_RETRY_ATTEMPTS; attempt++) {
-                        this.logger.warn(`🔄 Rate limited (429) on primary provider ${primaryName}. Retry ${attempt}/${this.RATE_LIMIT_RETRY_ATTEMPTS} in ${Math.ceil(retryDelayMs / 1000)}s...`);
-                        await this.delay(retryDelayMs);
-                        try {
-                            const retryProvider = await this.getProvider(pName);
-                            const retryResult = await operation(retryProvider);
-                            if (retryResult !== null && retryResult !== undefined) {
-                                this.logger.log(`✅ Retry succeeded after 429`);
-                                return retryResult as T;
+                    if (this.isDailyQuotaExhausted(errMsg)) {
+                        const cooldownMs = this.getQuotaCooldownMs();
+                        const cooldownUntil = Date.now() + cooldownMs;
+                        this.quotaCooldowns.set(quotaKey, cooldownUntil);
+                        this.logger.warn(`⏸️ Daily quota exhausted for ${primaryName}. Skipping retry and cooling down until ${new Date(cooldownUntil).toISOString()}.`);
+                        await this.recordHealthEvent(AiHealthEventType.ERROR, primaryName, task, errMsg, {
+                            reason: 'daily_quota_exhausted',
+                            cooldownMs,
+                            cooldownUntil: new Date(cooldownUntil).toISOString(),
+                            type,
+                        });
+                    } else {
+                        let retryDelayMs = this.extractRetryDelayMs(errMsg);
+                        for (let attempt = 1; attempt <= this.RATE_LIMIT_RETRY_ATTEMPTS; attempt++) {
+                            this.logger.warn(`🔄 Rate limited (429) on primary provider ${primaryName}. Retry ${attempt}/${this.RATE_LIMIT_RETRY_ATTEMPTS} in ${Math.ceil(retryDelayMs / 1000)}s...`);
+                            await this.delay(retryDelayMs);
+                            try {
+                                const retryProvider = await this.getProvider(pName);
+                                const retryResult = await operation(retryProvider);
+                                if (retryResult !== null && retryResult !== undefined) {
+                                    this.logger.log(`✅ Retry succeeded after 429`);
+                                    return retryResult as T;
+                                }
+                                lastError = new Error('Provider returned null');
+                            } catch (retryErr) {
+                                lastError = retryErr;
+                                const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+                                if (!(retryMsg.includes('429') || retryMsg.toLowerCase().includes('rate limit') || retryMsg.toLowerCase().includes('too many requests'))) {
+                                    this.logger.warn(`⚠️ Retry failed after 429: ${retryErr}`);
+                                    break;
+                                }
+                                retryDelayMs = this.extractRetryDelayMs(retryMsg, retryDelayMs * 2);
                             }
-                            lastError = new Error('Provider returned null');
-                        } catch (retryErr) {
-                            lastError = retryErr;
-                            const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-                            if (!(retryMsg.includes('429') || retryMsg.toLowerCase().includes('rate limit') || retryMsg.toLowerCase().includes('too many requests'))) {
-                                this.logger.warn(`⚠️ Retry failed after 429: ${retryErr}`);
-                                break;
-                            }
-                            retryDelayMs = this.extractRetryDelayMs(retryMsg, retryDelayMs * 2);
                         }
                     }
                 }
@@ -127,6 +163,40 @@ export class AiService implements AiProvider {
         this.logger.error(`🚨 SYSTEM ALERT: All AI providers failed for task (${task}).`);
         if (lastError instanceof InternalServerErrorException) throw lastError;
         throw new InternalServerErrorException((lastError instanceof Error ? lastError.message : undefined) || 'All AI providers failed');
+    }
+
+    private getQuotaKey(type: 'chat' | 'embed', provider: string, task: string): string {
+        return `${type}:${provider}:${task}`;
+    }
+
+    private getQuotaCooldownMs(): number {
+        const configured = Number(process.env.AI_PROVIDER_QUOTA_COOLDOWN_MS);
+        return Number.isFinite(configured) && configured > 0 ? configured : this.DEFAULT_QUOTA_COOLDOWN_MS;
+    }
+
+    private isDailyQuotaExhausted(message: string): boolean {
+        const lower = message.toLowerCase();
+        return (
+            lower.includes('generate_content_free_tier_requests') ||
+            lower.includes('generaterequestsperdayperprojectpermodel') ||
+            (lower.includes('resource_exhausted') && lower.includes('quota exceeded') && lower.includes('day'))
+        );
+    }
+
+    private async recordHealthEvent(
+        eventType: AiHealthEventType,
+        provider: string,
+        task: string,
+        errorMessage: string,
+        metadata?: Record<string, any>,
+    ): Promise<void> {
+        await this.aiHealthEventService.record({
+            eventType,
+            provider,
+            task,
+            errorMessage,
+            metadata,
+        });
     }
 
     private extractRetryDelayMs(message: string, fallbackMs: number = this.DEFAULT_RATE_LIMIT_DELAY_MS): number {
