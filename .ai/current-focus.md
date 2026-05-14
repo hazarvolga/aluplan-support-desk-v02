@@ -2,11 +2,12 @@
 
 ## Active Work
 
+- Pause the PDF-first import after the support-first seed corpus and validate real RAG quality before importing more files.
 - Build the PDF-first RAG dataset import path without polluting the knowledge pool with generated MD duplicates.
 - Keep `dataset/` as the clean import surface and `.archive/rag-incoming/pdf/` as the raw PDF inbox.
 - Preserve Gemini/LLMAPI + pgvector and low-rate ingestion while importing in small validated batches.
 - Ensure Knowledge Pool sources carry useful `metadata.category` values from both dataset scan and UI upload.
-- Continue controlled 5-file PDF support batches. Batch 001 through Batch 011 completed successfully.
+- Controlled 5-file PDF support batches 001 through 011 completed successfully.
 - Keep title-specific retrieval boosting in place so near-duplicate FAQ topics rank by the most specific PDF title, not only vector similarity.
 - Keep OpenAI as chat fallback only. Do not use OpenAI as embedding fallback while the active corpus is Gemini `3072/v2_2`.
 - Ensure unchanged dataset files with zero embeddings are re-indexed or fail clearly; never mark them as successful with an empty vector set.
@@ -34,4 +35,4 @@
 
 ## Next Recommended Step
 
-Prepare PDF Batch 012 from `.archive/rag-staging/pdf-first/ready/manifest-ready.json`. Keep the same 5-file, sequential, low-rate sync pattern. Prefer remaining support-first FAQ sources before manuals, release/package files, or broad project-data documents. After each source, verify `SUCCESS`, `ACTIVE`, embeddings > 0, and embedding distribution only `3072/v2_2`. After the batch, run language/category search smoke before moving on.
+Do not continue bulk import blindly. First run a real RAG acceptance test with 20-30 customer-like questions across Turkish, English, and German. Measure whether the top source is correct, the answer language follows locale/query intent, legacy `General` sources do not outrank categorized PDF sources, and multilingual near-duplicate ties do not degrade the answer. After that, resume selective imports with Batch 012 only for gaps revealed by the test set.

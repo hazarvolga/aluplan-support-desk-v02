@@ -862,3 +862,54 @@ Maintenance rule:
 - Watch multilingual near-duplicate ties when English and German FAQs cover the same topic.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
+
+## Pause Checkpoint - 2026-05-14 RAG Dataset Status
+
+### Current answer
+- The full dataset operation is **not finished**.
+- The support-first, controlled seed corpus is now usable enough to pause importing and run acceptance tests.
+- Do not continue importing every remaining PDF before testing real customer questions.
+
+### Completed import state
+- Completed staged batches: Batch 001 through Batch 011.
+- Last verified corpus state:
+  - knowledge sources: 79
+  - knowledge pool embeddings: 696
+  - embedding distribution: only `3072 / v2_2`
+- PDF-first manifest state:
+  - ready manifest entries: 123
+  - dataset PDF files detected locally: 64
+  - remaining ready manifest files: 62
+
+### Remaining ready files by category
+- `License & Activation`: 18
+- `Project Data Management`: 18
+- `Release Package Info`: 6
+- `Export Import & IFC DWG`: 5
+- `Network & Workgroup`: 5
+- `Installation & Setup`: 4
+- `Performance & Hardware`: 3
+- `License Server & CodeMeter`: 2
+- `Allplan Share & Cloud`: 1
+
+### Next recommended phase
+- Pause bulk import.
+- Build a 20-30 question RAG acceptance test set using real customer-style questions in Turkish, English, and German.
+- For each question, check:
+  - whether the top source is the expected document
+  - whether the generated answer uses the correct language
+  - whether legacy `General` sources outrank categorized PDF sources
+  - whether multilingual near-duplicate ties damage the final answer
+- Resume Batch 012 only after the test set shows which categories are actually missing.
+
+### Import priority after acceptance test
+- First: `License & Activation`
+- Then: `Network & Workgroup`
+- Then: `Export Import & IFC DWG`
+- Then: `Performance & Hardware`
+- Last: broad manuals, release/package info, and project-data documents.
+
+### Notes for resume
+- Keep OpenAI disabled for embedding fallback; OpenAI may remain chat fallback only.
+- Keep using the sequential low-rate import pattern for any future batch.
+- `apps/backend/openapi.json` remains an unrelated modified artifact and should not be mixed into RAG/memory commits.

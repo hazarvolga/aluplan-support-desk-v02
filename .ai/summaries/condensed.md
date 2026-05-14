@@ -27,6 +27,9 @@ Aluplan Support Desk is an AI-assisted ticket system for Allplan/BIM support wor
 - Sync diagnosis avoids quota-heavy model reranking and uses bounded fallback behavior.
 - Turkish fallback summaries were added to avoid raw English customer-facing output when Gemini is delayed.
 - The project should stay on pgvector for now and measure the real bottlenecks before considering Qdrant.
+- PDF-first RAG import is paused after controlled support-first batches 001-011; the corpus is usable enough for acceptance testing before importing more files.
+- Last verified RAG import state: 79 knowledge sources, 696 knowledge-pool embeddings, all `3072 / v2_2`.
+- The ready manifest still has remaining files, but the next phase is a 20-30 question TR/EN/DE RAG acceptance test, not blind bulk import.
 
 ## Current Risks
 
@@ -35,6 +38,7 @@ Aluplan Support Desk is an AI-assisted ticket system for Allplan/BIM support wor
 - Old RAG data can pollute new retrieval if not cleaned before re-import.
 - Root Markdown, imported agent blocks, and duplicated AGENTS/CLAUDE content may be stale.
 - Uncommitted changes currently mix product RAG edits with tooling/spec/agent noise.
+- Legacy `General` knowledge sources can still appear behind new categorized PDF sources and should be watched during acceptance testing.
 
 ## Do Not Assume
 
