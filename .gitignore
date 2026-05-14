@@ -151,6 +151,8 @@ dataset.zip
 
 # Local agent/worktree artifacts
 .claude/worktrees/
+.agents/skills/
+.github/agents/
 .n8nac/
 graphify-out/.graphify_ast.json
 graphify-out/.graphify_incremental.json
