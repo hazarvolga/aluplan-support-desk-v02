@@ -428,6 +428,8 @@ Maintenance rule:
 - DE / `Performance & Hardware`: `FAQ_DE_Geschwindigkeit_von_Allplan_verbessern_bzw_analysieren.pdf`
 
 ### Verification
+- Product code committed:
+  - `0c2f1fb fix(rag): boost title-specific retrieval matches`
 - Dataset scan result:
   - discovered 5 new files
   - checked 10 existing files
@@ -449,6 +451,46 @@ Maintenance rule:
 ### Remaining
 - Continue with Batch 002 using the same sequential sync pattern.
 - Watch legacy `General` category results; they may need separate cleanup/reclassification after enough PDF sources are imported.
+
+## Follow-up - 2026-05-14 PDF Batch 002 Import and Retrieval Tuning
+
+### Decision
+- Batch 002 stayed support-first and sequential to protect Gemini quota.
+- Retrieval should prefer source title specificity when vector similarity, language, and category are otherwise close.
+- Foreign-language sources remain eligible as fallback evidence; this is a ranking improvement, not a language hard filter.
+
+### Batch 002 files
+- TR / `License & Activation`: `faq-softlock-SSS-Bilgisayarimi-formatladim-lisansimi-nasil-geri-alirim.pdf`
+- EN / `Installation & Setup`: `FAQ_EN_Allplan_silent_installation_(Allplan_2017_and_later).pdf`
+- EN / `Export Import & IFC DWG`: `FAQ_EN_Export_resolving_and_transferring_layouts.pdf`
+- DE / `Performance & Hardware`: `FAQ_DE_Grafikkarten_fuer_Allplan.pdf`
+- DE / `License & Activation`: `FAQ_DE_Lizenz_auf_neuen_anderen_Rechner_uebertragen.pdf`
+
+### Verification
+- Dataset scan result:
+  - discovered 5 new files
+  - checked 15 existing files
+  - updated 0 existing files
+  - total local dataset files: 20
+- Sync result:
+  - 5/5 sources `SUCCESS`
+  - 5/5 sources `ACTIVE`
+  - total new embeddings: 32
+  - embedding distribution: `3072 / v2_2`
+- Backend health remained green after restart.
+- Backend tests passed:
+  - `pnpm --filter @aluplan/backend test -- embedding.service.spec.ts`
+  - `pnpm --filter @aluplan/backend typecheck`
+- Live search smoke after title-specific ranking:
+  - TR format/recover-license query returns `faq-softlock-SSS-Bilgisayarimi-formatladim-lisansimi-nasil-geri-alirim.pdf` first.
+  - DE license-transfer query returns `FAQ_DE_Lizenz_auf_neuen_anderen_Rechner_uebertragen.pdf` first.
+  - EN silent-install query returns `FAQ_EN_Allplan_silent_installation_(Allplan_2017_and_later).pdf` first.
+
+### Remaining
+- Continue with Batch 003 using the same sequential sync pattern.
+- Similar multilingual license FAQs can still show capped similarity ties; rank order is now improved by language, category, and title tokens.
+- Graphify hook ran on commit but warned that the rebuilt graph had 5596 nodes while the existing graph has 11474; `graphify-out/GRAPH_REPORT.md` was restored and not committed.
+- `apps/backend/openapi.json` remains an unrelated modified artifact.
 
 ## Follow-up - 2026-05-14 Settings Secret Hardening
 
