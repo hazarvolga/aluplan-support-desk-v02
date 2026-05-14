@@ -6,6 +6,7 @@ import { RAG_CONFIG, getConfidenceBand } from '../config/rag.config';
 import { createHash } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
+import { classifyDatasetFile } from '../knowledge-pool/dataset-classifier';
 
 export interface SearchResult {
     articleId: string;
@@ -14,6 +15,8 @@ export interface SearchResult {
     content: string;
     similarity: number;
     confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+    language?: string;
+    category?: string | null;
     updatedAt?: Date;
 }
 
@@ -28,6 +31,8 @@ export interface SearchResponse {
     results: SearchResult[];
     diagnostics: SearchDiagnostics;
 }
+
+const normalizeSearchLimit = (limit: number): number => Math.min(Math.max(Math.floor(limit || 5), 1), 20);
 
 @Injectable()
 export class EmbeddingService {
@@ -104,6 +109,10 @@ export class EmbeddingService {
         const config = await this.registry.getActiveVersionConfig();
         const vectorStr = JSON.stringify(embResult.embedding);
         const cleanQuery = query.replace(/['"\\;]/g, '');
+        const normalizedLimit = normalizeSearchLimit(limit);
+        const queryClassification = classifyDatasetFile(`${cleanQuery}.pdf`);
+        const queryLanguage = queryClassification.language;
+        const queryCategory = queryClassification.category;
 
         const isValidUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
         const validProductId = (productId && isValidUuid(productId)) ? productId : null;
@@ -121,6 +130,7 @@ export class EmbeddingService {
                 similarity: number;
                 trust_score: number;
                 language: string;
+                category: string | null;
                 updated_at: Date;
             }>
         >`
@@ -148,6 +158,7 @@ export class EmbeddingService {
             ) AS similarity,
             ka.trust_score,
             ka.language,
+            NULL::text AS category,
             ka.updated_at
         FROM knowledge_embeddings ke
         JOIN knowledge_articles ka ON ka.id = ke.article_id
@@ -175,6 +186,7 @@ export class EmbeddingService {
             1 - (kpe.embedding <=> ${vectorStr}::vector) AS similarity,
             ks.trust_score,
             ks.language,
+            ks.metadata->>'category' AS category,
             ks.updated_at
         FROM knowledge_pool_embeddings kpe
         JOIN knowledge_sources ks ON kpe.source_id = ks.id
@@ -187,19 +199,41 @@ export class EmbeddingService {
       )
       SELECT * 
       FROM combined_search 
-      ORDER BY (similarity * (trust_score::float)) DESC 
-      LIMIT ${limit * 2} -- Fetch more for Re-ranking
+      ORDER BY (
+        similarity
+        * (trust_score::float)
+        * CASE
+            WHEN language = ${queryLanguage} THEN 1.14
+            WHEN language IN ('tr', 'en', 'de') THEN 0.97
+            ELSE 1.0
+          END
+        * CASE
+            WHEN category = ${queryCategory} THEN 1.18
+            WHEN category IS NULL THEN 1.0
+            ELSE 0.98
+          END
+      ) DESC
+      LIMIT ${normalizedLimit * 4} -- Fetch more for language/category-aware de-duplication
     `;
 
-        const results = rows.map((row) => ({
-            articleId: row.article_id,
-            sourceType: row.source_type as any,
-            title: row.title,
-            content: row.content,
-            similarity: Number(row.similarity),
-            confidence: getConfidenceBand(row.similarity),
-            updatedAt: row.updated_at,
-        }));
+        const results = this.dedupeSearchRows(rows, normalizedLimit).map((row) => {
+            const rawSimilarity = Number(row.similarity);
+            const languageMultiplier = row.language === queryLanguage ? 1.14 : row.language && ['tr', 'en', 'de'].includes(row.language) ? 0.97 : 1.0;
+            const categoryMultiplier = row.category === queryCategory ? 1.18 : row.category ? 0.98 : 1.0;
+            const adjustedSimilarity = Math.min(rawSimilarity * languageMultiplier * categoryMultiplier, 1);
+
+            return {
+                articleId: row.article_id,
+                sourceType: row.source_type as any,
+                title: row.title,
+                content: row.content,
+                similarity: adjustedSimilarity,
+                confidence: getConfidenceBand(adjustedSimilarity),
+                language: row.language,
+                category: row.category,
+                updatedAt: row.updated_at,
+            };
+        });
 
         const diagnostics: SearchDiagnostics = {
             topScore: results.length > 0 ? results[0].similarity : 0,
@@ -211,6 +245,21 @@ export class EmbeddingService {
         this.logger.log(`📊 Search diagnostics: topScore = ${diagnostics.topScore.toFixed(3)}, passed = ${diagnostics.passedThreshold}, threshold = ${diagnostics.thresholdUsed}, model = ${diagnostics.queryEmbeddingModel} `);
 
         return { results, diagnostics };
+    }
+
+    private dedupeSearchRows<T extends { article_id: string; source_type: string }>(rows: T[], limit: number): T[] {
+        const seen = new Set<string>();
+        const deduped: T[] = [];
+
+        for (const row of rows) {
+            const key = `${row.source_type}:${row.article_id}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            deduped.push(row);
+            if (deduped.length >= limit) break;
+        }
+
+        return deduped;
     }
 
     async indexPoolContent(sourceId: string, content: string, metadata: any = {}): Promise<void> {

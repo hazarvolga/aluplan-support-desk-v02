@@ -59,7 +59,22 @@ const inferLanguage = (filePath: string, fileName: string): 'tr' | 'en' | 'de' =
         lowerName.includes('faq_de') ||
         lowerName.includes('faq-de') ||
         /(^|[-_])de([-_.]|$)/.test(lowerName) ||
-        hasAny(lowerPath, ['lizenz', 'grafikkarten', 'projekt', 'ueber', 'über', 'fuer', 'für', 'rechner'])
+        hasAny(lowerPath, [
+            'lizenz',
+            'grafikkarten',
+            'projekt',
+            'ueber',
+            'über',
+            'fuer',
+            'für',
+            'rechner',
+            'echtzeit',
+            'blockiert',
+            'wenn',
+            'nicht',
+            'keine',
+            'werden',
+        ])
     ) {
         return 'de';
     }
@@ -148,6 +163,8 @@ const inferSourceClass = (categorySlug: keyof typeof DATASET_CATEGORY_BY_SLUG): 
 
 const inferImportBatch = (filePath: string): string => {
     const segments = normalizedPathSegments(filePath);
+    if (segments.includes('knowledge-pool')) return 'ui-upload';
+
     const explicitBatch = segments.find((segment) => segment === 'pilot' || /^batch-\d+$/.test(segment));
     return explicitBatch ?? 'dataset-local';
 };

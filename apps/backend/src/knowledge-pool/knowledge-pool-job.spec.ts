@@ -19,6 +19,7 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
     const localMockPrismaService = {
         ...mockPrismaService,
         knowledgeSource: {
+            create: jest.fn(),
             findUnique: jest.fn(),
             update: jest.fn(),
         }
@@ -97,6 +98,44 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
             } else {
                 process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS = original;
             }
+        });
+    });
+
+    describe('createFileSource', () => {
+        it('applies the shared dataset classifier metadata to UI uploads', async () => {
+            const source = {
+                id: 'source-upload',
+                name: 'TR License Transfer',
+                metadata: { ingestionMode: 'bulk-safe' },
+            };
+            localMockPrismaService.knowledgeSource.create.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue({
+                ...source,
+                status: KnowledgeSourceStatus.SYNCING,
+            });
+
+            await service.createFileSource(
+                'TR License Transfer',
+                'FILE_PDF' as any,
+                {
+                    originalname: 'FAQ_TR_Lisansı_yeni_bir_bilgisayara_veya_baska_bir_bilgisayara_aktarma.pdf',
+                    path: 'knowledge-pool/uploaded-license.pdf',
+                } as Express.Multer.File,
+            );
+
+            expect(localMockPrismaService.knowledgeSource.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    language: 'tr',
+                    metadata: expect.objectContaining({
+                        category: 'License & Activation',
+                        categorySlug: 'license-activation',
+                        canonicalSource: 'pdf',
+                        importBatch: 'ui-upload',
+                        ingestionMode: 'bulk-safe',
+                    }),
+                }),
+            }));
         });
     });
 });

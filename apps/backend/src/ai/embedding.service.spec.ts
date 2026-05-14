@@ -123,6 +123,51 @@ describe('EmbeddingService', () => {
             expect(results[1].confidence).toBe('MEDIUM'); // 0.75 >= 0.70
             expect(results[2].confidence).toBe('LOW');    // 0.50 < 0.70
         });
+
+        it('should de-duplicate repeated chunks from the same source and expose source metadata', async () => {
+            mockAiService.embed.mockResolvedValue(mockEmbedResult);
+            mockPrismaService.$queryRaw.mockResolvedValue([
+                {
+                    article_id: 'src-tr',
+                    source_type: 'DOCUMENT',
+                    title: 'TR License Transfer',
+                    content: 'Lisansı yeni bilgisayara aktarma...',
+                    similarity: 0.82,
+                    trust_score: 0.85,
+                    language: 'tr',
+                    category: 'License & Activation',
+                },
+                {
+                    article_id: 'src-tr',
+                    source_type: 'DOCUMENT',
+                    title: 'TR License Transfer',
+                    content: 'Duplicate child chunk...',
+                    similarity: 0.80,
+                    trust_score: 0.85,
+                    language: 'tr',
+                    category: 'License & Activation',
+                },
+                {
+                    article_id: 'src-en',
+                    source_type: 'DOCUMENT',
+                    title: 'EN License Server',
+                    content: 'Install license server...',
+                    similarity: 0.78,
+                    trust_score: 0.85,
+                    language: 'en',
+                    category: 'License Server & CodeMeter',
+                },
+            ]);
+
+            const { results } = await service.search('Allplan lisansını yeni bilgisayara nasıl aktarırım?', 3);
+
+            expect(results.map((result) => result.articleId)).toEqual(['src-tr', 'src-en']);
+            expect(results[0]).toEqual(expect.objectContaining({
+                language: 'tr',
+                category: 'License & Activation',
+            }));
+            expect(results[0].similarity).toBeGreaterThan(0.82);
+        });
     });
 
     describe('indexPoolContent', () => {

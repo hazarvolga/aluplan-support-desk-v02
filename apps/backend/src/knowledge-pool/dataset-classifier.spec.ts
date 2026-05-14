@@ -65,4 +65,24 @@ describe('classifyDatasetFile', () => {
             categorySlug: 'export-import-ifc-dwg',
         }));
     });
+
+    it('marks UI uploads with a dedicated import batch', () => {
+        const result = classifyDatasetFile('knowledge-pool/FAQ_TR_Lisansı_yeni_bir_bilgisayara_veya_baska_bir_bilgisayara_aktarma.pdf');
+
+        expect(result).toEqual(expect.objectContaining({
+            language: 'tr',
+            category: 'License & Activation',
+            importBatch: 'ui-upload',
+            canonicalSource: 'pdf',
+        }));
+    });
+
+    it('detects German support questions without explicit locale markers', () => {
+        const result = classifyDatasetFile('Was tun wenn der Echtzeit-Scanner Allplan-Daten blockiert.pdf');
+
+        expect(result).toEqual(expect.objectContaining({
+            language: 'de',
+            category: 'Performance & Hardware',
+        }));
+    });
 });

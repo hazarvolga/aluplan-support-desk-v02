@@ -54,6 +54,8 @@ export class KnowledgePoolService {
     }
 
     async createFileSource(name: string, type: KnowledgeSourceType, file: Express.Multer.File): Promise<any> {
+        const classificationPath = file.path ? path.join(file.path, file.originalname) : file.originalname;
+        const classification = classifyDatasetFile(classificationPath);
         const source = await this.prisma.knowledgeSource.create({
             data: {
                 name,
@@ -61,10 +63,8 @@ export class KnowledgePoolService {
                 fileName: file.originalname,
                 filePath: file.path, // Now stores MinIO object key (e.g., 'knowledge-pool/1234-doc.pdf')
                 status: KnowledgeSourceStatus.ACTIVE,
-                metadata: {
-                    useAiPreprocessing: false,
-                    ingestionMode: 'bulk-safe',
-                },
+                language: classification.language,
+                metadata: buildDatasetMetadata(classification),
             },
         });
 

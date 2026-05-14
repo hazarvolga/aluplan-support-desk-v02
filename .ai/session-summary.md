@@ -375,6 +375,45 @@ Maintenance rule:
 - Do not commit `apps/backend/openapi.json` unless intentionally regenerated or restored.
 - Continue imports in 5-file support batches from `.archive/rag-staging/pdf-first/ready/manifest-ready.json`.
 
+## Follow-up - 2026-05-14 Language/Category-Aware RAG Retrieval
+
+### Decision
+- RAG search should not hard-filter by source language. User/UI language controls answer language, while source retrieval may still use EN/DE/TR documents.
+- Same-language and same-category sources should be boosted, not made mandatory.
+- Repeated chunks from the same source should be de-duplicated in returned search results.
+- UI-uploaded Knowledge Pool files should use the same classifier metadata as local dataset imports.
+
+### Fix applied
+- UI uploads now classify file metadata through the shared dataset classifier:
+  - `language`
+  - `category`
+  - `categorySlug`
+  - `sourceClass`
+  - `canonicalSource`
+  - `importBatch=ui-upload`
+- `EmbeddingService.search()` now:
+  - infers query language/category
+  - boosts same-language and same-category results
+  - keeps foreign-language sources eligible as fallback evidence
+  - de-duplicates repeated chunks by source
+  - returns source `language` and `category` metadata in search results
+- German query detection was tightened for support terms such as `Echtzeit`, `blockiert`, `wenn`, `nicht`, and related German signals.
+
+### Verification
+- Backend tests passed:
+  - `pnpm --filter @aluplan/backend test -- dataset-classifier.spec.ts knowledge-pool-job.spec.ts embedding.service.spec.ts`
+- Backend typecheck passed:
+  - `pnpm --filter @aluplan/backend typecheck`
+- Backend was restarted and health remained green.
+- Live search smoke after restart:
+  - TR broad license-transfer query returns TR `License & Activation` sources in the first two results.
+  - EN license-server query returns the EN `License Server & CodeMeter` pilot first.
+  - DE real-time scanner query returns the DE `Performance & Hardware` pilot first.
+
+### Remaining
+- Older sources with `General` category still appear lower in result lists; clean/reclassify them separately if they continue to add noise.
+- `apps/backend/openapi.json` remains an unrelated modified artifact.
+
 ## Follow-up - 2026-05-14 Settings Secret Hardening
 
 ### Decision
