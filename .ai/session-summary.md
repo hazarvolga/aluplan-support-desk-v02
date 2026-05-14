@@ -666,3 +666,39 @@ Maintenance rule:
 - Continue with Batch 007 using the same sequential, low-rate import pattern.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
+
+## Follow-up - 2026-05-14 PDF Batch 007 Completed
+
+### Batch 007 files
+- DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_-_Lizenz_ausleihen_Nachverfolgung_welche_Ben.pdf`
+- DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_-_Lizenz_offline_am_Server_aktivieren_und_zu.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_License_server_-_activating_a_license_offline_on_the_serv.pdf`
+- EN / `License Server & CodeMeter`: `FAQ_EN_License_server_-_license_borrowing_tracking_which_users_h.pdf`
+- TR / `License & Activation`: `faq-softlock-SSS-Allplan-Lisansinin-Kayitlandirma-İşlemi.pdf`
+
+### Result
+- Dataset scan result:
+  - discovered 5 new files
+  - checked 40 existing files
+  - updated 0 existing files
+  - total local dataset files: 45
+- Sync result:
+  - 5/5 sources `ACTIVE`
+  - 5/5 latest sync logs `SUCCESS`
+  - total Batch 007 embeddings: 26
+  - embedding distribution: `3072 / v2_2` only
+
+### Search smoke
+- DE license borrowing tracking query returned `FAQ_DE_Lizenzserver_-_Lizenz_ausleihen_Nachverfolgung_welche_Ben.pdf` first.
+- DE license-server offline activation query returned `FAQ_DE_Lizenzserver_-_Lizenz_offline_am_Server_aktivieren_und_zu.pdf` first when the query explicitly targeted server-side offline activation.
+- EN license-server offline activation query returned `FAQ_EN_License_server_-_activating_a_license_offline_on_the_serv.pdf` first.
+- EN license borrowing tracking query returned `FAQ_EN_License_server_-_license_borrowing_tracking_which_users_h.pdf` first.
+- TR Allplan license registration query returned `faq-softlock-SSS-Allplan-Lisansinin-Kayitlandirma-İşlemi.pdf` first.
+
+### Note
+- A broader DE query mentioning both offline activation and return (`zurueckgeben`) correctly preferred the workstation/offline activation-return PDF from Batch 004 over the server-specific Batch 007 PDF. This is expected; server-specific wording ranks the Batch 007 source first.
+
+### Remaining
+- Continue with Batch 008 using the same sequential, low-rate import pattern.
+- Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
+- `apps/backend/openapi.json` remains an unrelated modified artifact.
