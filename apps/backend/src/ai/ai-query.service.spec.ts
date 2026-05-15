@@ -432,7 +432,8 @@ describe('AiQueryService', () => {
             expect(result.answerMode).toBe('FALLBACK');
             expect(result.answer).toContain('Grafik kartı sürücüsü güncellemesi');
             expect(result.answer).toContain('NVIDIA Studio');
-            expect(result.answer).toContain('Kaynak: Graphics card driver update');
+            expect(result.answer).not.toContain('Kaynak:');
+            expect(result.answer).not.toContain('İlgili pasaj:');
             expect(result.answer).not.toContain('Why is Allplan running so slow?');
         });
 
@@ -466,9 +467,41 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             expect(result.answer).toContain('Alışveriş profilini');
             expect(result.answer).toContain('Nitelik atamasını');
             expect(result.answer).toContain('Eleman filtresini');
-            expect(result.answer).toContain('Kaynak: [Dataset] ifc_aktarim_el_kitabi.pdf');
+            expect(result.answer).not.toContain('Kaynak:');
+            expect(result.answer).not.toContain('İlgili pasaj:');
             expect(result.answer).not.toContain('The model response was delayed');
             expect(result.answer).not.toContain('####');
+        });
+
+        it('returns a Turkish DWG/DXF fallback without leaking customer source details or drifting to IFC', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'mixed-ifc-dwg',
+                        sourceType: 'DOCUMENT',
+                        title: '[Dataset] ifc_aktarim_el_kitabi.pdf',
+                        content: 'Example screenshots show how Allplan IFC export appears in Solibri, demonstrating the layer structure. DWG/DXF export should preserve layers and reference files when the export profile and XRef settings are checked.',
+                        similarity: 0.95,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.95, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'DWG/DXF export sırasında layer ve referans dosyaları nasıl korunur?',
+                wait: true,
+                language: 'tr-TR',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('DWG/DXF aktarımında layer ve referans yapısını korumak');
+            expect(result.answer).toContain('Export profilinde layer/katman eşlemesini');
+            expect(result.answer).toContain('Referans dosyalar veya XRef');
+            expect(result.answer).not.toContain('IFC aktarımında kritik kontroller');
+            expect(result.answer).not.toContain('Kaynak:');
+            expect(result.answer).not.toContain('İlgili pasaj:');
         });
 
         it('keeps Hotinfo error traces out of the retrieval query', async () => {

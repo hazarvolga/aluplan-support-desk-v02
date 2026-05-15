@@ -512,7 +512,9 @@ export class AiQueryService {
                 this.logger.warn(`⚠️ Diagnosis generation timed out or returned empty. Falling back to top matched content.`);
             }
 
-            const rawAnswer = aiResult?.response ?? this.buildDeterministicFallbackAnswer(userQuery, results, options.language || 'tr');
+            const rawAnswer = aiResult?.response ?? this.buildDeterministicFallbackAnswer(userQuery, results, options.language || 'tr', {
+                showSourceDetails: isStaff,
+            });
             answerMode = aiResult?.response ? 'LLM' : 'FALLBACK';
 
             // Split response by languages (TR, EN, DE)
@@ -757,7 +759,12 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             .map(({ __rankingScore, ...result }) => result);
     }
 
-    private buildDeterministicFallbackAnswer(query: string, results: SearchResult[], language: string): string {
+    private buildDeterministicFallbackAnswer(
+        query: string,
+        results: SearchResult[],
+        language: string,
+        options: { showSourceDetails?: boolean } = {},
+    ): string {
         const responseLanguage = this.resolveFallbackLanguage(language, query);
         const snippets = this.extractRelevantFallbackSnippets(query, results);
         if (snippets.length === 0) {
@@ -792,24 +799,35 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         }
 
         const turkishSummary = this.buildTurkishFallbackSummary(query, snippets[0]);
-        return [
+        const answerLines = [
             'Model yanıtı gecikti; bilgi kaynağındaki en ilgili eşleşmeye göre kısa yanıt:',
             '',
             turkishSummary,
-            '',
-            `Kaynak: ${snippets[0].title}`,
-            `İlgili pasaj: ${snippets[0].excerpt}`,
-        ].join('\n');
+        ];
+
+        if (options.showSourceDetails) {
+            answerLines.push(
+                '',
+                `Kaynak: ${snippets[0].title}`,
+                `İlgili pasaj: ${snippets[0].excerpt}`,
+            );
+        }
+
+        return answerLines.join('\n');
     }
 
     private buildTurkishFallbackSummary(query: string, snippet: { title: string; excerpt: string }): string {
-        const normalized = this.normalizeSearchText(`${query} ${snippet.title} ${snippet.excerpt}`);
+        const normalizedQuery = this.normalizeSearchText(query);
+        const normalizedEvidence = this.normalizeSearchText(`${snippet.title} ${snippet.excerpt}`);
         const asksIfcExport =
-            normalized.includes('ifc') &&
-            /(?:aktarim|disa aktar|export|ayar|settings|eleman|model)/.test(normalized);
+            normalizedQuery.includes('ifc') &&
+            /(?:aktarim|disa aktar|export|ayar|settings|eleman|model)/.test(normalizedQuery);
+        const asksDwgDxfExport =
+            /(?:dwg|dxf|autocad)/.test(normalizedQuery) &&
+            /(?:layer|katman|referans|xref|dosya|export|disa aktar|aktarim|koru|korunur|korumak)/.test(normalizedQuery);
         const asksGraphicsDriverUpdate =
-            /(?:grafik karti|ekran karti|graphics card|gpu|nvidia|amd)/.test(normalized) &&
-            /(?:guncelle|guncelleme|update|current)/.test(normalized);
+            /(?:grafik karti|grafik kartlari|ekran karti|ekran kartlari|graphics card|gpu|nvidia|amd)/.test(normalizedQuery) &&
+            /(?:guncelle|guncelleme|update|current|surum)/.test(normalizedQuery);
 
         if (asksIfcExport) {
             return [
@@ -823,11 +841,22 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             ].join('\n');
         }
 
+        if (asksDwgDxfExport) {
+            return [
+                'DWG/DXF aktarımında layer ve referans yapısını korumak için kritik kontroller şunlar:',
+                '- Export profilinde layer/katman eşlemesini kontrol edin; Allplan katmanlarının DWG layer adlarına nasıl çevrileceğini doğrulayın.',
+                '- Referans dosyalar veya XRef kullanılıyorsa hedef teslim biçimini baştan belirleyin: tek DWG dosyası mı, ayrı referanslı dosyalar mı gönderilecek?',
+                '- Aktarılacak çizim dosyası, katman ve eleman setini daraltın; gereksiz veya gizli katmanları export kapsamından çıkarın.',
+                '- Birim, ölçek ve koordinat ayarlarını kontrol edin; alıcı tarafta kayma veya ölçek bozulması genelde bu ayarlardan kaynaklanır.',
+                '- Teslimden önce küçük bir deneme exportu yapıp DWG viewer veya AutoCAD tarafında layer adlarını, görünürlüğü ve referans bağlantılarını kontrol edin.',
+            ].join('\n');
+        }
+
         if (asksGraphicsDriverUpdate) {
             return 'Grafik kartı sürücüsü güncellemesi için bilgi kaynağı, güncel NVIDIA Studio veya AMD Pro sürücüsünün üreticinin resmi sitesinden indirilmesini ve kurulumdan sonra Windows sisteminin yeniden başlatılmasını işaret ediyor.';
         }
 
-        return `Bilgi kaynağında sorunuzla eşleşen bölüm bulundu. Öne çıkan nokta: ${snippet.excerpt}`;
+        return `Bilgi kaynağında sorunuzla eşleşen bölüm bulundu. Öne çıkan nokta: ${snippet.excerpt || normalizedEvidence}`;
     }
 
     private resolveFallbackLanguage(language: string | undefined, query: string): 'tr' | 'en' | 'de' {
