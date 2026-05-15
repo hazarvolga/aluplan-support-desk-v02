@@ -8,6 +8,11 @@
   - critical badge, hover, placeholder, customer text, and status badge contrast issues were adjusted with static Tailwind classes.
   - focused contrast regression tests were added for role/status badges.
   - `apps/backend/openapi.json` remains unrelated drift and must stay out of frontend accessibility commits.
+- UI Contrast Accessibility Phase 2 completed pending visual approval:
+  - `source-architecture-view`, `customers`, and `knowledge-pool` dense labels were moved toward a `10px` readability floor.
+  - remaining decorative `7px` labels in source architecture are marked `aria-hidden`.
+  - customer and knowledge-pool metadata/badge readability was improved without changing data flow or layout structure.
+  - broader surfaces such as `admin/email-validation` and `hotinfo-grid` are intentionally deferred.
 - Rich Message Composer MVP completed:
   - ticket detail now uses a TipTap rich reply composer for admin/customer replies.
   - message history and ticket descriptions render through a safe rich/plain renderer.
@@ -96,6 +101,7 @@
 - Backend rich-text sanitizer is intentionally narrow; do not expand tags/attributes without XSS-focused tests.
 - UI contrast Phase 1 touched many frontend pages; GitNexus reports HIGH because of broad symbol spread even though the changes are static classes/tests.
 - Visual acceptability still needs browser review before Phase 2 changes typography density or token-level color consistency.
+- Phase 2 can make dense operational screens feel heavier; wait for visual approval before applying the same treatment to more pages.
 
 ## Next Recommended Step
 
@@ -107,7 +113,7 @@ Review UI Contrast Phase 1 visually before expanding scope:
 - Knowledge pool/FAQ badges in light and dark contexts.
 - AI settings placeholder readability.
 
-If acceptable, Phase 2 should address small-font cleanup and token-level color consistency. If not acceptable, revert the single Phase 1 commit or branch back to `2765a47`.
+If Phase 2 is visually acceptable, commit/keep it and plan Phase 3 for broader dense surfaces (`admin/email-validation`, `hotinfo-grid`) as a separate pass. If not acceptable, revert only the Phase 2 commit or adjust these three files.
 
 Manual smoke-test Rich Message Composer before broadening the editor scope:
 

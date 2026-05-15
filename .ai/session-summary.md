@@ -1952,3 +1952,41 @@ Maintenance rule:
   - small-font cleanup (`text-[7px]`, `text-[8px]`, `text-[9px]`)
   - token-level color consistency pass
   - broader status badge regression coverage
+
+## Follow-up - 2026-05-15 UI Contrast Accessibility Phase 2
+
+### Goal
+- Improve dense support-console readability without changing page logic or broad visual identity.
+- Keep the phase narrowly reversible after Phase 1.
+
+### Changes
+- `source-architecture-view.tsx`:
+  - informational `8px/9px` labels moved to `10px`.
+  - decorative micro labels remain `7px` but are marked `aria-hidden`.
+- `customers/page.tsx`:
+  - table and sync badges/meta labels moved from `8px/9px` to `10px`.
+  - remaining low-contrast light text in data cells moved from `text-white/50` to `text-white/80`.
+  - active/passive/syncing badges now use stronger light-mode text with preserved dark-mode color.
+- `knowledge-pool/page.tsx`:
+  - dense table filters, headers, badges, logs, and article metadata moved from `9px` to `10px`.
+
+### Validation
+- Targeted frontend contrast tests passed:
+  - `pnpm --filter @aluplan/frontend exec vitest run src/lib/contrast.spec.ts src/components/team/RoleBadge.spec.tsx src/components/team/AgentStatusBadge.spec.tsx`
+  - 3 files, 7 tests passed.
+- Frontend typecheck passed:
+  - `pnpm --filter @aluplan/frontend typecheck`
+- `git diff --check` passed.
+- Services were restarted at user request:
+  - backend on port `4000`
+  - frontend on port `3000`
+- GitNexus:
+  - `detect_changes` reported MEDIUM, limited to `CustomersPage`, `KnowledgePoolPage`, and `SourceArchitectureView`.
+- Graphify:
+  - update attempted.
+  - smaller graph warning persisted (`5656` vs existing `11474`), so `graphify-out/GRAPH_REPORT.md` was restored and not committed.
+
+### Next
+- User is visually checking the UI.
+- If the density still feels acceptable, commit Phase 2 and continue later with a separate Phase 3 for broader pages like `admin/email-validation` and `hotinfo-grid`.
+- If the UI feels too large/heavy, revert only the Phase 2 commit or adjust these three files before expanding scope.
