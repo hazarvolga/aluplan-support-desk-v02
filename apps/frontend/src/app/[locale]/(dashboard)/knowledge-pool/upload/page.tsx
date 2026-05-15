@@ -84,7 +84,7 @@ export default function KnowledgePoolUploadPage() {
                     <span className="text-[10px] font-bold tracking-[0.2em] uppercase">BACK_TO_POOL</span>
                 </Button>
                 <div className="text-right">
-                    <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-400/5 font-mono text-[9px] uppercase tracking-widest px-2 py-0.5">
+                    <Badge variant="outline" className="border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-400/5 font-mono text-[9px] uppercase tracking-widest px-2 py-0.5">
                         SECURE_GATEWAY_ACTIVE
                     </Badge>
                 </div>

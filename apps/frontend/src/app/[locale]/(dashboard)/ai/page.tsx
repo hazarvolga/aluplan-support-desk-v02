@@ -318,7 +318,7 @@ function AiPageContent() {
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder={t('input.placeholder')}
-                                className="w-full pl-12 pr-4 h-14 bg-transparent text-white font-bold text-[14px] tracking-tight focus:outline-none placeholder:text-muted-foreground/30"
+                                className="w-full pl-12 pr-4 h-14 bg-transparent text-white font-bold text-[14px] tracking-tight focus:outline-none placeholder:text-muted-foreground/60"
                             />
                         </div>
                         <div className="flex gap-2">

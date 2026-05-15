@@ -184,7 +184,7 @@ export function FieldMapping({
                             variant="ghost"
                             size="sm"
                             onClick={onReset}
-                            className="h-8 text-[10px] font-bold uppercase tracking-tight text-white/40 hover:text-white"
+                            className="h-8 text-[10px] font-bold uppercase tracking-tight text-white/80 hover:text-white"
                         >
                             <RotateCcw className="h-3 w-3 mr-2" />
                             {commonT('reset')}
@@ -285,7 +285,7 @@ export function FieldMapping({
                                         )}
                                     </div>
                                     <p className="text-[10px] font-mono text-white/20 uppercase tracking-tighter">
-                                        {t('sync.mapping.system_key')}: <span className="text-white/40">{item.key}</span>
+                                        {t('sync.mapping.system_key')}: <span className="text-white/80">{item.key}</span>
                                     </p>
                                 </div>
 
@@ -337,7 +337,7 @@ export function FieldMapping({
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-1.5">
-                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">{t('sync.mapping.step_1_crm')}</Label>
+                                    <Label className="text-[9px] text-white/80 uppercase tracking-widest font-bold">{t('sync.mapping.step_1_crm')}</Label>
                                     <SmartFieldSelector
                                         fields={discoveryData}
                                         value={newCrmField}
@@ -346,7 +346,7 @@ export function FieldMapping({
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">{t('sync.mapping.step_2_display_name')}</Label>
+                                    <Label className="text-[9px] text-white/80 uppercase tracking-widest font-bold">{t('sync.mapping.step_2_display_name')}</Label>
                                     <Input
                                         value={newFieldLabel}
                                         onChange={(e) => setNewFieldLabel(e.target.value)}
@@ -355,7 +355,7 @@ export function FieldMapping({
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-[9px] text-white/40 uppercase tracking-widest font-bold">{t('sync.mapping.step_3_system_key')}</Label>
+                                    <Label className="text-[9px] text-white/80 uppercase tracking-widest font-bold">{t('sync.mapping.step_3_system_key')}</Label>
                                     <Input
                                         value={newFieldKey}
                                         onChange={(e) => setNewFieldKey(e.target.value)}
@@ -370,7 +370,7 @@ export function FieldMapping({
                                     size="sm"
                                     onClick={handleAddCustomField}
                                     disabled={!newFieldKey.trim() || !newFieldLabel.trim()}
-                                    className="h-9 px-6 text-[10px] font-black uppercase tracking-widest bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/20"
+                                    className="h-9 px-6 text-[10px] font-black uppercase tracking-widest bg-blue-500 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
                                 >
                                     {t('sync.mapping.add_column_btn')}
                                 </Button>

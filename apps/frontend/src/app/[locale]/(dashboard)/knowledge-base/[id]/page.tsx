@@ -117,7 +117,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ id: st
                     <div className="flex items-center gap-3">
                         <Link
                             href={`/knowledge-base/${id}/edit`}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-500 hover:text-white transition-all font-medium text-xs border border-orange-500/20"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-700 hover:text-white transition-all font-medium text-xs border border-orange-500/20"
                         >
                             <FileText className="h-3.5 w-3.5" /> Düzenle
                         </Link>
@@ -177,7 +177,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ id: st
                             <button
                                 onClick={() => handleFeedback(true)}
                                 disabled={feedbackLoading}
-                                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500 hover:text-white transition-all font-medium text-sm disabled:opacity-50 border border-green-500/20"
+                                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-700 hover:text-white transition-all font-medium text-sm disabled:opacity-50 border border-green-500/20"
                             >
                                 <ThumbsUp className="h-4 w-4" /> Evet
                             </button>

@@ -29,12 +29,12 @@ import { ContentSanitizer } from '@/lib/content-sanitizer';
 import { markdownToHtml } from '@/lib/markdown-to-html';
 
 const STATUS_COLORS: Record<string, string> = {
-    NEW: 'border-blue-900/50 text-blue-400 bg-blue-400/5',
-    OPEN: 'border-sky-900/50 text-sky-400 bg-sky-400/5',
-    IN_PROGRESS: 'border-amber-900/50 text-amber-400 bg-amber-400/5',
-    PENDING_CUSTOMER: 'border-purple-900/50 text-purple-400 bg-purple-400/5',
-    PENDING_CUSTOMER_REVIEW: 'border-orange-900/50 text-orange-400 bg-orange-400/5',
-    RESOLVED: 'border-emerald-900/50 text-emerald-400 bg-emerald-400/5',
+    NEW: 'border-blue-900/50 text-blue-700 dark:text-blue-400 bg-blue-400/5',
+    OPEN: 'border-sky-900/50 text-sky-700 dark:text-sky-400 bg-sky-400/5',
+    IN_PROGRESS: 'border-amber-900/50 text-amber-700 dark:text-amber-400 bg-amber-400/5',
+    PENDING_CUSTOMER: 'border-purple-900/50 text-purple-700 dark:text-purple-400 bg-purple-400/5',
+    PENDING_CUSTOMER_REVIEW: 'border-orange-900/50 text-orange-700 dark:text-orange-400 bg-orange-400/5',
+    RESOLVED: 'border-emerald-900/50 text-emerald-700 dark:text-emerald-400 bg-emerald-400/5',
     CLOSED: 'border-border text-muted-foreground bg-muted/5',
 };
 
@@ -464,7 +464,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                         size="sm"
                                         onClick={handleDraft}
                                         disabled={drafting}
-                                        className="h-7 border-purple-500/30 text-purple-400 bg-purple-400/5 hover:bg-purple-400/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
+                                        className="h-7 border-purple-500/30 text-purple-700 dark:text-purple-400 bg-purple-400/5 hover:bg-purple-400/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
                                     >
                                         <Bot className={`h-3 w-3 ${drafting ? 'animate-pulse' : ''}`} />
                                         {drafting ? t('drafting') : t('ai_draft_btn')}

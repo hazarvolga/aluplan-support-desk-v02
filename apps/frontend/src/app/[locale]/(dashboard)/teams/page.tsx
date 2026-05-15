@@ -218,7 +218,7 @@ export default function TeamsPage() {
                                             </div>
                                         ))}
                                         {team.members?.length > 5 && (
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-slate-100 text-[10px] font-bold text-slate-500 ring-1 ring-border/50">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-slate-100 text-[10px] font-bold text-slate-700 ring-1 ring-border/50">
                                                 +{team.members.length - 5}
                                             </div>
                                         )}

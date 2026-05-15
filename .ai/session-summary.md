@@ -1899,3 +1899,56 @@ Maintenance rule:
   - ANN draft markdown becomes readable headings/lists in the editor
   - old plain text messages still render correctly
   - `<script>`, event attributes, and `javascript:` links do not persist or execute
+
+## Follow-up - 2026-05-15 UI Contrast Accessibility Phase 1
+
+### Trigger
+- `.kiro/specs/ui-contrast-accessibility` incelendi.
+- Spec genel problemi doğru yakalıyor, ancak tam uygulama yerine geri alınabilir küçük fazlarla ilerleme kararı verildi.
+- Design direction: `Industrial Support Console`; amaç mevcut support-console kimliğini koruyarak kontrast ve okunabilirliği artırmak.
+
+### Checkpoint
+- Branch created:
+  - `codex/ui-contrast-accessibility-theme`
+- Safe rollback point:
+  - `2765a47 feat(tickets): add rich message composer MVP`
+- Existing unrelated drift preserved:
+  - `apps/backend/openapi.json`
+
+### Changes
+- Role/status badges:
+  - `RoleBadge` AGENT/VIEWER light-mode text strengthened.
+  - `AgentStatusBadge` OFFLINE light-mode text strengthened.
+- Critical status/hover/placeholder fixes:
+  - ticket status colors now keep darker light-mode text with original dark-mode color.
+  - knowledge-base feedback/edit hover backgrounds use darker green/orange.
+  - CRM field mapping action hover uses darker blue.
+  - login, AI page, reset password, and AI settings placeholders are more visible.
+- Customer/knowledge-pool/FAQ visible text:
+  - key low-opacity `text-white/40` customer text moved to `text-white/80`.
+  - knowledge-pool, FAQ, upload, and ticket badge text now use stronger light-mode variants.
+- Regression guard:
+  - added `contrast.ts` utility.
+  - added focused contrast tests for adjusted role/status badges.
+
+### Validation
+- Targeted frontend tests passed:
+  - `pnpm --filter @aluplan/frontend exec vitest run src/lib/contrast.spec.ts src/components/team/RoleBadge.spec.tsx src/components/team/AgentStatusBadge.spec.tsx`
+  - 3 files, 7 tests passed.
+- Frontend typecheck passed:
+  - `pnpm --filter @aluplan/frontend typecheck`
+- Local smoke:
+  - backend health returned HTTP 200.
+  - frontend `/tr/login` returned HTTP 200 HTML.
+- GitNexus:
+  - `detect_changes` reported HIGH because many frontend page symbols changed, but changes are static classes/tests.
+- Graphify:
+  - update attempted.
+  - smaller graph warning persisted (`5656` vs existing `11474`), so `graphify-out/GRAPH_REPORT.md` was restored and not committed.
+
+### Next
+- Browser visual review on login, ticket detail, customers, knowledge pool, and AI settings.
+- If the visual tone is acceptable, continue with Phase 2:
+  - small-font cleanup (`text-[7px]`, `text-[8px]`, `text-[9px]`)
+  - token-level color consistency pass
+  - broader status badge regression coverage

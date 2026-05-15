@@ -2,6 +2,12 @@
 
 ## Active Work
 
+- UI Contrast Accessibility Phase 1 completed on branch `codex/ui-contrast-accessibility-theme`:
+  - design direction is `Industrial Support Console`, preserving the existing support-console identity.
+  - safe rollback point is `2765a47`.
+  - critical badge, hover, placeholder, customer text, and status badge contrast issues were adjusted with static Tailwind classes.
+  - focused contrast regression tests were added for role/status badges.
+  - `apps/backend/openapi.json` remains unrelated drift and must stay out of frontend accessibility commits.
 - Rich Message Composer MVP completed:
   - ticket detail now uses a TipTap rich reply composer for admin/customer replies.
   - message history and ticket descriptions render through a safe rich/plain renderer.
@@ -88,8 +94,20 @@
 - Dashboard data loading must remain role-aware; do not call admin-only observability endpoints from customer pages.
 - Rich message MVP stores sanitized HTML without a DB `contentFormat` column; renderer must continue detecting legacy plain text safely.
 - Backend rich-text sanitizer is intentionally narrow; do not expand tags/attributes without XSS-focused tests.
+- UI contrast Phase 1 touched many frontend pages; GitNexus reports HIGH because of broad symbol spread even though the changes are static classes/tests.
+- Visual acceptability still needs browser review before Phase 2 changes typography density or token-level color consistency.
 
 ## Next Recommended Step
+
+Review UI Contrast Phase 1 visually before expanding scope:
+
+- Login page placeholder visibility.
+- Ticket detail status badges and AI action button.
+- Customers table opacity/readability.
+- Knowledge pool/FAQ badges in light and dark contexts.
+- AI settings placeholder readability.
+
+If acceptable, Phase 2 should address small-font cleanup and token-level color consistency. If not acceptable, revert the single Phase 1 commit or branch back to `2765a47`.
 
 Manual smoke-test Rich Message Composer before broadening the editor scope:
 

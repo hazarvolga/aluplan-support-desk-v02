@@ -291,9 +291,9 @@ export default function KnowledgePoolPage() {
 
     const statusBadge = (status: string) => {
         const map: Record<string, string> = {
-            ACTIVE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-            SYNCING: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-            FAILED: 'bg-red-500/10 text-red-400 border-red-500/20',
+            ACTIVE: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
+            SYNCING: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
+            FAILED: 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20',
             INACTIVE: 'bg-muted/20 text-muted-foreground border-border/30',
         };
         return (
@@ -479,7 +479,7 @@ export default function KnowledgePoolPage() {
                                                 </TableCell>
                                                 <TableCell className="py-2.5">
                                                     <div className="flex items-center gap-2.5">
-                                                        <div className={`h-7 w-7 border flex items-center justify-center shrink-0 ${source.type === 'URL' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
+                                                        <div className={`h-7 w-7 border flex items-center justify-center shrink-0 ${source.type === 'URL' ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'}`}>
                                                             {source.type === 'URL' ? <Globe className="h-3.5 w-3.5" /> : <FileIcon className="h-3.5 w-3.5" />}
                                                         </div>
                                                         <div className="min-w-0">
@@ -491,7 +491,7 @@ export default function KnowledgePoolPage() {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="w-24">
-                                                    <Badge variant="outline" className={`text-[9px] font-mono rounded-none px-1.5 ${source.type === 'URL' ? 'border-blue-500/30 text-blue-400 bg-blue-500/5' : 'border-amber-500/30 text-amber-400 bg-amber-500/5'}`}>
+                                                    <Badge variant="outline" className={`text-[9px] font-mono rounded-none px-1.5 ${source.type === 'URL' ? 'border-blue-500/30 text-blue-700 dark:text-blue-400 bg-blue-500/5' : 'border-amber-500/30 text-amber-700 dark:text-amber-400 bg-amber-500/5'}`}>
                                                         {source.type === 'URL' ? 'URL' : source.type?.replace('FILE_', '') || t('filters.file')}
                                                     </Badge>
                                                 </TableCell>
@@ -649,7 +649,7 @@ export default function KnowledgePoolPage() {
                                                 className="w-4 h-4 cursor-pointer accent-primary shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2.5 mb-1 text-[9px] font-mono uppercase">
-                                                    <Badge className={`px-1.5 py-0 h-4 border ${a.status === 'PUBLISHED' ? 'border-green-900/50 text-green-400 bg-green-400/5' : a.status === 'DRAFT' ? 'border-amber-900/50 text-amber-400 bg-amber-400/5' : 'border-orange-900/50 text-orange-400 bg-orange-400/5'}`}>
+                                                    <Badge className={`px-1.5 py-0 h-4 border ${a.status === 'PUBLISHED' ? 'border-green-900/50 text-green-700 dark:text-green-400 bg-green-400/5' : a.status === 'DRAFT' ? 'border-amber-900/50 text-amber-700 dark:text-amber-400 bg-amber-400/5' : 'border-orange-900/50 text-orange-700 dark:text-orange-400 bg-orange-400/5'}`}>
                                                         {t(`status_labels.${(a.status || 'DRAFT').toLowerCase()}`)}
                                                     </Badge>
                                                     {a.tags?.map((t: string) => <span key={t} className="text-muted-foreground/40">#{t.toUpperCase()}</span>)}

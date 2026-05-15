@@ -160,7 +160,7 @@ export default function LoginPage() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 data-testid="login-email"
                                 placeholder={t('email_placeholder')}
-                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 text-white text-sm font-mono placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 focus:bg-primary/5 transition-all"
+                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 text-white text-sm font-mono placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus:bg-primary/5 transition-all"
                             />
                         </div>
 
@@ -176,7 +176,7 @@ export default function LoginPage() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 data-testid="login-password"
                                 placeholder={t('password_placeholder')}
-                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 text-white text-[16px] tracking-[0.3em] font-mono placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 focus:bg-primary/5 transition-all"
+                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 text-white text-[16px] tracking-[0.3em] font-mono placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus:bg-primary/5 transition-all"
                             />
                         </div>
 

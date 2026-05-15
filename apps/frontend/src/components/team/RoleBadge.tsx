@@ -19,8 +19,8 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({ role, className }) => {
         DEPARTMENT_MANAGER: { label: t('roles.department_manager'), color: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' },
         TEAM_LEAD: { label: t('roles.team_lead'), color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
         SENIOR_AGENT: { label: t('roles.senior_agent'), color: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20' },
-        AGENT: { label: t('roles.agent'), color: 'bg-slate-500/10 text-slate-500 border-slate-500/20' },
-        VIEWER: { label: t('roles.viewer'), color: 'bg-stone-500/10 text-stone-500 border-stone-500/20' },
+        AGENT: { label: t('roles.agent'), color: 'bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/20' },
+        VIEWER: { label: t('roles.viewer'), color: 'bg-stone-500/10 text-stone-700 dark:text-stone-400 border-stone-500/20' },
     };
 
     const { label, color } = config[r] || config.AGENT;
