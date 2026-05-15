@@ -742,7 +742,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">
                                                                 {c.value.toUpperCase()}
                                                             </span>
-                                                            <Badge className="bg-white/5 text-white/80 border-none text-[10px] font-bold px-1.5 h-4">
+                                                            <Badge className="bg-white/5 text-white/80 border-none text-[8px] font-bold px-1.5 h-4">
                                                                 {c.count} {t('labels.items')}
                                                             </Badge>
                                                         </div>
@@ -778,7 +778,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                                             {c.fullName}
                                                                         </Link>
                                                                         {c.customerProfile?.isVip && (
-                                                                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20 px-1 py-0 h-4 text-[10px] font-black uppercase tracking-tighter">
+                                                                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20 px-1 py-0 h-4 text-[8px] font-black uppercase tracking-tighter">
                                                                                 VIP
                                                                             </Badge>
                                                                         )}
@@ -808,7 +808,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                             return (
                                                                 <TableCell key={col.key}>
                                                                     {c.customerProfile?.account ? (
-                                                                        <Badge variant="outline" className="bg-blue-500/5 text-blue-400 border-blue-500/20 text-[10px] font-bold px-2 py-0.5">
+                                                                        <Badge variant="outline" className="bg-blue-500/5 text-blue-400 border-blue-500/20 text-[9px] font-bold px-2 py-0.5">
                                                                             <Building2 className="h-3 w-3 mr-1" />
                                                                             {c.customerProfile.account.name}
                                                                         </Badge>
@@ -828,7 +828,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                         case 'industry':
                                                             return (
                                                                 <TableCell key={col.key}>
-                                                                    <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/80 border border-white/5">
+                                                                    <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/50 border border-white/5">
                                                                         {c.customerProfile?.industry || t('labels.general')}
                                                                     </span>
                                                                 </TableCell>
@@ -836,7 +836,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                         case 'status':
                                                             return (
                                                                 <TableCell key={col.key}>
-                                                                    <Badge className={`${c.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-white/5 text-slate-700 dark:text-slate-400'} border-none text-[10px] font-black tracking-widest px-2 py-0.5`}>
+                                                                    <Badge className={`${c.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-slate-400'} border-none text-[9px] font-black tracking-widest px-2 py-0.5`}>
                                                                         {(() => {
                                                                             const status = c.status?.toLowerCase();
                                                                             const labelKey = `labels.${status}`;
@@ -973,7 +973,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500">
                                                                 {a.value.toUpperCase()}
                                                             </span>
-                                                            <Badge className="bg-white/5 text-white/80 border-none text-[10px] font-bold px-1.5 h-4">
+                                                            <Badge className="bg-white/5 text-white/80 border-none text-[8px] font-bold px-1.5 h-4">
                                                                 {a.count} {t('labels.items')}
                                                             </Badge>
                                                         </div>
@@ -1011,7 +1011,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                         case 'industry':
                                                             return (
                                                                 <TableCell key={col.key}>
-                                                                    <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/80 border border-white/5">
+                                                                    <span className="bg-white/5 px-2 py-1 rounded text-[10px] font-bold text-white/50 border border-white/5">
                                                                         {a.industry || t('labels.general')}
                                                                     </span>
                                                                 </TableCell>
@@ -1093,12 +1093,12 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                 </div>
                                                 <div className="flex items-center gap-2 mt-4">
                                                     {conn.isActive ? (
-                                                        <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-none text-[10px] font-black tracking-[0.2em] px-2">{t('labels.active')}</Badge>
+                                                        <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[8px] font-black tracking-[0.2em] px-2">{t('labels.active')}</Badge>
                                                     ) : (
-                                                        <Badge variant="outline" className="text-slate-700 dark:text-slate-400 border-white/10 text-[10px] font-black tracking-[0.2em] px-2">{t('labels.passive')}</Badge>
+                                                        <Badge variant="outline" className="text-slate-500 border-white/10 text-[8px] font-black tracking-[0.2em] px-2">{t('labels.passive')}</Badge>
                                                     )}
                                                     {conn.syncStatus === 'SYNCING' && (
-                                                        <Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-400 animate-pulse border-none text-[10px] font-black tracking-[0.2em] px-2">{t('labels.syncing')}</Badge>
+                                                        <Badge className="bg-blue-500/10 text-blue-400 animate-pulse border-none text-[8px] font-black tracking-[0.2em] px-2">{t('labels.syncing')}</Badge>
                                                     )}
                                                 </div>
                                             </div>
@@ -1106,18 +1106,18 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                             <div className="p-8 flex-1 grid grid-cols-1 sm:grid-cols-2 gap-8">
                                                 <div className="space-y-4">
                                                     <div>
-                                                        <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2">{t('sync.last_transfer')}</p>
+                                                        <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2">{t('sync.last_transfer')}</p>
                                                         <p className="text-sm font-bold text-white">
                                                             {conn.lastSyncAt ? new Date(conn.lastSyncAt).toLocaleString(locale) : t('sync.last_transfer_none')}
                                                         </p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2">{t('sync.system_status')}</p>
+                                                        <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2">{t('sync.system_status')}</p>
                                                         <div className="flex items-center gap-3">
                                                             <p className="text-sm font-bold text-blue-400 font-mono">{conn.syncStatus || 'IDLE'}</p>
                                                             {conn.syncStatus === 'SYNCING' && logs.length > 0 && (
                                                                 <div className="flex-1 max-w-[200px] flex flex-col gap-1.5">
-                                                                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-white/80">
+                                                                    <div className="flex justify-between text-[8px] font-bold uppercase tracking-widest text-white/80">
                                                                         <span>{t('sync.progress')}</span>
                                                                         <span>{Math.round(((logs[0].successCount + logs[0].errorCount) / Math.max(1, logs[0].totalRecords)) * 100)}%</span>
                                                                     </div>
@@ -1125,7 +1125,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                                         value={((logs[0].successCount + logs[0].errorCount) / Math.max(1, logs[0].totalRecords)) * 100}
                                                                         className="h-1.5 bg-white/5 border-none"
                                                                     />
-                                                                    <div className="flex justify-between text-[10px] font-medium text-white/60">
+                                                                    <div className="flex justify-between text-[9px] font-medium text-white/60">
                                                                         <span className="flex items-center gap-1">
                                                                             <Check className="h-2 w-2 text-emerald-500" />
                                                                             {logs[0].successCount}
@@ -1152,7 +1152,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                         <RefreshCw className={`h-4 w-4 mr-2 ${syncing || conn.syncStatus === 'SYNCING' ? 'animate-spin' : ''}`} />
                                                         {t('sync.trigger_sync')}
                                                     </Button>
-                                                    <Button asChild variant="ghost" className="text-[10px] font-bold text-muted-foreground hover:text-white group">
+                                                    <Button asChild variant="ghost" className="text-[9px] font-bold text-muted-foreground hover:text-white group">
                                                         <Link href="/customers/crm">
                                                             {t('sync.edit_settings')} <ArrowRight className="h-3 w-3 ml-2 group-hover:translate-x-1 transition-transform" />
                                                         </Link>
@@ -1197,7 +1197,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                 ) : (
                                     logs.map((log) => (
                                         <TableRow key={log.id} className="border-white/5 hover:bg-white/[0.01]">
-                                            <TableCell className="font-mono text-[11px] text-white/80 px-6">
+                                            <TableCell className="font-mono text-[11px] text-white/50 px-6">
                                                 {new Date(log.startedAt).toLocaleString(locale)}
                                             </TableCell>
                                             <TableCell>
@@ -1212,7 +1212,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                         <span className="text-[10px] font-black text-rose-500 tracking-tighter">ERR_500</span>
                                                     </div>
                                                 ) : (
-                                                    <Badge variant="outline" className="animate-pulse border-blue-500/20 text-blue-400 text-[10px]">{t('labels.pending')}</Badge>
+                                                    <Badge variant="outline" className="animate-pulse border-blue-500/20 text-blue-400 text-[9px]">{t('labels.pending')}</Badge>
                                                 )}
                                             </TableCell>
                                             <TableCell className="font-bold text-white/80">{log.totalRecords}</TableCell>
@@ -1275,3 +1275,4 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         </motion.div>
     );
 }
+

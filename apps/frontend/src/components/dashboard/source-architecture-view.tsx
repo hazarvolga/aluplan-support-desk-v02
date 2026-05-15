@@ -77,7 +77,7 @@ export function SourceArchitectureView({ stats }: SourceArchitectureViewProps) {
                 <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
                     <Activity className="h-3.5 w-3.5" /> {t('subtitle')}
                 </h3>
-                <Badge variant="outline" className="text-[10px] font-mono border-primary/20 text-primary uppercase">
+                <Badge variant="outline" className="text-[9px] font-mono border-primary/20 text-primary uppercase">
                     {t('total_entropy')}: {stats.totalSources} {t('units')}
                 </Badge>
             </div>
@@ -93,7 +93,7 @@ export function SourceArchitectureView({ stats }: SourceArchitectureViewProps) {
                                     <div className="absolute inset-0 bg-primary/5 translate-y-full group-hover:translate-y-0 transition-transform" />
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-tight">{p.label}</p>
+                                    <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest leading-tight">{p.label}</p>
                                     <p className="text-[12px] font-mono font-bold mt-0.5">{p.count}</p>
                                 </div>
                                 <ArrowDown className="h-3 w-3 text-muted-foreground/30" />
@@ -106,8 +106,8 @@ export function SourceArchitectureView({ stats }: SourceArchitectureViewProps) {
                         {pillars.map((p) => (
                             <div key={`${p.id}-engine`} className="flex flex-col items-center">
                                 <div className="w-full border border-border/20 p-2 text-center bg-muted/5 min-h-[48px] flex flex-col justify-center">
-                                    <p className="text-[10px] font-bold text-primary/70 uppercase tracking-tighter leading-tight">{p.layer}</p>
-                                    <p aria-hidden="true" className="text-[7px] text-muted-foreground/50 mt-0.5 font-mono italic uppercase">{t('status_running')}</p>
+                                    <p className="text-[8px] font-bold text-primary/70 uppercase tracking-tighter leading-tight">{p.layer}</p>
+                                    <p className="text-[7px] text-muted-foreground/50 mt-0.5 font-mono italic uppercase">{t('status_running')}</p>
                                 </div>
                                 <ArrowDown className="h-3 w-3 text-muted-foreground/30 mt-2" />
                             </div>
@@ -119,7 +119,7 @@ export function SourceArchitectureView({ stats }: SourceArchitectureViewProps) {
                         {pillars.map((p) => (
                             <div key={`${p.id}-strategy`} className="flex flex-col items-center">
                                 <div className="w-full border border-dashed border-border/30 p-2 text-center bg-black/20 min-h-[32px] flex items-center justify-center">
-                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter leading-tight">{p.strategy}</p>
+                                    <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter leading-tight">{p.strategy}</p>
                                 </div>
                                 <div className="h-8 w-[1px] bg-gradient-to-b from-border/30 to-primary/40 mt-2" />
                             </div>
@@ -139,8 +139,8 @@ export function SourceArchitectureView({ stats }: SourceArchitectureViewProps) {
                                 <span className="text-[11px] font-extrabold uppercase tracking-[0.3em]">{t('vector.unified_index')}</span>
                             </div>
                             <div className="flex gap-4 mt-1">
-                                <Badge aria-hidden="true" variant="outline" className="text-[7px] border-primary/20 font-mono uppercase">{t('vector.re_ranking')}</Badge>
-                                <Badge aria-hidden="true" variant="outline" className="text-[7px] border-primary/20 font-mono uppercase">{t('vector.trust_priority')}</Badge>
+                                <Badge variant="outline" className="text-[7px] border-primary/20 font-mono uppercase">{t('vector.re_ranking')}</Badge>
+                                <Badge variant="outline" className="text-[7px] border-primary/20 font-mono uppercase">{t('vector.trust_priority')}</Badge>
                             </div>
                         </div>
                     </div>
@@ -151,12 +151,12 @@ export function SourceArchitectureView({ stats }: SourceArchitectureViewProps) {
                         <div className="flex items-center gap-6">
                             <div className="flex flex-col items-center opacity-40">
                                 <Compass className="h-4 w-4 mb-1" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">{t('engine.query_preproc')}</span>
+                                <span className="text-[7px] font-bold uppercase tracking-widest">{t('engine.query_preproc')}</span>
                             </div>
                             <Zap className="h-5 w-5 text-primary animate-pulse" />
                             <div className="flex flex-col items-center">
                                 <Cpu className="h-4 w-4 mb-1 text-primary" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-primary">{t('engine.hybrid_retrieval')}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-widest text-primary">{t('engine.hybrid_retrieval')}</span>
                             </div>
                         </div>
                     </div>

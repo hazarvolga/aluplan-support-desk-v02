@@ -297,7 +297,7 @@ export default function KnowledgePoolPage() {
             INACTIVE: 'bg-muted/20 text-muted-foreground border-border/30',
         };
         return (
-            <Badge variant="outline" className={`text-[10px] font-mono rounded-none px-1.5 ${map[status] || 'bg-muted/20 text-muted-foreground'}`}>
+            <Badge variant="outline" className={`text-[9px] font-mono rounded-none px-1.5 ${map[status] || 'bg-muted/20 text-muted-foreground'}`}>
                 {status === 'SYNCING' && <RefreshCw className="h-2.5 w-2.5 mr-1 animate-spin inline" />}
                 {status}
             </Badge>
@@ -311,12 +311,12 @@ export default function KnowledgePoolPage() {
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border/40 pb-4">
                     <div className="flex-1 min-w-0">
                         <h1 className="text-[16px] md:text-[18px] font-bold tracking-tight text-foreground uppercase truncate">{t('title')}</h1>
-                        <p className="text-[10px] md:text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest">{t('subtitle')}</p>
+                        <p className="text-[9px] md:text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest">{t('subtitle')}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         <TabsList className="bg-muted/10 border border-border/40 h-9">
-                            <TabsTrigger value="sources" className="text-[10px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">{t('tabs.raw_sources')}</TabsTrigger>
-                            <TabsTrigger value="articles" className="text-[10px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">{t('tabs.seeded_content')}</TabsTrigger>
+                            <TabsTrigger value="sources" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">{t('tabs.raw_sources')}</TabsTrigger>
+                            <TabsTrigger value="articles" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">{t('tabs.seeded_content')}</TabsTrigger>
                         </TabsList>
                         <div className="flex items-center gap-2">
                             <Dialog open={isUrlModalOpen} onOpenChange={setIsUrlModalOpen}>
@@ -377,7 +377,7 @@ export default function KnowledgePoolPage() {
                                     {/* Status filter */}
                                     {['', 'ACTIVE', 'SYNCING', 'FAILED'].map(s => (
                                         <button key={s} onClick={() => setStatusFilter(s)}
-                                            className={`px-2 py-1 text-[10px] font-bold uppercase tracking-widest border rounded transition-all ${statusFilter === s ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}>
+                                            className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest border rounded transition-all ${statusFilter === s ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}>
                                             {s || t('filters.all')}
                                         </button>
                                     ))}
@@ -385,7 +385,7 @@ export default function KnowledgePoolPage() {
                                     {/* Type filter */}
                                     {[{ v: '', l: t('filters.all_types') }, { v: 'URL', l: t('filters.url') }, { v: 'FILE', l: t('filters.file') }].map(f => (
                                         <button key={f.v} onClick={() => setTypeFilter(f.v)}
-                                            className={`px-2 py-1 text-[10px] font-bold uppercase tracking-widest border rounded transition-all ${typeFilter === f.v ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}>
+                                            className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest border rounded transition-all ${typeFilter === f.v ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}>
                                             {f.l}
                                         </button>
                                     ))}
@@ -431,25 +431,25 @@ export default function KnowledgePoolPage() {
                                                     aria-label={t('table.select_all')}
                                                 />
                                             </TableHead>
-                                            <TableHead className="text-[10px] font-bold uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('name')}>
+                                            <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('name')}>
                                                 <span className="flex items-center gap-1">{t('table.source')} <SortIcon field="name" /></span>
                                             </TableHead>
-                                            <TableHead className="text-[10px] font-bold uppercase tracking-widest cursor-pointer select-none w-24" onClick={() => toggleSort('type')}>
+                                            <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-24" onClick={() => toggleSort('type')}>
                                                 <span className="flex items-center gap-1">{t('table.type')} <SortIcon field="type" /></span>
                                             </TableHead>
-                                            <TableHead className="text-[10px] font-bold uppercase tracking-widest cursor-pointer select-none w-32" onClick={() => toggleSort('category')}>
+                                            <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-32" onClick={() => toggleSort('category')}>
                                                 <span className="flex items-center gap-1">Kategori <SortIcon field="category" /></span>
                                             </TableHead>
-                                            <TableHead className="text-[10px] font-bold uppercase tracking-widest cursor-pointer select-none w-28" onClick={() => toggleSort('status')}>
+                                            <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-28" onClick={() => toggleSort('status')}>
                                                 <span className="flex items-center gap-1">{t('table.status')} <SortIcon field="status" /></span>
                                             </TableHead>
-                                            <TableHead className="text-[10px] font-bold uppercase tracking-widest cursor-pointer select-none w-24 text-right" onClick={() => toggleSort('embeddings')}>
+                                            <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-24 text-right" onClick={() => toggleSort('embeddings')}>
                                                 <span className="flex items-center justify-end gap-1">{t('table.vector')} <SortIcon field="embeddings" /></span>
                                             </TableHead>
-                                            <TableHead className="text-[10px] font-bold uppercase tracking-widest cursor-pointer select-none w-32" onClick={() => toggleSort('lastSyncedAt')}>
+                                            <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-32" onClick={() => toggleSort('lastSyncedAt')}>
                                                 <span className="flex items-center gap-1">{t('table.last_sync')} <SortIcon field="lastSyncedAt" /></span>
                                             </TableHead>
-                                            <TableHead className="text-[10px] font-bold uppercase tracking-widest w-24 text-right pr-3">{t('table.action')}</TableHead>
+                                            <TableHead className="text-[9px] font-bold uppercase tracking-widest w-24 text-right pr-3">{t('table.action')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -484,14 +484,14 @@ export default function KnowledgePoolPage() {
                                                         </div>
                                                         <div className="min-w-0">
                                                             <p className="font-bold text-[12px] leading-tight truncate max-w-[200px]">{source.name}</p>
-                                                            <p className="text-[10px] text-muted-foreground/50 font-mono truncate max-w-[200px] mt-0.5">
+                                                            <p className="text-[9px] text-muted-foreground/50 font-mono truncate max-w-[200px] mt-0.5">
                                                                 {source.type === 'URL' ? source.url : source.fileName}
                                                             </p>
                                                         </div>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="w-24">
-                                                    <Badge variant="outline" className={`text-[10px] font-mono rounded-none px-1.5 ${source.type === 'URL' ? 'border-blue-500/30 text-blue-700 dark:text-blue-400 bg-blue-500/5' : 'border-amber-500/30 text-amber-700 dark:text-amber-400 bg-amber-500/5'}`}>
+                                                    <Badge variant="outline" className={`text-[9px] font-mono rounded-none px-1.5 ${source.type === 'URL' ? 'border-blue-500/30 text-blue-700 dark:text-blue-400 bg-blue-500/5' : 'border-amber-500/30 text-amber-700 dark:text-amber-400 bg-amber-500/5'}`}>
                                                         {source.type === 'URL' ? 'URL' : source.type?.replace('FILE_', '') || t('filters.file')}
                                                     </Badge>
                                                 </TableCell>
@@ -533,7 +533,7 @@ export default function KnowledgePoolPage() {
                             </div>
 
                             {/* Footer count */}
-                            <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground/50 uppercase px-1">
+                            <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground/50 uppercase px-1">
                                 <span>{filteredSources.length} / {sources.length} {t('table.source')} {t('table.showing')}</span>
                                 {someSelected && <span className="text-primary">{selectedIds.size} {t('articles.select_page', { count: selectedIds.size }).replace('PAGE', 'SELECTED').split(' ')[0]}</span>}
                             </div>
@@ -546,7 +546,7 @@ export default function KnowledgePoolPage() {
                                     <History className="h-3.5 w-3.5 text-muted-foreground" />
                                     <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground">{t('logs.title')}</span>
                                     {activeSource && (
-                                        <span className="ml-auto text-primary font-mono text-[10px] uppercase truncate max-w-[120px]">{activeSource.name}</span>
+                                        <span className="ml-auto text-primary font-mono text-[9px] uppercase truncate max-w-[120px]">{activeSource.name}</span>
                                     )}
                                 </div>
                                 {!activeSource ? (
@@ -562,13 +562,13 @@ export default function KnowledgePoolPage() {
                                             <div key={log.id} className="p-3 space-y-1.5 hover:bg-muted/10">
                                                 <div className="flex items-center justify-between">
                                                     {log.status === 'SUCCESS' ? (
-                                                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 uppercase"><CheckCircle2 className="h-2.5 w-2.5" /> {t('logs.success')}</span>
+                                                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-500 uppercase"><CheckCircle2 className="h-2.5 w-2.5" /> {t('logs.success')}</span>
                                                     ) : log.status === 'FAILED' ? (
-                                                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-red-500 uppercase"><XCircle className="h-2.5 w-2.5" /> {t('logs.error')}</span>
+                                                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-red-500 uppercase"><XCircle className="h-2.5 w-2.5" /> {t('logs.error')}</span>
                                                     ) : (
-                                                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-500 uppercase animate-pulse"><Clock className="h-2.5 w-2.5" /> {t('logs.processing')}</span>
+                                                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-amber-500 uppercase animate-pulse"><Clock className="h-2.5 w-2.5" /> {t('logs.processing')}</span>
                                                     )}
-                                                    <span className="text-[10px] font-mono text-muted-foreground/60">{new Date(log.syncStartedAt).toLocaleString(t('meta.locale'))}</span>
+                                                    <span className="text-[9px] font-mono text-muted-foreground/60">{new Date(log.syncStartedAt).toLocaleString(t('meta.locale'))}</span>
                                                 </div>
                                                 <p className="text-[10px] text-foreground/70 font-mono leading-tight uppercase">
                                                     {log.status === 'SUCCESS' ? t('logs.chunks_processed', { count: log.chunksProcessed }) : log.status === 'FAILED' ? log.error : t('logs.processing') + '...'}
@@ -607,7 +607,7 @@ export default function KnowledgePoolPage() {
                         <div className="flex items-center gap-1.5">
                             {[{ value: '', label: t('articles.all') }, { value: 'REVIEW', label: t('articles.review') }, { value: 'PUBLISHED', label: t('articles.published') }, { value: 'DRAFT', label: t('articles.draft') }].map(f => (
                                 <button key={f.value} onClick={() => setArticleStatusFilter(f.value)}
-                                    className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest border rounded transition-all ${articleStatusFilter === f.value ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}>
+                                    className={`px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest border rounded transition-all ${articleStatusFilter === f.value ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}>
                                     {f.label}
                                 </button>
                             ))}
@@ -648,7 +648,7 @@ export default function KnowledgePoolPage() {
                                                 onChange={() => setSelectedArticleIds(prev => { const n = new Set(prev); if (n.has(a.id)) { n.delete(a.id) } else { n.add(a.id) }; return n; })}
                                                 className="w-4 h-4 cursor-pointer accent-primary shrink-0" />
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2.5 mb-1 text-[10px] font-mono uppercase">
+                                                <div className="flex items-center gap-2.5 mb-1 text-[9px] font-mono uppercase">
                                                     <Badge className={`px-1.5 py-0 h-4 border ${a.status === 'PUBLISHED' ? 'border-green-900/50 text-green-700 dark:text-green-400 bg-green-400/5' : a.status === 'DRAFT' ? 'border-amber-900/50 text-amber-700 dark:text-amber-400 bg-amber-400/5' : 'border-orange-900/50 text-orange-700 dark:text-orange-400 bg-orange-400/5'}`}>
                                                         {t(`status_labels.${(a.status || 'DRAFT').toLowerCase()}`)}
                                                     </Badge>
@@ -657,7 +657,7 @@ export default function KnowledgePoolPage() {
                                                 <Link href={`/knowledge-base/${a.id}`} className="group-hover:text-primary">
                                                     <p className="font-bold text-foreground text-[14px] leading-tight tracking-tight truncate">{a.title}</p>
                                                 </Link>
-                                                <div className="flex items-center gap-4 mt-1 text-[10px] font-mono uppercase text-muted-foreground/60">
+                                                <div className="flex items-center gap-4 mt-1 text-[9px] font-mono uppercase text-muted-foreground/60">
                                                     <span>{t('articles.author')}: {a.creator?.fullName || t('meta.system')}</span>
                                                     <span>{new Date(a.createdAt).toLocaleDateString(t('meta.locale'))}</span>
                                                 </div>
