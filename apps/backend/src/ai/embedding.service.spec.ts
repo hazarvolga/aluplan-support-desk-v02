@@ -106,6 +106,33 @@ describe('EmbeddingService', () => {
             expect(result.diagnostics.queryEmbeddingModel).toBe('text-embedding-3-small');
         });
 
+        it('should expose approved FAQ entries as first-class search results', async () => {
+            mockAiService.embed.mockResolvedValue(mockEmbedResult);
+            mockPrismaService.$queryRaw.mockResolvedValue([
+                {
+                    article_id: 'faq-1',
+                    source_type: 'FAQ',
+                    title: 'What should I check if license server installation failed?',
+                    content: 'Check the Wibu setup, license server services, administrator rights, antivirus blocking, and installation logs.',
+                    similarity: 0.91,
+                    trust_score: 1.0,
+                    language: 'en',
+                    category: null,
+                    updated_at: new Date(),
+                },
+            ]);
+
+            const result = await service.search('What should I check if license server installation failed?', 5);
+
+            expect(result.results).toHaveLength(1);
+            expect(result.results[0]).toEqual(expect.objectContaining({
+                articleId: 'faq-1',
+                sourceType: 'FAQ',
+                title: 'What should I check if license server installation failed?',
+                confidence: 'HIGH',
+            }));
+        });
+
         it('should apply confidence tiers correctly', async () => {
             // Arrange
             mockAiService.embed.mockResolvedValue(mockEmbedResult);

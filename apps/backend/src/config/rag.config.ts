@@ -73,6 +73,7 @@ export const RAG_CONFIG = {
         /** Source type multipliers */
         FACTORS: {
             ARTICLE: 1.30,
+            FAQ: 1.35,
             DOCUMENT: 1.15,
             URL: 0.60,
             TICKET: 0.50,

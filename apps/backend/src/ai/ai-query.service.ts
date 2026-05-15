@@ -1088,6 +1088,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                 let sourceBoost = 1.0;
 
                 if (res.sourceType === 'ARTICLE') sourceBoost *= RERANK.ARTICLE;
+                if (res.sourceType === 'FAQ') sourceBoost *= RERANK.FAQ;
                 if (res.sourceType === 'DOCUMENT') sourceBoost *= RERANK.DOCUMENT;
                 if (res.sourceType === 'URL') sourceBoost *= RERANK.URL;
                 if (res.sourceType === 'TICKET') sourceBoost *= RERANK.TICKET;

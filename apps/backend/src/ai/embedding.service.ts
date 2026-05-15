@@ -12,7 +12,7 @@ import { expandQueryWithSynonyms } from './utils/synonym-dictionary';
 
 export interface SearchResult {
     articleId: string;
-    sourceType: 'ARTICLE' | 'DOCUMENT' | 'URL' | 'TICKET';
+    sourceType: 'ARTICLE' | 'DOCUMENT' | 'URL' | 'TICKET' | 'FAQ';
     title: string;
     content: string;
     similarity: number;
@@ -263,7 +263,7 @@ export class EmbeddingService {
         const rows = await this.prisma.$queryRaw<
             Array<{
                 article_id: string;
-                source_type: 'ARTICLE' | 'POOL' | 'URL' | 'DOCUMENT';
+                source_type: 'ARTICLE' | 'POOL' | 'URL' | 'DOCUMENT' | 'FAQ';
                 title: string;
                 content: string;
                 similarity: number;
@@ -291,6 +291,28 @@ export class EmbeddingService {
           AND kpe.embedding_version = ${config.version}
           AND to_tsvector('simple', ks.name || ' ' || kpe.content) @@ websearch_to_tsquery('simple', ${cleanQuery})
         GROUP BY ks.id
+      ),
+      faq_keyword_search AS (
+        SELECT
+            fe.id,
+            ts_rank_cd(to_tsvector('simple', fe.question || ' ' || fe.answer || ' ' || array_to_string(fe.tags, ' ')), websearch_to_tsquery('simple', ${cleanQuery})) AS rank
+        FROM faq_entries fe
+        WHERE fe.status = 'PUBLISHED'
+          AND fe.deleted_at IS NULL
+          AND (${includeInternal} = true OR fe.is_internal = false)
+          AND to_tsvector('simple', fe.question || ' ' || fe.answer || ' ' || array_to_string(fe.tags, ' ')) @@ websearch_to_tsquery('simple', ${cleanQuery})
+      ),
+      faq_semantic AS (
+        SELECT
+            fe.id,
+            1 - (fe.question_embedding <=> ${vectorStr}::vector) AS similarity
+        FROM faq_entries fe
+        WHERE fe.status = 'PUBLISHED'
+          AND fe.deleted_at IS NULL
+          AND (${includeInternal} = true OR fe.is_internal = false)
+          AND fe.question_embedding IS NOT NULL
+          AND fe.embedding_version = ${config.version}
+          AND fe.embedding_dim = ${config.dimension}
       ),
       combined_search AS (
         SELECT 
@@ -353,6 +375,33 @@ export class EmbeddingService {
               OR ks.name ILIKE '%' || ${query} || '%'
           )
           AND kpe.parent_id IS NOT NULL
+
+        UNION ALL
+
+        SELECT
+            fe.id AS article_id,
+            'FAQ' AS source_type,
+            fe.question AS title,
+            fe.answer AS content,
+            (
+                COALESCE(fs.similarity, 0.0) * 0.65 +
+                COALESCE((SELECT rank FROM faq_keyword_search WHERE id = fe.id LIMIT 1), 0.0) * 0.25 +
+                CASE WHEN fe.question ILIKE '%' || ${cleanQuery} || '%' THEN 0.10 ELSE 0.0 END
+            ) AS similarity,
+            LEAST((fe.trust_score * fe.feedback_weight)::float, 1.2) AS trust_score,
+            fe.language,
+            NULL::text AS category,
+            fe.updated_at
+        FROM faq_entries fe
+        LEFT JOIN faq_semantic fs ON fs.id = fe.id
+        WHERE fe.status = 'PUBLISHED'
+          AND fe.deleted_at IS NULL
+          AND (${includeInternal} = true OR fe.is_internal = false)
+          AND (
+              COALESCE(fs.similarity, 0.0) > ${this.SIMILARITY_THRESHOLD}
+              OR EXISTS (SELECT 1 FROM faq_keyword_search WHERE id = fe.id)
+              OR fe.question ILIKE '%' || ${cleanQuery} || '%'
+          )
       )
       SELECT * 
       FROM combined_search 
