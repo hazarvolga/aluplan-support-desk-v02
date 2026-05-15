@@ -1430,3 +1430,54 @@ Maintenance rule:
 - GitNexus was run with:
   - `npx gitnexus detect_changes --repo aluplan-support-desk-v02`
   - result: `No changes detected`.
+
+## Follow-up - 2026-05-15 Hotinfo Diagnostic Context Phase
+
+### Problem clarified
+- User clarified that Hotinfo is not a canonical vendor RAG source.
+- Correct model:
+  - uploaded `.hxl` = ticket-specific diagnostic context about the customer's machine.
+  - dataset/RAG PDFs = general support knowledge.
+  - AI diagnosis should combine both without importing user Hotinfo into the global knowledge pool.
+
+### Code findings
+- Frontend `tickets/new` uploads `.hxl` to `/customers/me/hotinfo`, stores parsed profile Hotinfo, and sends confirmed `hotinfoContext` to `/ai/query`.
+- Ticket creation stores `hotinfoContext` into `Ticket.hotinfoSnapshot`.
+- Backend prompt context already included a basic Hotinfo section, but missed several useful diagnostic fields.
+- Retrieval correctly avoided raw Hotinfo trace pollution, but explicit Hotinfo analysis lacked safe system-signal enrichment.
+
+### Change
+- `AiQueryService` now builds safe Hotinfo retrieval signals for explicit Hotinfo/system analysis:
+  - includes OS, Allplan version, GPU/driver/OpenGL, RAM/VRAM, resolution, conflicting processes, security services, and an error-present marker.
+  - excludes raw trace/path strings such as `_SEC.NSE` and `License` path fragments from the retrieval query.
+- `PromptContextBuilderService` now includes richer Hotinfo details in final prompt context:
+  - OpenGL, license type, Allplan hotfix, installed modules/worksets, security services, printers/default printer, conflicting processes, and truncated error trace.
+
+### Verification
+- `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts prompt-context-builder.service.pbt.spec.ts`
+  - 3 suites passed.
+  - 36 passed, 1 skipped.
+- `pnpm --filter @aluplan/backend typecheck`
+  - Passed.
+- `pnpm --filter @aluplan/backend build`
+  - Passed after GitNexus reported high risk.
+
+### Phase-end mapping
+- GitNexus impact:
+  - `AiQueryService`: `MEDIUM`, 34 upstream impacts, 0 affected processes.
+  - `PromptContextBuilderService`: `MEDIUM`, 32 upstream impacts, 0 affected processes.
+- GitNexus detect changes:
+  - 7 files, 12 symbols.
+  - 6 affected execution flows.
+  - risk level: `high`.
+  - extra verification run because of this: backend build passed.
+- Graphify was run with `graphify update .`.
+  - warning repeated: existing graph 11474 nodes, rebuilt graph 5609 nodes.
+  - `graphify-out/GRAPH_REPORT.md` was restored and not accepted into git.
+
+### Next step
+- Browser/manual flow:
+  - upload `.hxl` from the customer ticket form.
+  - ask a Hotinfo-specific AI diagnosis question.
+  - verify AI answer references the system details.
+  - create the ticket and verify `hotinfoSnapshot` is visible for support/admin.

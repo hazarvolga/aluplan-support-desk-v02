@@ -12,6 +12,10 @@
   - 4/4 sync logs ended as `SUCCESS`.
   - 179 embeddings written as `v2_2 / 3072`.
   - `rag-tr-share-cloud-001` and `rag-tr-project-backup-001` now pass retrieval acceptance.
+- Hotinfo diagnostic flow is now treated as ticket-specific context, not global RAG corpus:
+  - raw Hotinfo traces stay out of retrieval query to avoid source pollution.
+  - safe Hotinfo system signals can enrich retrieval when the user explicitly asks for Hotinfo/system analysis.
+  - prompt context includes richer Hotinfo fields for final diagnosis.
 - Use `.ai/rag-quality/run-acceptance.mjs` for future localhost retrieval checks; default delay is intentionally throttle-safe.
 - Pause the PDF-first import after the support-first seed corpus and validate real RAG quality before importing more files.
 - Build the PDF-first RAG dataset import path without polluting the knowledge pool with generated MD duplicates.
@@ -51,3 +55,4 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Hotinfo needs canonical PDF/TXT source approval before import, because current confirmed candidates are MD-only.
 - AI-optional ticket creation should be app-help/product copy, not vendor FAQ retrieval.
 - Next retrieval step: run the focused acceptance set after any new source import before changing retrieval code again.
+- Next product-flow step: verify in the browser that a newly uploaded `.hxl` appears in AI diagnosis context and in the created ticket snapshot.

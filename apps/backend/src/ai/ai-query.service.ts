@@ -343,15 +343,15 @@ export class AiQueryService {
             expandedQuery += `\n\n[KULLANICI EKLERİ İÇERİĞİ]:\n${parsedDocumentTexts}`;
         }
 
-        // Hotinfo is valuable context for answer generation, but raw traces can
-        // pollute retrieval intent (for example a performance query with a
-        // license trace can wrongly retrieve license-transfer PDFs).
-        const isHardwareQuery = this.isHardwareOrSystemQuery(expandedQuery);
-        if (hotinfoContext && isHardwareQuery) {
-            const h = hotinfoContext;
-            this.logger.log(`ℹ️ Hotinfo kept for prompt context, not retrieval query (OS=${h.osVersion || 'N/A'}, GPU=${h.gpu || 'N/A'}, Error=${h.errorTrace ? 'present' : 'none'})`);
+        // Hotinfo is ticket-specific diagnostic context. Keep raw traces out of
+        // retrieval, but let safe system signals help when the user asks for a
+        // system/Hotinfo diagnosis.
+        const hotinfoRetrievalContext = this.buildHotinfoRetrievalContext(hotinfoContext, expandedQuery);
+        if (hotinfoRetrievalContext) {
+            expandedQuery += `\n\n[HOTINFO SAFE SEARCH SIGNALS]\n${hotinfoRetrievalContext}`;
+            this.logger.log(`ℹ️ Hotinfo safe signals injected into retrieval query (raw trace redacted).`);
         } else if (hotinfoContext) {
-            this.logger.log(`ℹ️ Hotinfo available but NOT injected into search query (non-hardware query)`);
+            this.logger.log(`ℹ️ Hotinfo kept for prompt context only; retrieval query not expanded.`);
         }
 
 
@@ -368,17 +368,20 @@ export class AiQueryService {
         // 2. HyDE: Generate hypothetical document for better retrieval
         const queryLanguage = detectQueryLanguage(expandedQuery);
         const hypotheticalDoc = generateHypotheticalDocument(expandedQuery, { language: queryLanguage });
+        const retrievalDocument = hotinfoRetrievalContext
+            ? `${hypotheticalDoc}\n\n[HOTINFO SAFE SEARCH SIGNALS]\n${hotinfoRetrievalContext}`
+            : hypotheticalDoc;
 
         // 3. Semantic search (use HyDE document for embedding, but original query for logging)
         const searchStartTime = Date.now();
-        const searchResponse: SearchResponse = await this.embeddingService.search(hypotheticalDoc, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, options.productId, isStaff);
+        const searchResponse: SearchResponse = await this.embeddingService.search(retrievalDocument, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, options.productId, isStaff);
         this.logger.log(`🔍 [Phase: Search] Found ${searchResponse.results.length} results in ${Date.now() - searchStartTime}ms. TopScore: ${searchResponse.diagnostics.topScore.toFixed(3)}`);
         let results = searchResponse.results;
 
         // Langfuse retrieval span (non-blocking)
         this.langfuse.traceRetrieval({
             query: userQuery,
-            hypotheticalDoc,
+            hypotheticalDoc: retrievalDocument,
             chunksRetrieved: results.length,
             topScore: searchResponse.diagnostics.topScore,
             cacheHit: false,
@@ -866,6 +869,42 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             { name: 'startup', terms: ['acilis', 'baslangic', 'baslatma', 'startup', 'start', 'starting', 'startet', 'bekliyor', 'waiting'], weight: 0.1 },
             { name: 'network', terms: ['ag', 'network', 'netzwerk', 'isim cozumleme', 'name resolution', 'dns', 'server', 'sunucu'], weight: 0.1 },
         ];
+    }
+
+    private buildHotinfoRetrievalContext(hotinfoContext: any, query: string): string {
+        if (!hotinfoContext || typeof hotinfoContext !== 'object') return '';
+
+        const normalizedQuery = this.normalizeSearchText(query);
+        const explicitlyAsksHotinfo =
+            normalizedQuery.includes('hotinfo') ||
+            normalizedQuery.includes('hotinf') ||
+            normalizedQuery.includes('hxl') ||
+            normalizedQuery.includes('sistem bilgisi') ||
+            normalizedQuery.includes('sistem analizi') ||
+            normalizedQuery.includes('system info') ||
+            normalizedQuery.includes('system analysis');
+
+        if (!explicitlyAsksHotinfo && !this.isHardwareOrSystemQuery(query)) {
+            return '';
+        }
+
+        const h = hotinfoContext;
+        const lines = [
+            `Allplan surumu: ${h.allplanVersion || 'bilinmiyor'} ${h.allplanHotfix ? `hotfix ${h.allplanHotfix}` : ''}`.trim(),
+            `Isletim sistemi: ${h.osVersion || 'bilinmiyor'}`,
+            `GPU: ${h.gpu || 'bilinmiyor'} ${h.gpuDriverVersion ? `driver ${h.gpuDriverVersion}` : ''} ${h.openglVersion ? `OpenGL ${h.openglVersion}` : ''}`.trim(),
+            `RAM: ${h.ram || 'bilinmiyor'} ${h.vram ? `VRAM ${h.vram}` : ''}`.trim(),
+            h.screenResolution ? `Ekran cozunurlugu: ${h.screenResolution}` : '',
+            Array.isArray(h.conflictingProcesses) && h.conflictingProcesses.length > 0
+                ? `Cakisan surecler: ${h.conflictingProcesses.join(', ')}`
+                : '',
+            Array.isArray(h.securityServices) && h.securityServices.length > 0
+                ? `Guvenlik/antivirus servisleri: ${h.securityServices.join(', ')}`
+                : '',
+            h.errorTrace ? 'Hotinfo hata kaydi mevcut; ham trace arama sorgusundan cikartildi.' : '',
+        ];
+
+        return lines.filter(Boolean).join('\n');
     }
 
     private normalizeSearchText(value: string): string {

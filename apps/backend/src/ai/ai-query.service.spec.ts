@@ -468,6 +468,47 @@ describe('AiQueryService', () => {
             expect(searchArg).toContain('isim çözümleme');
         });
 
+        it('adds safe Hotinfo signals for explicit Hotinfo analysis without leaking raw traces', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [{
+                    articleId: 'performance-faq',
+                    sourceType: 'DOCUMENT',
+                    title: 'Allplan performance diagnostics',
+                    content: 'Check graphics driver, security software, and system requirements.',
+                    similarity: 0.95,
+                    confidence: 'HIGH',
+                }],
+                diagnostics: { topScore: 0.95, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            await service.query({
+                userQuery: 'Hotinfo dosyamı analiz eder misin?',
+                wait: true,
+                language: 'tr',
+                hotinfoContext: {
+                    allplanVersion: '2026',
+                    osVersion: 'Windows 11',
+                    gpu: 'NVIDIA RTX 4070',
+                    gpuDriverVersion: '551.86',
+                    securityServices: ['Windows Defender'],
+                    conflictingProcesses: ['onedrive.exe'],
+                    errorTrace: 'SEC Hata: C:\\ProgramData\\Nemetschek\\Allplan\\2026\\License\\_SEC.NSE',
+                },
+            });
+
+            const searchArg = mockEmbeddingService.search.mock.calls[0][0] as string;
+            expect(searchArg).toContain('HOTINFO SAFE SEARCH SIGNALS');
+            expect(searchArg).toContain('Windows 11');
+            expect(searchArg).toContain('NVIDIA RTX 4070');
+            expect(searchArg).toContain('Windows Defender');
+            expect(searchArg).toContain('onedrive.exe');
+            expect(searchArg).toContain('Hotinfo hata kaydi mevcut');
+            expect(searchArg).not.toContain('_SEC.NSE');
+            expect(searchArg).not.toContain('License');
+            expect(searchArg).not.toContain('Lisans');
+        });
+
         it('demotes license sources for network startup questions when the query is not about licensing', async () => {
             mockPrismaService.user.findUnique.mockResolvedValue({ role: { name: 'ADMIN' } });
             mockEmbeddingService.search.mockResolvedValue({

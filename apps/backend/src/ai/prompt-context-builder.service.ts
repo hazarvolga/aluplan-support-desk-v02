@@ -61,17 +61,36 @@ export class PromptContextBuilderService {
 - İşletim Sistemi: ${h.osVersion || 'Bilinmiyor'}
 - İşlemci (CPU): ${h.cpu || 'Bilinmiyor'}
 - Ekran Kartı (GPU): ${h.gpu || 'Bilinmiyor'} (Sürücü: ${h.gpuDriverVersion || 'Bilinmiyor'}, VRAM: ${h.vram || 'Bilinmiyor'})
+- OpenGL: ${h.openglVersion || 'Bilinmiyor'}
 - RAM: ${h.ram || 'Bilinmiyor'}
 - Ekran Çözünürlüğü: ${h.screenResolution || 'Bilinmiyor'}
+- Lisans Tipi: ${h.licenseType || 'Bilinmiyor'}
+- Allplan Hotfix/Patch: ${h.allplanHotfix || 'Bilinmiyor'}
 `;
+                        if (h.installedModules && h.installedModules.length > 0) {
+                            hotinfoContent += `- Modüller/Worksets: ${h.installedModules.join(', ')}\n`;
+                        }
                         if (h.drives && h.drives.length > 0) {
                             hotinfoContent += `- Diskler: ${h.drives.map((d: any) => `${d.root} (${d.free}/${d.total})`).join(', ')}\n`;
+                        }
+                        if (h.securityServices && h.securityServices.length > 0) {
+                            hotinfoContent += `- Güvenlik/Antivirüs Servisleri: ${h.securityServices.join(', ')}\n`;
+                        }
+                        if (h.printers && h.printers.length > 0) {
+                            hotinfoContent += `- Yazıcılar: ${h.printers.slice(0, 10).join(', ')}\n`;
+                        }
+                        if (h.defaultPrinter) {
+                            hotinfoContent += `- Varsayılan Yazıcı: ${h.defaultPrinter}\n`;
                         }
                         if (h.registryPaths && Object.keys(h.registryPaths).length > 0) {
                             hotinfoContent += `- Kayıt Defteri Yolları: ${Object.entries(h.registryPaths).map(([k, v]) => `${k}=${v}`).join(' | ')}\n`;
                         }
                         if (h.conflictingProcesses && h.conflictingProcesses.length > 0) {
                             hotinfoContent += `- Olası Çakışmalar: ${h.conflictingProcesses.join(', ')}\n`;
+                        }
+                        if (h.errorTrace) {
+                            const errorTrace = String(h.errorTrace);
+                            hotinfoContent += `- Hata Kaydı/Trace: ${errorTrace.length > 1200 ? `${errorTrace.slice(0, 1200)}... [trace truncated]` : errorTrace}\n`;
                         }
                         sections.push({ name: 'HOTINFO_DATA', priority: P.HOTINFO_DATA, content: hotinfoContent });
                     } else {
