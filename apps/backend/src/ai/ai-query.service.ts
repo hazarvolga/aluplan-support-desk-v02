@@ -23,6 +23,7 @@ import { RagObservabilityService } from './rag-observability.service';
 import { AiDiagnosisService, DiagnosisResult } from './ai-diagnosis.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
 import { createHash } from 'crypto';
+import { buildSupportAnswerContractPrompt } from './ai-answer-contract';
 
 // local type with NO_MATCH
 export type LocalConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -475,11 +476,14 @@ export class AiQueryService {
             diagnosis = diagnosisForThreshold;
 
             const systemPromptRaw = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', MASTER_DIAGNOSIS_PROMPT);
-            let dynamicSystemPrompt = systemPromptRaw
-                .replace('{{PRODUCT}}', diagnosis?.productName || 'General')
-                .replace('{{CATEGORIES}}', diagnosis?.categoryNames.join(', ') || 'N/A')
-                .replace('{{KEYWORDS}}', diagnosis?.matchedKeywords.join(', ') || 'N/A')
-                .replace('{{LANGUAGE}}', options.language === 'tr' ? 'Turkish' : (options.language === 'de' ? 'German' : 'English'));
+            const dynamicSystemPrompt = buildSupportAnswerContractPrompt({
+                basePrompt: systemPromptRaw,
+                product: diagnosis?.productName,
+                categories: diagnosis?.categoryNames,
+                keywords: diagnosis?.matchedKeywords,
+                language: options.language,
+                audience: isStaff ? 'agent' : 'customer',
+            });
 
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
@@ -1261,11 +1265,14 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             diagnosis = diagnosisForThreshold;
 
             const systemPromptRaw = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', MASTER_DIAGNOSIS_PROMPT);
-            let dynamicSystemPrompt = systemPromptRaw
-                .replace('{{PRODUCT}}', diagnosis?.productName || 'General')
-                .replace('{{CATEGORIES}}', diagnosis?.categoryNames.join(', ') || 'N/A')
-                .replace('{{KEYWORDS}}', diagnosis?.matchedKeywords.join(', ') || 'N/A')
-                .replace('{{LANGUAGE}}', options.language === 'tr' ? 'Turkish' : (options.language === 'de' ? 'German' : 'English'));
+            const dynamicSystemPrompt = buildSupportAnswerContractPrompt({
+                basePrompt: systemPromptRaw,
+                product: diagnosis?.productName,
+                categories: diagnosis?.categoryNames,
+                keywords: diagnosis?.matchedKeywords,
+                language: options.language,
+                audience: isStaff ? 'agent' : 'customer',
+            });
 
 
             const contextPrompt = await this.promptContextBuilder.buildContext({
@@ -2153,11 +2160,14 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
         });
 
         const systemPromptRaw = await this.promptsService.getPrompt('SYSTEM_PROMPT_SUPPORT', MASTER_DIAGNOSIS_PROMPT);
-        const systemPrompt = systemPromptRaw
-            .replace('{{PRODUCT}}', diagnosis?.productName || 'General')
-            .replace('{{CATEGORIES}}', diagnosis?.categoryNames.join(', ') || 'N/A')
-            .replace('{{KEYWORDS}}', diagnosis?.matchedKeywords.join(', ') || 'N/A')
-            .replace('{{LANGUAGE}}', lang === 'tr' ? 'Turkish' : (lang === 'de' ? 'German' : 'English'));
+        const systemPrompt = buildSupportAnswerContractPrompt({
+            basePrompt: systemPromptRaw,
+            product: diagnosis?.productName,
+            categories: diagnosis?.categoryNames,
+            keywords: diagnosis?.matchedKeywords,
+            language: lang,
+            audience: isStaff ? 'agent' : 'customer',
+        });
 
         return {
             context: `${systemPrompt}\n\n[CONTEXT]\n${context}\n${parsedDocs}`,

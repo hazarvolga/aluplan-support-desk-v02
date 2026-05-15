@@ -8,6 +8,7 @@ import { StorageService } from '../common/services/storage.service';
 import { AiDiagnosisService } from './ai-diagnosis.service';
 import { DocumentParserService } from '../common/services/document-parser.service';
 import { MASTER_DIAGNOSIS_PROMPT } from './ai-query.service';
+import { buildSupportAnswerContractPrompt } from './ai-answer-contract';
 
 @Injectable()
 export class AiCopilotService {
@@ -152,19 +153,14 @@ export class AiCopilotService {
 
         const targetLanguage = ticket.creator?.language || 'tr';
 
-        const systemPrompt = `
-${MASTER_DIAGNOSIS_PROMPT}
-
-## STEP 7 — OUTPUT
-Output ONLY in the following language: [${targetLanguage.toUpperCase()}]
-Use strict headers:
-## 📌 Sorun Yorumu
-...
-## 🎯 En Olası Neden
-...
-## 🛠️ Çözüm Adımları
-...
-`;
+        const systemPrompt = buildSupportAnswerContractPrompt({
+            basePrompt: MASTER_DIAGNOSIS_PROMPT,
+            product: diagnosis.productName,
+            categories: diagnosis.categoryNames,
+            keywords: diagnosis.matchedKeywords,
+            language: targetLanguage,
+            audience: 'agent',
+        });
 
         const isShift = diagnosis.isProblemShift;
         const prompt = `

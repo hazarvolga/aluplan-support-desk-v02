@@ -1731,3 +1731,48 @@ Maintenance rule:
 - This is the first narrow step toward admin-quality customer answers.
 - Retrieval is not the issue for this case; answer synthesis/fallback quality was the issue.
 - Next improvement should generalize this from individual fallback intents into a shared customer/admin answer quality contract, but only after this narrow fix is live-tested.
+
+## Follow-up - 2026-05-15 Answer Drift Reset Phase 4
+
+### Trigger
+- User observed that customer and admin answers use different structures and asked why the two sides do not use the same system.
+- Live evidence:
+  - customer answer now has a good structured fallback for license borrowing.
+  - admin Copilot draft still drifted toward unrelated root-cause troubleshooting for a how-to question.
+
+### Root cause
+- Customer query flow used `MASTER_DIAGNOSIS_PROMPT`.
+- Admin Copilot imported `MASTER_DIAGNOSIS_PROMPT` but then appended its own shortened `STEP 7` output block.
+- The two paths did not share a single answer quality contract for:
+  - exact user intent.
+  - how-to vs outage diagnosis separation.
+  - customer/admin core-answer consistency.
+  - no raw source/excerpt leakage in customer answers.
+
+### Changes
+- Added `apps/backend/src/ai/ai-answer-contract.ts`.
+- Added shared `buildSupportAnswerContractPrompt(...)`.
+- Customer `AiQueryService` now builds system prompts through the shared contract.
+- Admin `AiCopilotService` now builds system prompts through the same shared contract instead of its private shortened output block.
+- Added tests:
+  - `apps/backend/src/ai/ai-answer-contract.spec.ts`
+  - `AiCopilotService` prompt now asserts the shared answer contract is present.
+
+### Validation
+- GitNexus impact before edits:
+  - `AiQueryService`: `MEDIUM`
+  - `AiCopilotService`: `LOW`
+- GitNexus `detect_changes` after edits:
+  - risk: `medium`
+  - affected execution flows: 4
+  - changed symbol area includes `AiQueryService`, `queryInternal`, `AiCopilotService`, and `generateDraft`.
+- Tests passed:
+  - `pnpm --filter @aluplan/backend test -- ai-answer-contract.spec.ts ai-copilot.service.spec.ts ai-query.service.spec.ts`
+- Backend typecheck passed:
+  - `pnpm --filter @aluplan/backend typecheck`
+- Graphify update was attempted, but it again warned about a smaller rebuilt graph (`5617` nodes vs existing `11474`); `graphify-out/GRAPH_REPORT.md` was restored and not committed.
+
+### Decision
+- This phase does not change retrieval, DB schema, embeddings, or provider routing.
+- It resets customer/admin answer-format drift at the prompt-contract layer.
+- Next live test should compare the same ticket question on both customer answer and admin ANN draft after backend rebuild/reload.

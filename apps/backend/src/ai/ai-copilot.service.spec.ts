@@ -71,6 +71,11 @@ describe('AiCopilotService', () => {
 
             expect(result.draft).toBe('Generated draft response');
             expect(mockAi.generate).toHaveBeenCalled();
+            const prompt = mockAi.generate.mock.calls[0][0];
+            expect(prompt).toContain('## SHARED ANSWER CONTRACT');
+            expect(prompt).toContain('Audience: support agent draft');
+            expect(prompt).toContain('Keep the same core solution for customer and agent outputs');
+            expect(prompt).toContain('do not convert it into an outage/root-cause diagnosis');
         });
 
         it('should handle image attachments correctly', async () => {
