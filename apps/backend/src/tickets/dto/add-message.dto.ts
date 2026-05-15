@@ -1,11 +1,22 @@
-import { IsString, IsBoolean, IsOptional, IsEnum, IsArray, IsObject } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsEnum, IsArray, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CommunicationChannel } from '@aluplan/database';
+
+export enum MessageContentFormat {
+    HTML = 'HTML',
+    PLAIN_TEXT = 'PLAIN_TEXT',
+}
 
 export class AddMessageDto {
     @ApiProperty({ example: 'Sorununuzu inceliyoruz, kısa süre içinde dönüş yapacağız.' })
     @IsString()
+    @MaxLength(10000)
     message: string;
+
+    @ApiPropertyOptional({ enum: MessageContentFormat, default: MessageContentFormat.PLAIN_TEXT })
+    @IsEnum(MessageContentFormat)
+    @IsOptional()
+    contentFormat?: MessageContentFormat;
 
     @ApiPropertyOptional({ description: 'Internal note — not visible to customer', default: false })
     @IsBoolean()

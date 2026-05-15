@@ -444,7 +444,7 @@
       "ai_summary_record": "ANN_ÖZET_KAYDI",
       "sending": "GÖNDERİLİYOR...",
       "secure_chat": "UÇTAN_UCA_GÜVENLİ_İLETİŞİM",
-      "message_placeholder": "Mesajınızı buraya yazın... (Enter ile gönder)",
+      "message_placeholder": "Mesajınızı buraya yazın... (Ctrl/Cmd+Enter ile gönder)",
       "ticket_metadata": "TALEP_METADATASI",
       "status_label": "DURUM_KODU",
       "channel_label": "ERİŞİM_KANALI",
@@ -2077,6 +2077,16 @@
     "view_action": "İncele",
     "system_alert_title": "🚨 AI Geri Dönüş Tüzüğü Tetiklendi",
     "system_alert_desc": "Birincil model ({primary}) yanıt vermedi veya hata verdi. Sistem otomatik olarak {fallback} modelini devreye aldı."
+  },
+  "richTextEditor": {
+    "toolbar": {
+      "bold": "Kalın",
+      "italic": "İtalik",
+      "bulletList": "Madde işaretli liste",
+      "orderedList": "Numaralı liste",
+      "heading2": "Başlık 2",
+      "heading3": "Başlık 3"
+    }
   },
   "admin": {
     "products": {

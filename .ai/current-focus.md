@@ -2,6 +2,12 @@
 
 ## Active Work
 
+- Rich Message Composer MVP completed:
+  - ticket detail now uses a TipTap rich reply composer for admin/customer replies.
+  - message history and ticket descriptions render through a safe rich/plain renderer.
+  - AI Copilot markdown drafts are converted into sanitized readable HTML before insertion.
+  - backend accepts `contentFormat: HTML` only for ticket message bodies and applies strict allowlist sanitization.
+  - no Prisma migration was added; sanitized HTML is stored in the existing message field for this MVP.
 - Phase 1 RAG relevance/cache fix is committed. Continue with a measured RAG quality program, not ad-hoc browser questions.
 - Use `.ai/rag-quality/acceptance-questions.json` as the active acceptance set before importing more files or changing retrieval logic.
 - Faz 6 live API acceptance completed:
@@ -63,6 +69,8 @@
 - `RagMaintenanceService` vector dimension and index maintenance behavior.
 - `NotificationsGateway` and WebSocket connection flows.
 - Ticket lifecycle and AI-optional ticket creation.
+- Global `XssValidationPipe` behavior for non-message strings.
+- `AddMessageDto` and ticket message creation/rendering compatibility with old plain text content.
 
 ## Known Risks
 
@@ -78,8 +86,18 @@
 - Customer answer quality can still diverge from admin Copilot for topics that do not yet have either successful LLM generation or structured deterministic fallback coverage.
 - Ticket creation from AI diagnosis depends on `interactionId` idempotency; keep this path covered when changing ticket creation or AI query interaction persistence.
 - Dashboard data loading must remain role-aware; do not call admin-only observability endpoints from customer pages.
+- Rich message MVP stores sanitized HTML without a DB `contentFormat` column; renderer must continue detecting legacy plain text safely.
+- Backend rich-text sanitizer is intentionally narrow; do not expand tags/attributes without XSS-focused tests.
 
 ## Next Recommended Step
+
+Manual smoke-test Rich Message Composer before broadening the editor scope:
+
+- Admin ticket detail: send bold/list/heading reply and verify render.
+- Customer ticket detail: send formatted reply and verify render.
+- ANN draft: verify markdown headings/lists appear as readable editor content.
+- Legacy plain text: verify old messages still display cleanly.
+- XSS smoke: `<script>`, `onerror`, and `javascript:` links must not persist or execute.
 
 Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 

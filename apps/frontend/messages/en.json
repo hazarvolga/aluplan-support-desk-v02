@@ -444,7 +444,7 @@
       "ai_summary_record": "ANN_SUMMARY_RECORD",
       "sending": "SENDING...",
       "secure_chat": "END-TO-END SECURE COMMUNICATION",
-      "message_placeholder": "Type your message here... (Enter to send)",
+      "message_placeholder": "Type your message here... (Ctrl/Cmd+Enter to send)",
       "ticket_metadata": "REQUEST_METADATA",
       "status_label": "STATUS_CODE",
       "channel_label": "ACCESS_CHANNEL",
@@ -2077,6 +2077,16 @@
     "view_action": "View",
     "system_alert_title": "🚨 AI Auto-Fallback Triggered",
     "system_alert_desc": "Primary model ({primary}) failed or timed out. System automatically switched to {fallback} provider."
+  },
+  "richTextEditor": {
+    "toolbar": {
+      "bold": "Bold",
+      "italic": "Italic",
+      "bulletList": "Bullet list",
+      "orderedList": "Numbered list",
+      "heading2": "Heading 2",
+      "heading3": "Heading 3"
+    }
   },
   "admin": {
     "products": {

@@ -1,9 +1,5 @@
 import { PipeTransform, Injectable, ArgumentMetadata } from '@nestjs/common';
-import DOMPurify from 'dompurify';
-import { JSDOM } from 'jsdom';
-
-const window = new JSDOM('').window;
-const purify = DOMPurify(window as any);
+import { sanitizeRichTextHtml, stripHtml } from '../utils/rich-text-sanitizer';
 
 /**
  * GAP-14: Backend HTML Sanitization
@@ -23,10 +19,13 @@ export class XssValidationPipe implements PipeTransform {
         return this.sanitize(value);
     }
 
-    private sanitize(obj: any): any {
+    private sanitize(obj: any, key?: string, parent?: any): any {
         if (typeof obj === 'string') {
-            // Remove any potentially dangerous HTML payload
-            return purify.sanitize(obj, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+            if (key === 'message' && parent?.contentFormat === 'HTML') {
+                return sanitizeRichTextHtml(obj);
+            }
+
+            return stripHtml(obj);
         }
 
         if (Array.isArray(obj)) {
@@ -36,7 +35,7 @@ export class XssValidationPipe implements PipeTransform {
         if (typeof obj === 'object' && obj !== null) {
             const sanitizedObj: any = {};
             for (const key of Object.keys(obj)) {
-                sanitizedObj[key] = this.sanitize(obj[key]);
+                sanitizedObj[key] = this.sanitize(obj[key], key, obj);
             }
             return sanitizedObj;
         }

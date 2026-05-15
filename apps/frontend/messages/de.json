@@ -444,7 +444,7 @@
       "ai_summary_record": "ANN_ZUSAMMENFASSUNGS_AUFZEICHNUNG",
       "sending": "SENDEN...",
       "secure_chat": "ENDE-ZU-ENDE SICHERE KOMMUNIKATION",
-      "message_placeholder": "Nachricht hier eingeben... (Enter zum Senden)",
+      "message_placeholder": "Nachricht hier eingeben... (Strg/Cmd+Enter zum Senden)",
       "ticket_metadata": "ANFRAGE_METADATEN",
       "status_label": "STATUS_CODE",
       "channel_label": "ZUGANGSKANAL",
@@ -2077,6 +2077,16 @@
     "view_action": "Ansehen",
     "system_alert_title": "System-Alarm",
     "system_alert_desc": "Es liegt eine kritische Systemmeldung vor, die Ihre Aufmerksamkeit erfordert."
+  },
+  "richTextEditor": {
+    "toolbar": {
+      "bold": "Fett",
+      "italic": "Kursiv",
+      "bulletList": "Aufzählung",
+      "orderedList": "Nummerierte Liste",
+      "heading2": "Überschrift 2",
+      "heading3": "Überschrift 3"
+    }
   },
   "admin": {
     "products": {

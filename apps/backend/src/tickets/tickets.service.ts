@@ -19,6 +19,8 @@ import { BulkUpdateTicketDto } from './dto/bulk-update-ticket.dto';
 import { TicketStatus, TicketPriority, Prisma } from '@aluplan/database';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiQueryService } from '../ai/ai-query.service';
+import { MessageContentFormat } from './dto/add-message.dto';
+import { isRichTextEffectivelyEmpty, sanitizeRichTextHtml } from '../common/utils/rich-text-sanitizer';
 
 const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
     NEW: [TicketStatus.OPEN, TicketStatus.DRAFT, TicketStatus.PENDING_CUSTOMER_REVIEW],
@@ -484,11 +486,25 @@ export class TicketsService {
             throw new BadRequestException('Cannot add message to a closed ticket');
         }
 
+        const contentFormat = dto.contentFormat ?? MessageContentFormat.PLAIN_TEXT;
+        const messageBody = contentFormat === MessageContentFormat.HTML
+            ? sanitizeRichTextHtml(this.piiMaskingService.maskSensitiveData(sanitizeRichTextHtml(dto.message)))
+            : this.piiMaskingService.maskSensitiveData(dto.message);
+
+        const hasAttachments = Boolean(dto.attachments?.length);
+        if (contentFormat === MessageContentFormat.HTML && isRichTextEffectivelyEmpty(messageBody) && !hasAttachments) {
+            throw new BadRequestException('message cannot be empty after sanitization');
+        }
+
+        if (messageBody.trim().length === 0 && !hasAttachments) {
+            throw new BadRequestException('message cannot be empty');
+        }
+
         const message = await this.prisma.ticketMessage.create({
             data: {
                 ticketId,
                 senderId,
-                message: this.piiMaskingService.maskSensitiveData(dto.message),
+                message: messageBody,
                 isInternal: dto.isInternal ?? false,
                 channel: dto.channel || 'WEB',
             },

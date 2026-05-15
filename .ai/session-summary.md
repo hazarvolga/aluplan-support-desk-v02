@@ -1848,3 +1848,54 @@ Maintenance rule:
 ### Decision
 - Backend RBAC stays strict.
 - This is a frontend role-aware data loading fix, not a security relaxation.
+
+## Follow-up - 2026-05-15 Rich Message Composer MVP
+
+### Trigger
+- `.kiro/specs/rich-text-editor` ihtiyacı incelendi.
+- Tam spec ilk faz için fazla büyük olduğu için güvenli MVP uygulandı:
+  - ticket detayında admin/customer rich reply composer
+  - AI Copilot markdown taslaklarını okunabilir HTML'e dönüştürme
+  - backend allowlist sanitizasyon
+  - Prisma migration olmadan mevcut `TicketMessage.message` alanında sanitized HTML saklama
+
+### Changes
+- Frontend:
+  - `RichTextEditor` eklendi: TipTap `StarterKit`, placeholder, toolbar, `Ctrl/Cmd+Enter` ile gönderme.
+  - `RichTextRenderer` eklendi: eski plain text mesajları bozmadan, rich HTML mesajları sanitize ederek render eder.
+  - `ContentSanitizer` eklendi: sadece güvenli rich-text tag/attribute allowlist'ine izin verir.
+  - `markdownToHtml` eklendi: AI Copilot draft başlık/list/bold/italic çıktısını editöre uygun HTML'e çevirir.
+  - Ticket detay reply textarea yerine rich editor kullanır; macro ve ANN draft çıktıları editöre HTML olarak eklenir.
+- Backend:
+  - `AddMessageDto.contentFormat` opsiyonel `HTML | PLAIN_TEXT` kabul eder.
+  - `message` uzunluk limiti 10.000 karaktere çıkarıldı.
+  - Global `XssValidationPipe`, yalnızca `contentFormat: HTML` ve `message` alanında strict rich-text allowlist uygular.
+  - Diğer string alanlarda eski HTML temizleme davranışı korunur.
+  - `TicketsService.addMessage` kaydetmeden önce ikinci kez rich-text sanitizasyon yapar ve boş kalan mesajı reddeder.
+
+### Validation
+- Frontend targeted tests passed:
+  - `pnpm --filter @aluplan/frontend exec vitest run src/lib/content-sanitizer.spec.ts src/lib/markdown-to-html.spec.ts src/components/ui/rich-text-renderer.spec.tsx src/components/ui/rich-text-editor.spec.tsx`
+  - 4 files, 13 tests passed.
+- Backend targeted tests passed:
+  - `pnpm --filter @aluplan/backend test -- xss-validation.pipe.spec.ts tickets.service.spec.ts`
+  - 2 suites, 18 tests passed.
+- Typecheck passed:
+  - `pnpm --filter @aluplan/frontend typecheck`
+  - `pnpm --filter @aluplan/backend typecheck`
+- i18n check passed:
+  - `pnpm i18n:check`
+
+### Decision
+- First phase stores sanitized HTML in the existing `message` field.
+- No Prisma `contentFormat` migration was added.
+- Global XSS protection remains strict; rich HTML is a narrow exception for ticket message bodies only.
+- `apps/backend/openapi.json` remains a separate drift and was not part of this phase.
+
+### Next
+- Manual smoke should verify:
+  - admin formatted reply send/render
+  - customer formatted reply send/render
+  - ANN draft markdown becomes readable headings/lists in the editor
+  - old plain text messages still render correctly
+  - `<script>`, event attributes, and `javascript:` links do not persist or execute

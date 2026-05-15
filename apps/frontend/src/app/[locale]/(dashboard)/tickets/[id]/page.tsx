@@ -15,6 +15,8 @@ import { HotinfoGrid } from "@/components/ui/hotinfo-grid";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { RichTextRenderer } from '@/components/ui/rich-text-renderer';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,6 +25,8 @@ import { tr as trLocale, enUS as enLocale, de as deLocale } from 'date-fns/local
 import { toast } from 'sonner';
 import { MacroPicker } from '@/components/macros/macro-picker';
 import { useTranslations, useLocale } from 'next-intl';
+import { ContentSanitizer } from '@/lib/content-sanitizer';
+import { markdownToHtml } from '@/lib/markdown-to-html';
 
 const STATUS_COLORS: Record<string, string> = {
     NEW: 'border-blue-900/50 text-blue-400 bg-blue-400/5',
@@ -198,8 +202,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         };
     }, [id, user]);
 
-    const handleTypingChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setReply(e.target.value);
+    const handleTypingChange = (html: string) => {
+        setReply(html);
         if (!isTyping) {
             setIsTyping(true);
             getSocket().emit('ticket:typing', { ticketId: id, isTyping: true });
@@ -216,6 +220,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
     const roleName = (typeof user?.role === 'string' ? user.role : user?.role?.name)?.toLowerCase();
     const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer') || roleName === 'customer' || roleName === 'viewer';
+    const isReplyEffectivelyEmpty = ContentSanitizer.isEffectivelyEmpty(reply);
+    const isComposerDisabled = ['CLOSED', 'RESOLVED', 'PENDING_CUSTOMER_REVIEW'].includes(ticket?.status);
 
     const handleRequestLiveChat = async () => {
         try {
@@ -239,9 +245,11 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     };
 
     const handleSendReply = async () => {
-        if (!reply.trim() && files.length === 0) return;
+        const sanitizedReply = ContentSanitizer.sanitize(reply);
+        if (ContentSanitizer.isEffectivelyEmpty(sanitizedReply) && files.length === 0) return;
 
-        const messageText = reply;
+        const messageText = sanitizedReply;
+        const previousReply = reply;
         setReply(''); // Clear immediately for UX
         setSending(true);
 
@@ -268,7 +276,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         try {
             const message = await api.tickets.addMessage(id, {
                 message: messageText,
-                isInternal: false
+                isInternal: false,
+                contentFormat: 'HTML',
             });
 
             if (files.length > 0) {
@@ -293,7 +302,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 ...prev,
                 messages: prev.messages.filter((m: any) => m.id !== tempId)
             }));
-            setReply(messageText); // Restore input
+            setReply(previousReply); // Restore input
         } finally {
             setSending(false);
         }
@@ -316,7 +325,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         setDrafting(true);
         try {
             const res = await api.ai.getCopilotDraft(id);
-            setReply(res.draft);
+            setReply(markdownToHtml(res.draft));
             toast.success(t('draft_success'));
         } catch (err: any) {
             toast.error(t('draft_error', { error: err.message }));
@@ -600,7 +609,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                             <span className="text-[9px] text-muted-foreground uppercase font-mono shrink-0">{formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true, locale: dateLocale })}</span>
                                         </div>
                                         <div className="bg-muted/30 border border-border/50 p-3 text-[12px] leading-relaxed tracking-tight text-foreground font-medium shadow-sm">
-                                            {ticket.description}
+                                            <RichTextRenderer content={ticket.description} />
 
                                             {/* Show attachments from the first message here if it's the description duplicate */}
                                             {ticket.messages?.[0]?.attachments?.length > 0 && (
@@ -656,7 +665,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                                         ? 'bg-primary text-primary-foreground border border-primary rounded-tl-lg rounded-bl-lg rounded-br-none shadow-sm'
                                                         : 'bg-card border border-border/60 rounded-tr-lg rounded-br-lg rounded-bl-none shadow-sm'
                                                     } ${msg.isOptimistic ? 'opacity-70 italic' : ''}`}>
-                                                    {msg.message}
+                                                    <RichTextRenderer content={msg.message} />
 
                                                     {/* Attachments for this message */}
                                                     {msg.attachments?.length > 0 && (
@@ -727,37 +736,39 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             </label>
                             <div className="flex-1 space-y-2">
                                 <div className="flex justify-between items-center mr-1">
-                                    <MacroPicker onSelect={(content: string) => setReply((prev) => prev ? `${prev}\n${content}` : content)} />
+                                    <MacroPicker onSelect={(content: string) => {
+                                        const macroHtml = markdownToHtml(content);
+                                        setReply((prev) => prev && !ContentSanitizer.isEffectivelyEmpty(prev)
+                                            ? `${prev}${macroHtml}`
+                                            : macroHtml);
+                                    }} />
                                     <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-1.5">
                                         <Shield className="h-2.5 w-2.5" /> {t('secure_chat')}
                                     </span>
                                 </div>
-                                <Textarea
+                                <RichTextEditor
                                     placeholder={t('message_placeholder')}
-                                    className="bg-black/20 border-border/40 focus-visible:ring-primary min-h-20 text-[13px] p-3 rounded-md resize-y shadow-inner transition-colors overflow-hidden"
                                     value={reply}
-                                    ref={(el) => {
-                                        if (el) {
-                                            el.style.height = 'auto';
-                                            el.style.height = `${el.scrollHeight}px`;
-                                        }
-                                    }}
                                     onChange={handleTypingChange}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
+                                    disabled={isComposerDisabled}
+                                    aria-label={t('message_placeholder')}
+                                    onSubmit={() => {
+                                        if (!sending && (!isReplyEffectivelyEmpty || files.length > 0)) {
                                             handleSendReply();
                                         }
                                     }}
+                                    className="min-h-20 transition-colors"
                                 />
                             </div>
-                            <Button
-                                onClick={handleSendReply}
-                                disabled={sending || (!reply.trim() && files.length === 0)}
-                                className="shrink-0 bg-primary hover:bg-primary/90 rounded-md h-auto min-h-20 w-14 border-border transition-all hover:scale-[1.02] active:scale-[0.98] self-stretch"
-                            >
-                                {sending ? <Loader2 className="h-5 w-5 animate-spin text-primary-foreground" /> : <Send className="h-6 w-6 text-primary-foreground" />}
-                            </Button>
+                            {!isComposerDisabled && (
+                                <Button
+                                    onClick={handleSendReply}
+                                    disabled={sending || (isReplyEffectivelyEmpty && files.length === 0)}
+                                    className="shrink-0 bg-primary hover:bg-primary/90 rounded-md h-auto min-h-20 w-14 border-border transition-all hover:scale-[1.02] active:scale-[0.98] self-stretch"
+                                >
+                                    {sending ? <Loader2 className="h-5 w-5 animate-spin text-primary-foreground" /> : <Send className="h-6 w-6 text-primary-foreground" />}
+                                </Button>
+                            )}
                         </div>
                     </CardFooter>
                 </Card>

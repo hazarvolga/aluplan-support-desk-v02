@@ -306,6 +306,33 @@ describe('TicketsService', () => {
                     expect.objectContaining({ data: { status: 'OPEN' } })
                 );
             });
+
+            it('should sanitize allowed rich text HTML before saving', async () => {
+                const ticket = { id: 'tik1', status: 'OPEN', userId: 'user1' };
+                prisma.ticket.findFirst.mockResolvedValue(ticket);
+                prisma.ticketMessage.create.mockResolvedValue({ id: 'msg1' });
+
+                await service.addMessage('tik1', {
+                    message: '<p onclick="alert(1)">Hello <strong>team</strong><script>alert(1)</script></p>',
+                    contentFormat: 'HTML',
+                } as any, 'user1', 'customer');
+
+                expect(prisma.ticketMessage.create).toHaveBeenCalledWith(expect.objectContaining({
+                    data: expect.objectContaining({
+                        message: '<p>Hello <strong>team</strong></p>',
+                    }),
+                }));
+            });
+
+            it('should reject rich text messages that become empty after sanitization', async () => {
+                const ticket = { id: 'tik1', status: 'OPEN', userId: 'user1' };
+                prisma.ticket.findFirst.mockResolvedValue(ticket);
+
+                await expect(service.addMessage('tik1', {
+                    message: '<script>alert(1)</script>',
+                    contentFormat: 'HTML',
+                } as any, 'user1', 'customer')).rejects.toThrow(BadRequestException);
+            });
         });
 
         describe('transition', () => {
