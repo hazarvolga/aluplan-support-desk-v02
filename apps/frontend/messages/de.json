@@ -2208,9 +2208,12 @@
         "pipeline_desc": "Tiefenanalyse der gelösten Tickets läuft.",
         "knowledge_committed": "Wissen bestätigt",
         "knowledge_committed_desc": "Das Modell wurde erfolgreich in den allgemeinen Wissenspool integriert.",
+        "dismissed": "Kandidat verworfen",
+        "dismissed_desc": "Der Lernkandidat wurde abgelehnt und aus der Validierungswarteschlange entfernt.",
         "sync_error": "Datensynchronisierungsfehler",
         "pipeline_exception": "Pipeline-Ausnahme",
-        "commit_error": "Übertragungsfehler"
+        "commit_error": "Übertragungsfehler",
+        "dismiss_error": "Fehler beim Verwerfen"
       }
     },
     "live_support_request": {

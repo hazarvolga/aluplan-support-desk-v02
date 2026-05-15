@@ -2208,9 +2208,12 @@
         "pipeline_desc": "In-depth analysis of resolved tickets is in progress.",
         "knowledge_committed": "Knowledge Committed",
         "knowledge_committed_desc": "The model has been successfully integrated into the general knowledge pool.",
+        "dismissed": "Candidate Dismissed",
+        "dismissed_desc": "The learning candidate was rejected and removed from the validation queue.",
         "sync_error": "Data sync error",
         "pipeline_exception": "Pipeline Exception",
-        "commit_error": "Commit Error"
+        "commit_error": "Commit Error",
+        "dismiss_error": "Dismiss Error"
       }
     },
     "live_support_request": {

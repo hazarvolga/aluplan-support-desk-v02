@@ -2208,9 +2208,12 @@
         "pipeline_desc": "Çözülen biletlerin derinlemesine analizi devam ediyor.",
         "knowledge_committed": "Bilgi Onaylandı",
         "knowledge_committed_desc": "Model başarıyla genel bilgi havuzuna entegre edildi.",
+        "dismissed": "Aday Reddedildi",
+        "dismissed_desc": "Öğrenme adayı reddedildi ve doğrulama kuyruğundan çıkarıldı.",
         "sync_error": "Veri senkronizasyon hatası",
         "pipeline_exception": "Pipeline istisnası oluştu",
-        "commit_error": "Onaylama hatası"
+        "commit_error": "Onaylama hatası",
+        "dismiss_error": "Reddetme hatası"
       }
     },
     "live_support_request": {

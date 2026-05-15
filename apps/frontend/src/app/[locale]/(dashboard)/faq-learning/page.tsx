@@ -96,6 +96,16 @@ export default function FaqLearningPage() {
         }
     };
 
+    const handleDismiss = async (id: string) => {
+        try {
+            await api.faq.dismiss(id);
+            toast({ title: t('toasts.dismissed'), description: t('toasts.dismissed_desc') });
+            load();
+        } catch (error) {
+            toast({ title: t('toasts.dismiss_error'), description: String(error), variant: 'destructive' });
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -297,6 +307,7 @@ export default function FaqLearningPage() {
                                             </Button>
                                             <Button
                                                 variant="ghost"
+                                                onClick={() => handleDismiss(c.id)}
                                                 className="h-8 px-4 text-[10px] uppercase font-bold tracking-widest text-muted-foreground hover:text-red-500 rounded-none"
                                             >
                                                 {t('dismiss')}

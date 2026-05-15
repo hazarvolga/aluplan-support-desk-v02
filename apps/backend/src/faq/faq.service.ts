@@ -310,7 +310,7 @@ export class FaqService {
     }
 
     async approveFaq(id: string): Promise<any> {
-        return this.prisma.faqEntry.update({
+        const faq = await this.prisma.faqEntry.update({
             where: { id },
             data: {
                 status: 'PUBLISHED',
@@ -318,6 +318,8 @@ export class FaqService {
                 isInternal: false // Make public when approved by human
             },
         });
+        await this.refreshFaqQuestionEmbedding(faq);
+        return faq;
     }
 
     async dismissFaq(id: string): Promise<any> {
@@ -325,11 +327,43 @@ export class FaqService {
     }
 
     async updateFaq(id: string, data: { question?: string; answer?: string; tags?: string[] }): Promise<any> {
-        return this.prisma.faqEntry.update({ where: { id }, data });
+        const faq = await this.prisma.faqEntry.update({ where: { id }, data });
+        if (data.question !== undefined || data.answer !== undefined || data.tags !== undefined) {
+            await this.refreshFaqQuestionEmbedding(faq);
+        }
+        return faq;
     }
 
     async deleteFaq(id: string): Promise<any> {
         return this.prisma.faqEntry.update({ where: { id }, data: { deletedAt: new Date() } });
+    }
+
+    private async refreshFaqQuestionEmbedding(faq: { id: string; question?: string | null }) {
+        if (!faq.question) return;
+
+        try {
+            const config = await this.registry.getActiveVersionConfig();
+            const result = await this.aiService.embed(faq.question);
+            if (!result?.embedding?.length) {
+                this.logger.warn(`FAQ embedding skipped for ${faq.id}: AI provider returned no embedding`);
+                return;
+            }
+            if (result.embedding.length !== config.dimension) {
+                this.logger.warn(`FAQ embedding skipped for ${faq.id}: expected ${config.dimension} dimensions, got ${result.embedding.length}`);
+                return;
+            }
+
+            await this.prisma.$executeRaw`
+                UPDATE faq_entries
+                SET question_embedding = ${JSON.stringify(result.embedding)}::vector,
+                    embedding_version = ${config.version},
+                    embedding_dim = ${config.dimension},
+                    migrated_at = NOW()
+                WHERE id = ${faq.id}::uuid
+            `;
+        } catch (error: any) {
+            this.logger.warn(`FAQ embedding refresh failed for ${faq.id}: ${error?.message ?? error}`);
+        }
     }
 
     /**

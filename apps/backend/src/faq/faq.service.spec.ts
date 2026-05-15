@@ -26,10 +26,12 @@ describe('FaqService - Knowledge Base CRUD', () => {
 
     const mockAiService = {
         reformat: jest.fn(),
+        embed: jest.fn(),
     };
 
     const localMockPrismaService = {
         ...mockPrismaService,
+        $executeRaw: jest.fn(),
         faqEntry: {
             findMany: jest.fn(),
             count: jest.fn(),
@@ -54,6 +56,8 @@ describe('FaqService - Knowledge Base CRUD', () => {
 
         service = module.get<FaqService>(FaqService);
         jest.clearAllMocks();
+        mockAiService.embed.mockResolvedValue({ embedding: Array.from({ length: 1536 }, () => 0.1) });
+        localMockPrismaService.$executeRaw.mockResolvedValue(1);
     });
 
     describe('findAll', () => {
@@ -85,7 +89,7 @@ describe('FaqService - Knowledge Base CRUD', () => {
     describe('approveFaq', () => {
         it('should update FAQ status to PUBLISHED and isInternal to false', async () => {
             // Arrange
-            const updatedFaq = { id: 'faq-1', status: 'PUBLISHED', isInternal: false };
+            const updatedFaq = { id: 'faq-1', question: 'Q1', status: 'PUBLISHED', isInternal: false };
             localMockPrismaService.faqEntry.update.mockResolvedValue(updatedFaq);
 
             // Act
@@ -101,6 +105,8 @@ describe('FaqService - Knowledge Base CRUD', () => {
                     isInternal: false
                 }
             });
+            expect(mockAiService.embed).toHaveBeenCalledWith('Q1');
+            expect(localMockPrismaService.$executeRaw).toHaveBeenCalled();
         });
     });
 
@@ -120,6 +126,8 @@ describe('FaqService - Knowledge Base CRUD', () => {
                 where: { id: 'faq-1' },
                 data: updateData
             });
+            expect(mockAiService.embed).toHaveBeenCalledWith('Updated Q');
+            expect(localMockPrismaService.$executeRaw).toHaveBeenCalled();
         });
     });
 
