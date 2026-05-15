@@ -1242,3 +1242,70 @@ Maintenance rule:
    - either source-gap/reporting for missing Allplan Share/Hotinfo/project-backup docs,
    - or metadata/category cleanup for legacy `General` noise,
    - or duplicate/canonical demotion if the unresolved duplicate test confirms it.
+
+## Follow-up - 2026-05-15 Faz 3 Completed
+
+### Resume state
+- Continued from checkpoint `99a76b2 docs(memory): add rag quality checkpoint`.
+- Working tree still had only the known unrelated `apps/backend/openapi.json` artifact before Faz 3 edits.
+- Backend was not running at resume, so it was started with:
+  - `pnpm --filter @aluplan/backend start`
+- Backend booted successfully on `localhost:4000`.
+- Redis and Postgres were reachable.
+
+### Unresolved acceptance questions rerun
+- The 5 previously unresolved `429` questions were rerun with a 15 second delay.
+- Result:
+  - 5 total
+  - 2 passed
+  - 3 failed
+  - 0 throttle failures
+
+### Final Faz 3 acceptance result
+- 25 total questions.
+- 19 passed.
+- 6 real quality/data failures.
+- 0 remaining throttle-only failures.
+
+### Real failures
+- `rag-tr-project-backup-001`
+  - Top source: `[Dataset] FAQ_TR_Lisansı_yeni_bir_bilgisayara_veya_baska_bir_bilgisayara_aktarma.pdf`
+  - Root cause: likely project backup/data-management source gap or over-broad acceptance wording.
+- `rag-tr-share-cloud-001`
+  - Top source: `[Dataset] ifc_aktarim_el_kitabi.pdf`
+  - Root cause: Allplan Share/Cloud source gap or weak coverage.
+- `rag-tr-hotinfo-001`
+  - Top source: `Allplan_2023_New_Features`
+  - Root cause: Hotinfo source gap and legacy `General` noise.
+- `rag-tr-no-ai-ticket-001`
+  - Top source: `[Dataset] faq-softlock-Softlock-Destek-2006.pdf`
+  - Root cause: likely product UX/help content, not PDF RAG corpus content.
+- `rag-tr-general-demotion-001`
+  - Top source: license registration FAQ.
+  - Root cause: query contains `lisans değil`, but retrieval still treats `lisans` as positive signal.
+- `rag-tr-duplicate-canonical-001`
+  - Top source: `[Dataset] pilot-de-grafikkartentreiber-aktualisieren.pdf`
+  - Root cause: duplicate/pilot source outranks canonical FAQ source.
+
+### Files added
+- `.ai/rag-quality/run-acceptance.mjs`
+  - Local retrieval-only acceptance runner.
+  - Handles login, CSRF headers, throttled delay, JSON output, and ID filtering.
+- `.ai/rag-quality/results-2026-05-15.md`
+  - Human-readable Faz 3 result and failure classification.
+
+### Verification
+- Smoke-tested the runner with:
+  - `node .ai/rag-quality/run-acceptance.mjs --ids rag-tr-network-startup-001 --delay-ms 1000 --output /private/tmp/rag-acceptance-smoke.json`
+- Result:
+  - 1 total
+  - 1 pass
+  - 0 fail
+  - 0 throttle
+
+### Next step
+- Commit Faz 3 docs/tooling/memory separately.
+- Then start Faz 4 with the smallest product-code fix:
+  - canonical/duplicate source preference,
+  - negation-aware retrieval for `lisans değil / not license`.
+- Treat Hotinfo, Allplan Share, project backup, and product-help/ticket-opening failures as dataset/acceptance decisions unless matching sources are confirmed in the corpus.

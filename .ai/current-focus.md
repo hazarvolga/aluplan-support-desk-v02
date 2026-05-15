@@ -4,6 +4,8 @@
 
 - Phase 1 RAG relevance/cache fix is committed. Continue with a measured RAG quality program, not ad-hoc browser questions.
 - Use `.ai/rag-quality/acceptance-questions.json` as the active acceptance set before importing more files or changing retrieval logic.
+- Faz 3 retrieval-only acceptance is complete: 25 questions, 19 pass, 6 real quality/data failures, 0 remaining throttle-only failures.
+- Use `.ai/rag-quality/run-acceptance.mjs` for future localhost retrieval checks; default delay is intentionally throttle-safe.
 - Pause the PDF-first import after the support-first seed corpus and validate real RAG quality before importing more files.
 - Build the PDF-first RAG dataset import path without polluting the knowledge pool with generated MD duplicates.
 - Keep `dataset/` as the clean import surface and `.archive/rag-incoming/pdf/` as the raw PDF inbox.
@@ -37,4 +39,4 @@
 
 ## Next Recommended Step
 
-Run the 25-question RAG acceptance set in `.ai/rag-quality/acceptance-questions.json` against localhost and record failures by root cause: retrieval, metadata/category, cache, generation, or dataset quality. After that, implement the smallest failing-category fix and commit it as the next phase.
+Start Faz 4 with the smallest product-code fix: canonical/duplicate source preference and negation-aware handling for `lisans değil / not license` queries. Keep source-gap decisions for Hotinfo, Allplan Share, project backup, and product-help/ticket-opening content as separate dataset/acceptance decisions.
