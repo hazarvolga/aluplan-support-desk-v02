@@ -2875,6 +2875,11 @@
       "total_entropy": "TOPLAM ENTROPİ",
       "units": "BİRİM",
       "status_running": "ÇALIŞIYOR",
+      "learned": {
+        "published": "PUBLISHED FAQ",
+        "pending": "PENDING REVIEW",
+        "ticket_embeddings": "TICKET EMBEDS"
+      },
       "pillars": {
         "documents": "PDF/DOCX/XLS/TXT/MD",
         "articles": "ADMİN MAKALE",

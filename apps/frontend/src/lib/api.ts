@@ -358,7 +358,16 @@ export const api = {
                 URLS: number;
                 TICKETS: number;
             };
+            publishedFaqs?: number;
             pendingFaqs: number;
+            ticketEmbeddings?: number;
+            retrievalEnabledSources?: {
+                DOCUMENTS: number;
+                ARTICLES: number;
+                URLS: number;
+                FAQ: number;
+                TICKETS: number;
+            };
             totalSources: number;
         }>('/ai/sources-stats'),
         getIntelligence: (days = 30) => request<any>(`/ai/intelligence?days=${days}`),

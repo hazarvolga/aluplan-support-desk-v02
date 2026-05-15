@@ -25,6 +25,16 @@ interface SourceArchitectureViewProps {
             URLS: number;
             TICKETS: number;
         };
+        publishedFaqs?: number;
+        pendingFaqs?: number;
+        ticketEmbeddings?: number;
+        retrievalEnabledSources?: {
+            DOCUMENTS: number;
+            ARTICLES: number;
+            URLS: number;
+            FAQ: number;
+            TICKETS: number;
+        };
         totalSources: number;
     };
 }
@@ -121,6 +131,13 @@ export function SourceArchitectureView({ stats }: SourceArchitectureViewProps) {
                                 <div className="w-full border border-dashed border-border/30 p-2 text-center bg-black/20 min-h-[32px] flex items-center justify-center">
                                     <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter leading-tight">{p.strategy}</p>
                                 </div>
+                                {p.id === 'TICKETS' && (
+                                    <div className="mt-2 flex flex-col items-center gap-1 text-[7px] font-mono uppercase text-muted-foreground/70">
+                                        <span>{t('learned.published')}: {stats.publishedFaqs ?? stats.pillars.TICKETS}</span>
+                                        <span>{t('learned.pending')}: {stats.pendingFaqs ?? 0}</span>
+                                        <span>{t('learned.ticket_embeddings')}: {stats.ticketEmbeddings ?? 0}</span>
+                                    </div>
+                                )}
                                 <div className="h-8 w-[1px] bg-gradient-to-b from-border/30 to-primary/40 mt-2" />
                             </div>
                         ))}

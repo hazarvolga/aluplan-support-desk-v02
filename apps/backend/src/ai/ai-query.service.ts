@@ -1982,7 +1982,7 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
      * as defined in FAQ_Self_Learing_mimarisi.MD
      */
     async getSourcesStats() {
-        const [filesCount, articlesCount, urlsCount, learnedCount] = await Promise.all([
+        const [filesCount, articlesCount, urlsCount, learnedCount, pendingFaqs, ticketEmbeddings] = await Promise.all([
             this.prisma.knowledgeSource.count({
                 where: { type: { in: ['FILE_PDF', 'FILE_TXT', 'FILE_MD', 'FILE_CSV'] } }
             }),
@@ -1994,12 +1994,12 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
             }),
             this.prisma.faqEntry.count({
                 where: { status: 'PUBLISHED' }
-            })
+            }),
+            this.prisma.faqEntry.count({
+                where: { status: 'PENDING_REVIEW' }
+            }),
+            this.prisma.ticketEmbedding.count()
         ]);
-
-        const pendingFaqs = await this.prisma.faqEntry.count({
-            where: { status: 'PENDING_REVIEW' }
-        });
 
         return {
             pillars: {
@@ -2008,7 +2008,16 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
                 URLS: urlsCount,
                 TICKETS: learnedCount
             },
+            publishedFaqs: learnedCount,
             pendingFaqs,
+            ticketEmbeddings,
+            retrievalEnabledSources: {
+                DOCUMENTS: filesCount,
+                ARTICLES: articlesCount,
+                URLS: urlsCount,
+                FAQ: learnedCount,
+                TICKETS: ticketEmbeddings
+            },
             totalSources: filesCount + articlesCount + urlsCount + learnedCount
         };
     }
