@@ -7,7 +7,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiQueryService } from '../ai/ai-query.service';
 import { RedisService } from '../redis/redis.service';
 import { mockPrismaService } from '../test/mock.utils';
-import { TicketStatus, TicketPriority } from '@aluplan/database';
+import { TicketStatus, TicketPriority, Prisma } from '@aluplan/database';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('TicketsService', () => {
@@ -79,6 +79,66 @@ describe('TicketsService', () => {
             expect(result).toEqual(expectedTicket);
             expect(mockEventEmitter.emit).toHaveBeenCalledWith('ticket.created', expectedTicket);
             expect(prisma.ticket.create).toHaveBeenCalled();
+        });
+
+        it('should reuse an existing ticket for the same AI interaction', async () => {
+            const dto = {
+                subject: 'License borrow',
+                description: 'How do I borrow a license?',
+                interactionId: '11111111-1111-4111-8111-111111111111',
+            };
+            const existingTicket = {
+                id: 'tik1',
+                ticketNumber: 'SUP-00001',
+                userId: 'user1',
+                subject: 'License borrow',
+            };
+
+            prisma.ticket.findFirst.mockResolvedValue(existingTicket);
+
+            const result = await service.create(dto, 'user1');
+
+            expect(result).toEqual({ ...existingTicket, alreadyCreated: true });
+            expect(prisma.$queryRaw).not.toHaveBeenCalled();
+            expect(prisma.ticket.create).not.toHaveBeenCalled();
+            expect(mockEventEmitter.emit).not.toHaveBeenCalledWith('ticket.created', expect.anything());
+        });
+
+        it('should recover from a duplicate AI interaction race by returning the existing ticket', async () => {
+            const dto = {
+                subject: 'License borrow',
+                description: 'How do I borrow a license?',
+                priority: TicketPriority.MEDIUM,
+                interactionId: '11111111-1111-4111-8111-111111111111',
+            };
+            const existingTicket = {
+                id: 'tik1',
+                ticketNumber: 'SUP-00001',
+                userId: 'user1',
+                subject: 'License borrow',
+            };
+
+            prisma.ticket.findFirst
+                .mockResolvedValueOnce(null)
+                .mockResolvedValueOnce(existingTicket);
+            prisma.$queryRaw = jest.fn().mockResolvedValue([{ nextval: 2n }]);
+            mockSlaService.calculateDeadlines.mockResolvedValue({
+                slaResponseDue: new Date(),
+                slaResolveDue: new Date(),
+            });
+            prisma.ticket.create.mockRejectedValue(new Prisma.PrismaClientKnownRequestError(
+                'Unique constraint failed on the fields: (`interaction_id`)',
+                {
+                    code: 'P2002',
+                    clientVersion: 'test',
+                    meta: { target: ['interaction_id'] },
+                },
+            ));
+
+            const result = await service.create(dto, 'user1');
+
+            expect(result).toEqual({ ...existingTicket, alreadyCreated: true });
+            expect(mockEventEmitter.emit).not.toHaveBeenCalledWith('ticket.created', expect.anything());
         });
     });
 

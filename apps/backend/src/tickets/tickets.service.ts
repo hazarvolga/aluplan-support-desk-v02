@@ -61,34 +61,53 @@ export class TicketsService {
     // CREATE
     // =============================================
     async create(dto: CreateTicketDto, createdByUserId: string) {
+        if (dto.interactionId) {
+            const existingTicket = await this.findTicketByInteractionId(dto.interactionId);
+            if (existingTicket) {
+                this.assertInteractionTicketOwner(existingTicket, createdByUserId);
+                this.logger.log(`🎫 Reusing ticket ${existingTicket.ticketNumber} for AI interaction ${dto.interactionId}`);
+                return { ...existingTicket, alreadyCreated: true };
+            }
+        }
+
         const priority = dto.priority ?? TicketPriority.MEDIUM;
         const [ticketNumber, slaDeadlines] = await Promise.all([
             this.generateTicketNumber(),
             this.slaService.calculateDeadlines(priority, dto.departmentId),
         ]);
 
-        const ticket = await this.prisma.ticket.create({
-            data: {
-                ticketNumber,
-                subject: this.piiMaskingService.maskSensitiveData(dto.subject),
-                description: dto.description ? this.piiMaskingService.maskSensitiveData(dto.description) : null,
-                priority,
-                status: TicketStatus.NEW,
-                tags: dto.tags ?? [],
-                userId: createdByUserId,
-                interactionId: dto.interactionId,
-                productId: dto.productId,
-                hotinfoSnapshot: dto.hotinfoContext || undefined,
-                slaResponseDue: slaDeadlines.slaResponseDue,
-                slaResolveDue: slaDeadlines.slaResolveDue,
-                channel: dto.channel || 'WEB',
-                departmentId: dto.departmentId,
-            },
-            include: {
-                creator: { select: { id: true, fullName: true, email: true } },
-                product: { select: { name: true } }
-            },
-        });
+        let ticket;
+        try {
+            ticket = await this.prisma.ticket.create({
+                data: {
+                    ticketNumber,
+                    subject: this.piiMaskingService.maskSensitiveData(dto.subject),
+                    description: dto.description ? this.piiMaskingService.maskSensitiveData(dto.description) : null,
+                    priority,
+                    status: TicketStatus.NEW,
+                    tags: dto.tags ?? [],
+                    userId: createdByUserId,
+                    interactionId: dto.interactionId,
+                    productId: dto.productId,
+                    hotinfoSnapshot: dto.hotinfoContext || undefined,
+                    slaResponseDue: slaDeadlines.slaResponseDue,
+                    slaResolveDue: slaDeadlines.slaResolveDue,
+                    channel: dto.channel || 'WEB',
+                    departmentId: dto.departmentId,
+                },
+                include: this.ticketListInclude(),
+            });
+        } catch (error) {
+            if (dto.interactionId && this.isInteractionUniqueConstraintError(error)) {
+                const existingTicket = await this.findTicketByInteractionId(dto.interactionId);
+                if (existingTicket) {
+                    this.assertInteractionTicketOwner(existingTicket, createdByUserId);
+                    this.logger.log(`🎫 Reusing ticket ${existingTicket.ticketNumber} after interaction uniqueness race`);
+                    return { ...existingTicket, alreadyCreated: true };
+                }
+            }
+            throw error;
+        }
 
         this.logger.log(`🎫 Created ticket ${ticket.ticketNumber} (${priority})`);
 
@@ -102,6 +121,39 @@ export class TicketsService {
         this.eventEmitter.emit('ticket.created', ticket);
 
         return ticket;
+    }
+
+    private ticketListInclude() {
+        return {
+            creator: { select: { id: true, fullName: true, email: true } },
+            product: { select: { name: true } },
+        };
+    }
+
+    private findTicketByInteractionId(interactionId: string) {
+        return this.prisma.ticket.findFirst({
+            where: { interactionId },
+            include: this.ticketListInclude(),
+        });
+    }
+
+    private assertInteractionTicketOwner(ticket: { userId?: string | null }, createdByUserId: string) {
+        if (ticket.userId && ticket.userId !== createdByUserId) {
+            throw new BadRequestException('This AI diagnosis is already linked to another ticket');
+        }
+    }
+
+    private isInteractionUniqueConstraintError(error: unknown) {
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
+            return false;
+        }
+
+        const target = error.meta?.target;
+        if (Array.isArray(target)) {
+            return target.includes('interaction_id') || target.includes('interactionId');
+        }
+
+        return String(target).includes('interaction_id') || String(target).includes('interactionId');
     }
 
     private async runAutoTaggingAsync(ticketId: string, productId: string, text: string, hotinfoContext?: any) {

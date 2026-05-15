@@ -212,15 +212,18 @@ export default function NewTicketPage() {
                 interactionId: interactionId ?? undefined,
             });
 
-            const message = await api.tickets.addMessage(ticket.id, {
-                message: values.description,
-                isInternal: false
-            });
+            let message = null;
+            if (!ticket.alreadyCreated) {
+                message = await api.tickets.addMessage(ticket.id, {
+                    message: values.description,
+                    isInternal: false
+                });
+            }
 
             toast.success(t('toasts.success'));
 
             // Try uploading attachments in parallel or sequence, but don't block basic success
-            if (files.length > 0) {
+            if (files.length > 0 && message) {
                 try {
                     for (const file of files) {
                         await api.attachments.upload(message.id, file);

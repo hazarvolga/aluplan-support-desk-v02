@@ -36,6 +36,10 @@
   - customer `AiQueryService` and admin `AiCopilotService` now share `buildSupportAnswerContractPrompt(...)`.
   - admin Copilot no longer has its own shortened answer structure layered over the master diagnosis prompt.
   - shared contract enforces exact intent, no how-to-to-outage drift, same customer/admin core solution, and no raw excerpt/source leakage for customer answers.
+- Ticket Interaction Idempotency Phase 5 started:
+  - repeated ticket creation from the same AI interaction no longer leaks Prisma `interaction_id` uniqueness as HTTP 500.
+  - backend returns the existing ticket for the same user with `alreadyCreated: true`.
+  - frontend avoids adding duplicate initial messages/attachments when the existing ticket is reused.
 - Use `.ai/rag-quality/run-acceptance.mjs` for future localhost retrieval checks; default delay is intentionally throttle-safe.
 - Use `.ai/rag-quality/run-answer-smoke.mjs` for focused customer-facing answer checks before declaring RAG-facing changes done.
 - Pause the PDF-first import after the support-first seed corpus and validate real RAG quality before importing more files.
@@ -69,6 +73,7 @@
 - `graphify` CLI was previously unavailable in PATH, so graph updates may need environment repair.
 - `apps/backend/openapi.json` is modified separately; do not mix it into RAG import commits unless intentionally regenerated.
 - Customer answer quality can still diverge from admin Copilot for topics that do not yet have either successful LLM generation or structured deterministic fallback coverage.
+- Ticket creation from AI diagnosis depends on `interactionId` idempotency; keep this path covered when changing ticket creation or AI query interaction persistence.
 
 ## Next Recommended Step
 
@@ -78,4 +83,5 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - AI-optional ticket creation should be app-help/product copy, not vendor FAQ retrieval.
 - Next RAG step: stop broad RAG changes unless a new acceptance failure appears; future source imports must rerun the focused acceptance set.
 - Next answer-quality step: rebuild/reload backend, live-test the same license borrowing question through customer answer and admin ANN draft, and verify both stay on the same how-to procedure.
+- Next ticket-flow step: retry ticket creation from the same customer screen and verify it routes without 500; then compare admin ANN draft for the created/reused ticket.
 - Next product-flow step: isolate live notification behavior as its own small acceptance phase, because Hotinfo upload and AI-optional ticket creation now pass in both API and UI flows.

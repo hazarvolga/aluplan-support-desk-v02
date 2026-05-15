@@ -1776,3 +1776,44 @@ Maintenance rule:
 - This phase does not change retrieval, DB schema, embeddings, or provider routing.
 - It resets customer/admin answer-format drift at the prompt-contract layer.
 - Next live test should compare the same ticket question on both customer answer and admin ANN draft after backend rebuild/reload.
+
+## Follow-up - 2026-05-15 Ticket Interaction Idempotency Phase 5
+
+### Trigger
+- User live-tested the improved customer answer for:
+  - `How do I borrow a license temporarily from the license server?`
+- Customer answer quality was acceptable and stayed on the license borrowing procedure.
+- Creating a ticket from the same AI interaction failed with HTTP 500.
+
+### Root cause
+- `Ticket.interactionId` is intentionally unique in Prisma/DB.
+- The frontend can retry ticket creation with the same `interactionId`.
+- `TicketsService.create(...)` did not treat duplicate interaction ticket creation as an idempotent retry.
+- Prisma `P2002` leaked as a 500:
+  - `Unique constraint failed on the fields: (interaction_id)`.
+
+### Changes
+- `TicketsService.create(...)` now checks whether the AI interaction is already linked to a ticket before creating a new one.
+- If the same user retries with the same interaction, the existing ticket is returned with `alreadyCreated: true`.
+- A race condition on `interaction_id` uniqueness is also handled by catching Prisma `P2002` and returning the existing ticket when safe.
+- Cross-user reuse of the same AI interaction is rejected with a controlled `BadRequestException`.
+- New ticket UI now skips duplicate initial message/attachment upload when the backend returns `alreadyCreated: true`.
+
+### Validation
+- Targeted backend test passed:
+  - `pnpm --filter @aluplan/backend test -- tickets.service.spec.ts`
+- Backend typecheck passed:
+  - `pnpm --filter @aluplan/backend typecheck`
+- Frontend typecheck passed:
+  - `pnpm --filter @aluplan/frontend typecheck`
+- Backend build passed:
+  - `pnpm --filter @aluplan/backend build`
+- Backend was rebuilt and reloaded on `localhost:4000`.
+- Graphify/GitNexus:
+  - `npx gitnexus impact TicketsService --direction upstream` could not run in the sandbox because npm registry access was blocked.
+  - Graphify should still be attempted before commit; if the graph rebuild is smaller than the existing graph, restore `graphify-out/GRAPH_REPORT.md` and do not commit graph output.
+
+### Decision
+- This phase is not a RAG retrieval change.
+- It removes a ticket-flow drift where an otherwise successful AI answer could not become a ticket because the interaction retry path was not idempotent.
+- Next live validation: user should click ticket creation again from the same customer screen and verify it routes to the existing/new ticket without 500.
