@@ -7,6 +7,11 @@
 - Faz 3 retrieval-only acceptance completed: 25 questions, 19 pass, 6 real quality/data failures, 0 remaining throttle-only failures.
 - Faz 4 narrow retrieval fix committed: negated license intent and pilot/canonical preference target checks pass.
 - Faz 5 source-gap decision is documented in `.ai/rag-quality/source-gap-plan-2026-05-15.md`.
+- Batch 012 source-gap import completed for Allplan Share/Cloud and Project Data Management:
+  - 4 PDFs registered from `dataset/**/batch-012`.
+  - 4/4 sync logs ended as `SUCCESS`.
+  - 179 embeddings written as `v2_2 / 3072`.
+  - `rag-tr-share-cloud-001` and `rag-tr-project-backup-001` now pass retrieval acceptance.
 - Use `.ai/rag-quality/run-acceptance.mjs` for future localhost retrieval checks; default delay is intentionally throttle-safe.
 - Pause the PDF-first import after the support-first seed corpus and validate real RAG quality before importing more files.
 - Build the PDF-first RAG dataset import path without polluting the knowledge pool with generated MD duplicates.
@@ -41,4 +46,8 @@
 
 ## Next Recommended Step
 
-Start Batch 012 only for selected source-gap PDFs: Allplan Share/Cloud and Project Data Management. Keep Hotinfo and AI-optional ticket creation as separate product-help/source decisions until canonical source material is confirmed.
+Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
+
+- Hotinfo needs canonical PDF/TXT source approval before import, because current confirmed candidates are MD-only.
+- AI-optional ticket creation should be app-help/product copy, not vendor FAQ retrieval.
+- Next retrieval step: run the focused acceptance set after any new source import before changing retrieval code again.

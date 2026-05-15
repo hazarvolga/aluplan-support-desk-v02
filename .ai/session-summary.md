@@ -1381,3 +1381,52 @@ Maintenance rule:
 
 ### File added
 - `.ai/rag-quality/source-gap-plan-2026-05-15.md`
+
+## Follow-up - 2026-05-15 Batch 012 Source-Gap Import
+
+### Scope
+- Imported only selected canonical PDFs for the confirmed source gaps:
+  - `dataset/en/allplan-share-cloud/batch-012/Allplan_Share_2023_Manual.pdf`
+  - `dataset/en/allplan-share-cloud/batch-012/System_Requirements_Allplan_Share_EN_GmbH.pdf`
+  - `dataset/de/allplan-share-cloud/batch-012/Allplan_Share_2023_Handbuch.pdf`
+  - `dataset/de/project-data-management/batch-012/FAQ_DE_Projektaustausch_incl_aller_Einstellungen_mit_Partnerbuer.pdf`
+- Raw archive files under `.archive/rag-incoming/pdf/` were not modified.
+- `apps/backend/openapi.json` remained an unrelated uncommitted artifact and was not included.
+
+### Dataset scan and sync
+- Dataset scan result:
+  - 4 new files discovered.
+  - 65 existing files checked.
+  - 0 existing files updated.
+- Final sync logs:
+  - 4/4 sources ended as `SUCCESS`.
+  - `Allplan_Share_2023_Handbuch.pdf`: 91 embeddings, 67 chunks.
+  - `Allplan_Share_2023_Manual.pdf`: 83 embeddings, 61 chunks.
+  - `FAQ_DE_Projektaustausch...pdf`: 3 embeddings, 2 chunks.
+  - `System_Requirements_Allplan_Share_EN_GmbH.pdf`: 2 embeddings, 1 chunk.
+- Embedding distribution for Batch 012:
+  - `embedding_version = v2_2`
+  - `embedding_dim = 3072`
+  - total `179` embeddings.
+
+### Targeted acceptance
+- `rag-tr-project-backup-001`: PASS.
+  - Top source: `[Dataset] FAQ_DE_Projektaustausch_incl_aller_Einstellungen_mit_Partnerbuer.pdf`
+- `rag-tr-share-cloud-001`: PASS.
+  - Top source: `[Dataset] Allplan_Share_2023_Handbuch.pdf`
+- Result file from the live runner was written outside the repo at `/private/tmp/rag-acceptance-batch-012.json`.
+- Throttle count: 0.
+
+### Remaining source decisions
+- `rag-tr-hotinfo-001` still needs a canonical source decision. Current confirmed candidates are MD-only, so do not import them into the PDF-first corpus without an explicit exception.
+- `rag-tr-no-ai-ticket-001` should be handled as product-help/app copy, not vendor PDF RAG.
+
+### Phase-end mapping
+- Graphify was run with `graphify update .`.
+- Graphify warning repeated:
+  - existing `graph.json`: 11474 nodes.
+  - rebuilt graph: 5608 nodes.
+  - output was not accepted into git; `graphify-out/GRAPH_REPORT.md` was restored.
+- GitNexus was run with:
+  - `npx gitnexus detect_changes --repo aluplan-support-desk-v02`
+  - result: `No changes detected`.
