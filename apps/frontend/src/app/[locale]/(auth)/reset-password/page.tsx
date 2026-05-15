@@ -80,7 +80,7 @@ function ResetPasswordForm() {
                         placeholder="••••••••"
                         required
                         minLength={8}
-                        className="w-full h-11 px-4 bg-black border border-white/10 rounded-xl text-sm font-mono text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold placeholder:text-white/50"
+                        className="w-full h-11 px-4 bg-black border border-white/10 rounded-xl text-sm font-mono text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold placeholder:text-white/20"
                     />
                     <button
                         type="button"
@@ -105,7 +105,7 @@ function ResetPasswordForm() {
                         onChange={(e) => setConfirm(e.target.value)}
                         placeholder="••••••••"
                         required
-                        className="w-full h-11 px-4 bg-black border border-white/10 rounded-xl text-sm font-mono text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold placeholder:text-white/50"
+                        className="w-full h-11 px-4 bg-black border border-white/10 rounded-xl text-sm font-mono text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold placeholder:text-white/20"
                     />
                     <button
                         type="button"

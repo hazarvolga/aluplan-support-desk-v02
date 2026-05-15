@@ -117,8 +117,8 @@ export default function FaqPage() {
                             <div className="flex justify-between items-start">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-3">
-                                        <Badge className={`text-[9px] h-4 tracking-tighter ${faq.status === 'PUBLISHED' ? 'border-emerald-900/50 text-emerald-700 dark:text-emerald-400 bg-emerald-400/5' :
-                                            faq.status === 'PENDING_REVIEW' ? 'border-orange-900/50 text-orange-700 dark:text-orange-400 bg-orange-400/5' : 'border-border text-muted-foreground bg-muted/5'
+                                        <Badge className={`text-[9px] h-4 tracking-tighter ${faq.status === 'PUBLISHED' ? 'border-emerald-900/50 text-emerald-400 bg-emerald-400/5' :
+                                            faq.status === 'PENDING_REVIEW' ? 'border-orange-900/50 text-orange-400 bg-orange-400/5' : 'border-border text-muted-foreground bg-muted/5'
                                             }`}>
                                             {faq.status === 'PUBLISHED' ? t('filters.published') :
                                                 faq.status === 'PENDING_REVIEW' ? t('filters.pending_review') :

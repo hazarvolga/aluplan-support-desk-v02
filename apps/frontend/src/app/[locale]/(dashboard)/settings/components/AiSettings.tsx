@@ -228,7 +228,7 @@ export function AiSettings() {
                                 type={secret && showKey !== name ? 'password' : 'text'}
                                 value={keyValue}
                                 onChange={(e) => setKeyValue(e.target.value)}
-                                className="bg-slate-950/80 border-white/10 focus:border-brand-500/50 pr-10 h-11 transition-all text-white placeholder:text-white/50 select-none shadow-inner"
+                                className="bg-slate-950/80 border-white/10 focus:border-brand-500/50 pr-10 h-11 transition-all text-white placeholder:text-white/20 select-none shadow-inner"
                                 placeholder={secret ? '••••••••••••••••' : 'http://...'}
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20">
@@ -241,7 +241,7 @@ export function AiSettings() {
                         <Input
                             value={modelValue}
                             onChange={(e) => setModelValue(e.target.value)}
-                            className="bg-slate-950/80 border-white/10 focus:border-brand-500/50 h-11 transition-all text-white placeholder:text-white/50 shadow-inner"
+                            className="bg-slate-950/80 border-white/10 focus:border-brand-500/50 h-11 transition-all text-white placeholder:text-white/20 shadow-inner"
                             placeholder={t('model_placeholder')}
                         />
                     </div>

@@ -742,7 +742,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">
                                                                 {c.value.toUpperCase()}
                                                             </span>
-                                                            <Badge className="bg-white/5 text-white/80 border-none text-[8px] font-bold px-1.5 h-4">
+                                                            <Badge className="bg-white/5 text-white/40 border-none text-[8px] font-bold px-1.5 h-4">
                                                                 {c.count} {t('labels.items')}
                                                             </Badge>
                                                         </div>
@@ -766,7 +766,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                     switch (col.key) {
                                                         case 'customerNo':
                                                             return (
-                                                                <TableCell key={col.key} className="text-white/80 font-mono text-[10px] whitespace-nowrap">
+                                                                <TableCell key={col.key} className="text-white/40 font-mono text-[10px] whitespace-nowrap">
                                                                     {c.customerProfile?.customerNo || tc('unassigned').toUpperCase()}
                                                                 </TableCell>
                                                             );
@@ -813,7 +813,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                                             {c.customerProfile.account.name}
                                                                         </Badge>
                                                                     ) : (
-                                                                        <span className="text-white/80 italic text-xs">{c.customerProfile?.companyName || '-'}</span>
+                                                                        <span className="text-white/40 italic text-xs">{c.customerProfile?.companyName || '-'}</span>
                                                                     )}
                                                                 </TableCell>
                                                             );
@@ -846,7 +846,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                                 </TableCell>
                                                             );
                                                         default:
-                                                            return <TableCell key={col.key} className="text-white/80 text-xs">-</TableCell>;
+                                                            return <TableCell key={col.key} className="text-white/40 text-xs">-</TableCell>;
                                                     }
                                                 })}
 
@@ -973,7 +973,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500">
                                                                 {a.value.toUpperCase()}
                                                             </span>
-                                                            <Badge className="bg-white/5 text-white/80 border-none text-[8px] font-bold px-1.5 h-4">
+                                                            <Badge className="bg-white/5 text-white/40 border-none text-[8px] font-bold px-1.5 h-4">
                                                                 {a.count} {t('labels.items')}
                                                             </Badge>
                                                         </div>
@@ -996,7 +996,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                 {accountColumns.map(col => {
                                                     switch (col.key) {
                                                         case 'accountNumber':
-                                                            return <TableCell key={col.key} className="text-white/80 font-mono text-[10px]">{a.accountNumber || tc('unassigned').toUpperCase()}</TableCell>;
+                                                            return <TableCell key={col.key} className="text-white/40 font-mono text-[10px]">{a.accountNumber || tc('unassigned').toUpperCase()}</TableCell>;
                                                         case 'name':
                                                             return (
                                                                 <TableCell key={col.key}>
@@ -1031,11 +1031,11 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                                 </TableCell>
                                                             );
                                                         case 'address':
-                                                            return <TableCell key={col.key} className="text-white/80 text-[10px] max-w-[200px] truncate">{a.address || '-'}</TableCell>;
+                                                            return <TableCell key={col.key} className="text-white/40 text-[10px] max-w-[200px] truncate">{a.address || '-'}</TableCell>;
                                                         case 'crmVerified':
                                                             return <TableCell key={col.key} className="text-white/60 text-[10px] font-bold">{a._count?.customers || 0} {t('labels.items')}</TableCell>;
                                                         default:
-                                                            return <TableCell key={col.key} className="text-white/80 text-xs">-</TableCell>;
+                                                            return <TableCell key={col.key} className="text-white/40 text-xs">-</TableCell>;
                                                     }
                                                 })}
 
@@ -1117,7 +1117,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                             <p className="text-sm font-bold text-blue-400 font-mono">{conn.syncStatus || 'IDLE'}</p>
                                                             {conn.syncStatus === 'SYNCING' && logs.length > 0 && (
                                                                 <div className="flex-1 max-w-[200px] flex flex-col gap-1.5">
-                                                                    <div className="flex justify-between text-[8px] font-bold uppercase tracking-widest text-white/80">
+                                                                    <div className="flex justify-between text-[8px] font-bold uppercase tracking-widest text-white/40">
                                                                         <span>{t('sync.progress')}</span>
                                                                         <span>{Math.round(((logs[0].successCount + logs[0].errorCount) / Math.max(1, logs[0].totalRecords)) * 100)}%</span>
                                                                     </div>
@@ -1275,4 +1275,5 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         </motion.div>
     );
 }
+
 
