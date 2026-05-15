@@ -1,0 +1,77 @@
+{
+  "version": "2026-05-15-phase-1",
+  "description": "Product-flow acceptance checks for Hotinfo and AI-optional ticket creation. Keep separate from vendor PDF RAG acceptance.",
+  "defaults": {
+    "baseUrl": "http://localhost:4000/api/v1",
+    "customerEmail": "e2e-customer@aluplan.test",
+    "adminEmail": "e2e-admin@aluplan.test"
+  },
+  "flows": [
+    {
+      "id": "product-hotinfo-upload-001",
+      "type": "api",
+      "goal": "Customer can upload a Hotinfo .hxl file and profile stores parsed system data.",
+      "expected": [
+        "upload returns success",
+        "customer profile contains hotinfoData",
+        "parsed Hotinfo includes OS, GPU, Allplan version, and conflicting process signals"
+      ],
+      "securityChecks": [
+        "invalid file payloads must not be accepted",
+        "raw Hotinfo should not be used as global RAG corpus"
+      ]
+    },
+    {
+      "id": "product-hotinfo-ai-context-001",
+      "type": "api",
+      "goal": "Customer AI diagnosis can receive Hotinfo context without leaking raw trace/path data.",
+      "expected": [
+        "AI query returns HTTP 200",
+        "answer is non-empty",
+        "answer does not expose sensitive raw trace paths"
+      ],
+      "securityChecks": [
+        "raw trace strings such as _SEC.NSE must not be echoed in the customer answer"
+      ]
+    },
+    {
+      "id": "product-ticket-no-ai-001",
+      "type": "api",
+      "goal": "Customer can create a support ticket without a prior AI interaction.",
+      "expected": [
+        "ticket creation returns a ticket number",
+        "interactionId remains empty",
+        "customer can read the created ticket"
+      ],
+      "securityChecks": [
+        "ticket create must not require AI diagnosis",
+        "customer ownership must be enforced on ticket read"
+      ]
+    },
+    {
+      "id": "product-ticket-hotinfo-snapshot-001",
+      "type": "api",
+      "goal": "Ticket created with confirmed Hotinfo context persists that context as ticket-specific snapshot.",
+      "expected": [
+        "created ticket contains hotinfoSnapshot",
+        "customer read contains the same snapshot",
+        "admin read contains the same snapshot"
+      ],
+      "securityChecks": [
+        "Hotinfo snapshot stays ticket-specific and is not imported into vendor PDF RAG"
+      ]
+    },
+    {
+      "id": "product-hotinfo-rbac-001",
+      "type": "api",
+      "goal": "Hotinfo raw download remains support/admin-only.",
+      "expected": [
+        "customer download attempt is forbidden",
+        "admin download returns the uploaded Hotinfo XML"
+      ],
+      "securityChecks": [
+        "customers must not access raw Hotinfo download endpoint directly"
+      ]
+    }
+  ]
+}

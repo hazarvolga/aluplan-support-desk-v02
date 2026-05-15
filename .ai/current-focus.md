@@ -20,6 +20,10 @@
   - raw Hotinfo traces stay out of retrieval query to avoid source pollution.
   - safe Hotinfo system signals can enrich retrieval when the user explicitly asks for Hotinfo/system analysis.
   - prompt context includes richer Hotinfo fields for final diagnosis.
+- Product-flow Phase 1 API acceptance completed:
+  - `.ai/product-flow/run-product-flow-acceptance.mjs`
+  - 9/9 pass.
+  - verifies Hotinfo upload/profile persistence, AI context without raw trace leak, AI-optional ticket creation, ticket Hotinfo snapshot, and raw Hotinfo download RBAC.
 - Use `.ai/rag-quality/run-acceptance.mjs` for future localhost retrieval checks; default delay is intentionally throttle-safe.
 - Use `.ai/rag-quality/run-answer-smoke.mjs` for focused customer-facing answer checks before declaring RAG-facing changes done.
 - Pause the PDF-first import after the support-first seed corpus and validate real RAG quality before importing more files.
@@ -60,4 +64,4 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Hotinfo needs canonical PDF/TXT source approval before import, because current confirmed candidates are MD-only.
 - AI-optional ticket creation should be app-help/product copy, not vendor FAQ retrieval.
 - Next RAG step: stop broad RAG changes unless a new acceptance failure appears; future source imports must rerun the focused acceptance set.
-- Next product-flow step: verify in the browser that a newly uploaded `.hxl` appears in AI diagnosis context and in the created ticket snapshot.
+- Next product-flow step: browser/UI verification for customer `.hxl` upload, direct ticket creation without AI, admin visibility, and live notification behavior.

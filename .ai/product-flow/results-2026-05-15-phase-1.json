@@ -1,0 +1,74 @@
+{
+  "summary": {
+    "startedAt": "2026-05-15T03:43:41.105Z",
+    "finishedAt": "2026-05-15T03:43:52.872Z",
+    "baseUrl": "http://localhost:4000/api/v1",
+    "runId": "pf-1778816621107",
+    "total": 9,
+    "pass": 9,
+    "fail": 0
+  },
+  "results": [
+    {
+      "id": "product-health-001",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "id": "product-hotinfo-upload-001",
+      "ok": true,
+      "status": 201,
+      "allplanVersion": "Allplan 2026",
+      "gpu": "NVIDIA RTX 4070",
+      "osVersion": "Windows 11 (24H2 - Build 26100)",
+      "conflictingProcesses": [
+        "onedrive.exe"
+      ]
+    },
+    {
+      "id": "product-hotinfo-profile-001",
+      "ok": true,
+      "status": 200,
+      "hasHotinfoUpdatedAt": true
+    },
+    {
+      "id": "product-hotinfo-ai-context-001",
+      "ok": true,
+      "status": 200,
+      "confidence": "MEDIUM",
+      "answerMode": "FALLBACK",
+      "rawTraceLeaked": false
+    },
+    {
+      "id": "product-ticket-no-ai-001",
+      "ok": true,
+      "status": 201,
+      "ticketId": "30d10685-7679-4a6a-af0d-b154fcda7d7e",
+      "ticketNumber": "SUP-01018",
+      "interactionId": null
+    },
+    {
+      "id": "product-ticket-customer-read-001",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "id": "product-ticket-hotinfo-snapshot-001",
+      "ok": true,
+      "status": 200,
+      "snapshotGpu": "NVIDIA RTX 4070",
+      "snapshotAllplanVersion": "Allplan 2026"
+    },
+    {
+      "id": "product-hotinfo-rbac-customer-download-001",
+      "ok": true,
+      "status": 403
+    },
+    {
+      "id": "product-hotinfo-rbac-admin-download-001",
+      "ok": true,
+      "status": 200,
+      "contentType": "application/xml; charset=utf-8"
+    }
+  ]
+}

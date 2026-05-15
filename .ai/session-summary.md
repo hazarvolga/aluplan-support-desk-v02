@@ -1603,3 +1603,51 @@ Maintenance rule:
 - Future source imports or retrieval/fallback changes should rerun:
   - `.ai/rag-quality/run-acceptance.mjs`
   - `.ai/rag-quality/run-answer-smoke.mjs` for a focused critical subset.
+
+## Follow-up - 2026-05-15 Product Flow Acceptance Phase 1
+
+### Goal
+- Move the two out-of-scope RAG failures into product-flow validation:
+  - Hotinfo diagnostic flow.
+  - AI-optional ticket creation.
+- Validate by API first before browser/UI work.
+
+### Added
+- `.ai/product-flow/README.md`
+- `.ai/product-flow/acceptance-flows.json`
+- `.ai/product-flow/run-product-flow-acceptance.mjs`
+- `.ai/product-flow/results-2026-05-15-phase-1.json`
+- `.ai/product-flow/results-2026-05-15-phase-1.md`
+
+### API validation
+- Ran `.ai/product-flow/run-product-flow-acceptance.mjs` against `http://localhost:4000/api/v1`.
+- Result:
+  - 9 total.
+  - 9 pass.
+  - 0 fail.
+
+### Passed checks
+- Backend health returned `200`.
+- Customer uploaded `_hotinf_.hxl`; parsed profile included:
+  - Allplan 2026.
+  - Windows 11 24H2 build 26100.
+  - NVIDIA RTX 4070.
+  - `onedrive.exe` conflict signal.
+- `/auth/me` returned persisted Hotinfo profile data.
+- `/ai/query?wait=true` accepted Hotinfo context and returned a non-empty customer answer without leaking `_SEC.NSE`.
+- Customer created a ticket without prior AI interaction:
+  - created ticket `SUP-01018`.
+  - `interactionId` remained `null`.
+- Customer could read the created ticket.
+- Admin could read the created ticket and confirm `hotinfoSnapshot`.
+- Customer raw Hotinfo download was forbidden with `403`.
+- Admin raw Hotinfo download returned `200` XML.
+
+### Decision
+- Faz 1 is complete.
+- The product API supports Hotinfo context and AI-optional ticket creation.
+- Next product-flow phase should verify the same behavior in the browser/UI:
+  - customer uploads `.hxl`.
+  - customer can create a ticket without AI.
+  - admin sees the ticket and Hotinfo snapshot.
+  - live notification behavior is checked.
