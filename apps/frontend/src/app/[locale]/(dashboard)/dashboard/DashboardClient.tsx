@@ -47,6 +47,9 @@ export default function DashboardClient() {
     const [stats, setStats] = useState<any>(null);
     const [aiHealth, setAiHealth] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
+    const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer');
+    const canViewAiHealthMetrics = userRoles.includes('admin') || userRoles.includes('superuser');
 
     useEffect(() => {
         const loadData = async () => {
@@ -54,7 +57,7 @@ export default function DashboardClient() {
                 const [statusRes, statsRes, aiHealthRes] = await Promise.all([
                     api.ai.status().catch(() => null),
                     (api.tickets as unknown as { getSlaStats: () => Promise<unknown> }).getSlaStats().catch(() => null),
-                    api.ai.getHealthMetrics().catch(() => null)
+                    canViewAiHealthMetrics ? api.ai.getHealthMetrics().catch(() => null) : Promise.resolve(null),
                 ]);
                 setAiStatus(statusRes);
                 setStats(statsRes);
@@ -66,10 +69,7 @@ export default function DashboardClient() {
             }
         };
         loadData();
-    }, []);
-
-    const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
-    const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer');
+    }, [canViewAiHealthMetrics]);
 
     if (loading) {
         return (

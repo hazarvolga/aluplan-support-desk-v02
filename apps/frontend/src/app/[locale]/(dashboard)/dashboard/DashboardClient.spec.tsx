@@ -4,6 +4,7 @@ import DashboardClient from './DashboardClient';
 import { useAuth } from '@/components/auth/role-guard';
 import { server } from '@/test/setup';
 import { http, HttpResponse } from 'msw';
+import { api } from '@/lib/api';
 
 // Mock the Auth Hook
 vi.mock('@/components/auth/role-guard', () => ({
@@ -28,34 +29,37 @@ describe('DashboardClient', () => {
         (useAuth as any).mockReturnValue({
             user: { fullName: 'John Doe', roles: ['customer'] }
         });
+        const getHealthMetricsSpy = vi.spyOn(api.ai, 'getHealthMetrics');
 
         render(<DashboardClient />);
 
         await waitFor(() => {
-            expect(screen.queryByText(/user_portal/i)).toBeDefined();
-            expect(screen.queryByText(/John Doe/i)).toBeDefined();
+            expect(screen.getByText(/user_portal/i)).toBeInTheDocument();
         });
 
         // Check for specific customer sections
         expect(screen.getByText(/knowledge_base.title/i)).toBeDefined();
         expect(screen.getByText(/ai_diagnostic.title/i)).toBeDefined();
+        expect(getHealthMetricsSpy).not.toHaveBeenCalled();
     });
 
     it('renders admin dashboard for admin role', async () => {
         (useAuth as any).mockReturnValue({
             user: { fullName: 'Admin User', roles: ['admin'] }
         });
+        const getHealthMetricsSpy = vi.spyOn(api.ai, 'getHealthMetrics');
 
         render(<DashboardClient />);
 
         await waitFor(() => {
-            expect(screen.queryByText(/title/i)).toBeDefined(); // 'title' is translated as namespace 'dashboard'
-            expect(screen.queryByText(/system_active/i)).toBeDefined();
+            expect(screen.getByText(/title/i)).toBeInTheDocument(); // 'title' is translated as namespace 'dashboard'
+            expect(screen.getByText(/system_active/i)).toBeInTheDocument();
         });
 
         // Admin dashboard has specific stats
         expect(screen.getByText(/stats.sla_violations/i)).toBeDefined();
         expect(screen.getByText(/stats.daily_resolved/i)).toBeDefined();
+        expect(getHealthMetricsSpy).toHaveBeenCalledTimes(1);
     });
 
     it('handles API errors gracefully', async () => {

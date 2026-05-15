@@ -40,6 +40,9 @@
   - repeated ticket creation from the same AI interaction no longer leaks Prisma `interaction_id` uniqueness as HTTP 500.
   - backend returns the existing ticket for the same user with `alreadyCreated: true`.
   - frontend avoids adding duplicate initial messages/attachments when the existing ticket is reused.
+- Customer Dashboard 403 Cleanup completed:
+  - customer/viewer dashboard no longer calls admin-only `/ai/health-metrics`.
+  - admin/superuser dashboard still loads AI health metrics.
 - Use `.ai/rag-quality/run-acceptance.mjs` for future localhost retrieval checks; default delay is intentionally throttle-safe.
 - Use `.ai/rag-quality/run-answer-smoke.mjs` for focused customer-facing answer checks before declaring RAG-facing changes done.
 - Pause the PDF-first import after the support-first seed corpus and validate real RAG quality before importing more files.
@@ -74,6 +77,7 @@
 - `apps/backend/openapi.json` is modified separately; do not mix it into RAG import commits unless intentionally regenerated.
 - Customer answer quality can still diverge from admin Copilot for topics that do not yet have either successful LLM generation or structured deterministic fallback coverage.
 - Ticket creation from AI diagnosis depends on `interactionId` idempotency; keep this path covered when changing ticket creation or AI query interaction persistence.
+- Dashboard data loading must remain role-aware; do not call admin-only observability endpoints from customer pages.
 
 ## Next Recommended Step
 
@@ -84,4 +88,5 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Next RAG step: stop broad RAG changes unless a new acceptance failure appears; future source imports must rerun the focused acceptance set.
 - Next answer-quality step: rebuild/reload backend, live-test the same license borrowing question through customer answer and admin ANN draft, and verify both stay on the same how-to procedure.
 - Next ticket-flow step: retry ticket creation from the same customer screen and verify it routes without 500; then compare admin ANN draft for the created/reused ticket.
+- Next browser step: reload customer dashboard; the `/ai/health-metrics` 403 should disappear, then retry ticket creation.
 - Next product-flow step: isolate live notification behavior as its own small acceptance phase, because Hotinfo upload and AI-optional ticket creation now pass in both API and UI flows.

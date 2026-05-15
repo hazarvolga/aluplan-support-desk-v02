@@ -1817,3 +1817,34 @@ Maintenance rule:
 - This phase is not a RAG retrieval change.
 - It removes a ticket-flow drift where an otherwise successful AI answer could not become a ticket because the interaction retry path was not idempotent.
 - Next live validation: user should click ticket creation again from the same customer screen and verify it routes to the existing/new ticket without 500.
+
+## Follow-up - 2026-05-15 Customer Dashboard 403 Cleanup
+
+### Trigger
+- User reported a browser console error before retesting ticket creation:
+  - `API Error [403]`
+  - stack pointed to `DashboardClient.useEffect.loadData`.
+
+### Root cause
+- Customer dashboard loaded three requests in parallel for every role.
+- One request was `/api/v1/ai/health-metrics`.
+- Backend correctly protects that endpoint with `ADMIN | SUPERUSER`.
+- Customer users therefore received a valid 403, but frontend still produced console noise.
+
+### Changes
+- `DashboardClient` now computes user role before loading dashboard data.
+- Customer/viewer users skip `api.ai.getHealthMetrics()`.
+- Admin/superuser users still load AI health metrics.
+- Dashboard spec now verifies:
+  - customer role does not call `getHealthMetrics`.
+  - admin role does call `getHealthMetrics`.
+
+### Validation
+- Frontend dashboard spec passed:
+  - `pnpm --filter @aluplan/frontend exec vitest run 'src/app/[locale]/(dashboard)/dashboard/DashboardClient.spec.tsx'`
+- Frontend typecheck passed:
+  - `pnpm --filter @aluplan/frontend typecheck`
+
+### Decision
+- Backend RBAC stays strict.
+- This is a frontend role-aware data loading fix, not a security relaxation.
