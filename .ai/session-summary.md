@@ -1899,3 +1899,45 @@ Maintenance rule:
   - ANN draft markdown becomes readable headings/lists in the editor
   - old plain text messages still render correctly
   - `<script>`, event attributes, and `javascript:` links do not persist or execute
+
+## Follow-up - 2026-05-15 RAG Fallback + AI Operations Topology Plan
+
+### Trigger
+- Customer-facing AI diagnosis still fell back to raw-ish excerpts for unknown intents, even when retrieval found the right document.
+- The system already has approved learning surfaces:
+  - `/en/faq-learning`
+  - `FaqEntry`
+  - `TrainingQueue`
+  - AI interaction feedback
+  - high-CSAT ticket indexing
+- A broader review showed AI operations UI is distributed across:
+  - `/en/system-topology`
+  - `/en/faq-learning`
+  - `/en/admin/ai-intelligence`
+  - `/en/admin/ai-health`
+  - `/en/admin/settings?tab=ai`
+
+### Decisions
+- Do not create a second learning system.
+- Connect published FAQ learning outputs into the main RAG retrieval path.
+- Use product/category keywords as deterministic fallback signals, not only diagnosis/prompt context.
+- Customer fallback answers must be structured support answers, not raw excerpts.
+- Keep special high-quality fallback templates, but add a generic evidence-driven synthesis path for unknown questions.
+- Align source topology stats with actual retrieval behavior.
+- Treat AI Operations Dashboard consolidation as a separate frontend/ops debt phase after RAG/fallback stabilization.
+
+### Planned Backend Work
+- Add approved `faq_entries` to main search as a first-class `FAQ` source.
+- Keep customer retrieval limited to published/public FAQ entries.
+- Allow staff/admin retrieval to include internal approved FAQ entries where appropriate.
+- Refresh FAQ `question_embedding` on approve/update using the active embedding version/dimension.
+- Pass `DiagnosisResult` into deterministic fallback generation.
+- Use matched product/category keywords, category names, and source title tokens when selecting fallback snippets.
+- Ensure fallback answer text hides `[Dataset]`, file names, Document ID, raw URLs, and technical source metadata from customers.
+- Enrich AI interaction context with source/fallback strategy details for AI health/intelligence dashboards.
+
+### Restore Point
+- Before product-code changes, create a dedicated docs/memory commit and restore checkpoint:
+  - commit: `docs(memory): record rag fallback topology plan`
+  - checkpoint branch: `restore/rag-fallback-before-integration-20260515`
+- Existing `apps/backend/openapi.json` drift remains intentionally excluded.
