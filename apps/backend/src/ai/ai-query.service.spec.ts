@@ -567,6 +567,92 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             expect(result.answer).not.toContain('License server - borrowing licenses temporarily.');
         });
 
+        it('returns a structured English generic fallback for license server installation failures', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'license-install-failed',
+                        sourceType: 'DOCUMENT',
+                        title: 'FAQ_EN_License_server_installation_failed.pdf',
+                        content: `License server installation failed Technical Support FAQ Category: Technical Services->Licensing->Wibu Lizenzserver Programs: Allplan 2021 Document ID: 20160113164538 Internet: https://connect.allplan.com/en/faqid/20160113164538.html Question: During installation of license server the message appears installation failed. Answer: Check whether the Wibu CodeMeter Runtime is installed. Run the license server setup as administrator. Temporarily disable antivirus protection during installation if it blocks setup files. Check the installation log for the exact error message.`,
+                        similarity: 0.96,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.96, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            diagnosisService.analyze.mockResolvedValue({
+                productId: null,
+                productName: 'Allplan',
+                categoryNames: ['License Server & CodeMeter'],
+                matchedKeywords: ['license', 'server', 'wibu', 'installation'],
+                suggestedCauses: [],
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'What should I check if license server installation failed?',
+                wait: true,
+                language: 'en',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('## 📌 Problem Interpretation');
+            expect(result.answer).toContain('## ⚠️ Critical Checks');
+            expect(result.answer).toContain('## 🛠️ Solution Steps');
+            expect(result.answer).toContain('CodeMeter');
+            expect(result.answer).toContain('administrator');
+            expect(result.answer).not.toContain('[Dataset]');
+            expect(result.answer).not.toContain('FAQ_EN_License_server_installation_failed.pdf');
+            expect(result.answer).not.toContain('Document ID');
+            expect(result.answer).not.toContain('https://');
+            expect(result.answer).not.toContain('most relevant excerpts');
+        });
+
+        it('uses diagnosis keywords when selecting generic fallback evidence', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'generic-license',
+                        sourceType: 'DOCUMENT',
+                        title: 'General license server notes',
+                        content: 'License server setup includes many unrelated notes.',
+                        similarity: 0.96,
+                        confidence: 'HIGH',
+                    },
+                    {
+                        articleId: 'access-rights',
+                        sourceType: 'FAQ',
+                        title: 'License server - assigning access rights for seats to individual users',
+                        content: 'Answer: Open CodeMeter WebAdmin and go to Server access permissions. Assign the required users or groups to the license seats. Deny access for users who should not select those seats. Restart or refresh the license service if changes are not visible.',
+                        similarity: 0.82,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.96, passedThreshold: 2, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            diagnosisService.analyze.mockResolvedValue({
+                productId: null,
+                productName: 'Allplan',
+                categoryNames: ['License Server & CodeMeter'],
+                matchedKeywords: ['access rights', 'seats', 'users', 'license server'],
+                suggestedCauses: [],
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'How can I assign license server access rights to individual users?',
+                wait: true,
+                language: 'en',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('Server access permissions');
+            expect(result.answer).toContain('users or groups');
+            expect(result.answer).not.toContain('General license server notes');
+            expect(result.answer).not.toContain('most relevant excerpts');
+        });
+
         it('keeps Hotinfo error traces out of the retrieval query', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [{

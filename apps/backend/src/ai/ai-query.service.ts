@@ -518,6 +518,7 @@ export class AiQueryService {
 
             const rawAnswer = aiResult?.response ?? this.buildDeterministicFallbackAnswer(userQuery, results, options.language || 'tr', {
                 showSourceDetails: isStaff,
+                diagnosis,
             });
             answerMode = aiResult?.response ? 'LLM' : 'FALLBACK';
 
@@ -767,10 +768,10 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         query: string,
         results: SearchResult[],
         language: string,
-        options: { showSourceDetails?: boolean } = {},
+        options: { showSourceDetails?: boolean; diagnosis?: DiagnosisResult } = {},
     ): string {
         const responseLanguage = this.resolveFallbackLanguage(language, query);
-        const snippets = this.extractRelevantFallbackSnippets(query, results);
+        const snippets = this.extractRelevantFallbackSnippets(query, results, options.diagnosis);
         if (snippets.length === 0) {
             const topResult = results[0];
             if (!topResult) {
@@ -790,28 +791,22 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
         if (responseLanguage === 'en') {
             const englishSummary = this.buildEnglishFallbackSummary(query, snippets[0]);
-            if (englishSummary) {
-                return [
-                    'The model response was delayed; here is a concise answer based on the best matching knowledge base content:',
-                    '',
-                    englishSummary,
-                ].join('\n');
-            }
-
             return [
-                'The model response was delayed, so I am showing the most relevant excerpts found directly in the knowledge base:',
-                ...snippets.map(snippet => `- ${snippet.title}: ${snippet.excerpt}`),
+                'The model response was delayed; here is a concise answer based on the best matching knowledge base content:',
+                '',
+                englishSummary ?? this.buildGenericFallbackSummary(query, snippets[0], 'en', options.diagnosis),
             ].join('\n');
         }
 
         if (responseLanguage === 'de') {
             return [
-                'Die Modellantwort hat sich verzögert. Daher zeige ich die relevantesten direkt gefundenen Auszüge aus der Wissensbasis:',
-                ...snippets.map(snippet => `- ${snippet.title}: ${snippet.excerpt}`),
+                'Die Modellantwort hat sich verzögert. Hier ist eine kurze Antwort auf Basis des besten Treffers in der Wissensbasis:',
+                '',
+                this.buildGenericFallbackSummary(query, snippets[0], 'de', options.diagnosis),
             ].join('\n');
         }
 
-        const turkishSummary = this.buildTurkishFallbackSummary(query, snippets[0]);
+        const turkishSummary = this.buildTurkishFallbackSummary(query, snippets[0], options.diagnosis);
         const answerLines = [
             'Model yanıtı gecikti; bilgi kaynağındaki en ilgili eşleşmeye göre kısa yanıt:',
             '',
@@ -829,7 +824,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         return answerLines.join('\n');
     }
 
-    private buildTurkishFallbackSummary(query: string, snippet: { title: string; excerpt: string }): string {
+    private buildTurkishFallbackSummary(query: string, snippet: { title: string; excerpt: string }, diagnosis?: DiagnosisResult): string {
         const normalizedQuery = this.normalizeSearchText(query);
         const normalizedEvidence = this.normalizeSearchText(`${snippet.title} ${snippet.excerpt}`);
         const asksLicenseBorrowing = this.isLicenseBorrowingQuery(normalizedQuery);
@@ -897,7 +892,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             ].join('\n');
         }
 
-        return `Bilgi kaynağında sorunuzla eşleşen bölüm bulundu. Öne çıkan nokta: ${snippet.excerpt || normalizedEvidence}`;
+        return this.buildGenericFallbackSummary(query, snippet, 'tr', diagnosis);
     }
 
     private buildEnglishFallbackSummary(query: string, snippet: { title: string; excerpt: string }): string | null {
@@ -930,6 +925,89 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         ].join('\n');
     }
 
+    private buildGenericFallbackSummary(
+        query: string,
+        snippet: { title: string; excerpt: string },
+        language: 'tr' | 'en' | 'de',
+        diagnosis?: DiagnosisResult,
+    ): string {
+        const evidence = this.cleanSupportEvidence(`${snippet.title}. ${snippet.excerpt}`);
+        const sentences = this.extractActionableSentences(evidence);
+        const topic = this.inferFallbackTopic(query, snippet, diagnosis, language);
+        const checks = sentences.slice(0, 3);
+        const steps = sentences.slice(3, 8);
+        const fallbackChecks = checks.length > 0 ? checks : [evidence || topic];
+        const fallbackSteps = steps.length > 0 ? steps : fallbackChecks;
+
+        if (language === 'en') {
+            return [
+                '## 📌 Problem Interpretation',
+                `This looks like a support question about ${topic}. The best matching knowledge base content points to a concrete procedure or checklist rather than a general explanation.`,
+                '',
+                '## ⚠️ Critical Checks',
+                ...fallbackChecks.map(item => `- ${item}`),
+                '',
+                '## 🛠️ Solution Steps',
+                ...fallbackSteps.map((item, index) => `${index + 1}. ${item}`),
+                '',
+                '## ✅ Verification',
+                '- Repeat the operation after applying the checks above.',
+                '- If the same error or behavior continues, create a support request and include screenshots, exact error text, and the affected Allplan/license server version.',
+            ].join('\n');
+        }
+
+        if (language === 'de') {
+            return [
+                '## 📌 Probleminterpretation',
+                `Die Frage passt zum Themenbereich ${topic}. Der beste Wissensbasis-Treffer verweist auf eine konkrete Prüfung oder Vorgehensweise.`,
+                '',
+                '## ⚠️ Kritische Prüfungen',
+                ...fallbackChecks.map(item => `- ${item}`),
+                '',
+                '## 🛠️ Lösungsschritte',
+                ...fallbackSteps.map((item, index) => `${index + 1}. ${item}`),
+                '',
+                '## ✅ Verifizierung',
+                '- Führen Sie den Vorgang nach den Prüfungen erneut aus.',
+                '- Wenn das Verhalten weiterhin besteht, erstellen Sie eine Support-Anfrage mit Screenshot, genauer Fehlermeldung und Versionsinformationen.',
+            ].join('\n');
+        }
+
+        return [
+            '## 📌 Sorun Yorumu',
+            `Bu soru ${topic} konusu ile eşleşiyor. Bilgi kaynağındaki en güçlü eşleşme genel açıklamadan çok uygulanabilir bir kontrol/prosedür işaret ediyor.`,
+            '',
+            '## ⚠️ Kritik Kontroller',
+            ...fallbackChecks.map(item => `- ${item}`),
+            '',
+            '## 🛠️ Çözüm Adımları',
+            ...fallbackSteps.map((item, index) => `${index + 1}. ${item}`),
+            '',
+            '## ✅ Doğrulama',
+            '- Kontrollerden sonra işlemi tekrar deneyin.',
+            '- Sorun devam ederse ekran görüntüsü, tam hata metni ve Allplan/lisans sunucusu sürümüyle destek talebi oluşturun.',
+        ].join('\n');
+    }
+
+    private inferFallbackTopic(
+        query: string,
+        snippet: { title: string; excerpt: string },
+        diagnosis: DiagnosisResult | undefined,
+        language: 'tr' | 'en' | 'de',
+    ): string {
+        const signals = [
+            diagnosis?.categoryNames?.[0],
+            diagnosis?.matchedKeywords?.slice(0, 3).join(', '),
+            this.cleanSupportEvidence(snippet.title, 120),
+            query,
+        ].filter(Boolean);
+
+        const rawTopic = String(signals[0] || query);
+        if (language === 'tr') return rawTopic || 'teknik destek';
+        if (language === 'de') return rawTopic || 'technischer Support';
+        return rawTopic || 'technical support';
+    }
+
     private isLicenseBorrowingQuery(normalizedQuery: string): boolean {
         return /(?:license|lisans|lizenz|wibu|codemeter)/.test(normalizedQuery) &&
             /(?:borrow|borrowing|odunc|ausleihen|offline|temporary|temporar|gecici)/.test(normalizedQuery);
@@ -943,7 +1021,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         return detectQueryLanguage(query);
     }
 
-    private extractRelevantFallbackSnippets(query: string, results: SearchResult[]): Array<{ title: string; excerpt: string; score: number }> {
+    private extractRelevantFallbackSnippets(query: string, results: SearchResult[], diagnosis?: DiagnosisResult): Array<{ title: string; excerpt: string; score: number }> {
         const normalizedQuery = this.normalizeSearchText(query);
         const activeTerms = new Set<string>();
 
@@ -958,22 +1036,38 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             .filter(token => token.length >= 4)
             .forEach(token => activeTerms.add(token));
 
+        [
+            ...(diagnosis?.matchedKeywords ?? []),
+            ...(diagnosis?.categoryNames ?? []),
+            diagnosis?.productName ?? '',
+        ]
+            .flatMap(value => this.normalizeSearchText(value).split(/\s+/))
+            .filter(token => token.length >= 4)
+            .forEach(token => activeTerms.add(token));
+
         const snippets: Array<{ title: string; excerpt: string; score: number }> = [];
 
         for (const result of results.slice(0, 8)) {
-            const paragraphs = (result.content ?? '')
+            const answerEvidence = this.extractAnswerEvidence(result.content ?? '');
+            const paragraphs = [
+                ...(answerEvidence ? [answerEvidence] : []),
+                ...(result.content ?? '')
                 .split(/\n{2,}|(?<=\.)\s+/)
                 .map(part => part.trim().replace(/\s+/g, ' '))
-                .filter(Boolean);
+                    .filter(Boolean),
+            ];
 
             let bestExcerpt = '';
             let bestScore = 0;
 
             for (const paragraph of paragraphs) {
                 const normalizedParagraph = this.normalizeSearchText(paragraph);
-                const score = [...activeTerms].reduce((sum, term) => (
+                const titleTerms = this.normalizeSearchText(result.title || '')
+                    .split(/\s+/)
+                    .filter(token => token.length >= 4);
+                const score = [...activeTerms, ...titleTerms].reduce((sum, term) => (
                     normalizedParagraph.includes(term) ? sum + 1 : sum
-                ), 0);
+                ), paragraph === answerEvidence ? 4 : 0);
 
                 if (score > bestScore) {
                     bestScore = score;
@@ -994,14 +1088,59 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
     }
 
     private cleanFallbackExcerpt(value: string, maxLength = 420): string {
-        const cleaned = String(value || '')
+        const cleaned = this.cleanSupportEvidence(value, maxLength);
+        return cleaned.length > maxLength ? `${cleaned.slice(0, maxLength - 3).trim()}...` : cleaned;
+    }
+
+    private cleanSupportEvidence(value: string, maxLength = 900): string {
+        let cleaned = String(value || '')
             .replace(/\[Kaynak:.*?\]/g, '')
+            .replace(/\[Dataset\]/gi, '')
             .replace(/^#{1,6}\s*/gm, '')
             .replace(/\*\*/g, '')
+            .replace(/--\s*\d+\s+of\s+\d+\s*--/gi, ' ')
+            .replace(/https?:\/\/\S+/gi, ' ')
+            .replace(/\bTechnical Support FAQ\b/gi, ' ')
+            .replace(/\bFAQ Technischer Support\b/gi, ' ')
+            .replace(/\bCategory:\s*.*?(?=\bPrograms:|\bDocument ID:|\bQuestion:|\bAnswer:|$)/gi, ' ')
+            .replace(/\bKategorie:\s*.*?(?=\bProgramme:|\bDokument-ID:|\bFrage:|\bAntwort:|$)/gi, ' ')
+            .replace(/\bPrograms?:\s*.*?(?=\bDocument ID:|\bQuestion:|\bAnswer:|$)/gi, ' ')
+            .replace(/\bProgramme:\s*.*?(?=\bDokument-ID:|\bFrage:|\bAntwort:|$)/gi, ' ')
+            .replace(/\bDocument ID:\s*\S+/gi, ' ')
+            .replace(/\bDokument-ID:\s*\S+/gi, ' ')
+            .replace(/\bInternet:\s*\S+/gi, ' ')
+            .replace(/\b(?:FAQ_[A-Z]{2}|faq[-_a-z0-9]*|[a-z0-9_-]+)\.pdf\b/gi, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        const answerMatch = cleaned.match(/\b(?:Answer|Antwort|Yanıt|Cevap):\s*(.+)$/i);
+        if (answerMatch?.[1]) {
+            cleaned = answerMatch[1].trim();
+        }
+        cleaned = cleaned
+            .replace(/\b(?:Question|Frage|Soru):\s*/gi, '')
             .replace(/\s+/g, ' ')
             .trim();
 
         return cleaned.length > maxLength ? `${cleaned.slice(0, maxLength - 3).trim()}...` : cleaned;
+    }
+
+    private extractAnswerEvidence(value: string): string {
+        const match = String(value || '').match(/\b(?:Answer|Antwort|Yanıt|Cevap):\s*(.+)$/is);
+        return match?.[1]?.replace(/\s+/g, ' ').trim() ?? '';
+    }
+
+    private extractActionableSentences(value: string): string[] {
+        const stopPatterns = [
+            /^(technical support|category|programs?|document id|internet)\b/i,
+            /^(faq|source|dataset)\b/i,
+        ];
+        return String(value || '')
+            .split(/(?<=[.!?])\s+|(?:\s*[-•]\s*)|(?:\s*\d+\.\s*)/)
+            .map(part => part.trim())
+            .filter(part => part.length >= 24)
+            .filter(part => !stopPatterns.some(pattern => pattern.test(part)))
+            .slice(0, 8);
     }
 
     private getQuerySignalGroups(): Array<{ name: string; terms: string[]; weight: number }> {
