@@ -5,7 +5,8 @@
 - Phase 1 RAG relevance/cache fix is committed. Continue with a measured RAG quality program, not ad-hoc browser questions.
 - Use `.ai/rag-quality/acceptance-questions.json` as the active acceptance set before importing more files or changing retrieval logic.
 - Faz 3 retrieval-only acceptance completed: 25 questions, 19 pass, 6 real quality/data failures, 0 remaining throttle-only failures.
-- Faz 4 narrow retrieval fix completed locally: negated license intent and pilot/canonical preference target checks now pass.
+- Faz 4 narrow retrieval fix committed: negated license intent and pilot/canonical preference target checks pass.
+- Faz 5 source-gap decision is documented in `.ai/rag-quality/source-gap-plan-2026-05-15.md`.
 - Use `.ai/rag-quality/run-acceptance.mjs` for future localhost retrieval checks; default delay is intentionally throttle-safe.
 - Pause the PDF-first import after the support-first seed corpus and validate real RAG quality before importing more files.
 - Build the PDF-first RAG dataset import path without polluting the knowledge pool with generated MD duplicates.
@@ -40,4 +41,4 @@
 
 ## Next Recommended Step
 
-Commit Faz 4, then start Faz 5 as a dataset/acceptance-scope decision pass for project backup, Allplan Share, Hotinfo, and product-help/ticket-opening questions. Do not broaden retrieval logic for missing content until source coverage is confirmed.
+Start Batch 012 only for selected source-gap PDFs: Allplan Share/Cloud and Project Data Management. Keep Hotinfo and AI-optional ticket creation as separate product-help/source decisions until canonical source material is confirmed.

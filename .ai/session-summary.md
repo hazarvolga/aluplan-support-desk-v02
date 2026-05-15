@@ -1345,3 +1345,39 @@ Maintenance rule:
   - `rag-tr-share-cloud-001`
   - `rag-tr-hotinfo-001`
   - `rag-tr-no-ai-ticket-001`
+
+## Follow-up - 2026-05-15 Faz 5 Source Gap Decision
+
+### Active corpus finding
+- Queried active `knowledge_sources` for Share/Cloud, Hotinfo, backup/project, and ticket/support/help terms.
+- Active pool has weak/no canonical source coverage for:
+  - Allplan Share / Cloud usage.
+  - Hotinfo-specific support flow.
+  - project backup / project exchange as `Project Data Management`.
+  - AI-optional ticket creation product help.
+
+### Archive candidates found
+- Allplan Share / Cloud PDF candidates exist under `.archive/rag-incoming/pdf/`:
+  - `Allplan_Share_2022_Manual.pdf`
+  - `Allplan_Share_2023_Manual.pdf`
+  - `Allplan_Share_2023_Handbuch.pdf`
+  - `System_Requirements_Allplan_Share_EN_GmbH.pdf`
+  - `setup-System_Requirements_Allplan_Share_EN_GmbH.pdf`
+- Project data/exchange PDF candidates:
+  - `FAQ_DE_Projektaustausch_incl_aller_Einstellungen_mit_Partnerbuer.pdf`
+  - `faq-technical-FAQ-DE-Projektaustausch-incl-aller-Einstellungen-mit-Partnerbuer.pdf`
+- Hotinfo/Hotline sources appear to be MD only at this point:
+  - `Hotlinetools.md`
+  - `bilgi-bankasi-Hotlinetools.md`
+
+### Decision
+- Do not broaden retrieval logic to solve missing-source questions.
+- Use Batch 012 for selected canonical PDFs covering:
+  - Allplan Share & Cloud
+  - Project Data Management
+- Treat Hotinfo and AI-optional ticket creation separately:
+  - Hotinfo needs a canonical PDF/TXT source or explicit exception to PDF-first.
+  - AI-optional ticket creation is product-help content, not vendor RAG content.
+
+### File added
+- `.ai/rag-quality/source-gap-plan-2026-05-15.md`
