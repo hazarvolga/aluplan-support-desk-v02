@@ -1651,3 +1651,44 @@ Maintenance rule:
   - customer can create a ticket without AI.
   - admin sees the ticket and Hotinfo snapshot.
   - live notification behavior is checked.
+
+## Follow-up - 2026-05-15 Product Flow Acceptance Phase 2
+
+### Goal
+- Verify the critical Hotinfo + AI-optional ticket flow through the real browser UI, not only API calls.
+- Keep this as product-flow acceptance, separate from vendor PDF RAG quality.
+
+### Added
+- `.ai/product-flow/run-product-flow-ui-smoke.mjs`
+- `.ai/product-flow/results-2026-05-15-phase-2-ui-20260515041454.json`
+- `.ai/product-flow/results-2026-05-15-phase-2-ui-20260515041454.md`
+
+### UI validation
+- Ran `.ai/product-flow/run-product-flow-ui-smoke.mjs` through the frontend workspace against:
+  - frontend: `http://localhost:3000`
+  - backend: `http://localhost:4000/api/v1`
+- Result:
+  - 12 total checks.
+  - 12 pass.
+  - 0 fail.
+
+### Passed checks
+- Backend health returned `200`.
+- Customer logged in through the UI as `e2e-customer@aluplan.com`.
+- Customer opened `/tr/tickets/new`.
+- Customer selected `ALLPLAN`.
+- Customer uploaded a new `.hxl` through the UI.
+- Customer selected `MEDIUM` priority.
+- Customer filled the ticket subject/details.
+- Customer skipped AI with `Doğrudan Talep Oluşturmaya Geç`.
+- Customer created ticket `b5a609d2-1ff6-4a24-b589-6712534a362b`.
+- Admin logged in through the UI as `admin@example.com`.
+- Admin opened the ticket detail page.
+- Admin saw the Hotinfo snapshot in the ticket detail sidebar.
+
+### Notes
+- The runner was hardened to avoid a false-positive where `/tr/tickets/new` matched a broad `/tr/tickets/` URL predicate.
+- It now waits for the real `POST /api/v1/tickets` response and extracts the created ticket id.
+- Live notification behavior was not included in this smoke result; treat it as the next product-flow sub-phase if it remains a priority.
+- GitNexus `detect_changes` returned `No changes detected`.
+- Graphify update was attempted, but it again warned about a smaller rebuilt graph (`5611` nodes vs existing `11474`); `graphify-out/GRAPH_REPORT.md` was restored and not committed.

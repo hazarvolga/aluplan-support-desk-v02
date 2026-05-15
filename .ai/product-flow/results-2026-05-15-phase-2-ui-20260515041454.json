@@ -1,0 +1,67 @@
+{
+  "runId": "20260515041454",
+  "generatedAt": "2026-05-15T04:15:25.585Z",
+  "status": "PASS",
+  "frontendUrl": "http://localhost:3000",
+  "backendUrl": "http://localhost:4000/api/v1",
+  "ticketId": "b5a609d2-1ff6-4a24-b589-6712534a362b",
+  "subject": "PF UI Hotinfo direct ticket 20260515041454",
+  "checks": [
+    {
+      "name": "backend health",
+      "status": "PASS",
+      "detail": "200"
+    },
+    {
+      "name": "customer login",
+      "status": "PASS",
+      "detail": "e2e-customer@aluplan.com"
+    },
+    {
+      "name": "customer new ticket page",
+      "status": "PASS"
+    },
+    {
+      "name": "product selected",
+      "status": "PASS",
+      "detail": "ALLPLAN"
+    },
+    {
+      "name": "hotinfo upload via ui",
+      "status": "PASS",
+      "detail": "/var/folders/lj/rwnnzkw932dgrl67pfhmlt8c0000gn/T/aluplan-hotinfo-ui-KKqqrn/_hotinf_ui_20260515041454.hxl"
+    },
+    {
+      "name": "priority selected",
+      "status": "PASS",
+      "detail": "MEDIUM"
+    },
+    {
+      "name": "step 1 completed",
+      "status": "PASS"
+    },
+    {
+      "name": "ai skipped by customer",
+      "status": "PASS"
+    },
+    {
+      "name": "direct ticket created via ui",
+      "status": "PASS",
+      "detail": "b5a609d2-1ff6-4a24-b589-6712534a362b"
+    },
+    {
+      "name": "admin login",
+      "status": "PASS",
+      "detail": "admin@example.com"
+    },
+    {
+      "name": "admin can open ticket detail",
+      "status": "PASS",
+      "detail": "b5a609d2-1ff6-4a24-b589-6712534a362b"
+    },
+    {
+      "name": "admin sees hotinfo snapshot",
+      "status": "PASS"
+    }
+  ]
+}
