@@ -100,6 +100,15 @@
       "mustMentionHints": ["DWG", "export", "çözülmüş"]
     },
     {
+      "id": "rag-tr-dwg-layer-reference-001",
+      "language": "tr",
+      "query": "DWG/DXF export sırasında layer ve referans dosyaları nasıl korunur?",
+      "expectedCategories": ["Export Import & IFC DWG"],
+      "expectedSourceHints": ["DWG", "X-Ref", "Export", "layer"],
+      "forbiddenSourceHints": ["name resolution", "license offline"],
+      "mustMentionHints": ["DWG", "layer", "referans"]
+    },
+    {
       "id": "rag-tr-project-backup-001",
       "language": "tr",
       "query": "Allplan proje yedeği almak ve başka bilgisayara taşımak için güvenli yöntem nedir?",

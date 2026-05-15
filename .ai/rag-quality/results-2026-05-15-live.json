@@ -1,0 +1,814 @@
+{
+  "summary": {
+    "startedAt": "2026-05-15T03:10:46.776Z",
+    "finishedAt": "2026-05-15T03:17:13.889Z",
+    "baseUrl": "http://localhost:4000/api/v1",
+    "delayMs": 15000,
+    "total": 25,
+    "pass": 23,
+    "fail": 2,
+    "throttle": 0
+  },
+  "results": [
+    {
+      "id": "rag-tr-network-startup-001",
+      "query": "Allplan açılışta birkaç dakika bekliyor, ağ veya isim çözümleme kaynaklı olabilir mi?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+        "category": "Performance & Hardware",
+        "similarity": 0.7808396728625132
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.7808396728625132
+        },
+        {
+          "title": "[Dataset] FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 0.7431168479722107
+        },
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_in_the_home-office.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 0.7334712518197756
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-performance-001",
+      "query": "Allplan yavaş çalışıyor, performans için ilk hangi kontrolleri yapmalıyım?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+        "category": "Performance & Hardware",
+        "similarity": 0.9159234058609704
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.9159234058609704
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Geschwindigkeit_von_Allplan_verbessern_bzw_analysieren.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.8143595446917036
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Grafikkarten_fuer_Allplan.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.741869896073738
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-graphics-driver-001",
+      "query": "Grafik kartı sürücüsünü güncellemem gerekiyor mu, nasıl yapmalıyım?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_DE_Grafikkartentreiber_aktualisieren.pdf",
+        "category": "Performance & Hardware",
+        "similarity": 0.6851371131431679
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_DE_Grafikkartentreiber_aktualisieren.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.6851371131431679
+        },
+        {
+          "title": "[Dataset] FAQ_EN_Updating_the_driver_of_the_graphics_card.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.6090271511529199
+        },
+        {
+          "title": "FAQ_EN_Updating_the_driver_of_the_graphics_card",
+          "category": "General",
+          "similarity": 0.5658755759367983
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-license-offline-001",
+      "query": "Allplan lisansını internet olmadan offline nasıl etkinleştiririm?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_DE_Lizenz_offline_aktivieren_und_zurueckgeben_(ohne_Internet.pdf",
+        "category": "License & Activation",
+        "similarity": 0.942167612942741
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_DE_Lizenz_offline_aktivieren_und_zurueckgeben_(ohne_Internet.pdf",
+          "category": "License & Activation",
+          "similarity": 0.942167612942741
+        },
+        {
+          "title": "[Dataset] FAQ_EN_Activating_license_offline_(without_Internet_access).pdf",
+          "category": "License & Activation",
+          "similarity": 0.9333543157302475
+        },
+        {
+          "title": "[Dataset] faq-softlock-SSS-Allplan-Lisansinin-Kayitlandirma-İşlemi.pdf",
+          "category": "License & Activation",
+          "similarity": 0.9119282825472532
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-license-server-add-001",
+      "query": "License Server'da yeni lisans eklemek ve istemcilerin görmesini sağlamak için ne yapmalıyım?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_TR_Lisansı_yeni_bir_bilgisayara_veya_baska_bir_bilgisayara_aktarma.pdf",
+        "category": "License & Activation",
+        "similarity": 0.7771891750061738
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_TR_Lisansı_yeni_bir_bilgisayara_veya_baska_bir_bilgisayara_aktarma.pdf",
+          "category": "License & Activation",
+          "similarity": 0.7771891750061738
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Installation_und_Konfiguration_des_Lizenzservers.pdf",
+          "category": "License Server & CodeMeter",
+          "similarity": 0.7170649944074249
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Lizenzserver_und_oder_Lizenzen_aktualisieren_.pdf",
+          "category": "License Server & CodeMeter",
+          "similarity": 0.7159291709095562
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-installation-001",
+      "query": "Allplan kurulumu sırasında nelere dikkat etmeliyim, güncel kurulum paketi nereden alınır?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_EN_Allplan_silent_installation_(Allplan_2017_and_later).pdf",
+        "category": "Installation & Setup",
+        "similarity": 0.7598473709087964
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_silent_installation_(Allplan_2017_and_later).pdf",
+          "category": "Installation & Setup",
+          "similarity": 0.7598473709087964
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Allplan_Silent-Installation_ab_Allplan_2017-2021.pdf",
+          "category": "Installation & Setup",
+          "similarity": 0.7384205632088532
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Infos_zur_laenderspezifischen_Installation_Allplan_2019.pdf",
+          "category": "Installation & Setup",
+          "similarity": 0.7138921443127756
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-workgroup-add-computer-001",
+      "query": "Workgroup Manager'da bilgisayar ekleyemiyorum, hangi ağ kontrollerini yapmalıyım?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf",
+        "category": "Network & Workgroup",
+        "similarity": 0.7713525201096766
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 0.7713525201096766
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Workgroupmanager_Rechner_aufnehmen_nicht_moeglich.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 0.7705552781156022
+        },
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_in_the_home-office.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 0.5829977680479387
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-home-office-001",
+      "query": "Allplan home-office kullanımında proje verilerine erişim için önerilen yöntem nedir?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_EN_Allplan_in_the_home-office.pdf",
+        "category": "Network & Workgroup",
+        "similarity": 0.8045934777845765
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_in_the_home-office.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 0.8045934777845765
+        },
+        {
+          "title": "[Dataset] FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 0.6007483900837898
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Workgroupmanager_Rechner_aufnehmen_nicht_moeglich.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 0.5755425645698868
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-ifc-export-001",
+      "query": "IFC dışa aktarımında model elemanları doğru gitmiyorsa hangi ayarları kontrol etmeliyim?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] ifc_aktarim_el_kitabi.pdf",
+        "category": "Export Import & IFC DWG",
+        "similarity": 0.7736880229539871
+      },
+      "top3": [
+        {
+          "title": "[Dataset] ifc_aktarim_el_kitabi.pdf",
+          "category": "Export Import & IFC DWG",
+          "similarity": 0.7736880229539871
+        },
+        {
+          "title": "[Dataset] FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-).pdf",
+          "category": "Export Import & IFC DWG",
+          "similarity": 0.7572562751839338
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Export_Plaene_aufgeloest_uebertragen.pdf",
+          "category": "Export Import & IFC DWG",
+          "similarity": 0.647001149157859
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-dwg-export-001",
+      "query": "DWG export yaparken planları çözülmüş olarak aktarmak istiyorum, hangi seçenekleri kullanmalıyım?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-).pdf",
+        "category": "Export Import & IFC DWG",
+        "similarity": 0.8355091398432564
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-).pdf",
+          "category": "Export Import & IFC DWG",
+          "similarity": 0.8355091398432564
+        },
+        {
+          "title": "[Dataset] ifc_aktarim_el_kitabi.pdf",
+          "category": "Export Import & IFC DWG",
+          "similarity": 0.7063664345741321
+        },
+        {
+          "title": "FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-)",
+          "category": "Export & Import (IFC, DWG, etc.)",
+          "similarity": 0.7060345148553137
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-project-backup-001",
+      "query": "Allplan proje yedeği almak ve başka bilgisayara taşımak için güvenli yöntem nedir?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_DE_Projektaustausch_incl_aller_Einstellungen_mit_Partnerbuer.pdf",
+        "category": "Project Data Management",
+        "similarity": 0.7547511363126882
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_DE_Projektaustausch_incl_aller_Einstellungen_mit_Partnerbuer.pdf",
+          "category": "Project Data Management",
+          "similarity": 0.7547511363126882
+        },
+        {
+          "title": "[Dataset] FAQ_TR_Lisansı_yeni_bir_bilgisayara_veya_baska_bir_bilgisayara_aktarma.pdf",
+          "category": "License & Activation",
+          "similarity": 0.6344026731760017
+        },
+        {
+          "title": "[Dataset] faq-softlock-SSS-Lisansimi-artik-başka-bir-bilgisayarda-kullanmak-istiyorum.pdf",
+          "category": "License & Activation",
+          "similarity": 0.6065181436075328
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-share-cloud-001",
+      "query": "Allplan Share ile proje paylaşımı yaparken nelere dikkat etmeliyim?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] Allplan_Share_2023_Handbuch.pdf",
+        "category": "Allplan Share & Cloud",
+        "similarity": 0.7018330908898116
+      },
+      "top3": [
+        {
+          "title": "[Dataset] Allplan_Share_2023_Handbuch.pdf",
+          "category": "Allplan Share & Cloud",
+          "similarity": 0.7018330908898116
+        },
+        {
+          "title": "[Dataset] Allplan_Share_2023_Manual.pdf",
+          "category": "Allplan Share & Cloud",
+          "similarity": 0.6909561613268853
+        },
+        {
+          "title": "[Dataset] System_Requirements_Allplan_Share_EN_GmbH.pdf",
+          "category": "Allplan Share & Cloud",
+          "similarity": 0.6501482351535796
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-hotinfo-001",
+      "query": "Hotinfo raporunda hata izleri var, AI cevabı bunları doğrudan arama sorgusuna karıştırmadan nasıl değerlendirmeli?",
+      "language": "tr",
+      "ok": false,
+      "status": 200,
+      "categoryOk": false,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-)",
+        "category": "Export & Import (IFC, DWG, etc.)",
+        "similarity": 0.4718711728657824
+      },
+      "top3": [
+        {
+          "title": "FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-)",
+          "category": "Export & Import (IFC, DWG, etc.)",
+          "similarity": 0.4718711728657824
+        },
+        {
+          "title": "[Dataset] FAQ_TR_Lisansı_yeni_bir_bilgisayara_veya_baska_bir_bilgisayara_aktarma.pdf",
+          "category": "License & Activation",
+          "similarity": 0.4686728560165857
+        },
+        {
+          "title": "FAQ_EN_Updating_the_driver_of_the_graphics_card",
+          "category": "General",
+          "similarity": 0.467112125636104
+        }
+      ]
+    },
+    {
+      "id": "rag-en-performance-001",
+      "query": "Allplan is running very slow. What should I check first?",
+      "language": "en",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+        "category": "Performance & Hardware",
+        "similarity": 1
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 1
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Geschwindigkeit_von_Allplan_verbessern_bzw_analysieren.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.8692342835282992
+        },
+        {
+          "title": "[Dataset] FAQ_EN_Updating_the_driver_of_the_graphics_card.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.7869663073100566
+        }
+      ]
+    },
+    {
+      "id": "rag-en-name-resolution-001",
+      "query": "Allplan takes several minutes to start. Could name resolution on the network be the reason?",
+      "language": "en",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+        "category": "Performance & Hardware",
+        "similarity": 0.8563785766594544
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.8563785766594544
+        },
+        {
+          "title": "[Dataset] FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 0.8196000159323792
+        },
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_in_the_home-office.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 0.80546387128654
+        }
+      ]
+    },
+    {
+      "id": "rag-en-graphics-driver-001",
+      "query": "How do I update the graphics card driver for Allplan?",
+      "language": "en",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_EN_Updating_the_driver_of_the_graphics_card.pdf",
+        "category": "Performance & Hardware",
+        "similarity": 1
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_EN_Updating_the_driver_of_the_graphics_card.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 1
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Grafikkartentreiber_aktualisieren.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.9518774246450362
+        },
+        {
+          "title": "FAQ_EN_Updating_the_driver_of_the_graphics_card",
+          "category": "General",
+          "similarity": 0.8556967294156714
+        }
+      ]
+    },
+    {
+      "id": "rag-en-license-server-001",
+      "query": "How can I activate a license offline with License Server?",
+      "language": "en",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_DE_Lizenzserver_-_Lizenz_offline_am_Server_aktivieren_und_zu.pdf",
+        "category": "License Server & CodeMeter",
+        "similarity": 0.9936832357497882
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_DE_Lizenzserver_-_Lizenz_offline_am_Server_aktivieren_und_zu.pdf",
+          "category": "License Server & CodeMeter",
+          "similarity": 0.9936832357497882
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Lizenzserver_-_Lizenz_offline_am_Server_aktualisieren.pdf",
+          "category": "License Server & CodeMeter",
+          "similarity": 0.9501922860104552
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Lizenzserver_auf_neuen_Server_umziehen.pdf",
+          "category": "License Server & CodeMeter",
+          "similarity": 0.8780748773880772
+        }
+      ]
+    },
+    {
+      "id": "rag-en-workgroup-001",
+      "query": "I cannot add a computer in Workgroup Manager. What should I check?",
+      "language": "en",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf",
+        "category": "Network & Workgroup",
+        "similarity": 1
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 1
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Workgroupmanager_Rechner_aufnehmen_nicht_moeglich.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 0.8814285929622615
+        },
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_in_the_home-office.pdf",
+          "category": "Network & Workgroup",
+          "similarity": 0.7161862093898096
+        }
+      ]
+    },
+    {
+      "id": "rag-de-performance-001",
+      "query": "Allplan ist langsam. Welche Punkte soll ich zuerst prüfen?",
+      "language": "de",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+        "category": "Performance & Hardware",
+        "similarity": 0.9352496122778374
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.9352496122778374
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Geschwindigkeit_von_Allplan_verbessern_bzw_analysieren.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.8446036477470302
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Echtzeit-Scanner_blockiert_Allplandaten.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.7571172685975026
+        }
+      ]
+    },
+    {
+      "id": "rag-de-graphics-driver-001",
+      "query": "Wie aktualisiere ich den Grafikkartentreiber für Allplan?",
+      "language": "de",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_DE_Grafikkartentreiber_aktualisieren.pdf",
+        "category": "Performance & Hardware",
+        "similarity": 0.9802399007079747
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_DE_Grafikkartentreiber_aktualisieren.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.9802399007079747
+        },
+        {
+          "title": "[Dataset] FAQ_EN_Updating_the_driver_of_the_graphics_card.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.9793765538629289
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Grafikkarten_fuer_Allplan.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.8014657413494071
+        }
+      ]
+    },
+    {
+      "id": "rag-de-ifc-001",
+      "query": "Beim IFC Export werden Bauteile nicht korrekt übertragen. Welche Einstellungen sind relevant?",
+      "language": "de",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] ifc_aktarim_el_kitabi.pdf",
+        "category": "Export Import & IFC DWG",
+        "similarity": 0.7564000095605887
+      },
+      "top3": [
+        {
+          "title": "[Dataset] ifc_aktarim_el_kitabi.pdf",
+          "category": "Export Import & IFC DWG",
+          "similarity": 0.7564000095605887
+        },
+        {
+          "title": "[Dataset] FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-).pdf",
+          "category": "Export Import & IFC DWG",
+          "similarity": 0.7448105661491696
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Export_Plaene_aufgeloest_uebertragen.pdf",
+          "category": "Export Import & IFC DWG",
+          "similarity": 0.678898288417906
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-cross-lingual-001",
+      "query": "Türkçe dokümanda yoksa İngilizce veya Almanca kaynaktan performans cevabı verebilir misin?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+        "category": "Performance & Hardware",
+        "similarity": 0.7316205599628679
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.7316205599628679
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Grafikkarten_fuer_Allplan.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.6718774278684131
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Geschwindigkeit_von_Allplan_verbessern_bzw_analysieren.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.6564956611601066
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-no-ai-ticket-001",
+      "query": "AI kullanmadan doğrudan destek talebi açmak istiyorum, bu mümkün mü?",
+      "language": "tr",
+      "ok": false,
+      "status": 200,
+      "categoryOk": false,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] faq-softlock-Softlock-Destek-2006.pdf",
+        "category": "License & Activation",
+        "similarity": 0.5549119360154076
+      },
+      "top3": [
+        {
+          "title": "[Dataset] faq-softlock-Softlock-Destek-2006.pdf",
+          "category": "License & Activation",
+          "similarity": 0.5549119360154076
+        },
+        {
+          "title": "[Dataset] faq-softlock-SSS-Bilgisayar-değişikliği-yapmak-istiyorum-Softlock-2013.pdf",
+          "category": "License & Activation",
+          "similarity": 0.5318470286226081
+        },
+        {
+          "title": "[Dataset] faq-softlock-SSS-Lisansimi-artik-başka-bir-bilgisayarda-kullanmak-istiyorum.pdf",
+          "category": "License & Activation",
+          "similarity": 0.5175808032039643
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-general-demotion-001",
+      "query": "Allplan ağ üzerinden açılırken çok bekliyor, lisans değil isim çözümleme olabilir mi?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+        "category": "Performance & Hardware",
+        "similarity": 0.7498670270054055
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_EN_Allplan_is_running_slow.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.7498670270054055
+        },
+        {
+          "title": "[Dataset] FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-).pdf",
+          "category": "Export Import & IFC DWG",
+          "similarity": 0.5590160615787506
+        },
+        {
+          "title": "FAQ_EN_Updating_the_driver_of_the_graphics_card",
+          "category": "General",
+          "similarity": 0.5409937995606551
+        }
+      ]
+    },
+    {
+      "id": "rag-tr-duplicate-canonical-001",
+      "query": "Grafik kartı sürücüsü konusunda pilot veya duplicate kaynak yerine canonical FAQ kaynağı kullanılmalı mı?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_DE_Grafikkartentreiber_aktualisieren.pdf",
+        "category": "Performance & Hardware",
+        "similarity": 0.623339182007659
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_DE_Grafikkartentreiber_aktualisieren.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.623339182007659
+        },
+        {
+          "title": "[Dataset] FAQ_EN_Updating_the_driver_of_the_graphics_card.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.5790172373687957
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Grafikkarten_fuer_Allplan.pdf",
+          "category": "Performance & Hardware",
+          "similarity": 0.5549094069314201
+        }
+      ]
+    }
+  ]
+}

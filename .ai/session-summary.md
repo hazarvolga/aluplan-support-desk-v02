@@ -1550,3 +1550,56 @@ Maintenance rule:
 
 ### Remaining note
 - This fixes customer-facing fallback hygiene and one concrete DWG/DXF drift case. Broader RAG quality work should still evaluate retrieval source coverage and answer freshness with the planned regression question set.
+
+## Follow-up - 2026-05-15 Live RAG Acceptance Closure
+
+### Goal
+- Decide whether the current support-first vendor PDF RAG corpus can be treated as stable enough to stop broad RAG changes.
+- Use API-driven validation while preserving quota-safe pacing.
+
+### Execution
+- Ran `.ai/rag-quality/run-acceptance.mjs` against localhost API with 15000ms delay.
+- Added `rag-tr-dwg-layer-reference-001` to the acceptance set because it represents the recently observed DWG/DXF layer/reference failure.
+- Added `.ai/rag-quality/run-answer-smoke.mjs` for focused customer-facing `/ai/query?wait=true` answer checks.
+
+### Retrieval results
+- Initial live run:
+  - 25 total.
+  - 23 pass.
+  - 2 fail.
+  - 0 throttle / 429.
+- New DWG/DXF layer/reference regression:
+  - 1 total.
+  - 1 pass.
+- Effective current set:
+  - 26 total.
+  - 24 in-scope vendor PDF RAG checks pass.
+  - 2 failures remain out-of-scope for vendor PDF RAG.
+
+### Known out-of-scope failures
+- `rag-tr-hotinfo-001`
+  - Hotinfo is ticket-specific diagnostic context, not global vendor PDF RAG.
+  - Keep outside vendor RAG acceptance unless a canonical Hotinfo PDF/TXT support source is approved.
+- `rag-tr-no-ai-ticket-001`
+  - AI-optional ticket creation is product/help flow content.
+  - Move to product-flow acceptance, not vendor PDF RAG.
+
+### Customer answer smoke
+- Ran `.ai/rag-quality/run-answer-smoke.mjs` for:
+  - `rag-tr-network-startup-001`
+  - `rag-tr-graphics-driver-001`
+  - `rag-tr-ifc-export-001`
+  - `rag-tr-dwg-layer-reference-001`
+  - `rag-tr-cross-lingual-001`
+- Result:
+  - 5 total.
+  - 5 pass.
+  - 0 source leaks.
+  - 0 `NO_MATCH`.
+
+### Decision
+- Vendor PDF RAG can be considered stable for the current support-first corpus.
+- Do not continue broad RAG refactors right now.
+- Future source imports or retrieval/fallback changes should rerun:
+  - `.ai/rag-quality/run-acceptance.mjs`
+  - `.ai/rag-quality/run-answer-smoke.mjs` for a focused critical subset.

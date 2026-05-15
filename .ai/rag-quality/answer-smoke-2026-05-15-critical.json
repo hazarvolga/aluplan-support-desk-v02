@@ -1,0 +1,90 @@
+{
+  "summary": {
+    "startedAt": "2026-05-15T03:20:53.381Z",
+    "finishedAt": "2026-05-15T03:22:31.929Z",
+    "baseUrl": "http://localhost:4000/api/v1",
+    "delayMs": 15000,
+    "total": 5,
+    "pass": 5,
+    "fail": 0,
+    "sourceLeaks": 0,
+    "noMatch": 0
+  },
+  "results": [
+    {
+      "id": "rag-tr-network-startup-001",
+      "query": "Allplan açılışta birkaç dakika bekliyor, ağ veya isim çözümleme kaynaklı olabilir mi?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "answerMode": "FALLBACK",
+      "confidence": "MEDIUM",
+      "answerHintsOk": true,
+      "sourceLeak": false,
+      "customerSourcesHidden": true,
+      "noForbiddenSource": true,
+      "noNoMatch": true,
+      "answerPreview": "Model yanıtı gecikti; bilgi kaynağındaki en ilgili eşleşmeye göre kısa yanıt:\n\nBilgi kaynağında sorunuzla eşleşen bölüm bulundu. Öne çıkan nokta: Name resolution on the network If Allplan takes several minutes to start, name resolution on the network may not work."
+    },
+    {
+      "id": "rag-tr-graphics-driver-001",
+      "query": "Grafik kartı sürücüsünü güncellemem gerekiyor mu, nasıl yapmalıyım?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "answerMode": "FALLBACK",
+      "confidence": "MEDIUM",
+      "answerHintsOk": true,
+      "sourceLeak": false,
+      "customerSourcesHidden": true,
+      "noForbiddenSource": true,
+      "noNoMatch": true,
+      "answerPreview": "Model yanıtı gecikti; bilgi kaynağındaki en ilgili eşleşmeye göre kısa yanıt:\n\nGrafik kartı sürücüsü güncellemesi için bilgi kaynağı, güncel NVIDIA Studio veya AMD Pro sürücüsünün üreticinin resmi sitesinden indirilmesini ve kurulumdan sonra Windows sisteminin yeniden başlatılmasını işaret ediyor."
+    },
+    {
+      "id": "rag-tr-ifc-export-001",
+      "query": "IFC dışa aktarımında model elemanları doğru gitmiyorsa hangi ayarları kontrol etmeliyim?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "answerMode": "FALLBACK",
+      "confidence": "MEDIUM",
+      "answerHintsOk": true,
+      "sourceLeak": false,
+      "customerSourcesHidden": true,
+      "noForbiddenSource": true,
+      "noNoMatch": true,
+      "answerPreview": "Model yanıtı gecikti; bilgi kaynağındaki en ilgili eşleşmeye göre kısa yanıt:\n\nIFC aktarımında kritik kontroller şunlar:\n- Doğru IFC gönderim yolunu seçin: genel IFC gönderimi veya özellikle IFC 2x3 gönderimi.\n- Alışveriş profilini kontrol edin; standart şablon yeterli değilse proje için özel profil/favori kullanın.\n- Nitelik atamasını kontrol edin; özel ve standart attribute eşleşmeleri doğru olmalı.\n- Koordinat ve uzunluk parametrelerini kontrol edin; disiplinler arası modellerde offset/ölçek "
+    },
+    {
+      "id": "rag-tr-dwg-layer-reference-001",
+      "query": "DWG/DXF export sırasında layer ve referans dosyaları nasıl korunur?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "answerMode": "FALLBACK",
+      "confidence": "MEDIUM",
+      "answerHintsOk": true,
+      "sourceLeak": false,
+      "customerSourcesHidden": true,
+      "noForbiddenSource": true,
+      "noNoMatch": true,
+      "answerPreview": "Model yanıtı gecikti; bilgi kaynağındaki en ilgili eşleşmeye göre kısa yanıt:\n\nDWG/DXF aktarımında layer ve referans yapısını korumak için kritik kontroller şunlar:\n- Export profilinde layer/katman eşlemesini kontrol edin; Allplan katmanlarının DWG layer adlarına nasıl çevrileceğini doğrulayın.\n- Referans dosyalar veya XRef kullanılıyorsa hedef teslim biçimini baştan belirleyin: tek DWG dosyası mı, ayrı referanslı dosyalar mı gönderilecek?\n- Aktarılacak çizim dosyası, katman ve eleman setini dar"
+    },
+    {
+      "id": "rag-tr-cross-lingual-001",
+      "query": "Türkçe dokümanda yoksa İngilizce veya Almanca kaynaktan performans cevabı verebilir misin?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "answerMode": "FALLBACK",
+      "confidence": "HIGH",
+      "answerHintsOk": true,
+      "sourceLeak": false,
+      "customerSourcesHidden": true,
+      "noForbiddenSource": true,
+      "noNoMatch": true,
+      "answerPreview": "Model yanıtı gecikti; bilgi kaynağındaki en ilgili eşleşmeye göre kısa yanıt:\n\nBilgi kaynağında sorunuzla eşleşen bölüm bulundu. Öne çıkan nokta: Allplan is running slow Technical Support FAQ Category: General Basis Functions->Technic->Performance Programs: Allplan 2021 Allplan 2020 Allplan 2019 Allplan 2018 Document ID: 20180305101135 Internet: https://connect.allplan.com/en/faqid/20180305101135.html Question: Why is Allplan running so slow? Answer: Check the following points: 1. Current versio"
+    }
+  ]
+}

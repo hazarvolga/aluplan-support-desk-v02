@@ -4,7 +4,11 @@
 
 - Phase 1 RAG relevance/cache fix is committed. Continue with a measured RAG quality program, not ad-hoc browser questions.
 - Use `.ai/rag-quality/acceptance-questions.json` as the active acceptance set before importing more files or changing retrieval logic.
-- Faz 3 retrieval-only acceptance completed: 25 questions, 19 pass, 6 real quality/data failures, 0 remaining throttle-only failures.
+- Faz 6 live API acceptance completed:
+  - current set is 26 questions after adding `rag-tr-dwg-layer-reference-001`.
+  - 24 in-scope vendor PDF RAG checks pass.
+  - 2 remaining failures are out-of-scope for vendor PDF RAG: Hotinfo diagnostic flow and AI-optional ticket creation help.
+  - 5 critical customer answer smoke checks pass with 0 source leaks.
 - Faz 4 narrow retrieval fix committed: negated license intent and pilot/canonical preference target checks pass.
 - Faz 5 source-gap decision is documented in `.ai/rag-quality/source-gap-plan-2026-05-15.md`.
 - Batch 012 source-gap import completed for Allplan Share/Cloud and Project Data Management:
@@ -17,6 +21,7 @@
   - safe Hotinfo system signals can enrich retrieval when the user explicitly asks for Hotinfo/system analysis.
   - prompt context includes richer Hotinfo fields for final diagnosis.
 - Use `.ai/rag-quality/run-acceptance.mjs` for future localhost retrieval checks; default delay is intentionally throttle-safe.
+- Use `.ai/rag-quality/run-answer-smoke.mjs` for focused customer-facing answer checks before declaring RAG-facing changes done.
 - Pause the PDF-first import after the support-first seed corpus and validate real RAG quality before importing more files.
 - Build the PDF-first RAG dataset import path without polluting the knowledge pool with generated MD duplicates.
 - Keep `dataset/` as the clean import surface and `.archive/rag-incoming/pdf/` as the raw PDF inbox.
@@ -54,5 +59,5 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 
 - Hotinfo needs canonical PDF/TXT source approval before import, because current confirmed candidates are MD-only.
 - AI-optional ticket creation should be app-help/product copy, not vendor FAQ retrieval.
-- Next retrieval step: run the focused acceptance set after any new source import before changing retrieval code again.
+- Next RAG step: stop broad RAG changes unless a new acceptance failure appears; future source imports must rerun the focused acceptance set.
 - Next product-flow step: verify in the browser that a newly uploaded `.hxl` appears in AI diagnosis context and in the created ticket snapshot.

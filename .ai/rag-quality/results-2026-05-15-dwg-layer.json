@@ -1,0 +1,46 @@
+{
+  "summary": {
+    "startedAt": "2026-05-15T03:20:24.984Z",
+    "finishedAt": "2026-05-15T03:20:26.503Z",
+    "baseUrl": "http://localhost:4000/api/v1",
+    "delayMs": 1000,
+    "total": 1,
+    "pass": 1,
+    "fail": 0,
+    "throttle": 0
+  },
+  "results": [
+    {
+      "id": "rag-tr-dwg-layer-reference-001",
+      "query": "DWG/DXF export sırasında layer ve referans dosyaları nasıl korunur?",
+      "language": "tr",
+      "ok": true,
+      "status": 200,
+      "categoryOk": true,
+      "sourceOk": true,
+      "forbiddenHit": false,
+      "top": {
+        "title": "[Dataset] FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-).pdf",
+        "category": "Export Import & IFC DWG",
+        "similarity": 0.8102771250021285
+      },
+      "top3": [
+        {
+          "title": "[Dataset] FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-).pdf",
+          "category": "Export Import & IFC DWG",
+          "similarity": 0.8102771250021285
+        },
+        {
+          "title": "[Dataset] FAQ_DE_Export_Plaene_aufgeloest_uebertragen.pdf",
+          "category": "Export Import & IFC DWG",
+          "similarity": 0.6888169804674744
+        },
+        {
+          "title": "FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-)",
+          "category": "Export & Import (IFC, DWG, etc.)",
+          "similarity": 0.6873552203015327
+        }
+      ]
+    }
+  ]
+}
