@@ -1517,3 +1517,36 @@ Maintenance rule:
 
 ### Remaining note
 - This improves the fallback path. The deeper product decision remains whether sync diagnosis timeout should be raised or whether the UI should communicate fallback mode more softly.
+
+## Follow-up - 2026-05-15 DWG/DXF Fallback Source Hygiene
+
+### Problem observed
+- User asked in Turkish: `DWG/DXF export sırasında layer ve referans dosyaları nasıl korunur?`
+- Customer fallback answer incorrectly drifted to the IFC checklist because fallback intent detection mixed the user query with retrieved source title/excerpt.
+- Customer fallback also exposed raw `Kaynak:` and `İlgili pasaj:` lines, which is useful for traceability but not suitable as end-user support copy.
+
+### Change
+- `AiQueryService` now passes `showSourceDetails: isStaff` into deterministic fallback generation.
+- Customer fallback answers no longer include raw source/passage lines; staff/admin fallback traceability is preserved.
+- Turkish fallback intent detection now uses query-only intent for IFC/DWG/DXF/graphics-driver special cases.
+- Added a DWG/DXF-specific Turkish fallback checklist for layer/katman, reference/XRef, export scope, scale/coordinates, and final viewer validation.
+
+### Verification
+- `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts`
+  - 2 suites passed.
+  - 34 passed, 1 skipped.
+- `pnpm --filter @aluplan/backend typecheck`
+  - Passed.
+- `pnpm --filter @aluplan/backend build`
+  - Passed.
+- Backend and frontend were restarted:
+  - backend: `http://localhost:4000/api/v1`
+  - frontend: `http://localhost:3000`
+- Live customer API check passed:
+  - query returned `200`.
+  - answer stayed on DWG/DXF.
+  - `sources: []`.
+  - answer text did not contain `Kaynak:` or `İlgili pasaj:`.
+
+### Remaining note
+- This fixes customer-facing fallback hygiene and one concrete DWG/DXF drift case. Broader RAG quality work should still evaluate retrieval source coverage and answer freshness with the planned regression question set.
