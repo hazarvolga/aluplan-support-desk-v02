@@ -1692,3 +1692,42 @@ Maintenance rule:
 - Live notification behavior was not included in this smoke result; treat it as the next product-flow sub-phase if it remains a priority.
 - GitNexus `detect_changes` returned `No changes detected`.
 - Graphify update was attempted, but it again warned about a smaller rebuilt graph (`5611` nodes vs existing `11474`); `graphify-out/GRAPH_REPORT.md` was restored and not committed.
+
+## Follow-up - 2026-05-15 Customer Answer Quality Phase 3
+
+### Trigger
+- User tested: `How do I borrow a license temporarily from the license server?`
+- Customer-facing AI diagnosis fell back to a raw excerpt-style answer.
+- Admin Copilot draft produced a much better structured solution.
+
+### Root cause
+- Customer `/ai/query?wait=true` used synchronous generation with a short timeout.
+- `AiQueryService.SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS` was `6000`.
+- When the model timed out, deterministic fallback only had special handling for a few intents such as IFC, DWG/DXF, and graphics driver update.
+- License borrowing had no structured fallback, so the customer saw a low-quality excerpt even though retrieval found the right document.
+
+### Changes
+- Increased synchronous customer diagnosis generation timeout from `6000ms` to `15000ms`.
+- Added structured deterministic fallback for license borrowing intent in Turkish.
+- Added structured deterministic fallback for license borrowing intent in English.
+- Added regression coverage for both Turkish UI-language and English requested-language variants.
+
+### Validation
+- GitNexus impact for `AiQueryService`:
+  - risk: `MEDIUM`
+  - direct impacted files include AI controller, ticket service, AI query processor, AI copilot service.
+- GitNexus `detect_changes` after edits:
+  - risk: `high`
+  - affected execution flows: 8
+  - changed symbol area includes `AiQueryService`, `query`, and `streamQuery`.
+- Targeted tests passed:
+  - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts`
+  - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts embedding.service.spec.ts gemini.service.spec.ts llm-api.service.spec.ts`
+- Backend typecheck passed:
+  - `pnpm --filter @aluplan/backend typecheck`
+- Graphify update was attempted, but it again warned about a smaller rebuilt graph (`5613` nodes vs existing `11474`); `graphify-out/GRAPH_REPORT.md` was restored and not committed.
+
+### Decision
+- This is the first narrow step toward admin-quality customer answers.
+- Retrieval is not the issue for this case; answer synthesis/fallback quality was the issue.
+- Next improvement should generalize this from individual fallback intents into a shared customer/admin answer quality contract, but only after this narrow fix is live-tested.

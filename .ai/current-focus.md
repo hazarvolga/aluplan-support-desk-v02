@@ -28,6 +28,10 @@
   - `.ai/product-flow/run-product-flow-ui-smoke.mjs`
   - 12/12 pass.
   - verifies customer UI login, ALLPLAN selection, `.hxl` upload, AI skip, direct ticket creation, admin UI ticket visibility, and admin Hotinfo snapshot visibility.
+- Customer Answer Quality Phase 3 started:
+  - customer sync diagnosis timeout increased from `6000ms` to `15000ms`.
+  - license borrowing fallback now returns structured solution steps instead of raw excerpts.
+  - Turkish UI-language and English requested-language fallback regressions are covered.
 - Use `.ai/rag-quality/run-acceptance.mjs` for future localhost retrieval checks; default delay is intentionally throttle-safe.
 - Use `.ai/rag-quality/run-answer-smoke.mjs` for focused customer-facing answer checks before declaring RAG-facing changes done.
 - Pause the PDF-first import after the support-first seed corpus and validate real RAG quality before importing more files.
@@ -60,6 +64,7 @@
 - A source can have an unchanged content hash while still having zero embeddings from an earlier failed run; sync must verify embeddings before treating unchanged content as healthy.
 - `graphify` CLI was previously unavailable in PATH, so graph updates may need environment repair.
 - `apps/backend/openapi.json` is modified separately; do not mix it into RAG import commits unless intentionally regenerated.
+- Customer answer quality can still diverge from admin Copilot for topics that do not yet have either successful LLM generation or structured deterministic fallback coverage.
 
 ## Next Recommended Step
 
@@ -68,4 +73,5 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Hotinfo needs canonical PDF/TXT source approval before import, because current confirmed candidates are MD-only.
 - AI-optional ticket creation should be app-help/product copy, not vendor FAQ retrieval.
 - Next RAG step: stop broad RAG changes unless a new acceptance failure appears; future source imports must rerun the focused acceptance set.
+- Next answer-quality step: live-test the license borrowing question after backend reload, then generalize a shared customer/admin solution quality contract if the result is good.
 - Next product-flow step: isolate live notification behavior as its own small acceptance phase, because Hotinfo upload and AI-optional ticket creation now pass in both API and UI flows.

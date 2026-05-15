@@ -154,7 +154,7 @@ import { StorageService } from '../common/services/storage.service';
 export class AiQueryService {
     private readonly logger = new Logger(AiQueryService.name);
     private readonly DIAGNOSIS_GENERATION_TIMEOUT_MS = 25000;
-    private readonly SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS = 6000;
+    private readonly SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS = 15000;
     constructor(
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
@@ -785,6 +785,15 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         }
 
         if (responseLanguage === 'en') {
+            const englishSummary = this.buildEnglishFallbackSummary(query, snippets[0]);
+            if (englishSummary) {
+                return [
+                    'The model response was delayed; here is a concise answer based on the best matching knowledge base content:',
+                    '',
+                    englishSummary,
+                ].join('\n');
+            }
+
             return [
                 'The model response was delayed, so I am showing the most relevant excerpts found directly in the knowledge base:',
                 ...snippets.map(snippet => `- ${snippet.title}: ${snippet.excerpt}`),
@@ -819,6 +828,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
     private buildTurkishFallbackSummary(query: string, snippet: { title: string; excerpt: string }): string {
         const normalizedQuery = this.normalizeSearchText(query);
         const normalizedEvidence = this.normalizeSearchText(`${snippet.title} ${snippet.excerpt}`);
+        const asksLicenseBorrowing = this.isLicenseBorrowingQuery(normalizedQuery);
         const asksIfcExport =
             normalizedQuery.includes('ifc') &&
             /(?:aktarim|disa aktar|export|ayar|settings|eleman|model)/.test(normalizedQuery);
@@ -856,7 +866,69 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             return 'Grafik kartı sürücüsü güncellemesi için bilgi kaynağı, güncel NVIDIA Studio veya AMD Pro sürücüsünün üreticinin resmi sitesinden indirilmesini ve kurulumdan sonra Windows sisteminin yeniden başlatılmasını işaret ediyor.';
         }
 
+        if (asksLicenseBorrowing) {
+            return [
+                'Lisans sunucusundan geçici lisans ödünç almak için temel akış şöyledir:',
+                '',
+                '## 📌 Sorun Yorumu',
+                'Bu bir arıza değil; Allplan lisans sunucusundan belirli süreyle offline kullanılabilecek lisans alma işlemidir.',
+                '',
+                '## ⚠️ Kritik Kontroller',
+                '- İşlem lisans sunucusunda değil, lisansı kullanacak istemci bilgisayarda yapılmalıdır.',
+                '- İstemci bilgisayar lisans sunucusuna bağlı olmalıdır; ofis dışındaysanız VPN bağlantısı gerekir.',
+                '- Ödünç alma süresi bitene kadar lisans sunucu havuzunda diğer kullanıcılar için kullanılamaz.',
+                '',
+                '## 🛠️ Çözüm Adımları',
+                '1. İstemci bilgisayarda Allmenu veya Services uygulamasını açın.',
+                '2. Utilities / Dienstprogramme menüsünden License settings / Lizenzeinstellungen ekranına girin.',
+                '3. License selection / Lizenzauswahl bölümünde ödünç almak istediğiniz lisansı seçin.',
+                '4. Borrow licenses for / Lizenzen ausleihen für alanından süreyi belirleyin.',
+                '5. Borrow / Ausleihen düğmesine tıklayın.',
+                '6. Lisansın bilgisayar adınız altında göründüğünü kontrol edin.',
+                '',
+                '## ✅ Doğrulama',
+                '- Allplan ödünç alınan lisansla açılmalı.',
+                '- Lisans ayarlarında iade tarihi görülebilmeli.',
+                '- Süre dolmadan iade etmek için aynı lisansı seçip End borrowing / Ausleihe beenden seçeneğini kullanabilirsiniz.',
+            ].join('\n');
+        }
+
         return `Bilgi kaynağında sorunuzla eşleşen bölüm bulundu. Öne çıkan nokta: ${snippet.excerpt || normalizedEvidence}`;
+    }
+
+    private buildEnglishFallbackSummary(query: string, snippet: { title: string; excerpt: string }): string | null {
+        const normalizedQuery = this.normalizeSearchText(query);
+        if (!this.isLicenseBorrowingQuery(normalizedQuery)) {
+            return null;
+        }
+
+        return [
+            '## 📌 Problem Interpretation',
+            'You want to temporarily borrow an Allplan license from the license server so the client computer can use it offline for a defined period.',
+            '',
+            '## ⚠️ Critical Checks',
+            '- Borrowing is done on the client computer, not directly on the license server.',
+            '- The client must be connected to the license server when borrowing or returning the license. Use VPN if you are outside the company network.',
+            '- During the borrowing period, the license is not available in the shared server pool for other users.',
+            '',
+            '## 🛠️ Solution Steps',
+            '1. Open Allmenu or the Services application on the client computer.',
+            '2. Go to Utilities / Dienstprogramme and open License settings / Lizenzeinstellungen.',
+            '3. In License selection / Lizenzauswahl, select the license you want to borrow.',
+            '4. In Borrow licenses for / Lizenzen ausleihen für, choose the borrowing period.',
+            '5. Click Borrow / Ausleihen.',
+            '6. Confirm that the borrowed license appears under your computer name.',
+            '',
+            '## ✅ Verification',
+            '- Start Allplan with the borrowed license.',
+            '- Check the license information button to confirm the automatic return date.',
+            '- To return the license early, select the borrowed license and use End borrowing / Ausleihe beenden.',
+        ].join('\n');
+    }
+
+    private isLicenseBorrowingQuery(normalizedQuery: string): boolean {
+        return /(?:license|lisans|lizenz|wibu|codemeter)/.test(normalizedQuery) &&
+            /(?:borrow|borrowing|odunc|ausleihen|offline|temporary|temporar|gecici)/.test(normalizedQuery);
     }
 
     private resolveFallbackLanguage(language: string | undefined, query: string): 'tr' | 'en' | 'de' {

@@ -504,6 +504,69 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             expect(result.answer).not.toContain('İlgili pasaj:');
         });
 
+        it('returns a structured customer-safe license borrowing fallback when generation is unavailable', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'license-borrow',
+                        sourceType: 'DOCUMENT',
+                        title: 'FAQ_EN_License_server_-_borrowing_licenses_temporarily.pdf',
+                        content: 'License server - borrowing licenses temporarily. Open Allmenu or Services application. Go to Utilities and License settings. Select the license in License selection. Choose the period in Borrow licenses for and click Borrow. To return it early, select End borrowing.',
+                        similarity: 0.96,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.96, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'How do I borrow a license temporarily from the license server?',
+                wait: true,
+                language: 'tr-TR',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('Lisans sunucusundan geçici lisans ödünç almak');
+            expect(result.answer).toContain('## 🛠️ Çözüm Adımları');
+            expect(result.answer).toContain('License settings');
+            expect(result.answer).toContain('Ausleihen');
+            expect(result.answer).toContain('## ✅ Doğrulama');
+            expect(result.answer).not.toContain('Kaynak:');
+            expect(result.answer).not.toContain('İlgili pasaj:');
+            expect(result.answer).not.toContain('License server - borrowing licenses temporarily.');
+        });
+
+        it('returns a structured English license borrowing fallback when the requested language is English', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'license-borrow',
+                        sourceType: 'DOCUMENT',
+                        title: 'FAQ_EN_License_server_-_borrowing_licenses_temporarily.pdf',
+                        content: 'License server - borrowing licenses temporarily. Open Allmenu or Services application. Go to Utilities and License settings. Select the license in License selection. Choose the period in Borrow licenses for and click Borrow. To return it early, select End borrowing.',
+                        similarity: 0.96,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.96, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'How do I borrow a license temporarily from the license server?',
+                wait: true,
+                language: 'en',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('## 🛠️ Solution Steps');
+            expect(result.answer).toContain('License settings');
+            expect(result.answer).toContain('Borrow / Ausleihen');
+            expect(result.answer).toContain('## ✅ Verification');
+            expect(result.answer).not.toContain('License server - borrowing licenses temporarily.');
+        });
+
         it('keeps Hotinfo error traces out of the retrieval query', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [{
