@@ -436,6 +436,41 @@ describe('AiQueryService', () => {
             expect(result.answer).not.toContain('Why is Allplan running so slow?');
         });
 
+        it('returns a Turkish actionable IFC fallback instead of raw headings when generation is unavailable', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'ifc-export',
+                        sourceType: 'DOCUMENT',
+                        title: '[Dataset] ifc_aktarim_el_kitabi.pdf',
+                        content: `#### 2.2.2 IFC Export Stages
+
+Allplan models can be exported via two menus.
+Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Coordinates and Length Parameters, Element Filter, and Advanced Options for geometry conversion, Quantity Data, and Elements.`,
+                        similarity: 0.95,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.95, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'IFC aktarımında hangi ayarlar kritik?',
+                wait: true,
+                language: 'tr-TR',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('IFC aktarımında kritik kontroller');
+            expect(result.answer).toContain('Alışveriş profilini');
+            expect(result.answer).toContain('Nitelik atamasını');
+            expect(result.answer).toContain('Eleman filtresini');
+            expect(result.answer).toContain('Kaynak: [Dataset] ifc_aktarim_el_kitabi.pdf');
+            expect(result.answer).not.toContain('The model response was delayed');
+            expect(result.answer).not.toContain('####');
+        });
+
         it('keeps Hotinfo error traces out of the retrieval query', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [{

@@ -758,28 +758,33 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
     }
 
     private buildDeterministicFallbackAnswer(query: string, results: SearchResult[], language: string): string {
+        const responseLanguage = this.resolveFallbackLanguage(language, query);
         const snippets = this.extractRelevantFallbackSnippets(query, results);
         if (snippets.length === 0) {
             const topResult = results[0];
             if (!topResult) {
-                return 'Bilgi kaynağında kullanılabilir bir içerik bulunamadı.';
+                return responseLanguage === 'en'
+                    ? 'No usable content was found in the knowledge base.'
+                    : responseLanguage === 'de'
+                        ? 'In der Wissensbasis wurde kein nutzbarer Inhalt gefunden.'
+                        : 'Bilgi kaynağında kullanılabilir bir içerik bulunamadı.';
             }
 
             snippets.push({
                 title: topResult.title || 'Kaynak',
-                excerpt: (topResult.content ?? '').slice(0, 420).trim(),
+                excerpt: this.cleanFallbackExcerpt((topResult.content ?? '').slice(0, 420)),
                 score: topResult.similarity,
             });
         }
 
-        if (language === 'en') {
+        if (responseLanguage === 'en') {
             return [
                 'The model response was delayed, so I am showing the most relevant excerpts found directly in the knowledge base:',
                 ...snippets.map(snippet => `- ${snippet.title}: ${snippet.excerpt}`),
             ].join('\n');
         }
 
-        if (language === 'de') {
+        if (responseLanguage === 'de') {
             return [
                 'Die Modellantwort hat sich verzögert. Daher zeige ich die relevantesten direkt gefundenen Auszüge aus der Wissensbasis:',
                 ...snippets.map(snippet => `- ${snippet.title}: ${snippet.excerpt}`),
@@ -788,24 +793,49 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
         const turkishSummary = this.buildTurkishFallbackSummary(query, snippets[0]);
         return [
-            'Model yanıtı geciktiği için bilgi kaynağındaki en ilgili eşleşmeye göre güvenli özet gösteriliyor:',
-            `- ${turkishSummary}`,
-            `- Kaynak: ${snippets[0].title}`,
-            `- Orijinal kaynak pasajı: ${snippets[0].excerpt}`,
+            'Model yanıtı gecikti; bilgi kaynağındaki en ilgili eşleşmeye göre kısa yanıt:',
+            '',
+            turkishSummary,
+            '',
+            `Kaynak: ${snippets[0].title}`,
+            `İlgili pasaj: ${snippets[0].excerpt}`,
         ].join('\n');
     }
 
     private buildTurkishFallbackSummary(query: string, snippet: { title: string; excerpt: string }): string {
         const normalized = this.normalizeSearchText(`${query} ${snippet.title} ${snippet.excerpt}`);
+        const asksIfcExport =
+            normalized.includes('ifc') &&
+            /(?:aktarim|disa aktar|export|ayar|settings|eleman|model)/.test(normalized);
         const asksGraphicsDriverUpdate =
             /(?:grafik karti|ekran karti|graphics card|gpu|nvidia|amd)/.test(normalized) &&
             /(?:guncelle|guncelleme|update|current)/.test(normalized);
+
+        if (asksIfcExport) {
+            return [
+                'IFC aktarımında kritik kontroller şunlar:',
+                '- Doğru IFC gönderim yolunu seçin: genel IFC gönderimi veya özellikle IFC 2x3 gönderimi.',
+                '- Alışveriş profilini kontrol edin; standart şablon yeterli değilse proje için özel profil/favori kullanın.',
+                '- Nitelik atamasını kontrol edin; özel ve standart attribute eşleşmeleri doğru olmalı.',
+                '- Koordinat ve uzunluk parametrelerini kontrol edin; disiplinler arası modellerde offset/ölçek ayarları önemlidir.',
+                '- Eleman filtresini kontrol edin; hangi yapı elemanlarının aktarılacağı burada belirlenir.',
+                '- Gelişmiş seçeneklerde geometri dönüşümü, quantity data ve element ayarlarını gözden geçirin.',
+            ].join('\n');
+        }
 
         if (asksGraphicsDriverUpdate) {
             return 'Grafik kartı sürücüsü güncellemesi için bilgi kaynağı, güncel NVIDIA Studio veya AMD Pro sürücüsünün üreticinin resmi sitesinden indirilmesini ve kurulumdan sonra Windows sisteminin yeniden başlatılmasını işaret ediyor.';
         }
 
-        return 'Bilgi kaynağında sorunuzla eşleşen pasaj bulundu; aşağıdaki orijinal kaynak pasajı üzerinden devam edebilirsiniz.';
+        return `Bilgi kaynağında sorunuzla eşleşen bölüm bulundu. Öne çıkan nokta: ${snippet.excerpt}`;
+    }
+
+    private resolveFallbackLanguage(language: string | undefined, query: string): 'tr' | 'en' | 'de' {
+        const normalizedLanguage = (language || '').toLowerCase();
+        if (normalizedLanguage.startsWith('tr')) return 'tr';
+        if (normalizedLanguage.startsWith('en')) return 'en';
+        if (normalizedLanguage.startsWith('de')) return 'de';
+        return detectQueryLanguage(query);
     }
 
     private extractRelevantFallbackSnippets(query: string, results: SearchResult[]): Array<{ title: string; excerpt: string; score: number }> {
@@ -849,13 +879,24 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             if (bestExcerpt && bestScore >= 2) {
                 snippets.push({
                     title: result.title || 'Kaynak',
-                    excerpt: bestExcerpt.length > 420 ? `${bestExcerpt.slice(0, 417).trim()}...` : bestExcerpt,
+                    excerpt: this.cleanFallbackExcerpt(bestExcerpt, 520),
                     score: bestScore + result.similarity,
                 });
             }
         }
 
         return snippets.sort((a, b) => b.score - a.score).slice(0, 3);
+    }
+
+    private cleanFallbackExcerpt(value: string, maxLength = 420): string {
+        const cleaned = String(value || '')
+            .replace(/\[Kaynak:.*?\]/g, '')
+            .replace(/^#{1,6}\s*/gm, '')
+            .replace(/\*\*/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        return cleaned.length > maxLength ? `${cleaned.slice(0, maxLength - 3).trim()}...` : cleaned;
     }
 
     private getQuerySignalGroups(): Array<{ name: string; terms: string[]; weight: number }> {

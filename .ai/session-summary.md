@@ -1481,3 +1481,39 @@ Maintenance rule:
   - ask a Hotinfo-specific AI diagnosis question.
   - verify AI answer references the system details.
   - create the ticket and verify `hotinfoSnapshot` is visible for support/admin.
+
+## Follow-up - 2026-05-15 IFC Fallback Answer Quality
+
+### Problem observed
+- User asked in Turkish: `IFC aktarımında hangi ayarlar kritik?`
+- Because model generation was delayed, deterministic fallback returned an English raw excerpt:
+  - `The model response was delayed...`
+  - source title plus `#### 2.2.2 IFC Export Stages`
+- This was not useful for a customer-facing support answer.
+
+### Change
+- Improved deterministic fallback in `AiQueryService`:
+  - supports locale variants such as `tr-TR`.
+  - detects Turkish query language when explicit language is missing or malformed.
+  - cleans Markdown headings/source wrappers from fallback excerpts.
+  - adds an actionable Turkish IFC fallback checklist covering:
+    - IFC send/export path.
+    - exchange profile.
+    - attribute mapping.
+    - coordinates/length parameters.
+    - element filter.
+    - advanced geometry/quantity/element options.
+
+### Verification
+- `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts`
+  - 2 suites passed.
+  - 33 passed, 1 skipped.
+- `pnpm --filter @aluplan/backend typecheck`
+  - Passed.
+- `pnpm --filter @aluplan/backend build`
+  - Passed.
+- Backend was restarted from the new build.
+- Health check passed at `/api/v1/health`.
+
+### Remaining note
+- This improves the fallback path. The deeper product decision remains whether sync diagnosis timeout should be raised or whether the UI should communicate fallback mode more softly.
