@@ -1309,3 +1309,39 @@ Maintenance rule:
   - canonical/duplicate source preference,
   - negation-aware retrieval for `lisans değil / not license`.
 - Treat Hotinfo, Allplan Share, project backup, and product-help/ticket-opening failures as dataset/acceptance decisions unless matching sources are confirmed in the corpus.
+
+## Follow-up - 2026-05-15 Faz 4 Target Fix
+
+### Change
+- Updated `EmbeddingService` ranking with two narrow deterministic multipliers:
+  - negated license intent handling for phrases like `lisans değil`, `not license`, `keine lizenz`.
+  - pilot/copy source quality demotion so canonical FAQ sources outrank pilot duplicates.
+- Updated `.ai/rag-quality/run-acceptance.mjs` so source hint matching includes retrieved content, not only title/category/metadata.
+
+### Tests
+- `pnpm --filter @aluplan/backend test -- embedding.service.spec.ts`
+  - 17 passed.
+- `pnpm --filter @aluplan/backend typecheck`
+  - Passed.
+- `pnpm --filter @aluplan/backend build`
+  - Passed.
+
+### Live target acceptance
+- `rag-tr-general-demotion-001`
+  - PASS.
+  - Top source changed to `[Dataset] FAQ_EN_Allplan_is_running_slow.pdf`.
+- `rag-tr-duplicate-canonical-001`
+  - PASS.
+  - Top source changed to `[Dataset] FAQ_DE_Grafikkartentreiber_aktualisieren.pdf`.
+
+### Live regression acceptance
+- `rag-tr-network-startup-001`: PASS.
+- `rag-tr-license-offline-001`: PASS.
+- `rag-en-license-server-001`: PASS.
+
+### Remaining failures
+- Remaining known failures are dataset/acceptance-scope decisions, not immediate retrieval-code defects:
+  - `rag-tr-project-backup-001`
+  - `rag-tr-share-cloud-001`
+  - `rag-tr-hotinfo-001`
+  - `rag-tr-no-ai-ticket-001`

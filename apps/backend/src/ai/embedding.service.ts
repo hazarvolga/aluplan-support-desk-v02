@@ -90,11 +90,26 @@ const calculateTitleTokenBoost = (queryTokens: string[], title: string | null | 
 const hasSignal = (normalizedQuery: string, signals: string[]): boolean =>
     signals.some((signal) => normalizedQuery.includes(signal));
 
+const hasNegatedLicenseIntent = (normalizedQuery: string): boolean =>
+    [
+        'lisans degil',
+        'lisans sorunu degil',
+        'lisans kaynakli degil',
+        'not license',
+        'not licensing',
+        'not a license',
+        'no license issue',
+        'nicht lizenz',
+        'keine lizenz',
+    ].some((phrase) => normalizedQuery.includes(phrase));
+
 const calculateIntentCategoryMultiplier = (query: string, category: string | null | undefined): number => {
     if (!category) return 1;
 
     const normalizedQuery = normalizeSearchText(query);
-    const hasLicenseIntent = hasSignal(normalizedQuery, ['license', 'lisans', 'softlock', 'codemeter', 'product key', 'aktivasyon', 'activation', 'lizenz']);
+    const hasLicenseIntent =
+        !hasNegatedLicenseIntent(normalizedQuery) &&
+        hasSignal(normalizedQuery, ['license', 'lisans', 'softlock', 'codemeter', 'product key', 'aktivasyon', 'activation', 'lizenz']);
     const hasNetworkIntent = hasSignal(normalizedQuery, ['network', 'netzwerk', 'server', 'sunucu', 'isim cozumleme', 'name resolution', 'dns', 'workgroup', 'ag']);
     const hasStartupIntent = hasSignal(normalizedQuery, ['acilis', 'baslangic', 'startup', 'start', 'bekliyor', 'waiting']);
     const hasPerformanceIntent = hasSignal(normalizedQuery, ['performans', 'performance', 'yavas', 'slow', 'langsam', 'grafik', 'graphics', 'driver', 'surucu']);
@@ -104,6 +119,35 @@ const calculateIntentCategoryMultiplier = (query: string, category: string | nul
     if (hasLicenseIntent && category === 'License & Activation') return 1.18;
     if ((hasNetworkIntent || hasStartupIntent) && category === 'Network & Workgroup') return 1.22;
     if (hasPerformanceIntent && category === 'Performance & Hardware') return 1.18;
+
+    return 1;
+};
+
+const calculateIntentSourceMultiplier = (
+    query: string,
+    category: string | null | undefined,
+    title: string | null | undefined,
+): number => {
+    const normalizedQuery = normalizeSearchText(query);
+    const normalizedSource = normalizeSearchText(`${category ?? ''} ${title ?? ''}`);
+    const negatedLicenseIntent = hasNegatedLicenseIntent(normalizedQuery);
+    const hasLicenseSourceSignal = hasSignal(normalizedSource, ['license', 'lisans', 'lizenz', 'softlock', 'codemeter']);
+    const asksNetworkStartup =
+        hasSignal(normalizedQuery, ['network', 'netzwerk', 'server', 'sunucu', 'isim cozumleme', 'name resolution', 'dns', 'workgroup', 'ag']) &&
+        hasSignal(normalizedQuery, ['acilis', 'baslangic', 'startup', 'start', 'bekliyor', 'waiting']);
+
+    if ((negatedLicenseIntent || asksNetworkStartup) && hasLicenseSourceSignal) return 0.5;
+
+    return 1;
+};
+
+const calculateSourceQualityMultiplier = (title: string | null | undefined): number => {
+    const normalizedTitle = normalizeSearchText(title);
+    if (!normalizedTitle) return 1;
+
+    if (normalizedTitle.includes('pilot')) return 0.68;
+    if (normalizedTitle.includes('kopya') || normalizedTitle.includes(' copy ')) return 0.86;
+    if (normalizedTitle.includes('faq ')) return 1.04;
 
     return 1;
 };
@@ -335,9 +379,11 @@ export class EmbeddingService {
                 const languageMultiplier = row.language === queryLanguage ? 1.14 : row.language && ['tr', 'en', 'de'].includes(row.language) ? 0.97 : 1.0;
                 const categoryMultiplier = row.category === queryCategory ? 1.18 : row.category ? 0.98 : 1.0;
                 const intentCategoryMultiplier = calculateIntentCategoryMultiplier(query, row.category);
+                const intentSourceMultiplier = calculateIntentSourceMultiplier(query, row.category, row.title);
                 const titleBoost = calculateTitleTokenBoost(queryTokens, row.title);
                 const contentSignalBoost = calculateContentSignalBoost(query, row.title, row.content);
-                const rankScore = rawSimilarity * languageMultiplier * categoryMultiplier * intentCategoryMultiplier * titleBoost * contentSignalBoost;
+                const sourceQualityMultiplier = calculateSourceQualityMultiplier(row.title);
+                const rankScore = rawSimilarity * languageMultiplier * categoryMultiplier * intentCategoryMultiplier * intentSourceMultiplier * titleBoost * contentSignalBoost * sourceQualityMultiplier;
                 const adjustedSimilarity = Math.min(rankScore, 1);
 
                 return {

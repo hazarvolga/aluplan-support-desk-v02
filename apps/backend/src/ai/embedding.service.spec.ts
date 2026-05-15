@@ -198,6 +198,66 @@ describe('EmbeddingService', () => {
 
             expect(results.map((result) => result.articleId)).toEqual(['src-format', 'src-transfer']);
         });
+
+        it('should demote license sources when the query explicitly says it is not a license issue', async () => {
+            mockAiService.embed.mockResolvedValue(mockEmbedResult);
+            mockPrismaService.$queryRaw.mockResolvedValue([
+                {
+                    article_id: 'license-register',
+                    source_type: 'DOCUMENT',
+                    title: 'faq-softlock-SSS-Allplan-Lisansinin-Kayitlandirma-Islemi.pdf',
+                    content: 'Lisans kayitlandirma ve aktivasyon islemi.',
+                    similarity: 0.90,
+                    trust_score: 0.85,
+                    language: 'tr',
+                    category: 'General',
+                },
+                {
+                    article_id: 'network-startup',
+                    source_type: 'DOCUMENT',
+                    title: 'FAQ_EN_Allplan_is_running_slow.pdf',
+                    content: 'Name resolution on the network If Allplan takes several minutes to start, name resolution may not work.',
+                    similarity: 0.74,
+                    trust_score: 0.85,
+                    language: 'en',
+                    category: 'Performance & Hardware',
+                },
+            ]);
+
+            const { results } = await service.search('Allplan ağ üzerinden açılırken çok bekliyor, lisans değil isim çözümleme olabilir mi?', 2);
+
+            expect(results.map((result) => result.articleId)).toEqual(['network-startup', 'license-register']);
+        });
+
+        it('should prefer canonical FAQ sources over pilot duplicates when both match the same intent', async () => {
+            mockAiService.embed.mockResolvedValue(mockEmbedResult);
+            mockPrismaService.$queryRaw.mockResolvedValue([
+                {
+                    article_id: 'pilot-driver',
+                    source_type: 'DOCUMENT',
+                    title: '[Dataset] pilot-de-grafikkartentreiber-aktualisieren.pdf',
+                    content: 'Grafikkartentreiber aktualisieren NVIDIA AMD Treiber.',
+                    similarity: 0.64,
+                    trust_score: 0.85,
+                    language: 'de',
+                    category: 'Performance & Hardware',
+                },
+                {
+                    article_id: 'faq-driver',
+                    source_type: 'DOCUMENT',
+                    title: '[Dataset] FAQ_DE_Grafikkartentreiber_aktualisieren.pdf',
+                    content: 'Grafikkartentreiber aktualisieren NVIDIA AMD Treiber.',
+                    similarity: 0.62,
+                    trust_score: 0.85,
+                    language: 'de',
+                    category: 'Performance & Hardware',
+                },
+            ]);
+
+            const { results } = await service.search('Grafik kartı sürücüsü konusunda canonical FAQ kaynağı kullanılmalı mı?', 2);
+
+            expect(results.map((result) => result.articleId)).toEqual(['faq-driver', 'pilot-driver']);
+        });
     });
 
     describe('indexPoolContent', () => {

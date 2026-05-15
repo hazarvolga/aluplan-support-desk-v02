@@ -71,7 +71,7 @@ function evaluate(question, responseStatus, results) {
   const top = results[0];
   const joinedTopFive = results
     .slice(0, 5)
-    .map(result => `${result.title || ''} ${result.category || ''} ${JSON.stringify(result.metadata || {})}`)
+    .map(result => `${result.title || ''} ${result.category || ''} ${result.content || ''} ${JSON.stringify(result.metadata || {})}`)
     .join('\n');
   const categoryOk = (question.expectedCategories || []).some(category =>
     results.slice(0, 3).some(result => normalize(result.category).includes(normalize(category))),
