@@ -407,6 +407,41 @@ describe('AiQueryService', () => {
             expect(mockAiService.reformat).toHaveBeenCalledTimes(1);
         });
 
+        it('keeps synchronous customer diagnosis open long enough for admin-grade synthesis', async () => {
+            jest.useFakeTimers();
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'license-move',
+                        sourceType: 'DOCUMENT',
+                        title: 'Moving license server to a new server',
+                        content: 'Return licenses on the old server. Install the license server on the new machine. Activate licenses with the Product Key. Verify clients can connect.',
+                        similarity: 0.96,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.96, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockImplementation(() =>
+                new Promise((resolve) => setTimeout(() => resolve({
+                    response: '## 📌 Sorun Yorumu\nLisans sunucusu taşıma süreci için sentezlenmiş yanıt.',
+                }), 30_000)),
+            );
+
+            const resultPromise = service.query({
+                userQuery: 'Lisans sunucusunu yeni bir makineye taşımak istiyorum, süreç nedir?',
+                wait: true,
+                language: 'tr',
+            });
+
+            await jest.advanceTimersByTimeAsync(30_000);
+            const result = await resultPromise;
+
+            expect(result.answerMode).toBe('LLM');
+            expect(result.answer).toContain('Lisans sunucusu taşıma süreci');
+            jest.useRealTimers();
+        });
+
         it('uses query-aware fallback excerpts when synchronous generation is unavailable', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [
@@ -443,6 +478,44 @@ describe('AiQueryService', () => {
             expect(result.answer).not.toContain('Kaynak:');
             expect(result.answer).not.toContain('İlgili pasaj:');
             expect(result.answer).not.toContain('Why is Allplan running so slow?');
+        });
+
+        it('answers a Turkish customer question in Turkish even when the UI locale is English', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'license-move',
+                        sourceType: 'DOCUMENT',
+                        title: 'FAQ_EN_Moving_license_server_to_a_new_server.pdf',
+                        content: 'Moving license server to a new server. Return the license on the old server. Install license server on the new machine. Activate with Product Key. Verify Allplan clients connect to the new license server.',
+                        similarity: 0.96,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.96, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            diagnosisService.analyze.mockResolvedValue({
+                productId: null,
+                productName: 'Allplan',
+                categoryNames: ['Sistem, Lisans & Abonelik'],
+                matchedKeywords: ['lisans', 'taşıma'],
+                suggestedCauses: [],
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'Lisans sunucusunu yeni bir makineye taşımak istiyorum, süreç nedir?',
+                wait: true,
+                language: 'en',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('## 📌 Sorun Yorumu');
+            expect(result.answer).toContain('## 🛠️ Çözüm Adımları');
+            expect(result.answer).not.toContain('## 📌 Problem Interpretation');
+            expect(result.answer).not.toContain('## 🛠️ Solution Steps');
+            expect(mockAiService.reformat.mock.calls[0][0]).toContain('## 📌 Sorun Yorumu');
+            expect(mockAiService.reformat.mock.calls[0][0]).toContain('## 🛠️ Çözüm Adımları');
         });
 
         it('returns a Turkish actionable IFC fallback instead of raw headings when generation is unavailable', async () => {
@@ -512,7 +585,7 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             expect(result.answer).not.toContain('İlgili pasaj:');
         });
 
-        it('returns a structured customer-safe license borrowing fallback when generation is unavailable', async () => {
+        it('returns a structured customer-safe license borrowing fallback in the query language when generation is unavailable', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [
                     {
@@ -535,11 +608,11 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             });
 
             expect(result.answerMode).toBe('FALLBACK');
-            expect(result.answer).toContain('Lisans sunucusundan geçici lisans ödünç almak');
-            expect(result.answer).toContain('## 🛠️ Çözüm Adımları');
+            expect(result.answer).toContain('temporarily borrow an Allplan license');
+            expect(result.answer).toContain('## 🛠️ Solution Steps');
             expect(result.answer).toContain('License settings');
             expect(result.answer).toContain('Ausleihen');
-            expect(result.answer).toContain('## ✅ Doğrulama');
+            expect(result.answer).toContain('## ✅ Verification');
             expect(result.answer).not.toContain('Kaynak:');
             expect(result.answer).not.toContain('İlgili pasaj:');
             expect(result.answer).not.toContain('License server - borrowing licenses temporarily.');

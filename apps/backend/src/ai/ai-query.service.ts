@@ -155,7 +155,7 @@ import { StorageService } from '../common/services/storage.service';
 export class AiQueryService {
     private readonly logger = new Logger(AiQueryService.name);
     private readonly DIAGNOSIS_GENERATION_TIMEOUT_MS = 25000;
-    private readonly SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS = 15000;
+    private readonly SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS = 60000;
     constructor(
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
@@ -192,7 +192,7 @@ export class AiQueryService {
         const { userQuery, userId, channel = 'WEB', hotinfoContext, wait = true } = options;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
-        const lang = options.language || 'tr';
+        const lang = this.resolveResponseLanguage(options.language, userQuery);
 
         // --- GAP-05: AI Quota & Budget Check ---
         const today = new Date().toISOString().split('T')[0];
@@ -252,7 +252,7 @@ export class AiQueryService {
         const { userQuery, userId, channel = 'WEB', hotinfoContext, attachments } = options;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
-        const lang = options.language || 'tr';
+        const lang = this.resolveResponseLanguage(options.language, userQuery);
 
         // Setup cache key for later saving
         const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
@@ -481,7 +481,7 @@ export class AiQueryService {
                 product: diagnosis?.productName,
                 categories: diagnosis?.categoryNames,
                 keywords: diagnosis?.matchedKeywords,
-                language: options.language,
+                language: lang,
                 audience: isStaff ? 'agent' : 'customer',
             });
 
@@ -516,14 +516,14 @@ export class AiQueryService {
                 this.logger.warn(`⚠️ Diagnosis generation timed out or returned empty. Falling back to top matched content.`);
             }
 
-            const rawAnswer = aiResult?.response ?? this.buildDeterministicFallbackAnswer(userQuery, results, options.language || 'tr', {
+            const rawAnswer = aiResult?.response ?? this.buildDeterministicFallbackAnswer(userQuery, results, lang, {
                 showSourceDetails: isStaff,
                 diagnosis,
             });
             answerMode = aiResult?.response ? 'LLM' : 'FALLBACK';
 
             // Split response by languages (TR, EN, DE)
-            const splitResponse = this.parseMultiLangResponse(rawAnswer, options.language || 'auto');
+            const splitResponse = this.parseMultiLangResponse(rawAnswer, lang);
             answer = splitResponse.main; // The active language content
             translations = splitResponse.translations;
 
@@ -1022,12 +1022,19 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             /(?:borrow|borrowing|odunc|ausleihen|offline|temporary|temporar|gecici)/.test(normalizedQuery);
     }
 
-    private resolveFallbackLanguage(language: string | undefined, query: string): 'tr' | 'en' | 'de' {
+    private resolveResponseLanguage(language: string | undefined, query: string): 'tr' | 'en' | 'de' {
+        const queryLanguage = detectQueryLanguage(query);
+        if (queryLanguage) return queryLanguage;
+
         const normalizedLanguage = (language || '').toLowerCase();
         if (normalizedLanguage.startsWith('tr')) return 'tr';
-        if (normalizedLanguage.startsWith('en')) return 'en';
         if (normalizedLanguage.startsWith('de')) return 'de';
-        return detectQueryLanguage(query);
+        if (normalizedLanguage.startsWith('en')) return 'en';
+        return 'tr';
+    }
+
+    private resolveFallbackLanguage(language: string | undefined, query: string): 'tr' | 'en' | 'de' {
+        return this.resolveResponseLanguage(language, query);
     }
 
     private extractRelevantFallbackSnippets(query: string, results: SearchResult[], diagnosis?: DiagnosisResult): Array<{ title: string; excerpt: string; score: number }> {
