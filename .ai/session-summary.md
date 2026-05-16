@@ -1941,3 +1941,42 @@ Maintenance rule:
   - commit: `docs(memory): record rag fallback topology plan`
   - checkpoint branch: `restore/rag-fallback-before-integration-20260515`
 - Existing `apps/backend/openapi.json` drift remains intentionally excluded.
+
+## Restore Point - 2026-05-16 Customer/Agent RAG Answer Parity
+
+### Trigger
+- Customer tarafında RAG yanıtları fallback'e erken düşüyor ve admin Copilot yanıtlarından belirgin biçimde daha zayıf kalıyordu.
+- Örnek: "Lisans sunucusunu yeni bir makineye taşımak istiyorum, süreç nedir?"
+  - Customer: 15 saniye sonunda kısa/mixed-language deterministic fallback.
+  - Admin: 60 saniyelik Copilot synthesis ile detaylı Türkçe prosedür.
+
+### Implemented
+- `AiQueryService` synchronous customer diagnosis generation timeout'u 15s -> 60s yapıldı.
+- Cevap dili URL locale yerine soru diline göre belirlenir hale getirildi.
+  - `/en` UI altında Türkçe soru Türkçe answer contract kullanır.
+- Stale customer permission token sorunu için frontend API katmanı `403 Requires permission` durumunda bir kez refresh+retry yapacak şekilde düzeltildi.
+- RBAC seed/auth refresh drift'i düzeltildi; CUSTOMER ve AGENT rolleri `ticket:read` dahil gerekli ticket izinlerine sahip.
+
+### Validation
+- Backend:
+  - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts --runInBand`
+  - `pnpm --filter @aluplan/backend typecheck`
+  - `pnpm --filter @aluplan/backend build`
+- Frontend:
+  - `pnpm --filter @aluplan/frontend exec vitest run src/lib/api.spec.ts`
+  - `pnpm --filter @aluplan/frontend typecheck`
+- Runtime:
+  - Backend restarted from fresh `dist/main`.
+  - `/api/v1/health` returned `ok`.
+  - Customer and admin WebSocket clients reconnected.
+- User confirmed the latest customer flow works.
+
+### Commits
+- `74c859f fix(auth): restore customer ticket permissions`
+- `457076a fix(frontend): refresh stale permission tokens`
+- `3b7b82d fix(rag): align customer answer synthesis with agent flow`
+
+### Restore Policy
+- This point is considered a stable restore checkpoint for RAG customer/admin answer parity.
+- `apps/backend/openapi.json` is still unrelated drift and must not be mixed into product/RAG commits.
+- Graphify still warns that a fresh graph has about 5.6k nodes vs existing 11.4k nodes; graph output should not be force-overwritten until chunk/source mismatch is understood.
