@@ -190,7 +190,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                     <Button
                         onClick={() => window.location.href = `/${locale}/tickets/new`}
                         data-testid="create-ticket-button"
-                        className="h-9 px-4 bg-primary hover:bg-primary/90 text-white text-[10px] font-bold uppercase tracking-widest transition-all"
+                        className="h-9 px-4 bg-primary hover:bg-primary/90 text-black text-[10px] font-bold uppercase tracking-widest transition-all"
                     >
                         <Ticket className="w-3.5 h-3.5 mr-2" />
                         {t('new_ticket')}
