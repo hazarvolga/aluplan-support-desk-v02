@@ -56,6 +56,19 @@ interface SyncLog {
     details: SyncDetails | null;
 }
 
+interface CrmChangeLog {
+    id: string;
+    entityType: string;
+    entityId: string;
+    localRecordId: string | null;
+    fieldName: string;
+    oldValue: string | null;
+    newValue: string | null;
+    source: string;
+    status: string;
+    changedAt: string;
+}
+
 import { use } from 'react';
 
 export default function CrmManagementPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -92,9 +105,11 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
 
     const [connection, setConnection] = useState<CrmConnection | null>(null);
     const [logs, setLogs] = useState<SyncLog[]>([]);
+    const [changes, setChanges] = useState<CrmChangeLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [syncing, setSyncing] = useState(false);
+    const [deltaSyncing, setDeltaSyncing] = useState(false);
 
     const loadData = async () => {
         try {
@@ -117,6 +132,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
                     },
                 });
                 loadLogs(conn.id);
+                loadChanges(conn.id);
                 loadDiscovery(conn.id);
             }
             // Load field definitions
@@ -135,6 +151,15 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
             setLogs(syncLogs);
         } catch (error) {
             if (process.env.NODE_ENV === 'development') console.error('Failed to load logs', error);
+        }
+    };
+
+    const loadChanges = async (id: string) => {
+        try {
+            const recentChanges = await api.crm.getChanges(id, 50);
+            setChanges(recentChanges);
+        } catch (error) {
+            if (process.env.NODE_ENV === 'development') console.error('Failed to load CRM changes', error);
         }
     };
 
@@ -176,6 +201,20 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
             if (process.env.NODE_ENV === 'development') console.error('Sync failed', error);
         } finally {
             setSyncing(false);
+        }
+    };
+
+    const handleDeltaSync = async () => {
+        if (!connection) return;
+        setDeltaSyncing(true);
+        try {
+            await api.crm.triggerDeltaSync(connection.id);
+            toast({ title: '🔄 ' + t('crm.delta_sync_btn'), description: t('crm.delta_sync_started') });
+            await Promise.all([loadData(), loadChanges(connection.id)]);
+        } catch (error) {
+            if (process.env.NODE_ENV === 'development') console.error('Delta sync failed', error);
+        } finally {
+            setDeltaSyncing(false);
         }
     };
 
@@ -360,15 +399,26 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button
-                                className="w-full"
-                                variant="outline"
-                                disabled={!connection || syncing}
-                                onClick={handleSync}
-                            >
-                                {syncing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                                {t('crm.sync_btn')}
-                            </Button>
+                            <div className="grid w-full grid-cols-1 gap-2">
+                                <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    disabled={!connection || deltaSyncing}
+                                    onClick={handleDeltaSync}
+                                >
+                                    {deltaSyncing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                                    {t('crm.delta_sync_btn')}
+                                </Button>
+                                <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    disabled={!connection || syncing}
+                                    onClick={handleSync}
+                                >
+                                    {syncing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                                    {t('crm.sync_btn')}
+                                </Button>
+                            </div>
                         </CardFooter>
                     </Card>
                 </div>
@@ -456,6 +506,54 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
                             ) : (
                                 logs.map((log) => (
                                     <SyncLogRow key={log.id} log={log} />
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <History className="h-5 w-5" />
+                        {t('crm.change_history_title')}
+                    </CardTitle>
+                    <CardDescription>{t('crm.change_history_desc')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>{t('labels.created_at')}</TableHead>
+                                <TableHead>{tc('type')}</TableHead>
+                                <TableHead>{t('crm.external_id')}</TableHead>
+                                <TableHead>{t('crm.changed_field')}</TableHead>
+                                <TableHead>{t('crm.old_value')}</TableHead>
+                                <TableHead>{t('crm.new_value')}</TableHead>
+                                <TableHead>{t('labels.status')}</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {changes.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                        {t('crm.change_history_empty')}
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                changes.map((change) => (
+                                    <TableRow key={change.id}>
+                                        <TableCell className="text-xs">{new Date(change.changedAt).toLocaleString(locale)}</TableCell>
+                                        <TableCell className="text-xs">{change.entityType}</TableCell>
+                                        <TableCell className="text-xs font-mono">{change.entityId}</TableCell>
+                                        <TableCell className="text-xs">{change.fieldName}</TableCell>
+                                        <TableCell className="max-w-[220px] truncate text-xs text-muted-foreground">{change.oldValue || '-'}</TableCell>
+                                        <TableCell className="max-w-[220px] truncate text-xs">{change.newValue || '-'}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={change.status === 'SUCCESS' ? 'secondary' : 'destructive'}>{change.status}</Badge>
+                                        </TableCell>
+                                    </TableRow>
                                 ))
                             )}
                         </TableBody>

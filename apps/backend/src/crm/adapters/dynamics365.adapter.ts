@@ -504,6 +504,50 @@ export class Dynamics365Adapter implements ICrmAdapter {
         }
     }
 
+    async fetchDeltaRecords(
+        config: any,
+        entityType: 'account' | 'contact',
+        deltaLink?: string | null,
+    ): Promise<{ records: any[]; deltaLink: string | null }> {
+        const token = await this.getAccessToken(config);
+        const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
+        const entitySet = entityType === 'account' ? 'accounts' : 'contacts';
+        const select = entityType === 'account'
+            ? 'accountid,name,websiteurl,address1_composite,industrycode,accountnumber,modifiedon,statecode'
+            : 'contactid,emailaddress1,firstname,lastname,jobtitle,telephone1,new_musteridurumu,new_AbonelikModeli,_parentcustomerid_value,modifiedon,statecode';
+
+        let nextUrl: string | null = deltaLink || `${instanceUrl}/api/data/v9.2/${entitySet}?$select=${select}`;
+        let latestDeltaLink: string | null = null;
+        const records: any[] = [];
+
+        while (nextUrl) {
+            const headers: Record<string, string> = {
+                Authorization: `Bearer ${token}`,
+                'OData-MaxVersion': '4.0',
+                'OData-Version': '4.0',
+                Accept: 'application/json',
+            };
+            if (!deltaLink) {
+                headers.Prefer = 'odata.track-changes';
+            }
+
+            const response: { data: any } = await axios.get(nextUrl, {
+                headers,
+                timeout: 30000,
+            });
+
+            records.push(...(response.data.value ?? []));
+            nextUrl = response.data['@odata.nextLink'] ?? null;
+            latestDeltaLink = response.data['@odata.deltaLink'] ?? latestDeltaLink;
+        }
+
+        return { records, deltaLink: latestDeltaLink };
+    }
+
+    isDeletedDeltaRecord(record: any): boolean {
+        return String(record?.['@odata.context'] || '').includes('$deletedEntity') || record?.reason === 'deleted';
+    }
+
     private async fetchEntityMetadata(instanceUrl: string, token: string, entityName: string) {
         // EntityDefinitions endpoint for accurate field label discovery
         const url = `${instanceUrl}/api/data/v9.2/EntityDefinitions(LogicalName='${entityName}')/Attributes?$select=LogicalName,DisplayName&$filter=IsValidForRead eq true and AttributeType ne 'Virtual'`;

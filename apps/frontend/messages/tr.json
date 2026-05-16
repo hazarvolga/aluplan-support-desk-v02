@@ -812,6 +812,8 @@
       "last_sync": "Son Senkronizasyon",
       "never_synced": "Hiç yapılmadı",
       "sync_btn": "Şimdi Senkronize Et",
+      "delta_sync_btn": "CRM Güncellemelerini Kontrol Et",
+      "delta_sync_started": "CRM güncelleme kontrolü başlatıldı.",
       "success": "Başarılı",
       "error": "Hata",
       "in_progress": "Devam Ediyor",
@@ -828,7 +830,13 @@
       "instance_url": "Dynamics Sunucu Adresi (URL)",
       "external_id": "Harici ID",
       "provider_label": "Servis Sağlayıcı",
-      "instance_label": "Sunucu"
+      "instance_label": "Sunucu",
+      "change_history_title": "Son CRM Değişiklikleri",
+      "change_history_desc": "Dynamics 365 üzerinden gelen account ve contact güncellemeleri burada listelenir.",
+      "change_history_empty": "CRM değişikliği bulunmuyor.",
+      "changed_field": "Değişen Alan",
+      "old_value": "Eski Değer",
+      "new_value": "Yeni Değer"
     },
     "import": {
       "title": "Müşterileri İçe Aktar",

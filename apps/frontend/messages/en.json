@@ -812,6 +812,8 @@
       "last_sync": "Last Sync",
       "never_synced": "Never performed",
       "sync_btn": "Sync Now",
+      "delta_sync_btn": "Check CRM Updates",
+      "delta_sync_started": "CRM update check started.",
       "success": "Success",
       "error": "Error",
       "in_progress": "In Progress",
@@ -828,7 +830,13 @@
       "instance_url": "Dynamics Instance URL",
       "external_id": "External ID",
       "provider_label": "Provider",
-      "instance_label": "Instance"
+      "instance_label": "Instance",
+      "change_history_title": "Recent CRM Changes",
+      "change_history_desc": "Account and contact updates received from Dynamics 365 are listed here.",
+      "change_history_empty": "No CRM changes found.",
+      "changed_field": "Changed Field",
+      "old_value": "Old Value",
+      "new_value": "New Value"
     },
     "import": {
       "title": "Import Customers",

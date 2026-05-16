@@ -18,6 +18,8 @@ export class SettingsService {
         /\.credentials_json$/,
         /\.token$/,
         /^resend_api_key$/,
+        /^dynamics_api_key$/,
+        /^crm\.dynamics\.api_key$/,
     ];
 
     constructor(

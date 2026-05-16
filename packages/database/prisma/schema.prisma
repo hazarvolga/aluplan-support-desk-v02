@@ -287,6 +287,8 @@ model CrmConnection {
   updatedAt     DateTime     @updatedAt @map("updated_at")
   deletedAt     DateTime?    @map("deleted_at")
   syncLogs      CrmSyncLog[]
+  deltaStates   CrmDeltaSyncState[]
+  changeLogs    CrmChangeLog[]
 
   @@map("crm_connections")
 }
@@ -305,6 +307,42 @@ model CrmSyncLog {
   connection   CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
   @@map("crm_sync_logs")
+}
+
+model CrmDeltaSyncState {
+  id                   String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId         String        @map("connection_id") @db.Uuid
+  entityType           String        @map("entity_type") @db.VarChar(32)
+  deltaLink            String?       @map("delta_link")
+  lastSuccessfulSyncAt DateTime?     @map("last_successful_sync_at")
+  lastError            String?       @map("last_error")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+  connection           CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, entityType], map: "crm_delta_sync_states_connection_entity_key")
+  @@index([connectionId], map: "idx_crm_delta_sync_states_connection")
+  @@map("crm_delta_sync_states")
+}
+
+model CrmChangeLog {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId  String?       @map("connection_id") @db.Uuid
+  entityType    String        @map("entity_type") @db.VarChar(32)
+  entityId      String        @map("entity_id") @db.VarChar(255)
+  localRecordId String?       @map("local_record_id") @db.Uuid
+  fieldName     String        @map("field_name") @db.VarChar(100)
+  oldValue      String?       @map("old_value")
+  newValue      String?       @map("new_value")
+  source        String        @default("DELTA_SYNC") @db.VarChar(50)
+  status        String        @default("SUCCESS") @db.VarChar(50)
+  changedAt     DateTime      @default(now()) @map("changed_at")
+  connection    CrmConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId], map: "idx_crm_change_logs_entity")
+  @@index([changedAt], map: "idx_crm_change_logs_changed_at")
+  @@index([connectionId], map: "idx_crm_change_logs_connection")
+  @@map("crm_change_logs")
 }
 
 model Setting {

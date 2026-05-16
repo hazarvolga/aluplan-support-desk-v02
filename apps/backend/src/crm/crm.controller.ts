@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { CrmService } from './crm.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/rbac.guard';
@@ -33,6 +33,16 @@ export class CrmController {
     @Get('logs/:connectionId')
     async getLogs(@Param('connectionId') connectionId: string) {
         return this.crmService.getSyncLogs(connectionId);
+    }
+
+    @Post('delta-sync/:id')
+    async triggerDeltaSync(@Param('id') id: string) {
+        return this.crmService.triggerDeltaSync(id);
+    }
+
+    @Get('changes')
+    async getChangeLogs(@Query('connectionId') connectionId?: string, @Query('limit') limit?: string) {
+        return this.crmService.getChangeLogs(connectionId, limit ? Number(limit) : 50);
     }
 
     @Get('fields-definitions')

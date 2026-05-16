@@ -810,6 +810,8 @@
       "last_sync": "Letzte Synchronisierung",
       "never_synced": "Nie durchgeführt",
       "sync_btn": "Jetzt synchronisieren",
+      "delta_sync_btn": "CRM-Updates prüfen",
+      "delta_sync_started": "CRM-Aktualisierungsprüfung wurde gestartet.",
       "success": "Erfolgreich",
       "error": "Fehler",
       "in_progress": "In Bearbeitung",
@@ -826,7 +828,13 @@
       "instance_url": "Instanz-URL",
       "external_id": "Externe ID",
       "provider_label": "Anbieter",
-      "instance_label": "Instanz"
+      "instance_label": "Instanz",
+      "change_history_title": "Letzte CRM-Änderungen",
+      "change_history_desc": "Account- und Kontaktänderungen aus Dynamics 365 werden hier angezeigt.",
+      "change_history_empty": "Keine CRM-Änderungen gefunden.",
+      "changed_field": "Geändertes Feld",
+      "old_value": "Alter Wert",
+      "new_value": "Neuer Wert"
     },
     "import": {
       "title": "Kunden importieren",

@@ -77,6 +77,8 @@ function buildSyncDetails(
 }
 
 import { PiiMaskingService } from '../common/services/pii-masking.service';
+import { CrmRecordSyncService } from './services/crm-record-sync.service';
+import { CrmDeltaSyncService } from './services/crm-delta-sync.service';
 
 export interface CrmContact {
     contactId: string;           // CustomerProfile.id
@@ -99,6 +101,8 @@ export class CrmService {
         private dynamics365: Dynamics365Adapter,
         private crypto: CryptoService,
         private piiMasking: PiiMaskingService,
+        private recordSync: CrmRecordSyncService,
+        private deltaSync: CrmDeltaSyncService,
     ) {
         // Register available adapters
         this.adapters.set(CrmProvider.DYNAMICS_365, dynamics365);
@@ -452,6 +456,14 @@ export class CrmService {
         });
     }
 
+    async triggerDeltaSync(id: string) {
+        return this.deltaSync.runDeltaSync(id);
+    }
+
+    async getChangeLogs(connectionId?: string, limit = 50) {
+        return this.deltaSync.getRecentChanges(connectionId, limit);
+    }
+
     async getDiscoveryData(connectionId: string) {
         const connection = await this.prisma.crmConnection.findUnique({
             where: { id: connectionId }
@@ -547,117 +559,24 @@ export class CrmService {
     }
 
     private async syncSingleAccount(data: any) {
-        const industryFormatted = data['industrycode@OData.Community.Display.V1.FormattedValue'] || data.industrycode_display;
-
-        return this.prisma.crmAccount.upsert({
-            where: { externalAccountId: data.accountid },
-            update: {
-                name: data.name,
-                website: data.websiteurl,
-                address: data.address1_composite,
-                industry: industryFormatted,
-                account_number: data.accountnumber || null,
-                crmVerified: true,
-            },
-            create: {
-                name: data.name,
-                externalAccountId: data.accountid,
-                website: data.websiteurl,
-                address: data.address1_composite,
-                industry: industryFormatted,
-                account_number: data.accountnumber || null,
-                crmVerified: true,
-            },
+        const connection = await this.prisma.crmConnection.findFirst({
+            where: { provider: CrmProvider.DYNAMICS_365, isActive: true, deletedAt: null },
+        });
+        return this.recordSync.upsertAccountFromDynamics(data, connection, {
+            connectionId: connection?.id,
+            source: 'WEBHOOK',
+            recordChanges: true,
         });
     }
 
     private async syncSingleContact(data: any) {
-        // This is a simplified version of the adapter logic for a single contact
-        if (!data.emailaddress1) {
-            this.logger.warn(`Webhook received for contact without email: ${data.contactid}`);
-            return;
-        }
-
-        // Security: prevent CRM webhook from overwriting admin accounts with CUSTOMER role
-        const adminEmails = (process.env.ADMIN_BYPASS_EMAILS || '')
-            .split(',')
-            .map(e => e.trim().toLowerCase());
-        if (adminEmails.includes(data.emailaddress1.toLowerCase())) {
-            this.logger.warn(`Webhook sync skipped for protected admin email: ${data.emailaddress1}`);
-            return;
-        }
-
-        return this.prisma.$transaction(async (tx) => {
-            // 1. Find or create User
-            let user = await tx.user.findUnique({
-                where: { email: data.emailaddress1 },
-            });
-
-            if (!user) {
-                // Get customer role
-                const customerRole = await tx.role.findUnique({
-                    where: { name: 'CUSTOMER' }
-                });
-
-                user = await tx.user.create({
-                    data: {
-                        email: data.emailaddress1,
-                        fullName: `${data.firstname || ''} ${data.lastname || ''}`.trim() || 'CRM Contact',
-                        status: 'ACTIVE',
-                        passwordHash: 'CRM_SYNCED',
-                        roleId: customerRole?.id,
-                    },
-                });
-            }
-
-            // 2. Find Linked Account if any
-            let linkedAccountId: string | undefined = undefined;
-            let accountInfo: any = null;
-
-            const accountId = data.parentcustomerid_account?.accountid || data._parentcustomerid_value;
-
-            if (accountId) {
-                accountInfo = await tx.crmAccount.findUnique({
-                    where: { externalAccountId: accountId },
-                });
-                linkedAccountId = accountInfo?.id;
-            }
-
-            const statusFormatted = data['new_musteridurumu@OData.Community.Display.V1.FormattedValue'] || data.new_musteridurumu_display;
-            const clientNo = data.accountnumber || accountInfo?.customerNo || `DYN-${data.contactid.substring(0, 8)}`;
-            const industryFromAccount = accountInfo?.industry;
-
-            // 3. Upsert CustomerProfile
-            return tx.customerProfile.upsert({
-                where: { userId: user.id },
-                update: {
-                    firstName: data.firstname,
-                    lastName: data.lastname,
-                    jobTitle: data.jobtitle,
-                    phoneNumber: data.telephone1,
-                    companyName: data.parentcustomerid_account?.name || accountInfo?.name || 'Unknown',
-                    accountId: linkedAccountId,
-                    externalContactId: data.contactid,
-                    customerNo: clientNo,
-                    contractStatus: statusFormatted,
-                    industry: industryFromAccount,
-                    crmVerified: true,
-                },
-                create: {
-                    userId: user.id,
-                    firstName: data.firstname,
-                    lastName: data.lastname,
-                    customerNo: clientNo,
-                    jobTitle: data.jobtitle,
-                    phoneNumber: data.telephone1,
-                    companyName: data.parentcustomerid_account?.name || accountInfo?.name || 'Unknown',
-                    accountId: linkedAccountId,
-                    externalContactId: data.contactid,
-                    contractStatus: statusFormatted,
-                    industry: industryFromAccount,
-                    crmVerified: true,
-                },
-            });
+        const connection = await this.prisma.crmConnection.findFirst({
+            where: { provider: CrmProvider.DYNAMICS_365, isActive: true, deletedAt: null },
+        });
+        return this.recordSync.upsertContactFromDynamics(data, connection, {
+            connectionId: connection?.id,
+            source: 'WEBHOOK',
+            recordChanges: true,
         });
     }
 }

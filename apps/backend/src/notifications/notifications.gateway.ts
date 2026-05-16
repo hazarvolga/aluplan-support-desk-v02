@@ -507,6 +507,75 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         });
     }
 
+    async emitCrmChanges(payload: { connectionId: string; entityType: 'account' | 'contact'; changeCount: number }) {
+        const entityLabel = payload.entityType === 'account' ? 'account' : 'customer';
+        const title = payload.entityType === 'account'
+            ? 'CRM account bilgisi güncellendi'
+            : 'CRM müşteri bilgisi güncellendi';
+        const message = `${payload.changeCount} ${entityLabel} alanı Dynamics 365 üzerinden güncellendi.`;
+
+        const admins = await this.prisma.user.findMany({
+            where: {
+                role: {
+                    name: { in: ['admin', 'super-admin', 'department-manager'] },
+                },
+            },
+            select: { id: true },
+        });
+
+        if (admins.length > 0) {
+            await this.prisma.notification.createMany({
+                data: admins.map(admin => ({
+                    userId: admin.id,
+                    title,
+                    message,
+                    type: 'SYSTEM_ALERT',
+                    link: '/customers/crm',
+                })),
+            });
+        }
+
+        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').emit('crm:changes', {
+            ...payload,
+            title,
+            message,
+            timestamp: Date.now(),
+        });
+    }
+
+    async emitCrmSyncError(payload: { connectionId: string; message: string }) {
+        const title = 'CRM delta sync hatası';
+        const message = `Dynamics 365 değişiklik senkronizasyonu başarısız oldu: ${payload.message}`;
+
+        const admins = await this.prisma.user.findMany({
+            where: {
+                role: {
+                    name: { in: ['admin', 'super-admin', 'department-manager'] },
+                },
+            },
+            select: { id: true },
+        });
+
+        if (admins.length > 0) {
+            await this.prisma.notification.createMany({
+                data: admins.map(admin => ({
+                    userId: admin.id,
+                    title,
+                    message,
+                    type: 'SYSTEM_ALERT',
+                    link: '/customers/crm',
+                })),
+            });
+        }
+
+        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').emit('crm:sync_error', {
+            ...payload,
+            title,
+            message,
+            timestamp: Date.now(),
+        });
+    }
+
     sendToUser(userId: string, event: string, payload: any) {
         this.server.to(`user:${userId}`).emit(event, payload);
     }

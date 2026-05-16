@@ -574,8 +574,13 @@ export const api = {
             body: JSON.stringify(data)
         }),
         triggerSync: (id: string) => request<any>(`/crm/sync/${id}`, { method: 'POST' }),
+        triggerDeltaSync: (id: string) => request<any>(`/crm/delta-sync/${id}`, { method: 'POST' }),
         getDiscoveryData: (id: string) => request<any>(`/crm/discovery/${id}`),
         getLogs: (connectionId: string) => request<any[]>(`/crm/logs/${connectionId}`),
+        getChanges: (connectionId?: string, limit = 50) => request<any[]>(`/crm/changes?${new URLSearchParams({
+            ...(connectionId ? { connectionId } : {}),
+            limit: String(limit),
+        }).toString()}`),
         getAccounts: () => request<any[]>('/crm/accounts'),
         getAccount: (id: string) => request<any>(`/crm/accounts/${id}`),
         bulkDeleteAccounts: (ids: string[]) => request<any>('/crm/accounts/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
