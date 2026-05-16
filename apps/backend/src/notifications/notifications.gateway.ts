@@ -517,7 +517,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         const admins = await this.prisma.user.findMany({
             where: {
                 role: {
-                    name: { in: ['admin', 'super-admin', 'department-manager'] },
+                    name: { in: ['admin', 'ADMIN', 'super-admin', 'SUPER_ADMIN', 'department-manager', 'DEPARTMENT_MANAGER'] },
                 },
             },
             select: { id: true },
@@ -550,7 +550,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         const admins = await this.prisma.user.findMany({
             where: {
                 role: {
-                    name: { in: ['admin', 'super-admin', 'department-manager'] },
+                    name: { in: ['admin', 'ADMIN', 'super-admin', 'SUPER_ADMIN', 'department-manager', 'DEPARTMENT_MANAGER'] },
                 },
             },
             select: { id: true },

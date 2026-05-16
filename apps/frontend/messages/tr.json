@@ -2084,7 +2084,14 @@
     "new_ticket_desc": "{name} yeni bir destek talebi açtı: \"{subject}\"",
     "view_action": "İncele",
     "system_alert_title": "🚨 AI Geri Dönüş Tüzüğü Tetiklendi",
-    "system_alert_desc": "Birincil model ({primary}) yanıt vermedi veya hata verdi. Sistem otomatik olarak {fallback} modelini devreye aldı."
+    "system_alert_desc": "Birincil model ({primary}) yanıt vermedi veya hata verdi. Sistem otomatik olarak {fallback} modelini devreye aldı.",
+    "crm_change_title": "CRM verisi güncellendi",
+    "crm_change_desc": "Dynamics 365 üzerinden {count} {entity} alanı güncellendi.",
+    "crm_entity_account": "firma",
+    "crm_entity_contact": "müşteri",
+    "crm_sync_error_title": "CRM senkronizasyon hatası",
+    "crm_sync_error_desc": "Dynamics 365 güncelleme kontrolü başarısız oldu: {message}",
+    "open_crm_action": "CRM'i Aç"
   },
   "richTextEditor": {
     "toolbar": {

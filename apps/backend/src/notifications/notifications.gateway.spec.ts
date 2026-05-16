@@ -155,4 +155,39 @@ describe('NotificationsGateway', () => {
             expect(mockServer.emit).toHaveBeenCalledWith('system:ai_fallback', expect.any(Object));
         });
     });
+
+    describe('emitCrmChanges', () => {
+        it('should broadcast CRM changes and create persistent notifications', async () => {
+            mockPrisma.user.findMany.mockResolvedValue([{ id: 'admin-1' }]);
+
+            await gateway.emitCrmChanges({
+                connectionId: 'crm-1',
+                entityType: 'contact',
+                changeCount: 3,
+            });
+
+            expect(mockPrisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({
+                    role: expect.objectContaining({
+                        name: expect.objectContaining({
+                            in: expect.arrayContaining(['admin', 'ADMIN']),
+                        }),
+                    }),
+                }),
+            }));
+            expect(mockPrisma.notification.createMany).toHaveBeenCalledWith(expect.objectContaining({
+                data: [expect.objectContaining({
+                    userId: 'admin-1',
+                    type: 'SYSTEM_ALERT',
+                    link: '/customers/crm',
+                })],
+            }));
+            expect(mockServer.to).toHaveBeenCalledWith('role:admin');
+            expect(mockServer.emit).toHaveBeenCalledWith('crm:changes', expect.objectContaining({
+                connectionId: 'crm-1',
+                entityType: 'contact',
+                changeCount: 3,
+            }));
+        });
+    });
 });

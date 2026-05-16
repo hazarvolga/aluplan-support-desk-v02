@@ -2084,7 +2084,14 @@
     "new_ticket_desc": "{name} hat ein neues Support-Ticket eröffnet: \"{subject}\"",
     "view_action": "Ansehen",
     "system_alert_title": "System-Alarm",
-    "system_alert_desc": "Es liegt eine kritische Systemmeldung vor, die Ihre Aufmerksamkeit erfordert."
+    "system_alert_desc": "Es liegt eine kritische Systemmeldung vor, die Ihre Aufmerksamkeit erfordert.",
+    "crm_change_title": "CRM-Daten aktualisiert",
+    "crm_change_desc": "{count} {entity}-Feld(er) wurden aus Dynamics 365 aktualisiert.",
+    "crm_entity_account": "Firma",
+    "crm_entity_contact": "Kunde",
+    "crm_sync_error_title": "CRM-Synchronisation fehlgeschlagen",
+    "crm_sync_error_desc": "Dynamics 365-Aktualisierungsprüfung fehlgeschlagen: {message}",
+    "open_crm_action": "CRM öffnen"
   },
   "richTextEditor": {
     "toolbar": {

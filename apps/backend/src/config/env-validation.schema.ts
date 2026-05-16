@@ -69,7 +69,7 @@ export const envSchema = z.object({
 
     // CRM
     CRM_SYNC_INTERVAL: z.string().default('0 0 * * *'), // Daily at midnight
-    CRM_DELTA_SYNC_INTERVAL: z.string().default('*/15 * * * *'),
+    CRM_DELTA_SYNC_INTERVAL: z.string().default('*/5 * * * *'),
     ADMIN_BYPASS_EMAILS: z.string().min(1, "ADMIN_BYPASS_EMAILS is required for security"),
 
     // Added from GAP-09

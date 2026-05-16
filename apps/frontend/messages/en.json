@@ -2084,7 +2084,14 @@
     "new_ticket_desc": "{name} opened a new support ticket: \"{subject}\"",
     "view_action": "View",
     "system_alert_title": "🚨 AI Auto-Fallback Triggered",
-    "system_alert_desc": "Primary model ({primary}) failed or timed out. System automatically switched to {fallback} provider."
+    "system_alert_desc": "Primary model ({primary}) failed or timed out. System automatically switched to {fallback} provider.",
+    "crm_change_title": "CRM data updated",
+    "crm_change_desc": "{count} {entity} field(s) were updated from Dynamics 365.",
+    "crm_entity_account": "account",
+    "crm_entity_contact": "customer",
+    "crm_sync_error_title": "CRM sync failed",
+    "crm_sync_error_desc": "Dynamics 365 update check failed: {message}",
+    "open_crm_action": "Open CRM"
   },
   "richTextEditor": {
     "toolbar": {

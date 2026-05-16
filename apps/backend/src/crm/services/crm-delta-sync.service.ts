@@ -29,7 +29,7 @@ export class CrmDeltaSyncService {
         private readonly notifications: NotificationsGateway,
     ) { }
 
-    @Cron(process.env.CRM_DELTA_SYNC_INTERVAL || '*/15 * * * *')
+    @Cron(process.env.CRM_DELTA_SYNC_INTERVAL || '*/5 * * * *')
     async runScheduledDeltaSync() {
         const connections = await this.prisma.crmConnection.findMany({
             where: {

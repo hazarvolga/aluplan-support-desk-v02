@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FieldMapping } from './field-mapping';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslations, useLocale } from 'next-intl';
+import { getSocket } from '@/lib/socket';
 
 interface CrmConnection {
     id: string;
@@ -175,6 +176,33 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
     useEffect(() => {
         loadData();
     }, []);
+
+    useEffect(() => {
+        if (!connection?.id) return;
+
+        const socket = getSocket();
+        const refreshCrmData = async (payload?: { connectionId?: string }) => {
+            if (payload?.connectionId && payload.connectionId !== connection.id) return;
+            await Promise.all([
+                loadChanges(connection.id),
+                api.crm.getConnections().then(connections => {
+                    if (connections?.[0]) setConnection(connections[0]);
+                }),
+            ]);
+        };
+
+        socket.on('crm:changes', refreshCrmData);
+        socket.on('crm:sync_error', refreshCrmData);
+
+        if (!socket.connected) {
+            socket.connect();
+        }
+
+        return () => {
+            socket.off('crm:changes', refreshCrmData);
+            socket.off('crm:sync_error', refreshCrmData);
+        };
+    }, [connection?.id]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();

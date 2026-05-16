@@ -41,8 +41,39 @@ export function GlobalTicketNotification() {
             });
         };
 
+        const handleCrmChanges = (data: any) => {
+            toastRef.current({
+                title: t('crm_change_title'),
+                description: t('crm_change_desc', {
+                    count: data.changeCount ?? 0,
+                    entity: data.entityType === 'account' ? t('crm_entity_account') : t('crm_entity_contact'),
+                }),
+                action: (
+                    <ToastAction
+                        altText={t('open_crm_action')}
+                        onClick={() => window.open('/customers/crm', '_blank')}
+                        className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                        {t('open_crm_action')}
+                    </ToastAction>
+                ),
+                duration: 10000,
+            });
+        };
+
+        const handleCrmSyncError = (data: any) => {
+            toastRef.current({
+                title: t('crm_sync_error_title'),
+                description: t('crm_sync_error_desc', { message: data.message || '-' }),
+                variant: 'destructive',
+                duration: 10000,
+            });
+        };
+
         socket.on('ticket:created', handleNewTicket);
         socket.on('system:ai_fallback', handleAiFallback);
+        socket.on('crm:changes', handleCrmChanges);
+        socket.on('crm:sync_error', handleCrmSyncError);
 
         if (!socket.connected) {
             socket.connect();
@@ -51,6 +82,8 @@ export function GlobalTicketNotification() {
         return () => {
             socket.off('ticket:created', handleNewTicket);
             socket.off('system:ai_fallback', handleAiFallback);
+            socket.off('crm:changes', handleCrmChanges);
+            socket.off('crm:sync_error', handleCrmSyncError);
         };
     }, [t]);
 

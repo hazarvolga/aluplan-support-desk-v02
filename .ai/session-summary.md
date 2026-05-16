@@ -1980,3 +1980,33 @@ Maintenance rule:
 - This point is considered a stable restore checkpoint for RAG customer/admin answer parity.
 - `apps/backend/openapi.json` is still unrelated drift and must not be mixed into product/RAG commits.
 - Graphify still warns that a fresh graph has about 5.6k nodes vs existing 11.4k nodes; graph output should not be force-overwritten until chunk/source mismatch is understood.
+
+## Follow-up - 2026-05-16 CRM Live Delta Notifications
+
+### Trigger
+- Dynamics 365 delta sync was updating local account/contact records and writing `crm_change_logs`, but the admin experience still required watching the CRM page or pressing "Check CRM Updates" to feel confident.
+- User expectation: CRM remains source of truth; support DB updates automatically; admins receive live notification and can see refreshed change history.
+
+### Implemented
+- CRM scheduled delta sync default interval changed from 15 minutes to 5 minutes.
+- Existing backend `crm:changes` and `crm:sync_error` websocket events were connected to the global frontend notification listener.
+- Admins now receive localized toast notifications for CRM account/customer changes and CRM sync errors.
+- `/customers/crm` now listens for CRM websocket events and refreshes change history/connection status automatically.
+- CRM persistent notification recipient lookup now accepts uppercase and lowercase role names, preventing admin notification misses caused by role-name casing.
+
+### Validation
+- Backend:
+  - `pnpm --filter @aluplan/backend test -- notifications.gateway.spec.ts crm-record-sync.service.spec.ts`
+  - `pnpm --filter @aluplan/backend typecheck`
+  - `pnpm --filter @aluplan/backend build`
+- Frontend:
+  - `pnpm --filter @aluplan/frontend typecheck`
+  - `pnpm i18n:check`
+- Runtime:
+  - Backend restarted from fresh `dist/main`.
+  - `/api/v1/health` returned `200`.
+
+### Notes
+- Manual "Check CRM Updates" remains useful as an immediate force-check button.
+- Automatic polling is still delta-poll based, not Dataverse webhook push. Webhook registration can be a later phase if true instant sync is required.
+- Existing Resend `401 invalid API key` email queue noise is unrelated and should be handled in a separate email/config cleanup phase.
