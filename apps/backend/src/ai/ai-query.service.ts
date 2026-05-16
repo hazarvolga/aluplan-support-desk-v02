@@ -576,8 +576,17 @@ export class AiQueryService {
                 estimatedCost,
                 userContext: {
                     answerMode,
+                    fallbackStrategy: answerMode === 'FALLBACK' ? 'DETERMINISTIC_STRUCTURED' : null,
                     translations,
                     diagnosis,
+                    source: topResult ? {
+                        id: topResult.articleId,
+                        type: topResult.sourceType,
+                        title: topResult.title,
+                        category: topResult.category ?? null,
+                        language: topResult.language ?? null,
+                        similarity: Math.round(topResult.similarity * 1000) / 1000,
+                    } : null,
                     chunkAnalytics: {
                         resultCount: results.length,
                         avgSimilarity: results.length > 0 ? Math.round((results.reduce((a, r) => a + r.similarity, 0) / results.length) * 1000) / 1000 : 0,
@@ -1478,7 +1487,15 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                 totalTokens,
                 estimatedCost,
                 userContext: {
-                    diagnosis: diagnosis
+                    diagnosis,
+                    source: topResult ? {
+                        id: topResult.articleId,
+                        type: topResult.sourceType,
+                        title: topResult.title,
+                        category: topResult.category ?? null,
+                        language: topResult.language ?? null,
+                        similarity: Math.round(topResult.similarity * 1000) / 1000,
+                    } : null,
                 } as Prisma.InputJsonValue
             },
         });
@@ -2097,6 +2114,12 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
                 OR: [
                     { confidenceBand: 'LOW' },
                     { confidenceBand: null },
+                    {
+                        AND: [
+                            { userContext: { path: ['answerMode'], equals: 'FALLBACK' } },
+                            { confidenceBand: { in: ['LOW', 'MEDIUM'] } },
+                        ],
+                    },
                     {
                         feedbacks: {
                             some: {

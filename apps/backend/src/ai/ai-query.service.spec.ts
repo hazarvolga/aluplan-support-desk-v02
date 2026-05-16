@@ -363,7 +363,15 @@ describe('AiQueryService', () => {
             expect(result.answer).toContain('Use the certified graphics driver package.');
             expect(mockPrismaService.aiInteraction.create).toHaveBeenCalledWith(expect.objectContaining({
                 data: expect.objectContaining({
-                    userContext: expect.objectContaining({ answerMode: 'FALLBACK' }),
+                    userContext: expect.objectContaining({
+                        answerMode: 'FALLBACK',
+                        fallbackStrategy: 'DETERMINISTIC_STRUCTURED',
+                        source: expect.objectContaining({
+                            id: 'art-1',
+                            type: 'ARTICLE',
+                            title: 'Graphics Driver Guide',
+                        }),
+                    }),
                 }),
             }));
         });
