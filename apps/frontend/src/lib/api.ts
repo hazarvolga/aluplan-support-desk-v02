@@ -43,6 +43,59 @@ const safeFetch = async (input: string, init: RequestInit) => {
     }
 };
 
+const canAttemptRefresh = (path: string) =>
+    !path.includes('/auth/login') && !path.includes('/auth/refresh');
+
+const isPermissionRefreshCandidate = async (res: Response) => {
+    if (res.status !== 403) return false;
+
+    try {
+        const body = await (typeof res.clone === 'function' ? res.clone() : res).json();
+        const message = Array.isArray(body?.message) ? body.message.join(', ') : body?.message;
+        return typeof message === 'string' && message.includes('Requires permission');
+    } catch {
+        return false;
+    }
+};
+
+const refreshAndRetry = async (path: string, fetchOptions: RequestInit) => {
+    if (isRefreshing) {
+        await new Promise<void>((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+        });
+
+        return safeFetch(`${getApiUrl()}${path}`, fetchOptions);
+    }
+
+    isRefreshing = true;
+    try {
+        const refreshRes = await safeFetch(`${getApiUrl()}/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!refreshRes.ok) {
+            processQueue(new Error('Session expired'));
+            throw new ApiRequestError('common.session_expired', 'SESSION_EXPIRED');
+        }
+
+        processQueue(null);
+        return safeFetch(`${getApiUrl()}${path}`, fetchOptions);
+    } catch (err) {
+        processQueue(err as Error);
+        if (isBackendUnavailableError(err)) {
+            throw err;
+        }
+        if (err instanceof ApiRequestError) {
+            throw err;
+        }
+        throw new ApiRequestError('common.session_expired', 'SESSION_EXPIRED');
+    } finally {
+        isRefreshing = false;
+    }
+};
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const csrfToken = typeof window !== 'undefined'
         ? document.cookie.split('; ').find(row => row.trim().startsWith('XSRF-TOKEN='))?.split('=')[1]
@@ -70,50 +123,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
     let res = await safeFetch(`${getApiUrl()}${path}`, fetchOptions);
 
-    if (res.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
-        if (isRefreshing) {
-            try {
-                await new Promise<void>((resolve, reject) => {
-                    failedQueue.push({ resolve, reject });
-                });
-
-                res = await safeFetch(`${getApiUrl()}${path}`, fetchOptions);
-                if (res.ok) {
-                    const text = await res.text();
-                    return text ? JSON.parse(text) : {} as T;
-                }
-            } catch (e) {
-                throw new ApiRequestError('common.session_expired', 'SESSION_EXPIRED');
-            }
-        } else {
-            isRefreshing = true;
-            try {
-                const refreshRes = await safeFetch(`${getApiUrl()}/auth/refresh`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (refreshRes.ok) {
-                    processQueue(null);
-                    res = await safeFetch(`${getApiUrl()}${path}`, fetchOptions);
-                    if (res.ok) {
-                        const text = await res.text();
-                        return text ? JSON.parse(text) : {} as T;
-                    }
-                } else {
-                    processQueue(new Error('Session expired'));
-                    throw new ApiRequestError('common.session_expired', 'SESSION_EXPIRED');
-                }
-            } catch (err) {
-                processQueue(err as Error);
-                if (isBackendUnavailableError(err)) {
-                    throw err;
-                }
-                throw new ApiRequestError('common.session_expired', 'SESSION_EXPIRED');
-            } finally {
-                isRefreshing = false;
-            }
+    if (canAttemptRefresh(path) && (res.status === 401 || await isPermissionRefreshCandidate(res))) {
+        res = await refreshAndRetry(path, fetchOptions);
+        if (res.ok) {
+            const text = await res.text();
+            return text ? JSON.parse(text) : {} as T;
         }
     }
 

@@ -72,6 +72,39 @@ describe('api.ts', () => {
         expect(global.fetch).toHaveBeenCalledTimes(3);
     });
 
+    it('should refresh once on stale permission 403 and retry request', async () => {
+        // Step 1: Stale JWT still has an old permission payload
+        (global.fetch as any).mockResolvedValueOnce({
+            ok: false,
+            status: 403,
+            clone: () => ({
+                json: async () => ({ message: 'Requires permission: ticket:read' }),
+            }),
+            json: async () => ({ message: 'Requires permission: ticket:read' }),
+        });
+
+        // Step 2: Refresh token succeeds and issues a JWT with current permissions
+        (global.fetch as any).mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            json: async () => ({}),
+        });
+
+        // Step 3: Retry original request succeeds
+        (global.fetch as any).mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ data: [] }),
+            json: async () => ({ data: [] }),
+        });
+
+        const response = await api.tickets.list();
+
+        expect(response).toEqual({ data: [] });
+        expect(global.fetch).toHaveBeenCalledTimes(3);
+        expect((global.fetch as any).mock.calls[1][0]).toContain('/auth/refresh');
+    });
+
     it('should fail if fetch throws non-ok status without 401', async () => {
         (global.fetch as any).mockResolvedValueOnce({
             ok: false,
