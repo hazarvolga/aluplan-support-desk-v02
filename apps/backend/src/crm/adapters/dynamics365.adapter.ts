@@ -512,11 +512,9 @@ export class Dynamics365Adapter implements ICrmAdapter {
         const token = await this.getAccessToken(config);
         const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
         const entitySet = entityType === 'account' ? 'accounts' : 'contacts';
-        const select = entityType === 'account'
-            ? 'accountid,name,websiteurl,address1_composite,industrycode,accountnumber,modifiedon,statecode'
-            : 'contactid,emailaddress1,firstname,lastname,jobtitle,telephone1,new_musteridurumu,new_AbonelikModeli,_parentcustomerid_value,modifiedon,statecode';
-
-        let nextUrl: string | null = deltaLink || `${instanceUrl}/api/data/v9.2/${entitySet}?$select=${select}`;
+        // Keep delta queries schema-flexible like full import. Some Dynamics tenants
+        // reject $select when optional/custom fields are absent or differently cased.
+        let nextUrl: string | null = deltaLink || `${instanceUrl}/api/data/v9.2/${entitySet}`;
         let latestDeltaLink: string | null = null;
         const records: any[] = [];
 
@@ -527,9 +525,9 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 'OData-Version': '4.0',
                 Accept: 'application/json',
             };
-            if (!deltaLink) {
-                headers.Prefer = 'odata.track-changes';
-            }
+            headers.Prefer = deltaLink
+                ? 'odata.include-annotations="*"'
+                : 'odata.track-changes, odata.include-annotations="*"';
 
             const response: { data: any } = await axios.get(nextUrl, {
                 headers,

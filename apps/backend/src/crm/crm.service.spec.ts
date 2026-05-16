@@ -479,6 +479,41 @@ describe('CrmService', () => {
         });
     });
 
+    describe('triggerDeltaSync', () => {
+        it('should mark connection SUCCESS when delta sync has no record errors', async () => {
+            mockPrisma.crmConnection.update.mockResolvedValue({});
+            mockDeltaSync.runDeltaSync.mockResolvedValue({
+                account: { errorCount: 0 },
+                contact: { errorCount: 0 },
+            });
+
+            await service.triggerDeltaSync('conn-1');
+
+            expect(mockPrisma.crmConnection.update).toHaveBeenCalledWith({
+                where: { id: 'conn-1' },
+                data: { syncStatus: SyncStatus.SYNCING },
+            });
+            expect(mockPrisma.crmConnection.update).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { id: 'conn-1' },
+                    data: expect.objectContaining({ syncStatus: SyncStatus.SUCCESS }),
+                }),
+            );
+        });
+
+        it('should mark connection ERROR when delta sync throws', async () => {
+            mockPrisma.crmConnection.update.mockResolvedValue({});
+            mockDeltaSync.runDeltaSync.mockRejectedValue(new Error('delta failed'));
+
+            await expect(service.triggerDeltaSync('conn-1')).rejects.toThrow('delta failed');
+
+            expect(mockPrisma.crmConnection.update).toHaveBeenCalledWith({
+                where: { id: 'conn-1' },
+                data: { syncStatus: SyncStatus.ERROR },
+            });
+        });
+    });
+
     // ── processDynamics365Webhook ─────────────────────────────────────────────
 
     describe('processDynamics365Webhook', () => {

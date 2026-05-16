@@ -457,7 +457,29 @@ export class CrmService {
     }
 
     async triggerDeltaSync(id: string) {
-        return this.deltaSync.runDeltaSync(id);
+        await this.prisma.crmConnection.update({
+            where: { id },
+            data: { syncStatus: SyncStatus.SYNCING },
+        });
+
+        try {
+            const result = await this.deltaSync.runDeltaSync(id);
+            const errorCount = result.account.errorCount + result.contact.errorCount;
+            await this.prisma.crmConnection.update({
+                where: { id },
+                data: {
+                    syncStatus: errorCount > 0 ? SyncStatus.ERROR : SyncStatus.SUCCESS,
+                    lastSyncAt: new Date(),
+                },
+            });
+            return result;
+        } catch (error) {
+            await this.prisma.crmConnection.update({
+                where: { id },
+                data: { syncStatus: SyncStatus.ERROR },
+            });
+            throw error;
+        }
     }
 
     async getChangeLogs(connectionId?: string, limit = 50) {

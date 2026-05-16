@@ -35,8 +35,10 @@ export class CrmRecordSyncService {
             name: this.resolveField(data, 'name', mappings, 'name') || 'Unknown',
             website: this.resolveField(data, 'website', mappings, 'websiteurl'),
             address: this.resolveField(data, 'address', mappings, 'address1_composite'),
-            industry: this.resolveField(data, 'industry', mappings, 'industrycode@OData.Community.Display.V1.FormattedValue')
+            industry: this.asNullableString(
+                this.resolveField(data, 'industry', mappings, 'industrycode@OData.Community.Display.V1.FormattedValue')
                 || data.industrycode_display,
+            ),
             account_number: this.resolveField(data, 'accountNumber', mappings, 'accountnumber'),
             crmVerified: true,
         };
@@ -51,6 +53,14 @@ export class CrmRecordSyncService {
             create: {
                 ...next,
                 externalAccountId: externalId,
+            },
+        });
+
+        await this.prisma.customerProfile.updateMany({
+            where: { accountId: account.id },
+            data: {
+                companyName: next.name,
+                industry: next.industry,
             },
         });
 
@@ -146,9 +156,9 @@ export class CrmRecordSyncService {
                 || data.new_musteridurumu_display
                 || null;
             const subscriptionModel = this.resolveField(data, 'subscriptionModel', mappings, 'new_AbonelikModeli') || null;
-            const industryFromAccount = accountInfo?.industry
+            const industryFromAccount = this.asNullableString(accountInfo?.industry
                 || data.parentcustomerid_account?.['industrycode@OData.Community.Display.V1.FormattedValue']
-                || null;
+                || null);
             const companyName = this.resolveField(data, 'companyName', mappings, 'parentcustomerid_account.name')
                 || data.parentcustomerid_account?.name
                 || accountInfo?.name
@@ -197,6 +207,43 @@ export class CrmRecordSyncService {
         });
     }
 
+    async reconcileLinkedCustomerProfileSnapshots(): Promise<number> {
+        const accounts = await this.prisma.crmAccount.findMany({
+            select: {
+                id: true,
+                name: true,
+                industry: true,
+                customers: {
+                    select: {
+                        id: true,
+                        companyName: true,
+                        industry: true,
+                    },
+                },
+            },
+        });
+
+        let updatedCount = 0;
+        for (const account of accounts) {
+            const staleProfileIds = account.customers
+                .filter(profile => profile.companyName !== account.name || profile.industry !== account.industry)
+                .map(profile => profile.id);
+
+            if (staleProfileIds.length === 0) continue;
+
+            const result = await this.prisma.customerProfile.updateMany({
+                where: { id: { in: staleProfileIds } },
+                data: {
+                    companyName: account.name,
+                    industry: account.industry,
+                },
+            });
+            updatedCount += result.count;
+        }
+
+        return updatedCount;
+    }
+
     private async recordChanges(
         entityType: EntityType,
         entityId: string,
@@ -239,6 +286,11 @@ export class CrmRecordSyncService {
         if (value === undefined || value === null) return null;
         if (value instanceof Date) return value.toISOString();
         if (typeof value === 'object') return JSON.stringify(value);
+        return String(value);
+    }
+
+    private asNullableString(value: unknown): string | null {
+        if (value === undefined || value === null || value === '') return null;
         return String(value);
     }
 

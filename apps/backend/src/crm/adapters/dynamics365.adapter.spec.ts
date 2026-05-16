@@ -475,6 +475,39 @@ describe('Dynamics365Adapter', () => {
 
     // ── fetchEntityMetadata URL ───────────────────────────────────────────────
 
+    describe('fetchDeltaRecords', () => {
+        it('should start delta tracking without a fragile $select clause', async () => {
+            mockedAxios.get = jest.fn().mockResolvedValue({
+                data: {
+                    value: [buildAccount({ industrycode: 8 })],
+                    '@odata.deltaLink': 'https://org.crm4.dynamics.com/api/data/v9.2/accounts?$deltatoken=abc',
+                },
+                status: 200,
+            });
+
+            const result = await adapter.fetchDeltaRecords(buildConfig(), 'account', null);
+
+            expect(result.records).toHaveLength(1);
+            expect(result.deltaLink).toContain('$deltatoken=abc');
+            expect((mockedAxios.get as jest.Mock).mock.calls[0][0]).toBe('https://org.crm4.dynamics.com/api/data/v9.2/accounts');
+            expect((mockedAxios.get as jest.Mock).mock.calls[0][1].headers.Prefer).toBe(
+                'odata.track-changes, odata.include-annotations="*"',
+            );
+        });
+
+        it('should reuse saved delta links and keep annotation headers', async () => {
+            mockedAxios.get = jest.fn().mockResolvedValue({
+                data: { value: [], '@odata.deltaLink': 'https://delta-next' },
+                status: 200,
+            });
+
+            await adapter.fetchDeltaRecords(buildConfig(), 'contact', 'https://saved-delta');
+
+            expect((mockedAxios.get as jest.Mock).mock.calls[0][0]).toBe('https://saved-delta');
+            expect((mockedAxios.get as jest.Mock).mock.calls[0][1].headers.Prefer).toBe('odata.include-annotations="*"');
+        });
+    });
+
     describe('fetchEntityMetadata (via getDiscoveryData)', () => {
         it('should call EntityDefinitions endpoint with correct URL', async () => {
             mockedAxios.get = jest.fn()

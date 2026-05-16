@@ -68,6 +68,10 @@ export class CrmDeltaSyncService {
 
         const account = await this.syncEntity(decryptedConnection, 'account');
         const contact = await this.syncEntity(decryptedConnection, 'contact');
+        const reconciledProfiles = await this.recordSync.reconcileLinkedCustomerProfileSnapshots();
+        if (reconciledProfiles > 0) {
+            this.logger.log(`CRM profile snapshots reconciled for ${reconciledProfiles} linked customer profiles`);
+        }
         return { account, contact };
     }
 
