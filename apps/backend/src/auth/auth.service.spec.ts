@@ -154,6 +154,27 @@ describe('AuthService', () => {
             expect(result).toHaveProperty('access_token');
             expect(result).toHaveProperty('refresh_token');
         });
+
+        it('should fall back to default role permissions when role has no mapped permissions', async () => {
+            const mockUser = { id: '1', email: 'test@test.com', fullName: 'Test User', status: 'ACTIVE', refreshTokenHash: 'hash', roleId: 'role-customer' };
+            prisma.role = { findUnique: jest.fn() };
+            prisma.user.findUnique.mockResolvedValue(mockUser);
+            prisma.role.findUnique.mockResolvedValue({ name: 'CUSTOMER', permissions: [] });
+            prisma.user.update.mockResolvedValue(mockUser);
+            (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+            (bcrypt.hash as jest.Mock).mockResolvedValue('newHash');
+            jwt.signAsync.mockResolvedValue('new-token');
+
+            await service.refreshTokens('1', 'valid-token');
+
+            expect(jwt.signAsync).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    role: 'CUSTOMER',
+                    permissions: expect.arrayContaining(['ticket:create', 'ticket:read', 'ticket:update']),
+                }),
+                expect.any(Object),
+            );
+        });
     });
 
     describe('forgotPassword', () => {

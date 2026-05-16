@@ -100,7 +100,8 @@ export class AuthService {
         }) : null;
 
         const role = roleWithPerms?.name || 'CUSTOMER';
-        const permissions = roleWithPerms?.permissions.map(p => p.permission.name) || this.getPermissionsForRole(role);
+        const rolePermissions = roleWithPerms?.permissions.map(p => p.permission.name) || [];
+        const permissions = rolePermissions.length > 0 ? rolePermissions : this.getPermissionsForRole(role);
 
         const tokens = await this.generateTokens(userId, user.email, user.fullName, role, permissions);
         await this.updateRefreshTokenHash(user.id, tokens.refresh_token);

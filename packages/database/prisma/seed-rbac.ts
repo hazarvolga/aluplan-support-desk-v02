@@ -43,9 +43,9 @@ async function main() {
     // 2. Create Roles and Assign Permissions
     const sysRoles = [
         { name: 'ADMIN', isSystem: true, perms: permissions.map(p => p.name) },
-        { name: 'AGENT', isSystem: true, perms: ['ticket:read', 'ticket:update', 'kb:read'] },
-        { name: 'DEPARTMENT_MANAGER', isSystem: true, perms: ['ticket:read', 'ticket:update', 'kb:read', 'kb:approve'] },
-        { name: 'CUSTOMER', isSystem: true, perms: ['ticket:read', 'ticket.create'] },
+        { name: 'AGENT', isSystem: true, perms: ['ticket:create', 'ticket:read', 'ticket:update', 'kb:read', 'faq:read'] },
+        { name: 'DEPARTMENT_MANAGER', isSystem: true, perms: ['ticket:create', 'ticket:read', 'ticket:update', 'ticket:assign', 'kb:read', 'kb:approve', 'reports:read'] },
+        { name: 'CUSTOMER', isSystem: true, perms: ['ticket:create', 'ticket:read', 'ticket:update', 'kb:read', 'faq:read'] },
     ];
 
     for (const r of sysRoles) {
