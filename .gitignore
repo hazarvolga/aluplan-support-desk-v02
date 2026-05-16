@@ -153,6 +153,7 @@ dataset.zip
 .agent/
 .agents/
 .claude/
+.gemini/
 .kiro/
 .opencode/
 .claude/worktrees/
