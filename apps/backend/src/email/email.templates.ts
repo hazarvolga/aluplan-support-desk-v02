@@ -11,6 +11,7 @@ import * as Handlebars from 'handlebars';
 import { convert } from 'html-to-text';
 import { BaseEmailSchema } from './contracts/base.contract';
 import { Logger } from '@nestjs/common';
+import { normalizeEmailLogoUrl } from '../common/utils/public-url.util';
 
 const logger = new Logger('EmailTemplates');
 
@@ -142,6 +143,7 @@ export class TemplateService {
       primary_color: '#0EA5E9',
       logo_url: '/logo.png',
       address: '',
+      api_base_url: process.env.API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.allplan.net.tr/api/v1' : 'http://localhost:4000/api/v1'),
       ...brandDefaults,
       ...data.brand
     };
@@ -149,13 +151,13 @@ export class TemplateService {
     // 2. Load Translations
     const t = this.loadLocale(data.locale || 'tr');
 
-    // 3. Absolute URL Logic
-    let absoluteLogoUrl = rawBrand.logo_url;
-    if (absoluteLogoUrl && (absoluteLogoUrl.startsWith('/') || !absoluteLogoUrl.startsWith('http'))) {
-      const baseUrl = rawBrand.help_center_url.endsWith('/') ? rawBrand.help_center_url.slice(0, -1) : rawBrand.help_center_url;
-      const cleanPath = absoluteLogoUrl.startsWith('/') ? absoluteLogoUrl : `/${absoluteLogoUrl}`;
-      absoluteLogoUrl = `${baseUrl}${cleanPath}`;
-    }
+    // 3. Email-safe public URL logic
+    const absoluteLogoUrl = normalizeEmailLogoUrl(rawBrand.logo_url, {
+      apiBaseUrl: rawBrand.api_base_url,
+      frontendUrl: rawBrand.help_center_url,
+      nodeEnv: process.env.NODE_ENV,
+      warn: (message) => logger.warn(message),
+    });
 
     const brandData = { ...rawBrand, logo_url: absoluteLogoUrl };
 

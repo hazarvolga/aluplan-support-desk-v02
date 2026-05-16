@@ -9,6 +9,7 @@ import { GmailProvider } from '../gmail.provider';
 import { EmailProvider } from '../interfaces/email-provider.interface';
 import { TemplateService, EmailPayload } from '../email.templates';
 import { ConfigService } from '@nestjs/config';
+import { normalizeEmailLogoUrl } from '../../common/utils/public-url.util';
 
 
 @Processor('email')
@@ -70,20 +71,19 @@ export class EmailProcessor extends WorkerHost {
 
       // Determine absolute base for API assets
       const envApiUrl = this.configService.get('apiUrl');
-      const apiBaseUrl = apiUrlSetting || envApiUrl || frontendUrl || 'https://api.allplan.net.tr';
-      const cleanApiBase = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
-
-      let absoluteLogoUrl = logoUrl || '/logo.png';
-      if (absoluteLogoUrl.startsWith('/')) {
-        // If it's a branding asset proxy or a local asset
-        const isProxyAsset = absoluteLogoUrl.startsWith('/api/v1/branding/assets');
-        const base = isProxyAsset ? cleanApiBase : (frontendUrl || cleanApiBase);
-        absoluteLogoUrl = `${base}${absoluteLogoUrl}`;
-      }
+      const nodeEnv = this.configService.get('nodeEnv') || process.env.NODE_ENV;
+      const apiBaseUrl = apiUrlSetting || envApiUrl || (nodeEnv === 'production' ? 'https://api.allplan.net.tr/api/v1' : 'http://localhost:4000/api/v1');
+      const absoluteLogoUrl = normalizeEmailLogoUrl(logoUrl || '/logo.png', {
+        apiBaseUrl,
+        frontendUrl,
+        nodeEnv,
+        warn: (message) => this.logger.warn(message),
+      });
 
       const brandDefaults = {
         name: companyName || 'Aluplan',
         logo_url: absoluteLogoUrl,
+        api_base_url: apiBaseUrl,
         address: address || '',
         phone: phone || '',
         email: email || '',

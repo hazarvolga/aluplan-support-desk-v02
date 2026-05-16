@@ -146,7 +146,7 @@ export default function AdminSettingsPage() {
         try {
             setUploadingLogo(true);
             const res = await api.branding.uploadLogo(file);
-            updateValue('branding.logo_url', res.url);
+            updateValue('branding.logo_url', res.publicUrl || res.url);
             toast({ title: '✅ ' + t('branding.logo_title'), description: t('toasts.logo_success') });
         } catch (error: any) {
             toast({

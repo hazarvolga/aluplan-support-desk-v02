@@ -11,6 +11,8 @@ import { Public } from '../auth/decorators/public.decorator';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { ConfigService } from '@nestjs/config';
+import { normalizeEmailLogoUrl } from '../common/utils/public-url.util';
 
 
 import { EmailInboundService } from './email-inbound.service';
@@ -29,6 +31,7 @@ export class EmailController {
     private readonly emailService: EmailService,
     private readonly gmailProvider: GmailProvider,
     private readonly emailInboundService: EmailInboundService,
+    private readonly configService: ConfigService,
   ) { }
 
   @UseGuards(JwtAuthGuard, RbacGuard)
@@ -302,7 +305,8 @@ export class EmailController {
       const [
         companyName, logoUrl, address, phone, email,
         linkedin, twitter, facebook, instagram, pinterest,
-        frontendUrl
+        frontendUrl,
+        apiUrlSetting
       ] = await Promise.all([
         this.prisma.setting.findUnique({ where: { key: 'branding.company_name' } }).then(s => s?.value),
         this.prisma.setting.findUnique({ where: { key: 'branding.logo_url' } }).then(s => s?.value),
@@ -315,11 +319,21 @@ export class EmailController {
         this.prisma.setting.findUnique({ where: { key: 'branding.social_instagram' } }).then(s => s?.value),
         this.prisma.setting.findUnique({ where: { key: 'branding.social_pinterest' } }).then(s => s?.value),
         this.prisma.setting.findUnique({ where: { key: 'general.frontend_url' } }).then(s => s?.value),
+        this.prisma.setting.findUnique({ where: { key: 'general.api_url' } }).then(s => s?.value),
       ]);
+
+      const nodeEnv = this.configService.get<string>('nodeEnv') || process.env.NODE_ENV;
+      const apiBaseUrl = apiUrlSetting || this.configService.get<string>('apiUrl') || (nodeEnv === 'production' ? 'https://api.allplan.net.tr/api/v1' : 'http://localhost:4000/api/v1');
 
       const brandDefaults = {
         name: companyName || 'Aluplan',
-        logo_url: logoUrl || '/logo.png',
+        logo_url: normalizeEmailLogoUrl(logoUrl || '/logo.png', {
+          apiBaseUrl,
+          frontendUrl,
+          nodeEnv,
+          warn: (message) => this.logger.warn(message),
+        }),
+        api_base_url: apiBaseUrl,
         address: address || '',
         phone: phone || '',
         email: email || '',

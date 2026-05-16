@@ -124,6 +124,33 @@ export const envSchema = z.object({
         });
     }
 
+    if (!env.API_URL?.trim()) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['API_URL'],
+            message: 'API_URL is required in production for public email assets',
+        });
+    }
+
+    if (env.API_URL) {
+        try {
+            const apiUrl = new URL(env.API_URL);
+            if (apiUrl.protocol !== 'https:' || ['localhost', '127.0.0.1', '::1'].includes(apiUrl.hostname)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['API_URL'],
+                    message: 'Production API_URL must be a public HTTPS URL',
+                });
+            }
+        } catch {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['API_URL'],
+                message: 'API_URL must be a valid URL',
+            });
+        }
+    }
+
     const unsafeOrigins = env.ALLOWED_ORIGINS?.split(',')
         .map(origin => origin.trim())
         .filter(origin => origin === '*' || origin.includes('localhost') || origin.includes('127.0.0.1'));

@@ -19,10 +19,15 @@ import { Roles } from '../rbac/decorators/rbac.decorators';
 import { StorageService } from '../common/services/storage.service';
 import { Response } from 'express';
 import { Public } from '../auth/decorators/public.decorator';
+import { ConfigService } from '@nestjs/config';
+import { normalizeEmailLogoUrl } from '../common/utils/public-url.util';
 
 @Controller('branding')
 export class BrandingController {
-    constructor(private readonly storageService: StorageService) { }
+    constructor(
+        private readonly storageService: StorageService,
+        private readonly configService: ConfigService,
+    ) { }
 
     @Public()
     @Get('assets/*path')
@@ -74,8 +79,15 @@ export class BrandingController {
         const key = await this.storageService.uploadFile(file, 'brand/logos');
 
         // Return the dynamic proxy endpoint instead of raw expiring S3 url
+        const url = `/api/v1/branding/assets/${key}`;
+
         return {
-            url: `/api/v1/branding/assets/${key}`,
+            url,
+            publicUrl: normalizeEmailLogoUrl(url, {
+                apiBaseUrl: this.configService.get<string>('apiUrl') || process.env.API_URL || 'http://localhost:4000/api/v1',
+                frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+                nodeEnv: process.env.NODE_ENV,
+            }),
             filename: key,
         };
     }

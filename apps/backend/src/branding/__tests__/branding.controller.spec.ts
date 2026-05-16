@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BrandingController } from '../branding.controller';
 import { StorageService } from '../../common/services/storage.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('BrandingController', () => {
     let controller: BrandingController;
@@ -16,7 +17,10 @@ describe('BrandingController', () => {
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             controllers: [BrandingController],
-            providers: [{ provide: StorageService, useValue: mockStorageService }],
+            providers: [
+                { provide: StorageService, useValue: mockStorageService },
+                { provide: ConfigService, useValue: { get: jest.fn((key: string) => key === 'apiUrl' ? 'https://api.example.com/api/v1' : undefined) } },
+            ],
         }).compile();
 
         controller = module.get<BrandingController>(BrandingController);
@@ -71,6 +75,7 @@ describe('BrandingController', () => {
             expect(storageService.uploadFile).toHaveBeenCalledWith(file, 'brand/logos');
             expect(result).toEqual({
                 url: '/api/v1/branding/assets/brand/logos/uuid-logo.png',
+                publicUrl: 'https://api.example.com/api/v1/branding/assets/brand/logos/uuid-logo.png',
                 filename: 'brand/logos/uuid-logo.png',
             });
         });

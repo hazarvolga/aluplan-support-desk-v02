@@ -561,7 +561,7 @@ export const api = {
         uploadLogo: (file: File) => {
             const formData = new FormData();
             formData.append('file', file);
-            return request<{ url: string; filename: string }>('/branding/upload-logo', {
+            return request<{ url: string; publicUrl?: string; filename: string }>('/branding/upload-logo', {
                 method: 'POST',
                 body: formData,
             });

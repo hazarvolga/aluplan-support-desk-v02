@@ -29,7 +29,7 @@ describe('validateEnv', () => {
             'NODE_ENV', 'PORT', 'DATABASE_URL', 'REDIS_URL',
             'JWT_SECRET', 'JWT_REFRESH_SECRET', 'ENCRYPTION_KEY',
             'FRONTEND_URL', 'SWAGGER_PASSWORD', 'ADMIN_BYPASS_EMAILS',
-            'ALLOWED_ORIGINS', 'LLMAPI_BASE_URL', 'LLMAPI_CHAT_MODEL',
+            'ALLOWED_ORIGINS', 'API_URL', 'LLMAPI_BASE_URL', 'LLMAPI_CHAT_MODEL',
             'LLMAPI_EMBED_MODEL', 'GEMINI_CHAT_MODEL', 'GEMINI_EMBED_MODEL',
             'KNOWLEDGE_SYNC_BULK_DELAY_MS', 'SIMILARITY_THRESHOLD',
             'LOW_CONFIDENCE_THRESHOLD',
@@ -111,7 +111,26 @@ describe('validateEnv', () => {
         expect(exitSpy).toHaveBeenCalledWith(1);
 
         exitSpy.mockRestore();
-        setEnv({ ...VALID_ENV, NODE_ENV: 'production', ALLOWED_ORIGINS: 'https://support.example.com' });
+        setEnv({ ...VALID_ENV, NODE_ENV: 'production', ALLOWED_ORIGINS: 'https://support.example.com', API_URL: 'https://api.example.com/api/v1' });
         expect(validateEnv()?.ALLOWED_ORIGINS).toBe('https://support.example.com');
+    });
+
+    it('rejects production without a public HTTPS API_URL for email assets', () => {
+        const exitSpy = jest
+            .spyOn(process, 'exit')
+            .mockImplementation(() => { throw new Error('process.exit called'); });
+
+        setEnv({ ...VALID_ENV, NODE_ENV: 'production', ALLOWED_ORIGINS: 'https://support.example.com' });
+        expect(() => validateEnv()).toThrow('process.exit called');
+        expect(exitSpy).toHaveBeenCalledWith(1);
+
+        exitSpy.mockClear();
+        setEnv({ ...VALID_ENV, NODE_ENV: 'production', ALLOWED_ORIGINS: 'https://support.example.com', API_URL: 'http://localhost:4000/api/v1' });
+        expect(() => validateEnv()).toThrow('process.exit called');
+        expect(exitSpy).toHaveBeenCalledWith(1);
+
+        exitSpy.mockRestore();
+        setEnv({ ...VALID_ENV, NODE_ENV: 'production', ALLOWED_ORIGINS: 'https://support.example.com', API_URL: 'https://api.example.com/api/v1' });
+        expect(validateEnv()?.API_URL).toBe('https://api.example.com/api/v1');
     });
 });
