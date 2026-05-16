@@ -287,25 +287,25 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
                         // Resolving names: if fullName is mapped specifically, use it. 
                         // Otherwise try to find firstname/lastname maps OR use defaults.
-                        const firstName = this.resolveField(contact, 'fullName', mappings, 'firstname') || '-';
-                        const lastName = this.resolveField(contact, 'lastName', mappings, 'lastname') || '-';
-                        const jobTitle = this.resolveField(contact, 'jobTitle', mappings, 'jobtitle');
-                        const phoneNumber = this.resolveField(contact, 'phoneNumber', mappings, 'telephone1');
+                        const firstName = this.limitString(this.resolveField(contact, 'fullName', mappings, 'firstname') || '-', 100);
+                        const lastName = this.limitString(this.resolveField(contact, 'lastName', mappings, 'lastname') || '-', 100);
+                        const jobTitle = this.asNullableString(this.resolveField(contact, 'jobTitle', mappings, 'jobtitle'), 255);
+                        const phoneNumber = this.asNullableString(this.resolveField(contact, 'phoneNumber', mappings, 'telephone1'), 50);
                         const contactId = this.resolveField(contact, 'externalContactId', mappings, 'contactid');
-                        const contractStatus = this.resolveField(contact, 'contractStatus', mappings, 'new_musteridurumu@OData.Community.Display.V1.FormattedValue');
-                        const subscriptionModel = this.resolveField(contact, 'subscriptionModel', mappings, 'new_AbonelikModeli');
+                        const contractStatus = this.asNullableString(this.resolveField(contact, 'contractStatus', mappings, 'new_musteridurumu@OData.Community.Display.V1.FormattedValue'), 100);
+                        const subscriptionModel = this.asNullableString(this.resolveField(contact, 'subscriptionModel', mappings, 'new_AbonelikModeli'), 100);
 
                         // industry: account expand'dan gelir, contact'ta bu veri yok
-                        const industryFromAccount = accountInfo?.industry
+                        const industryFromAccount = this.asNullableString(accountInfo?.industry
                             || (contact.parentcustomerid_account
                                 ? contact.parentcustomerid_account['industrycode@OData.Community.Display.V1.FormattedValue']
-                                : null);
+                                : null), 255);
 
                         // companyName: mapping'den veya expand'dan gelen account adı
-                        const companyName = this.resolveField(contact, 'companyName', mappings, 'parentcustomerid_account.name')
+                        const companyName = this.limitString(this.resolveField(contact, 'companyName', mappings, 'parentcustomerid_account.name')
                             || contact.parentcustomerid_account?.name
                             || accountInfo?.name
-                            || 'Unknown';
+                            || 'Unknown', 255);
 
                         // customerNo: 
                         // 1. CRM Mapping'den gelen özel bir değer varsa onu kullanalım (en yüksek öncelikli)
@@ -317,12 +317,12 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
                         let clientNo: string;
                         if (mappedNo && mappedNo !== '-') {
-                            clientNo = mappedNo;
+                            clientNo = this.limitString(mappedNo, 50);
                         } else if (accountNum) {
                             // Birden fazla çalışan aynı hesap numarasına sahip olabileceği için benzersizlik için ek takı kullanıyoruz
-                            clientNo = `${accountNum}-${contactId.substring(0, 5)}`;
+                            clientNo = this.limitString(`${accountNum}-${contactId.substring(0, 5)}`, 50);
                         } else {
-                            clientNo = `DYN-${contactId.substring(0, 10)}`;
+                            clientNo = this.limitString(`DYN-${contactId.substring(0, 10)}`, 50);
                         }
 
                         this.logger.debug(`Generated unique customerNo: ${clientNo} for contact: ${email} (Account: ${accountNum || 'N/A'})`);
@@ -626,6 +626,16 @@ export class Dynamics365Adapter implements ICrmAdapter {
         }
 
         return dataLower[crmKey] ?? null;
+    }
+
+    private limitString(value: unknown, maxLength: number): string {
+        return String(value ?? '').slice(0, maxLength);
+    }
+
+    private asNullableString(value: unknown, maxLength?: number): string | null {
+        if (value === undefined || value === null || value === '') return null;
+        const stringValue = String(value);
+        return maxLength ? stringValue.slice(0, maxLength) : stringValue;
     }
 
     private async getAccessToken(config: any): Promise<string> {

@@ -32,14 +32,15 @@ export class CrmRecordSyncService {
         }
 
         const next = {
-            name: this.resolveField(data, 'name', mappings, 'name') || 'Unknown',
-            website: this.resolveField(data, 'website', mappings, 'websiteurl'),
-            address: this.resolveField(data, 'address', mappings, 'address1_composite'),
+            name: this.limitString(this.resolveField(data, 'name', mappings, 'name') || 'Unknown', 255),
+            website: this.asNullableString(this.resolveField(data, 'website', mappings, 'websiteurl'), 255),
+            address: this.asNullableString(this.resolveField(data, 'address', mappings, 'address1_composite')),
             industry: this.asNullableString(
                 this.resolveField(data, 'industry', mappings, 'industrycode@OData.Community.Display.V1.FormattedValue')
                 || data.industrycode_display,
+                255,
             ),
-            account_number: this.resolveField(data, 'accountNumber', mappings, 'accountnumber'),
+            account_number: this.asNullableString(this.resolveField(data, 'accountNumber', mappings, 'accountnumber'), 255),
             crmVerified: true,
         };
 
@@ -148,28 +149,28 @@ export class CrmRecordSyncService {
                 linkedAccountId = accountInfo?.id ?? null;
             }
 
-            const firstName = this.resolveField(data, 'fullName', mappings, 'firstname') || data.firstname || '-';
-            const lastName = this.resolveField(data, 'lastName', mappings, 'lastname') || data.lastname || '-';
-            const jobTitle = this.resolveField(data, 'jobTitle', mappings, 'jobtitle') || data.jobtitle || null;
-            const phoneNumber = this.resolveField(data, 'phoneNumber', mappings, 'telephone1') || data.telephone1 || null;
-            const contractStatus = this.resolveField(data, 'contractStatus', mappings, 'new_musteridurumu@OData.Community.Display.V1.FormattedValue')
+            const firstName = this.limitString(this.resolveField(data, 'fullName', mappings, 'firstname') || data.firstname || '-', 100);
+            const lastName = this.limitString(this.resolveField(data, 'lastName', mappings, 'lastname') || data.lastname || '-', 100);
+            const jobTitle = this.asNullableString(this.resolveField(data, 'jobTitle', mappings, 'jobtitle') || data.jobtitle, 255);
+            const phoneNumber = this.asNullableString(this.resolveField(data, 'phoneNumber', mappings, 'telephone1') || data.telephone1, 50);
+            const contractStatus = this.asNullableString(this.resolveField(data, 'contractStatus', mappings, 'new_musteridurumu@OData.Community.Display.V1.FormattedValue')
                 || data.new_musteridurumu_display
-                || null;
-            const subscriptionModel = this.resolveField(data, 'subscriptionModel', mappings, 'new_AbonelikModeli') || null;
+                || null, 100);
+            const subscriptionModel = this.asNullableString(this.resolveField(data, 'subscriptionModel', mappings, 'new_AbonelikModeli'), 100);
             const industryFromAccount = this.asNullableString(accountInfo?.industry
                 || data.parentcustomerid_account?.['industrycode@OData.Community.Display.V1.FormattedValue']
-                || null);
-            const companyName = this.resolveField(data, 'companyName', mappings, 'parentcustomerid_account.name')
+                || null, 255);
+            const companyName = this.limitString(this.resolveField(data, 'companyName', mappings, 'parentcustomerid_account.name')
                 || data.parentcustomerid_account?.name
                 || accountInfo?.name
-                || 'Unknown';
+                || 'Unknown', 255);
             const mappedNo = this.resolveField(data, 'customerNo', mappings, 'new_customerid');
             const accountNum = accountInfo?.account_number || data.parentcustomerid_account?.accountnumber || data.accountnumber;
-            const customerNo = mappedNo && mappedNo !== '-'
+            const customerNo = this.limitString(mappedNo && mappedNo !== '-'
                 ? mappedNo
                 : accountNum
                     ? `${accountNum}-${String(contactId).substring(0, 5)}`
-                    : `DYN-${String(contactId).substring(0, 10)}`;
+                    : `DYN-${String(contactId).substring(0, 10)}`, 50);
 
             const existingProfile = await tx.customerProfile.findUnique({
                 where: { userId: user.id },
@@ -289,9 +290,14 @@ export class CrmRecordSyncService {
         return String(value);
     }
 
-    private asNullableString(value: unknown): string | null {
+    private limitString(value: unknown, maxLength: number): string {
+        return String(value ?? '').slice(0, maxLength);
+    }
+
+    private asNullableString(value: unknown, maxLength?: number): string | null {
         if (value === undefined || value === null || value === '') return null;
-        return String(value);
+        const stringValue = String(value);
+        return maxLength ? stringValue.slice(0, maxLength) : stringValue;
     }
 
     private resolveField(data: any, systemKey: string, mappings: Record<string, string>, defaultKey: string): any {

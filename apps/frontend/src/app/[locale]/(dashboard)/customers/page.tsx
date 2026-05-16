@@ -78,6 +78,7 @@ interface CustomerItem {
         account?: {
             id: string;
             name: string;
+            account_number?: string | null;
         };
     };
 }
@@ -97,6 +98,11 @@ interface AccountItem {
 
 type SortField = 'companyName' | 'fullName' | 'jobTitle' | 'email' | 'status' | 'createdAt' | 'contractStatus' | 'subscriptionModel' | 'industry' | 'customerNo' | 'phoneNumber' | 'crmVerified' | 'name' | 'website' | 'address' | 'accountNumber';
 type SortOrder = 'asc' | 'desc';
+
+const getDisplayCustomerNo = (customer: CustomerItem) =>
+    customer.customerProfile?.account?.account_number
+    || customer.customerProfile?.customerNo
+    || '';
 
 import { use } from 'react';
 
@@ -430,7 +436,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                 c.fullName.toLowerCase().includes(lowerTerm) ||
                 c.email.toLowerCase().includes(lowerTerm) ||
                 (c.customerProfile?.companyName || '').toLowerCase().includes(lowerTerm) ||
-                (c.customerProfile?.customerNo || '').toLowerCase().includes(lowerTerm) ||
+                getDisplayCustomerNo(c).toLowerCase().includes(lowerTerm) ||
                 (c.customerProfile?.contractStatus || '').toLowerCase().includes(lowerTerm) ||
                 (c.customerProfile?.subscriptionModel || '').toLowerCase().includes(lowerTerm)
             );
@@ -446,7 +452,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                     case 'fullName': fieldValue = c.fullName; break;
                     case 'email': fieldValue = c.email; break;
                     case 'companyName': fieldValue = c.customerProfile?.companyName || ''; break;
-                    case 'customerNo': fieldValue = c.customerProfile?.customerNo || ''; break;
+                    case 'customerNo': fieldValue = getDisplayCustomerNo(c); break;
                     case 'jobTitle': fieldValue = c.customerProfile?.jobTitle || ''; break;
                     case 'contractStatus': fieldValue = c.customerProfile?.contractStatus || ''; break;
                     case 'subscriptionModel': fieldValue = c.customerProfile?.subscriptionModel || ''; break;
@@ -472,7 +478,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                 case 'contractStatus': aValue = a.customerProfile?.contractStatus || ''; bValue = b.customerProfile?.contractStatus || ''; break;
                 case 'subscriptionModel': aValue = a.customerProfile?.subscriptionModel || ''; bValue = b.customerProfile?.subscriptionModel || ''; break;
                 case 'industry': aValue = a.customerProfile?.industry || ''; bValue = b.customerProfile?.industry || ''; break;
-                case 'customerNo': aValue = a.customerProfile?.customerNo || ''; bValue = b.customerProfile?.customerNo || ''; break;
+                case 'customerNo': aValue = getDisplayCustomerNo(a); bValue = getDisplayCustomerNo(b); break;
                 case 'phoneNumber': aValue = a.customerProfile?.phoneNumber || ''; bValue = b.customerProfile?.phoneNumber || ''; break;
                 case 'crmVerified': aValue = a.customerProfile?.crmVerified ? 1 : 0; bValue = b.customerProfile?.crmVerified ? 1 : 0; break;
                 case 'createdAt': aValue = new Date(a.createdAt).getTime(); bValue = new Date(b.createdAt).getTime(); break;
@@ -767,7 +773,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                         case 'customerNo':
                                                             return (
                                                                 <TableCell key={col.key} className="text-white/40 font-mono text-[10px] whitespace-nowrap">
-                                                                    {c.customerProfile?.customerNo || tc('unassigned').toUpperCase()}
+                                                                    {getDisplayCustomerNo(c) || tc('unassigned').toUpperCase()}
                                                                 </TableCell>
                                                             );
                                                         case 'fullName':
@@ -1275,5 +1281,3 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         </motion.div>
     );
 }
-
-

@@ -60,6 +60,9 @@ export default function CustomerProfilePage() {
         setFormData((prev: any) => ({ ...prev, [field]: value }));
     };
 
+    const displayCustomerNo = customer?.customerProfile?.account?.account_number || formData.customerNo || '';
+    const hasCrmAccountNumber = Boolean(customer?.customerProfile?.account?.account_number);
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
@@ -213,7 +216,12 @@ export default function CustomerProfilePage() {
                             <div className="space-y-2">
                                 <Label>{t('labels.customer_no')}</Label>
                                 <div className="flex">
-                                    <Input value={formData.customerNo} onChange={e => handleChange('customerNo', e.target.value)} className="font-mono bg-muted/10" />
+                                    <Input
+                                        value={displayCustomerNo}
+                                        onChange={e => handleChange('customerNo', e.target.value)}
+                                        disabled={hasCrmAccountNumber}
+                                        className="font-mono bg-muted/10"
+                                    />
                                 </div>
                             </div>
 

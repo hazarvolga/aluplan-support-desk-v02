@@ -317,7 +317,11 @@ export class CustomersService {
                 where,
                 include: {
                     role: true,
-                    customerProfile: true,
+                    customerProfile: {
+                        include: {
+                            account: true,
+                        },
+                    },
                 },
                 orderBy: { createdAt: 'desc' },
                 skip,
@@ -339,7 +343,13 @@ export class CustomersService {
         // Find existing custom profile
         const user = await this.prisma.user.findUnique({
             where: { id },
-            include: { customerProfile: true },
+            include: {
+                customerProfile: {
+                    include: {
+                        account: true,
+                    },
+                },
+            },
         });
 
         if (!user || !user.customerProfile) {
@@ -375,7 +385,13 @@ export class CustomersService {
 
         const freshUser = await this.prisma.user.findUnique({
             where: { id },
-            include: { customerProfile: true }
+            include: {
+                customerProfile: {
+                    include: {
+                        account: true,
+                    },
+                },
+            },
         });
 
         if (!freshUser) {
