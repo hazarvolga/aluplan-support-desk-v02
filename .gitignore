@@ -150,9 +150,19 @@ dataset.zip
 .gitnexus
 
 # Local agent/worktree artifacts
+.agent/
+.agents/
+.claude/
+.kiro/
+.opencode/
 .claude/worktrees/
 .agents/skills/
 .github/agents/
 .n8nac/
+graphify-out/
 graphify-out/.graphify_ast.json
 graphify-out/.graphify_incremental.json
+
+# Local media / promo generation artifacts
+apps/promo-video/
+scripts/capture-promo-screenshots.mjs
