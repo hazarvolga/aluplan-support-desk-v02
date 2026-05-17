@@ -60,6 +60,38 @@ if [ "$POOL_PARENT_COL_EXISTS" = "1" ] && [ "$POOL_PARENT_MIGRATION_FAILED" = "1
   "
 fi
 
+AI_CACHE_TABLE_EXISTS=$(psql "$CLEAN_DB_URL" -tAc "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='ai_response_cache';" 2>/dev/null || echo "0")
+EMBEDDING_VERSIONING_FAILED=$(psql "$CLEAN_DB_URL" -tAc "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name='20260511000000_add_embedding_versioning' AND finished_at IS NULL AND rolled_back_at IS NULL;" 2>/dev/null || echo "0")
+
+if [ "$AI_CACHE_TABLE_EXISTS" = "0" ] && [ "$EMBEDDING_VERSIONING_FAILED" = "1" ]; then
+  echo "[DEPLOY FIX] Creating missing ai_response_cache base table before retrying embedding versioning migration..."
+  psql "$CLEAN_DB_URL" -v ON_ERROR_STOP=1 -c "
+    CREATE TABLE IF NOT EXISTS \"ai_response_cache\" (
+      \"id\" UUID NOT NULL DEFAULT gen_random_uuid(),
+      \"query_hash\" TEXT NOT NULL,
+      \"query_embedding\" vector,
+      \"response\" JSONB NOT NULL,
+      \"tenant_id\" UUID NOT NULL,
+      \"user_id\" UUID,
+      \"confidence\" VARCHAR(20) NOT NULL,
+      \"created_at\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \"expires_at\" TIMESTAMP(3) NOT NULL,
+      CONSTRAINT \"ai_response_cache_pkey\" PRIMARY KEY (\"id\")
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS \"ai_response_cache_query_hash_key\" ON \"ai_response_cache\"(\"query_hash\");
+    CREATE INDEX IF NOT EXISTS \"idx_cache_hash\" ON \"ai_response_cache\"(\"query_hash\");
+    CREATE INDEX IF NOT EXISTS \"idx_cache_tenant\" ON \"ai_response_cache\"(\"tenant_id\");
+    CREATE INDEX IF NOT EXISTS \"idx_cache_expires\" ON \"ai_response_cache\"(\"expires_at\");
+
+    UPDATE \"_prisma_migrations\"
+    SET rolled_back_at = NOW()
+    WHERE migration_name = '20260511000000_add_embedding_versioning'
+      AND finished_at IS NULL
+      AND rolled_back_at IS NULL;
+  "
+fi
+
 echo "Running Prisma migrations..."
 echo "[DEPLOY DIAGNOSTIC] Available migrations:"
 ls -1 ./packages/database/prisma/migrations/ | grep -E '^[0-9]' | tail -10
