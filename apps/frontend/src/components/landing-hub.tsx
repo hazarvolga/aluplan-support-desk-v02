@@ -70,15 +70,6 @@ const LandingHub = () => {
                         >
                             {t('cta_login')}
                         </button>
-                            <button 
-                                id="nav-register-btn"
-                                onClick={() => router.push('/register')}
-                                aria-label={t('cta_register')}
-                                className="px-6 py-3 bg-white text-black text-xs font-black tracking-[0.2em] hover:bg-white/90 transition-all active:scale-95 flex items-center gap-3 wireframe-corner wireframe-corner-tl wireframe-corner-br uppercase"
-                            >
-                                {t('cta_register')}
-                                <ChevronRight className="w-4 h-4" id="nav-register-icon" aria-hidden="true" />
-                            </button>
                     </motion.div>
                 </div>
             </nav>

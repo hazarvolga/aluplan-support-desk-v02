@@ -11,7 +11,7 @@
       "ai_badge": "POWERED BY ALLPLAN AI",
       "title": "Welcome to Aluplan Support Platform",
       "subtitle": "The hub for technical expertise and resources to help you use Allplan most efficiently in your architectural and engineering projects.",
-      "cta_primary": "Login / Register",
+      "cta_primary": "Sign In",
       "cta_secondary": "Download 14-Day Free Trial"
     },
     "training": {
@@ -92,8 +92,8 @@
       "success_desc": "Your login details have been sent to your email address.",
       "success_hint": "Please check your email to log into the system.",
       "back_to_login": "Back to Login",
-      "title": "Register",
-      "subtitle": "Join the Aluplan Support Ecosystem",
+      "title": "Request Access",
+      "subtitle": "Submit an access request for the Aluplan support portal",
       "email_label": "Work Email",
       "email_placeholder": "example@company.com",
       "continue_btn": "Continue",

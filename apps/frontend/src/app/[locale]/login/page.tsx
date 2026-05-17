@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { api } from '@/lib/api';
 import Image from 'next/image';
-import Link from 'next/link';
 import { Terminal, ShieldAlert, Lock, CircleDot, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
@@ -145,9 +144,6 @@ export default function LoginPage() {
                             <CircleDot className="h-3 w-3" />
                             {t('login_tab')}
                         </div>
-                        <Link href="/register" className="px-4 py-2 border-b-2 border-transparent text-muted-foreground/50 hover:text-muted-foreground text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-colors">
-                            {t('request_tab')}
-                        </Link>
                     </div>
 
                     <form onSubmit={handleLogin} className="space-y-5">
@@ -204,14 +200,6 @@ export default function LoginPage() {
                             )}
                         </button>
 
-                        <div className="mt-4 text-center">
-                            <Link
-                                href="/register"
-                                className="text-[10px] text-muted-foreground hover:text-primary uppercase tracking-[0.2em] font-bold transition-colors"
-                            >
-                                {t('no_account')} <span className="underline underline-offset-4 decoration-primary/30">{t('register_link')}</span>
-                            </Link>
-                        </div>
                     </form>
 
                     <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-center gap-2 text-[8px] text-muted-foreground/40 uppercase tracking-widest">

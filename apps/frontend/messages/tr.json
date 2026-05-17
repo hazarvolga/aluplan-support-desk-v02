@@ -11,7 +11,7 @@
       "ai_badge": "POWERED BY ALLPLAN AI",
       "title": "Aluplan Destek Platformuna Hoş Geldiniz",
       "subtitle": "Mimari ve mühendislik projelerinizde Allplan'ı en verimli şekilde kullanmanız için Türkçe kaynaklar ve teknik uzmanlık merkezi.",
-      "cta_primary": "Giriş Yap / Kayıt Ol",
+      "cta_primary": "Giriş Yap",
       "cta_secondary": "14 Günlük Ücretsiz Deneme Sürümünü İndir"
     },
     "training": {
@@ -92,8 +92,8 @@
       "success_desc": "Giriş detaylarınız e-posta adresinize gönderildi.",
       "success_hint": "Lütfen e-postanızı kontrol edin ve sisteme giriş yapın.",
       "back_to_login": "Giriş Ekranına Dön",
-      "title": "Kayıt Ol",
-      "subtitle": "Aluplan Destek Ekosistemine Katılın",
+      "title": "Erişim Talebi İste",
+      "subtitle": "Aluplan destek portalı erişimi için talep oluşturun",
       "email_label": "İş E-postanız",
       "email_placeholder": "ornek@firma.com",
       "continue_btn": "Devam Et",
