@@ -90,7 +90,9 @@ describe('EmailService', () => {
 
         it('should skip email when user opted out', async () => {
             prisma.user.findUnique.mockResolvedValue({ id: 'u1', email: 'test@example.com' });
-            prisma.emailPreference.findUnique.mockResolvedValue({ enabled: false });
+            prisma.emailPreference.findUnique
+                .mockResolvedValueOnce(null)
+                .mockResolvedValueOnce({ enabled: false });
 
             await service.enqueueEmail({
                 template: 'ticket-created',
@@ -101,6 +103,48 @@ describe('EmailService', () => {
 
             expect(emailQueue.add).not.toHaveBeenCalled();
             expect(prisma.emailLog.create).not.toHaveBeenCalled();
+        });
+
+        it('should skip email when user globally unsubscribed', async () => {
+            prisma.user.findUnique.mockResolvedValue({ id: 'u1', email: 'test@example.com' });
+            prisma.emailPreference.findUnique
+                .mockResolvedValueOnce({ enabled: false })
+                .mockResolvedValueOnce(null);
+
+            await service.enqueueEmail({
+                template: 'ticket-created',
+                to: 'test@example.com',
+                subject: 'Test',
+                data: {},
+            });
+
+            expect(emailQueue.add).not.toHaveBeenCalled();
+            expect(prisma.emailLog.create).not.toHaveBeenCalled();
+        });
+
+        it('should inject user id for registered recipients', async () => {
+            prisma.user.findUnique.mockResolvedValue({ id: 'u1', email: 'test@example.com' });
+            prisma.emailPreference.findUnique
+                .mockResolvedValueOnce(null)
+                .mockResolvedValueOnce(null);
+            prisma.emailLog.create.mockResolvedValue({ id: 'log-1' });
+            emailQueue.add.mockResolvedValue({ id: 'job-1' });
+
+            await service.enqueueEmail({
+                template: 'ticket-created',
+                to: 'test@example.com',
+                subject: 'Test',
+                data: { ticketNumber: 'SUP-00001' },
+            });
+
+            expect(emailQueue.add).toHaveBeenCalledWith(
+                'ticket-created',
+                expect.objectContaining({
+                    data: expect.objectContaining({ userId: 'u1' }),
+                    logRef: 'log-1',
+                }),
+                expect.objectContaining({ priority: 3, attempts: 5 }),
+            );
         });
 
         it('should skip preference check for non-registered users', async () => {

@@ -13,6 +13,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { normalizeEmailLogoUrl } from '../common/utils/public-url.util';
+import { Prisma } from '@aluplan/database';
 
 
 import { EmailInboundService } from './email-inbound.service';
@@ -167,7 +168,7 @@ export class EmailController {
 
   @Public()
   @Post('unsubscribe')
-  async unsubscribe(@Body() body: { token: string }) {
+  async unsubscribe(@Body() body: { token: string; reason?: string; comment?: string }, @Req() req: any) {
     if (!body.token || typeof body.token !== 'string') {
       return { success: false, message: 'Invalid token' };
     }
@@ -202,21 +203,59 @@ export class EmailController {
       return { success: false, message: 'Invalid user' };
     }
 
-    // Disable all email notification types for this user
-    await this.prisma.emailPreference.upsert({
-      where: {
-        userId_emailType: {
-          userId,
-          emailType: 'ALL'
-        }
-      },
-      update: { enabled: false },
-      create: {
-        userId,
-        emailType: 'ALL',
-        enabled: false
-      }
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
     });
+
+    const reason = typeof body.reason === 'string' && body.reason.trim()
+      ? body.reason.trim().slice(0, 80)
+      : null;
+    const comment = typeof body.comment === 'string' && body.comment.trim()
+      ? body.comment.trim().slice(0, 1000)
+      : null;
+    const userAgent = typeof req.headers?.['user-agent'] === 'string'
+      ? req.headers['user-agent'].slice(0, 1000)
+      : null;
+    const ipAddress = typeof req.ip === 'string'
+      ? req.ip.slice(0, 100)
+      : null;
+
+    await this.prisma.$transaction([
+      // Disable all email notification types for this user.
+      this.prisma.emailPreference.upsert({
+        where: {
+          userId_emailType: {
+            userId,
+            emailType: 'ALL'
+          }
+        },
+        update: { enabled: false },
+        create: {
+          userId,
+          emailType: 'ALL',
+          enabled: false
+        }
+      }),
+      this.prisma.$executeRaw(Prisma.sql`
+        INSERT INTO "email_unsubscribe_feedbacks" (
+          "user_id",
+          "email",
+          "reason",
+          "comment",
+          "user_agent",
+          "ip_address"
+        )
+        VALUES (
+          ${userId}::uuid,
+          ${user?.email ?? null},
+          ${reason},
+          ${comment},
+          ${userAgent},
+          ${ipAddress}
+        )
+      `)
+    ]);
 
     return { success: true };
   }

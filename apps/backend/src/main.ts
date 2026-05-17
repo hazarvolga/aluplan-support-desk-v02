@@ -128,6 +128,7 @@ async function bootstrap() {
             '/api/v1/auth/forgot-password',
             '/api/v1/auth/reset-password',
             '/api/v1/auth/verify-email',
+            '/api/v1/email/unsubscribe',
         ];
 
         let csrfToken = req.cookies['XSRF-TOKEN'];
@@ -187,13 +188,10 @@ async function bootstrap() {
     // CORS
     app.enableCors({
         origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-            // SSRF bypass mitigation: Production'da origin olmadan gelen istekleri engelle
+            // Email clients, curl, health checks, and server-to-server image fetches often send no Origin.
+            // CORS is a browser boundary, not an authentication or SSRF control, so keep the allowlist for
+            // browser origins while allowing no-origin requests to reach public assets and signed-token flows.
             if (!origin) {
-                if (nodeEnv === 'production') {
-                    logger.warn(`CORS blocked: Request missing Origin header`);
-                    return callback(new Error('CORS blocked: Origin header required in production'));
-                }
-                // Development/test ortamında origin olmadan izin ver
                 return callback(null, true);
             }
 

@@ -2128,3 +2128,44 @@ Maintenance rule:
   - email logo public URL
   - CRM update check
   - RAG answer quality check
+
+## Email Branding and KVKK Unsubscribe Hardening - 2026-05-17
+
+### Completed
+- Diagnosed why uploaded branding logo did not render inside email templates:
+  - `branding.logo_url` was already saved as an absolute backend asset URL.
+  - Production CORS was blocking requests that had no `Origin` header.
+  - Email clients commonly fetch images without `Origin`, so the backend returned 500 for logo asset fetches.
+- Updated backend CORS behavior:
+  - Browser origins still use the allowlist.
+  - No-origin requests are allowed so email clients, health checks, curl, and server-to-server asset fetches can reach public/signed-token endpoints.
+- Added `/api/v1/email/unsubscribe` to CSRF bypass because it is a public signed-token action reached from email links.
+- Hardened unsubscribe enforcement:
+  - Email send path now checks both category preferences and global `ALL=false`.
+  - Registered recipients get `data.userId` injected before queueing so generated unsubscribe URLs are user-specific instead of `global`.
+- Added a lightweight unsubscribe survey:
+  - `/[locale]/unsubscribe` now asks an optional reason and optional note.
+  - TR/EN/DE copy is included for the page.
+  - Backend stores reason/comment with user/email, user-agent, IP, and timestamp.
+- Added Prisma migration:
+  - `20260517000003_add_email_unsubscribe_feedback`
+  - creates `email_unsubscribe_feedbacks`.
+
+### Validation
+- `pnpm --filter @aluplan/backend test -- email.service.spec.ts`
+- `pnpm exec prisma validate --schema packages/database/prisma/schema.prisma`
+- `pnpm --filter @aluplan/frontend typecheck`
+- `pnpm --filter @aluplan/backend typecheck`
+
+### Deploy Smoke After Redeploy
+- Re-test email logo:
+  - `curl -I -L https://api.allplan.net.tr/api/v1/branding/assets/...`
+  - expected: no backend 500; should return/redirect to a reachable image.
+- Send a real announcement/test email and confirm the logo renders in Gmail/Outlook.
+- Click unsubscribe link:
+  - page should show optional reason/comment fields.
+  - submit should succeed without login.
+  - subsequent non-essential emails should be skipped when `ALL=false` exists.
+
+### Follow-Up
+- Decide whether `ALL=false` should suppress ticket/system transactional emails too, or only announcement/marketing-style mail. Current implementation follows the existing endpoint wording and blocks all categories.

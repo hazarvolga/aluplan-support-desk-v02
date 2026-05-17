@@ -961,6 +961,21 @@ model EmailPreference {
   @@map("email_preferences")
 }
 
+model EmailUnsubscribeFeedback {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  email     String?  @db.VarChar(255)
+  reason    String?  @db.VarChar(80)
+  comment   String?
+  userAgent String?  @map("user_agent")
+  ipAddress String?  @map("ip_address") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId], map: "idx_email_unsubscribe_feedback_user")
+  @@index([reason], map: "idx_email_unsubscribe_feedback_reason")
+  @@map("email_unsubscribe_feedbacks")
+}
+
 model Announcement {
   id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title          String             @db.VarChar(255)

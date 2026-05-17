@@ -78,24 +78,39 @@ export class EmailService implements OnModuleInit {
                 select: { id: true, email: true }
             });
 
-            if (userObj) {
-                const pref = await this.prisma.emailPreference.findUnique({
-                    where: { userId_emailType: { userId: userObj.id, emailType } }
-                });
+            let payloadForQueue = payload;
 
-                // If preference is explicitly disabled, skip. (Default is enabled if missing)
-                if (pref && pref.enabled === false) {
+            if (userObj) {
+                const [globalPref, typePref] = await Promise.all([
+                    this.prisma.emailPreference.findUnique({
+                        where: { userId_emailType: { userId: userObj.id, emailType: 'ALL' } }
+                    }),
+                    this.prisma.emailPreference.findUnique({
+                        where: { userId_emailType: { userId: userObj.id, emailType } }
+                    })
+                ]);
+
+                // If global or category preference is explicitly disabled, skip. Default is enabled if missing.
+                if (globalPref?.enabled === false || typePref?.enabled === false) {
                     this.logger.warn(`🚫 Skipping email: ${payload.template} (${emailType}) to ${payload.to} - User Opted Out`);
                     return;
                 }
+
+                payloadForQueue = {
+                    ...payload,
+                    data: {
+                        ...payload.data,
+                        userId: payload.data?.userId ?? userObj.id,
+                    },
+                };
             }
 
             // 3. Create a draft log entry.
             const draftLog = await this.prisma.emailLog.create({
                 data: {
-                    recipientEmail: payload.to,
-                    subject: payload.subject,
-                    templateName: payload.template,
+                    recipientEmail: payloadForQueue.to,
+                    subject: payloadForQueue.subject,
+                    templateName: payloadForQueue.template,
                     provider: await this.getCurrentMailProviderForLog(),
                     status: 'QUEUED'
                 }
@@ -103,18 +118,18 @@ export class EmailService implements OnModuleInit {
 
             // 4. Enqueue the BullMQ job.
             const job = await this.emailQueue.add(
-                payload.template,
-                { ...payload, logRef: draftLog.id },
+                payloadForQueue.template,
+                { ...payloadForQueue, logRef: draftLog.id },
                 {
-                    priority: payload.priority ?? 3,
-                    delay: payload.delay ?? 0,
-                    jobId: payload.jobId,
+                    priority: payloadForQueue.priority ?? 3,
+                    delay: payloadForQueue.delay ?? 0,
+                    jobId: payloadForQueue.jobId,
                     attempts: 5, // Increased attempts for enterprise reliability
                     backoff: { type: 'exponential', delay: 2000 } // More generous backoff
                 }
             );
 
-            this.logger.log(`✅ Enqueued Email -> ${payload.template} to ${payload.to} (Log: ${draftLog.id}, Job: ${job.id}, Priority: ${payload.priority || 3})`);
+            this.logger.log(`✅ Enqueued Email -> ${payloadForQueue.template} to ${payloadForQueue.to} (Log: ${draftLog.id}, Job: ${job.id}, Priority: ${payloadForQueue.priority || 3})`);
         } catch (error) {
             this.logger.error(`❌ Failed to enqueue email: ${payload.template} to ${payload.to}`, error.stack);
             await this.errorLogger.logError({

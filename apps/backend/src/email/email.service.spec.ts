@@ -99,7 +99,21 @@ describe('EmailService', () => {
 
         it('skips enqueue when user has opted out of the email type', async () => {
             mockPrisma.user.findUnique.mockResolvedValueOnce({ id: 'u-1', email: 'user@example.com' });
-            mockPrisma.emailPreference.findUnique.mockResolvedValueOnce({ enabled: false });
+            mockPrisma.emailPreference.findUnique
+                .mockResolvedValueOnce(null)
+                .mockResolvedValueOnce({ enabled: false });
+
+            await service.enqueueEmail(basePayload);
+
+            expect(mockQueue.add).not.toHaveBeenCalled();
+            expect(mockPrisma.emailLog.create).not.toHaveBeenCalled();
+        });
+
+        it('skips enqueue when user has globally unsubscribed', async () => {
+            mockPrisma.user.findUnique.mockResolvedValueOnce({ id: 'u-1', email: 'user@example.com' });
+            mockPrisma.emailPreference.findUnique
+                .mockResolvedValueOnce({ enabled: false })
+                .mockResolvedValueOnce(null);
 
             await service.enqueueEmail(basePayload);
 
@@ -109,11 +123,31 @@ describe('EmailService', () => {
 
         it('proceeds normally when user has no preference record', async () => {
             mockPrisma.user.findUnique.mockResolvedValueOnce({ id: 'u-2', email: 'user@example.com' });
-            mockPrisma.emailPreference.findUnique.mockResolvedValueOnce(null);
+            mockPrisma.emailPreference.findUnique
+                .mockResolvedValueOnce(null)
+                .mockResolvedValueOnce(null);
 
             await service.enqueueEmail(basePayload);
 
             expect(mockQueue.add).toHaveBeenCalledTimes(1);
+        });
+
+        it('injects registered user id so unsubscribe links are user-specific', async () => {
+            mockPrisma.user.findUnique.mockResolvedValueOnce({ id: 'u-3', email: 'user@example.com' });
+            mockPrisma.emailPreference.findUnique
+                .mockResolvedValueOnce(null)
+                .mockResolvedValueOnce(null);
+
+            await service.enqueueEmail(basePayload);
+
+            expect(mockQueue.add).toHaveBeenCalledWith(
+                'ticket-created',
+                expect.objectContaining({
+                    data: expect.objectContaining({ userId: 'u-3' }),
+                    logRef: 'log-1',
+                }),
+                expect.any(Object),
+            );
         });
 
         it('throws and logs when queue.add fails', async () => {
