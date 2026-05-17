@@ -116,6 +116,7 @@ bin/
 obj/
 
 # Archives / Backups
+backups/
 *.sql
 !packages/database/prisma/migrations/**/*.sql
 *.log

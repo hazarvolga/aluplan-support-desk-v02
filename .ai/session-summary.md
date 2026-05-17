@@ -2010,3 +2010,121 @@ Maintenance rule:
 - Manual "Check CRM Updates" remains useful as an immediate force-check button.
 - Automatic polling is still delta-poll based, not Dataverse webhook push. Webhook registration can be a later phase if true instant sync is required.
 - Existing Resend `401 invalid API key` email queue noise is unrelated and should be handled in a separate email/config cleanup phase.
+
+## Deployment Note - 2026-05-16 Email Branding Logo URLs
+
+### Trigger
+- Announcement and transactional email templates now use branding/contact settings dynamically.
+- Uploaded logo must be visible inside real email clients, not only inside the admin UI preview.
+
+### Must Remember Before Deploy
+- Production must set a public HTTPS backend API URL:
+  - `API_URL=https://api.<domain>/api/v1`
+- This URL is used to build email-safe logo URLs such as:
+  - `https://api.<domain>/api/v1/branding/assets/brand/logos/...`
+- Do not use `localhost`, relative URLs, private network URLs, or temporary signed object-storage URLs for `branding.logo_url` in production.
+- After deploy, upload/save the logo once from admin settings so `branding.logo_url` stores the new public URL shape.
+
+### Deploy Verification
+- Unauthenticated asset check:
+  - `curl -I https://api.<domain>/api/v1/branding/assets/<logo-key>` should return a successful image response or a valid public redirect.
+- Email HTML check:
+  - Announcement and transactional email preview must contain `<img src="https://...">`, not `/api/...` or `http://localhost...`.
+- Real inbox smoke:
+  - Send one test announcement or transactional email to Gmail/Outlook and confirm the logo renders.
+
+### Related Commit
+- `798cc52 fix(email): use public branding logo urls`
+
+## Follow-up - 2026-05-16 Remotion Promo Video
+
+### Trigger
+- User requested a 10-second dynamic motion graphic promo video using live application screenshots.
+
+### Implemented
+- Added isolated Remotion workspace app:
+  - `apps/promo-video`
+  - Composition: `AluplanPromo`
+  - 10 seconds, 30 fps, 1920x1080, H.264 render target.
+- Added screenshot capture helper:
+  - `scripts/capture-promo-screenshots.mjs`
+  - Captures login, dashboard, tickets, knowledge pool, AI intelligence, and AI settings screens from the running local app.
+  - Uses backend login API to create browser cookies without printing tokens.
+- Rendered output:
+  - `apps/promo-video/out/aluplan-promo.mp4`
+  - `apps/promo-video/out/preview.png`
+
+### Validation
+- Live app screenshots were captured from `localhost:3000` with backend auth from `localhost:4000`.
+- Remotion still preview succeeded:
+  - `pnpm --filter @aluplan/promo-video still`
+- Full MP4 render succeeded:
+  - `pnpm --filter @aluplan/promo-video render`
+  - 300/300 frames rendered and encoded.
+
+### Notes
+- `ffprobe` is not installed in the shell, so duration was verified from Remotion composition/render output rather than external media probing.
+- Backend `/api/v1/health` returned 503 during the session because storage threshold health was down, but auth and screenshot routes were usable.
+
+## Deployment Readiness - 2026-05-17 Repo Hygiene and Env Blockers
+
+### Completed
+- Removed local agent/tooling dumps from Git tracking so they will disappear from the remote repository after push:
+  - `.agent/`
+  - `.agents/`
+  - `.claude/`
+  - `.gemini/`
+  - `.kiro/`
+  - `.opencode/`
+  - `graphify-out/`
+- Kept `.github/` because it contains CI, Dependabot, release, and drill workflows.
+- Added ignore rules so local agent/spec/graph/promo artifacts do not re-enter Git.
+- Added missing i18n labels for the AI model list UI.
+- Updated deployment config docs/examples:
+  - `.env.example`
+  - `docker-compose.yml`
+  - `docker-compose.staging.yml`
+  - `docs/PRODUCTION_SECRETS.md`
+
+### Validation
+- `pnpm --filter @aluplan/backend test -- env-validation.spec.ts`
+- `pnpm i18n:check`
+- `docker compose --env-file /dev/null config` with production-like placeholder values.
+- `docker compose --env-file /dev/null -f docker-compose.staging.yml config` with staging-like placeholder values.
+
+### Current Deploy Blockers
+- Live secrets were pasted into chat. Rotate before deploy/push:
+  - database password/URL
+  - Redis password/URL
+  - OpenAI key
+  - Groq key
+  - Resend key
+  - R2 access/secret keys
+  - JWT secrets
+  - encryption key
+- Backend production env must add:
+  - `API_URL=https://api.allplan.net.tr/api/v1`
+- Backend production env must replace weak/short:
+  - `JWT_SECRET` must be at least 32 characters and should be strong random.
+- Backend production env currently includes:
+  - `ALLOWED_ORIGINS=https://allplan.net.tr,http://167.86.84.107:8000`
+  - Prefer only HTTPS production frontend origins. The raw HTTP IP origin is not suitable for a clean production launch.
+- Frontend production env currently has:
+  - `NEXT_INTERNAL_API_URL=http://backend-api:3001/api/v1`
+  - Verify the Coolify internal backend service really listens on `3001`; current backend Dockerfile exposes `4000`.
+- AI/RAG env currently points back to older 1536/OpenAI/Groq defaults:
+  - `EMBEDDING_MODEL=text-embedding-3-small`
+  - `GENERATIVE_MODEL=llama-3.3-70b-versatile`
+  - `VECTOR_DIMENSIONS=1536`
+  - Current stable direction is Gemini/LLMAPI with `gemini-embedding-2` and `3072` dimensions unless there is a deliberate migration plan.
+
+### Safe Next Step
+- Rotate exposed secrets first.
+- Update Coolify backend/frontend env values from `.env.example`.
+- Then run a staging deploy smoke:
+  - health
+  - login/me
+  - ticket creation with and without AI
+  - email logo public URL
+  - CRM update check
+  - RAG answer quality check

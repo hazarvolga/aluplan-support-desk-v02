@@ -1,29 +1,50 @@
-version: '3.8'
-
 services:
   backend:
     build:
       context: .
-      target: runner
-      args:
-        APP: backend
+      dockerfile: apps/backend/Dockerfile
     environment:
-      - NODE_ENV=staging
-      - DATABASE_URL=${STAGING_DATABASE_URL}
-      - REDIS_URL=${STAGING_REDIS_URL}
+      NODE_ENV: staging
+      PORT: 4000
+      DATABASE_URL: ${STAGING_DATABASE_URL:?set STAGING_DATABASE_URL}
+      REDIS_URL: ${STAGING_REDIS_URL:?set STAGING_REDIS_URL}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY}
+      FRONTEND_URL: ${STAGING_FRONTEND_URL:?set STAGING_FRONTEND_URL}
+      API_URL: ${STAGING_API_URL:?set STAGING_API_URL}
+      ALLOWED_ORIGINS: ${STAGING_ALLOWED_ORIGINS:?set STAGING_ALLOWED_ORIGINS}
+      ADMIN_BYPASS_EMAILS: ${ADMIN_BYPASS_EMAILS:?set ADMIN_BYPASS_EMAILS}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      LLMAPI_API_KEY: ${LLMAPI_API_KEY:-}
+      LLMAPI_BASE_URL: ${LLMAPI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai}
+      LLMAPI_CHAT_MODEL: ${LLMAPI_CHAT_MODEL:-gemini-2.5-flash}
+      LLMAPI_EMBED_MODEL: ${LLMAPI_EMBED_MODEL:-gemini-embedding-2}
+      CHAT_PROVIDER: ${CHAT_PROVIDER:-GEMINI}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-3072}
+      VECTOR_DIMENSIONS: ${VECTOR_DIMENSIONS:-3072}
+      KNOWLEDGE_SYNC_QUEUE_CONCURRENCY: ${KNOWLEDGE_SYNC_QUEUE_CONCURRENCY:-1}
+      KNOWLEDGE_SYNC_RATE_MAX: ${KNOWLEDGE_SYNC_RATE_MAX:-1}
+      KNOWLEDGE_SYNC_RATE_DURATION_MS: ${KNOWLEDGE_SYNC_RATE_DURATION_MS:-30000}
+      KNOWLEDGE_SYNC_BULK_DELAY_MS: ${KNOWLEDGE_SYNC_BULK_DELAY_MS:-15000}
     ports:
-      - "3002:3001"
+      - "4000:4000"
     restart: unless-stopped
 
   frontend:
     build:
       context: .
-      target: runner
+      dockerfile: apps/frontend/Dockerfile
       args:
-        APP: frontend
+        NEXT_PUBLIC_API_URL: ${STAGING_API_URL:?set STAGING_API_URL}
     environment:
-      - NODE_ENV=staging
-      - NEXT_PUBLIC_API_URL=https://staging-api.aluplan.com/api/v1
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${STAGING_API_URL:?set STAGING_API_URL}
+      NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://backend:4000/api/v1}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
     ports:
-      - "4001:4000"
+      - "3000:3000"
+    depends_on:
+      - backend
     restart: unless-stopped

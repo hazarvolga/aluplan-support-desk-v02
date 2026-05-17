@@ -81,15 +81,16 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-4000}
       # Database
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
       # Auth
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       # App
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      FRONTEND_URL: ${FRONTEND_URL:?set FRONTEND_URL}
+      API_URL: ${API_URL:?set public backend API_URL, e.g. https://api.example.com/api/v1}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS}
       # Redis / BullMQ
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       # Storage (Cloudflare R2 / S3)
@@ -107,21 +108,35 @@ services:
       # AI
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+      GEMINI_EMBED_MODEL: ${GEMINI_EMBED_MODEL:-gemini-embedding-2}
+      LLMAPI_API_KEY: ${LLMAPI_API_KEY:-}
+      LLMAPI_BASE_URL: ${LLMAPI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai}
+      LLMAPI_CHAT_MODEL: ${LLMAPI_CHAT_MODEL:-gemini-2.5-flash}
+      LLMAPI_EMBED_MODEL: ${LLMAPI_EMBED_MODEL:-gemini-embedding-2}
+      CHAT_PROVIDER: ${CHAT_PROVIDER:-GEMINI}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-gemini-embedding-2}
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-OPENAI}
-      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1536}
-      GENERATIVE_MODEL: ${GENERATIVE_MODEL:-llama-3.3-70b-versatile}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-3072}
+      GENERATIVE_MODEL: ${GENERATIVE_MODEL:-gemini-2.5-flash}
       # Vector / RAG
-      VECTOR_DIMENSIONS: ${VECTOR_DIMENSIONS:-1536}
+      VECTOR_DIMENSIONS: ${VECTOR_DIMENSIONS:-3072}
       SIMILARITY_THRESHOLD_HIGH: ${SIMILARITY_THRESHOLD_HIGH:-0.75}
       SIMILARITY_THRESHOLD_MEDIUM: ${SIMILARITY_THRESHOLD_MEDIUM:-0.70}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      KNOWLEDGE_SYNC_QUEUE_CONCURRENCY: ${KNOWLEDGE_SYNC_QUEUE_CONCURRENCY:-1}
+      KNOWLEDGE_SYNC_RATE_MAX: ${KNOWLEDGE_SYNC_RATE_MAX:-1}
+      KNOWLEDGE_SYNC_RATE_DURATION_MS: ${KNOWLEDGE_SYNC_RATE_DURATION_MS:-30000}
+      KNOWLEDGE_SYNC_BULK_DELAY_MS: ${KNOWLEDGE_SYNC_BULK_DELAY_MS:-15000}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY}
+      # CRM
+      CRM_DELTA_SYNC_INTERVAL: "${CRM_DELTA_SYNC_INTERVAL:-*/5 * * * *}"
       # Swagger
       SWAGGER_PASSWORD: ${SWAGGER_PASSWORD:-}
       # Monitoring
       SENTRY_ENABLED: ${SENTRY_ENABLED:-false}
       # Security
-      ADMIN_BYPASS_EMAILS: ${ADMIN_BYPASS_EMAILS:-hazar@allplan.net.tr}
+      ADMIN_BYPASS_EMAILS: ${ADMIN_BYPASS_EMAILS:?set ADMIN_BYPASS_EMAILS}
     ports:
       - "${PORT:-4000}:${PORT:-4000}"
     depends_on:
@@ -151,15 +166,15 @@ services:
       context: .
       dockerfile: apps/frontend/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api/v1}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL}
     container_name: aluplan_frontend
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api/v1}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL}
       NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://aluplan_backend:4000/api/v1}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
     ports:
       - "3000:3000"
     depends_on:
