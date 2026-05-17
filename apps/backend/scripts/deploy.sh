@@ -30,6 +30,36 @@ if [ "$SUBSCRIPTION_COL_EXISTS" = "1" ] && [ "$SUBSCRIPTION_MIGRATION_FAILED" = 
   "
 fi
 
+POOL_PARENT_COL_EXISTS=$(psql "$CLEAN_DB_URL" -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_name='knowledge_pool_embeddings' AND column_name='parent_id';" 2>/dev/null || echo "0")
+POOL_PARENT_MIGRATION_FAILED=$(psql "$CLEAN_DB_URL" -tAc "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name='20260316000001_add_pool_embedding_parent_id' AND finished_at IS NULL AND rolled_back_at IS NULL;" 2>/dev/null || echo "0")
+
+if [ "$POOL_PARENT_COL_EXISTS" = "1" ] && [ "$POOL_PARENT_MIGRATION_FAILED" = "1" ]; then
+  echo "[DEPLOY FIX] Finalizing already-applied knowledge_pool_embeddings parent_id migration..."
+  psql "$CLEAN_DB_URL" -v ON_ERROR_STOP=1 -c "
+    DO \$\$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'knowledge_pool_embeddings_parent_id_fkey'
+      ) THEN
+        ALTER TABLE \"knowledge_pool_embeddings\"
+        ADD CONSTRAINT \"knowledge_pool_embeddings_parent_id_fkey\"
+        FOREIGN KEY (\"parent_id\") REFERENCES \"knowledge_pool_embeddings\"(\"id\")
+        ON DELETE SET NULL ON UPDATE NO ACTION;
+      END IF;
+    END \$\$;
+
+    CREATE INDEX IF NOT EXISTS \"idx_kpe_parent\" ON \"knowledge_pool_embeddings\"(\"parent_id\");
+
+    UPDATE \"_prisma_migrations\"
+    SET finished_at = NOW(),
+        applied_steps_count = GREATEST(applied_steps_count, 1),
+        logs = NULL
+    WHERE migration_name = '20260316000001_add_pool_embedding_parent_id'
+      AND finished_at IS NULL
+      AND rolled_back_at IS NULL;
+  "
+fi
+
 echo "Running Prisma migrations..."
 echo "[DEPLOY DIAGNOSTIC] Available migrations:"
 ls -1 ./packages/database/prisma/migrations/ | grep -E '^[0-9]' | tail -10
