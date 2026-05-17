@@ -11,7 +11,7 @@ export class PreReimportInspectService {
     private readonly logger = new Logger(PreReimportInspectService.name);
     private readonly DEFAULT_SAMPLE_SIZE = 10;
     private readonly STALE_CACHE_DAYS = 30;
-    private readonly DATASET_EXTENSIONS = new Set(['.md', '.json', '.csv', '.pdf', '.txt', '.msg']);
+    private readonly DATASET_EXTENSIONS = new Set(['.md', '.json', '.csv', '.pdf', '.txt', '.msg', '.doc', '.docx']);
 
     constructor(
         private readonly prisma: PrismaService,

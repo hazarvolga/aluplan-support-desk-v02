@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import csv from 'csv-parser';
+import * as mammoth from 'mammoth';
 
 @Injectable()
 export class KnowledgePoolParserService {
@@ -90,6 +91,17 @@ export class KnowledgePoolParserService {
         return this.fixEncoding(content);
     }
 
+    async parseDocx(input: string | Buffer): Promise<string> {
+        try {
+            const dataBuffer = Buffer.isBuffer(input) ? input : fs.readFileSync(input);
+            const result = await mammoth.extractRawText({ buffer: dataBuffer });
+            return this.fixEncoding(result.value || '');
+        } catch (error: any) {
+            this.logger.error(`Failed to parse DOCX/DOC: ${error.message}`);
+            return '';
+        }
+    }
+
     async parseFile(type: string, input: string | Buffer): Promise<string> {
         switch (type) {
             case 'FILE_PDF': return this.parsePdf(input);
@@ -97,6 +109,7 @@ export class KnowledgePoolParserService {
             case 'FILE_TXT': return this.parseTxt(input);
             case 'FILE_MD': return this.parseMd(input);
             case 'FILE_MSG': return this.parseMsg(input);
+            case 'FILE_DOCX': return this.parseDocx(input);
             default: throw new Error(`Unsupported file type: ${type}`);
         }
     }

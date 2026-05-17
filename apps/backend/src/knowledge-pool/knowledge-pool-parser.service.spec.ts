@@ -11,6 +11,10 @@ jest.mock('pdf-parse', () => ({
     })),
 }));
 
+jest.mock('mammoth', () => ({
+    extractRawText: jest.fn().mockResolvedValue({ value: 'Parsed Word text' }),
+}));
+
 describe('KnowledgePoolParserService', () => {
     let service: KnowledgePoolParserService;
 
@@ -32,5 +36,13 @@ describe('KnowledgePoolParserService', () => {
         expect(result).toBe('Parsed PDF text');
         expect(getText).toHaveBeenCalled();
         expect(destroy).toHaveBeenCalled();
+    });
+
+    it('parses docx buffers through mammoth raw text extraction', async () => {
+        const result = await service.parseDocx(Buffer.from('fake-docx'));
+        const { extractRawText } = jest.requireMock('mammoth');
+
+        expect(result).toBe('Parsed Word text');
+        expect(extractRawText).toHaveBeenCalledWith({ buffer: Buffer.from('fake-docx') });
     });
 });

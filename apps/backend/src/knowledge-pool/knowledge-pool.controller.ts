@@ -41,7 +41,7 @@ export class KnowledgePoolController {
             storage: memoryStorage(), // Use memory storage so we can stream to R2/S3
         }),
     )
-    @ApiOperation({ summary: 'Upload a knowledge file (PDF, TXT, CSV, MD)' })
+    @ApiOperation({ summary: 'Upload a knowledge file (PDF, TXT, CSV, MD, DOCX)' })
     async uploadKnowledgeFile(
         @UploadedFile(
             new ParseFilePipe({
@@ -62,12 +62,14 @@ export class KnowledgePoolController {
             'text/csv',
             'text/markdown',
             'application/octet-stream',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/x-pdf' // Added variant
         ];
 
         const isMimeValid = validMimes.some(mime => file.mimetype.toLowerCase().includes(mime.toLowerCase()));
         const ext = extname(file.originalname).toLowerCase();
-        const validExts = ['.pdf', '.txt', '.csv', '.md', '.msg'];
+        const validExts = ['.pdf', '.txt', '.csv', '.md', '.msg', '.doc', '.docx'];
         const isExtValid = validExts.includes(ext);
 
         if (!isMimeValid && !isExtValid) {
@@ -186,6 +188,8 @@ export class KnowledgePoolController {
             case '.txt': return KnowledgeSourceType.FILE_TXT;
             case '.md': return KnowledgeSourceType.FILE_MD;
             case '.msg': return KnowledgeSourceType.FILE_MSG;
+            case '.doc':
+            case '.docx': return KnowledgeSourceType.FILE_DOCX;
             default: throw new Error(`Unsupported file extension: ${ext}`);
         }
     }

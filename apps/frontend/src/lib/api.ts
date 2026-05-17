@@ -241,6 +241,17 @@ export const api = {
                 body: formData,
             });
         },
+        uploadMany: async (files: File[], onProgress?: (completed: number, total: number, file: File) => void) => {
+            const results = [];
+            for (let i = 0; i < files.length; i += 1) {
+                const file = files[i];
+                const name = file.name.replace(/\.[^/.]+$/, '') || file.name;
+                const result = await api.pool.upload(name, file);
+                results.push(result);
+                onProgress?.(i + 1, files.length, file);
+            }
+            return results;
+        },
         sync: (id: string) => request<any>(`/knowledge-pool/sources/${id}/sync`, { method: 'POST' }),
         logs: (id: string) => request<any[]>(`/knowledge-pool/sources/${id}/logs`),
         syncDataset: () => request<any>('/knowledge-pool/sync-dataset', { method: 'POST' }),

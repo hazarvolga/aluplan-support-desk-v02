@@ -1151,6 +1151,7 @@ enum KnowledgeSourceType {
   FILE_MD
   FILE_CSV
   FILE_MSG
+  FILE_DOCX
 }
 
 enum KnowledgeSourceStatus {

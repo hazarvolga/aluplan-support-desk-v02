@@ -175,7 +175,7 @@ export class KnowledgePoolService {
             }
 
             const filesToSync: string[] = [];
-            const validExts = ['.md', '.json', '.csv', '.pdf', '.txt', '.msg'];
+            const validExts = ['.md', '.json', '.csv', '.pdf', '.txt', '.msg', '.doc', '.docx'];
 
             const walkSync = (dir: string) => {
                 const files = fs.readdirSync(dir);
@@ -204,6 +204,7 @@ export class KnowledgePoolService {
                 if (ext === '.pdf') type = KnowledgeSourceType.FILE_PDF;
                 if (ext === '.csv') type = KnowledgeSourceType.FILE_CSV;
                 if (ext === '.msg') type = KnowledgeSourceType.FILE_MSG;
+                if (ext === '.doc' || ext === '.docx') type = KnowledgeSourceType.FILE_DOCX;
 
                 const fileName = path.basename(filePath);
                 const classification = classifyDatasetFile(filePath);

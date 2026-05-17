@@ -137,5 +137,38 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
                 }),
             }));
         });
+
+        it('stores Word uploads with DOCX metadata and bulk-safe ingestion', async () => {
+            const source = {
+                id: 'source-docx',
+                name: 'Word Manual',
+                metadata: { ingestionMode: 'bulk-safe' },
+            };
+            localMockPrismaService.knowledgeSource.create.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue({
+                ...source,
+                status: KnowledgeSourceStatus.SYNCING,
+            });
+
+            await service.createFileSource(
+                'Word Manual',
+                'FILE_DOCX' as any,
+                {
+                    originalname: 'Allplan Word Manual.docx',
+                    path: 'knowledge-pool/allplan-word-manual.docx',
+                } as Express.Multer.File,
+            );
+
+            expect(localMockPrismaService.knowledgeSource.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    type: 'FILE_DOCX',
+                    metadata: expect.objectContaining({
+                        importBatch: 'ui-upload',
+                        ingestionMode: 'bulk-safe',
+                    }),
+                }),
+            }));
+        });
     });
 });

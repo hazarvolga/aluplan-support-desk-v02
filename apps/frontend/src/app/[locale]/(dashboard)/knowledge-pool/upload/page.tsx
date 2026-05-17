@@ -22,7 +22,7 @@ export default function KnowledgePoolUploadPage() {
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [fileName, setFileName] = useState('');
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [uploadStatus, setUploadStatus] = useState<'IDLE' | 'UPLOADING' | 'SUCCESS' | 'FAILED'>('IDLE');
     const [telemetry, setTelemetry] = useState<string[]>([]);
 
@@ -31,33 +31,47 @@ export default function KnowledgePoolUploadPage() {
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0] || null;
-        setSelectedFile(file);
-        if (file && !fileName) {
-            setFileName(file.name.split('.')[0]);
+        const files = Array.from(e.target.files || []);
+        setSelectedFiles(files);
+        if (files.length === 1 && !fileName) {
+            setFileName(files[0].name.replace(/\.[^/.]+$/, ''));
+        } else if (files.length > 1) {
+            setFileName('');
         }
     };
 
     const handleUpload = async () => {
-        if (!fileName || !selectedFile) {
-            toast({ title: 'Hata', description: 'Lütfen dosya adını ve dosyayı seçin.', variant: 'destructive' });
+        if (selectedFiles.length === 0) {
+            toast({ title: 'Hata', description: 'Lütfen en az bir dosya seçin.', variant: 'destructive' });
+            return;
+        }
+        if (selectedFiles.length === 1 && !fileName) {
+            toast({ title: 'Hata', description: 'Lütfen dosya adını girin.', variant: 'destructive' });
             return;
         }
 
         setLoading(true);
         setUploadStatus('UPLOADING');
         addTelemetry('UPLOAD_SEQUENCE_INITIATED');
-        addTelemetry(`SOURCE_DETECTED: ${selectedFile.name.toUpperCase()}`);
+        addTelemetry(`SOURCE_COUNT: ${selectedFiles.length}`);
 
         try {
-            addTelemetry('UPLOADING_TO_QUANTUM_GATEWAY...');
-            await api.pool.upload(fileName, selectedFile);
+            if (selectedFiles.length === 1) {
+                addTelemetry(`SOURCE_DETECTED: ${selectedFiles[0].name.toUpperCase()}`);
+                addTelemetry('UPLOADING_TO_QUANTUM_GATEWAY...');
+                await api.pool.upload(fileName, selectedFiles[0]);
+            } else {
+                addTelemetry('BULK_UPLOAD_QUEUE_STARTED...');
+                await api.pool.uploadMany(selectedFiles, (completed, total, file) => {
+                    addTelemetry(`UPLOADED_${completed}/${total}: ${file.name.toUpperCase()}`);
+                });
+            }
 
             setUploadStatus('SUCCESS');
             addTelemetry('DATA_TRANSFER_COMPLETE');
             addTelemetry('INDEXING_NEURAL_NODES...');
 
-            toast({ title: 'Başarılı', description: 'Dosya yüklendi ve indeksleme başlatıldı.' });
+            toast({ title: 'Başarılı', description: `${selectedFiles.length} dosya yüklendi ve indeksleme başlatıldı.` });
 
             setTimeout(() => {
                 router.push('/knowledge-pool');
@@ -115,8 +129,9 @@ export default function KnowledgePoolUploadPage() {
                                     <Input
                                         value={fileName}
                                         onChange={(e) => setFileName(e.target.value)}
-                                        placeholder="Enter dataset name..."
+                                        placeholder={selectedFiles.length > 1 ? 'Bulk upload uses original file names' : 'Enter dataset name...'}
                                         className="bg-white/5 border-white/10 focus:border-primary/50 transition-colors h-12"
+                                        disabled={selectedFiles.length > 1}
                                     />
                                 </div>
 
@@ -126,18 +141,19 @@ export default function KnowledgePoolUploadPage() {
                                         htmlFor="file-upload"
                                         className={`
                                             relative h-48 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-3 transition-all duration-300 cursor-pointer
-                                            ${selectedFile ? 'border-primary/40 bg-primary/5' : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'}
+                                            ${selectedFiles.length > 0 ? 'border-primary/40 bg-primary/5' : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'}
                                         `}
                                     >
                                         <input
                                             id="file-upload"
                                             type="file"
+                                            multiple
                                             onChange={handleFileChange}
                                             className="hidden"
-                                            accept=".pdf,.csv,.md,.txt"
+                                            accept=".pdf,.csv,.md,.txt,.msg,.doc,.docx"
                                         />
-                                        <div className={`p-4 rounded-full ${selectedFile ? 'bg-primary/20' : 'bg-white/5'}`}>
-                                            {selectedFile ? (
+                                        <div className={`p-4 rounded-full ${selectedFiles.length > 0 ? 'bg-primary/20' : 'bg-white/5'}`}>
+                                            {selectedFiles.length > 0 ? (
                                                 <FileText className="h-8 w-8 text-primary animate-pulse" />
                                             ) : (
                                                 <Upload className="h-8 w-8 text-muted-foreground" />
@@ -145,10 +161,16 @@ export default function KnowledgePoolUploadPage() {
                                         </div>
                                         <div className="text-center">
                                             <p className="text-sm font-bold text-foreground px-4">
-                                                {selectedFile ? selectedFile.name : 'Click or drag to drop data'}
+                                                {selectedFiles.length === 1
+                                                    ? selectedFiles[0].name
+                                                    : selectedFiles.length > 1
+                                                        ? `${selectedFiles.length} files selected`
+                                                        : 'Click or drag to drop data'}
                                             </p>
                                             <p className="text-[10px] font-mono text-muted-foreground mt-1 uppercase">
-                                                {selectedFile ? `${(selectedFile.size / 1024).toFixed(2)} KB` : 'PDF, CSV, MD, TXT (MAX 50MB)'}
+                                                {selectedFiles.length > 0
+                                                    ? `${(selectedFiles.reduce((sum, file) => sum + file.size, 0) / 1024 / 1024).toFixed(2)} MB total`
+                                                    : 'PDF, CSV, MD, TXT, DOCX, MSG (MAX 50MB EACH)'}
                                             </p>
                                         </div>
                                     </label>
@@ -157,7 +179,7 @@ export default function KnowledgePoolUploadPage() {
 
                             <Button
                                 onClick={handleUpload}
-                                disabled={loading || !selectedFile}
+                                disabled={loading || selectedFiles.length === 0}
                                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-14 rounded-xl font-bold tracking-[0.1em] text-xs uppercase group overflow-hidden relative"
                             >
                                 {loading && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
