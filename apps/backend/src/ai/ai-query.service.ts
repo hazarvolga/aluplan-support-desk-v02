@@ -856,6 +856,9 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         const asksWorkgroupComputerAdd =
             /(?:workgroup|workgroupmanager|workgroup manager|calisma grubu|çalisma grubu)/.test(normalizedQuery) &&
             /(?:bilgisayar|computer|rechner|arbeitsplatz|ekle|eklenemiyor|eklenmiyor|add|hinzufugen|aufnehmen)/.test(normalizedQuery);
+        const asksWorkgroupCheckout =
+            /(?:workgroup|workgroupmanager|workgroup manager|calisma grubu|çalisma grubu)/.test(normalizedQuery) &&
+            /(?:checkout|check out|disa|disarida|offline|uzaktan|ofis disi|merkezi olmayan|dezentral)/.test(normalizedQuery);
 
         if (asksIfcExport) {
             return [
@@ -882,6 +885,32 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
         if (asksGraphicsDriverUpdate) {
             return 'Grafik kartı sürücüsü güncellemesi için bilgi kaynağı, güncel NVIDIA Studio veya AMD Pro sürücüsünün üreticinin resmi sitesinden indirilmesini ve kurulumdan sonra Windows sisteminin yeniden başlatılmasını işaret ediyor.';
+        }
+
+        if (asksWorkgroupCheckout) {
+            return [
+                '## 📌 Sorun Yorumu',
+                'Workgroup Manager ortamında bir bilgisayarı veya ilgili proje/kullanıcı verilerini merkezi yapıdan ayırıp ofis dışında çalışma senaryosu soruluyor. Bu bir hata değil; Workgroup Manager veri konumu ve erişim yönetimi prosedürüdür.',
+                '',
+                '## ⚠️ Kritik Kontroller',
+                '- İşlemi yapacak kullanıcının Allplan Administrator yetkisine sahip olduğunu doğrulayın.',
+                '- Dışarıda çalışacak bilgisayarın Workgroup Manager ortamına dahil ve erişilebilir olduğunu kontrol edin.',
+                '- Taşınacak proje ve kullanıcı klasörleri için merkezi veri klasörü, yerel hedef ve izinleri netleştirin.',
+                '- Aynı projede eş zamanlı çalışma/erişim kilitleri için `*.lck` dosyalarının proje erişimini yönettiğini dikkate alın.',
+                '',
+                '## 🛠️ Çözüm Adımları',
+                '1. Allmenu üzerinden Workgroup Manager yönetim ekranını açın.',
+                '2. Dışarıda çalışacak bilgisayarın Workgroup Manager tarafından tanındığını kontrol edin.',
+                '3. Gerekli projeleri merkezi `Prj` yapısından Workgroup Manager kapsamındaki hedef bilgisayara taşıyın veya orada depolanacak şekilde yapılandırın.',
+                '4. Kullanıcıya özel ayarlar gerekiyorsa Allmenu > Workgroup Manager > Kullanıcıları Yönet ekranından kullanıcı klasörünü hedef bilgisayara taşıyın.',
+                '5. Büro standardı gibi ortak ayarların yalnızca Allplan Administrator tarafından değiştirilebildiğini dikkate alın.',
+                '6. Dışarıda çalışma öncesinde proje açma, kaydetme ve geri dönüş senaryosunu küçük bir test proje üzerinde doğrulayın.',
+                '',
+                '## ✅ Doğrulama',
+                '- Hedef bilgisayarda ilgili proje açılmalı ve değişiklikler kaydedilebilmelidir.',
+                '- Kullanıcıya özel ayarlar doğru gelmelidir.',
+                '- Aynı projeye başka kullanıcı eriştiğinde okuma/yazma kilit davranışı beklenen şekilde çalışmalıdır.',
+            ].join('\n');
         }
 
         if (asksWorkgroupComputerAdd) {
@@ -1233,6 +1262,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             { name: 'performance', terms: ['performans', 'slow', 'yavas', 'donma', 'freeze'], weight: 0.08 },
             { name: 'startup', terms: ['acilis', 'baslangic', 'baslatma', 'startup', 'start', 'starting', 'startet', 'bekliyor', 'waiting'], weight: 0.1 },
             { name: 'network', terms: ['ag', 'network', 'netzwerk', 'isim cozumleme', 'name resolution', 'dns', 'server', 'sunucu'], weight: 0.1 },
+            { name: 'workgroup', terms: ['workgroup', 'work groupmanager', 'workgroupmanager', 'checkout', 'check out', 'disa calis', 'disarida calis', 'merkezi olmayan', 'dezentral', 'zentralen dateiablageordner', 'benutzer', 'benutzerordner', 'kullanici klasoru', 'projektzugriff', 'projekt locking', 'lck', 'arbeitsplatz'], weight: 0.18 },
         ];
     }
 

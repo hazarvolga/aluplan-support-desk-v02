@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger, Delete, ConflictException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger, Delete } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
@@ -87,7 +87,12 @@ export class KnowledgePoolController {
         });
         if (existingByName) {
             logger.warn(`Duplicate detected by filename: ${file.originalname} → already stored as "${existingByName.name}"`);
-            throw new ConflictException(`DUPLICATE_FILE: "${existingByName.name}" adıyla aynı dosya zaten Knowledge Pool'da mevcut.`);
+            return {
+                skipped: true,
+                reason: 'DUPLICATE_FILE',
+                duplicateOf: existingByName.id,
+                message: `"${existingByName.name}" adıyla aynı dosya zaten Knowledge Pool'da mevcut.`,
+            };
         }
 
         // Upload to R2/S3 and get storage key
@@ -110,7 +115,12 @@ export class KnowledgePoolController {
                 // Clean up the orphaned storage object we just wrote
                 await this.storageService.deleteFile(storageKey).catch(() => { /* best-effort */ });
                 logger.warn(`Duplicate by content-hash: ${file.originalname} matches existing "${existingByHash.name}"`);
-                throw new ConflictException(`DUPLICATE_FILE: "${existingByHash.name}" adıyla aynı içerik zaten Knowledge Pool'da mevcut.`);
+                return {
+                    skipped: true,
+                    reason: 'DUPLICATE_FILE',
+                    duplicateOf: existingByHash.id,
+                    message: `"${existingByHash.name}" adıyla aynı içerik zaten Knowledge Pool'da mevcut.`,
+                };
             }
         }
 

@@ -59,19 +59,42 @@ export default function KnowledgePoolUploadPage() {
             if (selectedFiles.length === 1) {
                 addTelemetry(`SOURCE_DETECTED: ${selectedFiles[0].name.toUpperCase()}`);
                 addTelemetry('UPLOADING_TO_QUANTUM_GATEWAY...');
-                await api.pool.upload(fileName, selectedFiles[0]);
+                const result = await api.pool.upload(fileName, selectedFiles[0]);
+                if (result.skipped) {
+                    addTelemetry(`DUPLICATE_SKIPPED: ${selectedFiles[0].name.toUpperCase()}`);
+                    toast({ title: 'Atlandı', description: result.message || 'Bu dosya zaten mevcut.' });
+                    setUploadStatus('SUCCESS');
+                    return;
+                }
             } else {
                 addTelemetry('BULK_UPLOAD_QUEUE_STARTED...');
-                await api.pool.uploadMany(selectedFiles, (completed, total, file) => {
-                    addTelemetry(`UPLOADED_${completed}/${total}: ${file.name.toUpperCase()}`);
+                const summary = await api.pool.uploadMany(selectedFiles, (completed, total, file) => {
+                    addTelemetry(`PROCESSED_${completed}/${total}: ${file.name.toUpperCase()}`);
                 });
+                summary.results
+                    .filter(result => result.skipped)
+                    .forEach(result => addTelemetry(`DUPLICATE_SKIPPED: ${(result.fileName || 'unknown').toUpperCase()}`));
+
+                if (summary.failed > 0) {
+                    setUploadStatus(summary.uploaded > 0 || summary.skipped > 0 ? 'SUCCESS' : 'FAILED');
+                    toast({
+                        title: summary.uploaded > 0 || summary.skipped > 0 ? 'Kısmi Başarı' : 'Hata',
+                        description: `${summary.uploaded} yüklendi, ${summary.skipped} duplicate atlandı, ${summary.failed} hata.`,
+                        variant: summary.uploaded > 0 || summary.skipped > 0 ? 'default' : 'destructive',
+                    });
+                    if (summary.uploaded === 0 && summary.skipped === 0) return;
+                } else {
+                    toast({ title: 'Başarılı', description: `${summary.uploaded} dosya yüklendi, ${summary.skipped} duplicate atlandı.` });
+                }
             }
 
             setUploadStatus('SUCCESS');
             addTelemetry('DATA_TRANSFER_COMPLETE');
             addTelemetry('INDEXING_NEURAL_NODES...');
 
-            toast({ title: 'Başarılı', description: `${selectedFiles.length} dosya yüklendi ve indeksleme başlatıldı.` });
+            if (selectedFiles.length === 1) {
+                toast({ title: 'Başarılı', description: '1 dosya yüklendi ve indeksleme başlatıldı.' });
+            }
 
             setTimeout(() => {
                 router.push('/knowledge-pool');

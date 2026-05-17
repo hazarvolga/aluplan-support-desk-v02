@@ -889,6 +889,49 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
                 'license-offline',
             ]);
         });
+
+        it('prioritizes Workgroup checkout evidence over unrelated high-scoring manuals', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue({ role: { name: 'ADMIN' } });
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'visual-scripting',
+                        sourceType: 'DOCUMENT',
+                        title: 'Allplan_2020_eL_VisualScripting',
+                        category: 'Manuals & Tutorials',
+                        content: 'Visual scripting examples for nodes, graphs, and automation workflows in Allplan.',
+                        similarity: 0.91,
+                        confidence: 'HIGH',
+                    },
+                    {
+                        articleId: 'workgroup-checkout',
+                        sourceType: 'DOCUMENT',
+                        title: 'Allplan 2023 Workgroupmanager',
+                        category: 'Network & Workgroup',
+                        content: 'Projekte und Benutzerordner können auf allen Arbeitsplätzen im Netzwerk abgelegt werden, die im Workgroupmanager aufgenommen wurden. Über Allmenu - Workgroupmanager - Benutzer verwalten können Benutzerordner verschoben werden. *.lck Dateien steuern den Projektzugriff.',
+                        similarity: 0.78,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.91, passedThreshold: 2, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'Workgroup ortamında bilgisayarı checkout edip dışarıda çalışabilir miyim?',
+                wait: true,
+                language: 'tr',
+                userId: 'admin-1',
+            });
+
+            expect(result.sources.map(source => source.articleId)).toEqual([
+                'workgroup-checkout',
+                'visual-scripting',
+            ]);
+            expect(result.answer).toContain('Workgroup');
+            expect(result.answer).toMatch(/dışarıda çalışma/i);
+            expect(result.answer).not.toContain('Visual scripting');
+        });
     });
 
     describe('submitTelemetry', () => {

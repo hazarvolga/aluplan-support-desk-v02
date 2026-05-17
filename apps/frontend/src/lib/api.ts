@@ -23,6 +23,23 @@ export class ApiRequestError extends Error {
 export const isBackendUnavailableError = (error: unknown): error is ApiRequestError =>
     error instanceof ApiRequestError && error.code === 'BACKEND_UNAVAILABLE';
 
+export type KnowledgePoolUploadResult = {
+    skipped?: boolean;
+    reason?: string;
+    duplicateOf?: string;
+    message?: string;
+    fileName?: string;
+    [key: string]: any;
+};
+
+export type KnowledgePoolBulkUploadResult = {
+    results: KnowledgePoolUploadResult[];
+    uploaded: number;
+    skipped: number;
+    failed: number;
+    total: number;
+};
+
 const processQueue = (error: Error | null, token: string | null = null) => {
     failedQueue.forEach(prom => {
         if (error) {
@@ -236,21 +253,37 @@ export const api = {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('name', name);
-            return request('/knowledge-pool/sources/upload', {
+            return request<KnowledgePoolUploadResult>('/knowledge-pool/sources/upload', {
                 method: 'POST',
                 body: formData,
             });
         },
         uploadMany: async (files: File[], onProgress?: (completed: number, total: number, file: File) => void) => {
-            const results = [];
+            const results: KnowledgePoolUploadResult[] = [];
             for (let i = 0; i < files.length; i += 1) {
                 const file = files[i];
                 const name = file.name.replace(/\.[^/.]+$/, '') || file.name;
-                const result = await api.pool.upload(name, file);
-                results.push(result);
-                onProgress?.(i + 1, files.length, file);
+                try {
+                    const result = await api.pool.upload(name, file);
+                    results.push({ ...result, fileName: file.name });
+                    onProgress?.(i + 1, files.length, file);
+                } catch (error: any) {
+                    results.push({
+                        skipped: false,
+                        reason: 'UPLOAD_FAILED',
+                        message: error?.message || 'Upload failed',
+                        fileName: file.name,
+                    });
+                    onProgress?.(i + 1, files.length, file);
+                }
             }
-            return results;
+            return {
+                results,
+                uploaded: results.filter(result => !result.skipped && result.reason !== 'UPLOAD_FAILED').length,
+                skipped: results.filter(result => result.skipped).length,
+                failed: results.filter(result => result.reason === 'UPLOAD_FAILED').length,
+                total: files.length,
+            };
         },
         sync: (id: string) => request<any>(`/knowledge-pool/sources/${id}/sync`, { method: 'POST' }),
         logs: (id: string) => request<any[]>(`/knowledge-pool/sources/${id}/logs`),
