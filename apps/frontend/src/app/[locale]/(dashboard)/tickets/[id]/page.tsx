@@ -104,12 +104,6 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         return enLocale;
     };
     const dateLocale = getDateLocale();
-    const hotinfoSnapshotText = ticket?.hotinfoSnapshot
-        ? typeof ticket.hotinfoSnapshot === 'object'
-            ? JSON.stringify(ticket.hotinfoSnapshot, null, 2)
-            : String(ticket.hotinfoSnapshot)
-        : '';
-
     const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
         if (scrollRef.current) {
             scrollRef.current.scrollIntoView({ behavior, block: 'end' });
@@ -869,26 +863,6 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                             {String(ticket.hotinfoSnapshot)}
                                         </div>
                                     )}
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t('hotinfo_raw_json')}</h3>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-7 text-[10px]"
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(hotinfoSnapshotText);
-                                                    toast.success(t('hotinfo_copied'));
-                                                }}
-                                            >
-                                                {t('copy_hotinfo')}
-                                            </Button>
-                                        </div>
-                                        <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-border/60 bg-black/30 p-3 text-[10px] leading-relaxed text-muted-foreground">
-                                            {hotinfoSnapshotText}
-                                        </pre>
-                                    </div>
                                 </div>
                             </ScrollArea>
                         </DialogContent>

@@ -2283,3 +2283,26 @@ Maintenance rule:
 - Deploy backend for the RAG fallback and DOCX enum/parser changes.
 - Deploy frontend for the bulk upload UI.
 - Production DB has already received `macros.deleted_at`; the new DOCX enum migration will apply during backend deploy.
+
+## AI Settings / Answer Tone Fixes - 2026-05-17
+
+### Root cause
+- Admin AI settings still allowed and persisted the deprecated `gemini-2.0-flash-exp` chat model.
+- Gemini `v1beta generateContent` returns 404 for that model, which broke admin AI Copilot/ANN draft generation.
+- Gemini model list UI could show a recommended model in the dropdown while the underlying setting state still held the old unsupported value.
+- Customer fallback copy was technically useful but too mechanical for a corporate support experience.
+
+### Changes
+- Gemini service now normalizes deprecated `gemini-2.0-flash-exp` / `models/gemini-2.0-flash-exp` to `gemini-2.5-flash` before API calls.
+- Production sync now repairs existing `ai.gemini.chat_model=gemini-2.0-flash-exp` records to `gemini-2.5-flash` during deploy.
+- Admin AI settings model listing now updates the actual setting state to the recommended/supported model when the current value is unsupported.
+- Removed the old Gemini "Flash 2.0 Exp" quick option from the UI and added `gemini-2.5-flash`.
+- Added `ai.gemini.api_key` to frontend secret-save handling.
+- AI answer contract now uses a warmer corporate support voice as "Aluplan AI Destek", while preserving grounding and no-hallucination rules.
+- Customer AI answers now address the user by full name once when an authenticated user profile has `fullName`.
+- Hotinfo modal no longer shows the raw JSON/kopyalama block; it keeps the structured Hotinfo view.
+
+### Validation
+- `pnpm --filter @aluplan/backend test -- gemini.service.spec.ts ai-query.service.spec.ts`
+- `pnpm --filter @aluplan/backend typecheck`
+- `pnpm --filter @aluplan/frontend typecheck`

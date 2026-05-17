@@ -608,6 +608,7 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             });
 
             expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('Aluplan AI Destek');
             expect(result.answer).toContain('## 📌 Sorun Yorumu');
             expect(result.answer).toContain('Workgroup Manager’da bilgisayar ekleme');
             expect(result.answer).toContain('Allplan Administrator');

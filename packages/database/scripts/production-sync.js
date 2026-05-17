@@ -364,6 +364,14 @@ async function main() {
             }
         }
 
+        await prisma.setting.updateMany({
+            where: {
+                key: 'ai.gemini.chat_model',
+                value: { in: ['gemini-2.0-flash-exp', 'models/gemini-2.0-flash-exp'] },
+            },
+            data: { value: 'gemini-2.5-flash', isSecret: false },
+        });
+
         // --- 6. Knowledge Base Categories (Sync from seed.ts logic) ---
         console.log('📚 Syncing Knowledge Base Categories...');
         const KB_CATEGORIES = [

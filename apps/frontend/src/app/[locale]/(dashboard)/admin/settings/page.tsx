@@ -67,6 +67,18 @@ export default function AdminSettingsPage() {
         loading ? t('ai.loading_models') : t('ai.list_models')
     );
 
+    const chooseRecommendedModel = (
+        models: Array<{ id: string; recommended: boolean }>,
+        currentValue: string,
+    ) => {
+        if (models.length === 0) return currentValue;
+
+        const currentIsSupported = models.some(model => model.id === currentValue);
+        if (currentIsSupported) return currentValue;
+
+        return models.find(model => model.recommended)?.id || models[0]?.id || currentValue;
+    };
+
     // SLA States
     const [policies, setPolicies] = useState<any[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
@@ -225,6 +237,7 @@ export default function AdminSettingsPage() {
                 'ai.deepseek.api_key',
                 'ai.groq.api_key',
                 'ai.custom.api_key',
+                'ai.gemini.api_key',
                 'ai.vertex.credentials_json',
                 'email.resend.api_key',
                 'email.smtp.pass',
@@ -798,14 +811,10 @@ export default function AdminSettingsPage() {
                                                             try {
                                                                 const result = await api.ai.listModels('gemini', getSetting('ai.gemini.api_key'));
                                                                 setGeminiModels(result);
-                                                                if (!getSetting('ai.gemini.chat_model')) {
-                                                                    const rec = result.chatModels.find((m: { recommended: boolean }) => m.recommended);
-                                                                    if (rec) updateValue('ai.gemini.chat_model', rec.id);
-                                                                }
-                                                                if (!getSetting('ai.gemini.embed_model')) {
-                                                                    const rec = result.embedModels.find((m: { recommended: boolean }) => m.recommended);
-                                                                    if (rec) updateValue('ai.gemini.embed_model', rec.id);
-                                                                }
+                                                                const nextChatModel = chooseRecommendedModel(result.chatModels, getSetting('ai.gemini.chat_model'));
+                                                                const nextEmbedModel = chooseRecommendedModel(result.embedModels, getSetting('ai.gemini.embed_model'));
+                                                                updateValue('ai.gemini.chat_model', nextChatModel);
+                                                                updateValue('ai.gemini.embed_model', nextEmbedModel);
                                                             } catch (e: any) {
                                                                 toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
                                                             } finally {
@@ -854,24 +863,24 @@ export default function AdminSettingsPage() {
                                                                 className="bg-black/50 h-8 text-sm"
                                                             />
                                                             <datalist id="gemini-chat-models">
+                                                                <option value="gemini-2.5-flash" />
                                                                 <option value="gemini-1.5-flash" />
                                                                 <option value="gemini-1.5-pro" />
-                                                                <option value="gemini-2.0-flash-exp" />
                                                             </datalist>
                                                             <div className="flex gap-1">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    className="h-5 px-1.5 text-[9px] hover:bg-teal-500/20 text-teal-500"
+                                                                    onClick={() => updateValue('ai.gemini.chat_model', 'gemini-2.5-flash')}
+                                                                >
+                                                                    Flash 2.5
+                                                                </Button>
                                                                 <Button
                                                                     variant="ghost"
                                                                     className="h-5 px-1.5 text-[9px] hover:bg-teal-500/20 text-teal-500"
                                                                     onClick={() => updateValue('ai.gemini.chat_model', 'gemini-1.5-flash')}
                                                                 >
                                                                     Flash 1.5
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    className="h-5 px-1.5 text-[9px] hover:bg-teal-500/20 text-teal-500"
-                                                                    onClick={() => updateValue('ai.gemini.chat_model', 'gemini-2.0-flash-exp')}
-                                                                >
-                                                                    Flash 2.0 (Exp)
                                                                 </Button>
                                                             </div>
                                                         </div>

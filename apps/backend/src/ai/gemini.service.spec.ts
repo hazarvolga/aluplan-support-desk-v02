@@ -53,6 +53,24 @@ describe('GeminiService', () => {
         await expect(service.embed('aluplan')).rejects.toThrow('Gemini Embed Error 429');
     });
 
+    it('normalizes deprecated Gemini chat model aliases before generateContent calls', async () => {
+        settings.getValue
+            .mockResolvedValueOnce('test-api-key')
+            .mockResolvedValueOnce('gemini-2.0-flash-exp');
+        (config.get as jest.Mock).mockReturnValue(undefined);
+
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }),
+        }) as any;
+
+        await expect(service.generate('Merhaba')).resolves.toBe('ok');
+        expect(global.fetch).toHaveBeenCalledWith(
+            expect.stringContaining('/models/gemini-2.5-flash:generateContent?key=test-api-key'),
+            expect.any(Object),
+        );
+    });
+
     it('marks gemini-embedding-2 as the recommended embed model', async () => {
         settings.getValue.mockResolvedValue('test-api-key');
         global.fetch = jest.fn().mockResolvedValue({

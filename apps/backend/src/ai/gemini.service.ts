@@ -12,6 +12,12 @@ import { AiPart, AiProvider, ChatResult, EmbeddingResult, ModelListResult } from
 @Injectable()
 export class GeminiService implements AiProvider {
     private readonly logger = new Logger(GeminiService.name);
+    private readonly recommendedChatModel = 'gemini-2.5-flash';
+    private readonly recommendedEmbedModel = 'gemini-embedding-2';
+    private readonly deprecatedChatModelMap: Record<string, string> = {
+        'gemini-2.0-flash-exp': this.recommendedChatModel,
+        'models/gemini-2.0-flash-exp': this.recommendedChatModel,
+    };
 
     constructor(
         private readonly config: ConfigService,
@@ -24,19 +30,32 @@ export class GeminiService implements AiProvider {
     }
 
     private async getChatModel(): Promise<string> {
-        return (await this.settings.getValue('ai.gemini.chat_model')) ||
+        const configuredModel = (await this.settings.getValue('ai.gemini.chat_model')) ||
             this.config.get<string>('GEMINI_CHAT_MODEL') ||
-            'gemini-1.5-flash';
+            this.recommendedChatModel;
+
+        return this.normalizeChatModel(configuredModel);
     }
 
     private async getEmbedModel(): Promise<string> {
         return (await this.settings.getValue('ai.gemini.embed_model')) ||
             this.config.get<string>('GEMINI_EMBED_MODEL') ||
-            'gemini-embedding-2';
+            this.recommendedEmbedModel;
     }
 
     getName(): string {
         return 'gemini';
+    }
+
+    private normalizeChatModel(model: string): string {
+        const normalized = model.replace(/^models\//, '');
+        const replacement = this.deprecatedChatModelMap[model] || this.deprecatedChatModelMap[normalized];
+        if (replacement) {
+            this.logger.warn(`Deprecated Gemini chat model "${model}" normalized to "${replacement}".`);
+            return replacement;
+        }
+
+        return normalized;
     }
 
     async getActiveModelName(): Promise<string> {
@@ -267,8 +286,8 @@ Yalnızca kategori adını yaz. Başka bir şey yazma.`;
         const apiKey = apiKeyOverride || await this.getApiKey();
         if (!apiKey) return { chatModels: [], embedModels: [] };
 
-        const RECOMMENDED_CHAT = 'models/gemini-2.5-flash';
-        const RECOMMENDED_EMBED = 'models/gemini-embedding-2';
+        const RECOMMENDED_CHAT = `models/${this.recommendedChatModel}`;
+        const RECOMMENDED_EMBED = `models/${this.recommendedEmbedModel}`;
 
         try {
             const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}&pageSize=100`;

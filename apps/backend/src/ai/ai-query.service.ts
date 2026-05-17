@@ -59,6 +59,13 @@ You are powering an intelligent support ticket diagnosis engine.
 
 Your job is NOT just to answer — but to reach a technical diagnosis using the 7-STEP DIAGNOSIS STRATEGY below.
 
+Voice and tone:
+- You are "Aluplan AI Destek".
+- Write like a calm, experienced corporate support specialist: clear, helpful, and natural.
+- If [Kullanıcı Profili] includes a full name, address the user by that full name once in the opening sentence.
+- Keep the answer grounded in [CONTEXT]; do not make the response warmer by adding unsupported facts or promises.
+- Prefer practical wording the end user can follow without losing the professional diagnostic structure.
+
 ---
 
 ## STEP 1 — CONTEXT ANALYSIS
@@ -525,6 +532,7 @@ export class AiQueryService {
             // Split response by languages (TR, EN, DE)
             const splitResponse = this.parseMultiLangResponse(rawAnswer, lang);
             answer = splitResponse.main; // The active language content
+            answer = await this.applyPersonalizedGreeting(answer, userId, this.resolveResponseLanguage(lang, userQuery));
             translations = splitResponse.translations;
 
             options.hotinfoContext = options.hotinfoContext || {}; // ensure for consistency below
@@ -801,7 +809,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         if (responseLanguage === 'en') {
             const englishSummary = this.buildEnglishFallbackSummary(query, snippets[0]);
             return [
-                'The model response was delayed; here is a concise answer based on the best matching knowledge base content:',
+                'As Aluplan AI Support, here is the most useful guidance I can provide from the available knowledge base match:',
                 '',
                 englishSummary ?? this.buildGenericFallbackSummary(query, snippets[0], 'en', options.diagnosis),
             ].join('\n');
@@ -809,7 +817,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
         if (responseLanguage === 'de') {
             return [
-                'Die Modellantwort hat sich verzögert. Hier ist eine kurze Antwort auf Basis des besten Treffers in der Wissensbasis:',
+                'Als Aluplan AI Support gebe ich Ihnen auf Basis des besten Wissensbasis-Treffers die folgende praxisnahe Orientierung:',
                 '',
                 this.buildGenericFallbackSummary(query, snippets[0], 'de', options.diagnosis),
             ].join('\n');
@@ -817,7 +825,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
         const turkishSummary = this.buildTurkishFallbackSummary(query, snippets[0], options.diagnosis);
         const answerLines = [
-            'Model yanıtı gecikti; bilgi kaynağındaki en ilgili eşleşmeye göre kısa yanıt:',
+            'Aluplan AI Destek olarak, bilgi kaynağındaki en güçlü eşleşmeye göre uygulanabilir önerim şöyle:',
             '',
             turkishSummary,
         ];
@@ -1062,6 +1070,35 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
     private resolveFallbackLanguage(language: string | undefined, query: string): 'tr' | 'en' | 'de' {
         return this.resolveResponseLanguage(language, query);
+    }
+
+    private async applyPersonalizedGreeting(
+        answer: string | null,
+        userId: string | null | undefined,
+        language: 'tr' | 'en' | 'de',
+    ): Promise<string | null> {
+        if (!answer || !userId) return answer;
+
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { fullName: true },
+        });
+
+        const fullName = user?.fullName?.trim();
+        if (!fullName) return answer;
+
+        const firstBlock = answer.slice(0, 240).toLowerCase();
+        if (firstBlock.includes(fullName.toLowerCase())) return answer;
+        if (/^(merhaba|hello|hallo)\b/i.test(answer.trim())) return answer;
+
+        const greeting =
+            language === 'en'
+                ? `Hello ${fullName},`
+                : language === 'de'
+                    ? `Hallo ${fullName},`
+                    : `Merhaba ${fullName},`;
+
+        return `${greeting}\n\n${answer}`;
     }
 
     private extractRelevantFallbackSnippets(query: string, results: SearchResult[], diagnosis?: DiagnosisResult): Array<{ title: string; excerpt: string; score: number }> {
