@@ -13,11 +13,11 @@
 - **Alan**: Güvenlik
 - **Sorun**: `apps/backend/src/deploy-prep.ts` dosyasında OpenAI, Resend, xAI, Cloudflare R2 API anahtarları ve secret'ları düz metin olarak kaynak koduna yazılmış. Bu dosya git geçmişinde de mevcut.
   ```
-  { key: 'email.resend.api_key', value: 're_fupJu99g_BM3sewTw2Jtn...' }
-  { key: 'ai.xai.api_key', value: 'gsk_TOkGgf6qW9ltkaN...' }
-  { key: 'ai.openai.api_key', value: 'sk-proj-thgH52aPIH...' }
-  { key: 'storage.r2.secret_access_key', value: '4f6d2d4e398...' }
-  { key: 'storage.r2.token', value: 'cfat_vivAwu0aBtZUfp...' }
+  { key: 'email.resend.api_key', value: '[REDACTED]' }
+  { key: 'ai.xai.api_key', value: '[REDACTED]' }
+  { key: 'ai.openai.api_key', value: '[REDACTED]' }
+  { key: 'storage.r2.secret_access_key', value: '[REDACTED]' }
+  { key: 'storage.r2.token', value: '[REDACTED]' }
   ```
 - **Etki**: **Kritik** — Repo'yu gören herkes bu anahtarlarla API çağrısı yapabilir, depolama verilerine erişebilir. Gitleaks CI adımı bu dosyada zaten bypass yapılmış olabilir.
 - **Dosya/Konum**: `apps/backend/src/deploy-prep.ts:56-77`
