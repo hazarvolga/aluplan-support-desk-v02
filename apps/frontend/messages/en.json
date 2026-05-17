@@ -1022,6 +1022,9 @@
       "hide_key": "Hide {name} key",
       "show_key": "Show {name} key",
       "model_placeholder": "e.g., gpt-4, claude-3-opus...",
+      "list_models": "List Models",
+      "loading_models": "Loading...",
+      "model_list_error": "Could not load model list",
       "total_latency": "Total Latency",
       "validation": {
         "missing_fields": "Missing fields: {fields}",

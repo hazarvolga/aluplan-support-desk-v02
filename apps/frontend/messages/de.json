@@ -1022,6 +1022,9 @@
       "hide_key": "{name} Schlüssel verbergen",
       "show_key": "{name} Schlüssel anzeigen",
       "model_placeholder": "z.B.: gpt-4, claude-3-opus...",
+      "list_models": "Modelle auflisten",
+      "loading_models": "Wird geladen...",
+      "model_list_error": "Modellliste konnte nicht geladen werden",
       "total_latency": "Gesamtlatenz",
       "validation": {
         "missing_fields": "Fehlende Felder: {fields}",

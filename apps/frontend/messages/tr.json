@@ -1022,6 +1022,9 @@
       "hide_key": "{name} anahtarını gizle",
       "show_key": "{name} anahtarını göster",
       "model_placeholder": "örn: gpt-4, claude-3-opus...",
+      "list_models": "Modelleri Listele",
+      "loading_models": "Yükleniyor...",
+      "model_list_error": "Model listesi yüklenemedi",
       "total_latency": "Toplam Gecikme",
       "validation": {
         "missing_fields": "Eksik alanlar: {fields}",
