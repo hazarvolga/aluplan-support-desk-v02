@@ -585,6 +585,38 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             expect(result.answer).not.toContain('İlgili pasaj:');
         });
 
+        it('returns a Turkish Workgroup Manager fallback instead of leaking German source text', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'workgroup-de',
+                        sourceType: 'DOCUMENT',
+                        title: 'Allplan 2023',
+                        content: 'So richten Sie eine Allplan Workgroup ein. Sie sind als Allplan Administrator angemeldet. Allplan 2023 ist auf allen Arbeitsplätzen installiert, die in die Workgroup aufgenommen werden sollen. Der Workgroupmanager ist aktiviert. Starten Sie Allmenu 2023.',
+                        similarity: 0.95,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.95, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'Workgroup Manager’da bilgisayar eklenemiyor, sebep ne olabilir?',
+                wait: true,
+                language: 'tr-TR',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('## 📌 Sorun Yorumu');
+            expect(result.answer).toContain('Workgroup Manager’da bilgisayar ekleme');
+            expect(result.answer).toContain('Allplan Administrator');
+            expect(result.answer).toContain('DNS/isim çözümleme');
+            expect(result.answer).not.toContain('So richten Sie');
+            expect(result.answer).not.toContain('Arbeitsplätzen');
+            expect(result.answer).not.toContain('İlgili pasaj:');
+        });
+
         it('returns a structured customer-safe license borrowing fallback in the query language when generation is unavailable', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [

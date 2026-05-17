@@ -826,7 +826,6 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             answerLines.push(
                 '',
                 `Kaynak: ${snippets[0].title}`,
-                `İlgili pasaj: ${snippets[0].excerpt}`,
             );
         }
 
@@ -846,6 +845,9 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         const asksGraphicsDriverUpdate =
             /(?:grafik karti|grafik kartlari|ekran karti|ekran kartlari|graphics card|gpu|nvidia|amd)/.test(normalizedQuery) &&
             /(?:guncelle|guncelleme|update|current|surum)/.test(normalizedQuery);
+        const asksWorkgroupComputerAdd =
+            /(?:workgroup|workgroupmanager|workgroup manager|calisma grubu|çalisma grubu)/.test(normalizedQuery) &&
+            /(?:bilgisayar|computer|rechner|arbeitsplatz|ekle|eklenemiyor|eklenmiyor|add|hinzufugen|aufnehmen)/.test(normalizedQuery);
 
         if (asksIfcExport) {
             return [
@@ -872,6 +874,31 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
         if (asksGraphicsDriverUpdate) {
             return 'Grafik kartı sürücüsü güncellemesi için bilgi kaynağı, güncel NVIDIA Studio veya AMD Pro sürücüsünün üreticinin resmi sitesinden indirilmesini ve kurulumdan sonra Windows sisteminin yeniden başlatılmasını işaret ediyor.';
+        }
+
+        if (asksWorkgroupComputerAdd) {
+            return [
+                '## 📌 Sorun Yorumu',
+                'Workgroup Manager’da bilgisayar ekleme işlemi genelde yetki, sürüm uyumu, Workgroup Manager aktivasyonu veya ağ/paylaşım erişimi koşullarından biri sağlanmadığında başarısız olur.',
+                '',
+                '## ⚠️ Kritik Kontroller',
+                '- İşlemi Allplan Administrator yetkisine sahip kullanıcıyla yaptığınızdan emin olun.',
+                '- Workgroup’a alınacak tüm bilgisayarlarda aynı Allplan sürümünün kurulu olduğunu kontrol edin.',
+                '- Workgroup Manager modülünün etkin olduğunu doğrulayın.',
+                '- Yeni bilgisayarın ağda erişilebilir olduğunu ve merkezi Allplan veri klasörüne gerekli okuma/yazma izinlerine sahip olduğunu kontrol edin.',
+                '',
+                '## 🛠️ Çözüm Adımları',
+                '1. Allmenu’yu yönetici yetkisiyle açın.',
+                '2. Workgroup Manager yönetim ekranına girin ve bilgisayar ekleme işlemini buradan başlatın.',
+                '3. Eklemek istediğiniz bilgisayarın ağ adını ve erişilebilirliğini kontrol edin.',
+                '4. Merkezi proje/veri yolunda paylaşım ve NTFS izinlerini doğrulayın.',
+                '5. Bilgisayar listede görünmüyorsa DNS/isim çözümleme, güvenlik duvarı ve ağ bağlantısını kontrol edin.',
+                '',
+                '## ✅ Doğrulama',
+                '- Bilgisayar Workgroup Manager listesinde görünmeli.',
+                '- İlgili bilgisayardan Allplan açıldığında merkezi proje/veri yapısı erişilebilir olmalı.',
+                '- Sorun devam ederse ekran görüntüsü, hata metni, Allplan sürümü ve sunucu/paylaşım yolu bilgisiyle destek talebi oluşturun.',
+            ].join('\n');
         }
 
         if (asksLicenseBorrowing) {
