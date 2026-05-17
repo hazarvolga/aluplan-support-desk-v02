@@ -1092,6 +1092,7 @@
       "smtp_port": "Port",
       "smtp_user": "Username",
       "smtp_pass": "Password",
+      "smtp_secure": "Use direct SSL/TLS (port 465 only)",
       "resend_api_key": "API Key",
       "gmail_client_id": "Client ID",
       "gmail_client_secret": "Client Secret",

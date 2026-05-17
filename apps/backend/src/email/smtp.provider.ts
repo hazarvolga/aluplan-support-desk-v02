@@ -40,6 +40,8 @@ export class SmtpProvider implements EmailProvider {
         const _from = options.from ?? (await this.settings.getValue('email.from_address')) ?? process.env.MAIL_FROM ?? 'noreply@aluplan.com';
         const _to = typeof options.to === 'string' ? options.to.split(',').map(e => e.trim()) : options.to;
         const info = await transporter.sendMail({
+            from: _from,
+            to: _to,
             subject: options.subject,
             html: options.html,
             text: options.text,

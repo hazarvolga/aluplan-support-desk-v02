@@ -1237,7 +1237,7 @@ export default function AdminSettingsPage() {
                                     <div className="space-y-2">
                                         <Label>{t('email.active_provider')}</Label>
                                         <Select
-                                            value={getSetting('email.active_provider') || 'resend'}
+                                            value={getSetting('email.active_provider') || 'smtp'}
                                             onValueChange={v => updateValue('email.active_provider', v)}
                                         >
                                             <SelectTrigger>
@@ -1310,6 +1310,18 @@ export default function AdminSettingsPage() {
                                                         value={getSetting('email.smtp.pass')}
                                                         onChange={e => updateValue('email.smtp.pass', e.target.value)}
                                                     />
+                                                </div>
+                                                <div className="flex items-center space-x-2 pt-2 md:col-span-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="smtp-secure"
+                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 bg-background"
+                                                        checked={getSetting('email.smtp.secure') === 'true'}
+                                                        onChange={e => updateValue('email.smtp.secure', e.target.checked ? 'true' : 'false')}
+                                                    />
+                                                    <Label htmlFor="smtp-secure" className="text-xs font-medium cursor-pointer">
+                                                        {t('email.smtp_secure')}
+                                                    </Label>
                                                 </div>
                                             </div>
                                         </div>
@@ -1504,7 +1516,7 @@ export default function AdminSettingsPage() {
                                         className="flex-1"
                                         onClick={() => handleSave([
                                             'email.active_provider', 'email.from_address',
-                                            'email.resend.api_key', 'email.smtp.host', 'email.smtp.port', 'email.smtp.user', 'email.smtp.pass',
+                                            'email.resend.api_key', 'email.smtp.host', 'email.smtp.port', 'email.smtp.user', 'email.smtp.pass', 'email.smtp.secure',
                                             'email.gmail.email', 'email.gmail.client_id', 'email.gmail.client_secret',
                                             'email.imap.host', 'email.imap.port', 'email.imap.user', 'email.imap.pass', 'email.imap.tls',
                                         ])}

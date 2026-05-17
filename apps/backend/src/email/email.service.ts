@@ -26,13 +26,13 @@ export class EmailService implements OnModuleInit {
     ) { }
 
     async onModuleInit() {
-        // Read active provider from Settings, fall back to resend
+        // Read active provider from Settings, fall back to SMTP for the self-hosted mail path.
         await this.refreshProvider();
     }
 
     private async refreshProvider() {
         try {
-            const providerName = (await this.settings.getValue('email.active_provider')) || 'resend';
+            const providerName = (await this.settings.getValue('email.active_provider')) || 'smtp';
             this.logger.log(`📧 Active email provider from settings: ${providerName}`);
             switch (providerName) {
                 case 'smtp':
@@ -42,19 +42,26 @@ export class EmailService implements OnModuleInit {
                     this.provider = this.gmail;
                     break;
                 case 'resend':
-                default:
                     this.provider = this.resend;
+                    break;
+                default:
+                    this.provider = this.smtp;
                     break;
             }
             this.logger.log(`📧 Email provider: ${providerName}`);
         } catch (error) {
-            this.provider = this.resend;
+            this.provider = this.smtp;
             await this.errorLogger.logError({
                 action: 'email_provider_refresh_failed',
-                message: 'Failed to refresh email provider, falling back to Resend',
+                message: 'Failed to refresh email provider, falling back to SMTP',
                 error
             });
         }
+    }
+
+    private async getCurrentMailProviderForLog(): Promise<'RESEND' | 'SMTP'> {
+        const providerName = (await this.settings.getValue('email.active_provider')) || 'smtp';
+        return providerName === 'resend' ? 'RESEND' : 'SMTP';
     }
 
     /**
@@ -89,7 +96,7 @@ export class EmailService implements OnModuleInit {
                     recipientEmail: payload.to,
                     subject: payload.subject,
                     templateName: payload.template,
-                    provider: 'RESEND', // Use a valid enum value as initial draft
+                    provider: await this.getCurrentMailProviderForLog(),
                     status: 'QUEUED'
                 }
             });

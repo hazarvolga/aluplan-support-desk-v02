@@ -30,15 +30,15 @@ export class EmailProcessor extends WorkerHost {
 
   private async refreshProvider() {
     try {
-      const providerName = (await this.settings.getValue('email.active_provider')) || 'resend';
+      const providerName = (await this.settings.getValue('email.active_provider')) || 'smtp';
       switch (providerName) {
         case 'smtp': this.provider = this.smtp; break;
         case 'gmail': this.provider = this.gmail; break;
-        case 'resend':
-        default: this.provider = this.resend; break;
+        case 'resend': this.provider = this.resend; break;
+        default: this.provider = this.smtp; break;
       }
     } catch {
-      this.provider = this.resend;
+      this.provider = this.smtp;
     }
   }
 
@@ -104,7 +104,7 @@ export class EmailProcessor extends WorkerHost {
         text: compiled.text
       });
 
-      const providerEnum = (activeProvider?.toUpperCase() || 'RESEND') as any;
+      const providerEnum = activeProvider === 'resend' ? 'RESEND' : 'SMTP';
 
       if (logRef) {
         await this.prisma.emailLog.update({

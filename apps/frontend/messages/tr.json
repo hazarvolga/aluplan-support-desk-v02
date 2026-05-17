@@ -1092,6 +1092,7 @@
       "smtp_port": "Port",
       "smtp_user": "Kullanıcı Adı",
       "smtp_pass": "Şifre",
+      "smtp_secure": "Doğrudan SSL/TLS kullan (yalnızca 465 portu)",
       "resend_api_key": "API Anahtarı",
       "gmail_client_id": "Client ID",
       "gmail_client_secret": "Client Secret",
