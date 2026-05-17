@@ -341,20 +341,27 @@ async function main() {
         // --- 5. Mandatory Settings ---
         console.log('⚙️ Enforcing mandatory settings...');
         const mandatorySettings = [
-            { key: 'ai.chat_provider', value: 'openai' },
-            { key: 'ai.active_provider', value: 'openai' },
-            { key: 'ai.embed_provider', value: 'openai' },
+            { key: 'ai.chat_provider', value: 'gemini' },
+            { key: 'ai.active_provider', value: 'gemini' },
+            { key: 'ai.embed_provider', value: 'gemini' },
+            { key: 'ai.gemini.chat_model', value: 'gemini-2.5-flash' },
+            { key: 'ai.gemini.embed_model', value: 'gemini-embedding-2' },
             { key: 'ai.openai.chat_model', value: 'gpt-4o-mini' },
             { key: 'ai.openai.embed_model', value: 'text-embedding-3-small' },
             { key: 'ai.fallback_provider', value: 'openai' }
         ];
 
         for (const setting of mandatorySettings) {
-            await prisma.setting.upsert({
+            const existingSetting = await prisma.setting.findUnique({
                 where: { key: setting.key },
-                update: { value: setting.value },
-                create: { key: setting.key, value: setting.value, isSecret: false }
+                select: { key: true }
             });
+
+            if (!existingSetting) {
+                await prisma.setting.create({
+                    data: { key: setting.key, value: setting.value, isSecret: false }
+                });
+            }
         }
 
         // --- 6. Knowledge Base Categories (Sync from seed.ts logic) ---
