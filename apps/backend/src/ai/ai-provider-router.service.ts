@@ -80,6 +80,8 @@ export class AiProviderRouter {
         const envProvider = process.env.EMBEDDING_PROVIDER?.toLowerCase();
         if (envProvider === 'openai') return this.openai;
         if (envProvider === 'ollama') return this.ollama;
+        if (envProvider === 'llmapi') return this.llmapi;
+        if (envProvider === 'gemini') return this.gemini;
 
         const provider = await this.getProviderByName(embedProvider || legacyProvider);
         if (provider) return provider;

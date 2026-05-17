@@ -2169,3 +2169,40 @@ Maintenance rule:
 
 ### Follow-Up
 - Decide whether `ALL=false` should suppress ticket/system transactional emails too, or only announcement/marketing-style mail. Current implementation follows the existing endpoint wording and blocks all categories.
+
+## AI Settings and Embedding 400 Investigation - 2026-05-17
+
+### Root Cause
+- Dataset indexing errors saying `OpenAI HTTP 400` mean the embedding call was going through `OpenAiService.embed()`, not Gemini.
+- The production/env defaults had an inconsistent combination:
+  - `EMBEDDING_PROVIDER=OPENAI`
+  - `EMBEDDING_MODEL=gemini-embedding-2`
+  - `EMBEDDING_DIMENSIONS=3072`
+- `text-embedding-3-small` cannot accept `dimensions: 3072`; OpenAI rejects this with HTTP 400.
+- This also explains the UI confusion: selecting Gemini models in AI settings does not help if the active embedding provider/env still resolves to OpenAI.
+
+### Completed
+- OpenAI embedding requests now cap dimensions per OpenAI model:
+  - `text-embedding-3-small` max 1536.
+  - `text-embedding-3-large` max 3072.
+  - legacy embedding models omit the `dimensions` parameter.
+- Embedding provider env validation now accepts `GEMINI`, `LLMAPI`, and `OLLAMA`.
+- Provider router now honors `EMBEDDING_PROVIDER=GEMINI` and `EMBEDDING_PROVIDER=LLMAPI`.
+- Compose/env examples now default embedding provider to `GEMINI`, matching the current pgvector + Gemini direction.
+- Gemini setting validation now requires `ai.gemini.embed_model` when Gemini is selected as the embedding provider.
+
+### Validation
+- `pnpm --filter @aluplan/backend test -- openai.service.spec.ts ai-provider-router.service.spec.ts env-validation.spec.ts`
+- `pnpm exec prisma validate --schema packages/database/prisma/schema.prisma`
+- `pnpm --filter @aluplan/backend typecheck`
+
+### Production Follow-Up
+- In Coolify backend env, use:
+  - `EMBEDDING_PROVIDER=GEMINI`
+  - `EMBEDDING_MODEL=gemini-embedding-2`
+  - `EMBEDDING_DIMENSIONS=3072`
+  - `VECTOR_DIMENSIONS=3072`
+- In Admin AI settings, ensure:
+  - `ai.embed_provider=gemini`
+  - `ai.gemini.embed_model=gemini-embedding-2`
+  - old `ai.openai.embed_model` can remain for fallback, but should not be the active embedding provider during Gemini indexing.

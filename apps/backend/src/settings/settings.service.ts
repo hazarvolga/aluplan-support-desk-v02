@@ -143,8 +143,9 @@ export class SettingsService {
             if (providerToValidate === 'gemini') {
                 const apiKey = await getVal('ai.gemini.api_key');
                 const chatModel = await getVal('ai.gemini.chat_model');
-                if (!apiKey || !chatModel) {
-                    throw new Error(`Gemini yapılandırması eksik (API Key veya Chat Model).`);
+                const embedModel = await getVal('ai.gemini.embed_model');
+                if (!apiKey || !chatModel || (key === 'ai.embed_provider' && !embedModel)) {
+                    throw new Error(`Gemini yapılandırması eksik (API Key, Chat Model veya Embed Model).`);
                 }
             }
             if (providerToValidate === 'vertex') {

@@ -60,7 +60,7 @@ export const envSchema = z.object({
     GCP_REGION: z.string().default('europe-west4'),
     GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
 
-    EMBED_PROVIDER: z.enum(['OPENAI', 'VERTEX', 'LOCAL', 'MOCK']).default('OPENAI'),
+    EMBED_PROVIDER: z.enum(['OPENAI', 'GEMINI', 'LLMAPI', 'OLLAMA', 'VERTEX', 'LOCAL', 'MOCK']).default('GEMINI'),
     CHAT_PROVIDER: z.enum(['GROQ', 'OPENAI', 'ANTHROPIC', 'GEMINI', 'MOCK']).default('GROQ'),
 
     // Email
@@ -73,7 +73,7 @@ export const envSchema = z.object({
     ADMIN_BYPASS_EMAILS: z.string().min(1, "ADMIN_BYPASS_EMAILS is required for security"),
 
     // Added from GAP-09
-    EMBEDDING_PROVIDER: z.enum(['OPENAI', 'VERTEX', 'LOCAL', 'MOCK']).optional(),
+    EMBEDDING_PROVIDER: z.enum(['OPENAI', 'GEMINI', 'LLMAPI', 'OLLAMA', 'VERTEX', 'LOCAL', 'MOCK']).optional(),
     FAQ_SEMANTIC_DEDUP_THRESHOLD: z.coerce.number().optional(),
     AI_GLOBAL_DAILY_CAP: z.coerce.number().optional(),
     SLACK_WEBHOOK_URL: optionalUrl,

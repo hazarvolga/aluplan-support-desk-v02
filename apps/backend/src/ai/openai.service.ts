@@ -28,6 +28,22 @@ export class OpenAiService implements AiProvider {
             'text-embedding-3-small';
     }
 
+    private getEmbeddingDimensionsForModel(model: string): number | undefined {
+        if (!model.startsWith('text-embedding-3-')) {
+            return undefined;
+        }
+
+        const configured = parseInt(this.config.get('EMBEDDING_DIMENSIONS') || '1536', 10);
+        const requested = Number.isFinite(configured) && configured > 0 ? configured : 1536;
+        const maxDimensions = model === 'text-embedding-3-large' ? 3072 : 1536;
+
+        if (requested > maxDimensions) {
+            this.logger.warn(`Configured OpenAI embedding dimensions (${requested}) exceed ${model} max (${maxDimensions}); capping request.`);
+        }
+
+        return Math.min(requested, maxDimensions);
+    }
+
     getName(): string {
         return 'openai';
     }
@@ -57,17 +73,22 @@ export class OpenAiService implements AiProvider {
 
         try {
             const model = await this.getEmbedModel();
+            const body: Record<string, unknown> = {
+                model,
+                input: text,
+            };
+            const dimensions = this.getEmbeddingDimensionsForModel(model);
+            if (dimensions) {
+                body.dimensions = dimensions;
+            }
+
             const response = await this.fetchWithRetry('https://api.openai.com/v1/embeddings', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${apiKey}`,
                 },
-                body: JSON.stringify({
-                    model,
-                    input: text,
-                    dimensions: parseInt(this.config.get('EMBEDDING_DIMENSIONS') || '1536', 10),
-                }),
+                body: JSON.stringify(body),
                 signal: AbortSignal.timeout(60000),
             });
 
