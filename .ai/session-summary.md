@@ -2260,3 +2260,26 @@ Maintenance rule:
 - Vector columns should be unconstrained `vector` so Gemini `3072` and future provider dimensions can coexist physically.
 - HNSW is skipped for active dimensions over pgvector's practical HNSW limit; exact search remains available for the current support-test corpus.
 - Dedicated Qdrant migration should only happen after acceptance-set benchmark evidence and deployment/backup/monitoring planning.
+
+## Production RAG / Dataset Upload Fixes - 2026-05-17
+
+### What changed
+- Production AI ticket/customer answer flow failed because the live `macros` table missed `deleted_at` while Prisma `Macro.deletedAt` and the global soft-delete filter expected it.
+- Added migration `20260517000006_add_macro_deleted_at` and applied the same safe SQL live.
+- A Turkish Workgroup Manager question fell back to German raw source text when Gemini response timed out.
+- Added a deterministic Turkish Workgroup Manager fallback so `Workgroup Manager’da bilgisayar eklenemiyor...` returns Turkish support structure instead of leaking German excerpts.
+- Removed raw fallback passage exposure from staff fallback detail; source title may remain, raw excerpt no longer appears.
+- Dataset upload now supports multi-file selection with sequential upload, preserving quota-safe ingestion behavior.
+- Knowledge pool upload/parser now accepts Word documents as `FILE_DOCX` via `mammoth` raw text extraction.
+
+### Validation
+- `pnpm --filter @aluplan/database db:generate`
+- `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts knowledge-pool-parser.service.spec.ts knowledge-pool-job.spec.ts`
+- `pnpm --filter @aluplan/backend typecheck`
+- `pnpm --filter @aluplan/frontend typecheck`
+- `pnpm exec prisma validate --schema packages/database/prisma/schema.prisma`
+
+### Deploy note
+- Deploy backend for the RAG fallback and DOCX enum/parser changes.
+- Deploy frontend for the bulk upload UI.
+- Production DB has already received `macros.deleted_at`; the new DOCX enum migration will apply during backend deploy.
