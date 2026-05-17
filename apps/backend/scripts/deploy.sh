@@ -8,6 +8,28 @@ if [ -z "$DATABASE_URL" ]; then
   exit 1
 fi
 
+# Clean DATABASE_URL for psql (remove ?schema=... etc).
+# Use POSIX shell parameter expansion instead of sed because BusyBox sed treats
+# "\?" as an invalid basic-regex repetition token.
+CLEAN_DB_URL=${DATABASE_URL%%\?*}
+
+echo "[DEPLOY DIAGNOSTIC] Checking known failed migration metadata..."
+SUBSCRIPTION_COL_EXISTS=$(psql "$CLEAN_DB_URL" -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_name='customer_profiles' AND column_name='subscription_model';" 2>/dev/null || echo "0")
+SUBSCRIPTION_MIGRATION_FAILED=$(psql "$CLEAN_DB_URL" -tAc "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name='20260314110208_add_subscription_model' AND finished_at IS NULL AND rolled_back_at IS NULL;" 2>/dev/null || echo "0")
+
+if [ "$SUBSCRIPTION_COL_EXISTS" = "1" ] && [ "$SUBSCRIPTION_MIGRATION_FAILED" = "1" ]; then
+  echo "[DEPLOY FIX] Marking already-applied subscription_model migration as applied..."
+  psql "$CLEAN_DB_URL" -v ON_ERROR_STOP=1 -c "
+    UPDATE \"_prisma_migrations\"
+    SET finished_at = NOW(),
+        applied_steps_count = GREATEST(applied_steps_count, 1),
+        logs = NULL
+    WHERE migration_name = '20260314110208_add_subscription_model'
+      AND finished_at IS NULL
+      AND rolled_back_at IS NULL;
+  "
+fi
+
 echo "Running Prisma migrations..."
 echo "[DEPLOY DIAGNOSTIC] Available migrations:"
 ls -1 ./packages/database/prisma/migrations/ | grep -E '^[0-9]' | tail -10
@@ -21,11 +43,6 @@ npx prisma migrate deploy \
 
 # Verify critical column exists — if not, apply migrations directly via psql
 echo "[DEPLOY DIAGNOSTIC] Checking if is_vip column exists in customer_profiles..."
-# Clean DATABASE_URL for psql (remove ?schema=... etc).
-# Use POSIX shell parameter expansion instead of sed because BusyBox sed treats
-# "\?" as an invalid basic-regex repetition token.
-CLEAN_DB_URL=${DATABASE_URL%%\?*}
-
 # Check if is_vip exists in customer_profiles
 HAS_VIP=$(psql "$CLEAN_DB_URL" -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_name='customer_profiles' AND column_name='is_vip';" 2>/dev/null || echo "0")
 
