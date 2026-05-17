@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { KnowledgePoolParserService } from './knowledge-pool-parser.service';
 import * as crypto from 'crypto';
-import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
+import { KnowledgeSourceStatus, KnowledgeSourceType, Prisma } from '@aluplan/database';
 
 import { CrawlService } from './crawl.service';
 import { StorageService } from '../common/services/storage.service';
@@ -112,7 +112,7 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
 
     private async handleUrlSync(source: { id: string; url?: string | null; name?: string; language?: string; metadata?: unknown }, logId: string) {
         if (!source.url) throw new Error('URL is required for URL sync');
-        const { content, hash, title } = await this.crawlService.fetch(source.url);
+        const { content, hash, title, provider, metadata } = await this.crawlService.fetch(source.url);
 
         // Section 3.5.3: Change Monitor
         // If content length changes significantly (>30%), mark as major
@@ -133,6 +133,7 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
             url: source.url,
             title,
             sourceType: 'url',
+            crawlerProvider: provider ?? 'basic',
             status: isMajorChange ? 'PENDING_REVIEW' : 'ACTIVE',
         });
 
@@ -149,8 +150,10 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
                     ...((source.metadata as Record<string, unknown>) || {}),
                     lastContentLength: newLength,
                     isMajorChange,
-                    category: category
-                }
+                    category: category,
+                    crawlerProvider: provider ?? 'basic',
+                    crawler: metadata ?? {},
+                } as Prisma.InputJsonValue
             }
         });
 

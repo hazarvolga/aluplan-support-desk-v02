@@ -2206,3 +2206,39 @@ Maintenance rule:
   - `ai.embed_provider=gemini`
   - `ai.gemini.embed_model=gemini-embedding-2`
   - old `ai.openai.embed_model` can remain for fallback, but should not be the active embedding provider during Gemini indexing.
+
+## Optional Crawl4AI URL Ingestion Sidecar - 2026-05-17
+
+### Decision
+- Current URL ingestion remains available as the safe default.
+- Crawl4AI is added as an optional URL-to-markdown extraction sidecar for higher-quality web source ingestion.
+- The sidecar is disabled by default to avoid unnecessary RAM use on the VPS.
+- If Crawl4AI fails, times out, or returns weak content, the backend automatically falls back to the existing basic crawler.
+
+### Completed
+- Added backend Crawl4AI adapter in `CrawlService`.
+- Added env validation for:
+  - `CRAWL4AI_ENABLED`
+  - `CRAWL4AI_BASE_URL`
+  - `CRAWL4AI_API_TOKEN`
+  - `CRAWL4AI_TIMEOUT_MS`
+- URL sync now stores crawler provider metadata on `KnowledgeSource` and embedding metadata.
+- Docker Compose now includes `crawl4ai` behind the `crawl4ai` profile.
+- Default compose remains lightweight; sidecar starts only when explicitly enabled.
+
+### Validation
+- `pnpm --filter @aluplan/backend test -- crawl.service.spec.ts knowledge-pool.processor.spec.ts env-validation.spec.ts`
+- `pnpm --filter @aluplan/backend typecheck`
+- `docker compose --env-file /dev/null config`
+- `COMPOSE_PROFILES=crawl4ai docker compose --env-file /dev/null config`
+- `git diff --check`
+
+### Production Follow-Up
+- For Coolify, only enable this after the current production fixes are deployed and stable.
+- If enabled through Compose:
+  - set `COMPOSE_PROFILES=crawl4ai`
+  - set `CRAWL4AI_ENABLED=true`
+  - keep `CRAWL4AI_BASE_URL=http://crawl4ai:11235`
+- If enabled as a separate Coolify service:
+  - point `CRAWL4AI_BASE_URL` to the internal service URL.
+- URL ingestion should be tested with a single pilot URL before bulk web ingestion.

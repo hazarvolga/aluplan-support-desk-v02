@@ -130,4 +130,58 @@ describe('KnowledgePoolProcessor file sync', () => {
             data: { chunksProcessed: expect.any(Number), newHash: contentHash },
         });
     });
+
+    it('stores crawler metadata for URL sync results', async () => {
+        const prisma = {
+            knowledgeSource: {
+                update: jest.fn().mockResolvedValue({}),
+            },
+            knowledgeSourceSyncLog: {
+                update: jest.fn().mockResolvedValue({}),
+            },
+        };
+        const embeddingService = {
+            indexPoolContent: jest.fn().mockResolvedValue(undefined),
+        };
+        const crawlService = {
+            fetch: jest.fn().mockResolvedValue({
+                content: 'Crawl4AI markdown content with enough detail for URL indexing.',
+                title: 'Crawled URL',
+                hash: 'url-hash',
+                provider: 'crawl4ai',
+                metadata: { crawl4aiSuccess: true },
+            }),
+        };
+        const processor = new KnowledgePoolProcessor(
+            prisma as any,
+            embeddingService as any,
+            {} as any,
+            crawlService as any,
+            {} as any,
+            {} as any,
+        );
+
+        await (processor as any).handleUrlSync({
+            id: '8551f74c-e2e1-432c-af47-8ee988f86d14',
+            url: 'https://example.com/help',
+            name: 'Help',
+            metadata: { category: 'Installation & Setup' },
+        }, 'log-2');
+
+        expect(embeddingService.indexPoolContent).toHaveBeenCalledWith(
+            '8551f74c-e2e1-432c-af47-8ee988f86d14',
+            expect.stringContaining('Crawl4AI markdown content'),
+            expect.objectContaining({ crawlerProvider: 'crawl4ai' }),
+        );
+        expect(prisma.knowledgeSource.update).toHaveBeenCalledWith({
+            where: { id: '8551f74c-e2e1-432c-af47-8ee988f86d14' },
+            data: expect.objectContaining({
+                metadata: expect.objectContaining({
+                    category: 'Installation & Setup',
+                    crawlerProvider: 'crawl4ai',
+                    crawler: { crawl4aiSuccess: true },
+                }),
+            }),
+        });
+    });
 });
