@@ -67,16 +67,23 @@ export default function AdminSettingsPage() {
         loading ? t('ai.loading_models') : t('ai.list_models')
     );
 
-    const chooseRecommendedModel = (
+    const chooseDefaultModel = (
         models: Array<{ id: string; recommended: boolean }>,
         currentValue: string,
     ) => {
-        if (models.length === 0) return currentValue;
+        if (currentValue || models.length === 0) return currentValue;
+        return models.find(model => model.recommended)?.id || models[0]?.id || '';
+    };
 
-        const currentIsSupported = models.some(model => model.id === currentValue);
-        if (currentIsSupported) return currentValue;
-
-        return models.find(model => model.recommended)?.id || models[0]?.id || currentValue;
+    const getModelOptions = (
+        models: Array<{ id: string; displayName: string; recommended: boolean }>,
+        currentValue: string,
+    ) => {
+        if (!currentValue || models.some(model => model.id === currentValue)) return models;
+        return [
+            { id: currentValue, displayName: `${currentValue} (configured)`, recommended: false },
+            ...models,
+        ];
     };
 
     // SLA States
@@ -826,10 +833,10 @@ export default function AdminSettingsPage() {
                                                             try {
                                                                 const result = await api.ai.listModels('gemini', getSetting('ai.gemini.api_key'));
                                                                 setGeminiModels(result);
-                                                                const nextChatModel = chooseRecommendedModel(result.chatModels, getSetting('ai.gemini.chat_model'));
-                                                                const nextEmbedModel = chooseRecommendedModel(result.embedModels, getSetting('ai.gemini.embed_model'));
-                                                                updateValue('ai.gemini.chat_model', nextChatModel);
-                                                                updateValue('ai.gemini.embed_model', nextEmbedModel);
+                                                                const nextChatModel = chooseDefaultModel(result.chatModels, getSetting('ai.gemini.chat_model'));
+                                                                const nextEmbedModel = chooseDefaultModel(result.embedModels, getSetting('ai.gemini.embed_model'));
+                                                                if (nextChatModel) updateValue('ai.gemini.chat_model', nextChatModel);
+                                                                if (nextEmbedModel) updateValue('ai.gemini.embed_model', nextEmbedModel);
                                                             } catch (e: any) {
                                                                 toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
                                                             } finally {
@@ -862,7 +869,7 @@ export default function AdminSettingsPage() {
                                                             onChange={e => updateValue('ai.gemini.chat_model', e.target.value)}
                                                             className="bg-black/50 h-8 text-sm rounded border border-border/50 w-full px-2"
                                                         >
-                                                            {geminiModels.chatModels.map(m => (
+                                                            {getModelOptions(geminiModels.chatModels, getSetting('ai.gemini.chat_model')).map(m => (
                                                                 <option key={m.id} value={m.id}>
                                                                     {m.recommended ? `⭐ ${m.displayName}` : m.displayName}
                                                                 </option>
@@ -909,7 +916,7 @@ export default function AdminSettingsPage() {
                                                             onChange={e => updateValue('ai.gemini.embed_model', e.target.value)}
                                                             className="bg-black/50 h-8 text-sm rounded border border-border/50 w-full px-2"
                                                         >
-                                                            {geminiModels.embedModels.map(m => (
+                                                            {getModelOptions(geminiModels.embedModels, getSetting('ai.gemini.embed_model')).map(m => (
                                                                 <option key={m.id} value={m.id}>
                                                                     {m.recommended ? `⭐ ${m.displayName}` : m.displayName}
                                                                 </option>

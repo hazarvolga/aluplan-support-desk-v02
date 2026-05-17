@@ -23,6 +23,8 @@ describe('ai-answer-contract', () => {
         expect(prompt).toContain('Audience: customer self-service answer');
         expect(prompt).toContain('Answer the user\'s exact intent');
         expect(prompt).toContain('do not convert it into an outage/root-cause diagnosis');
+        expect(prompt).toContain('Output language must be Turkish');
+        expect(prompt).toContain('Do not mix German or English source-language labels into a Turkish answer');
         expect(prompt).toContain('Do not show raw excerpts');
     });
 

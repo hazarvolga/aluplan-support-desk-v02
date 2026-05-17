@@ -102,6 +102,7 @@ export class GeminiService implements AiProvider {
 
         try {
             const model = await this.getChatModel();
+            this.logger.log(`Gemini generate using model: ${model}`);
             const contents = [{
                 role: 'user',
                 parts: this.mapParts(prompt)
