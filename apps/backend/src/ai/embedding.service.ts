@@ -289,6 +289,7 @@ export class EmbeddingService {
         JOIN knowledge_pool_embeddings kpe ON kpe.source_id = ks.id
         WHERE ks.status = 'ACTIVE'
           AND kpe.embedding_version = ${config.version}
+          AND kpe.embedding_dim = ${config.dimension}
           AND to_tsvector('simple', ks.name || ' ' || kpe.content) @@ websearch_to_tsquery('simple', ${cleanQuery})
         GROUP BY ks.id
       ),
@@ -338,6 +339,7 @@ export class EmbeddingService {
         WHERE ka.status = 'PUBLISHED' 
           AND (${includeInternal} = true OR ka.is_internal = false)
           AND ke.embedding_version = ${config.version}
+          AND ke.embedding_dim = ${config.dimension}
           AND (
               (1 - (ke.embedding <=> ${vectorStr}::vector)) > ${this.SIMILARITY_THRESHOLD}
               OR EXISTS (SELECT 1 FROM keyword_search WHERE id = ka.id)
@@ -369,6 +371,7 @@ export class EmbeddingService {
         WHERE ks.status = 'ACTIVE' 
           AND (${validProductId}::uuid IS NULL OR ks.product_id = ${validProductId}::uuid OR ks.product_id IS NULL) 
           AND kpe.embedding_version = ${config.version}
+          AND kpe.embedding_dim = ${config.dimension}
           AND (
               1 - (kpe.embedding <=> ${vectorStr}::vector) > ${this.SIMILARITY_THRESHOLD}
               OR EXISTS (SELECT 1 FROM pool_keyword_search WHERE id = ks.id)
@@ -589,7 +592,9 @@ export class EmbeddingService {
       SELECT t.id AS ticket_id, t.subject, 1 - (te.embedding <=> ${vectorStr}::vector) AS similarity
       FROM ticket_embeddings te
       JOIN tickets t ON t.id = te.ticket_id
-      WHERE te.embedding_version = ${config.version} AND 1 - (te.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
+      WHERE te.embedding_version = ${config.version}
+        AND te.embedding_dim = ${config.dimension}
+        AND 1 - (te.embedding <=> ${vectorStr}::vector) > ${this.MEDIUM_THRESHOLD}
       ORDER BY similarity DESC LIMIT ${limit}
         `;
 

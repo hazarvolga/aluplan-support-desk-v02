@@ -51,10 +51,12 @@ describe('RagMaintenanceService', () => {
         prisma.$queryRaw.mockResolvedValue([{ extname: 'vector' }]);
         prisma.$queryRawUnsafe
             .mockResolvedValueOnce([{ formatted_type: 'vector(1536)' }])
+            .mockResolvedValueOnce([{ formatted_type: 'vector(1536)' }])
+            .mockResolvedValueOnce([{ formatted_type: 'vector(1536)' }])
+            .mockResolvedValueOnce([{ formatted_type: 'vector' }])
+            .mockResolvedValueOnce([{ formatted_type: 'vector' }])
             .mockResolvedValueOnce([{ indexdef: 'CREATE INDEX knowledge_embeddings_vector_hnsw_idx ON public.knowledge_embeddings USING btree (embedding)' }])
-            .mockResolvedValueOnce([{ formatted_type: 'vector(1536)' }])
-            .mockResolvedValueOnce([{ indexdef: 'CREATE INDEX knowledge_pool_embeddings_vector_hnsw_idx ON public.knowledge_pool_embeddings USING hnsw (embedding vector_cosine_ops)' }])
-            .mockResolvedValueOnce([{ formatted_type: 'vector(1536)' }])
+            .mockResolvedValueOnce([{ indexdef: "CREATE INDEX knowledge_pool_embeddings_vector_hnsw_idx ON public.knowledge_pool_embeddings USING hnsw (((embedding)::vector(1536)) vector_cosine_ops) WHERE ((embedding_version)::text = 'v3s'::text AND embedding_dim = 1536)" }])
             .mockResolvedValueOnce([]);
         prisma.$executeRawUnsafe.mockResolvedValue(0);
 
@@ -63,18 +65,23 @@ describe('RagMaintenanceService', () => {
         const executedSql = prisma.$executeRawUnsafe.mock.calls.map((call) => String(call[0]));
         expect(executedSql.some((sql) => sql.includes('DROP INDEX IF EXISTS "knowledge_embeddings_vector_hnsw_idx"'))).toBe(true);
         expect(executedSql.some((sql) => sql.includes('CREATE INDEX "knowledge_embeddings_vector_hnsw_idx"'))).toBe(true);
+        expect(executedSql.some((sql) => sql.includes('embedding::vector(1536)'))).toBe(true);
+        expect(executedSql.some((sql) => sql.includes("WHERE embedding_version = 'v3s' AND embedding_dim = 1536"))).toBe(true);
         expect(executedSql.some((sql) => sql.includes('CREATE INDEX "ticket_embeddings_vector_hnsw_idx"'))).toBe(true);
         expect(executedSql.some((sql) => sql.includes('DROP INDEX IF EXISTS "knowledge_pool_embeddings_vector_hnsw_idx"'))).toBe(false);
+        expect(executedSql.filter((sql) => sql.includes('ALTER COLUMN') && sql.includes('TYPE vector USING')).length).toBe(3);
     });
 
     it('drops vector indexes and skips HNSW when active dimension exceeds pgvector limit', async () => {
         prisma.$queryRaw.mockResolvedValue([{ extname: 'vector' }]);
         prisma.$queryRawUnsafe
             .mockResolvedValueOnce([{ formatted_type: 'vector(3072)' }])
+            .mockResolvedValueOnce([{ formatted_type: 'vector(3072)' }])
+            .mockResolvedValueOnce([{ formatted_type: 'vector(3072)' }])
+            .mockResolvedValueOnce([{ formatted_type: 'vector' }])
+            .mockResolvedValueOnce([{ formatted_type: 'vector' }])
             .mockResolvedValueOnce([{ indexdef: 'CREATE INDEX knowledge_embeddings_vector_hnsw_idx ON public.knowledge_embeddings USING btree (embedding)' }])
-            .mockResolvedValueOnce([{ formatted_type: 'vector(3072)' }])
             .mockResolvedValueOnce([{ indexdef: 'CREATE INDEX knowledge_pool_embeddings_vector_hnsw_idx ON public.knowledge_pool_embeddings USING btree (embedding)' }])
-            .mockResolvedValueOnce([{ formatted_type: 'vector(3072)' }])
             .mockResolvedValueOnce([]);
         prisma.$executeRawUnsafe.mockResolvedValue(0);
 

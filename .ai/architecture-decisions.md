@@ -50,3 +50,11 @@ and consequence. Use session summaries for implementation history.
 - Context: During PDF Batch 003, OpenAI embedding fallback produced same-dimension vectors for a Gemini-indexed corpus, but retrieval quality was corrupted because the embedding spaces were different.
 - Decision: Keep OpenAI as chat fallback only. Do not use OpenAI as embedding fallback for the active Gemini `3072/v2_2` corpus unless a new embedding version and full re-embedding plan are created.
 - Consequence: Gemini embedding quota exhaustion should fail or pause ingestion clearly. It must not silently fall back to a different embedding model space inside the same `embedding_version`.
+
+## ADR-007 - Isolate Embedding Indexes By Version And Dimension
+
+- Date: 2026-05-17
+- Status: Accepted
+- Context: The product must keep the higher-quality Gemini embedding path, but production still had fixed `vector(1536)` columns that rejected Gemini `3072` vectors. Normalizing all providers into one shared vector space is not a reliable professional solution because providers produce different semantic spaces.
+- Decision: Use embedding index isolation. pgvector columns are stored as unconstrained `vector`, while all writes/searches are isolated by active `embedding_version + embedding_dim`. Gemini `v2_2 / 3072` remains the active embedding index. Other providers require their own embedding version and reindex before activation.
+- Consequence: Provider changes become explicit index lifecycle events instead of silent fallback. PostgreSQL remains the near-term production store; Qdrant migration is a roadmap item to benchmark later, not a pre-delivery change.

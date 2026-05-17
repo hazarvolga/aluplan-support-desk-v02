@@ -2242,3 +2242,21 @@ Maintenance rule:
 - If enabled as a separate Coolify service:
   - point `CRAWL4AI_BASE_URL` to the internal service URL.
 - URL ingestion should be tested with a single pilot URL before bulk web ingestion.
+
+## Embedding Index Isolation Decision - 2026-05-17
+
+### Decision
+- Keep Gemini embedding as the active production embedding path because answer quality was validated against that corpus.
+- Do not pretend provider normalization makes OpenAI/Gemini/Ollama vectors interchangeable.
+- Use index isolation instead:
+  - active provider/model/dim resolves to an `embedding_version`.
+  - vector writes store that `embedding_version + embedding_dim`.
+  - retrieval queries only search the active `embedding_version + embedding_dim`.
+  - provider changes require a new index version and controlled reindex before activation.
+- Qdrant is added to the roadmap for later benchmark/pilot, not for the pre-test delivery.
+
+### Implementation Direction
+- PostgreSQL/pgvector remains the production store.
+- Vector columns should be unconstrained `vector` so Gemini `3072` and future provider dimensions can coexist physically.
+- HNSW is skipped for active dimensions over pgvector's practical HNSW limit; exact search remains available for the current support-test corpus.
+- Dedicated Qdrant migration should only happen after acceptance-set benchmark evidence and deployment/backup/monitoring planning.

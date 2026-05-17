@@ -59,6 +59,11 @@
 - Controlled 5-file PDF support batches 001 through 011 completed successfully.
 - Keep title-specific retrieval boosting in place so near-duplicate FAQ topics rank by the most specific PDF title, not only vector similarity.
 - Keep OpenAI as chat fallback only. Do not use OpenAI as embedding fallback while the active corpus is Gemini `3072/v2_2`.
+- Embedding index isolation is the active production strategy:
+  - Gemini `v2_2 / 3072` remains the active embedding index.
+  - pgvector columns are unconstrained `vector`.
+  - every vector write/search must isolate by `embedding_version + embedding_dim`.
+  - Qdrant is roadmap/benchmark only, not a pre-delivery migration.
 - Ensure unchanged dataset files with zero embeddings are re-indexed or fail clearly; never mark them as successful with an empty vector set.
 
 ## Avoid Breaking

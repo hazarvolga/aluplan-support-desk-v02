@@ -32,6 +32,13 @@ export class RagMaintenanceService implements OnModuleInit {
             table: 'ticket_embeddings',
         },
     ] as const;
+    private readonly VECTOR_COLUMNS = [
+        { table: 'knowledge_embeddings', column: 'embedding' },
+        { table: 'knowledge_pool_embeddings', column: 'embedding' },
+        { table: 'ticket_embeddings', column: 'embedding' },
+        { table: 'faq_entries', column: 'question_embedding' },
+        { table: 'ai_response_cache', column: 'query_embedding' },
+    ] as const;
 
     constructor(
         private readonly prisma: PrismaService,
@@ -68,9 +75,11 @@ export class RagMaintenanceService implements OnModuleInit {
         }
 
         const config = await this.registry.getActiveVersionConfig();
+        for (const column of this.VECTOR_COLUMNS) {
+            await this.ensureVectorColumnIsUnconstrained(column.table, column.column);
+        }
         for (const index of this.VECTOR_INDEXES) {
-            await this.ensureVectorColumnDimension(index.table, config.dimension);
-            await this.ensureVectorIndex(index.name, index.table, config.dimension);
+            await this.ensureVectorIndex(index.name, index.table, config.version, config.dimension);
         }
 
         // Ensure content hash indexes for duplicate detection
@@ -101,7 +110,7 @@ export class RagMaintenanceService implements OnModuleInit {
         }
     }
 
-    private async ensureVectorIndex(indexName: string, tableName: string, expectedDimension: number) {
+    private async ensureVectorIndex(indexName: string, tableName: string, embeddingVersion: string, expectedDimension: number) {
         const existing = await this.prisma.$queryRawUnsafe<Array<{ indexdef: string }>>(
             `
         SELECT indexdef
@@ -122,7 +131,15 @@ export class RagMaintenanceService implements OnModuleInit {
             return;
         }
 
-        if (currentDefinition.includes('using hnsw')) {
+        const hasExpectedDimensionExpression =
+            currentDefinition.includes(`embedding::vector(${expectedDimension})`)
+            || currentDefinition.includes(`(embedding)::vector(${expectedDimension})`);
+        if (
+            currentDefinition.includes('using hnsw')
+            && hasExpectedDimensionExpression
+            && currentDefinition.includes('embedding_version')
+            && currentDefinition.includes('embedding_dim')
+        ) {
             return;
         }
 
@@ -133,12 +150,13 @@ export class RagMaintenanceService implements OnModuleInit {
 
         await this.prisma.$executeRawUnsafe(`
       CREATE INDEX "${indexName}"
-      ON "${tableName}" USING hnsw (embedding vector_cosine_ops)
-      WITH (m = 16, ef_construction = 64);
+      ON "${tableName}" USING hnsw ((embedding::vector(${expectedDimension})) vector_cosine_ops)
+      WITH (m = 16, ef_construction = 64)
+      WHERE embedding_version = '${embeddingVersion.replace(/'/g, "''")}' AND embedding_dim = ${expectedDimension};
     `);
     }
 
-    private async ensureVectorColumnDimension(tableName: string, expectedDimension: number) {
+    private async ensureVectorColumnIsUnconstrained(tableName: string, columnName: string) {
         const columns = await this.prisma.$queryRawUnsafe<Array<{ formatted_type: string }>>(
             `
         SELECT format_type(a.atttypid, a.atttypmod) AS formatted_type
@@ -147,28 +165,26 @@ export class RagMaintenanceService implements OnModuleInit {
         JOIN pg_namespace n ON n.oid = c.relnamespace
         WHERE n.nspname = 'public'
           AND c.relname = $1
-          AND a.attname = 'embedding'
+          AND a.attname = $2
           AND a.attnum > 0
       `,
             tableName,
+            columnName,
         );
 
         const formattedType = columns[0]?.formatted_type?.toLowerCase();
-        if (formattedType === `vector(${expectedDimension})`) {
+        if (!formattedType || formattedType === 'vector') {
             return;
         }
 
-        const counts = await this.prisma.$queryRawUnsafe<Array<{ total: number }>>(
-            `SELECT COUNT(*)::int AS total FROM "${tableName}"`,
-        );
-        const totalRows = counts[0]?.total ?? 0;
-        if (totalRows > 0) {
-            throw new Error(`Embedding column drift detected on ${tableName}: ${formattedType ?? 'unknown'}. Table contains ${totalRows} rows, refusing automatic dimension rewrite.`);
+        if (!/^vector\(\d+\)$/.test(formattedType)) {
+            this.logger.warn(`⚠️ Unexpected vector column type on ${tableName}.${columnName}: ${formattedType}. Leaving unchanged.`);
+            return;
         }
 
-        this.logger.warn(`🧱 Rewriting ${tableName}.embedding from ${formattedType ?? 'unknown'} to vector(${expectedDimension})`);
+        this.logger.warn(`🧱 Rewriting ${tableName}.${columnName} from ${formattedType} to unconstrained vector for embedding index isolation`);
         await this.prisma.$executeRawUnsafe(
-            `ALTER TABLE "${tableName}" ALTER COLUMN "embedding" TYPE vector(${expectedDimension}) USING embedding::vector(${expectedDimension})`,
+            `ALTER TABLE "${tableName}" ALTER COLUMN "${columnName}" TYPE vector USING "${columnName}"::vector`,
         );
     }
 }

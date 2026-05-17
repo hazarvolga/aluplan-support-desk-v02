@@ -186,6 +186,7 @@ export class AiSemanticCache {
                  FROM "ai_response_cache"
                  WHERE "tenant_id" = ${semanticTenantId}::uuid
                    AND "embedding_version" = ${config.version}
+                   AND "embedding_dim" = ${config.dimension}
                    AND "expires_at" > NOW()
                  ORDER BY "query_embedding" <=> ${vectorCast}
                  LIMIT 1`

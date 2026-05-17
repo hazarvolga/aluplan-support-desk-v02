@@ -214,6 +214,7 @@ export class FaqService {
                         FROM faq_entries
                         WHERE question_embedding IS NOT NULL
                           AND embedding_version = ${config.version}
+                          AND embedding_dim = ${config.dimension}
                           AND status IN ('PUBLISHED', 'PENDING_REVIEW')
                           AND 1 - (question_embedding <=> ${vectorStr}::vector) >= ${DEDUP_THRESHOLD}
                         ORDER BY similarity DESC
