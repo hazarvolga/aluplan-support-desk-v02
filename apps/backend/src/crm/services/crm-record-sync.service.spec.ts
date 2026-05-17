@@ -93,4 +93,76 @@ describe('CrmRecordSyncService', () => {
             },
         });
     });
+
+    it('updates an existing profile by CRM contact id before creating a new one', async () => {
+        const tx = {
+            role: {
+                findFirst: jest.fn().mockResolvedValue({ id: 'role-customer', name: 'CUSTOMER' }),
+                findUnique: jest.fn().mockResolvedValue({ id: 'role-customer', name: 'CUSTOMER' }),
+            },
+            user: {
+                findUnique: jest.fn().mockResolvedValue(null),
+                update: jest.fn().mockImplementation(({ data }) => Promise.resolve({
+                    id: 'user-existing',
+                    email: data.email || 'old@example.com',
+                    roleId: 'role-customer',
+                    status: 'ACTIVE',
+                    passwordHash: 'CRM_SYNCED',
+                })),
+                create: jest.fn(),
+            },
+            crmAccount: {
+                findUnique: jest.fn().mockResolvedValue({ id: 'account-1', name: 'Promer', industry: 'Engineering', account_number: 'C300160737' }),
+            },
+            customerProfile: {
+                findUnique: jest.fn()
+                    .mockResolvedValueOnce({
+                        id: 'profile-existing',
+                        userId: 'user-existing',
+                        externalContactId: 'crm-contact-1',
+                        firstName: 'Old',
+                        lastName: 'Name',
+                        companyName: 'Old Company',
+                        user: {
+                            id: 'user-existing',
+                            email: 'old@example.com',
+                            roleId: 'role-customer',
+                            status: 'ACTIVE',
+                            passwordHash: 'CRM_SYNCED',
+                        },
+                    }),
+                update: jest.fn().mockResolvedValue({ id: 'profile-existing' }),
+                create: jest.fn(),
+            },
+            crmChangeLog: {
+                createMany: jest.fn(),
+            },
+        };
+        const prisma = {
+            $transaction: jest.fn((callback) => callback(tx)),
+        };
+        service = new CrmRecordSyncService(prisma as unknown as PrismaService);
+
+        await service.upsertContactFromDynamics({
+            contactid: 'crm-contact-1',
+            emailaddress1: 'new@example.com',
+            firstname: 'Cem',
+            lastname: 'Sayar',
+            telephone1: '+90 555',
+            parentcustomerid_account: {
+                accountid: 'crm-account-1',
+                name: 'Promer',
+                accountnumber: 'C300160737',
+            },
+        });
+
+        expect(tx.customerProfile.findUnique).toHaveBeenCalledWith({
+            where: { externalContactId: 'crm-contact-1' },
+            include: { user: true },
+        });
+        expect(tx.customerProfile.create).not.toHaveBeenCalled();
+        expect(tx.customerProfile.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'profile-existing' },
+        }));
+    });
 });

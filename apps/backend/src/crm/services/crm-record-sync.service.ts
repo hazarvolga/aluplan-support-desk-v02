@@ -108,7 +108,12 @@ export class CrmRecordSyncService {
                 });
             }
 
-            let user = await tx.user.findUnique({ where: { email } });
+            const existingProfileByContactId = await tx.customerProfile.findUnique({
+                where: { externalContactId: contactId },
+                include: { user: true },
+            });
+
+            let user = existingProfileByContactId?.user ?? await tx.user.findUnique({ where: { email } });
             if (!user) {
                 user = await tx.user.create({
                     data: {
@@ -137,6 +142,18 @@ export class CrmRecordSyncService {
                         where: { id: user.id },
                         data: { status: 'ACTIVE' },
                     });
+                }
+
+                if (!isPlaceholderEmail && user.email !== email) {
+                    const emailOwner = await tx.user.findUnique({ where: { email } });
+                    if (!emailOwner || emailOwner.id === user.id) {
+                        user = await tx.user.update({
+                            where: { id: user.id },
+                            data: { email },
+                        });
+                    } else {
+                        this.logger.warn(`CRM contact email update skipped because ${email} already belongs to another user`);
+                    }
                 }
             }
 
@@ -172,7 +189,7 @@ export class CrmRecordSyncService {
                     ? `${accountNum}-${String(contactId).substring(0, 5)}`
                     : `DYN-${String(contactId).substring(0, 10)}`, 50);
 
-            const existingProfile = await tx.customerProfile.findUnique({
+            const existingProfile = existingProfileByContactId ?? await tx.customerProfile.findUnique({
                 where: { userId: user.id },
             });
 
@@ -189,6 +206,7 @@ export class CrmRecordSyncService {
                 subscriptionModel,
                 industry: industryFromAccount,
                 crmVerified: true,
+                deletedAt: null,
             };
 
             const profile = existingProfile
