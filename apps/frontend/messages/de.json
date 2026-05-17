@@ -452,6 +452,10 @@
       "open_date": "ERSTELLUNGSDATUM",
       "assignee_label": "ATANAN_UZMAN",
       "hotfix_data": "HOTINFO_TELEMETRIE_DATEN",
+      "hotinfo_modal_desc": "Hotinfo-Systemdaten, die der Kunde beim Erstellen des Tickets übermittelt hat.",
+      "hotinfo_raw_json": "RAW_HOTINFO_JSON",
+      "copy_hotinfo": "KOPIEREN",
+      "hotinfo_copied": "Hotinfo-Daten kopiert",
       "security_warning": "SICHERHEITSWARNUNG",
       "security_warning_desc": "Alle Korrespondenz und geteilten Daten werden gemäß den Aluplan-Qualitätsstandards aufgezeichnet.",
       "initial_attachments": "TICKET_ANHÄNGE"

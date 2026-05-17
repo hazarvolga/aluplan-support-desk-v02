@@ -452,6 +452,10 @@
       "open_date": "AÇILIŞ_TARİHİ",
       "assignee_label": "ATANAN_UZMAN",
       "hotfix_data": "HOTINFO_TELEMETRİ_VERİSİ",
+      "hotinfo_modal_desc": "Müşterinin ticket açarken gönderdiği Hotinfo sistem verileri.",
+      "hotinfo_raw_json": "HAM_HOTINFO_JSON",
+      "copy_hotinfo": "KOPYALA",
+      "hotinfo_copied": "Hotinfo verisi kopyalandı",
       "security_warning": "GÜVENLİK_UYARISI",
       "security_warning_desc": "Tüm yazışmalar ve paylaşılan veriler Aluplan kalite standartları gereği kayıt altına alınmaktadır.",
       "initial_attachments": "BİLET_EKLERİ"

@@ -20,6 +20,14 @@ import { RichTextRenderer } from '@/components/ui/rich-text-renderer';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { tr as trLocale, enUS as enLocale, de as deLocale } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -96,6 +104,11 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         return enLocale;
     };
     const dateLocale = getDateLocale();
+    const hotinfoSnapshotText = ticket?.hotinfoSnapshot
+        ? typeof ticket.hotinfoSnapshot === 'object'
+            ? JSON.stringify(ticket.hotinfoSnapshot, null, 2)
+            : String(ticket.hotinfoSnapshot)
+        : '';
 
     const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
         if (scrollRef.current) {
@@ -823,27 +836,63 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 </Card>
 
                 {!isCustomer && ticket.hotinfoSnapshot && (
-                    <Card className="border-cyan-900/50 bg-cyan-950/10">
-                        <CardHeader className="py-2 bg-cyan-950/30 border-b border-cyan-900/30 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%,transparent_100%)] bg-[length:10px_10px]" />
-                            <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-cyan-500 relative z-10 flex items-center gap-1.5">
-                                <Cpu className="h-3 w-3" /> {t('hotfix_data')}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <div className="w-full bg-black/40 pb-2">
-                                {typeof ticket.hotinfoSnapshot === 'object' && ticket.hotinfoSnapshot !== null ? (
-                                    <div className="p-2">
-                                        <HotinfoGrid data={ticket.hotinfoSnapshot} variant="compact" />
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full justify-between border-cyan-900/50 bg-cyan-950/10 text-cyan-300 hover:bg-cyan-950/25 hover:text-cyan-100"
+                            >
+                                <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em]">
+                                    <Cpu className="h-3.5 w-3.5" />
+                                    {t('hotfix_data')}
+                                </span>
+                                <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-5xl max-h-[88vh] p-0 overflow-hidden border-cyan-900/50 bg-background">
+                            <DialogHeader className="bg-cyan-950/20 border-cyan-900/30">
+                                <DialogTitle className="flex items-center gap-2 text-cyan-300">
+                                    <Cpu className="h-4 w-4" />
+                                    {t('hotfix_data')}
+                                </DialogTitle>
+                                <DialogDescription>
+                                    {t('hotinfo_modal_desc')}
+                                </DialogDescription>
+                            </DialogHeader>
+                            <ScrollArea className="max-h-[72vh] px-5 pb-5">
+                                <div className="space-y-5">
+                                    {typeof ticket.hotinfoSnapshot === 'object' && ticket.hotinfoSnapshot !== null ? (
+                                        <HotinfoGrid data={ticket.hotinfoSnapshot} />
+                                    ) : (
+                                        <div className="text-[11px] font-mono text-cyan-200/90 leading-relaxed whitespace-pre-wrap break-all border border-cyan-900/30 bg-cyan-950/10 p-3">
+                                            {String(ticket.hotinfoSnapshot)}
+                                        </div>
+                                    )}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t('hotinfo_raw_json')}</h3>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7 text-[10px]"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(hotinfoSnapshotText);
+                                                    toast.success(t('hotinfo_copied'));
+                                                }}
+                                            >
+                                                {t('copy_hotinfo')}
+                                            </Button>
+                                        </div>
+                                        <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-border/60 bg-black/30 p-3 text-[10px] leading-relaxed text-muted-foreground">
+                                            {hotinfoSnapshotText}
+                                        </pre>
                                     </div>
-                                ) : (
-                                    <div className="p-3 text-[10px] font-mono text-cyan-300/80 leading-relaxed whitespace-pre-wrap break-all">
-                                        {String(ticket.hotinfoSnapshot)}
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                                </div>
+                            </ScrollArea>
+                        </DialogContent>
+                    </Dialog>
                 )}
 
                 {/* System Notice */}

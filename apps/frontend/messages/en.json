@@ -452,6 +452,10 @@
       "open_date": "OPEN_DATE",
       "assignee_label": "ASSIGNED_EXPERT",
       "hotfix_data": "HOTINFO_TELEMETRY_DATA",
+      "hotinfo_modal_desc": "Hotinfo system data submitted by the customer when opening the ticket.",
+      "hotinfo_raw_json": "RAW_HOTINFO_JSON",
+      "copy_hotinfo": "COPY",
+      "hotinfo_copied": "Hotinfo data copied",
       "security_warning": "SECURITY_WARNING",
       "security_warning_desc": "All correspondence and shared data are recorded for Aluplan quality standards.",
       "initial_attachments": "TICKET_ATTACHMENTS"
