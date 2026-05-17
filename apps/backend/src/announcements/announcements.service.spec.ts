@@ -154,6 +154,29 @@ describe('AnnouncementsService — generateExcerpt', () => {
 });
 
 // ---------------------------------------------------------------------------
+// findAll
+// ---------------------------------------------------------------------------
+
+describe('AnnouncementsService — findAll', () => {
+    let prisma: any;
+    let service: AnnouncementsService;
+
+    beforeEach(async () => {
+        prisma = buildPrismaMock();
+        prisma.announcement.findMany.mockResolvedValue([]);
+        service = await buildService(prisma, buildEmailMock(), buildGatewayMock());
+    });
+
+    it('excludes soft-deleted announcements from admin list', async () => {
+        await service.findAll();
+
+        expect(prisma.announcement.findMany).toHaveBeenCalledWith(expect.objectContaining({
+            where: { deletedAt: null },
+        }));
+    });
+});
+
+// ---------------------------------------------------------------------------
 // markLogRead
 // ---------------------------------------------------------------------------
 

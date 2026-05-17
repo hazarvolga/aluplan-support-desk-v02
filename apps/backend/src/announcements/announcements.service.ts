@@ -31,6 +31,7 @@ export class AnnouncementsService {
 
     async findAll() {
         return this.prisma.announcement.findMany({
+            where: { deletedAt: null },
             include: {
                 author: {
                     select: {
