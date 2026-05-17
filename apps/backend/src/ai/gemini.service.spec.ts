@@ -40,6 +40,19 @@ describe('GeminiService', () => {
         );
     });
 
+    it('throws Gemini embed HTTP errors so the AI retry/backoff layer can handle 429s', async () => {
+        settings.getValue.mockResolvedValueOnce('test-api-key').mockResolvedValueOnce(null);
+        (config.get as jest.Mock).mockReturnValue(undefined);
+
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: false,
+            status: 429,
+            text: async () => '{"error":{"message":"quota exceeded","details":[{"retryDelay":"30s"}]}}',
+        }) as any;
+
+        await expect(service.embed('aluplan')).rejects.toThrow('Gemini Embed Error 429');
+    });
+
     it('marks gemini-embedding-2 as the recommended embed model', async () => {
         settings.getValue.mockResolvedValue('test-api-key');
         global.fetch = jest.fn().mockResolvedValue({

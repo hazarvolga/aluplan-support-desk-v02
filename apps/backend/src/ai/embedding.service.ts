@@ -173,7 +173,7 @@ const calculateContentSignalBoost = (query: string, title: string | null | undef
 @Injectable()
 export class EmbeddingService {
     private readonly logger = new Logger(EmbeddingService.name);
-    private readonly POOL_EMBED_PACING_MS = 350;
+    private readonly POOL_EMBED_PACING_MS = this.resolvePoolEmbedPacingMs();
 
     private readonly SIMILARITY_THRESHOLD = RAG_CONFIG.SIMILARITY.THRESHOLD;
     private readonly LOW_THRESHOLD = RAG_CONFIG.SIMILARITY.LOW;
@@ -613,6 +613,17 @@ export class EmbeddingService {
 
     private async delayPoolEmbedding(): Promise<void> {
         await new Promise(resolve => setTimeout(resolve, this.POOL_EMBED_PACING_MS));
+    }
+
+    private resolvePoolEmbedPacingMs(): number {
+        if (process.env.NODE_ENV === 'test') return 0;
+
+        const configured = Number(process.env.KNOWLEDGE_SYNC_EMBED_DELAY_MS);
+        if (Number.isFinite(configured) && configured >= 0) {
+            return configured;
+        }
+
+        return 6000;
     }
 
     private ensureEmbeddingCompatibility(result: EmbeddingResult | null, config: { dimension: number; model: string }, context: string): EmbeddingResult | null {

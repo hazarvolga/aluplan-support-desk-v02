@@ -192,12 +192,15 @@ export class GeminiService implements AiProvider {
                 signal: AbortSignal.timeout(10_000),
             });
 
-            if (!response.ok) throw new Error(`Gemini Embed Error ${response.status}`);
+            if (!response.ok) {
+                const errorBody = await response.text().catch(() => '');
+                throw new Error(`Gemini Embed Error ${response.status}${errorBody ? `: ${errorBody.slice(0, 500)}` : ''}`);
+            }
             const data = await response.json();
             return { embedding: data.embedding.values, model };
         } catch (err: any) {
             this.logger.error(`🚨 Gemini embed failed: ${err.message}`);
-            return null;
+            throw err;
         }
     }
 

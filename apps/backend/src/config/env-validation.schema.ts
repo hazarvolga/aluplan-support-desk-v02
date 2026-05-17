@@ -90,6 +90,7 @@ export const envSchema = z.object({
     KNOWLEDGE_SYNC_RATE_DURATION_MS: z.coerce.number().int().positive().optional(),
     KNOWLEDGE_SYNC_QUEUE_CONCURRENCY: z.coerce.number().int().positive().optional(),
     KNOWLEDGE_SYNC_BULK_DELAY_MS: z.coerce.number().int().nonnegative().default(15000),
+    KNOWLEDGE_SYNC_EMBED_DELAY_MS: z.coerce.number().int().nonnegative().default(6000),
     CRAWL4AI_ENABLED: z.coerce.boolean().default(false),
     CRAWL4AI_BASE_URL: z.string().url().optional(),
     CRAWL4AI_API_TOKEN: z.string().optional(),
