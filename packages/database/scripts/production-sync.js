@@ -372,6 +372,23 @@ async function main() {
             data: { value: 'gemini-2.5-flash', isSecret: false },
         });
 
+        const currentChatProvider = await prisma.setting.findUnique({
+            where: { key: 'ai.chat_provider' },
+            select: { value: true },
+        });
+
+        if (currentChatProvider?.value) {
+            await prisma.setting.upsert({
+                where: { key: 'ai.active_provider' },
+                update: { value: currentChatProvider.value, isSecret: false },
+                create: {
+                    key: 'ai.active_provider',
+                    value: currentChatProvider.value,
+                    isSecret: false,
+                },
+            });
+        }
+
         // --- 6. Knowledge Base Categories (Sync from seed.ts logic) ---
         console.log('📚 Syncing Knowledge Base Categories...');
         const KB_CATEGORIES = [

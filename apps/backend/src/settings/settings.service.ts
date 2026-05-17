@@ -69,6 +69,25 @@ export class SettingsService {
         this.cache.set(dto.key, dto.value); // Store plaintext in cache for internal use
         this.secretCache.set(dto.key, isSecret);
 
+        if (dto.key === 'ai.chat_provider' && dto.value !== '********') {
+            await this.prisma.setting.upsert({
+                where: { key: 'ai.active_provider' },
+                update: {
+                    value: dto.value,
+                    isSecret: false,
+                    updatedBy: userId,
+                },
+                create: {
+                    key: 'ai.active_provider',
+                    value: dto.value,
+                    isSecret: false,
+                    updatedBy: userId,
+                },
+            });
+            this.cache.set('ai.active_provider', dto.value);
+            this.secretCache.set('ai.active_provider', false);
+        }
+
         if ((dto.key === 'ai.embed_provider' || dto.key.endsWith('.embed_model')) && oldValue !== finalValue) {
             this.eventEmitter.emit('ai.embedding.provider_changed', { key: dto.key, newValue: finalValue, oldValue });
         }
@@ -283,17 +302,19 @@ export class SettingsService {
     }
 
     async bulkUpsert(dto: BulkUpsertSettingDto, userId?: string) {
+        const settings = this.withLegacyAiProviderSync(dto.settings);
+
         // Run validations first with full context of this request
-        const context = new Map<string, string>(dto.settings.map(s => [s.key, s.value]));
+        const context = new Map<string, string>(settings.map(s => [s.key, s.value]));
         
         // Fetch existing settings before bulk update to compare changes
-        const keysToUpdate = dto.settings.map(s => s.key);
+        const keysToUpdate = settings.map(s => s.key);
         const existingSettings = await this.prisma.setting.findMany({
             where: { key: { in: keysToUpdate } }
         });
         const existingMap = new Map(existingSettings.map(s => [s.key, s.isSecret ? this.crypto.decrypt(s.value) : s.value]));
 
-        for (const item of dto.settings) {
+        for (const item of settings) {
             if (item.key.startsWith('ai.')) {
                 await this.validateAiSetting(item.key, item.value, context);
             }
@@ -301,7 +322,7 @@ export class SettingsService {
 
         // Use a transaction for all upserts
         const results = await this.prisma.$transaction(
-            dto.settings.map((item) => {
+            settings.map((item) => {
                 let finalValue = item.value;
                 const isSecret = this.resolveSecretFlag(item.key, item.isSecret);
 
@@ -334,7 +355,7 @@ export class SettingsService {
         );
 
         // Update caches after success
-        for (const item of dto.settings) {
+        for (const item of settings) {
             if (item.value !== '********') {
                 this.cache.set(item.key, item.value);
                 this.secretCache.set(item.key, this.resolveSecretFlag(item.key, item.isSecret));
@@ -347,6 +368,25 @@ export class SettingsService {
         }
 
         return results;
+    }
+
+    private withLegacyAiProviderSync<T extends { key: string; value: string; isSecret?: boolean }>(settings: T[]): T[] {
+        const chatProvider = settings.find((item) => item.key === 'ai.chat_provider')?.value;
+        if (!chatProvider || chatProvider === '********') {
+            return settings;
+        }
+
+        const activeProviderIndex = settings.findIndex((item) => item.key === 'ai.active_provider');
+        if (activeProviderIndex >= 0) {
+            return settings.map((item, index) => index === activeProviderIndex
+                ? { ...item, value: chatProvider, isSecret: false }
+                : item);
+        }
+
+        return [
+            ...settings,
+            { key: 'ai.active_provider', value: chatProvider, isSecret: false } as T,
+        ];
     }
 
     async delete(key: string) {

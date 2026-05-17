@@ -70,6 +70,59 @@ describe('SettingsService', () => {
             });
         });
 
+        it('should mirror chat provider to legacy active provider', async () => {
+            prisma.setting.upsert.mockResolvedValue({ id: 's1', key: 'ai.chat_provider', value: 'gemini', isSecret: false });
+            prisma.setting.findUnique.mockImplementation(({ where }: any) => {
+                if (where.key === 'ai.gemini.api_key') {
+                    return Promise.resolve({ key: 'ai.gemini.api_key', value: 'encrypted-key', isSecret: true });
+                }
+                if (where.key === 'ai.gemini.chat_model') {
+                    return Promise.resolve({ key: 'ai.gemini.chat_model', value: 'gemini-2.5-flash', isSecret: false });
+                }
+                return Promise.resolve(null);
+            });
+
+            await service.upsert({ key: 'ai.chat_provider', value: 'gemini', isSecret: false });
+
+            expect(prisma.setting.upsert).toHaveBeenCalledWith({
+                where: { key: 'ai.active_provider' },
+                update: {
+                    value: 'gemini',
+                    isSecret: false,
+                    updatedBy: undefined,
+                },
+                create: {
+                    key: 'ai.active_provider',
+                    value: 'gemini',
+                    isSecret: false,
+                    updatedBy: undefined,
+                },
+            });
+        });
+
+        it('should coerce stale active provider during bulk AI save', async () => {
+            prisma.setting.findMany.mockResolvedValue([]);
+            prisma.setting.findUnique.mockResolvedValue(null);
+            prisma.setting.upsert.mockImplementation((args: any) => Promise.resolve(args));
+            prisma.$transaction.mockImplementation((operations: Array<Promise<unknown>>) => Promise.all(operations));
+
+            await service.bulkUpsert({
+                settings: [
+                    { key: 'ai.chat_provider', value: 'gemini', isSecret: false },
+                    { key: 'ai.active_provider', value: 'openai', isSecret: false },
+                    { key: 'ai.gemini.api_key', value: 'gemini-key', isSecret: true },
+                    { key: 'ai.gemini.chat_model', value: 'gemini-2.5-flash', isSecret: false },
+                    { key: 'ai.gemini.embed_model', value: 'gemini-embedding-2', isSecret: false },
+                ],
+            });
+
+            expect(prisma.setting.upsert).toHaveBeenCalledWith(expect.objectContaining({
+                where: { key: 'ai.active_provider' },
+                update: expect.objectContaining({ value: 'gemini' }),
+                create: expect.objectContaining({ value: 'gemini' }),
+            }));
+        });
+
         it('should force API keys to be stored as encrypted secrets', async () => {
             prisma.setting.upsert.mockResolvedValue({ id: 's1', key: 'ai.gemini.api_key', value: 'encrypted-gemini-key', isSecret: true });
 

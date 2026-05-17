@@ -116,6 +116,16 @@ export default function AdminSettingsPage() {
         try {
             setLoading(true);
             const data = await api.settings.list(true);
+            const chatProvider = data.find((s: any) => s.key === 'ai.chat_provider')?.value;
+            const activeProvider = data.find((s: any) => s.key === 'ai.active_provider')?.value;
+            if (chatProvider && activeProvider !== chatProvider) {
+                const activeIndex = data.findIndex((s: any) => s.key === 'ai.active_provider');
+                if (activeIndex > -1) {
+                    data[activeIndex] = { ...data[activeIndex], value: chatProvider };
+                } else {
+                    data.push({ key: 'ai.active_provider', value: chatProvider });
+                }
+            }
             setSettings(data);
         } catch (error: any) {
             toast({
@@ -249,7 +259,9 @@ export default function AdminSettingsPage() {
 
             const batch = keys
                 .map(key => {
-                    const value = getSetting(key);
+                    const value = key === 'ai.active_provider'
+                        ? getSetting('ai.chat_provider') || getSetting(key)
+                        : getSetting(key);
                     const isSecret = secretKeys.includes(key);
                     return { key, value, isSecret };
                 })
@@ -496,7 +508,10 @@ export default function AdminSettingsPage() {
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-[12px] font-bold tracking-widest uppercase">{t('ai.chat_provider')}</Label>
-                                                <Select value={getSetting('ai.chat_provider') || getSetting('ai.active_provider') || 'ollama'} onValueChange={v => updateValue('ai.chat_provider', v)}>
+                                                <Select value={getSetting('ai.chat_provider') || getSetting('ai.active_provider') || 'ollama'} onValueChange={v => {
+                                                    updateValue('ai.chat_provider', v);
+                                                    updateValue('ai.active_provider', v);
+                                                }}>
                                                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
