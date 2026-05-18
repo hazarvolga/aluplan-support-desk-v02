@@ -74,6 +74,19 @@ describe('KnowledgePoolProcessor file sync', () => {
         const storageService = {
             getFile: jest.fn().mockResolvedValue(Buffer.from('pdf bytes')),
         };
+        const configService = {
+            get: jest.fn().mockImplementation((key: string, fallback?: string) => {
+                if (key === 'KNOWLEDGE_SYNC_EMBED_BUDGET_GUARD') return 'false';
+                return fallback;
+            }),
+        };
+        const redisService = {
+            get: jest.fn(),
+            getClient: jest.fn(),
+        };
+        const syncQueue = {
+            pause: jest.fn(),
+        };
 
         const processor = new KnowledgePoolProcessor(
             prisma as any,
@@ -82,6 +95,9 @@ describe('KnowledgePoolProcessor file sync', () => {
             {} as any,
             {} as any,
             storageService as any,
+            configService as any,
+            redisService as any,
+            syncQueue as any,
         );
 
         return { processor, prisma, embeddingService, parserService, storageService };
@@ -159,6 +175,9 @@ describe('KnowledgePoolProcessor file sync', () => {
             crawlService as any,
             {} as any,
             {} as any,
+            { get: jest.fn((key: string, fallback?: string) => key === 'KNOWLEDGE_SYNC_EMBED_BUDGET_GUARD' ? 'false' : fallback) } as any,
+            { get: jest.fn(), getClient: jest.fn() } as any,
+            { pause: jest.fn() } as any,
         );
 
         await (processor as any).handleUrlSync({
@@ -183,5 +202,66 @@ describe('KnowledgePoolProcessor file sync', () => {
                 }),
             }),
         });
+    });
+
+    it('pauses the queue before embedding when the estimated budget cap would be exceeded', async () => {
+        const prisma = {
+            knowledgePoolEmbedding: {
+                count: jest.fn().mockResolvedValue(0),
+            },
+            knowledgeSource: {
+                update: jest.fn().mockResolvedValue({}),
+            },
+            knowledgeSourceSyncLog: {
+                update: jest.fn().mockResolvedValue({}),
+            },
+        };
+        const embeddingService = {
+            indexPoolContent: jest.fn().mockResolvedValue(undefined),
+        };
+        const parserService = {
+            parseFile: jest.fn().mockResolvedValue(content.repeat(20)),
+        };
+        const storageService = {
+            getFile: jest.fn().mockResolvedValue(Buffer.from('pdf bytes')),
+        };
+        const configService = {
+            get: jest.fn().mockImplementation((key: string, fallback?: string) => {
+                if (key === 'KNOWLEDGE_SYNC_EMBED_BUDGET_GUARD') return 'true';
+                if (key === 'KNOWLEDGE_SYNC_DAILY_EMBED_USD_CAP') return '0.00001';
+                if (key === 'LLMAPI_EMBED_MODEL') return 'gemini-embedding-2';
+                return fallback;
+            }),
+        };
+        const redisClient = {
+            incrbyfloat: jest.fn(),
+            expire: jest.fn(),
+        };
+        const redisService = {
+            get: jest.fn().mockResolvedValue('0'),
+            getClient: jest.fn().mockReturnValue(redisClient),
+        };
+        const syncQueue = {
+            pause: jest.fn().mockResolvedValue(undefined),
+        };
+        const processor = new KnowledgePoolProcessor(
+            prisma as any,
+            embeddingService as any,
+            parserService as any,
+            {} as any,
+            {} as any,
+            storageService as any,
+            configService as any,
+            redisService as any,
+            syncQueue as any,
+        );
+
+        await expect((processor as any).handleFileSync({
+            ...source,
+            lastHash: null,
+        }, 'log-3')).rejects.toThrow(/budget cap reached/i);
+
+        expect(syncQueue.pause).toHaveBeenCalled();
+        expect(embeddingService.indexPoolContent).not.toHaveBeenCalled();
     });
 });

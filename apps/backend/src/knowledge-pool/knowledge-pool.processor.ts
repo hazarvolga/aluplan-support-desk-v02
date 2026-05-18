@@ -1,6 +1,7 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { Job } from 'bullmq';
+import { ConfigService } from '@nestjs/config';
+import { Job, Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../ai/embedding.service';
 import * as fs from 'fs';
@@ -14,6 +15,8 @@ import { StorageService } from '../common/services/storage.service';
 import { hierarchicalChunk } from '../knowledge-base/utils/smart-chunker';
 import { AiService } from '../ai/ai.service';
 import { OnModuleInit } from '@nestjs/common';
+import { RedisService } from '../redis/redis.service';
+import { countTokens } from '../ai/utils/token-counter';
 
 const parseWorkerNumber = (value: string | undefined, fallback: number): number => {
     const parsed = Number.parseInt(value ?? '', 10);
@@ -28,6 +31,13 @@ export const buildKnowledgeSyncWorkerOptions = (env: NodeJS.ProcessEnv = process
     },
 });
 
+class KnowledgeSyncBudgetPausedError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'KnowledgeSyncBudgetPausedError';
+    }
+}
+
 @Processor('knowledge-sync', buildKnowledgeSyncWorkerOptions())
 export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
     private readonly logger = new Logger(KnowledgePoolProcessor.name);
@@ -40,6 +50,9 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         private readonly crawlService: CrawlService,
         private readonly aiService: AiService,
         private readonly storageService: StorageService,
+        private readonly config: ConfigService,
+        private readonly redis: RedisService,
+        @InjectQueue('knowledge-sync') private readonly syncQueue: Queue,
     ) {
         super();
     }
@@ -95,15 +108,16 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
             this.logger.log(`✅ Completed sync for source: ${source.name} (${sourceId})`);
         } catch (error) {
             this.logger.error(`❌ Sync failed for source ${sourceId}: ${error.message}`, error.stack);
+            const budgetPaused = error instanceof KnowledgeSyncBudgetPausedError;
 
             await this.prisma.knowledgeSource.update({
                 where: { id: sourceId },
-                data: { status: KnowledgeSourceStatus.FAILED },
+                data: { status: budgetPaused ? KnowledgeSourceStatus.PENDING_REVIEW : KnowledgeSourceStatus.FAILED },
             });
 
             await this.prisma.knowledgeSourceSyncLog.update({
                 where: { id: log.id },
-                data: { status: 'FAILED', error: error.message, syncFinishedAt: new Date() },
+                data: { status: budgetPaused ? 'PAUSED_BUDGET' : 'FAILED', error: error.message, syncFinishedAt: new Date() },
             });
 
             throw error;
@@ -129,6 +143,7 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         this.logger.log(`🧩 Content split into ${hierarchies.length} hierarchies for ${source.url}`);
 
         const totalChunks = hierarchies.reduce((sum, h) => sum + h.children.length, 0);
+        await this.reserveEmbeddingBudgetOrPause(content, source.id);
         await this.embeddingService.indexPoolContent(source.id, content, {
             url: source.url,
             title,
@@ -251,6 +266,7 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         const hierarchies = hierarchicalChunk(content, { title: source.name || source.fileName || 'Untitled' });
         const totalChunks = hierarchies.reduce((sum, h) => sum + h.children.length, 0);
 
+        await this.reserveEmbeddingBudgetOrPause(content, source.id);
         await this.embeddingService.indexPoolContent(source.id, content, {
             fileName: source.fileName,
             sourceType: 'file',
@@ -282,5 +298,103 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
             where: { id: logId },
             data: { chunksProcessed: totalChunks, newHash: hash }
         });
+    }
+
+    private async reserveEmbeddingBudgetOrPause(content: string, sourceId: string): Promise<void> {
+        if (this.config.get<string>('KNOWLEDGE_SYNC_EMBED_BUDGET_GUARD', 'true') === 'false') {
+            return;
+        }
+
+        const model = this.resolveEmbedModel();
+        const usdPerMillion = this.resolveEmbedUsdPerMillion(model);
+        if (usdPerMillion <= 0) {
+            return;
+        }
+
+        const estimatedTokens = countTokens(content, model);
+        const multiplier = this.parsePositiveNumber(
+            this.config.get<string>('KNOWLEDGE_SYNC_EMBED_COST_MULTIPLIER'),
+            1.5,
+        );
+        const estimatedCostUsd = (estimatedTokens * usdPerMillion * multiplier) / 1_000_000;
+        const capUsd = this.resolveDailyEmbedCapUsd();
+
+        const today = new Date().toISOString().split('T')[0];
+        const globalKey = `ai:quota:global:cost:${today}`;
+        const embedKey = `ai:quota:knowledge_sync_embed:cost:${today}`;
+        const currentCostUsd = Number.parseFloat((await this.redis.get(globalKey)) || '0');
+        const projectedCostUsd = currentCostUsd + estimatedCostUsd;
+
+        if (projectedCostUsd > capUsd) {
+            await this.syncQueue.pause();
+            const message = [
+                `Knowledge sync embedding budget cap reached; queue paused.`,
+                `sourceId=${sourceId}`,
+                `current=$${currentCostUsd.toFixed(4)}`,
+                `estimated=$${estimatedCostUsd.toFixed(4)}`,
+                `cap=$${capUsd.toFixed(2)}`,
+            ].join(' ');
+            this.logger.error(`🧯 ${message}`);
+            throw new KnowledgeSyncBudgetPausedError(message);
+        }
+
+        const client = this.redis.getClient();
+        await Promise.all([
+            client.incrbyfloat(globalKey, estimatedCostUsd),
+            client.incrbyfloat(embedKey, estimatedCostUsd),
+            client.expire(globalKey, 86400),
+            client.expire(embedKey, 86400),
+        ]);
+
+        this.logger.log(
+            `💸 Reserved embedding budget source=${sourceId} model=${model} tokens≈${estimatedTokens} cost≈$${estimatedCostUsd.toFixed(5)} projected≈$${projectedCostUsd.toFixed(5)}/$${capUsd.toFixed(2)}`,
+        );
+    }
+
+    private resolveEmbedModel(): string {
+        return (
+            this.config.get<string>('LLMAPI_EMBED_MODEL') ||
+            this.config.get<string>('GEMINI_EMBED_MODEL') ||
+            this.config.get<string>('OPENAI_EMBED_MODEL') ||
+            'gemini-embedding-2'
+        );
+    }
+
+    private resolveEmbedUsdPerMillion(model: string): number {
+        const explicit = this.config.get<string>('KNOWLEDGE_SYNC_EMBED_USD_PER_MILLION_TOKENS');
+        const explicitValue = explicit ? Number.parseFloat(explicit) : Number.NaN;
+        if (Number.isFinite(explicitValue) && explicitValue >= 0) {
+            return explicitValue;
+        }
+
+        const normalized = model.toLowerCase().replace(/^models\//, '');
+        if (normalized === 'gemini-embedding-2') return 0.20;
+        if (normalized === 'gemini-embedding-001') return 0.15;
+        if (normalized === 'text-embedding-3-small') return 0.02;
+        if (normalized === 'text-embedding-3-large') return 0.13;
+        if (normalized === 'text-embedding-ada-002') return 0.10;
+
+        return 0.20;
+    }
+
+    private parsePositiveNumber(value: string | undefined, fallback: number): number {
+        const parsed = Number.parseFloat(value ?? '');
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    }
+
+    private resolveDailyEmbedCapUsd(): number {
+        const explicit = this.config.get<string>('KNOWLEDGE_SYNC_DAILY_EMBED_USD_CAP');
+        const explicitCap = explicit ? Number.parseFloat(explicit) : Number.NaN;
+        if (Number.isFinite(explicitCap) && explicitCap > 0) {
+            return explicitCap;
+        }
+
+        const global = this.config.get<string>('AI_GLOBAL_DAILY_CAP');
+        const globalCap = global ? Number.parseFloat(global) : Number.NaN;
+        if (Number.isFinite(globalCap) && globalCap > 0) {
+            return Math.min(globalCap, 2);
+        }
+
+        return 2;
     }
 }
