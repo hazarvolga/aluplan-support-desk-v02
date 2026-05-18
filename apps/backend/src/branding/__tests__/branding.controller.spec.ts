@@ -47,6 +47,21 @@ describe('BrandingController', () => {
             expect(res.redirect).toHaveBeenCalledWith(presignedUrl);
         });
 
+        it('should normalize wildcard path arrays before generating a download URL', async () => {
+            const presignedUrl = 'https://s3.example.com/brand/logos/logo.png?token=abc';
+            mockStorageService.isS3.mockReturnValue(true);
+            mockStorageService.getDownloadUrl.mockResolvedValue(presignedUrl);
+
+            const res = {
+                redirect: jest.fn().mockReturnValue(undefined),
+            } as any;
+
+            await controller.getAsset(['brand', 'logos', 'logo.png'], res);
+
+            expect(storageService.getDownloadUrl).toHaveBeenCalledWith('brand/logos/logo.png');
+            expect(res.redirect).toHaveBeenCalledWith(presignedUrl);
+        });
+
         it('should return 404 when storage service throws an error', async () => {
             mockStorageService.isS3.mockReturnValue(true);
             mockStorageService.getDownloadUrl.mockRejectedValue(new Error('Not found'));

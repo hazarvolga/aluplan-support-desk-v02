@@ -31,8 +31,10 @@ export class BrandingController {
 
     @Public()
     @Get('assets/*path')
-    async getAsset(@Param('path') key: string, @Res() res: Response) {
+    async getAsset(@Param('path') assetPath: string | string[], @Res() res: Response) {
         try {
+            const key = Array.isArray(assetPath) ? assetPath.join('/') : assetPath;
+
             if (this.storageService.isS3()) {
                 const url = await this.storageService.getDownloadUrl(key);
                 return res.redirect(url);
