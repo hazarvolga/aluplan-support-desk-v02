@@ -820,6 +820,31 @@ model KnowledgeSource {
   @@map("knowledge_sources")
 }
 
+model CrawlCandidate {
+  id            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source        String               @db.VarChar(100)
+  sourceUrl     String               @unique @map("source_url")
+  title         String               @db.VarChar(500)
+  format        CrawlCandidateFormat
+  status        CrawlCandidateStatus @default(PENDING_REVIEW)
+  language      String?              @db.VarChar(10)
+  categorySlug  String?              @map("category_slug") @db.VarChar(100)
+  contentHash   String?              @map("content_hash") @db.VarChar(255)
+  crawlFilter   String?              @map("crawl_filter") @db.VarChar(100)
+  rejectionReason String?            @map("rejection_reason")
+  metadata      Json?
+  importedSourceId String?           @map("imported_source_id") @db.Uuid
+  importedAt    DateTime?            @map("imported_at")
+  crawledAt     DateTime             @default(now()) @map("crawled_at")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  @@index([source, status], map: "idx_crawl_candidates_source_status")
+  @@index([format], map: "idx_crawl_candidates_format")
+  @@index([contentHash], map: "idx_crawl_candidates_content_hash")
+  @@map("crawl_candidates")
+}
+
 model KnowledgeSourceSyncLog {
   id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sourceId        String          @map("source_id") @db.Uuid
@@ -1160,6 +1185,20 @@ enum KnowledgeSourceStatus {
   SYNCING
   FAILED
   PENDING_REVIEW
+}
+
+enum CrawlCandidateFormat {
+  KNOWLEDGE_ARTICLE
+  PDF
+}
+
+enum CrawlCandidateStatus {
+  PENDING_REVIEW
+  APPROVED
+  IMPORTED
+  SKIPPED_DUPLICATE
+  REJECTED
+  FAILED
 }
 
 enum AnnouncementStatus {

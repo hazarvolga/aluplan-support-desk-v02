@@ -115,7 +115,7 @@ export default function FaqLearningPage() {
                         <Brain className="h-5 w-5 text-primary" />
                         {t('title')}
                     </h1>
-                    <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mt-1">
+                    <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
                         {t('subtitle')}
                     </p>
                 </div>
@@ -156,32 +156,32 @@ export default function FaqLearningPage() {
                     <CardContent className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('resolution_rate')}</p>
+                                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{t('resolution_rate')}</p>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-mono font-bold text-emerald-400">%{stats.deflectionRate || 0}</span>
-                                    <span className="text-[10px] text-muted-foreground/60">{t('prevented_tickets')}</span>
+                                    <span className="text-[11px] text-muted-foreground">{t('prevented_tickets')}</span>
                                 </div>
                                 <Progress value={stats.deflectionRate || 0} className="h-1 rounded-none bg-muted" />
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('writing_accuracy')}</p>
+                                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{t('writing_accuracy')}</p>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-mono font-bold text-primary">%{stats.aiAccuracy || 0}</span>
-                                    <span className="text-[10px] text-muted-foreground/60">{t('highest_confidence')}</span>
+                                    <span className="text-[11px] text-muted-foreground">{t('highest_confidence')}</span>
                                 </div>
                                 <Progress value={stats.aiAccuracy || 0} className="h-1 rounded-none bg-muted accent-primary" />
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('total_interactions')}</p>
+                                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{t('total_interactions')}</p>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-mono font-bold text-foreground">{stats.totalInteractions || 0}</span>
-                                    <span className="text-[10px] text-muted-foreground/60">{t('last_30_days')}</span>
+                                    <span className="text-[11px] text-muted-foreground">{t('last_30_days')}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-8 pt-6 border-t border-border/20">
-                            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-4">{t('confidence_distribution')}</h4>
+                            <h4 className="mb-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{t('confidence_distribution')}</h4>
                             <div className="space-y-3">
                                 {['HIGH', 'MEDIUM', 'LOW', 'NO_MATCH'].map(band => {
                                     const bandData = (stats as any).confidenceDistribution?.find((d: any) => d.band === band) || { count: 0 };
@@ -189,7 +189,7 @@ export default function FaqLearningPage() {
                                     const label = t(`bands.${band.toLowerCase()}`);
                                     return (
                                         <div key={band} className="space-y-1">
-                                            <div className="flex justify-between text-[9px] font-mono text-muted-foreground uppercase">
+                                            <div className="flex justify-between text-[10px] font-mono text-muted-foreground uppercase">
                                                 <span>{label}</span>
                                                 <span>{bandData.count} ({Math.round(percentage)}%)</span>
                                             </div>
@@ -213,22 +213,22 @@ export default function FaqLearningPage() {
                             <div className="flex items-start gap-4">
                                 <div className="mt-1 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest">{t('ingestion_engine')}</p>
-                                    <p className="text-[9px] text-muted-foreground font-mono">{t('ingestion_engine_desc')}</p>
+                                    <p className="text-[11px] font-bold uppercase tracking-wider">{t('ingestion_engine')}</p>
+                                    <p className="text-[10px] text-muted-foreground font-mono leading-relaxed">{t('ingestion_engine_desc')}</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-4">
                                 <div className={`mt-1 h-2 w-2 rounded-full ${pipelineInFlight ? 'bg-primary animate-pulse shadow-[0_0_8px_rgba(var(--primary),0.5)]' : 'bg-muted-foreground/40'}`} />
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest">{t('abstraction_layer')}</p>
-                                    <p className="text-[9px] text-muted-foreground font-mono">{t('abstraction_layer_desc')}</p>
+                                    <p className="text-[11px] font-bold uppercase tracking-wider">{t('abstraction_layer')}</p>
+                                    <p className="text-[10px] text-muted-foreground font-mono leading-relaxed">{t('abstraction_layer_desc')}</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-4">
                                 <div className={`mt-1 h-2 w-2 rounded-full ${candidates.length > 0 ? 'bg-orange-400' : 'bg-muted-foreground/40'}`} />
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest">{t('validation_queue')}</p>
-                                    <p className="text-[9px] text-muted-foreground font-mono">{t('validation_queue_desc', { count: candidates.length })}</p>
+                                    <p className="text-[11px] font-bold uppercase tracking-wider">{t('validation_queue')}</p>
+                                    <p className="text-[10px] text-muted-foreground font-mono leading-relaxed">{t('validation_queue_desc', { count: candidates.length })}</p>
                                 </div>
                             </div>
                         </div>

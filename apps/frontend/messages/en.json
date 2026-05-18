@@ -2,7 +2,7 @@
   "home": {
     "title": "Aluplan Support System",
     "cta_login": "Sign In",
-    "cta_register": "Register",
+    "cta_register": "Get Customer Access",
     "footer_copy": "© 2025 Aluplan A.Ş. All rights reserved.",
     "footer_status": "STATUS: ACTIVE",
     "footer_encryption": "ENCRYPTION: AES-256",
@@ -73,16 +73,17 @@
     "login_title": "ACCESS GATEWAY",
     "access_gate_desc": "Authentication required for telemetry read/write and support module access.",
     "login_tab": "SIGN IN",
-    "request_tab": "REQUEST_ACCESS",
+    "request_tab": "CUSTOMER_ACCESS",
     "email_label": "IDENTITY_TOKEN [EMAIL]",
     "email_placeholder": "operator@aluplan.com",
     "password_label": "VERIFICATION_KEY [PASSWORD]",
     "password_placeholder": "••••••••",
-    "recovery_link": "RECOVER_KEY?",
+    "recovery_link": "FORGOT PASSWORD",
     "submit_button": "START SESSION",
     "submitting": "ESTABLISHING_CONNECTION...",
     "no_account": "Don't have an account?",
-    "register_link": "Register",
+    "forgot_password_link": "Forgot Password",
+    "register_link": "Get Customer Access",
     "security_tagline": "Connections are monitored via Aluplan Sec-Net",
     "error_heading": "AUTHORIZATION DENIED",
     "error_default": "AUTH_FAILURE: Credentials rejected by security node",
@@ -92,8 +93,8 @@
       "success_desc": "Your login details have been sent to your email address.",
       "success_hint": "Please check your email to log into the system.",
       "back_to_login": "Back to Login",
-      "title": "Request Access",
-      "subtitle": "Submit an access request for the Aluplan support portal",
+      "title": "Get Customer Access",
+      "subtitle": "Use CRM verification to access the support portal or reset the password for an existing account.",
       "email_label": "Work Email",
       "email_placeholder": "example@company.com",
       "continue_btn": "Continue",
@@ -103,10 +104,10 @@
       "inactive_title": "Pending Verification",
       "inactive_desc": "A registration was already made with this email address, but the email verification hasn't been completed yet.",
       "inactive_btn": "Resend Verification Email",
-      "reset_sent_title": "Password Sent",
-      "reset_sent_desc": "Your new login password has been sent to your email address for security purposes. Please check your inbox (and spam folder if necessary).",
+      "reset_sent_title": "Reset Link Sent",
+      "reset_sent_desc": "A password reset link has been sent to your email address. Please check your inbox and spam folder if necessary.",
       "recognized_title": "We Recognize You!",
-      "recognized_desc": "We already have a profile for you and your company in the Aluplan system. <br /><br />You can log in or directly request a new password to be sent to your email.",
+      "recognized_desc": "We already have a profile for you and your company in the Aluplan system. <br /><br />You can log in or request a password reset link.",
       "login_btn": "Log In",
       "reset_btn": "Reset Password",
       "different_email": "Try a different email",
@@ -2225,6 +2226,7 @@
       "all_synced": "ALL_PATTERNS_SYNCED",
       "all_synced_desc": "Run the extraction loop manually to find new knowledge samples.",
       "add_to_kb": "ADD TO KB",
+      "dismiss": "DISMISS",
       "refresh": "REFRESH",
       "toasts": {
         "pipeline_started": "AI Pipeline Started",
@@ -2647,7 +2649,8 @@
       "placeholder": "Technical Documentation",
       "tabs": {
         "raw_sources": "RAW_SOURCES",
-        "seeded_content": "SEEDED_CONTENT"
+        "seeded_content": "SEEDED_CONTENT",
+        "crawler": "CRAWLER_CANDIDATES"
       },
       "buttons": {
         "add_url": "ADD_URL",
@@ -2702,6 +2705,41 @@
         "no_records": "NO_RECORDS_FOUND",
         "author": "AUTHOR",
         "under_review": "UNDER_REVIEW"
+      },
+      "crawler": {
+        "title": "LEARN NOW CRAWLER CANDIDATES",
+        "subtitle": "Stage public Allplan Learn Now content before Knowledge Pool import.",
+        "search_placeholder": "Search term or leave empty",
+        "dry_run_title": "DRY-RUN PREVIEW",
+        "discovered": "{count} CANDIDATES",
+        "no_candidates": "No crawler candidates found",
+        "formats": {
+          "article": "ARTICLE",
+          "pdf": "PDF"
+        },
+        "buttons": {
+          "dry_run": "PREVIEW",
+          "save_candidates": "SAVE CANDIDATES",
+          "import": "IMPORT"
+        },
+        "table": {
+          "title": "TITLE",
+          "format": "FORMAT",
+          "category": "CATEGORY",
+          "status": "STATUS"
+        },
+        "toasts": {
+          "fetch_error": "Could not load crawler candidates",
+          "dry_run_done": "Preview complete",
+          "dry_run_desc": "{count} candidates found",
+          "discover_done": "Discovery complete",
+          "discover_desc": "{count} new candidates saved",
+          "discover_error": "Crawler discovery failed",
+          "import_started": "Import started",
+          "import_desc": "Candidate was queued through the existing sync pipeline",
+          "import_skipped": "Candidate skipped",
+          "import_error": "Could not import candidate"
+        }
       },
       "meta": {
         "locale": "en-US",

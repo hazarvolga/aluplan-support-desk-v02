@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger, Delete } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
@@ -13,6 +13,8 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { KnowledgeSourceType } from '@aluplan/database';
 import { StorageService } from '../common/services/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { LearnNowCrawlerService } from './learnnow-crawler.service';
+import { DiscoverLearnNowDto } from './dto/learnnow-crawl.dto';
 
 // Production Knowledge Base Stabilization Sync v1.0.3 - Final RAG Fixes (Multi-chunk + High-precision 1536 aligned)
 @ApiTags('Knowledge Pool')
@@ -25,6 +27,7 @@ export class KnowledgePoolController {
         private readonly knowledgePoolService: KnowledgePoolService,
         private readonly storageService: StorageService,
         private readonly prisma: PrismaService,
+        private readonly learnNowCrawlerService: LearnNowCrawlerService,
     ) { }
 
     @Post('sources')
@@ -142,6 +145,27 @@ export class KnowledgePoolController {
     @ApiOperation({ summary: 'List all knowledge sources' })
     async getSources(): Promise<any> {
         return this.knowledgePoolService.getAllSources();
+    }
+
+    @Post('crawl/learnnow/discover')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Discover public Allplan Learn Now crawler candidates' })
+    async discoverLearnNow(@Body() dto: DiscoverLearnNowDto): Promise<any> {
+        return this.learnNowCrawlerService.discover(dto);
+    }
+
+    @Get('crawl/candidates')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'List crawler candidates awaiting review/import' })
+    async listCrawlerCandidates(@Query('status') status?: any): Promise<any> {
+        return this.learnNowCrawlerService.listCandidates(status);
+    }
+
+    @Post('crawl/candidates/:id/import')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Import an approved crawler candidate into the Knowledge Pool queue' })
+    async importCrawlerCandidate(@Param('id') id: string): Promise<any> {
+        return this.learnNowCrawlerService.importCandidate(id);
     }
 
     @Post('sources/bulk-delete')

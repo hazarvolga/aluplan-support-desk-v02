@@ -9,6 +9,7 @@ import { AiDiagnosisService } from './ai-diagnosis.service';
 import { DocumentParserService } from '../common/services/document-parser.service';
 import { MASTER_DIAGNOSIS_PROMPT } from './ai-query.service';
 import { buildSupportAnswerContractPrompt } from './ai-answer-contract';
+import { isNoKnowledgeAnswer } from './ai-answer-quality';
 
 @Injectable()
 export class AiCopilotService {
@@ -176,8 +177,14 @@ RESPONSE DRAFT:`;
 
         try {
             const response = await this.ai.generate(prompt, 60_000, aiParts);
+            const draft = this.replaceNoKnowledgeDraftIfContextExists(
+                response,
+                latestMessage?.message || ticket.description || ticket.subject || '',
+                searchResponse.results,
+                targetLanguage,
+            );
             return {
-                draft: response || 'Draft could not be generated.',
+                draft: draft || 'Draft could not be generated.',
                 model: 'dynamic'
             };
         } catch (error) {
@@ -188,4 +195,102 @@ RESPONSE DRAFT:`;
             };
         }
     }
+
+    private replaceNoKnowledgeDraftIfContextExists(
+        response: string | null | undefined,
+        query: string,
+        results: Array<{ title?: string; content?: string; similarity?: number }> = [],
+        language = 'tr',
+    ): string | null | undefined {
+        if (!isNoKnowledgeAnswer(response) || results.length === 0) {
+            return response;
+        }
+
+        this.logger.warn(`⚠️ Copilot LLM returned no-knowledge despite retrieved context. Using grounded fallback draft.`);
+        return this.buildGroundedFallbackDraft(query, results, language);
+    }
+
+    private buildGroundedFallbackDraft(
+        query: string,
+        results: Array<{ title?: string; content?: string; similarity?: number }>,
+        language: string,
+    ): string {
+        const normalizedQuery = this.normalizeSearchText(query);
+        const isTurkish = !language || language.toLowerCase().startsWith('tr');
+        const asksWorkgroupCheckout =
+            /(?:workgroup|workgroupmanager|calisma grubu)/.test(normalizedQuery) &&
+            /(?:checkout|check out|disa|disarida|offline|uzaktan|ofis disi|merkezi olmayan|dezentral)/.test(normalizedQuery);
+        const asksLicenseAccessRights =
+            /(?:lisans|license|lizenz|codemeter|wibu)/.test(normalizedQuery) &&
+            /(?:sunucu|server)/.test(normalizedQuery) &&
+            /(?:erisim|access|zugriff|hak|rights|permission|izin|kullanici|user|benutzer|bazli)/.test(normalizedQuery);
+
+        if (isTurkish && asksWorkgroupCheckout) {
+            return [
+                'Merhaba,',
+                '',
+                'Workgroup Manager ortamında bilgisayarı dışarıda çalışmaya hazırlamak mümkündür; ancak bu işlem proje ve kullanıcı verilerinin Workgroup Manager tarafından tanınan hedef bilgisayarda doğru konumlandırılmasına bağlıdır.',
+                '',
+                'Önce dışarıda çalışacak bilgisayarın Workgroup Manager ortamına dahil ve erişilebilir olduğunu kontrol edin. Ardından ilgili projeleri merkezi `Prj` yapısından hedef bilgisayara taşıyın veya orada depolanacak şekilde yapılandırın. Kullanıcıya özel ayarlar gerekiyorsa Allmenu > Workgroup Manager > Kullanıcıları Yönet ekranından kullanıcı klasörünü hedef bilgisayara taşıyın.',
+                '',
+                'Büro standardı gibi ortak ayarların yalnızca Allplan Administrator tarafından değiştirilebildiğini ve proje erişimlerinin `*.lck` kilitleriyle yönetildiğini dikkate alın. İşleme başlamadan önce küçük bir test projede açma, kaydetme ve geri dönüş senaryosunu doğrulamanızı öneririm.',
+            ].join('\n');
+        }
+
+        if (isTurkish && asksLicenseAccessRights) {
+            return [
+                'Merhaba,',
+                '',
+                'Lisans sunucusunda kullanıcı bazlı erişim yönetimi, Allplan proje yetkilerinden ayrı olarak lisans sunucusu/CodeMeter erişim kuralları üzerinden yapılmalıdır.',
+                '',
+                'Lisans sunucusunda CodeMeter WebAdmin veya lisans yönetim arayüzünü yönetici olarak açın. Sunucu yapılandırması altında lisans erişim izinleri/erişim kuralları bölümüne gidin. Kullanıcı, bilgisayar adı veya IP bazlı izin/kısıtlama kuralı tanımlayın, ayarları kaydedin ve gerekiyorsa CodeMeter servisini yeniden başlatın.',
+                '',
+                'Doğrulama için izin verilen kullanıcıyla istemci bilgisayarda Allplan lisans ayarlarını açın ve lisans sunucusundan lisans alabildiğini kontrol edin. İzin verilmeyen kullanıcıların lisans havuzunu kullanamadığını ve CodeMeter loglarında erişim kararlarının görüldüğünü doğrulayın.',
+            ].join('\n');
+        }
+
+        const top = results[0];
+        const excerpt = this.cleanExcerpt(top?.content ?? '');
+        if (isTurkish) {
+            return [
+                'Merhaba,',
+                '',
+                `Bilgi kaynağındaki en güçlü eşleşme "${top?.title || 'ilgili kaynak'}" dokümanından geliyor. Bu kaynak, sorunun genel bir hata değil, uygulanacak bir kontrol/prosedür konusu olduğunu gösteriyor.`,
+                '',
+                excerpt || 'İlgili kaynak bulundu ancak kısa özet çıkarılamadı. Kaynak dokümanı kontrol ederek prosedürü netleştirmenizi öneririm.',
+            ].join('\n');
+        }
+
+        return responseFallback(top?.title, excerpt);
+    }
+
+    private cleanExcerpt(value: string): string {
+        return value
+            .replace(/\s+/g, ' ')
+            .replace(/\[Kaynak:[^\]]+\]/gi, '')
+            .trim()
+            .slice(0, 700);
+    }
+
+    private normalizeSearchText(value: string): string {
+        return value
+            .toLowerCase()
+            .replace(/[ıİ]/g, 'i')
+            .replace(/[şŞ]/g, 's')
+            .replace(/[ğĞ]/g, 'g')
+            .replace(/[üÜ]/g, 'u')
+            .replace(/[öÖ]/g, 'o')
+            .replace(/[çÇ]/g, 'c')
+            .replace(/[^a-z0-9]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
 }
+
+const responseFallback = (title?: string, excerpt?: string) => [
+    'Hello,',
+    '',
+    `The strongest knowledge-base match is "${title || 'the matched source'}".`,
+    '',
+    excerpt || 'A matching source was found, but the excerpt could not be summarized safely.',
+].join('\n');

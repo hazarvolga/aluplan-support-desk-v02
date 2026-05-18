@@ -8,6 +8,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AiModule } from '../ai/ai.module';
 
 import { CrawlService } from './crawl.service';
+import { LearnNowCrawlerService } from './learnnow-crawler.service';
 
 @Module({
     imports: [
@@ -18,7 +19,7 @@ import { CrawlService } from './crawl.service';
         }),
     ],
     controllers: [KnowledgePoolController],
-    providers: [KnowledgePoolService, KnowledgePoolProcessor, KnowledgePoolParserService, CrawlService],
+    providers: [KnowledgePoolService, KnowledgePoolProcessor, KnowledgePoolParserService, CrawlService, LearnNowCrawlerService],
     exports: [KnowledgePoolService, KnowledgePoolParserService],
 })
 export class KnowledgePoolModule { }

@@ -68,7 +68,7 @@ export default function SystemTopologyPage() {
                 </Button>
             </div>
 
-            <div className="max-w-5xl mx-auto py-8">
+            <div className="w-full py-6">
                 <SourceArchitectureView stats={sourceStats} />
             </div>
         </div>

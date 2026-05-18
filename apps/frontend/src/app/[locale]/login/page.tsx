@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState } from 'react';
-import { useRouter } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 import { api } from '@/lib/api';
 import Image from 'next/image';
 import { Terminal, ShieldAlert, Lock, CircleDot, CheckCircle2 } from 'lucide-react';
@@ -138,12 +138,18 @@ export default function LoginPage() {
                 {/* Mechanism Wrapper */}
                 <div className="w-full max-w-[340px] mx-auto">
 
-                    {/* Fake Tabs (UI Only) */}
+                    {/* Access mode tabs */}
                     <div className="flex mb-6 border-b border-white/10">
                         <div className="px-4 py-2 border-b-2 border-primary text-primary text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 cursor-pointer">
                             <CircleDot className="h-3 w-3" />
                             {t('login_tab')}
                         </div>
+                        <Link
+                            href="/register"
+                            className="px-4 py-2 text-muted-foreground hover:text-primary text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 transition-colors"
+                        >
+                            {t('request_tab')}
+                        </Link>
                     </div>
 
                     <form onSubmit={handleLogin} className="space-y-5">
@@ -163,7 +169,9 @@ export default function LoginPage() {
                         <div className="space-y-1.5">
                             <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] flex justify-between">
                                 <span>{t('password_label')}</span>
-                                <span className="opacity-50 hover:opacity-100 cursor-pointer">{t('recovery_link')}</span>
+                                <Link href="/register" className="opacity-60 hover:opacity-100 hover:text-primary transition-colors">
+                                    {t('recovery_link')}
+                                </Link>
                             </label>
                             <input
                                 type="password"
@@ -201,6 +209,21 @@ export default function LoginPage() {
                         </button>
 
                     </form>
+
+                    <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <Link
+                            href="/register"
+                            className="border border-white/10 bg-white/[0.03] px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300 hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all"
+                        >
+                            {t('forgot_password_link')}
+                        </Link>
+                        <Link
+                            href="/register"
+                            className="border border-white/10 bg-white/[0.03] px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300 hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all"
+                        >
+                            {t('register_link')}
+                        </Link>
+                    </div>
 
                     <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-center gap-2 text-[8px] text-muted-foreground/40 uppercase tracking-widest">
                         <ShieldAlert className="h-3 w-3" />

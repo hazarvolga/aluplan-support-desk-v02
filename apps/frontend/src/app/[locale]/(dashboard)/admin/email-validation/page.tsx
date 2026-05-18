@@ -570,10 +570,10 @@ export default function EmailValidationPage() {
                                                             {c.fullName}
                                                             <Eye className="h-3 w-3 opacity-0 group-hover/name:opacity-100 transition-opacity" />
                                                         </span>
-                                                        <span className="text-[9px] text-muted-foreground/60 uppercase font-medium">{c.customerProfile?.companyName || '-'}</span>
+                                                        <span className="text-[10px] text-foreground/65 uppercase font-medium tracking-wide">{c.customerProfile?.companyName || '-'}</span>
                                                     </button>
                                                 </TableCell>
-                                                <TableCell className="font-mono text-[10px] text-white/70">{c.email}</TableCell>
+                                                <TableCell className="font-mono text-xs text-white/85">{c.email}</TableCell>
                                                 <TableCell className="text-center">
                                                     {vRes ? (
                                                         <Badge variant="outline" className={`text-[8px] font-black tracking-widest px-2 py-0.5 ${vRes.syntax?.isValid ? 'bg-emerald-500/10 text-emerald-400 border-none' : 'bg-red-500/10 text-red-400 border-none'}`}>
@@ -625,7 +625,7 @@ export default function EmailValidationPage() {
                                     <div className="space-y-1">
                                         <Badge className="bg-blue-500/10 text-blue-400 border-none text-[8px] font-black uppercase tracking-widest mb-2">{t('detail.title')}</Badge>
                                         <DialogTitle className="text-2xl font-bold text-white">{selectedCustomer.fullName}</DialogTitle>
-                                        <DialogDescription className="text-muted-foreground text-sm font-mono">{selectedCustomer.email}</DialogDescription>
+                                        <DialogDescription className="text-foreground/75 text-sm font-mono">{selectedCustomer.email}</DialogDescription>
                                     </div>
                                     <Button
                                         size="icon"

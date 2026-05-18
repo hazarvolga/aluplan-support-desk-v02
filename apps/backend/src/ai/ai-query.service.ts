@@ -24,6 +24,7 @@ import { AiDiagnosisService, DiagnosisResult } from './ai-diagnosis.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
 import { createHash } from 'crypto';
 import { buildSupportAnswerContractPrompt } from './ai-answer-contract';
+import { isNoKnowledgeAnswer } from './ai-answer-quality';
 
 // local type with NO_MATCH
 export type LocalConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -523,11 +524,22 @@ export class AiQueryService {
                 this.logger.warn(`⚠️ Diagnosis generation timed out or returned empty. Falling back to top matched content.`);
             }
 
-            const rawAnswer = aiResult?.response ?? this.buildDeterministicFallbackAnswer(userQuery, results, lang, {
+            let rawAnswer = aiResult?.response ?? this.buildDeterministicFallbackAnswer(userQuery, results, lang, {
                 showSourceDetails: isStaff,
                 diagnosis,
             });
             answerMode = aiResult?.response ? 'LLM' : 'FALLBACK';
+
+            if (aiResult?.response && isNoKnowledgeAnswer(rawAnswer) && results.length > 0) {
+                this.logger.warn(
+                    `⚠️ LLM returned no-knowledge despite retrieved context. Using deterministic fallback for query "${userQuery.slice(0, 80)}".`,
+                );
+                rawAnswer = this.buildDeterministicFallbackAnswer(userQuery, results, lang, {
+                    showSourceDetails: isStaff,
+                    diagnosis,
+                });
+                answerMode = 'FALLBACK';
+            }
 
             // Split response by languages (TR, EN, DE)
             const splitResponse = this.parseMultiLangResponse(rawAnswer, lang);
@@ -844,6 +856,10 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         const normalizedQuery = this.normalizeSearchText(query);
         const normalizedEvidence = this.normalizeSearchText(`${snippet.title} ${snippet.excerpt}`);
         const asksLicenseBorrowing = this.isLicenseBorrowingQuery(normalizedQuery);
+        const asksLicenseAccessRights =
+            /(?:lisans|license|lizenz|codemeter|wibu)/.test(normalizedQuery) &&
+            /(?:sunucu|server)/.test(normalizedQuery) &&
+            /(?:erisim|access|zugriff|hak|rights|permission|izin|kullanici|user|benutzer|bazli)/.test(normalizedQuery);
         const asksIfcExport =
             normalizedQuery.includes('ifc') &&
             /(?:aktarim|disa aktar|export|ayar|settings|eleman|model)/.test(normalizedQuery);
@@ -935,6 +951,32 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                 '- Bilgisayar Workgroup Manager listesinde görünmeli.',
                 '- İlgili bilgisayardan Allplan açıldığında merkezi proje/veri yapısı erişilebilir olmalı.',
                 '- Sorun devam ederse ekran görüntüsü, hata metni, Allplan sürümü ve sunucu/paylaşım yolu bilgisiyle destek talebi oluşturun.',
+            ].join('\n');
+        }
+
+        if (asksLicenseAccessRights) {
+            return [
+                '## 📌 Sorun Yorumu',
+                'Lisans sunucusunda kullanıcı bazlı erişim hakkı yönetimi soruluyor. Bu işlem genel Allplan proje yetkisinden farklıdır; lisans sunucusu/CodeMeter erişim kuralı tarafında yönetilmelidir.',
+                '',
+                '## ⚠️ Kritik Kontroller',
+                '- İşlemi lisans sunucusunda yönetici yetkisiyle yapın.',
+                '- Lisans sunucusunun istemci bilgisayarlar tarafından ağ üzerinden erişilebilir olduğunu doğrulayın.',
+                '- Kullanıcı bazlı kural yazacaksanız kullanıcı adı, bilgisayar adı veya ağ/IP bilgisinin tutarlı olduğundan emin olun.',
+                '- Değişiklikten önce mevcut lisans erişim ayarlarını not alın; yanlış kural tüm kullanıcıların lisans almasını engelleyebilir.',
+                '',
+                '## 🛠️ Çözüm Adımları',
+                '1. Lisans sunucusunda CodeMeter WebAdmin veya lisans yönetim arayüzünü yönetici olarak açın.',
+                '2. Sunucu yapılandırması bölümünde lisans erişim izinleri/erişim kuralları ekranına gidin.',
+                '3. Basit erişim modu tüm istemcilere izin veriyorsa, kullanıcı veya bilgisayar bazlı kısıtlama için gelişmiş kural modunu kullanın.',
+                '4. İzin verilecek kullanıcı, bilgisayar veya IP bilgisini kural olarak ekleyin; engellenecek kullanıcılar için ayrı kural tanımlayın.',
+                '5. Ayarları kaydedin ve gerekiyorsa CodeMeter servisini yeniden başlatın.',
+                '6. İstemci bilgisayarda Allplan lisans ayarlarından lisans sunucusunun göründüğünü ve ilgili kullanıcının lisans alabildiğini test edin.',
+                '',
+                '## ✅ Doğrulama',
+                '- İzin verilen kullanıcı lisansı alabilmeli ve Allplan açılmalıdır.',
+                '- İzin verilmeyen kullanıcı lisans havuzunu kullanamamalıdır.',
+                '- CodeMeter/License Server loglarında erişim kuralı nedeniyle reddedilen veya izin verilen istekler görülebilmelidir.',
             ].join('\n');
         }
 

@@ -19,7 +19,7 @@ const EVENT_COLORS: Record<string, { bg: string; border: string; icon: string; l
 };
 
 export function LiveEventFeed({ events, connectionState, stats, maxVisible = 50 }: LiveEventFeedProps) {
-    const t = useTranslations('admin.ai_health');
+    const t = useTranslations('admin.ai_health.dashboard');
     const feedRef = useRef<HTMLDivElement>(null);
     const prevEventsLengthRef = useRef(0);
 

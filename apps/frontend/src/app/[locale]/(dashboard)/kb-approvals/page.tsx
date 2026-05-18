@@ -76,7 +76,7 @@ export default function KbApprovalsPage() {
                         <Bot className="h-5 w-5 text-primary" />
                         {t('title')}
                     </h1>
-                    <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-tight">
+                    <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
                         {t('subtitle')}
                     </p>
                 </div>
@@ -115,11 +115,11 @@ export default function KbApprovalsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow className="border-border/40 hover:bg-transparent">
-                                    <TableHead className="w-[300px] h-8 text-[9px] uppercase font-bold tracking-widest font-mono">{t('table.query')}</TableHead>
-                                    <TableHead className="h-8 text-[9px] uppercase font-bold tracking-widest font-mono">{t('table.answer')}</TableHead>
-                                    <TableHead className="w-[120px] text-center h-8 text-[9px] uppercase font-bold tracking-widest font-mono">{t('table.confidence')}</TableHead>
-                                    <TableHead className="w-[100px] text-center h-8 text-[9px] uppercase font-bold tracking-widest font-mono">{t('table.source')}</TableHead>
-                                    <TableHead className="w-[180px] text-right h-8 text-[9px] uppercase font-bold tracking-widest font-mono">{t('table.actions')}</TableHead>
+                                    <TableHead className="w-[300px] h-8 text-[10px] uppercase font-bold tracking-wider font-mono">{t('table.query')}</TableHead>
+                                    <TableHead className="h-8 text-[10px] uppercase font-bold tracking-wider font-mono">{t('table.answer')}</TableHead>
+                                    <TableHead className="w-[120px] text-center h-8 text-[10px] uppercase font-bold tracking-wider font-mono">{t('table.confidence')}</TableHead>
+                                    <TableHead className="w-[100px] text-center h-8 text-[10px] uppercase font-bold tracking-wider font-mono">{t('table.source')}</TableHead>
+                                    <TableHead className="w-[180px] text-right h-8 text-[10px] uppercase font-bold tracking-wider font-mono">{t('table.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -128,11 +128,11 @@ export default function KbApprovalsPage() {
                                         <TableCell className="font-medium align-top py-3">
                                             <div className="flex gap-2">
                                                 <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                <span className="text-[12px] leading-tight tracking-tight uppercase font-bold">{draft.question}</span>
+                                                <span className="text-[13px] leading-snug tracking-normal uppercase font-bold">{draft.question}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell className="align-top py-3">
-                                            <p className="text-[11px] text-foreground/70 leading-relaxed italic line-clamp-3">"{draft.answer}"</p>
+                                            <p className="text-sm text-foreground/80 leading-relaxed line-clamp-3">"{draft.answer}"</p>
                                         </TableCell>
                                         <TableCell className="align-top text-center py-3">
                                             <Badge variant="outline" className={`h-4 px-1.5 text-[9px] font-mono rounded-none ${draft.confidenceScore >= 0.85 ? 'text-emerald-400 border-emerald-900/50 bg-emerald-500/5' :
@@ -144,17 +144,17 @@ export default function KbApprovalsPage() {
                                         </TableCell>
                                         <TableCell className="align-top text-center py-3">
                                             {draft.sourceTicketId ? (
-                                                <Link href={`/${locale}/tickets/${draft.sourceTicketId}`} target="_blank" className="font-mono text-[9px] text-primary hover:underline uppercase tracking-tighter">
+                                                <Link href={`/${locale}/tickets/${draft.sourceTicketId}`} target="_blank" className="font-mono text-[10px] text-primary hover:underline uppercase tracking-normal">
                                                     INC_{draft.sourceTicketId.substring(0, 6)}
                                                 </Link>
                                             ) : '-'}
                                         </TableCell>
                                         <TableCell className="align-top text-right py-3">
                                             <div className="flex justify-end gap-1.5">
-                                                <Button size="sm" variant="outline" onClick={() => handleApprove(draft.id)} className="h-6 text-[9px] font-bold uppercase border-emerald-900/50 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 transition-none">
+                                                <Button size="sm" variant="outline" onClick={() => handleApprove(draft.id)} className="h-6 text-[10px] font-bold uppercase border-emerald-900/50 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 transition-none">
                                                     {t('buttons.approve')}
                                                 </Button>
-                                                <Button size="sm" variant="outline" onClick={() => handleDismiss(draft.id)} className="h-6 text-[9px] font-bold uppercase border-red-900/50 text-red-500 bg-red-500/5 hover:bg-red-500/10 transition-none">
+                                                <Button size="sm" variant="outline" onClick={() => handleDismiss(draft.id)} className="h-6 text-[10px] font-bold uppercase border-red-900/50 text-red-500 bg-red-500/5 hover:bg-red-500/10 transition-none">
                                                     {t('buttons.delete')}
                                                 </Button>
                                             </div>

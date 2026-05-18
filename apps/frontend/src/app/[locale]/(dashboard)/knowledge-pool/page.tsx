@@ -11,7 +11,7 @@ import {
     ChevronDown, ChevronUp, ChevronsUpDown, PlayCircle, Trash2
 } from 'lucide-react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, CrawlCandidate, LearnNowCrawlFormat } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -61,6 +61,16 @@ export default function KnowledgePoolPage() {
     const [isPublishing, setIsPublishing] = useState(false);
     const [articleStatusFilter, setArticleStatusFilter] = useState<string>('');
 
+    // Crawler State
+    const [crawlCandidates, setCrawlCandidates] = useState<CrawlCandidate[]>([]);
+    const [loadingCrawlCandidates, setLoadingCrawlCandidates] = useState(false);
+    const [crawlSearch, setCrawlSearch] = useState('');
+    const [crawlStatusFilter, setCrawlStatusFilter] = useState('PENDING_REVIEW');
+    const [crawlFormats, setCrawlFormats] = useState<Set<LearnNowCrawlFormat>>(new Set(['knowledge_article', 'pdf']));
+    const [crawlDryRun, setCrawlDryRun] = useState<any>(null);
+    const [isDiscovering, setIsDiscovering] = useState(false);
+    const [importingCandidateIds, setImportingCandidateIds] = useState<Set<string>>(new Set());
+
     const { toast } = useToast();
 
     const [urlName, setUrlName] = useState('');
@@ -103,11 +113,16 @@ export default function KnowledgePoolPage() {
     useEffect(() => {
         if (activeTab === 'sources') loadSources();
         if (activeTab === 'articles') { setArticlePage(1); loadArticles(1); }
+        if (activeTab === 'crawler') loadCrawlCandidates();
     }, [activeTab]);
 
     useEffect(() => {
         if (activeTab === 'articles') { setArticlePage(1); loadArticles(1); }
     }, [articleStatusFilter]);
+
+    useEffect(() => {
+        if (activeTab === 'crawler') loadCrawlCandidates();
+    }, [crawlStatusFilter]);
 
     // ── Filtered + sorted sources ──────────────────────────────────────────
     const filteredSources = sources
@@ -289,6 +304,69 @@ export default function KnowledgePoolPage() {
         loadArticles(1);
     };
 
+    const loadCrawlCandidates = async () => {
+        setLoadingCrawlCandidates(true);
+        try {
+            const data = await api.pool.crawlCandidates(crawlStatusFilter || undefined);
+            setCrawlCandidates(data);
+        } catch (error: any) {
+            toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.fetch_error'), variant: 'destructive' });
+        } finally {
+            setLoadingCrawlCandidates(false);
+        }
+    };
+
+    const handleDiscoverLearnNow = async (dryRun: boolean) => {
+        setIsDiscovering(true);
+        try {
+            const result = await api.pool.discoverLearnNow({
+                search: crawlSearch,
+                formats: Array.from(crawlFormats),
+                maxPages: 1,
+                maxCandidates: 50,
+                dryRun,
+            });
+            setCrawlDryRun(result);
+            toast({
+                title: dryRun ? t('crawler.toasts.dry_run_done') : t('crawler.toasts.discover_done'),
+                description: dryRun
+                    ? t('crawler.toasts.dry_run_desc', { count: result.discovered ?? 0 })
+                    : t('crawler.toasts.discover_desc', { count: result.inserted ?? 0 }),
+            });
+            if (!dryRun) loadCrawlCandidates();
+        } catch (error: any) {
+            toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.discover_error'), variant: 'destructive' });
+        } finally {
+            setIsDiscovering(false);
+        }
+    };
+
+    const handleImportCandidate = async (id: string) => {
+        setImportingCandidateIds(prev => new Set(prev).add(id));
+        try {
+            const result = await api.pool.importCrawlCandidate(id);
+            toast({
+                title: result.skipped ? t('crawler.toasts.import_skipped') : t('crawler.toasts.import_started'),
+                description: result.reason || t('crawler.toasts.import_desc'),
+            });
+            loadCrawlCandidates();
+            loadSources();
+        } catch (error: any) {
+            toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.import_error'), variant: 'destructive' });
+        } finally {
+            setImportingCandidateIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+        }
+    };
+
+    const toggleCrawlFormat = (format: LearnNowCrawlFormat) => {
+        setCrawlFormats(prev => {
+            const next = new Set(prev);
+            if (next.has(format)) next.delete(format);
+            else next.add(format);
+            return next.size > 0 ? next : prev;
+        });
+    };
+
     const statusBadge = (status: string) => {
         const map: Record<string, string> = {
             ACTIVE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -317,6 +395,7 @@ export default function KnowledgePoolPage() {
                         <TabsList className="bg-muted/10 border border-border/40 h-9">
                             <TabsTrigger value="sources" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">{t('tabs.raw_sources')}</TabsTrigger>
                             <TabsTrigger value="articles" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">{t('tabs.seeded_content')}</TabsTrigger>
+                            <TabsTrigger value="crawler" className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest px-2 md:px-3">{t('tabs.crawler')}</TabsTrigger>
                         </TabsList>
                         <div className="flex items-center gap-2">
                             <Dialog open={isUrlModalOpen} onOpenChange={setIsUrlModalOpen}>
@@ -684,6 +763,166 @@ export default function KnowledgePoolPage() {
                                 </Button>
                             </div>
                         )}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="crawler" className="mt-0">
+                    <div className="space-y-4">
+                        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-3 pb-3 border-b border-border/30">
+                            <div className="space-y-1">
+                                <h2 className="text-[12px] font-bold uppercase tracking-widest">{t('crawler.title')}</h2>
+                                <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{t('crawler.subtitle')}</p>
+                            </div>
+                            <div className="flex flex-col md:flex-row gap-2 md:items-center">
+                                <div className="relative min-w-[260px]">
+                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+                                    <Input
+                                        value={crawlSearch}
+                                        onChange={e => setCrawlSearch(e.target.value)}
+                                        placeholder={t('crawler.search_placeholder')}
+                                        className="pl-8 h-8 text-[11px] bg-muted/10 border-border/50"
+                                    />
+                                </div>
+                                <div className="flex gap-1.5">
+                                    {[
+                                        { value: 'knowledge_article' as const, label: t('crawler.formats.article') },
+                                        { value: 'pdf' as const, label: t('crawler.formats.pdf') },
+                                    ].map(format => (
+                                        <button
+                                            key={format.value}
+                                            onClick={() => toggleCrawlFormat(format.value)}
+                                            className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest border rounded ${crawlFormats.has(format.value) ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60'}`}
+                                        >
+                                            {format.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <Button
+                                    onClick={() => handleDiscoverLearnNow(true)}
+                                    disabled={isDiscovering}
+                                    variant="outline"
+                                    className="h-8 text-[10px] uppercase font-bold tracking-widest gap-2"
+                                >
+                                    {isDiscovering ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
+                                    {t('crawler.buttons.dry_run')}
+                                </Button>
+                                <Button
+                                    onClick={() => handleDiscoverLearnNow(false)}
+                                    disabled={isDiscovering}
+                                    className="h-8 text-[10px] uppercase font-bold tracking-widest gap-2"
+                                >
+                                    {isDiscovering ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Globe className="h-3 w-3" />}
+                                    {t('crawler.buttons.save_candidates')}
+                                </Button>
+                            </div>
+                        </div>
+
+                        {crawlDryRun?.dryRun && (
+                            <div className="border border-primary/20 bg-primary/5 rounded-md p-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">{t('crawler.dry_run_title')}</span>
+                                    <Badge className="bg-primary/10 text-primary font-mono">{t('crawler.discovered', { count: crawlDryRun.discovered ?? 0 })}</Badge>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 max-h-[220px] overflow-auto">
+                                    {(crawlDryRun.candidates || []).slice(0, 12).map((candidate: any) => (
+                                        <div key={candidate.sourceUrl} className="border border-border/30 bg-background/40 p-2 rounded">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Badge variant="outline" className="text-[8px] rounded-none">{candidate.format}</Badge>
+                                                <span className="text-[8px] font-mono text-muted-foreground">{candidate.categorySlug}</span>
+                                            </div>
+                                            <p className="text-[11px] font-bold truncate">{candidate.title}</p>
+                                            <p className="text-[9px] font-mono text-muted-foreground/60 truncate">{candidate.sourceUrl}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                {['PENDING_REVIEW', 'IMPORTED', 'SKIPPED_DUPLICATE', 'FAILED', ''].map(status => (
+                                    <button
+                                        key={status || 'ALL'}
+                                        onClick={() => setCrawlStatusFilter(status)}
+                                        className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest border rounded ${crawlStatusFilter === status ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}
+                                    >
+                                        {status || t('filters.all')}
+                                    </button>
+                                ))}
+                            </div>
+                            <Button onClick={loadCrawlCandidates} variant="outline" className="h-8 text-[10px] uppercase font-bold tracking-widest gap-2">
+                                <RefreshCw className={`h-3.5 w-3.5 ${loadingCrawlCandidates ? 'animate-spin' : ''}`} />
+                                {t('buttons.refresh')}
+                            </Button>
+                        </div>
+
+                        <div className="border border-border/50 rounded-md overflow-hidden">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/10 hover:bg-muted/10 border-b border-border/40">
+                                        <TableHead className="text-[9px] font-bold uppercase tracking-widest">{t('crawler.table.title')}</TableHead>
+                                        <TableHead className="text-[9px] font-bold uppercase tracking-widest w-28">{t('crawler.table.format')}</TableHead>
+                                        <TableHead className="text-[9px] font-bold uppercase tracking-widest w-40">{t('crawler.table.category')}</TableHead>
+                                        <TableHead className="text-[9px] font-bold uppercase tracking-widest w-36">{t('crawler.table.status')}</TableHead>
+                                        <TableHead className="text-[9px] font-bold uppercase tracking-widest w-32 text-right">{t('table.action')}</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {loadingCrawlCandidates ? (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center py-12">
+                                                <RefreshCw className="h-5 w-5 animate-spin mx-auto text-primary" />
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : crawlCandidates.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                                                <Globe className="h-8 w-8 mx-auto mb-3 opacity-20" />
+                                                <p className="text-[10px] uppercase font-mono tracking-widest">{t('crawler.no_candidates')}</p>
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : crawlCandidates.map(candidate => (
+                                        <TableRow key={candidate.id} className="border-b border-border/20 hover:bg-muted/5">
+                                            <TableCell className="py-2.5">
+                                                <p className="font-bold text-[12px] leading-tight truncate max-w-[420px]">{candidate.title}</p>
+                                                <a
+                                                    href={candidate.sourceUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-[9px] font-mono text-muted-foreground/60 hover:text-primary truncate max-w-[420px] block"
+                                                >
+                                                    {candidate.sourceUrl}
+                                                </a>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="text-[9px] font-mono rounded-none px-1.5">
+                                                    {candidate.format}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="text-[10px] font-mono text-muted-foreground">{candidate.categorySlug || 'uncategorized'}</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="text-[9px] font-mono rounded-none px-1.5">
+                                                    {candidate.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    onClick={() => handleImportCandidate(candidate.id)}
+                                                    disabled={candidate.status === 'IMPORTED' || importingCandidateIds.has(candidate.id)}
+                                                    size="sm"
+                                                    className="h-7 text-[10px] uppercase font-bold tracking-widest gap-1.5"
+                                                >
+                                                    {importingCandidateIds.has(candidate.id) ? <RefreshCw className="h-3 w-3 animate-spin" /> : <ArrowUpCircle className="h-3 w-3" />}
+                                                    {t('crawler.buttons.import')}
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </div>
                 </TabsContent>
             </Tabs>

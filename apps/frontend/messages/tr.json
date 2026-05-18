@@ -2,7 +2,7 @@
   "home": {
     "title": "Aluplan Destek Sistemi",
     "cta_login": "Giriş Yap",
-    "cta_register": "Kayıt Ol",
+    "cta_register": "Müşteri Erişimi Al",
     "footer_copy": "© 2025 Aluplan A.Ş. Tüm hakları saklıdır.",
     "footer_status": "DURUM: AKTİF",
     "footer_encryption": "ŞİFRELEME: AES-256",
@@ -73,16 +73,17 @@
     "login_title": "ERİŞİM KAPISI",
     "access_gate_desc": "Telemetri okuma/yazma ve destek modülü erişimi için kimlik doğrulaması gereklidir.",
     "login_tab": "GİRİŞ YAP",
-    "request_tab": "ERİŞİM_TALEBİ",
+    "request_tab": "MÜŞTERİ_ERİŞİMİ",
     "email_label": "KİMLİK_BELİRTECİ [EPÖSTA]",
     "email_placeholder": "operator@aluplan.com",
     "password_label": "DOĞRULAMA_ANAHTARI [ŞİFRE]",
     "password_placeholder": "••••••••",
-    "recovery_link": "ANAHTAR_KURTAR?",
+    "recovery_link": "ŞİFREMİ UNUTTUM",
     "submit_button": "OTURUMU BAŞLAT",
     "submitting": "BAĞLANTI_KURULUYOR...",
     "no_account": "Hesabınız yok mu?",
-    "register_link": "Kayıt Ol",
+    "forgot_password_link": "Şifremi Unuttum",
+    "register_link": "Müşteri Erişimi Al",
     "security_tagline": "Bağlantılar Aluplan Sec-Net üzerinden izlenmektedir",
     "error_heading": "YETKİ REDDİDİ",
     "error_default": "AUTH_FAILURE: Kimlik bilgileri güvenlik düğümü tarafından reddedildi",
@@ -92,8 +93,8 @@
       "success_desc": "Giriş detaylarınız e-posta adresinize gönderildi.",
       "success_hint": "Lütfen e-postanızı kontrol edin ve sisteme giriş yapın.",
       "back_to_login": "Giriş Ekranına Dön",
-      "title": "Erişim Talebi İste",
-      "subtitle": "Aluplan destek portalı erişimi için talep oluşturun",
+      "title": "Müşteri Erişimi Al",
+      "subtitle": "CRM doğrulamasıyla destek portalı erişimi alın veya mevcut hesabınız için şifre sıfırlayın.",
       "email_label": "İş E-postanız",
       "email_placeholder": "ornek@firma.com",
       "continue_btn": "Devam Et",
@@ -103,10 +104,10 @@
       "inactive_title": "Doğrulama Bekleniyor",
       "inactive_desc": "Bu e-posta adresiyle bir kayıt zaten yapılmış ancak henüz e-posta doğrulaması tamamlanmamış.",
       "inactive_btn": "Doğrulama E-postasını Tekrar Gönder",
-      "reset_sent_title": "Şifreniz Gönderildi",
-      "reset_sent_desc": "Yeni giriş şifreniz güvenlik amacıyla e-posta adresinize gönderildi. Lütfen gelen kutunuzu (ve gerekiyorsa spam klasörünü) kontrol edin.",
+      "reset_sent_title": "Sıfırlama Bağlantısı Gönderildi",
+      "reset_sent_desc": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Lütfen gelen kutunuzu ve gerekiyorsa spam klasörünü kontrol edin.",
       "recognized_title": "Sizi Tanıyoruz!",
-      "recognized_desc": "Aluplan sisteminde firmanız ve size ait bir profil zaten bulunuyor. <br /><br />Giriş yapabilir veya doğrudan yeni bir şifre talep edip e-posta ile alabilirsiniz.",
+      "recognized_desc": "Aluplan sisteminde firmanız ve size ait bir profil zaten bulunuyor. <br /><br />Giriş yapabilir veya şifre sıfırlama bağlantısı talep edebilirsiniz.",
       "login_btn": "Giriş Yap",
       "reset_btn": "Şifremi Sıfırla",
       "different_email": "Farklı bir e-posta dene",
@@ -2225,6 +2226,7 @@
       "all_synced": "TÜM_PATERNLER_EŞİTLENDİ",
       "all_synced_desc": "Yeni bilgi örnekleri bulmak için çıkarma döngüsünü manuel olarak çalıştırın.",
       "add_to_kb": "BİLGİ_BANKASINA_EKLE",
+      "dismiss": "REDDET",
       "refresh": "YENİLE",
       "toasts": {
         "pipeline_started": "Yapay Zeka Hattı Başlatıldı",
@@ -2647,7 +2649,8 @@
       "placeholder": "Teknik Dokümantasyon",
       "tabs": {
         "raw_sources": "HAM KAYNAKLAR",
-        "seeded_content": "ÜRETİLMİŞ İÇERİK"
+        "seeded_content": "ÜRETİLMİŞ İÇERİK",
+        "crawler": "CRAWLER ADAYLARI"
       },
       "buttons": {
         "add_url": "URL EKLE",
@@ -2702,6 +2705,41 @@
         "no_records": "KAYIT BULUNAMADI",
         "author": "YAZAR",
         "under_review": "İNCELEMEDE"
+      },
+      "crawler": {
+        "title": "LEARN NOW CRAWLER ADAYLARI",
+        "subtitle": "Resmi Allplan Learn Now açık içeriklerini kontrollü aday havuzuna al.",
+        "search_placeholder": "Arama terimi veya boş bırak",
+        "dry_run_title": "DRY-RUN ÖNİZLEME",
+        "discovered": "{count} ADAY",
+        "no_candidates": "Crawler adayı bulunamadı",
+        "formats": {
+          "article": "MAKALE",
+          "pdf": "PDF"
+        },
+        "buttons": {
+          "dry_run": "ÖNİZLE",
+          "save_candidates": "ADAYLARI KAYDET",
+          "import": "İÇE AKTAR"
+        },
+        "table": {
+          "title": "BAŞLIK",
+          "format": "FORMAT",
+          "category": "KATEGORİ",
+          "status": "DURUM"
+        },
+        "toasts": {
+          "fetch_error": "Crawler adayları yüklenemedi",
+          "dry_run_done": "Önizleme tamamlandı",
+          "dry_run_desc": "{count} aday bulundu",
+          "discover_done": "Aday keşfi tamamlandı",
+          "discover_desc": "{count} yeni aday kaydedildi",
+          "discover_error": "Crawler keşfi başarısız",
+          "import_started": "İçe aktarma başlatıldı",
+          "import_desc": "Aday mevcut sync kuyruğuna alındı",
+          "import_skipped": "Aday atlandı",
+          "import_error": "Aday içe aktarılamadı"
+        }
       },
       "meta": {
         "locale": "tr-TR",

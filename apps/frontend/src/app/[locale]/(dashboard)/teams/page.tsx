@@ -74,7 +74,7 @@ export default function TeamsPage() {
                     <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                         {t('labels.command_center')}
                     </h1>
-                    <p className="text-muted-foreground text-sm flex items-center gap-2">
+                    <p className="text-foreground/70 text-sm flex items-center gap-2">
                         <Building2 className="h-4 w-4" />
                         {t('labels.organization')}
                     </p>
@@ -140,7 +140,7 @@ export default function TeamsPage() {
                                         <div className="p-2 rounded-xl bg-primary/10 text-primary">
                                             <ShieldCheck className="h-5 w-5" />
                                         </div>
-                                        <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider opacity-70">
+                                        <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                                             {dept.slug}
                                         </Badge>
                                     </div>
@@ -148,19 +148,19 @@ export default function TeamsPage() {
                                         {dept.name}
                                         <ChevronRight className="h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                                     </CardTitle>
-                                    <CardDescription className="line-clamp-2 min-h-[40px]">
+                                    <CardDescription className="line-clamp-2 min-h-[40px] text-foreground/75">
                                         {dept.description || t('no_description')}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="flex gap-4">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">{t('tabs.teams')}</span>
+                                            <span className="text-[10px] text-foreground/65 uppercase font-bold tracking-tight">{t('tabs.teams')}</span>
                                             <span className="text-xl font-bold">{dept._count?.teams || 0}</span>
                                         </div>
                                         <div className="w-px h-10 bg-border/50" />
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">{t('tabs.sla_policies')}</span>
+                                            <span className="text-[10px] text-foreground/65 uppercase font-bold tracking-tight">{t('tabs.sla_policies')}</span>
                                             <span className="text-xl font-bold">{dept.slaPolicies?.length || 0}</span>
                                         </div>
                                     </div>
@@ -173,7 +173,7 @@ export default function TeamsPage() {
                                     </div>
                                 </CardContent>
                                 <CardFooter className="bg-muted/30 py-3 flex justify-between border-t border-border/40">
-                                    <span className="text-xs text-muted-foreground font-medium italic">{t('labels.recent_activity')}</span>
+                                    <span className="text-xs text-foreground/65 font-medium">{t('labels.recent_activity')}</span>
                                     <Button variant="ghost" size="sm" className="h-8 text-xs font-bold hover:bg-background shadow-none px-3" asChild>
                                         <Link href={`/teams/departments/${dept.id}`}>{t('actions.details')}</Link>
                                     </Button>
@@ -201,7 +201,7 @@ export default function TeamsPage() {
                                     </div>
                                     <CardTitle className="text-lg flex justify-between items-center">
                                         {team.name}
-                                        <span className="text-muted-foreground text-sm font-normal">#{team.members?.length || 0} {t('tabs.agents')}</span>
+                                        <span className="text-foreground/70 text-sm font-normal">#{team.members?.length || 0} {t('tabs.agents')}</span>
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="pb-4">
@@ -211,7 +211,7 @@ export default function TeamsPage() {
                                                 {m.user.avatarUrl ? (
                                                     <img src={m.user.avatarUrl} alt={`${m.user.fullName} ${t('profile_pic_alt')}`} />
                                                 ) : (
-                                                    <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground uppercase">
+                                                    <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-foreground/70 uppercase">
                                                         {m.user.fullName.substring(0, 2)}
                                                     </div>
                                                 )}
@@ -224,7 +224,7 @@ export default function TeamsPage() {
                                         )}
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-muted-foreground flex items-center gap-1">
+                                        <span className="text-foreground/70 flex items-center gap-1">
                                             <ShieldCheck className="h-3.5 w-3.5" /> {t('labels.strategy')}
                                         </span>
                                         <span className="font-bold text-blue-600">{team.assignmentStrategy}</span>
@@ -246,11 +246,11 @@ export default function TeamsPage() {
                         <table className="w-full text-left text-sm">
                             <thead className="bg-muted/50 border-b border-border/50">
                                 <tr>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">{t('labels.agent')}</th>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">{t('labels.status')}</th>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">{t('labels.role')}</th>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground text-center">{t('labels.active_ticket_load')}</th>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">{t('labels.actions')}</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-foreground/65">{t('labels.agent')}</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-foreground/65">{t('labels.status')}</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-foreground/65">{t('labels.role')}</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-foreground/65 text-center">{t('labels.active_ticket_load')}</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-foreground/65">{t('labels.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border/30">
@@ -262,12 +262,12 @@ export default function TeamsPage() {
                                                     {m.user.avatarUrl ? (
                                                         <img src={m.user.avatarUrl} className="rounded-xl" alt={`${m.user.fullName} ${t('profile_pic_alt')}`} />
                                                     ) : (
-                                                        <UserCircle2 className="h-5 w-5 text-muted-foreground" />
+                                                        <UserCircle2 className="h-5 w-5 text-foreground/65" />
                                                     )}
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="font-bold text-foreground/90 group-hover:text-primary transition-colors">{m.user.fullName}</span>
-                                                    <span className="text-[11px] text-muted-foreground">{m.user.email}</span>
+                                                    <span className="text-xs text-foreground/70">{m.user.email}</span>
                                                 </div>
                                             </div>
                                         </td>
@@ -282,7 +282,7 @@ export default function TeamsPage() {
                                                 <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                                                     <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, ((m.user._count?.ticketsAssigned || 0) / 5) * 100)}%` }} />
                                                 </div>
-                                                <span className="text-[11px] font-bold text-muted-foreground">{m.user._count?.ticketsAssigned || 0} / 5</span>
+                                                <span className="text-[11px] font-bold text-foreground/70">{m.user._count?.ticketsAssigned || 0} / 5</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">

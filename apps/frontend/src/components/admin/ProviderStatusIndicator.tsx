@@ -19,7 +19,7 @@ type HealthStatusResponse = {
 };
 
 export function ProviderStatusIndicator() {
-    const t = useTranslations('admin.ai_health');
+    const t = useTranslations('admin.ai_health.dashboard');
     const [health, setHealth] = useState<HealthStatusResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [lastRefresh, setLastRefresh] = useState<Date | null>(null);

@@ -932,6 +932,39 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             expect(result.answer).toMatch(/dışarıda çalışma/i);
             expect(result.answer).not.toContain('Visual scripting');
         });
+
+        it('overrides no-knowledge LLM output when reliable context was retrieved', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue(null);
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'license-access',
+                        sourceType: 'DOCUMENT',
+                        title: 'Allplan License Server Access Rights',
+                        category: 'License & Activation',
+                        content: 'CodeMeter WebAdmin lisans sunucusunda kullanıcı, bilgisayar veya IP bazlı erişim kuralları tanımlanabilir.',
+                        similarity: 0.86,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.86, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue({
+                response: 'Bu konu mevcut bilgi kaynağında yer almıyor. Lütfen destek talebi oluşturunuz.',
+            });
+
+            const result = await service.query({
+                userQuery: 'Lisans sunucusunda erişim haklarını kullanıcı bazlı nasıl ayarlarım?',
+                wait: true,
+                language: 'tr',
+                userId: null,
+            });
+
+            expect(result.answer).toContain('Lisans sunucusunda kullanıcı bazlı erişim');
+            expect(result.answer).toContain('CodeMeter');
+            expect(result.answer).not.toContain('Bu konu mevcut bilgi kaynağında yer almıyor');
+            expect(result.answerMode).toBe('FALLBACK');
+        });
     });
 
     describe('submitTelemetry', () => {

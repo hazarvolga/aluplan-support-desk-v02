@@ -50,7 +50,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <p
         ref={ref}
-        className={cn("text-[11px] text-muted-foreground/70 tracking-tight", className)}
+        className={cn("text-xs leading-relaxed text-muted-foreground", className)}
         {...props}
     />
 ))

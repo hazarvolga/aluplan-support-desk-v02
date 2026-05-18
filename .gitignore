@@ -117,6 +117,7 @@ obj/
 
 # Archives / Backups
 backups/
+*.zip
 *.sql
 !packages/database/prisma/migrations/**/*.sql
 *.log
@@ -130,6 +131,8 @@ backend_*.txt
 frontend_*.txt
 live-*.txt
 security_scan_results.json
+dns.txt
+ssh.md
 
 # Temporary Dev Scripts
 scripts/.harvest_cache/

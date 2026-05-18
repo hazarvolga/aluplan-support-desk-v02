@@ -2,7 +2,7 @@
   "home": {
     "title": "Aluplan Support-System",
     "cta_login": "Anmelden",
-    "cta_register": "Registrieren",
+    "cta_register": "Kundenzugang anfordern",
     "footer_copy": "© 2025 Aluplan A.Ş. Alle Rechte vorbehalten.",
     "footer_status": "STATUS: AKTIV",
     "footer_encryption": "VERSCHLÜSSELUNG: AES-256",
@@ -73,16 +73,17 @@
     "login_title": "ZUGANGS-GATE",
     "access_gate_desc": "Authentifizierung für Telemetrie-Lese-/Schreibzugriff und Support-Modulzugriff erforderlich.",
     "login_tab": "ANMELDEN",
-    "request_tab": "ZUGANG_ANFORDERN",
+    "request_tab": "KUNDENZUGANG",
     "email_label": "IDENTITY_TOKEN [E-MAIL]",
     "email_placeholder": "operator@aluplan.com",
     "password_label": "VERIFICATION_KEY [PASSWORT]",
     "password_placeholder": "••••••••",
-    "recovery_link": "SCHLÜSSEL_WIEDERHERSTELLEN?",
+    "recovery_link": "PASSWORT VERGESSEN",
     "submit_button": "SITZUNG STARTEN",
     "submitting": "VERBINDUNG_WIRD_HERGESTELLT...",
     "no_account": "Sie haben noch kein Konto?",
-    "register_link": "Registrieren",
+    "forgot_password_link": "Passwort vergessen",
+    "register_link": "Kundenzugang anfordern",
     "security_tagline": "Verbindungen werden über das Aluplan Sec-Net überwacht",
     "error_heading": "AUTORISIERUNG VERWEIGERT",
     "error_default": "AUTH_FAILURE: Anmeldedaten vom Sicherheitsknoten abgelehnt",
@@ -92,8 +93,8 @@
       "success_desc": "Ihre Anmeldedaten wurden an Ihre E-Mail-Adresse gesendet.",
       "success_hint": "Bitte überprüfen Sie Ihre E-Mail, um sich in das System einzuloggen.",
       "back_to_login": "Zurück zur Anmeldung",
-      "title": "Zugang anfordern",
-      "subtitle": "Stellen Sie eine Zugangsanforderung für das Aluplan Support-Portal",
+      "title": "Kundenzugang anfordern",
+      "subtitle": "Nutzen Sie die CRM-Prüfung für den Support-Portal-Zugang oder setzen Sie das Passwort eines bestehenden Kontos zurück.",
       "email_label": "Geschäftliche E-Mail",
       "email_placeholder": "beispiel@firma.de",
       "continue_btn": "Weiter",
@@ -103,10 +104,10 @@
       "inactive_title": "Verifizierung Ausstehend",
       "inactive_desc": "Mit dieser E-Mail-Adresse wurde bereits eine Registrierung vorgenommen, aber die E-Mail-Verifizierung wurde noch nicht abgeschlossen.",
       "inactive_btn": "Verifizierungs-E-Mail Erneut Senden",
-      "reset_sent_title": "Passwort Gesendet",
-      "reset_sent_desc": "Ihr neues Anmeldepasswort wurde aus Sicherheitsgründen an Ihre E-Mail-Adresse gesendet. Bitte überprüfen Sie Ihren Posteingang (und falls nötig, den Spam-Ordner).",
+      "reset_sent_title": "Reset-Link gesendet",
+      "reset_sent_desc": "Ein Link zum Zurücksetzen des Passworts wurde an Ihre E-Mail-Adresse gesendet. Bitte prüfen Sie Ihren Posteingang und bei Bedarf den Spam-Ordner.",
       "recognized_title": "Wir kennen Sie bereits!",
-      "recognized_desc": "Wir haben bereits ein Profil für Sie und Ihr Unternehmen im Aluplan-System. <br /><br />Sie können sich anmelden oder direkt ein neues Passwort anfordern, das per E-Mail verschickt wird.",
+      "recognized_desc": "Wir haben bereits ein Profil für Sie und Ihr Unternehmen im Aluplan-System. <br /><br />Sie können sich anmelden oder einen Link zum Zurücksetzen des Passworts anfordern.",
       "login_btn": "Anmelden",
       "reset_btn": "Passwort zurücksetzen",
       "different_email": "Eine andere E-Mail ausprobieren",
@@ -2225,6 +2226,7 @@
       "all_synced": "ALLE_MUSTER_SYNCHRONISIERT",
       "all_synced_desc": "Führen Sie den Extraktionszyklus manuell aus, um neue Wissensbeispiele zu finden.",
       "add_to_kb": "IN KB AUFNEHMEN",
+      "dismiss": "VERWERFEN",
       "refresh": "AKTUALISIEREN",
       "toasts": {
         "pipeline_started": "KI-Pipeline gestartet",
@@ -2647,7 +2649,8 @@
       "placeholder": "Technische Dokumentation",
       "tabs": {
         "raw_sources": "ROHQUELLEN",
-        "seeded_content": "GESÄTE_INHALTE"
+        "seeded_content": "GESÄTE_INHALTE",
+        "crawler": "CRAWLER_KANDIDATEN"
       },
       "buttons": {
         "add_url": "URL_HINZUFÜGEN",
@@ -2702,6 +2705,41 @@
         "no_records": "KEINE_DATENSÄTZE_GEFUNDEN",
         "author": "AUTOR",
         "under_review": "IN_ÜBERPRÜFUNG"
+      },
+      "crawler": {
+        "title": "LEARN NOW CRAWLER-KANDIDATEN",
+        "subtitle": "Öffentliche Allplan Learn Now Inhalte vor dem Knowledge-Pool-Import prüfen.",
+        "search_placeholder": "Suchbegriff oder leer lassen",
+        "dry_run_title": "DRY-RUN VORSCHAU",
+        "discovered": "{count} KANDIDATEN",
+        "no_candidates": "Keine Crawler-Kandidaten gefunden",
+        "formats": {
+          "article": "ARTIKEL",
+          "pdf": "PDF"
+        },
+        "buttons": {
+          "dry_run": "VORSCHAU",
+          "save_candidates": "KANDIDATEN SPEICHERN",
+          "import": "IMPORT"
+        },
+        "table": {
+          "title": "TITEL",
+          "format": "FORMAT",
+          "category": "KATEGORIE",
+          "status": "STATUS"
+        },
+        "toasts": {
+          "fetch_error": "Crawler-Kandidaten konnten nicht geladen werden",
+          "dry_run_done": "Vorschau abgeschlossen",
+          "dry_run_desc": "{count} Kandidaten gefunden",
+          "discover_done": "Suche abgeschlossen",
+          "discover_desc": "{count} neue Kandidaten gespeichert",
+          "discover_error": "Crawler-Suche fehlgeschlagen",
+          "import_started": "Import gestartet",
+          "import_desc": "Kandidat wurde in die bestehende Sync-Pipeline gestellt",
+          "import_skipped": "Kandidat übersprungen",
+          "import_error": "Kandidat konnte nicht importiert werden"
+        }
       },
       "meta": {
         "locale": "de-DE",

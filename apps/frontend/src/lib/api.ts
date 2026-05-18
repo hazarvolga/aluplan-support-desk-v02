@@ -40,6 +40,30 @@ export type KnowledgePoolBulkUploadResult = {
     total: number;
 };
 
+export type LearnNowCrawlFormat = 'knowledge_article' | 'pdf';
+
+export type CrawlCandidate = {
+    id: string;
+    source: string;
+    sourceUrl: string;
+    title: string;
+    format: 'KNOWLEDGE_ARTICLE' | 'PDF';
+    status: string;
+    language?: string | null;
+    categorySlug?: string | null;
+    crawlFilter?: string | null;
+    rejectionReason?: string | null;
+    metadata?: Record<string, unknown> | null;
+};
+
+export type DiscoverLearnNowPayload = {
+    search?: string;
+    formats?: LearnNowCrawlFormat[];
+    maxPages?: number;
+    maxCandidates?: number;
+    dryRun?: boolean;
+};
+
 const processQueue = (error: Error | null, token: string | null = null) => {
     failedQueue.forEach(prom => {
         if (error) {
@@ -288,6 +312,17 @@ export const api = {
         sync: (id: string) => request<any>(`/knowledge-pool/sources/${id}/sync`, { method: 'POST' }),
         logs: (id: string) => request<any[]>(`/knowledge-pool/sources/${id}/logs`),
         syncDataset: () => request<any>('/knowledge-pool/sync-dataset', { method: 'POST' }),
+        discoverLearnNow: (body: DiscoverLearnNowPayload) =>
+            request<any>('/knowledge-pool/crawl/learnnow/discover', {
+                method: 'POST',
+                body: JSON.stringify(body),
+            }),
+        crawlCandidates: (status?: string) => {
+            const q = status ? `?${new URLSearchParams({ status }).toString()}` : '';
+            return request<CrawlCandidate[]>(`/knowledge-pool/crawl/candidates${q}`);
+        },
+        importCrawlCandidate: (id: string) =>
+            request<any>(`/knowledge-pool/crawl/candidates/${id}/import`, { method: 'POST' }),
         delete: (id: string) => request<{ success: boolean; message: string }>(`/knowledge-pool/sources/${id}`, { method: 'DELETE' }),
         bulkDelete: (ids: string[]) => request<{ success: boolean; count: number }>('/knowledge-pool/sources/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
     },

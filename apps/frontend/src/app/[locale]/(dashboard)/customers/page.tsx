@@ -793,8 +793,8 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                                             );
                                                         case 'email':
                                                             return (
-                                                                <TableCell key={col.key} className="text-white/60 font-mono text-[11px]">
-                                                                    <div className="flex items-center gap-2">
+                                                                <TableCell key={col.key} className="text-white/80 font-mono text-xs">
+                                                                    <div className="flex items-center gap-2 leading-relaxed">
                                                                         {c.email}
                                                                         {validationResults[c.email] && (
                                                                             <div title={`${t('labels.score')}: ${validationResults[c.email].score}`}>
