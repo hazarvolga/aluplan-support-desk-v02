@@ -85,6 +85,30 @@ describe('EmailService', () => {
             );
         });
 
+        it('skips reserved test recipients in production', async () => {
+            const previousNodeEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = 'production';
+
+            try {
+                await service.enqueueEmail({
+                    ...basePayload,
+                    to: 'admin@example.com',
+                });
+
+                expect(mockQueue.add).not.toHaveBeenCalled();
+                expect(mockPrisma.emailLog.create).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        data: expect.objectContaining({
+                            recipientEmail: 'admin@example.com',
+                            status: 'SKIPPED_INVALID_RECIPIENT',
+                        }),
+                    }),
+                );
+            } finally {
+                process.env.NODE_ENV = previousNodeEnv;
+            }
+        });
+
         it('uses default priority 3 when payload.priority is undefined', async () => {
             await service.enqueueEmail({ ...basePayload, priority: undefined });
             const opts = (mockQueue.add as jest.Mock).mock.calls[0][2];

@@ -20,6 +20,12 @@ export class DnsValidator {
             }
 
             if (records && records.length > 0) {
+                const hasNullMx = records.some(record => record.exchange === '.');
+                if (hasNullMx) {
+                    this.logger.debug(`Domain ${domain} publishes a Null MX record`);
+                    return { isValid: false, mxRecords: [] };
+                }
+
                 // Return sorted by priority
                 const sorted = records
                     .sort((a, b) => a.priority - b.priority)

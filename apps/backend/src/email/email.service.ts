@@ -9,6 +9,7 @@ import { GmailProvider } from './gmail.provider';
 import { EmailProvider } from './interfaces/email-provider.interface';
 import { EmailPayload } from './email.templates';
 import { ErrorLoggerService } from '../common/services/error-logger.service';
+import { getReservedEmailRecipient } from './email-recipient-guard.util';
 
 @Injectable()
 export class EmailService implements OnModuleInit {
@@ -69,6 +70,24 @@ export class EmailService implements OnModuleInit {
      */
     async enqueueEmail(payload: EmailPayload): Promise<void> {
         try {
+            const blockedRecipient = process.env.NODE_ENV === 'production'
+                ? getReservedEmailRecipient(payload.to)
+                : null;
+            if (blockedRecipient) {
+                this.logger.warn(`🚫 Skipping email to reserved/test recipient: ${blockedRecipient}`);
+                await this.prisma.emailLog.create({
+                    data: {
+                        recipientEmail: payload.to,
+                        subject: payload.subject,
+                        templateName: payload.template,
+                        provider: await this.getCurrentMailProviderForLog(),
+                        status: 'SKIPPED_INVALID_RECIPIENT',
+                        error: `Reserved/test recipient blocked before enqueue: ${blockedRecipient}`,
+                    }
+                });
+                return;
+            }
+
             // 1. Map template to Email Type (Category)
             const emailType = this.mapTemplateToType(payload.template);
 

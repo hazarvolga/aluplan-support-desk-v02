@@ -203,6 +203,23 @@ Maintenance rule:
 - `pnpm --filter @aluplan/backend test -- email-inbound.service.spec.ts omni-channel.service.spec.ts` passed.
 - `pnpm --filter @aluplan/backend typecheck` passed.
 
+## Follow-up - 2026-05-19 Email Deliverability Guardrails
+
+### Findings
+- Live DNS has MX `mail.allplan.net.tr` and SPF `v=spf1 mx ip4:167.86.84.107 ~all`.
+- DMARC exists as `v=DMARC1; p=none; rua=mailto:destek@allplan.net.tr; adkim=s; aspf=s`.
+- Reverse DNS for `167.86.84.107` resolves to `vmi3049865.contaboserver.net`, not `mail.allplan.net.tr`.
+- No public DKIM record was found for the common selectors checked, while docker-mailserver has DKIM milter configuration internally.
+
+### Fix applied
+- Production email enqueue now skips reserved/test recipients such as `admin@example.com`, `example.org`, `.test`, `.invalid`, and `localhost` before they reach the queue.
+- Skipped invalid recipients are logged with `SKIPPED_INVALID_RECIPIENT`.
+- Email DNS validation now treats Null MX (`.`) as invalid, matching domains such as `example.com` that explicitly do not accept mail.
+
+### Verification
+- `pnpm --filter @aluplan/backend test -- email.service.spec.ts email-validator.service.spec.ts email-inbound.service.spec.ts omni-channel.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+
 ### Verification
 - Backend must-pass regression set passed:
   - `pnpm --filter @aluplan/backend test -- auth.controller.spec.ts tickets.controller.spec.ts notifications.gateway.spec.ts ai-query.service.spec.ts`
