@@ -869,7 +869,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-5xl max-h-[88vh] p-0 overflow-hidden border-cyan-900/50 bg-background">
-                            <DialogHeader className="bg-cyan-950/20 border-cyan-900/30 px-5 py-4">
+                            <DialogHeader className="bg-cyan-950/20 border-cyan-900/30 px-6 py-5">
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="space-y-1.5">
                                         <DialogTitle className="flex items-center gap-2 text-cyan-300">
@@ -895,7 +895,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     )}
                                 </div>
                             </DialogHeader>
-                            <ScrollArea className="max-h-[72vh] px-5 pb-5">
+                            <ScrollArea className="max-h-[72vh] px-6 py-5">
                                 <div className="space-y-5">
                                     {typeof ticket.hotinfoSnapshot === 'object' && ticket.hotinfoSnapshot !== null ? (
                                         <HotinfoGrid data={ticket.hotinfoSnapshot} />

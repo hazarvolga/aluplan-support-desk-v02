@@ -2,6 +2,7 @@ const RESERVED_EXACT_DOMAINS = new Set([
     'example.com',
     'example.net',
     'example.org',
+    'internal.aluplan',
     'invalid',
     'localhost',
     'test',
@@ -14,6 +15,12 @@ const RESERVED_DOMAIN_SUFFIXES = [
     '.test',
 ];
 
+const INTERNAL_PLACEHOLDER_EMAIL_REGEX = /^no-email-[^@\s]+@internal\.aluplan$/i;
+
+export function isInternalPlaceholderEmail(email: string | null | undefined): boolean {
+    return typeof email === 'string' && INTERNAL_PLACEHOLDER_EMAIL_REGEX.test(email.trim());
+}
+
 export function splitEmailRecipients(recipients: string): string[] {
     return recipients
         .split(/[;,]/)
@@ -23,6 +30,8 @@ export function splitEmailRecipients(recipients: string): string[] {
 
 export function getReservedEmailRecipient(recipients: string): string | null {
     for (const recipient of splitEmailRecipients(recipients)) {
+        if (isInternalPlaceholderEmail(recipient)) return recipient;
+
         const domain = recipient.split('@')[1]?.toLowerCase();
         if (!domain) return recipient;
 

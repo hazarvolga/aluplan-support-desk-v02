@@ -707,7 +707,8 @@
       "download_hxl": "Download .HXL",
       "general": "General",
       "accounts": "Accounts",
-      "record_count": "{count} Records"
+      "record_count": "{count} Records",
+      "email_missing": "No email in CRM"
     },
     "table": {
       "loading": "Retrieving data from database",

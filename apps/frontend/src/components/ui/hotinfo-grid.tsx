@@ -117,8 +117,8 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
         ? "text-[10px] text-slate-300 dark:text-cyan-300/90 block mt-0.5"
         : "flex flex-wrap gap-x-4 gap-y-1.5 mt-2";
 
-    const detailTextClass = "text-[11px] leading-5 text-slate-300 dark:text-cyan-200/90";
-    const detailLabelClass = "font-semibold text-slate-400 dark:text-cyan-400/80";
+    const detailTextClass = "text-[12px] leading-6 text-slate-200 dark:text-cyan-100/90";
+    const detailLabelClass = "font-semibold text-slate-400 dark:text-cyan-300/80";
 
     const SectionHeader = ({ id, label, icon: Icon }: any) => (
         <button 
@@ -196,20 +196,20 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
                 <div className={`${itemWrapperClass} ${!isCompact ? 'md:col-span-3' : ''} ${isCompact ? 'flex-col items-start gap-1 py-2' : ''}`}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
                         {(graphicsCards.length > 0 ? graphicsCards : [{ name: '-' }]).map((card: any, index: number) => (
-                            <div key={`${card.name}-${index}`} className="border border-cyan-900/25 bg-cyan-950/10 p-3">
+                            <div key={`${card.name}-${index}`} className="border border-cyan-900/25 bg-cyan-950/10 p-4">
                                 <div className={`${labelClass} ${isCompact ? 'w-full mb-1' : ''}`}>
                                     <Monitor size={12} className="hidden md:inline mr-1" />
                                     {index + 1} {t('gpu')}
                                 </div>
                                 <div className={`${valContainerClass} ${isCompact ? 'text-left w-full' : ''}`}>
                                     <div className={`${valClass} whitespace-pre-wrap`}>{card.name || '-'}</div>
-                                    <div className={`${subValClass} ${isCompact ? 'flex flex-row flex-wrap gap-2' : ''}`}>
+                                    <div className={`${isCompact ? 'flex flex-row flex-wrap gap-2' : 'grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1.5 mt-3'}`}>
                                         <span className={detailTextClass}><span className={detailLabelClass}>{t('vram')}:</span> {card.vram || '-'}</span>
                                         <span className={detailTextClass}><span className={detailLabelClass}>{t('gpu_ram')}:</span> {card.ram || '-'}</span>
-                                        <span className={detailTextClass}><span className={detailLabelClass}>{t('resolution')}:</span> {card.resolution || '-'}</span>
+                                        <span className={`${detailTextClass} sm:col-span-2`}><span className={detailLabelClass}>{t('resolution')}:</span> {card.resolution || '-'}</span>
                                         <span className={detailTextClass}><span className={detailLabelClass}>{t('driver_date')}:</span> {card.driverDate || '-'}</span>
                                         <span className={detailTextClass}><span className={detailLabelClass}>{t('driver_version')}:</span> {card.driverVersion || '-'}</span>
-                                        {card.openglVersion && <span className={detailTextClass}><span className={detailLabelClass}>{t('opengl')}:</span> {card.openglVersion}</span>}
+                                        {card.openglVersion && <span className={`${detailTextClass} sm:col-span-2`}><span className={detailLabelClass}>{t('opengl')}:</span> {card.openglVersion}</span>}
                                     </div>
                                 </div>
                             </div>

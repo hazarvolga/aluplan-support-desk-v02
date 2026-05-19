@@ -14,6 +14,7 @@ import { EmailService } from '../email/email.service';
 import { ErrorLoggerService } from '../common/services/error-logger.service';
 import { UpdateCustomerProfileDto } from './dto/update-customer-profile.dto';
 import { CrmEmailValidatorService } from '../crm/crm-email-validator.service';
+import { isInternalPlaceholderEmail } from '../email/email-recipient-guard.util';
 
 @Injectable()
 export class CustomersService {
@@ -331,7 +332,7 @@ export class CustomersService {
         ]);
 
         return {
-            data,
+            data: data.map(customer => this.withDisplaySafeEmail(customer)),
             total,
             page,
             limit,
@@ -399,7 +400,7 @@ export class CustomersService {
         }
 
         const { passwordHash: _passwordHash, ...result } = freshUser;
-        return result;
+        return this.withDisplaySafeEmail(result);
     }
 
     async getCustomerById(id: string) {
@@ -413,7 +414,7 @@ export class CustomersService {
         }
 
         const { passwordHash: _passwordHash, ...result } = user;
-        return result;
+        return this.withDisplaySafeEmail(result);
     }
 
     async bulkDelete(ids: string[]) {
@@ -436,6 +437,9 @@ export class CustomersService {
             include: { customerProfile: true }
         });
         if (!user) throw new NotFoundException('Customer not found');
+        if (isInternalPlaceholderEmail(user.email)) {
+            throw new BadRequestException('Bu CRM kaydında gerçek e-posta adresi yok. Şifre sıfırlama e-postası gönderilemez.');
+        }
 
         // Generate a random temporary password (e.g. 8 chars)
         const generateTempPass = () => Math.random().toString(36).slice(-8);
@@ -532,6 +536,15 @@ export class CustomersService {
         return {
             content: profile.hotinfoRaw,
             filename: `hotinfo_${safeName}_${new Date().toISOString().split('T')[0]}.hxl`,
+        };
+    }
+
+    private withDisplaySafeEmail<T extends { email?: string | null }>(customer: T): T & { email: string | null; hasRealEmail: boolean } {
+        const hasRealEmail = !isInternalPlaceholderEmail(customer.email);
+        return {
+            ...customer,
+            email: hasRealEmail ? customer.email ?? null : null,
+            hasRealEmail,
         };
     }
 }

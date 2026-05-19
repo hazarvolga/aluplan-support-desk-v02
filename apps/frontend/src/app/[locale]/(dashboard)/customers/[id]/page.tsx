@@ -20,6 +20,8 @@ export default function CustomerProfilePage() {
     const { toast } = useToast();
     const params = useParams();
     const router = useRouter();
+    const t = useTranslations('customers');
+    const tc = useTranslations('common');
     const id = params.id as string;
 
     const [customer, setCustomer] = useState<any>(null);
@@ -62,6 +64,7 @@ export default function CustomerProfilePage() {
 
     const displayCustomerNo = customer?.customerProfile?.account?.account_number || formData.customerNo || '';
     const hasCrmAccountNumber = Boolean(customer?.customerProfile?.account?.account_number);
+    const displayEmail = customer?.hasRealEmail === false ? t('labels.email_missing') : customer?.email;
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -122,8 +125,6 @@ export default function CustomerProfilePage() {
         }
     };
 
-    const t = useTranslations('customers');
-    const tc = useTranslations('common');
     const { locale } = params as { locale: string; id: string };
 
     if (loading) {
@@ -160,7 +161,7 @@ export default function CustomerProfilePage() {
                                 {customer.status === 'ACTIVE' ? t('labels.active') : t('labels.passive')}
                             </Badge>
                         </div>
-                        <p className="text-muted-foreground">{customer.email}</p>
+                        <p className="text-muted-foreground">{displayEmail || '-'}</p>
                     </div>
                 </div>
                 <div>
@@ -192,7 +193,7 @@ export default function CustomerProfilePage() {
                     </DetailRow>
                     <DetailRow icon={FileText} label={t('labels.subscription_model')} value={profile?.subscriptionModel} />
                     <DetailRow icon={FileText} label={t('labels.contract_status')} value={profile?.contractStatus} />
-                    <DetailRow icon={Mail} label={t('labels.email')} value={customer.email} />
+                    <DetailRow icon={Mail} label={t('labels.email')} value={displayEmail} />
                     <DetailRow icon={Phone} label={t('labels.business_phone')} value={profile?.phoneNumber} />
                     <DetailRow icon={FileText} label={t('labels.fax')} value={profile?.fax} />
                     <DetailRow icon={Smartphone} label={t('labels.mobile_phone')} value={profile?.mobilePhone} />

@@ -1,6 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { XMLParser } from 'fast-xml-parser';
 
+type GraphicsCardInfo = {
+    name: string;
+    vram?: string;
+    ram?: string;
+    resolution?: string;
+    driverDate?: string;
+    driverVersion?: string;
+    openglVersion?: string;
+};
+
 @Injectable()
 export class HotinfoParserService {
     private readonly logger = new Logger(HotinfoParserService.name);
@@ -94,39 +104,10 @@ export class HotinfoParserService {
             let gpuDriverVersion = '';
             let openglVersion = '';
             let vram = '';
-            let graphicsCards: Array<{
-                name: string;
-                vram?: string;
-                ram?: string;
-                resolution?: string;
-                driverDate?: string;
-                driverVersion?: string;
-                openglVersion?: string;
-            }> = [];
+            let graphicsCards: GraphicsCardInfo[] = [];
             if (system?.video) {
                 const v = system.video;
-                const primaryCard = this.extractGraphicsCard(v);
-
-                // Handle multiple additional adapters
-                let additionalCards: Array<{
-                    name: string;
-                    vram?: string;
-                    ram?: string;
-                    resolution?: string;
-                    driverDate?: string;
-                    driverVersion?: string;
-                    openglVersion?: string;
-                }> = [];
-                if (v['additional-graphics-adapters']?.['graphics-adapter']) {
-                    const adapters = Array.isArray(v['additional-graphics-adapters']['graphics-adapter'])
-                        ? v['additional-graphics-adapters']['graphics-adapter']
-                        : [v['additional-graphics-adapters']['graphics-adapter']];
-                    additionalCards = adapters
-                        .map((adapter: any) => this.extractGraphicsCard(adapter))
-                        .filter((card: any) => card.name && card.name !== 'Unknown');
-                }
-
-                graphicsCards = [primaryCard, ...additionalCards].filter((card) => card.name && card.name !== 'Unknown');
+                graphicsCards = this.collectGraphicsCards(v);
                 const gpuNames = graphicsCards.map((card) => card.name);
                 if (gpuNames.length > 0) {
                     gpu = gpuNames.join(' / ');
@@ -134,9 +115,9 @@ export class HotinfoParserService {
                     gpu = 'Unknown';
                 }
 
-                gpuDriverVersion = primaryCard.driverVersion || '';
-                openglVersion = primaryCard.openglVersion || '';
-                vram = primaryCard.vram || primaryCard.ram || '';
+                gpuDriverVersion = graphicsCards[0]?.driverVersion || '';
+                openglVersion = graphicsCards[0]?.openglVersion || '';
+                vram = graphicsCards[0]?.vram || graphicsCards[0]?.ram || '';
             }
 
             // ── RAM ──
@@ -330,12 +311,67 @@ export class HotinfoParserService {
         return this.extractValue(node);
     }
 
-    private pickString(node: any, keys: string[]): string {
+    private pickString(node: any, keys: string[], itemLabels: string[] = []): string {
+        for (const key of keys) {
+            const value = this.safeString(node?.[key]);
+            if (value) return value;
+        }
+
+        const itemValue = this.pickItemString(node, itemLabels.length > 0 ? itemLabels : keys);
+        if (itemValue) return itemValue;
+
+        return '';
+    }
+
+    private pickItemString(node: any, labels: string[]): string {
+        if (!node || typeof node !== 'object') return '';
+
+        const normalizedLabels = labels
+            .map(label => this.normalizeHotinfoKey(label))
+            .filter(Boolean);
+        const itemContainers = [
+            node.item,
+            node.property,
+            node.entry,
+            node.value,
+            node.info,
+        ].filter(Boolean);
+
+        for (const container of itemContainers) {
+            const items = Array.isArray(container) ? container : [container];
+            for (const item of items) {
+                if (!item || typeof item !== 'object') continue;
+
+                const rawName = this.pickStringDirect(item, ['@_name', 'name', '@_key', 'key', '@_id', 'id', '@_caption', 'caption']);
+                const normalizedName = this.normalizeHotinfoKey(rawName);
+                if (!normalizedName) continue;
+
+                const matches = normalizedLabels.some(label => normalizedName === label || (label.length > 3 && normalizedName.includes(label)));
+                if (!matches) continue;
+
+                const value = this.pickStringDirect(item, ['@_value', 'value', '@_text', 'text']) || this.extractValue(item);
+                if (value) return value;
+            }
+        }
+
+        return '';
+    }
+
+    private pickStringDirect(node: any, keys: string[]): string {
         for (const key of keys) {
             const value = this.safeString(node?.[key]);
             if (value) return value;
         }
         return '';
+    }
+
+    private normalizeHotinfoKey(value: string): string {
+        return String(value || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/ı/g, 'i')
+            .replace(/[^a-z0-9]+/g, '');
     }
 
     private formatMemory(value: any): string {
@@ -357,7 +393,63 @@ export class HotinfoParserService {
         return /\b(mb|gb|kb)\b/i.test(raw) ? raw : `${raw} MB`;
     }
 
-    private extractGraphicsCard(node: any) {
+    private collectGraphicsCards(video: any): GraphicsCardInfo[] {
+        const candidates: any[] = [video];
+        const adapterGroups = [
+            video?.['additional-graphics-adapters']?.['graphics-adapter'],
+            video?.['additional-graphics-adapters']?.adapter,
+            video?.['graphics-adapters']?.['graphics-adapter'],
+            video?.['graphics-adapters']?.adapter,
+            video?.adapters?.adapter,
+            video?.adapter,
+            video?.['graphics-adapter'],
+            video?.gpu,
+            video?.display,
+        ];
+
+        for (const group of adapterGroups) {
+            if (!group) continue;
+            candidates.push(...(Array.isArray(group) ? group : [group]));
+        }
+
+        const cards = candidates
+            .flatMap((candidate) => this.expandCombinedGraphicsCard(this.extractGraphicsCard(candidate)))
+            .filter((card) => card.name && card.name !== 'Unknown');
+
+        const seen = new Set<string>();
+        return cards.filter((card) => {
+            const key = this.normalizeHotinfoKey(card.name);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        }).slice(0, 4);
+    }
+
+    private expandCombinedGraphicsCard(card: GraphicsCardInfo): GraphicsCardInfo[] {
+        if (!card.name || card.name === 'Unknown') return [];
+
+        const names = card.name
+            .split(/\s+(?:\/|\+|\|)\s+|;\s*/g)
+            .map(name => name.trim())
+            .filter(Boolean);
+
+        if (names.length <= 1) return [card];
+
+        return names.map((name, index) => ({
+            ...card,
+            name,
+            // When Hotinfo collapses two adapters into one display string, memory
+            // and driver fields may belong to only one adapter. Keep the first card
+            // faithful and leave ambiguous per-card values empty for the others.
+            vram: index === 0 ? card.vram : '',
+            ram: index === 0 ? card.ram : '',
+            driverDate: index === 0 ? card.driverDate : '',
+            driverVersion: index === 0 ? card.driverVersion : '',
+            openglVersion: index === 0 ? card.openglVersion : '',
+        }));
+    }
+
+    private extractGraphicsCard(node: any): GraphicsCardInfo {
         const name = this.pickString(node, [
             '@_card-description',
             'card-description',
@@ -367,7 +459,7 @@ export class HotinfoParserService {
             'name',
             '@_description',
             'description',
-        ]) || 'Unknown';
+        ], ['card description', 'graphics card', 'display adapter', 'adapter name', 'gpu', 'chip type', 'name']) || 'Unknown';
 
         const dedicatedMemory = this.pickString(node, [
             '@_dedicated-memory',
@@ -376,7 +468,7 @@ export class HotinfoParserService {
             'dedicated-vram',
             '@_vram',
             'vram',
-        ]);
+        ], ['dedicated memory', 'dedicated vram', 'vram', 'video memory']);
         const adapterMemory = this.pickString(node, [
             '@_adapter-ram',
             'adapter-ram',
@@ -384,7 +476,7 @@ export class HotinfoParserService {
             'memory-size',
             '@_ram',
             'ram',
-        ]);
+        ], ['adapter ram', 'memory size', 'graphics ram', 'gpu ram', 'ram']);
         const width = this.pickString(node, ['@_screen-width', 'screen-width', '@_width', 'width']);
         const height = this.pickString(node, ['@_screen-height', 'screen-height', '@_height', 'height']);
 
@@ -397,7 +489,7 @@ export class HotinfoParserService {
                 'screen-resolution',
                 '@_resolution',
                 'resolution',
-            ]) || (width && height ? `${width}x${height}` : ''),
+            ], ['screen resolution', 'resolution']) || (width && height ? `${width}x${height}` : ''),
             driverDate: this.pickString(node, [
                 '@_driver-date',
                 'driver-date',
@@ -405,19 +497,23 @@ export class HotinfoParserService {
                 'driver-date-string',
                 '@_driverdate',
                 'driverdate',
-            ]),
+                '@_driverDate',
+                'driverDate',
+            ], ['driver date', 'driverdate', 'driver datum', 'treiber datum', 'sürücü tarihi', 'surucu tarihi']),
             driverVersion: this.pickString(node, [
                 '@_driver-version',
                 'driver-version',
                 '@_driver',
                 'driver',
-            ]),
+                '@_driverVersion',
+                'driverVersion',
+            ], ['driver version', 'driverversion', 'treiber version', 'sürücü versiyonu', 'surucu versiyonu']),
             openglVersion: this.pickString(node, [
                 '@_opengl-version',
                 'opengl-version',
                 '@_opengl',
                 'opengl',
-            ]),
+            ], ['opengl version', 'opengl']),
         };
     }
 

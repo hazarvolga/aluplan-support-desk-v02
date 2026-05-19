@@ -97,6 +97,39 @@ describe('HotinfoParserService', () => {
         expect(data?.gpu).toBe('NVIDIA RTX A2000 / Intel UHD Graphics');
     });
 
+    it('should split collapsed dual-GPU names and read item-style driver fields', () => {
+        const xml = `<hotinfo>
+            <system>
+                <video>
+                    <item name="Graphics Card">NVIDIA GeForce RTX 5070 Laptop GPU / AMD Radeon(TM) 880M Graphics</item>
+                    <item name="VRAM">536870912</item>
+                    <item name="RAM">2147483648</item>
+                    <item name="Resolution">1920 x 1080 x Gerçek Renk (32bit)</item>
+                    <item name="Driver Date">2026-04-12</item>
+                    <item name="Driver Version">32.0.15.7602</item>
+                </video>
+            </system>
+        </hotinfo>`;
+
+        const data = service.parseHotinfo(xml);
+
+        expect(data?.graphicsCards).toHaveLength(2);
+        expect(data?.graphicsCards[0]).toMatchObject({
+            name: 'NVIDIA GeForce RTX 5070 Laptop GPU',
+            vram: '512 MB',
+            ram: '2 GB',
+            resolution: '1920 x 1080 x Gerçek Renk (32bit)',
+            driverDate: '2026-04-12',
+            driverVersion: '32.0.15.7602',
+        });
+        expect(data?.graphicsCards[1]).toMatchObject({
+            name: 'AMD Radeon(TM) 880M Graphics',
+            resolution: '1920 x 1080 x Gerçek Renk (32bit)',
+        });
+        expect(data?.graphicsCards[1].vram).toBe('');
+        expect(data?.gpu).toBe('NVIDIA GeForce RTX 5070 Laptop GPU / AMD Radeon(TM) 880M Graphics');
+    });
+
     it('should extract comprehensive diagnostic data (Registry, Drives, Printers, EnvVars)', () => {
         const mockXml = `<?xml version="1.0" encoding="utf-8"?>
         <hotinfo>

@@ -183,4 +183,48 @@ describe('CustomersService', () => {
       expect(mockCrmValidator.validateEmailInCrm).not.toHaveBeenCalled();
     });
   });
+
+  describe('CRM placeholder emails', () => {
+    it('hides internal CRM placeholder emails in customer detail responses', async () => {
+      const { service, mockPrisma } = buildService();
+
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        id: 'user-1',
+        email: 'no-email-75047b54-c652-f111-a824-70a8a52bb11e@internal.aluplan',
+        fullName: 'CRM Contact',
+        passwordHash: 'hash',
+        status: 'INACTIVE',
+        customerProfile: {
+          id: 'profile-1',
+          firstName: 'CRM',
+          lastName: 'Contact',
+          account: null,
+        },
+      });
+
+      const result = await service.getCustomerById('user-1') as any;
+
+      expect(result.email).toBeNull();
+      expect(result.hasRealEmail).toBe(false);
+    });
+
+    it('rejects password reset for CRM contacts without a real email', async () => {
+      const { service, mockPrisma, mockEmailService } = buildService();
+
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        id: 'user-1',
+        email: 'no-email-75047b54-c652-f111-a824-70a8a52bb11e@internal.aluplan',
+        fullName: 'CRM Contact',
+        passwordHash: 'hash',
+        status: 'INACTIVE',
+        customerProfile: {
+          firstName: 'CRM',
+          lastName: 'Contact',
+        },
+      });
+
+      await expect(service.resetPassword('user-1')).rejects.toThrow('gerçek e-posta adresi yok');
+      expect(mockEmailService.enqueueEmail).not.toHaveBeenCalled();
+    });
+  });
 });

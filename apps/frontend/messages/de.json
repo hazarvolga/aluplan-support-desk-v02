@@ -705,7 +705,8 @@
       "download_hxl": ".HXL herunterladen",
       "general": "Allgemein",
       "accounts": "Konten",
-      "record_count": "{count} Datensätze"
+      "record_count": "{count} Datensätze",
+      "email_missing": "Keine E-Mail im CRM"
     },
     "table": {
       "loading": "Daten werden aus der Datenbank abgerufen",

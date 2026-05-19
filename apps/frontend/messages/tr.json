@@ -707,7 +707,8 @@
       "download_hxl": ".HXL İndir",
       "general": "Genel",
       "accounts": "Hesaplar",
-      "record_count": "{count} Kayıt"
+      "record_count": "{count} Kayıt",
+      "email_missing": "CRM'de e-posta yok"
     },
     "table": {
       "loading": "Veriler veritabanından çekiliyor",

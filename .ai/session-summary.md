@@ -2369,3 +2369,20 @@ Maintenance rule:
 - `pnpm --filter @aluplan/backend test -- gemini.service.spec.ts ai-query.service.spec.ts`
 - `pnpm --filter @aluplan/backend typecheck`
 - `pnpm --filter @aluplan/frontend typecheck`
+
+## CRM Placeholder Email / Hotinfo Display Fixes - 2026-05-19
+
+### What changed
+- CRM contacts without a real email still keep an internal placeholder user for relational integrity, but `no-email-...@internal.aluplan` is now hidden from customer list/detail API responses.
+- Admin password reset for CRM contacts without a real email now fails safely instead of trying to send mail to the internal placeholder.
+- Email recipient guard treats `internal.aluplan` placeholder recipients as reserved/blocked.
+- Customer profile UI shows a localized "No email in CRM" label instead of the internal placeholder address.
+- Hotinfo parser now handles collapsed dual-GPU strings like `NVIDIA ... / AMD ...` as separate GPU cards.
+- Hotinfo parser now reads item-style GPU metadata for VRAM, RAM, resolution, driver date, and driver version.
+- Hotinfo modal/header and GPU detail cards have more padding and more readable typography.
+
+### Validation
+- `pnpm --filter @aluplan/backend test -- customers.service.spec.ts hotinfo-parser.service.spec.ts email.service.spec.ts`
+- `pnpm --filter @aluplan/backend typecheck`
+- `pnpm --filter @aluplan/frontend typecheck`
+- `pnpm i18n:check`
