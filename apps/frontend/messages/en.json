@@ -565,6 +565,7 @@
         "ai_unavailable": "AI service is currently unable to respond. You can continue creating your request.",
         "ai_backend_unavailable": "AI service is currently unreachable. You can continue directly with ticket creation.",
         "ai_no_match": "I couldn't fully understand your question, but I've prepared a general guide below.",
+        "ai_language_mismatch": "Your question does not match the selected interface language. Please change the language or write your question in the selected language.",
         "ai_timeout": "AI server is not responding (Timeout). You can create your request manually.",
         "ai_error": "AI diagnosis service is currently unreachable.",
         "ticket_backend_unavailable": "Support service is currently unreachable. Please try again in a few minutes.",

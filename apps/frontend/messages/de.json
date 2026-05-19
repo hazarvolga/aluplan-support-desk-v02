@@ -565,6 +565,7 @@
         "ai_unavailable": "KI-Dienst kann derzeit nicht antworten. Sie können mit der Erstellung Ihrer Anfrage fortfahren.",
         "ai_backend_unavailable": "KI-Dienst ist derzeit nicht erreichbar. Sie können direkt mit der Ticketerstellung fortfahren.",
         "ai_no_match": "Ich konnte Ihre Frage nicht ganz verstehen, habe aber unten einen allgemeinen Leitfaden vorbereitet.",
+        "ai_language_mismatch": "Ihre Frage passt nicht zur ausgewählten Oberflächensprache. Bitte ändern Sie die Sprache oder formulieren Sie die Frage in der ausgewählten Sprache.",
         "ai_timeout": "KI-Server antwortet nicht (Timeout). Sie können Ihre Anfrage manuell erstellen.",
         "ai_error": "KI-Diagnosedienst zurzeit nicht erreichbar.",
         "ticket_backend_unavailable": "Support-Dienst ist derzeit nicht erreichbar. Bitte versuchen Sie es in einigen Minuten erneut.",

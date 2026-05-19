@@ -565,6 +565,7 @@
         "ai_unavailable": "Yapay zeka servisi şu an cevap veremiyor. Talebinizi oluşturmaya devam edebilirsiniz.",
         "ai_backend_unavailable": "AI servisine şu anda ulaşılamıyor. Talebinizi doğrudan oluşturmaya devam edebilirsiniz.",
         "ai_no_match": "Sorunuzu tam olarak anlayamadım ama aşağıda genel bir rehber hazırladım.",
+        "ai_language_mismatch": "Sorunuz seçili arayüz diliyle uyumlu değil. Lütfen dil seçimini değiştirin veya sorunuzu seçili dilde yazın.",
         "ai_timeout": "Yapay zeka sunucusu yanıt vermiyor (Timeout). Talebinizi manuel olarak oluşturabilirsiniz.",
         "ai_error": "Yapay zeka teşhis servisine şu anda ulaşılamıyor.",
         "ticket_backend_unavailable": "Destek servisine şu anda ulaşılamıyor. Lütfen birkaç dakika sonra tekrar deneyin.",

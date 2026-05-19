@@ -28,6 +28,7 @@ describe('ai-answer-contract', () => {
         expect(prompt).toContain('Do not show raw excerpts');
         expect(prompt).toContain('Use these sections and keep them in this order');
         expect(prompt).toContain('Do not omit "Kritik Kontroller"');
+        expect(prompt).toContain('## ⚠️ Kritik Kontroller');
     });
 
     it('keeps agent drafts grounded in the same customer-safe core solution', () => {
@@ -44,5 +45,7 @@ describe('ai-answer-contract', () => {
         expect(prompt).toContain('Audience: support agent draft');
         expect(prompt).toContain('Keep the same core solution for customer and agent outputs');
         expect(prompt).toContain('must not contradict or drift away');
+        expect(prompt).toContain('## ⚠️ Critical Checks');
+        expect(prompt).not.toContain('## ⚠️ Kritik Kontroller');
     });
 });

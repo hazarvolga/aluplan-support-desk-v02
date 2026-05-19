@@ -18,6 +18,8 @@ export function resolveAnswerLanguage(language?: string | null): string {
 
 export function buildSupportAnswerContractPrompt(options: SupportAnswerContractOptions): string {
     const language = resolveAnswerLanguage(options.language);
+    const sectionShape = getRequiredSectionShape(language);
+    const criticalChecksLabel = getCriticalChecksLabel(language);
     const prompt = options.basePrompt
         .replace('{{PRODUCT}}', options.product || 'General')
         .replace('{{CATEGORIES}}', options.categories?.join(', ') || 'N/A')
@@ -44,12 +46,44 @@ export function buildSupportAnswerContractPrompt(options: SupportAnswerContractO
 
 ## REQUIRED OUTPUT SHAPE
 Use these sections and keep them in this order for troubleshooting, installation failures, licensing failures, startup/performance errors, and support-procedure answers:
-## 📌 Sorun Yorumu
-## 🎯 En Olası Neden
-## ⚠️ Kritik Kontroller
-## 🛠️ Çözüm Adımları
-## ✅ Doğrulama
+${sectionShape}
 
-Do not omit "Kritik Kontroller" when the retrieved context contains prerequisites, permissions, compatibility checks, network/proxy checks, security-software checks, or verification conditions.
-For pure how-to questions, "En Olası Neden" may briefly state that this is a procedure request, not an error diagnosis.`;
+Do not omit "${criticalChecksLabel}" when the retrieved context contains prerequisites, permissions, compatibility checks, network/proxy checks, security-software checks, or verification conditions.
+For pure how-to questions, the probable-cause section may briefly state that this is a procedure request, not an error diagnosis.`;
+}
+
+function getRequiredSectionShape(language: string): string {
+    if (language === 'English') {
+        return [
+            '## 📌 Issue Summary',
+            '## 🎯 Most Probable Cause',
+            '## ⚠️ Critical Checks',
+            '## 🛠️ Solution Steps',
+            '## ✅ Verification',
+        ].join('\n');
+    }
+
+    if (language === 'German') {
+        return [
+            '## 📌 Problemzusammenfassung',
+            '## 🎯 Wahrscheinlichste Ursache',
+            '## ⚠️ Kritische Prüfungen',
+            '## 🛠️ Lösungsschritte',
+            '## ✅ Überprüfung',
+        ].join('\n');
+    }
+
+    return [
+        '## 📌 Sorun Yorumu',
+        '## 🎯 En Olası Neden',
+        '## ⚠️ Kritik Kontroller',
+        '## 🛠️ Çözüm Adımları',
+        '## ✅ Doğrulama',
+    ].join('\n');
+}
+
+function getCriticalChecksLabel(language: string): string {
+    if (language === 'English') return 'Critical Checks';
+    if (language === 'German') return 'Kritische Prüfungen';
+    return 'Kritik Kontroller';
 }

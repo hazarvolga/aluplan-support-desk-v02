@@ -195,6 +195,25 @@ describe('AiQueryService', () => {
     });
 
     describe('query — HIGH confidence', () => {
+        it('blocks ticket-opening AI when query language does not match the selected UI language', async () => {
+            const result = await service.query({
+                userQuery: 'What should I check if license server installation failed?',
+                userId: null,
+                language: 'tr',
+                strictLanguage: true,
+                wait: true,
+            });
+
+            expect(result.languageMismatch).toBe(true);
+            expect(result.answer).toContain('Seçili arayüz diliniz Türkçe');
+            expect(result.answer).toContain('sorunuz İngilizce');
+            expect(result.suggestTicket).toBe(false);
+            expect(mockEmbeddingService.search).not.toHaveBeenCalled();
+            expect(diagnosisService.analyze).not.toHaveBeenCalled();
+            expect(mockAiService.generate).not.toHaveBeenCalled();
+            expect(mockAiService.reformat).not.toHaveBeenCalled();
+        });
+
         it('should call shared support synthesis and return HIGH confidence answer', async () => {
             // Arrange
             mockPrismaService.user.findUnique.mockResolvedValue(null);
@@ -517,7 +536,7 @@ describe('AiQueryService', () => {
             expect(result.answer).not.toContain('en güçlü eşleşme');
         });
 
-        it('answers a Turkish customer question in Turkish even when the UI locale is English', async () => {
+        it('answers in the selected UI language even when the query language differs and strict mode is off', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [
                     {
@@ -547,12 +566,12 @@ describe('AiQueryService', () => {
             });
 
             expect(result.answerMode).toBe('FALLBACK');
-            expect(result.answer).toContain('## 📌 Sorun Yorumu');
-            expect(result.answer).toContain('## 🛠️ Çözüm Adımları');
-            expect(result.answer).not.toContain('## 📌 Problem Interpretation');
-            expect(result.answer).not.toContain('## 🛠️ Solution Steps');
-            expect(mockAiService.reformat.mock.calls[0][0]).toContain('## 📌 Sorun Yorumu');
-            expect(mockAiService.reformat.mock.calls[0][0]).toContain('## 🛠️ Çözüm Adımları');
+            expect(result.answer).toContain('## 📌 Problem Interpretation');
+            expect(result.answer).toContain('## 🛠️ Solution Steps');
+            expect(result.answer).not.toContain('## 📌 Sorun Yorumu');
+            expect(result.answer).not.toContain('## 🛠️ Çözüm Adımları');
+            expect(mockAiService.reformat.mock.calls[0][0]).toContain('## 📌 Issue Summary');
+            expect(mockAiService.reformat.mock.calls[0][0]).toContain('## 🛠️ Solution Steps');
         });
 
         it('returns a Turkish actionable IFC fallback instead of raw headings when generation is unavailable', async () => {
@@ -655,7 +674,7 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             expect(result.answer).not.toContain('İlgili pasaj:');
         });
 
-        it('returns a structured customer-safe license borrowing fallback in the query language when generation is unavailable', async () => {
+        it('returns a structured customer-safe license borrowing fallback in the selected UI language when generation is unavailable', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [
                     {
@@ -678,11 +697,11 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             });
 
             expect(result.answerMode).toBe('FALLBACK');
-            expect(result.answer).toContain('temporarily borrow an Allplan license');
-            expect(result.answer).toContain('## 🛠️ Solution Steps');
+            expect(result.answer).toContain('geçici lisans ödünç almak');
+            expect(result.answer).toContain('## 🛠️ Çözüm Adımları');
             expect(result.answer).toContain('License settings');
             expect(result.answer).toContain('Ausleihen');
-            expect(result.answer).toContain('## ✅ Verification');
+            expect(result.answer).toContain('## ✅ Doğrulama');
             expect(result.answer).not.toContain('Kaynak:');
             expect(result.answer).not.toContain('İlgili pasaj:');
             expect(result.answer).not.toContain('License server - borrowing licenses temporarily.');

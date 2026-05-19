@@ -344,7 +344,7 @@ export const api = {
         delete: (id: string) => request<any>(`/tickets/${id}`, { method: 'DELETE' }),
     },
     ai: {
-        query: (query: string, hotinfoContext?: any, productId?: string | null, language?: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>, attachments?: any[], wait?: boolean) => {
+        query: (query: string, hotinfoContext?: any, productId?: string | null, language?: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>, attachments?: any[], wait?: boolean, strictLanguage?: boolean) => {
             const url = wait ? '/ai/query?wait=true' : '/ai/query';
             return request<{
                 query: string;
@@ -355,9 +355,10 @@ export const api = {
                 suggestTicket: boolean;
                 jobId?: string;
                 status?: string;
+                languageMismatch?: boolean;
             }>(url, {
                 method: 'POST',
-                body: JSON.stringify({ query, hotinfoContext, productId, language, history, attachments }),
+                body: JSON.stringify({ query, hotinfoContext, productId, language, history, attachments, strictLanguage }),
                 signal: typeof AbortSignal !== 'undefined'
                     ? AbortSignal.timeout(wait ? 180000 : 60000)
                     : undefined,

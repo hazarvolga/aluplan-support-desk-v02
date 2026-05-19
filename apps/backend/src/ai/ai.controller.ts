@@ -51,6 +51,11 @@ export class AiQueryDto {
     @IsString()
     language?: string;
 
+    @ApiPropertyOptional({ description: 'Reject answers when query language does not match requested language' })
+    @IsOptional()
+    @IsBoolean()
+    strictLanguage?: boolean;
+
     @ApiPropertyOptional({ type: 'array', items: { type: 'object' } })
     @IsOptional()
     @IsArray()
@@ -122,6 +127,7 @@ export class AiController {
             attachments: dto.attachments,
             productId: dto.productId,
             language: dto.language,
+            strictLanguage: dto.strictLanguage,
             history: dto.history,
             wait: wait !== undefined ? wait === 'true' : false, // Default to async for WEB (non-blocking)
         });

@@ -37,6 +37,7 @@ export interface AiQueryOptions {
     attachments?: any[];
     history?: Array<{ role: 'user' | 'assistant'; content: string }>;
     language?: string; // tr, en, de or auto
+    strictLanguage?: boolean;
     productId?: string | null;
     wait?: boolean;
 }
@@ -52,6 +53,7 @@ export interface AiQueryResult {
     translations?: Record<string, string>;
     diagnosis?: DiagnosisResult;
     cacheVersion?: string;
+    languageMismatch?: boolean;
 }
 
 export const MASTER_DIAGNOSIS_PROMPT = `
@@ -240,6 +242,10 @@ RESPONSE DRAFT:`;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
         const lang = this.resolveResponseLanguage(options.language, userQuery);
+        const languageMismatch = this.getStrictLanguageMismatch(userQuery, lang, options.strictLanguage);
+        if (languageMismatch) {
+            return this.buildLanguageMismatchResult(userQuery, lang, languageMismatch);
+        }
 
         // --- GAP-05: AI Quota & Budget Check ---
         const today = new Date().toISOString().split('T')[0];
@@ -300,6 +306,10 @@ RESPONSE DRAFT:`;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
         const lang = this.resolveResponseLanguage(options.language, userQuery);
+        const languageMismatch = this.getStrictLanguageMismatch(userQuery, lang, options.strictLanguage);
+        if (languageMismatch) {
+            return this.buildLanguageMismatchResult(userQuery, lang, languageMismatch);
+        }
 
         // Setup cache key for later saving
         const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
@@ -1175,10 +1185,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             /(?:borrow|borrowing|odunc|ausleihen|offline|temporary|temporar|gecici)/.test(normalizedQuery);
     }
 
-    private resolveResponseLanguage(language: string | undefined, query: string): 'tr' | 'en' | 'de' {
-        const queryLanguage = detectQueryLanguage(query);
-        if (queryLanguage) return queryLanguage;
-
+    private resolveResponseLanguage(language: string | undefined, _query: string): 'tr' | 'en' | 'de' {
         const normalizedLanguage = (language || '').toLowerCase();
         if (normalizedLanguage.startsWith('tr')) return 'tr';
         if (normalizedLanguage.startsWith('de')) return 'de';
@@ -1188,6 +1195,94 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
     private resolveFallbackLanguage(language: string | undefined, query: string): 'tr' | 'en' | 'de' {
         return this.resolveResponseLanguage(language, query);
+    }
+
+    private getStrictLanguageMismatch(
+        query: string,
+        expectedLanguage: 'tr' | 'en' | 'de',
+        strictLanguage?: boolean,
+    ): { detectedLanguage: 'tr' | 'en' | 'de' } | null {
+        if (!strictLanguage) return null;
+
+        const detectedLanguage = this.detectQueryLanguageForGate(query);
+        if (!detectedLanguage || detectedLanguage === expectedLanguage) return null;
+
+        return { detectedLanguage };
+    }
+
+    private detectQueryLanguageForGate(query: string): 'tr' | 'en' | 'de' | null {
+        const normalized = this.normalizeSearchText(query);
+        const tokens = normalized.match(/[a-zçğıöşüäöüß]+/gi) ?? [];
+        if (tokens.length < 2) return null;
+
+        if (/[çğıöşüÇĞİÖŞÜ]/.test(query)) return 'tr';
+        if (/[äöüßÄÖÜ]/.test(query)) return 'de';
+
+        const tokenSet = new Set(tokens);
+        const score = (words: string[]) => words.reduce((total, word) => total + (tokenSet.has(word) ? 1 : 0), 0);
+
+        const scores = {
+            tr: score(['nasıl', 'nasil', 'nedir', 'hangi', 'neden', 'nerede', 'ne', 'mi', 'mı', 'mu', 'mü', 'icin', 'için', 'gerekir', 'olur', 'yaparim', 'yapabilirim', 'çalışır', 'calisir', 'lisans', 'sunucu', 'kullanici', 'kullanıcı']),
+            en: score(['what', 'should', 'check', 'if', 'how', 'can', 'do', 'does', 'why', 'when', 'where', 'which', 'is', 'are', 'the', 'with', 'for', 'failed', 'installation', 'license', 'server']),
+            de: score(['wie', 'kann', 'ich', 'was', 'warum', 'wenn', 'welche', 'der', 'die', 'das', 'mit', 'für', 'fuer', 'lizenz', 'server', 'installation', 'fehler']),
+        };
+
+        const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]) as Array<['tr' | 'en' | 'de', number]>;
+        const [bestLanguage, bestScore] = ranked[0];
+        const secondScore = ranked[1]?.[1] ?? 0;
+
+        if (bestScore >= 2 && bestScore > secondScore) return bestLanguage;
+        if (bestScore >= 3 && bestScore === secondScore) return null;
+
+        return null;
+    }
+
+    private buildLanguageMismatchResult(
+        query: string,
+        expectedLanguage: 'tr' | 'en' | 'de',
+        mismatch: { detectedLanguage: 'tr' | 'en' | 'de' },
+    ): AiQueryResult {
+        const expectedLabel = this.getLanguageLabel(expectedLanguage, expectedLanguage);
+        const detectedLabel = this.getLanguageLabel(mismatch.detectedLanguage, expectedLanguage);
+
+        const messages: Record<'tr' | 'en' | 'de', string> = {
+            tr: [
+                `Seçili arayüz diliniz ${expectedLabel}, ancak sorunuz ${detectedLabel} gibi görünüyor.`,
+                'AI önerisinin doğru ve tutarlı hazırlanabilmesi için lütfen sorunuzu seçili arayüz diliyle yazın ya da sol menüden dil seçimini değiştirip tekrar deneyin.',
+                'Teknik ürün adları, dosya adları ve hata kodları kendi özgün dilinde kalabilir.',
+            ].join('\n'),
+            en: [
+                `Your selected interface language is ${expectedLabel}, but your question appears to be in ${detectedLabel}.`,
+                'To keep the AI suggestion accurate and consistent, please ask your question in the selected interface language or change the interface language and try again.',
+                'Technical product names, file names, and error codes can stay in their original language.',
+            ].join('\n'),
+            de: [
+                `Ihre ausgewählte Oberflächensprache ist ${expectedLabel}, aber Ihre Frage scheint auf ${detectedLabel} gestellt zu sein.`,
+                'Damit der KI-Vorschlag korrekt und einheitlich bleibt, stellen Sie die Frage bitte in der ausgewählten Oberflächensprache oder ändern Sie die Sprache der Oberfläche und versuchen Sie es erneut.',
+                'Technische Produktnamen, Dateinamen und Fehlercodes können in der Originalsprache bleiben.',
+            ].join('\n'),
+        };
+
+        return {
+            query,
+            answer: messages[expectedLanguage],
+            answerMode: 'FALLBACK',
+            confidence: 'NO_MATCH',
+            sources: [],
+            interactionId: 'language-mismatch',
+            suggestTicket: false,
+            languageMismatch: true,
+        };
+    }
+
+    private getLanguageLabel(language: 'tr' | 'en' | 'de', targetLanguage: 'tr' | 'en' | 'de'): string {
+        const labels = {
+            tr: { tr: 'Türkçe', en: 'İngilizce', de: 'Almanca' },
+            en: { tr: 'Turkish', en: 'English', de: 'German' },
+            de: { tr: 'Türkisch', en: 'Englisch', de: 'Deutsch' },
+        };
+
+        return labels[targetLanguage][language];
     }
 
     private async applyPersonalizedGreeting(

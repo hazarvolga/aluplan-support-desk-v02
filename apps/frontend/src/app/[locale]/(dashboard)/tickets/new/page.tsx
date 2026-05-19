@@ -169,8 +169,8 @@ export default function NewTicketPage() {
             // Switch to specialized query endpoint for conversational RAG
             // Passing product context to focus search on relevant knowledge base
             const pId = selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId;
-            const resolvedResponse = await api.ai.query(buildDiagnosisQuery(subject, description), context, pId, locale, [], attachments, true) as
-                { answer?: string; interactionId?: string; answerMode?: 'LLM' | 'FALLBACK' } | null;
+            const resolvedResponse = await api.ai.query(buildDiagnosisQuery(subject, description), context, pId, locale, [], attachments, true, true) as
+                { answer?: string; interactionId?: string; answerMode?: 'LLM' | 'FALLBACK'; languageMismatch?: boolean } | null;
 
             if (!resolvedResponse || !resolvedResponse.answer) {
                 setDiagnosisState('failed');
@@ -180,9 +180,11 @@ export default function NewTicketPage() {
 
             setAiAnswer(resolvedResponse.answer);
             setInteractionId(resolvedResponse.interactionId ?? null);
-            setDiagnosisState(resolvedResponse.answerMode === 'FALLBACK' ? 'fallback' : 'ready');
+            setDiagnosisState(resolvedResponse.languageMismatch ? 'failed' : resolvedResponse.answerMode === 'FALLBACK' ? 'fallback' : 'ready');
 
-            if ((resolvedResponse as any).confidence === 'NO_MATCH') {
+            if (resolvedResponse.languageMismatch) {
+                toast.info(t('toasts.ai_language_mismatch'));
+            } else if ((resolvedResponse as any).confidence === 'NO_MATCH') {
                 toast.info(t('toasts.ai_no_match'));
             }
         } catch (err: any) {
