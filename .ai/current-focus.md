@@ -34,6 +34,10 @@
   - `.ai/product-flow/run-product-flow-ui-smoke.mjs`
   - 12/12 pass.
   - verifies customer UI login, ALLPLAN selection, `.hxl` upload, AI skip, direct ticket creation, admin UI ticket visibility, and admin Hotinfo snapshot visibility.
+- Hotinfo admin review revision completed:
+  - parsed Hotinfo snapshots now expose up to two structured GPU cards.
+  - admin ticket Hotinfo modal shows GPU 1/GPU 2 details with readable VRAM/RAM/resolution/driver date/driver version fields.
+  - admin/support can download the customer's raw `.hxl` file from the ticket Hotinfo modal.
 - Customer Answer Quality Phase 3 started:
   - customer sync diagnosis timeout increased from `6000ms` to `15000ms`.
   - license borrowing fallback now returns structured solution steps instead of raw excerpts.

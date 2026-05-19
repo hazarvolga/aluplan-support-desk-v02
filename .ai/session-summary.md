@@ -157,6 +157,21 @@ Maintenance rule:
 - Updated the `DocBreadcrumb` test translation mock to return `Yardım` for `help.nav.back`.
 - Updated the local customer sort test helper so empty/null values sort last in both directions.
 
+## Follow-up - 2026-05-19 Hotinfo GPU and Download Revision
+
+### What changed
+- Hotinfo parsing now preserves up to two graphics adapters as structured `graphicsCards` entries.
+- Each GPU card carries name, VRAM, RAM, resolution, driver date, driver version, and OpenGL when present.
+- The admin ticket Hotinfo modal now shows GPU 1 and GPU 2 as separate readable cards.
+- The Hotinfo modal header spacing and small telemetry values were adjusted for better readability.
+- Support/admin users can download the customer's raw `.hxl` Hotinfo file directly from the ticket Hotinfo modal.
+
+### Verification
+- `pnpm --filter @aluplan/backend test -- hotinfo-parser.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+
 ### Verification
 - Backend must-pass regression set passed:
   - `pnpm --filter @aluplan/backend test -- auth.controller.spec.ts tickets.controller.spec.ts notifications.gateway.spec.ts ai-query.service.spec.ts`

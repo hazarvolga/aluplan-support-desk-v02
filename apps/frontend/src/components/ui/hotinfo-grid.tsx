@@ -22,6 +22,44 @@ export interface HotinfoGridProps {
     variant?: 'grid' | 'compact';
 }
 
+type GraphicsCardSummary = {
+    name: string | null;
+    vram?: string | null;
+    ram?: string | null;
+    resolution?: string | null;
+    driverDate?: string | null;
+    driverVersion?: string | null;
+    openglVersion?: string | null;
+};
+
+const normalizeGraphicsCards = (data: any): GraphicsCardSummary[] => {
+    const cards = Array.isArray(data?.graphicsCards)
+        ? data.graphicsCards
+            .map((card: any) => ({
+                name: sr(card?.name),
+                vram: sr(card?.vram),
+                ram: sr(card?.ram),
+                resolution: sr(card?.resolution),
+                driverDate: sr(card?.driverDate),
+                driverVersion: sr(card?.driverVersion),
+                openglVersion: sr(card?.openglVersion),
+            }))
+            .filter((card: any) => card.name)
+        : [];
+
+    if (cards.length > 0) return cards.slice(0, 2);
+
+    return [{
+        name: sr(data?.gpu) || '-',
+        vram: sr(data?.vram),
+        ram: sr(data?.gpuRam),
+        resolution: sr(data?.screenResolution),
+        driverDate: sr(data?.gpuDriverDate),
+        driverVersion: sr(data?.gpuDriverVersion),
+        openglVersion: sr(data?.openglVersion),
+    }].filter((card) => card.name && card.name !== '-');
+};
+
 export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
     const t = useTranslations('common.hotinfo_labels');
     const [copied, setCopied] = useState(false);
@@ -35,14 +73,18 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
+    const graphicsCards = normalizeGraphicsCards(data);
+
     const copyToClipboard = () => {
+        const gpuSummary = graphicsCards.map((card, index) => (
+            `GPU ${index + 1}: ${card.name} | VRAM: ${card.vram || 'N/A'} | RAM: ${card.ram || 'N/A'} | Resolution: ${card.resolution || 'N/A'} | Driver Date: ${card.driverDate || 'N/A'} | Driver Version: ${card.driverVersion || 'N/A'}`
+        ));
         const summary = [
             `Allplan: ${data.allplanVersion} (${data.allplanEdition || 'N/A'}) - Build: ${data.allplanBuildId || 'N/A'}`,
             `OS: ${data.osVersion}`,
             `CPU: ${data.cpu}`,
             `RAM: ${data.ram}`,
-            `GPU: ${data.gpu} (VRAM: ${data.vram || 'N/A'})`,
-            `Res: ${data.screenResolution || 'N/A'}`,
+            ...gpuSummary,
             `Disk: ${JSON.stringify(data.drives || data.diskInfo)}`,
         ].join('\n');
 
@@ -72,8 +114,11 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
         : "text-sm font-semibold text-slate-200 dark:text-cyan-100";
 
     const subValClass = isCompact
-        ? "text-[9px] text-slate-400 dark:text-cyan-400/80 block mt-0.5"
-        : "flex flex-wrap gap-x-4 gap-y-1 mt-2";
+        ? "text-[10px] text-slate-300 dark:text-cyan-300/90 block mt-0.5"
+        : "flex flex-wrap gap-x-4 gap-y-1.5 mt-2";
+
+    const detailTextClass = "text-[11px] leading-5 text-slate-300 dark:text-cyan-200/90";
+    const detailLabelClass = "font-semibold text-slate-400 dark:text-cyan-400/80";
 
     const SectionHeader = ({ id, label, icon: Icon }: any) => (
         <button 
@@ -113,7 +158,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
                             {data.allplanVersion || '-'}
                             {data.allplanEdition && <span className={`${isCompact ? '' : 'ml-1'} text-[9px] text-slate-400 dark:text-cyan-400/70 block sm:inline`}>({data.allplanEdition})</span>}
                         </div>
-                        {data.allplanBuildId && <div className="text-[9px] text-slate-500 dark:text-cyan-600 mt-0.5">Build ID: {data.allplanBuildId}</div>}
+                        {data.allplanBuildId && <div className="text-[11px] leading-5 text-slate-300 dark:text-cyan-300/85 mt-1">Build ID: {data.allplanBuildId}</div>}
                         {data.allplanHotfix && <div className={isCompact ? subValClass : "text-[10px] text-brand-400 dark:text-cyan-400 mt-0.5"}>{t('hotfix')}: {data.allplanHotfix}</div>}
                     </div>
                 </div>
@@ -149,18 +194,26 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
 
                 {/* GPU & Video Details */}
                 <div className={`${itemWrapperClass} ${!isCompact ? 'md:col-span-3' : ''} ${isCompact ? 'flex-col items-start gap-1 py-2' : ''}`}>
-                    <div className={`${labelClass} ${isCompact ? 'w-full mb-1' : ''}`}>
-                        <Monitor size={12} className="hidden md:inline mr-1" />
-                        {t('gpu')}
-                    </div>
-                    <div className={`${valContainerClass} ${isCompact ? 'text-left w-full' : ''}`}>
-                        <div className={`${valClass} whitespace-pre-wrap`}>{sr(data.gpu) || '-'}</div>
-                        <div className={`${subValClass} ${isCompact ? 'flex flex-row flex-wrap gap-2' : ''}`}>
-                            {data.gpuDriverVersion && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">{t('gpu_driver')}: <span className="text-slate-300 dark:text-cyan-300">{sr(data.gpuDriverVersion)}</span></span>}
-                            {data.openglVersion && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">{t('opengl')}: <span className="text-slate-300 dark:text-cyan-300">{sr(data.openglVersion)}</span></span>}
-                            {data.vram && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">{t('vram')}: <span className="text-slate-300 dark:text-cyan-300">{sr(data.vram)}</span></span>}
-                            {data.screenResolution && <span className="text-[9px] text-slate-400 dark:text-cyan-500/80">{t('resolution')}: <span className="text-slate-300 dark:text-cyan-300">{sr(data.screenResolution)}</span></span>}
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                        {(graphicsCards.length > 0 ? graphicsCards : [{ name: '-' }]).map((card: any, index: number) => (
+                            <div key={`${card.name}-${index}`} className="border border-cyan-900/25 bg-cyan-950/10 p-3">
+                                <div className={`${labelClass} ${isCompact ? 'w-full mb-1' : ''}`}>
+                                    <Monitor size={12} className="hidden md:inline mr-1" />
+                                    {index + 1} {t('gpu')}
+                                </div>
+                                <div className={`${valContainerClass} ${isCompact ? 'text-left w-full' : ''}`}>
+                                    <div className={`${valClass} whitespace-pre-wrap`}>{card.name || '-'}</div>
+                                    <div className={`${subValClass} ${isCompact ? 'flex flex-row flex-wrap gap-2' : ''}`}>
+                                        <span className={detailTextClass}><span className={detailLabelClass}>{t('vram')}:</span> {card.vram || '-'}</span>
+                                        <span className={detailTextClass}><span className={detailLabelClass}>{t('gpu_ram')}:</span> {card.ram || '-'}</span>
+                                        <span className={detailTextClass}><span className={detailLabelClass}>{t('resolution')}:</span> {card.resolution || '-'}</span>
+                                        <span className={detailTextClass}><span className={detailLabelClass}>{t('driver_date')}:</span> {card.driverDate || '-'}</span>
+                                        <span className={detailTextClass}><span className={detailLabelClass}>{t('driver_version')}:</span> {card.driverVersion || '-'}</span>
+                                        {card.openglVersion && <span className={detailTextClass}><span className={detailLabelClass}>{t('opengl')}:</span> {card.openglVersion}</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 

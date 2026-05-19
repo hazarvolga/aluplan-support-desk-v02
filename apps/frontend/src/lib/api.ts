@@ -205,6 +205,30 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     return text ? JSON.parse(text) : {} as T;
 }
 
+async function downloadRequest(path: string): Promise<{ blob: Blob; filename?: string }> {
+    const fetchOptions: RequestInit = {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-Request-Id': (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+        },
+    };
+
+    let res = await safeFetch(`${getApiUrl()}${path}`, fetchOptions);
+    if (canAttemptRefresh(path) && (res.status === 401 || await isPermissionRefreshCandidate(res))) {
+        res = await refreshAndRetry(path, fetchOptions);
+    }
+
+    if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+
+    const disposition = res.headers.get('content-disposition') || '';
+    const filename = disposition.match(/filename="?([^"]+)"?/i)?.[1];
+    return { blob: await res.blob(), filename };
+}
+
 export const api = {
     auth: {
         login: (email: string, password: string) =>
@@ -561,6 +585,7 @@ export const api = {
         bulkDelete: (ids: string[]) => request<any>('/customers/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
         resetPassword: (id: string) => request<any>(`/customers/${id}/reset-password`, { method: 'POST' }),
         import: (data: any[]) => request<any>('/customers/import', { method: 'POST', body: JSON.stringify(data) }),
+        downloadHotinfo: (id: string) => downloadRequest(`/customers/${id}/hotinfo/download`),
     },
     products: {
         list: () => request<any[]>('/products'),

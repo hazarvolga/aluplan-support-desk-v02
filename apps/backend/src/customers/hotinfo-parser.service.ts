@@ -94,44 +94,49 @@ export class HotinfoParserService {
             let gpuDriverVersion = '';
             let openglVersion = '';
             let vram = '';
+            let graphicsCards: Array<{
+                name: string;
+                vram?: string;
+                ram?: string;
+                resolution?: string;
+                driverDate?: string;
+                driverVersion?: string;
+                openglVersion?: string;
+            }> = [];
             if (system?.video) {
                 const v = system.video;
-                const primaryGPU = this.safeString(v['card-description']) || this.safeString(v['chip-type']);
-                
+                const primaryCard = this.extractGraphicsCard(v);
+
                 // Handle multiple additional adapters
-                let additionalGPUs: string[] = [];
+                let additionalCards: Array<{
+                    name: string;
+                    vram?: string;
+                    ram?: string;
+                    resolution?: string;
+                    driverDate?: string;
+                    driverVersion?: string;
+                    openglVersion?: string;
+                }> = [];
                 if (v['additional-graphics-adapters']?.['graphics-adapter']) {
                     const adapters = Array.isArray(v['additional-graphics-adapters']['graphics-adapter'])
                         ? v['additional-graphics-adapters']['graphics-adapter']
                         : [v['additional-graphics-adapters']['graphics-adapter']];
-                    additionalGPUs = adapters.map((a: any) => this.safeString(a['@_card-description'])).filter(Boolean);
+                    additionalCards = adapters
+                        .map((adapter: any) => this.extractGraphicsCard(adapter))
+                        .filter((card: any) => card.name && card.name !== 'Unknown');
                 }
 
-                if (additionalGPUs.length > 0 && primaryGPU) {
-                    gpu = `${additionalGPUs.join(', ')} / ${primaryGPU}`;
+                graphicsCards = [primaryCard, ...additionalCards].filter((card) => card.name && card.name !== 'Unknown');
+                const gpuNames = graphicsCards.map((card) => card.name);
+                if (gpuNames.length > 0) {
+                    gpu = gpuNames.join(' / ');
                 } else {
-                    gpu = additionalGPUs[0] || primaryGPU || 'Unknown';
+                    gpu = 'Unknown';
                 }
 
-                gpuDriverVersion = this.safeString(v['driver-version']) || this.safeString(v['@_driver-version']) || this.safeString(v['driver']) || '';
-                openglVersion = this.safeString(v['opengl-version']) || this.safeString(v['@_opengl-version']) || this.safeString(v['opengl']) || '';
-
-                // VRAM
-                const dedicatedMem = v['dedicated-memory'] || v['@_dedicated-memory'] || v['adapter-ram'] || v['memory-size'];
-                if (dedicatedMem) {
-                    const bytes = Number(dedicatedMem);
-                    if (!isNaN(bytes) && bytes > 0) {
-                        if (bytes > 1024 * 1024 * 1024) {
-                            vram = `${Math.round(bytes / (1024 * 1024 * 1024))} GB`;
-                        } else if (bytes > 1024 * 1024) {
-                            vram = `${Math.round(bytes / (1024 * 1024))} MB`;
-                        } else {
-                            vram = `${dedicatedMem} MB`;
-                        }
-                    } else {
-                        vram = this.safeString(dedicatedMem) + ' MB';
-                    }
-                }
+                gpuDriverVersion = primaryCard.driverVersion || '';
+                openglVersion = primaryCard.openglVersion || '';
+                vram = primaryCard.vram || primaryCard.ram || '';
             }
 
             // ── RAM ──
@@ -200,6 +205,10 @@ export class HotinfoParserService {
                                  (system.video['@_screen-width'] && system.video['@_screen-height'] ? `${this.extractValue(system.video['@_screen-width'])}x${this.extractValue(system.video['@_screen-height'])}` : '') ||
                                  (system.video['screen-width'] && system.video['screen-height'] ? `${system.video['screen-width']}x${system.video['screen-height']}` : '');
             }
+            graphicsCards = graphicsCards.map((card) => ({
+                ...card,
+                resolution: card.resolution || screenResolution || undefined,
+            }));
 
             // ── Conflicting Processes ──
             let conflictingProcesses: string[] = [];
@@ -291,6 +300,7 @@ export class HotinfoParserService {
                 openglVersion,
                 vram,
                 screenResolution,
+                graphicsCards,
                 registryPaths,
                 drives,
                 printers,
@@ -318,6 +328,97 @@ export class HotinfoParserService {
 
     private safeString(node: any): string {
         return this.extractValue(node);
+    }
+
+    private pickString(node: any, keys: string[]): string {
+        for (const key of keys) {
+            const value = this.safeString(node?.[key]);
+            if (value) return value;
+        }
+        return '';
+    }
+
+    private formatMemory(value: any): string {
+        const raw = this.safeString(value);
+        if (!raw) return '';
+
+        const normalized = raw.replace(',', '.');
+        const bytes = Number(normalized);
+        if (!Number.isNaN(bytes) && bytes > 0) {
+            if (bytes >= 1024 * 1024 * 1024) {
+                return `${Math.round(bytes / (1024 * 1024 * 1024))} GB`;
+            }
+            if (bytes >= 1024 * 1024) {
+                return `${Math.round(bytes / (1024 * 1024))} MB`;
+            }
+            return `${Math.round(bytes)} MB`;
+        }
+
+        return /\b(mb|gb|kb)\b/i.test(raw) ? raw : `${raw} MB`;
+    }
+
+    private extractGraphicsCard(node: any) {
+        const name = this.pickString(node, [
+            '@_card-description',
+            'card-description',
+            '@_chip-type',
+            'chip-type',
+            '@_name',
+            'name',
+            '@_description',
+            'description',
+        ]) || 'Unknown';
+
+        const dedicatedMemory = this.pickString(node, [
+            '@_dedicated-memory',
+            'dedicated-memory',
+            '@_dedicated-vram',
+            'dedicated-vram',
+            '@_vram',
+            'vram',
+        ]);
+        const adapterMemory = this.pickString(node, [
+            '@_adapter-ram',
+            'adapter-ram',
+            '@_memory-size',
+            'memory-size',
+            '@_ram',
+            'ram',
+        ]);
+        const width = this.pickString(node, ['@_screen-width', 'screen-width', '@_width', 'width']);
+        const height = this.pickString(node, ['@_screen-height', 'screen-height', '@_height', 'height']);
+
+        return {
+            name,
+            vram: this.formatMemory(dedicatedMemory),
+            ram: this.formatMemory(adapterMemory),
+            resolution: this.pickString(node, [
+                '@_screen-resolution',
+                'screen-resolution',
+                '@_resolution',
+                'resolution',
+            ]) || (width && height ? `${width}x${height}` : ''),
+            driverDate: this.pickString(node, [
+                '@_driver-date',
+                'driver-date',
+                '@_driver-date-string',
+                'driver-date-string',
+                '@_driverdate',
+                'driverdate',
+            ]),
+            driverVersion: this.pickString(node, [
+                '@_driver-version',
+                'driver-version',
+                '@_driver',
+                'driver',
+            ]),
+            openglVersion: this.pickString(node, [
+                '@_opengl-version',
+                'opengl-version',
+                '@_opengl',
+                'opengl',
+            ]),
+        };
     }
 
     private mapWindowsBuild(build: string): string | null {

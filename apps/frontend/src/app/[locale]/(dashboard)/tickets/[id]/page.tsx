@@ -85,6 +85,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const [summarizing, setSummarizing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [drafting, setDrafting] = useState(false);
+    const [downloadingHotinfo, setDownloadingHotinfo] = useState(false);
 
     // CSAT States
     const [csatScore, setCsatScore] = useState<number>(0);
@@ -124,6 +125,29 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             toast.error(t('load_error'));
         } finally {
             setLoading(false);
+        }
+    };
+
+    const downloadHotinfo = async () => {
+        const customerId = ticket?.creator?.id;
+        if (!customerId) return;
+
+        setDownloadingHotinfo(true);
+        try {
+            const { blob, filename } = await api.customers.downloadHotinfo(customerId);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename || `hotinfo_${customerId}.hxl`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            toast.success(t('hotinfo_download_started'));
+        } catch (error) {
+            toast.error(t('hotinfo_download_error'));
+        } finally {
+            setDownloadingHotinfo(false);
         }
     };
 
@@ -845,14 +869,31 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-5xl max-h-[88vh] p-0 overflow-hidden border-cyan-900/50 bg-background">
-                            <DialogHeader className="bg-cyan-950/20 border-cyan-900/30">
-                                <DialogTitle className="flex items-center gap-2 text-cyan-300">
-                                    <Cpu className="h-4 w-4" />
-                                    {t('hotfix_data')}
-                                </DialogTitle>
-                                <DialogDescription>
-                                    {t('hotinfo_modal_desc')}
-                                </DialogDescription>
+                            <DialogHeader className="bg-cyan-950/20 border-cyan-900/30 px-5 py-4">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="space-y-1.5">
+                                        <DialogTitle className="flex items-center gap-2 text-cyan-300">
+                                            <Cpu className="h-4 w-4" />
+                                            {t('hotfix_data')}
+                                        </DialogTitle>
+                                        <DialogDescription className="text-[12px] leading-5 text-slate-300 dark:text-cyan-100/75">
+                                            {t('hotinfo_modal_desc')}
+                                        </DialogDescription>
+                                    </div>
+                                    {ticket.creator?.id && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={downloadHotinfo}
+                                            disabled={downloadingHotinfo}
+                                            className="shrink-0 h-8 border-cyan-900/50 bg-cyan-950/20 text-[10px] uppercase tracking-[0.16em] text-cyan-200 hover:bg-cyan-950/35 hover:text-cyan-100"
+                                        >
+                                            {downloadingHotinfo ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
+                                            {t('download_hotinfo')}
+                                        </Button>
+                                    )}
+                                </div>
                             </DialogHeader>
                             <ScrollArea className="max-h-[72vh] px-5 pb-5">
                                 <div className="space-y-5">

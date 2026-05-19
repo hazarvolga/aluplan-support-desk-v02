@@ -526,9 +526,12 @@ export class CustomersService {
             throw new NotFoundException('Hotinfo dosyası bulunamadı');
         }
 
+        const rawName = profile.user.fullName?.trim() || 'customer';
+        const safeName = rawName.replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || 'customer';
+
         return {
             content: profile.hotinfoRaw,
-            filename: `hotinfo_${profile.user.fullName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.hxl`,
+            filename: `hotinfo_${safeName}_${new Date().toISOString().split('T')[0]}.hxl`,
         };
     }
 }

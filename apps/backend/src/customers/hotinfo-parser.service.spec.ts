@@ -53,6 +53,50 @@ describe('HotinfoParserService', () => {
         expect(service.parseHotinfo(xmlVideoWH)?.screenResolution).toBe('3840x2160');
     });
 
+    it('should expose primary and secondary graphics cards with support details', () => {
+        const xml = `<hotinfo>
+            <system>
+                <video
+                    card-description="NVIDIA RTX A2000"
+                    dedicated-memory="4294967296"
+                    adapter-ram="8589934592"
+                    screen-resolution="1920 x 1080 x True Color (32bit)"
+                    driver-date="2026-01-15"
+                    driver-version="31.0.15.5186">
+                    <additional-graphics-adapters>
+                        <graphics-adapter
+                            card-description="Intel UHD Graphics"
+                            dedicated-memory="536870912"
+                            adapter-ram="2147483648"
+                            driver-date="2025-11-10"
+                            driver-version="31.0.101.5333" />
+                    </additional-graphics-adapters>
+                </video>
+            </system>
+        </hotinfo>`;
+
+        const data = service.parseHotinfo(xml);
+
+        expect(data?.graphicsCards).toHaveLength(2);
+        expect(data?.graphicsCards[0]).toMatchObject({
+            name: 'NVIDIA RTX A2000',
+            vram: '4 GB',
+            ram: '8 GB',
+            resolution: '1920 x 1080 x True Color (32bit)',
+            driverDate: '2026-01-15',
+            driverVersion: '31.0.15.5186',
+        });
+        expect(data?.graphicsCards[1]).toMatchObject({
+            name: 'Intel UHD Graphics',
+            vram: '512 MB',
+            ram: '2 GB',
+            resolution: '1920 x 1080 x True Color (32bit)',
+            driverDate: '2025-11-10',
+            driverVersion: '31.0.101.5333',
+        });
+        expect(data?.gpu).toBe('NVIDIA RTX A2000 / Intel UHD Graphics');
+    });
+
     it('should extract comprehensive diagnostic data (Registry, Drives, Printers, EnvVars)', () => {
         const mockXml = `<?xml version="1.0" encoding="utf-8"?>
         <hotinfo>
