@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Building, Edit, Save, Key, Monitor, Download, Mail, Phone, FileText, Smartphone, MapPin, Clock, MessageCircle, Briefcase } from 'lucide-react';
+import { ArrowLeft, User, Building, Save, Key, Monitor, Download, Mail, Phone, FileText, Smartphone, MapPin, Clock, MessageCircle, Briefcase, Hash, Globe, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -204,6 +204,40 @@ export default function CustomerProfilePage() {
                     </DetailRow>
                 </CardContent>
             </Card>
+
+            {account && (
+                <Card>
+                    <CardHeader className="pb-4">
+                        <div className="flex items-center space-x-2 text-sky-500">
+                            <Building className="h-5 w-5" />
+                            <CardTitle>{t('accounts.crm_account_details')}</CardTitle>
+                        </div>
+                        <CardDescription>{t('accounts.details_subtitle')}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <DetailRow icon={Building} label={t('accounts.account_name')} value={account.name} />
+                        <DetailRow icon={Hash} label={t('accounts.client_id_allplan')} value={account.account_number} />
+                        <DetailRow icon={Hash} label={t('accounts.client_id_frilo')} value={account.clientIdFrilo} />
+                        <DetailRow icon={Building} label={t('accounts.customer_segment')} value={account.industry} />
+                        <DetailRow icon={Phone} label={t('accounts.phone')} value={account.phone} />
+                        <DetailRow icon={FileText} label={t('accounts.fax')} value={account.fax} />
+                        <DetailRow icon={User} label={t('accounts.license_manager_name')} value={account.licenseManagerName} />
+                        <DetailRow icon={Globe} label={t('accounts.website')}>
+                            {account.website ? (
+                                <a href={account.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+                                    {account.website}
+                                    <ExternalLink className="h-3 w-3" />
+                                </a>
+                            ) : '-'}
+                        </DetailRow>
+                        <DetailRow icon={MapPin} label={t('accounts.service_address')}>
+                            <span className="whitespace-pre-line text-muted-foreground">
+                                {account.serviceAddress || account.address || '-'}
+                            </span>
+                        </DetailRow>
+                    </CardContent>
+                </Card>
+            )}
 
             <form onSubmit={handleSave}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

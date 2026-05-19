@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -47,7 +47,10 @@ export default function NewTicketPage() {
     const ct = useTranslations('common');
     const tt = useTranslations('tickets');
     const router = useRouter();
-    const locale = useLocale();
+    const intlLocale = useLocale();
+    const params = useParams<{ locale?: string }>();
+    const routeLocale = params?.locale;
+    const locale = routeLocale === 'tr' || routeLocale === 'en' || routeLocale === 'de' ? routeLocale : intlLocale;
     const [currentStep, setCurrentStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [loadingProducts, setLoadingProducts] = useState(true);
@@ -145,7 +148,10 @@ export default function NewTicketPage() {
 
     const runDiagnosis = async () => {
         const { subject, description } = form.getValues();
-        if (!description) return;
+        if (!(await form.trigger('description'))) {
+            toast.error(t('errors.description_min'));
+            return;
+        }
 
         setIsDiagnosing(true);
         setCurrentStep(2);
@@ -204,6 +210,14 @@ export default function NewTicketPage() {
         } finally {
             setIsDiagnosing(false);
         }
+    };
+
+    const proceedToTicketSummary = async () => {
+        if (!(await form.trigger('description'))) {
+            toast.error(t('errors.description_min'));
+            return;
+        }
+        setCurrentStep(3);
     };
 
     const onSubmit = async (values: TicketFormValues) => {
@@ -487,7 +501,7 @@ export default function NewTicketPage() {
                             <Button
                                 type="button"
                                 className="w-full bg-brand-600 text-industrial-dark hover:bg-brand-500"
-                                onClick={() => setCurrentStep(3)}
+                                onClick={proceedToTicketSummary}
                             >
                                 {t('ai.create_directly')}
                             </Button>
@@ -589,7 +603,7 @@ export default function NewTicketPage() {
                                     size="lg"
                                     variant="secondary"
                                     className="bg-white/5 hover:bg-white/10 px-8"
-                                    onClick={() => setCurrentStep(3)}
+                                    onClick={proceedToTicketSummary}
                                 >
                                     {t('ai.no_create_ticket')}
                                 </Button>
