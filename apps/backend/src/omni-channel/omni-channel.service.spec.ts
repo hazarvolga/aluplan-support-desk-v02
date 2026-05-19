@@ -5,6 +5,8 @@ import { TicketsService } from '../tickets/tickets.service';
 
 describe('OmniChannelService', () => {
   let service: OmniChannelService;
+  let prismaService: any;
+  let ticketsService: any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -29,10 +31,45 @@ describe('OmniChannelService', () => {
     }).compile();
 
     service = module.get<OmniChannelService>(OmniChannelService);
+    prismaService = module.get<PrismaService>(PrismaService);
+    ticketsService = module.get<TicketsService>(TicketsService);
+
+    jest.clearAllMocks();
   });
 
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  it('should ignore delivery status notifications without creating a ticket', async () => {
+    prismaService.inboundEmailLog.findUnique.mockResolvedValue(null);
+    prismaService.inboundEmailLog.upsert.mockResolvedValue({ id: 'log-bounce' });
+
+    await service.handleInboundEmailWebhook({
+      from: 'MAILER-DAEMON@mail.allplan.net.tr',
+      subject: 'Undelivered Mail Returned to Sender',
+      text: [
+        'This is the mail system at host mail.allplan.net.tr.',
+        'Reporting-MTA: dns; mail.allplan.net.tr',
+        'Final-Recipient: rfc822; admin@example.com',
+        'Action: failed',
+        'Status: 5.1.0',
+        'Diagnostic-Code: X-Postfix; Domain example.com does not accept mail (nullMX)',
+      ].join('\n'),
+      messageId: 'msg-bounce',
+      headers: { 'content-type': 'multipart/report; report-type=delivery-status' },
+    });
+
+    expect(ticketsService.create).not.toHaveBeenCalled();
+    expect(ticketsService.addMessage).not.toHaveBeenCalled();
+    expect(prismaService.user.create).not.toHaveBeenCalled();
+    expect(prismaService.inboundEmailLog.update).toHaveBeenCalledWith({
+      where: { id: 'log-bounce' },
+      data: expect.objectContaining({
+        processed: true,
+        error: 'Ignored delivery status notification',
+      }),
+    });
   });
 });

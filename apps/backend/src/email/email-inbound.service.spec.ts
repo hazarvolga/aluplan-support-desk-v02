@@ -133,5 +133,37 @@ describe('EmailInboundService', () => {
                 'new-user-1'
             );
         });
+
+        it('should ignore delivery status notifications without creating a ticket', async () => {
+            mockPrismaService.inboundEmailLog.findUnique.mockResolvedValue(null);
+            mockPrismaService.inboundEmailLog.upsert.mockResolvedValue({ id: 'log-bounce' });
+
+            const mockMail = {
+                from: { value: [{ address: 'MAILER-DAEMON@mail.allplan.net.tr' }] },
+                subject: 'Undelivered Mail Returned to Sender',
+                text: [
+                    'This is the mail system at host mail.allplan.net.tr.',
+                    'Reporting-MTA: dns; mail.allplan.net.tr',
+                    'Final-Recipient: rfc822; admin@example.com',
+                    'Action: failed',
+                    'Status: 5.1.0',
+                    'Diagnostic-Code: X-Postfix; Domain example.com does not accept mail (nullMX)',
+                ].join('\n'),
+                headers: new Map([['content-type', 'multipart/report; report-type=delivery-status']]),
+            };
+
+            await (service as any).processMail(mockMail, 'msg-bounce');
+
+            expect(mockTicketsService.create).not.toHaveBeenCalled();
+            expect(mockTicketsService.addMessage).not.toHaveBeenCalled();
+            expect(mockPrismaService.user.create).not.toHaveBeenCalled();
+            expect(mockPrismaService.inboundEmailLog.update).toHaveBeenCalledWith({
+                where: { id: 'log-bounce' },
+                data: expect.objectContaining({
+                    processed: true,
+                    error: 'Ignored delivery status notification',
+                }),
+            });
+        });
     });
 });

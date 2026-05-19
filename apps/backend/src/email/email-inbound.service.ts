@@ -9,6 +9,7 @@ import { simpleParser } from 'mailparser';
 import { CommunicationChannel } from '@aluplan/database';
 import { StorageService } from '../common/services/storage.service';
 import { PiiMaskingService } from '../common/services/pii-masking.service';
+import { isDeliveryStatusNotification } from './email-bounce.util';
 
 @Injectable()
 export class EmailInboundService implements OnModuleInit {
@@ -125,6 +126,19 @@ export class EmailInboundService implements OnModuleInit {
                 processed: false,
             },
         });
+
+        if (isDeliveryStatusNotification({ from, subject, body, headers: mail.headers })) {
+            await this.prisma.inboundEmailLog.update({
+                where: { id: log.id },
+                data: {
+                    processed: true,
+                    processedAt: new Date(),
+                    error: 'Ignored delivery status notification',
+                },
+            });
+            this.logger.warn(`Ignored delivery status notification ${messageId} from ${from}`);
+            return;
+        }
 
         try {
             // Logic: Ticket Threading

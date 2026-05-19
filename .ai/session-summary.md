@@ -188,6 +188,21 @@ Maintenance rule:
 - `pnpm i18n:check` passed.
 - `pnpm exec prisma validate --schema packages/database/prisma/schema.prisma` passed.
 
+## Follow-up - 2026-05-19 Inbound Bounce Email Filtering
+
+### Root cause
+- Mail delivery failure notifications from `MAILER-DAEMON` / Postfix were being treated as normal inbound customer emails.
+- That allowed delivery status notifications such as `Reporting-MTA`, `Final-Recipient`, `Action: failed`, and `nullMX` bounces to create support tickets.
+- The visible `[E-POSTA GİZLENDİ: ...]` text is PII masking in stored/displayed message content; it is separate from the actual email sending address path.
+
+### Fix applied
+- Added shared delivery-status-notification detection for IMAP inbound and omni-channel webhook inbound flows.
+- Delivery failure/bounce mails are now marked processed in `inbound_email_logs` with `Ignored delivery status notification` and do not create users, ticket messages, or tickets.
+
+### Verification
+- `pnpm --filter @aluplan/backend test -- email-inbound.service.spec.ts omni-channel.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+
 ### Verification
 - Backend must-pass regression set passed:
   - `pnpm --filter @aluplan/backend test -- auth.controller.spec.ts tickets.controller.spec.ts notifications.gateway.spec.ts ai-query.service.spec.ts`

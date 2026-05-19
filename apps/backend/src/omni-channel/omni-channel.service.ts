@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TicketsService } from '../tickets/tickets.service';
+import { isDeliveryStatusNotification } from '../email/email-bounce.util';
 
 @Injectable()
 export class OmniChannelService {
@@ -17,6 +18,7 @@ export class OmniChannelService {
         const subject = payload.subject || 'No Subject';
         const body = payload.text || payload.body || payload['stripped-text'] || 'Empty Message';
         const messageId = payload.messageId || payload['Message-Id'] || `webhook-${Date.now()}`;
+        const headers = payload.headers || payload.Headers || payload;
 
         if (!from) {
             this.logger.warn('Inbound webhook missing "from" field.');
@@ -40,6 +42,19 @@ export class OmniChannelService {
                 processed: false,
             },
         });
+
+        if (isDeliveryStatusNotification({ from, subject, body, headers })) {
+            await this.prisma.inboundEmailLog.update({
+                where: { id: log.id },
+                data: {
+                    processed: true,
+                    processedAt: new Date(),
+                    error: 'Ignored delivery status notification',
+                },
+            });
+            this.logger.warn(`Ignored delivery status notification ${messageId} from ${from}`);
+            return;
+        }
 
         try {
             // Thread detection - Support both [#SUP-123] and [SUP-123] formats
