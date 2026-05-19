@@ -147,6 +147,9 @@ describe('AiQueryService', () => {
         storageService = module.get<StorageService>(StorageService);
 
         jest.clearAllMocks();
+        mockAiService.generate.mockReset();
+        mockAiService.reformat.mockReset();
+        mockAiService.streamReformat.mockReset();
         mockPrismaService.aiInteraction.create.mockResolvedValue(mockInteraction);
         mockRedisService.get.mockResolvedValue(null);
         mockAiService.getActiveProviderName.mockResolvedValue('ollama');
@@ -192,7 +195,7 @@ describe('AiQueryService', () => {
     });
 
     describe('query — HIGH confidence', () => {
-        it('should call AI reformat and return HIGH confidence answer', async () => {
+        it('should call shared support synthesis and return HIGH confidence answer', async () => {
             // Arrange
             mockPrismaService.user.findUnique.mockResolvedValue(null);
             const highResult = {
@@ -203,7 +206,7 @@ describe('AiQueryService', () => {
                 results: [highResult],
                 diagnostics: { topScore: 0.95, passedThreshold: 1, queryEmbeddingModel: 'nomic', thresholdUsed: 0.78 },
             });
-            mockAiService.reformat.mockResolvedValue({ response: 'Formatted AI answer' });
+            mockAiService.generate.mockResolvedValue('Formatted AI answer');
 
             // Act
             const result = await service.query({ userQuery: 'how to install?', userId: null });
@@ -212,7 +215,10 @@ describe('AiQueryService', () => {
             expect(result.confidence).toBe('HIGH');
             expect(result.answer).toBe('Formatted AI answer');
             expect(result.suggestTicket).toBe(false);
-            expect(mockAiService.reformat).toHaveBeenCalledTimes(1);
+            expect(mockAiService.generate).toHaveBeenCalledTimes(1);
+            expect(mockAiService.generate.mock.calls[0][0]).toContain('RESPONSE DRAFT:');
+            expect(mockAiService.generate.mock.calls[0][0]).toContain('Audience: customer self-service answer');
+            expect(mockAiService.reformat).not.toHaveBeenCalled();
             expect(mockLangfuseService.trace).toHaveBeenCalledTimes(1);
         });
     });
@@ -398,13 +404,13 @@ describe('AiQueryService', () => {
                 ],
                 diagnostics: { topScore: 0.95, passedThreshold: 2, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
             });
-            mockAiService.reformat.mockResolvedValue({ response: 'Use the certified GPU driver package.' });
+            mockAiService.generate.mockResolvedValue('Use the certified GPU driver package.');
 
             const result = await service.query({ userQuery: 'How do I update the graphics driver?', wait: true });
 
             expect(result.answerMode).toBe('LLM');
-            expect(mockAiService.generate).not.toHaveBeenCalled();
-            expect(mockAiService.reformat).toHaveBeenCalledTimes(1);
+            expect(mockAiService.generate).toHaveBeenCalledTimes(1);
+            expect(mockAiService.reformat).not.toHaveBeenCalled();
         });
 
         it('keeps synchronous customer diagnosis open long enough for admin-grade synthesis', async () => {
@@ -478,6 +484,37 @@ describe('AiQueryService', () => {
             expect(result.answer).not.toContain('Kaynak:');
             expect(result.answer).not.toContain('İlgili pasaj:');
             expect(result.answer).not.toContain('Why is Allplan running so slow?');
+        });
+
+        it('does not build a customer fallback from an unrelated high-scoring source', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'layout-printing',
+                        sourceType: 'DOCUMENT',
+                        title: 'Allplan_2020_SbS_LayoutsPrinting-57xgv7qhci0',
+                        content: 'Open the Ports tab. Enter copy /b C:\\Print\\Test01.prn LPT1. If the printer is connected to a computer on the network, enter the UNC name instead of the port.',
+                        similarity: 0.95,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.95, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'Loopback adapter hangi durumda gerekir?',
+                wait: true,
+                language: 'tr',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('yeterince güvenilir ve doğrudan eşleşen içerik bulunamadı');
+            expect(result.answer).toContain('destek talebi');
+            expect(result.answer).not.toContain('Allplan_2020_SbS_LayoutsPrinting');
+            expect(result.answer).not.toContain('copy /b');
+            expect(result.answer).not.toContain('LPT1');
+            expect(result.answer).not.toContain('en güçlü eşleşme');
         });
 
         it('answers a Turkish customer question in Turkish even when the UI locale is English', async () => {

@@ -190,10 +190,49 @@ export class AiQueryService {
         aiParts: AiPart[],
         timeoutMs = this.DIAGNOSIS_GENERATION_TIMEOUT_MS,
     ) {
+        const synthesisPrompt = this.buildSupportSynthesisPrompt(finalPrompt);
+
         return Promise.race([
-            this.ai.reformat(finalPrompt, userQuery, kbContent, aiParts),
+            this.generateSupportSynthesis(synthesisPrompt, finalPrompt, userQuery, kbContent, aiParts, timeoutMs),
             new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
         ]);
+    }
+
+    private buildSupportSynthesisPrompt(finalPrompt: string): string {
+        return `${finalPrompt.trim()}
+
+RESPONSE DRAFT:`;
+    }
+
+    private async generateSupportSynthesis(
+        synthesisPrompt: string,
+        finalPrompt: string,
+        userQuery: string,
+        kbContent: string,
+        aiParts: AiPart[],
+        timeoutMs: number,
+    ) {
+        const generated = await this.ai.generate(synthesisPrompt, timeoutMs, aiParts);
+        const trimmed = generated?.trim();
+        if (trimmed && !this.looksLikeRankingPayload(trimmed)) {
+            return {
+                response: trimmed,
+                model: await this.ai.getActiveModelName(),
+            };
+        }
+
+        return this.ai.reformat(finalPrompt, userQuery, kbContent, aiParts);
+    }
+
+    private looksLikeRankingPayload(value: string): boolean {
+        if (!value.startsWith('{')) return false;
+
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed?.rankings);
+        } catch {
+            return false;
+        }
     }
 
     async query(options: AiQueryOptions): Promise<any> {
@@ -802,20 +841,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         const responseLanguage = this.resolveFallbackLanguage(language, query);
         const snippets = this.extractRelevantFallbackSnippets(query, results, options.diagnosis);
         if (snippets.length === 0) {
-            const topResult = results[0];
-            if (!topResult) {
-                return responseLanguage === 'en'
-                    ? 'No usable content was found in the knowledge base.'
-                    : responseLanguage === 'de'
-                        ? 'In der Wissensbasis wurde kein nutzbarer Inhalt gefunden.'
-                        : 'Bilgi kaynağında kullanılabilir bir içerik bulunamadı.';
-            }
-
-            snippets.push({
-                title: topResult.title || 'Kaynak',
-                excerpt: this.cleanFallbackExcerpt((topResult.content ?? '').slice(0, 420)),
-                score: topResult.similarity,
-            });
+            return this.buildNoUsableFallbackContentMessage(responseLanguage);
         }
 
         if (responseLanguage === 'en') {
@@ -1104,6 +1130,27 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         ].join('\n');
     }
 
+    private buildNoUsableFallbackContentMessage(language: 'tr' | 'en' | 'de'): string {
+        if (language === 'en') {
+            return [
+                'The knowledge base does not contain enough reliable information for this exact question yet.',
+                'Please create a support request and include the product version, environment details, screenshots, and the exact error or scenario.',
+            ].join('\n');
+        }
+
+        if (language === 'de') {
+            return [
+                'Die Wissensbasis enthält für diese konkrete Frage noch keine ausreichend verlässlichen Informationen.',
+                'Bitte erstellen Sie eine Support-Anfrage und fügen Sie Produktversion, Umgebungsdetails, Screenshots und die genaue Fehlermeldung oder Situation hinzu.',
+            ].join('\n');
+        }
+
+        return [
+            'Bu konu için bilgi kaynağında yeterince güvenilir ve doğrudan eşleşen içerik bulunamadı.',
+            'Lütfen destek talebi oluşturun; ürün sürümü, ortam bilgisi, ekran görüntüsü ve varsa tam hata metnini ekleyin.',
+        ].join('\n');
+    }
+
     private inferFallbackTopic(
         query: string,
         snippet: { title: string; excerpt: string },
@@ -1303,7 +1350,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             { name: 'exchange', terms: ['ifc', 'export', 'import', 'aktarim', 'ice aktar', 'disa aktar'], weight: 0.12 },
             { name: 'performance', terms: ['performans', 'slow', 'yavas', 'donma', 'freeze'], weight: 0.08 },
             { name: 'startup', terms: ['acilis', 'baslangic', 'baslatma', 'startup', 'start', 'starting', 'startet', 'bekliyor', 'waiting'], weight: 0.1 },
-            { name: 'network', terms: ['ag', 'network', 'netzwerk', 'isim cozumleme', 'name resolution', 'dns', 'server', 'sunucu'], weight: 0.1 },
+            { name: 'network', terms: ['ag', 'network', 'netzwerk', 'isim cozumleme', 'name resolution', 'dns', 'server', 'sunucu', 'loopback', 'loopback adapter', 'loopbackadapter', 'network adapter', 'bagdastirici', 'bagdastiricisi', 'geri dongu'], weight: 0.1 },
             { name: 'workgroup', terms: ['workgroup', 'work groupmanager', 'workgroupmanager', 'checkout', 'check out', 'disa calis', 'disarida calis', 'merkezi olmayan', 'dezentral', 'zentralen dateiablageordner', 'benutzer', 'benutzerordner', 'kullanici klasoru', 'projektzugriff', 'projekt locking', 'lck', 'arbeitsplatz'], weight: 0.18 },
         ];
     }

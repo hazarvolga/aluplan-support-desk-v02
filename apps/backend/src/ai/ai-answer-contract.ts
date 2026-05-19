@@ -43,12 +43,13 @@ export function buildSupportAnswerContractPrompt(options: SupportAnswerContractO
 - If information is insufficient, say what is missing and ask for the next useful detail instead of filling gaps with assumptions.
 
 ## REQUIRED OUTPUT SHAPE
-Use these sections when applicable and keep them in this order:
+Use these sections and keep them in this order for troubleshooting, installation failures, licensing failures, startup/performance errors, and support-procedure answers:
 ## 📌 Sorun Yorumu
 ## 🎯 En Olası Neden
 ## ⚠️ Kritik Kontroller
 ## 🛠️ Çözüm Adımları
 ## ✅ Doğrulama
 
+Do not omit "Kritik Kontroller" when the retrieved context contains prerequisites, permissions, compatibility checks, network/proxy checks, security-software checks, or verification conditions.
 For pure how-to questions, "En Olası Neden" may briefly state that this is a procedure request, not an error diagnosis.`;
 }

@@ -26,6 +26,8 @@ describe('ai-answer-contract', () => {
         expect(prompt).toContain('Output language must be Turkish');
         expect(prompt).toContain('Do not mix German or English source-language labels into a Turkish answer');
         expect(prompt).toContain('Do not show raw excerpts');
+        expect(prompt).toContain('Use these sections and keep them in this order');
+        expect(prompt).toContain('Do not omit "Kritik Kontroller"');
     });
 
     it('keeps agent drafts grounded in the same customer-safe core solution', () => {
