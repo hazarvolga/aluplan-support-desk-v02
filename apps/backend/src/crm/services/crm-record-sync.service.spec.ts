@@ -68,6 +68,38 @@ describe('CrmRecordSyncService', () => {
         });
     });
 
+    it('persists extended CRM account detail fields', async () => {
+        mockPrisma.crmAccount.findUnique.mockResolvedValue(null);
+        mockPrisma.crmAccount.upsert.mockResolvedValue({ id: 'acc-1' });
+
+        await service.upsertAccountFromDynamics({
+            accountid: 'dyn-acc-1',
+            name: 'Betaş Beton ve Prefabrike',
+            accountnumber: 'C300905890',
+            new_clientidfrilo: 'FR-42',
+            industrycode: 'Prefabrik',
+            telephone1: '0352 322 20 50',
+            fax: '0352 322 20 51',
+            new_lisansyoneticisiisimsoyisim: 'Meriç Dinekli',
+            websiteurl: 'https://example.com',
+            address1_composite: 'Organize Sanayi Bölgesi 37. Cad.',
+        });
+
+        expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                update: expect.objectContaining({
+                    account_number: 'C300905890',
+                    clientIdFrilo: 'FR-42',
+                    phone: '0352 322 20 50',
+                    fax: '0352 322 20 51',
+                    licenseManagerName: 'Meriç Dinekli',
+                    serviceAddress: 'Organize Sanayi Bölgesi 37. Cad.',
+                    rawCrmPayload: expect.objectContaining({ accountid: 'dyn-acc-1' }),
+                }),
+            }),
+        );
+    });
+
     it('reconciles stale linked customer profile snapshots', async () => {
         (mockPrisma.crmAccount as any).findMany = jest.fn().mockResolvedValue([
             {
@@ -149,6 +181,10 @@ describe('CrmRecordSyncService', () => {
             firstname: 'Cem',
             lastname: 'Sayar',
             telephone1: '+90 555',
+            fax: '+90 216',
+            mobilephone: '+90 532',
+            address1_composite: 'Istanbul',
+            preferredcontactmethodcode: 'Email',
             parentcustomerid_account: {
                 accountid: 'crm-account-1',
                 name: 'Promer',
@@ -163,6 +199,14 @@ describe('CrmRecordSyncService', () => {
         expect(tx.customerProfile.create).not.toHaveBeenCalled();
         expect(tx.customerProfile.update).toHaveBeenCalledWith(expect.objectContaining({
             where: { id: 'profile-existing' },
+            data: expect.objectContaining({
+                phoneNumber: '+90 555',
+                fax: '+90 216',
+                mobilePhone: '+90 532',
+                address: 'Istanbul',
+                preferredContactMethod: 'Email',
+                rawCrmPayload: expect.objectContaining({ contactid: 'crm-contact-1' }),
+            }),
         }));
     });
 });

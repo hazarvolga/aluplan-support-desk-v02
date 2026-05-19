@@ -405,7 +405,7 @@ export class CustomersService {
     async getCustomerById(id: string) {
         const user = await this.prisma.user.findUnique({
             where: { id },
-            include: { customerProfile: true },
+            include: { customerProfile: { include: { account: true } } },
         });
 
         if (!user || !user.customerProfile) {

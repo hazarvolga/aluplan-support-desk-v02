@@ -102,6 +102,30 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     const address = this.resolveField(account, 'address', mappings, 'address1_composite');
                     const externalId = this.resolveField(account, 'externalAccountId', mappings, 'accountid');
                     const accountNumber = this.resolveField(account, 'accountNumber', mappings, 'accountnumber');
+                    const serviceAddress = this.resolveFirstField(account, 'serviceAddress', mappings, [
+                        'address1_composite',
+                        'address1_line1',
+                        'address1_name',
+                    ]);
+                    const clientIdFrilo = this.resolveFirstField(account, 'clientIdFrilo', mappings, [
+                        'new_clientidfrilo',
+                        'new_clientid_frilo',
+                        'new_friloclientid',
+                        'new_frilo_clientid',
+                        'new_friloid',
+                    ]);
+                    const phone = this.resolveFirstField(account, 'phone', mappings, [
+                        'telephone1',
+                        'telephone2',
+                        'telephone3',
+                    ]);
+                    const fax = this.resolveFirstField(account, 'fax', mappings, ['fax']);
+                    const licenseManagerName = this.resolveFirstField(account, 'licenseManagerName', mappings, [
+                        'new_lisansyoneticisiisimsoyisim',
+                        'new_lisans_yoneticisi_isim_soyisim',
+                        'new_licensemanagername',
+                        'new_license_manager_name',
+                    ]);
 
                     await this.prisma.crmAccount.upsert({
                         where: { externalAccountId: externalId },
@@ -109,8 +133,14 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             name,
                             website,
                             address,
+                            serviceAddress,
                             industry,
                             account_number: accountNumber,
+                            clientIdFrilo,
+                            phone,
+                            fax,
+                            licenseManagerName,
+                            rawCrmPayload: account,
                             crmVerified: true,
                         },
                         create: {
@@ -118,8 +148,14 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             externalAccountId: externalId,
                             website,
                             address,
+                            serviceAddress,
                             industry,
                             account_number: accountNumber,
+                            clientIdFrilo,
+                            phone,
+                            fax,
+                            licenseManagerName,
+                            rawCrmPayload: account,
                             crmVerified: true,
                         },
                     });
@@ -626,6 +662,20 @@ export class Dynamics365Adapter implements ICrmAdapter {
         }
 
         return dataLower[crmKey] ?? null;
+    }
+
+    private resolveFirstField(data: any, systemKey: string, mappings: Record<string, string>, candidateKeys: string[]): any {
+        const mapped = mappings[systemKey];
+        if (mapped) {
+            return this.resolveField(data, systemKey, mappings, mapped);
+        }
+
+        for (const candidate of candidateKeys) {
+            const value = this.resolveField(data, systemKey, {}, candidate);
+            if (value !== undefined && value !== null && value !== '') return value;
+        }
+
+        return null;
     }
 
     private limitString(value: unknown, maxLength: number): string {

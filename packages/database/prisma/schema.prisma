@@ -222,32 +222,38 @@ model RolePermission {
 }
 
 model CustomerProfile {
-  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId            String            @unique @map("user_id") @db.Uuid
-  firstName         String            @map("first_name") @db.VarChar(100)
-  lastName          String            @map("last_name") @db.VarChar(100)
-  middleName        String?           @map("middle_name") @db.VarChar(100)
-  customerNo        String            @unique @map("customer_no") @db.VarChar(50)
-  companyName       String            @map("company_name") @db.VarChar(255)
-  accountId         String?           @map("account_id") @db.Uuid
-  industry          String?           @db.VarChar(255)
-  jobTitle          String?           @map("job_title") @db.VarChar(255)
-  phoneNumber       String?           @map("phone_number") @db.VarChar(50)
-  contractStatus    String?           @map("contract_status") @db.VarChar(100)
-  externalContactId String?           @unique @map("external_contact_id") @db.VarChar(255)
-  crmVerified       Boolean           @default(false) @map("crm_verified")
-  hotinfoData       Json?             @map("hotinfo_data")
-  hotinfoRaw        String?           @map("hotinfo_raw")
-  hotinfoUpdatedAt  DateTime?         @map("hotinfo_updated_at")
-  tags              String[]          @default([])
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
-  subscriptionModel String?           @map("subscription_model") @db.VarChar(100)
-  deletedAt         DateTime?         @map("deleted_at")
-  isVip             Boolean           @default(false) @map("is_vip")
-  announcementLogs  AnnouncementLog[]
-  account           CrmAccount?       @relation(fields: [accountId], references: [id])
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                 String            @unique @map("user_id") @db.Uuid
+  firstName              String            @map("first_name") @db.VarChar(100)
+  lastName               String            @map("last_name") @db.VarChar(100)
+  middleName             String?           @map("middle_name") @db.VarChar(100)
+  customerNo             String            @unique @map("customer_no") @db.VarChar(50)
+  companyName            String            @map("company_name") @db.VarChar(255)
+  accountId              String?           @map("account_id") @db.Uuid
+  industry               String?           @db.VarChar(255)
+  jobTitle               String?           @map("job_title") @db.VarChar(255)
+  phoneNumber            String?           @map("phone_number") @db.VarChar(50)
+  fax                    String?           @db.VarChar(50)
+  mobilePhone            String?           @map("mobile_phone") @db.VarChar(50)
+  address                String?
+  primaryTimeZone        String?           @map("primary_time_zone") @db.VarChar(100)
+  preferredContactMethod String?           @map("preferred_contact_method") @db.VarChar(100)
+  contractStatus         String?           @map("contract_status") @db.VarChar(100)
+  externalContactId      String?           @unique @map("external_contact_id") @db.VarChar(255)
+  crmVerified            Boolean           @default(false) @map("crm_verified")
+  rawCrmPayload          Json?             @map("raw_crm_payload")
+  hotinfoData            Json?             @map("hotinfo_data")
+  hotinfoRaw             String?           @map("hotinfo_raw")
+  hotinfoUpdatedAt       DateTime?         @map("hotinfo_updated_at")
+  tags                   String[]          @default([])
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+  subscriptionModel      String?           @map("subscription_model") @db.VarChar(100)
+  deletedAt              DateTime?         @map("deleted_at")
+  isVip                  Boolean           @default(false) @map("is_vip")
+  announcementLogs       AnnouncementLog[]
+  account                CrmAccount?       @relation(fields: [accountId], references: [id])
+  user                   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([companyName], map: "idx_customer_company")
   @@index([externalContactId], map: "idx_customer_external_id")
@@ -256,36 +262,42 @@ model CustomerProfile {
 }
 
 model CrmAccount {
-  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name              String            @db.VarChar(255)
-  industry          String?           @db.VarChar(255)
-  website           String?           @db.VarChar(255)
-  address           String?
-  externalAccountId String?           @unique @map("external_account_id") @db.VarChar(255)
-  crmVerified       Boolean           @default(false) @map("crm_verified")
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
-  account_number    String?           @db.VarChar(255)
-  customers         CustomerProfile[]
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String            @db.VarChar(255)
+  industry           String?           @db.VarChar(255)
+  website            String?           @db.VarChar(255)
+  address            String?
+  serviceAddress     String?           @map("service_address")
+  phone              String?           @db.VarChar(50)
+  fax                String?           @db.VarChar(50)
+  clientIdFrilo      String?           @map("client_id_frilo") @db.VarChar(255)
+  licenseManagerName String?           @map("license_manager_name") @db.VarChar(255)
+  rawCrmPayload      Json?             @map("raw_crm_payload")
+  externalAccountId  String?           @unique @map("external_account_id") @db.VarChar(255)
+  crmVerified        Boolean           @default(false) @map("crm_verified")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  account_number     String?           @db.VarChar(255)
+  customers          CustomerProfile[]
 
   @@map("crm_accounts")
 }
 
 model CrmConnection {
-  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   provider      CrmProvider
-  tenantId      String?      @map("tenant_id") @db.VarChar(255)
-  clientId      String?      @map("client_id") @db.VarChar(255)
-  clientSecret  String?      @map("client_secret")
-  webhookSecret String?      @map("webhook_secret")
-  instanceUrl   String?      @map("instance_url") @db.VarChar(255)
-  isActive      Boolean      @default(true) @map("is_active")
-  syncSettings  Json?        @map("sync_settings")
-  lastSyncAt    DateTime?    @map("last_sync_at")
-  syncStatus    SyncStatus   @default(IDLE) @map("sync_status")
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
-  deletedAt     DateTime?    @map("deleted_at")
+  tenantId      String?             @map("tenant_id") @db.VarChar(255)
+  clientId      String?             @map("client_id") @db.VarChar(255)
+  clientSecret  String?             @map("client_secret")
+  webhookSecret String?             @map("webhook_secret")
+  instanceUrl   String?             @map("instance_url") @db.VarChar(255)
+  isActive      Boolean             @default(true) @map("is_active")
+  syncSettings  Json?               @map("sync_settings")
+  lastSyncAt    DateTime?           @map("last_sync_at")
+  syncStatus    SyncStatus          @default(IDLE) @map("sync_status")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  deletedAt     DateTime?           @map("deleted_at")
   syncLogs      CrmSyncLog[]
   deltaStates   CrmDeltaSyncState[]
   changeLogs    CrmChangeLog[]
@@ -326,17 +338,17 @@ model CrmDeltaSyncState {
 }
 
 model CrmChangeLog {
-  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  connectionId  String?       @map("connection_id") @db.Uuid
-  entityType    String        @map("entity_type") @db.VarChar(32)
-  entityId      String        @map("entity_id") @db.VarChar(255)
-  localRecordId String?       @map("local_record_id") @db.Uuid
-  fieldName     String        @map("field_name") @db.VarChar(100)
-  oldValue      String?       @map("old_value")
-  newValue      String?       @map("new_value")
-  source        String        @default("DELTA_SYNC") @db.VarChar(50)
-  status        String        @default("SUCCESS") @db.VarChar(50)
-  changedAt     DateTime      @default(now()) @map("changed_at")
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId  String?        @map("connection_id") @db.Uuid
+  entityType    String         @map("entity_type") @db.VarChar(32)
+  entityId      String         @map("entity_id") @db.VarChar(255)
+  localRecordId String?        @map("local_record_id") @db.Uuid
+  fieldName     String         @map("field_name") @db.VarChar(100)
+  oldValue      String?        @map("old_value")
+  newValue      String?        @map("new_value")
+  source        String         @default("DELTA_SYNC") @db.VarChar(50)
+  status        String         @default("SUCCESS") @db.VarChar(50)
+  changedAt     DateTime       @default(now()) @map("changed_at")
   connection    CrmConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
 
   @@index([entityType, entityId], map: "idx_crm_change_logs_entity")
@@ -693,26 +705,26 @@ model TicketEscalation {
 }
 
 model FaqEntry {
-  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   question          String
   answer            String
-  status            FaqStatus             @default(PENDING_REVIEW)
-  confidenceScore   Decimal               @map("confidence_score") @db.Decimal(5, 4)
-  frequency         Int                   @default(1)
-  isInternal        Boolean               @default(true) @map("is_internal")
-  trustScore        Decimal               @default(0.75) @map("trust_score") @db.Decimal(5, 4)
-  feedbackWeight    Decimal               @default(1.0) @map("feedback_weight") @db.Decimal(5, 4)
-  sourceTypes       String[]              @default([]) @map("source_types")
-  tags              String[]              @default([])
-  language          String                @default("tr") @db.VarChar(10)
+  status            FaqStatus              @default(PENDING_REVIEW)
+  confidenceScore   Decimal                @map("confidence_score") @db.Decimal(5, 4)
+  frequency         Int                    @default(1)
+  isInternal        Boolean                @default(true) @map("is_internal")
+  trustScore        Decimal                @default(0.75) @map("trust_score") @db.Decimal(5, 4)
+  feedbackWeight    Decimal                @default(1.0) @map("feedback_weight") @db.Decimal(5, 4)
+  sourceTypes       String[]               @default([]) @map("source_types")
+  tags              String[]               @default([])
+  language          String                 @default("tr") @db.VarChar(10)
   questionEmbedding Unsupported("vector")? @map("question_embedding")
-  embeddingVersion  String                @default("v1") @map("embedding_version") @db.VarChar(10)
-  embeddingDim      Int                   @default(1536) @map("embedding_dim")
-  migratedAt        DateTime?             @map("migrated_at")
-  publishedAt       DateTime?             @map("published_at")
-  createdAt         DateTime              @default(now()) @map("created_at")
-  updatedAt         DateTime              @updatedAt @map("updated_at")
-  deletedAt         DateTime?             @map("deleted_at")
+  embeddingVersion  String                 @default("v1") @map("embedding_version") @db.VarChar(10)
+  embeddingDim      Int                    @default(1536) @map("embedding_dim")
+  migratedAt        DateTime?              @map("migrated_at")
+  publishedAt       DateTime?              @map("published_at")
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+  deletedAt         DateTime?              @map("deleted_at")
 
   @@index([status], map: "idx_faq_status")
   @@map("faq_entries")
@@ -821,23 +833,23 @@ model KnowledgeSource {
 }
 
 model CrawlCandidate {
-  id            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  source        String               @db.VarChar(100)
-  sourceUrl     String               @unique @map("source_url")
-  title         String               @db.VarChar(500)
-  format        CrawlCandidateFormat
-  status        CrawlCandidateStatus @default(PENDING_REVIEW)
-  language      String?              @db.VarChar(10)
-  categorySlug  String?              @map("category_slug") @db.VarChar(100)
-  contentHash   String?              @map("content_hash") @db.VarChar(255)
-  crawlFilter   String?              @map("crawl_filter") @db.VarChar(100)
-  rejectionReason String?            @map("rejection_reason")
-  metadata      Json?
-  importedSourceId String?           @map("imported_source_id") @db.Uuid
-  importedAt    DateTime?            @map("imported_at")
-  crawledAt     DateTime             @default(now()) @map("crawled_at")
-  createdAt     DateTime             @default(now()) @map("created_at")
-  updatedAt     DateTime             @updatedAt @map("updated_at")
+  id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source           String               @db.VarChar(100)
+  sourceUrl        String               @unique @map("source_url")
+  title            String               @db.VarChar(500)
+  format           CrawlCandidateFormat
+  status           CrawlCandidateStatus @default(PENDING_REVIEW)
+  language         String?              @db.VarChar(10)
+  categorySlug     String?              @map("category_slug") @db.VarChar(100)
+  contentHash      String?              @map("content_hash") @db.VarChar(255)
+  crawlFilter      String?              @map("crawl_filter") @db.VarChar(100)
+  rejectionReason  String?              @map("rejection_reason")
+  metadata         Json?
+  importedSourceId String?              @map("imported_source_id") @db.Uuid
+  importedAt       DateTime?            @map("imported_at")
+  crawledAt        DateTime             @default(now()) @map("crawled_at")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
 
   @@index([source, status], map: "idx_crawl_candidates_source_status")
   @@index([format], map: "idx_crawl_candidates_format")

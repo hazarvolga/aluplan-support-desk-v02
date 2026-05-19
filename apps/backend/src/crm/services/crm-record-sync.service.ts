@@ -35,12 +35,37 @@ export class CrmRecordSyncService {
             name: this.limitString(this.resolveField(data, 'name', mappings, 'name') || 'Unknown', 255),
             website: this.asNullableString(this.resolveField(data, 'website', mappings, 'websiteurl'), 255),
             address: this.asNullableString(this.resolveField(data, 'address', mappings, 'address1_composite')),
+            serviceAddress: this.asNullableString(this.resolveFirstField(data, 'serviceAddress', mappings, [
+                'address1_composite',
+                'address1_line1',
+                'address1_name',
+            ])),
             industry: this.asNullableString(
                 this.resolveField(data, 'industry', mappings, 'industrycode@OData.Community.Display.V1.FormattedValue')
                 || data.industrycode_display,
                 255,
             ),
             account_number: this.asNullableString(this.resolveField(data, 'accountNumber', mappings, 'accountnumber'), 255),
+            clientIdFrilo: this.asNullableString(this.resolveFirstField(data, 'clientIdFrilo', mappings, [
+                'new_clientidfrilo',
+                'new_clientid_frilo',
+                'new_friloclientid',
+                'new_frilo_clientid',
+                'new_friloid',
+            ]), 255),
+            phone: this.asNullableString(this.resolveFirstField(data, 'phone', mappings, [
+                'telephone1',
+                'telephone2',
+                'telephone3',
+            ]), 50),
+            fax: this.asNullableString(this.resolveFirstField(data, 'fax', mappings, ['fax']), 50),
+            licenseManagerName: this.asNullableString(this.resolveFirstField(data, 'licenseManagerName', mappings, [
+                'new_lisansyoneticisiisimsoyisim',
+                'new_lisans_yoneticisi_isim_soyisim',
+                'new_licensemanagername',
+                'new_license_manager_name',
+            ]), 255),
+            rawCrmPayload: data,
             crmVerified: true,
         };
 
@@ -169,7 +194,25 @@ export class CrmRecordSyncService {
             const firstName = this.limitString(this.resolveField(data, 'fullName', mappings, 'firstname') || data.firstname || '-', 100);
             const lastName = this.limitString(this.resolveField(data, 'lastName', mappings, 'lastname') || data.lastname || '-', 100);
             const jobTitle = this.asNullableString(this.resolveField(data, 'jobTitle', mappings, 'jobtitle') || data.jobtitle, 255);
-            const phoneNumber = this.asNullableString(this.resolveField(data, 'phoneNumber', mappings, 'telephone1') || data.telephone1, 50);
+            const phoneNumber = this.asNullableString(this.resolveFirstField(data, 'phoneNumber', mappings, [
+                'telephone1',
+                'telephone2',
+                'telephone3',
+            ]), 50);
+            const fax = this.asNullableString(this.resolveFirstField(data, 'fax', mappings, ['fax']), 50);
+            const mobilePhone = this.asNullableString(this.resolveFirstField(data, 'mobilePhone', mappings, ['mobilephone']), 50);
+            const address = this.asNullableString(this.resolveFirstField(data, 'address', mappings, [
+                'address1_composite',
+                'address1_line1',
+                'address1_name',
+            ]));
+            const primaryTimeZone = this.asNullableString(this.resolveFirstField(data, 'primaryTimeZone', mappings, [
+                'timezoneruleversionnumber',
+                'utcconversiontimezonecode',
+            ]), 100);
+            const preferredContactMethod = this.asNullableString(this.resolveFirstField(data, 'preferredContactMethod', mappings, [
+                'preferredcontactmethodcode',
+            ]), 100);
             const contractStatus = this.asNullableString(this.resolveField(data, 'contractStatus', mappings, 'new_musteridurumu@OData.Community.Display.V1.FormattedValue')
                 || data.new_musteridurumu_display
                 || null, 100);
@@ -198,6 +241,11 @@ export class CrmRecordSyncService {
                 lastName,
                 jobTitle,
                 phoneNumber,
+                fax,
+                mobilePhone,
+                address,
+                primaryTimeZone,
+                preferredContactMethod,
                 companyName,
                 accountId: linkedAccountId,
                 externalContactId: contactId,
@@ -205,6 +253,7 @@ export class CrmRecordSyncService {
                 contractStatus,
                 subscriptionModel,
                 industry: industryFromAccount,
+                rawCrmPayload: data,
                 crmVerified: true,
                 deletedAt: null,
             };
@@ -349,5 +398,19 @@ export class CrmRecordSyncService {
         }
 
         return dataLower[crmKey] ?? null;
+    }
+
+    private resolveFirstField(data: any, systemKey: string, mappings: Record<string, string>, candidateKeys: string[]): any {
+        const mapped = mappings[systemKey];
+        if (mapped) {
+            return this.resolveField(data, systemKey, mappings, mapped);
+        }
+
+        for (const candidate of candidateKeys) {
+            const value = this.resolveField(data, systemKey, {}, candidate);
+            if (value !== undefined && value !== null && value !== '') return value;
+        }
+
+        return null;
     }
 }

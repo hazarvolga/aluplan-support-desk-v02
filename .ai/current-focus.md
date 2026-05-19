@@ -38,6 +38,10 @@
   - parsed Hotinfo snapshots now expose up to two structured GPU cards.
   - admin ticket Hotinfo modal shows GPU 1/GPU 2 details with readable VRAM/RAM/resolution/driver date/driver version fields.
   - admin/support can download the customer's raw `.hxl` file from the ticket Hotinfo modal.
+- CRM detail surface revision completed:
+  - CRM account detail fields now persist beyond list columns and are shown in account profile detail.
+  - Customer/contact profile detail now shows a CRM Contact Details card with Dynamics contact fields.
+  - Added migration `20260519000001_add_crm_account_detail_fields`.
 - Customer Answer Quality Phase 3 started:
   - customer sync diagnosis timeout increased from `6000ms` to `15000ms`.
   - license borrowing fallback now returns structured solution steps instead of raw excerpts.

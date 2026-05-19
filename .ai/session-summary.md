@@ -172,6 +172,22 @@ Maintenance rule:
 - `pnpm --filter @aluplan/frontend typecheck` passed.
 - `pnpm i18n:check` passed.
 
+## Follow-up - 2026-05-19 CRM Account and Contact Detail Fields
+
+### What changed
+- Added persistent CRM account fields for Service Address, Phone, Fax, Client ID: Frilo, License Manager Name, and raw CRM payload snapshots.
+- Added persistent CRM contact/customer fields for Fax, Mobile Phone, Address, Primary Time Zone, Preferred Contact Method, and raw CRM payload snapshots.
+- Dynamics account/contact sync now writes those fields when they are present in the CRM response or mapped through the CRM field mapping UI.
+- Account detail page now shows the requested CRM account fields instead of only website/industry/address.
+- Customer profile page now includes a CRM Contact Details card in the same readable format.
+
+### Verification
+- `pnpm --filter @aluplan/backend test -- crm-record-sync.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+- `pnpm exec prisma validate --schema packages/database/prisma/schema.prisma` passed.
+
 ### Verification
 - Backend must-pass regression set passed:
   - `pnpm --filter @aluplan/backend test -- auth.controller.spec.ts tickets.controller.spec.ts notifications.gateway.spec.ts ai-query.service.spec.ts`

@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Building2, Globe, MapPin, Users, ArrowLeft, ExternalLink, Calendar, Mail, User } from 'lucide-react';
+import { Building2, Globe, MapPin, Users, ArrowLeft, ExternalLink, Calendar, Mail, User, Phone, Hash, FileText } from 'lucide-react';
 import Link from 'next/link';
 
 import { useTranslations, useLocale } from 'next-intl';
@@ -56,6 +56,16 @@ export default function AccountDetailPage() {
         );
     }
 
+    const InfoRow = ({ icon: Icon, label, children }: { icon: any; label: string; children: ReactNode }) => (
+        <div className="flex items-start gap-3 border-b border-border/40 pb-3 last:border-0 last:pb-0">
+            <Icon className="h-4 w-4 text-muted-foreground mt-1" />
+            <div className="space-y-1 min-w-0">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
+                <div className="text-sm text-foreground break-words">{children || '-'}</div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
@@ -77,46 +87,54 @@ export default function AccountDetailPage() {
                 {/* Info Cards */}
                 <Card className="lg:col-span-1 border-slate-200/60 dark:border-slate-800/60">
                     <CardHeader>
-                        <CardTitle className="text-lg">{commonT('general_info')}</CardTitle>
+                        <CardTitle className="text-lg">{t('accounts.crm_account_details')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="flex items-start gap-3">
-                            <Globe className="h-4 w-4 text-muted-foreground mt-1" />
-                            <div className="space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">{t('accounts.website')}</p>
-                                {account.website ? (
-                                    <a href={account.website} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
-                                        {account.website} <ExternalLink className="h-3 w-3" />
-                                    </a>
-                                ) : <p className="text-sm">-</p>}
-                            </div>
-                        </div>
+                        <InfoRow icon={Building2} label={t('accounts.account_name')}>
+                            {account.name || '-'}
+                        </InfoRow>
 
-                        <div className="flex items-start gap-3">
-                            <Building2 className="h-4 w-4 text-muted-foreground mt-1" />
-                            <div className="space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">{t('accounts.industry')}</p>
-                                <p className="text-sm">{account.industry || '-'}</p>
-                            </div>
-                        </div>
+                        <InfoRow icon={Hash} label={t('accounts.client_id_allplan')}>
+                            {account.account_number || '-'}
+                        </InfoRow>
 
-                        <div className="flex items-start gap-3">
-                            <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
-                            <div className="space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">{t('accounts.address')}</p>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    {account.address || '-'}
-                                </p>
-                            </div>
-                        </div>
+                        <InfoRow icon={Hash} label={t('accounts.client_id_frilo')}>
+                            {account.clientIdFrilo || '-'}
+                        </InfoRow>
 
-                        <div className="flex items-start gap-3">
-                            <Calendar className="h-4 w-4 text-muted-foreground mt-1" />
-                            <div className="space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">{t('accounts.joined_system')}</p>
-                                <p className="text-sm">{new Date(account.createdAt).toLocaleDateString(locale)}</p>
-                            </div>
-                        </div>
+                        <InfoRow icon={Building2} label={t('accounts.customer_segment')}>
+                            {account.industry || '-'}
+                        </InfoRow>
+
+                        <InfoRow icon={Phone} label={t('accounts.phone')}>
+                            {account.phone || '-'}
+                        </InfoRow>
+
+                        <InfoRow icon={FileText} label={t('accounts.fax')}>
+                            {account.fax || '-'}
+                        </InfoRow>
+
+                        <InfoRow icon={User} label={t('accounts.license_manager_name')}>
+                            {account.licenseManagerName || '-'}
+                        </InfoRow>
+
+                        <InfoRow icon={Globe} label={t('accounts.website')}>
+                            {account.website ? (
+                                <a href={account.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                                    {account.website} <ExternalLink className="h-3 w-3" />
+                                </a>
+                            ) : '-'}
+                        </InfoRow>
+
+                        <InfoRow icon={MapPin} label={t('accounts.service_address')}>
+                            <span className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                                {account.serviceAddress || account.address || '-'}
+                            </span>
+                        </InfoRow>
+
+                        <InfoRow icon={Calendar} label={t('accounts.joined_system')}>
+                            {new Date(account.createdAt).toLocaleDateString(locale)}
+                        </InfoRow>
                     </CardContent>
                 </Card>
 

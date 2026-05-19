@@ -2,14 +2,14 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { api } from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Building, Edit, Save, Key, Monitor, Download } from 'lucide-react';
+import { ArrowLeft, User, Building, Edit, Save, Key, Monitor, Download, Mail, Phone, FileText, Smartphone, MapPin, Clock, MessageCircle, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -132,6 +132,18 @@ export default function CustomerProfilePage() {
 
     if (!customer) return null;
 
+    const profile = customer.customerProfile;
+    const account = profile?.account;
+    const DetailRow = ({ icon: Icon, label, value, children }: { icon: any; label: string; value?: any; children?: ReactNode }) => (
+        <div className="flex items-start gap-3 border-b border-border/40 pb-3 last:border-0 last:pb-0">
+            <Icon className="h-4 w-4 text-muted-foreground mt-1" />
+            <div className="space-y-1 min-w-0">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
+                <div className="text-sm text-foreground break-words">{children || value || '-'}</div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-4">
@@ -158,6 +170,39 @@ export default function CustomerProfilePage() {
                     </Button>
                 </div>
             </div>
+
+            <Card>
+                <CardHeader className="pb-4">
+                    <div className="flex items-center space-x-2 text-sky-500">
+                        <User className="h-5 w-5" />
+                        <CardTitle>{t('labels.crm_contact_details')}</CardTitle>
+                    </div>
+                    <CardDescription>{t('crm.desc')}</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    <DetailRow icon={User} label={t('labels.first_name')} value={profile?.firstName} />
+                    <DetailRow icon={User} label={t('labels.last_name')} value={profile?.lastName} />
+                    <DetailRow icon={Briefcase} label={t('labels.job_title')} value={profile?.jobTitle} />
+                    <DetailRow icon={Building} label={t('labels.account_name')}>
+                        {account?.id ? (
+                            <Link href={`/customers/accounts/${account.id}`} className="text-primary hover:underline">
+                                {account.name || profile?.companyName || '-'}
+                            </Link>
+                        ) : (profile?.companyName || '-')}
+                    </DetailRow>
+                    <DetailRow icon={FileText} label={t('labels.subscription_model')} value={profile?.subscriptionModel} />
+                    <DetailRow icon={FileText} label={t('labels.contract_status')} value={profile?.contractStatus} />
+                    <DetailRow icon={Mail} label={t('labels.email')} value={customer.email} />
+                    <DetailRow icon={Phone} label={t('labels.business_phone')} value={profile?.phoneNumber} />
+                    <DetailRow icon={FileText} label={t('labels.fax')} value={profile?.fax} />
+                    <DetailRow icon={Smartphone} label={t('labels.mobile_phone')} value={profile?.mobilePhone} />
+                    <DetailRow icon={Clock} label={t('labels.primary_time_zone')} value={profile?.primaryTimeZone} />
+                    <DetailRow icon={MessageCircle} label={t('labels.preferred_contact_method')} value={profile?.preferredContactMethod} />
+                    <DetailRow icon={MapPin} label={t('labels.address')}>
+                        <span className="whitespace-pre-line text-muted-foreground">{profile?.address || '-'}</span>
+                    </DetailRow>
+                </CardContent>
+            </Card>
 
             <form onSubmit={handleSave}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
