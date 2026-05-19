@@ -32,6 +32,39 @@ type GraphicsCardSummary = {
     openglVersion?: string | null;
 };
 
+const GPU_NAME_PATTERN = /\b(nvidia|geforce|rtx|quadro|amd|radeon|intel|uhd|iris|graphics|gpu)\b/i;
+
+const splitCombinedGpuNames = (name: string | null): string[] => {
+    if (!name) return [];
+
+    const parts = name
+        .split(/\s+\/\s+/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+
+    if (parts.length < 2) return [name];
+
+    const gpuLikeParts = parts.filter((part) => GPU_NAME_PATTERN.test(part));
+    return gpuLikeParts.length >= 2 ? parts : [name];
+};
+
+const expandCombinedGpuCards = (cards: GraphicsCardSummary[]): GraphicsCardSummary[] => {
+    return cards.flatMap((card) => {
+        const names = splitCombinedGpuNames(card.name);
+        if (names.length <= 1) return [card];
+
+        return names.map((name, index) => ({
+            ...card,
+            name,
+            vram: index === 0 ? card.vram : null,
+            ram: index === 0 ? card.ram : null,
+            driverDate: index === 0 ? card.driverDate : null,
+            driverVersion: index === 0 ? card.driverVersion : null,
+            openglVersion: index === 0 ? card.openglVersion : null,
+        }));
+    });
+};
+
 const normalizeGraphicsCards = (data: any): GraphicsCardSummary[] => {
     const cards = Array.isArray(data?.graphicsCards)
         ? data.graphicsCards
@@ -47,9 +80,9 @@ const normalizeGraphicsCards = (data: any): GraphicsCardSummary[] => {
             .filter((card: any) => card.name)
         : [];
 
-    if (cards.length > 0) return cards.slice(0, 2);
+    if (cards.length > 0) return expandCombinedGpuCards(cards).slice(0, 2);
 
-    return [{
+    const fallbackCards = [{
         name: sr(data?.gpu) || '-',
         vram: sr(data?.vram),
         ram: sr(data?.gpuRam),
@@ -58,6 +91,8 @@ const normalizeGraphicsCards = (data: any): GraphicsCardSummary[] => {
         driverVersion: sr(data?.gpuDriverVersion),
         openglVersion: sr(data?.openglVersion),
     }].filter((card) => card.name && card.name !== '-');
+
+    return expandCombinedGpuCards(fallbackCards).slice(0, 2);
 };
 
 export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {

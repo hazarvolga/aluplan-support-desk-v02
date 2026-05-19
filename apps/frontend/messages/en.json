@@ -560,6 +560,7 @@
       },
       "errors": {
         "subject_min": "Subject must be at least 5 characters",
+        "subject_max": "Subject must be 255 characters or fewer. Please put details in the description field.",
         "description_min": "Description must be at least 10 characters"
       },
       "toasts": {

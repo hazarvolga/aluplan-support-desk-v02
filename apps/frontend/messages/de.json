@@ -560,6 +560,7 @@
       },
       "errors": {
         "subject_min": "Thema muss mindestens 5 Zeichen lang sein",
+        "subject_max": "Das Thema darf maximal 255 Zeichen lang sein. Bitte schreiben Sie Details in das Beschreibungsfeld.",
         "description_min": "Beschreibung muss mindestens 10 Zeichen lang sein"
       },
       "toasts": {

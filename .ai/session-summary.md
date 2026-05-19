@@ -2408,3 +2408,19 @@ Maintenance rule:
 - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts ai-copilot.service.spec.ts`
 - `pnpm --filter @aluplan/backend typecheck`
 - `git diff --check`
+
+## Live Verification Follow-up - 2026-05-19
+
+### What changed
+- Live deploy verification confirmed backend and frontend were running commit `4a4c372`.
+- Customer/admin AI query smokes returned structured answers without raw `Kaynak:`/strongest-match excerpt leakage.
+- Live customer ticket creation failure was traced to backend validation: `subject must be shorter than or equal to 255 characters`.
+- New ticket UI now enforces the 255-character subject limit with a localized validation message and character counter before advancing.
+- Legacy Hotinfo snapshots with a collapsed dual-GPU name now split into two GPU cards at render time, so old tickets also show `1/2 Graphics Card / GPU`.
+
+### Validation
+- Browser smoke opened the live new-ticket page and confirmed the form flow is reachable.
+- Live API smoke created a customer-role ticket (`SUP-00087`) with a valid short subject and then cleaned it up by soft-delete.
+- `pnpm --filter @aluplan/frontend typecheck`
+- `pnpm i18n:check`
+- `git diff --check`

@@ -20,8 +20,10 @@ import { toast } from 'sonner';
 import { useTranslations, useLocale } from 'next-intl';
 import { HotinfoGrid } from '@/components/ui/hotinfo-grid';
 
+const MAX_TICKET_SUBJECT_LENGTH = 255;
+
 const getTicketSchema = (t: any) => z.object({
-    subject: z.string().min(5, t('errors.subject_min')),
+    subject: z.string().min(5, t('errors.subject_min')).max(MAX_TICKET_SUBJECT_LENGTH, t('errors.subject_max')),
     description: z.string().min(10, t('errors.description_min')),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
 });
@@ -422,8 +424,16 @@ export default function NewTicketPage() {
                                             <FormItem>
                                                 <FormLabel>{t('fields.subject')}</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder={t('fields.subject_placeholder')} {...field} className="bg-slate-950/50 border-white/10" />
+                                                    <Input
+                                                        placeholder={t('fields.subject_placeholder')}
+                                                        maxLength={MAX_TICKET_SUBJECT_LENGTH}
+                                                        {...field}
+                                                        className="bg-slate-950/50 border-white/10"
+                                                    />
                                                 </FormControl>
+                                                <div className="text-right text-[11px] text-muted-foreground/70">
+                                                    {field.value?.length || 0}/{MAX_TICKET_SUBJECT_LENGTH}
+                                                </div>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -437,8 +447,12 @@ export default function NewTicketPage() {
                 {form.watch('priority') && (
                     <CardFooter className="justify-end border-t border-white/5 pt-6 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <Button
-                            disabled={!form.getValues('subject') || form.getValues('subject').length < 5}
-                            onClick={() => setCurrentStep(2)}
+                            disabled={!form.getValues('subject') || form.getValues('subject').length < 5 || form.getValues('subject').length > MAX_TICKET_SUBJECT_LENGTH}
+                            onClick={async () => {
+                                if (await form.trigger('subject')) {
+                                    setCurrentStep(2);
+                                }
+                            }}
                             className="bg-brand-600 hover:bg-brand-500 text-industrial-dark font-bold"
                         >
                             {ct('next_step')} <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />

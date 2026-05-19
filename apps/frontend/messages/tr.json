@@ -560,6 +560,7 @@
       },
       "errors": {
         "subject_min": "Konu en az 5 karakter olmalıdır",
+        "subject_max": "Konu en fazla 255 karakter olmalıdır. Detayları açıklama alanına yazabilirsiniz.",
         "description_min": "Açıklama en az 10 karakter olmalıdır"
       },
       "toasts": {
