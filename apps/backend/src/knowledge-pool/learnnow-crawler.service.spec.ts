@@ -171,4 +171,35 @@ describe('LearnNowCrawlerService', () => {
         expect(result).toEqual({ skipped: true, reason: 'DUPLICATE_URL', sourceId: 'existing-source' });
         expect(pool.triggerSync).not.toHaveBeenCalled();
     });
+
+    it('deletes a crawler candidate from the review queue', async () => {
+        const { service, prisma } = makeService();
+        prisma.$executeRawUnsafe.mockResolvedValue(1);
+
+        const result = await service.deleteCandidate('7c0ee310-32d5-47d0-bf19-286b8839b4db');
+
+        expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(
+            'DELETE FROM crawl_candidates WHERE id = $1::uuid',
+            '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+        );
+        expect(result).toEqual({ success: true, count: 1 });
+    });
+
+    it('bulk deletes unique crawler candidates with validated UUID placeholders', async () => {
+        const { service, prisma } = makeService();
+        prisma.$executeRawUnsafe.mockResolvedValue(2);
+
+        const result = await service.bulkDeleteCandidates([
+            '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            '996bd927-1c24-48e2-a256-1420b6d57bb6',
+        ]);
+
+        expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(
+            'DELETE FROM crawl_candidates WHERE id IN ($1::uuid, $2::uuid)',
+            '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            '996bd927-1c24-48e2-a256-1420b6d57bb6',
+        );
+        expect(result).toEqual({ success: true, count: 2 });
+    });
 });

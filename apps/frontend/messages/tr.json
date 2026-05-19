@@ -2762,8 +2762,13 @@
         "buttons": {
           "dry_run": "ÖNİZLE",
           "save_candidates": "ADAYLARI KAYDET",
-          "import": "İÇE AKTAR"
+          "import": "İÇE AKTAR",
+          "delete": "SİL",
+          "delete_selected": "SEÇİLENLERİ SİL"
         },
+        "selected": "{count} ADAY SEÇİLDİ",
+        "confirm_delete": "\"{title}\" crawler adayını onay kuyruğundan silmek istiyor musunuz?",
+        "confirm_bulk_delete": "{count} crawler adayı onay kuyruğundan silinecek. Bu işlem geri alınamaz.",
         "table": {
           "title": "BAŞLIK",
           "source": "KAYNAK",
@@ -2782,7 +2787,13 @@
           "import_started": "İçe aktarma başlatıldı",
           "import_desc": "Aday mevcut sync kuyruğuna alındı",
           "import_skipped": "Aday atlandı",
-          "import_error": "Aday içe aktarılamadı"
+          "import_error": "Aday içe aktarılamadı",
+          "delete_done": "Silindi",
+          "delete_desc": "Crawler adayı kuyruktan kaldırıldı.",
+          "delete_error": "Crawler adayı silinemedi",
+          "bulk_delete_done": "Silindi",
+          "bulk_delete_desc": "{count} crawler adayı kuyruktan kaldırıldı.",
+          "bulk_delete_error": "Crawler adayları silinemedi"
         }
       },
       "meta": {
@@ -4226,8 +4237,13 @@
       "buttons": {
         "dry_run": "ÖN İZLE",
         "save_candidates": "ADAYLARI KAYDET",
-        "import": "İÇE AKTAR"
+        "import": "İÇE AKTAR",
+        "delete": "SİL",
+        "delete_selected": "SEÇİLENLERİ SİL"
       },
+      "selected": "{count} ADAY SEÇİLDİ",
+      "confirm_delete": "\"{title}\" crawler adayını onay kuyruğundan silmek istiyor musunuz?",
+      "confirm_bulk_delete": "{count} crawler adayı onay kuyruğundan silinecek. Bu işlem geri alınamaz.",
       "table": {
         "title": "BAŞLIK",
         "source": "KAYNAK",
@@ -4246,7 +4262,13 @@
         "import_started": "İçe aktarma başladı",
         "import_desc": "Aday mevcut eşitleme kuyruğuna alındı",
         "import_skipped": "Aday atlandı",
-        "import_error": "Aday içe aktarılamadı"
+        "import_error": "Aday içe aktarılamadı",
+        "delete_done": "Silindi",
+        "delete_desc": "Crawler adayı kuyruktan kaldırıldı.",
+        "delete_error": "Crawler adayı silinemedi",
+        "bulk_delete_done": "Silindi",
+        "bulk_delete_desc": "{count} crawler adayı kuyruktan kaldırıldı.",
+        "bulk_delete_error": "Crawler adayları silinemedi"
       }
     },
     "meta": {

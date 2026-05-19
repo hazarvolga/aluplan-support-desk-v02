@@ -134,6 +134,35 @@ export class LearnNowCrawlerService {
         return this.importArticleCandidate(candidate);
     }
 
+    async deleteCandidate(id: string): Promise<{ success: boolean; count: number }> {
+        const [candidateId] = this.normalizeCandidateIds([id]);
+        const deleted = await this.prisma.$executeRawUnsafe<number>(
+            `DELETE FROM crawl_candidates WHERE id = $1::uuid`,
+            candidateId,
+        );
+
+        if (Number(deleted) === 0) {
+            throw new NotFoundException('Crawler candidate not found');
+        }
+
+        return { success: true, count: Number(deleted) };
+    }
+
+    async bulkDeleteCandidates(ids: string[]): Promise<{ success: boolean; count: number }> {
+        const candidateIds = this.normalizeCandidateIds(ids);
+        if (candidateIds.length === 0) {
+            return { success: true, count: 0 };
+        }
+
+        const placeholders = candidateIds.map((_, index) => `$${index + 1}::uuid`).join(', ');
+        const deleted = await this.prisma.$executeRawUnsafe<number>(
+            `DELETE FROM crawl_candidates WHERE id IN (${placeholders})`,
+            ...candidateIds,
+        );
+
+        return { success: true, count: Number(deleted) };
+    }
+
     private async importArticleCandidate(candidate: CrawlCandidateRecord) {
         const existing = await this.prisma.knowledgeSource.findFirst({
             where: { url: candidate.source_url },
@@ -392,6 +421,21 @@ export class LearnNowCrawlerService {
             sourceId ?? null,
             reason ?? null,
         );
+    }
+
+    private normalizeCandidateIds(ids: string[] | undefined): string[] {
+        if (!Array.isArray(ids)) {
+            throw new BadRequestException('ids must be an array');
+        }
+
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        const unique = [...new Set(ids.map(id => String(id ?? '').trim()).filter(Boolean))];
+        const invalid = unique.find(id => !uuidPattern.test(id));
+        if (invalid) {
+            throw new BadRequestException(`Invalid crawler candidate id: ${invalid}`);
+        }
+
+        return unique;
     }
 
     private buildImportMetadata(candidate: CrawlCandidateRecord, sourceType: 'knowledge_article' | 'pdf'): Prisma.InputJsonObject {

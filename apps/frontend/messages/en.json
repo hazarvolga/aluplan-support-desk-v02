@@ -2762,8 +2762,13 @@
         "buttons": {
           "dry_run": "PREVIEW",
           "save_candidates": "SAVE CANDIDATES",
-          "import": "IMPORT"
+          "import": "IMPORT",
+          "delete": "DELETE",
+          "delete_selected": "DELETE SELECTED"
         },
+        "selected": "{count} CANDIDATE SELECTED",
+        "confirm_delete": "Delete crawler candidate \"{title}\" from the review queue?",
+        "confirm_bulk_delete": "Delete {count} crawler candidates from the review queue? This action cannot be undone.",
         "table": {
           "title": "TITLE",
           "source": "SOURCE",
@@ -2782,7 +2787,13 @@
           "import_started": "Import started",
           "import_desc": "Candidate was queued through the existing sync pipeline",
           "import_skipped": "Candidate skipped",
-          "import_error": "Could not import candidate"
+          "import_error": "Could not import candidate",
+          "delete_done": "Deleted",
+          "delete_desc": "Crawler candidate removed from the queue.",
+          "delete_error": "Could not delete crawler candidate",
+          "bulk_delete_done": "Deleted",
+          "bulk_delete_desc": "Removed {count} crawler candidates from the queue.",
+          "bulk_delete_error": "Could not delete crawler candidates"
         }
       },
       "meta": {
@@ -4223,14 +4234,19 @@
         "article": "ARTICLE",
         "pdf": "PDF"
       },
-      "buttons": {
-        "dry_run": "PREVIEW",
-        "save_candidates": "SAVE CANDIDATES",
-        "import": "IMPORT"
-      },
-      "table": {
-        "title": "TITLE",
-        "source": "SOURCE",
+        "buttons": {
+          "dry_run": "PREVIEW",
+          "save_candidates": "SAVE CANDIDATES",
+          "import": "IMPORT",
+          "delete": "DELETE",
+          "delete_selected": "DELETE SELECTED"
+        },
+        "selected": "{count} CANDIDATE SELECTED",
+        "confirm_delete": "Delete crawler candidate \"{title}\" from the review queue?",
+        "confirm_bulk_delete": "Delete {count} crawler candidates from the review queue? This action cannot be undone.",
+        "table": {
+          "title": "TITLE",
+          "source": "SOURCE",
         "format": "FORMAT",
         "category": "CATEGORY",
         "status": "STATUS",
@@ -4243,12 +4259,18 @@
         "discover_done": "Discovery complete",
         "discover_desc": "{count} new candidates saved",
         "discover_error": "Crawler discovery failed",
-        "import_started": "Import started",
-        "import_desc": "Candidate was queued through the existing sync pipeline",
-        "import_skipped": "Candidate skipped",
-        "import_error": "Could not import candidate"
-      }
-    },
+          "import_started": "Import started",
+          "import_desc": "Candidate was queued through the existing sync pipeline",
+          "import_skipped": "Candidate skipped",
+          "import_error": "Could not import candidate",
+          "delete_done": "Deleted",
+          "delete_desc": "Crawler candidate removed from the queue.",
+          "delete_error": "Could not delete crawler candidate",
+          "bulk_delete_done": "Deleted",
+          "bulk_delete_desc": "Removed {count} crawler candidates from the queue.",
+          "bulk_delete_error": "Could not delete crawler candidates"
+        }
+      },
     "meta": {
       "locale": "tr-TR",
       "system": "SİSTEM"

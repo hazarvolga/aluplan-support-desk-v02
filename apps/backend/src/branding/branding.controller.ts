@@ -34,29 +34,24 @@ export class BrandingController {
     async getAsset(@Param('path') assetPath: string | string[], @Res() res: Response) {
         try {
             const key = Array.isArray(assetPath) ? assetPath.join('/') : assetPath;
+            const buffer = await this.storageService.getFile(key);
+            if (!buffer) return res.status(404).send('Asset not found');
 
-            if (this.storageService.isS3()) {
-                const url = await this.storageService.getDownloadUrl(key);
-                return res.redirect(url);
-            } else {
-                // For local storage, serve file directly
-                const buffer = await this.storageService.getFile(key);
-                if (!buffer) return res.status(404).send('Asset not found');
+            // Stream branding assets through our stable public endpoint so email
+            // clients do not depend on provider-specific expiring redirects.
+            const ext = path.extname(key).toLowerCase();
+            const mimeTypes: Record<string, string> = {
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.gif': 'image/gif',
+                '.svg': 'image/svg+xml',
+                '.webp': 'image/webp'
+            };
+            res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+            res.setHeader('Cache-Control', 'public, max-age=3600');
 
-                // Determine mime type from extension
-                const ext = path.extname(key).toLowerCase();
-                const mimeTypes: Record<string, string> = {
-                    '.png': 'image/png',
-                    '.jpg': 'image/jpeg',
-                    '.jpeg': 'image/jpeg',
-                    '.gif': 'image/gif',
-                    '.svg': 'image/svg+xml',
-                    '.webp': 'image/webp'
-                };
-                res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
-
-                return res.send(buffer);
-            }
+            return res.send(buffer);
         } catch (_error) {
             return res.status(404).send('Asset not found');
         }

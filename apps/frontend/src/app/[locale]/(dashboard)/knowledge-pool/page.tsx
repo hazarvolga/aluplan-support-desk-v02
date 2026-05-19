@@ -71,6 +71,9 @@ export default function KnowledgePoolPage() {
     const [crawlDryRun, setCrawlDryRun] = useState<any>(null);
     const [isDiscovering, setIsDiscovering] = useState(false);
     const [importingCandidateIds, setImportingCandidateIds] = useState<Set<string>>(new Set());
+    const [selectedCrawlCandidateIds, setSelectedCrawlCandidateIds] = useState<Set<string>>(new Set());
+    const [deletingCandidateIds, setDeletingCandidateIds] = useState<Set<string>>(new Set());
+    const [isBulkDeletingCandidates, setIsBulkDeletingCandidates] = useState(false);
 
     const { toast } = useToast();
 
@@ -334,6 +337,8 @@ export default function KnowledgePoolPage() {
         try {
             const data = await api.pool.crawlCandidates(crawlStatusFilter || undefined, crawlSourceFilter || undefined);
             setCrawlCandidates(data);
+            const visibleIds = new Set(data.map(candidate => candidate.id));
+            setSelectedCrawlCandidateIds(prev => new Set(Array.from(prev).filter(id => visibleIds.has(id))));
         } catch (error: any) {
             toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.fetch_error'), variant: 'destructive' });
         } finally {
@@ -380,6 +385,67 @@ export default function KnowledgePoolPage() {
             toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.import_error'), variant: 'destructive' });
         } finally {
             setImportingCandidateIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+        }
+    };
+
+    const allCrawlCandidatesSelected = crawlCandidates.length > 0 && crawlCandidates.every(candidate => selectedCrawlCandidateIds.has(candidate.id));
+
+    const toggleCrawlCandidateSelect = (id: string) => {
+        setSelectedCrawlCandidateIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const toggleSelectAllCrawlCandidates = () => {
+        if (allCrawlCandidatesSelected) {
+            setSelectedCrawlCandidateIds(new Set());
+            return;
+        }
+        setSelectedCrawlCandidateIds(new Set(crawlCandidates.map(candidate => candidate.id)));
+    };
+
+    const handleDeleteCrawlCandidate = async (candidate: CrawlCandidate) => {
+        if (!window.confirm(t('crawler.confirm_delete', { title: candidate.title }))) {
+            return;
+        }
+
+        setDeletingCandidateIds(prev => new Set(prev).add(candidate.id));
+        try {
+            await api.pool.deleteCrawlCandidate(candidate.id);
+            toast({ title: t('crawler.toasts.delete_done'), description: t('crawler.toasts.delete_desc') });
+            setCrawlCandidates(prev => prev.filter(item => item.id !== candidate.id));
+            setSelectedCrawlCandidateIds(prev => {
+                const next = new Set(prev);
+                next.delete(candidate.id);
+                return next;
+            });
+        } catch (error: any) {
+            toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.delete_error'), variant: 'destructive' });
+        } finally {
+            setDeletingCandidateIds(prev => { const next = new Set(prev); next.delete(candidate.id); return next; });
+        }
+    };
+
+    const handleBulkDeleteCrawlCandidates = async () => {
+        const ids = Array.from(selectedCrawlCandidateIds);
+        if (ids.length === 0) return;
+        if (!window.confirm(t('crawler.confirm_bulk_delete', { count: ids.length }))) {
+            return;
+        }
+
+        setIsBulkDeletingCandidates(true);
+        try {
+            const result = await api.pool.bulkDeleteCrawlCandidates(ids);
+            toast({ title: t('crawler.toasts.bulk_delete_done'), description: t('crawler.toasts.bulk_delete_desc', { count: result.count }) });
+            setCrawlCandidates(prev => prev.filter(candidate => !ids.includes(candidate.id)));
+            setSelectedCrawlCandidateIds(new Set());
+        } catch (error: any) {
+            toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.bulk_delete_error'), variant: 'destructive' });
+        } finally {
+            setIsBulkDeletingCandidates(false);
         }
     };
 
@@ -917,10 +983,47 @@ export default function KnowledgePoolPage() {
                             </Button>
                         </div>
 
+                        {selectedCrawlCandidateIds.size > 0 && (
+                            <div className="flex items-center justify-between px-3 py-2 bg-primary/5 border border-primary/20 rounded">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                                    {t('crawler.selected', { count: selectedCrawlCandidateIds.size })}
+                                </span>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        onClick={handleBulkDeleteCrawlCandidates}
+                                        disabled={isBulkDeletingCandidates}
+                                        variant="destructive"
+                                        className="h-7 text-[10px] uppercase font-bold tracking-widest gap-1.5 bg-red-500/20 text-red-500 hover:bg-red-500/30"
+                                    >
+                                        {isBulkDeletingCandidates ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                                        {t('crawler.buttons.delete_selected')}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => setSelectedCrawlCandidateIds(new Set())}
+                                        className="h-7 text-[10px] uppercase font-bold tracking-widest text-muted-foreground"
+                                    >
+                                        {t('buttons.cancel')}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="border border-border/50 rounded-md overflow-hidden">
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-muted/10 hover:bg-muted/10 border-b border-border/40">
+                                        <TableHead className="w-10 pl-3">
+                                            <input
+                                                type="checkbox"
+                                                checked={allCrawlCandidatesSelected}
+                                                onChange={toggleSelectAllCrawlCandidates}
+                                                className="w-4 h-4 cursor-pointer accent-primary"
+                                                aria-label={t('table.select_all')}
+                                            />
+                                        </TableHead>
                                         <TableHead className="text-[9px] font-bold uppercase tracking-widest">{t('crawler.table.title')}</TableHead>
                                         <TableHead className="text-[9px] font-bold uppercase tracking-widest w-32">{t('crawler.table.source')}</TableHead>
                                         <TableHead className="text-[9px] font-bold uppercase tracking-widest w-28">{t('crawler.table.format')}</TableHead>
@@ -932,19 +1035,27 @@ export default function KnowledgePoolPage() {
                                 <TableBody>
                                     {loadingCrawlCandidates ? (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center py-12">
+                                            <TableCell colSpan={7} className="text-center py-12">
                                                 <RefreshCw className="h-5 w-5 animate-spin mx-auto text-primary" />
                                             </TableCell>
                                         </TableRow>
                                     ) : crawlCandidates.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                                            <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                                                 <Globe className="h-8 w-8 mx-auto mb-3 opacity-20" />
                                                 <p className="text-[10px] uppercase font-mono tracking-widest">{t('crawler.no_candidates')}</p>
                                             </TableCell>
                                         </TableRow>
                                     ) : crawlCandidates.map(candidate => (
-                                        <TableRow key={candidate.id} className="border-b border-border/20 hover:bg-muted/5">
+                                        <TableRow key={candidate.id} className={`border-b border-border/20 hover:bg-muted/5 ${selectedCrawlCandidateIds.has(candidate.id) ? 'bg-primary/5' : ''}`}>
+                                            <TableCell className="pl-3 w-10">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedCrawlCandidateIds.has(candidate.id)}
+                                                    onChange={() => toggleCrawlCandidateSelect(candidate.id)}
+                                                    className="w-4 h-4 cursor-pointer accent-primary"
+                                                />
+                                            </TableCell>
                                             <TableCell className="py-2.5">
                                                 <p className="font-bold text-[12px] leading-tight truncate max-w-[420px]">{candidate.title}</p>
                                                 <a
@@ -987,15 +1098,27 @@ export default function KnowledgePoolPage() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button
-                                                    onClick={() => handleImportCandidate(candidate.id)}
-                                                    disabled={candidate.status === 'IMPORTED' || importingCandidateIds.has(candidate.id)}
-                                                    size="sm"
-                                                    className="h-7 text-[10px] uppercase font-bold tracking-widest gap-1.5"
-                                                >
-                                                    {importingCandidateIds.has(candidate.id) ? <RefreshCw className="h-3 w-3 animate-spin" /> : <ArrowUpCircle className="h-3 w-3" />}
-                                                    {t('crawler.buttons.import')}
-                                                </Button>
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Button
+                                                        onClick={() => handleImportCandidate(candidate.id)}
+                                                        disabled={candidate.status === 'IMPORTED' || importingCandidateIds.has(candidate.id) || deletingCandidateIds.has(candidate.id)}
+                                                        size="sm"
+                                                        className="h-7 text-[10px] uppercase font-bold tracking-widest gap-1.5"
+                                                    >
+                                                        {importingCandidateIds.has(candidate.id) ? <RefreshCw className="h-3 w-3 animate-spin" /> : <ArrowUpCircle className="h-3 w-3" />}
+                                                        {t('crawler.buttons.import')}
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => handleDeleteCrawlCandidate(candidate)}
+                                                        disabled={deletingCandidateIds.has(candidate.id)}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-7 w-7 rounded-none hover:bg-red-500/10 hover:text-red-500"
+                                                        aria-label={t('crawler.buttons.delete')}
+                                                    >
+                                                        {deletingCandidateIds.has(candidate.id) ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     ))}

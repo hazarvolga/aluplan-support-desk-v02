@@ -2762,8 +2762,13 @@
         "buttons": {
           "dry_run": "VORSCHAU",
           "save_candidates": "KANDIDATEN SPEICHERN",
-          "import": "IMPORT"
+          "import": "IMPORT",
+          "delete": "LÖSCHEN",
+          "delete_selected": "AUSGEWÄHLTE LÖSCHEN"
         },
+        "selected": "{count} KANDIDAT AUSGEWÄHLT",
+        "confirm_delete": "Crawler-Kandidat \"{title}\" aus der Prüfliste löschen?",
+        "confirm_bulk_delete": "{count} Crawler-Kandidaten werden aus der Prüfliste gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
         "table": {
           "title": "TITEL",
           "source": "QUELLE",
@@ -2782,7 +2787,13 @@
           "import_started": "Import gestartet",
           "import_desc": "Kandidat wurde in die bestehende Sync-Pipeline gestellt",
           "import_skipped": "Kandidat übersprungen",
-          "import_error": "Kandidat konnte nicht importiert werden"
+          "import_error": "Kandidat konnte nicht importiert werden",
+          "delete_done": "Gelöscht",
+          "delete_desc": "Crawler-Kandidat aus der Warteschlange entfernt.",
+          "delete_error": "Crawler-Kandidat konnte nicht gelöscht werden",
+          "bulk_delete_done": "Gelöscht",
+          "bulk_delete_desc": "{count} Crawler-Kandidaten aus der Warteschlange entfernt.",
+          "bulk_delete_error": "Crawler-Kandidaten konnten nicht gelöscht werden"
         }
       },
       "meta": {
@@ -4226,8 +4237,13 @@
       "buttons": {
         "dry_run": "VORSCHAU",
         "save_candidates": "KANDIDATEN SPEICHERN",
-        "import": "IMPORTIEREN"
+        "import": "IMPORTIEREN",
+        "delete": "LÖSCHEN",
+        "delete_selected": "AUSGEWÄHLTE LÖSCHEN"
       },
+      "selected": "{count} KANDIDAT AUSGEWÄHLT",
+      "confirm_delete": "Crawler-Kandidat \"{title}\" aus der Prüfliste löschen?",
+      "confirm_bulk_delete": "{count} Crawler-Kandidaten werden aus der Prüfliste gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
       "table": {
         "title": "TITEL",
         "source": "QUELLE",
@@ -4246,7 +4262,13 @@
         "import_started": "Import gestartet",
         "import_desc": "Kandidat wurde in die bestehende Sync-Pipeline eingereiht",
         "import_skipped": "Kandidat übersprungen",
-        "import_error": "Kandidat konnte nicht importiert werden"
+        "import_error": "Kandidat konnte nicht importiert werden",
+        "delete_done": "Gelöscht",
+        "delete_desc": "Crawler-Kandidat aus der Warteschlange entfernt.",
+        "delete_error": "Crawler-Kandidat konnte nicht gelöscht werden",
+        "bulk_delete_done": "Gelöscht",
+        "bulk_delete_desc": "{count} Crawler-Kandidaten aus der Warteschlange entfernt.",
+        "bulk_delete_error": "Crawler-Kandidaten konnten nicht gelöscht werden"
       }
     },
     "meta": {

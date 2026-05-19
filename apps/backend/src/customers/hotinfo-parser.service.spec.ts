@@ -97,6 +97,40 @@ describe('HotinfoParserService', () => {
         expect(data?.gpu).toBe('NVIDIA RTX A2000 / Intel UHD Graphics');
     });
 
+    it('should read nested Hotinfo driver nodes and additional adapter version attributes', () => {
+        const xml = `<hotinfo>
+            <system>
+                <video resolution="1920 x 1080 x Gerçek Renk (32bit)">
+                    <driver version="32.0.13046.10001" driverdate="4.06.2025"></driver>
+                    <memory-size>512</memory-size>
+                    <card-description>AMD Radeon(TM) 880M Graphics</card-description>
+                    <additional-graphics-adapters>
+                        <graphics-adapter card-description="NVIDIA GeForce RTX 5070 Laptop GPU" version="32.0.15.9186" driverdate="20.01.2026"/>
+                    </additional-graphics-adapters>
+                </video>
+            </system>
+        </hotinfo>`;
+
+        const data = service.parseHotinfo(xml);
+
+        expect(data?.graphicsCards).toHaveLength(2);
+        expect(data?.graphicsCards[0]).toMatchObject({
+            name: 'AMD Radeon(TM) 880M Graphics',
+            ram: '512 MB',
+            resolution: '1920 x 1080 x Gerçek Renk (32bit)',
+            driverDate: '4.06.2025',
+            driverVersion: '32.0.13046.10001',
+        });
+        expect(data?.graphicsCards[1]).toMatchObject({
+            name: 'NVIDIA GeForce RTX 5070 Laptop GPU',
+            resolution: '1920 x 1080 x Gerçek Renk (32bit)',
+            driverDate: '20.01.2026',
+            driverVersion: '32.0.15.9186',
+        });
+        expect(data?.graphicsCards[1].ram).toBe('');
+        expect(data?.gpuDriverVersion).toBe('32.0.13046.10001');
+    });
+
     it('should split collapsed dual-GPU names and read item-style driver fields', () => {
         const xml = `<hotinfo>
             <system>

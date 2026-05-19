@@ -461,6 +461,7 @@ export class HotinfoParserService {
             'description',
         ], ['card description', 'graphics card', 'display adapter', 'adapter name', 'gpu', 'chip type', 'name']) || 'Unknown';
 
+        const driverNode = node?.driver && typeof node.driver === 'object' ? node.driver : undefined;
         const dedicatedMemory = this.pickString(node, [
             '@_dedicated-memory',
             'dedicated-memory',
@@ -499,15 +500,35 @@ export class HotinfoParserService {
                 'driverdate',
                 '@_driverDate',
                 'driverDate',
-            ], ['driver date', 'driverdate', 'driver datum', 'treiber datum', 'sürücü tarihi', 'surucu tarihi']),
+            ], ['driver date', 'driverdate', 'driver datum', 'treiber datum', 'sürücü tarihi', 'surucu tarihi'])
+                || this.pickString(driverNode, [
+                    '@_driver-date',
+                    'driver-date',
+                    '@_driverdate',
+                    'driverdate',
+                    '@_date',
+                    'date',
+                    '@_driverDate',
+                    'driverDate',
+                ], ['driver date', 'driverdate', 'driver datum', 'treiber datum', 'sürücü tarihi', 'surucu tarihi']),
             driverVersion: this.pickString(node, [
                 '@_driver-version',
                 'driver-version',
+                '@_version',
+                'version',
                 '@_driver',
                 'driver',
                 '@_driverVersion',
                 'driverVersion',
-            ], ['driver version', 'driverversion', 'treiber version', 'sürücü versiyonu', 'surucu versiyonu']),
+            ], ['driver version', 'driverversion', 'treiber version', 'sürücü versiyonu', 'surucu versiyonu'])
+                || this.pickString(driverNode, [
+                    '@_driver-version',
+                    'driver-version',
+                    '@_version',
+                    'version',
+                    '@_driverVersion',
+                    'driverVersion',
+                ], ['driver version', 'driverversion', 'treiber version', 'sürücü versiyonu', 'surucu versiyonu']),
             openglVersion: this.pickString(node, [
                 '@_opengl-version',
                 'opengl-version',

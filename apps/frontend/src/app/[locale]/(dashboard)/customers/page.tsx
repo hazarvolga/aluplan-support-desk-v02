@@ -104,6 +104,9 @@ const getDisplayCustomerNo = (customer: CustomerItem) =>
     || customer.customerProfile?.customerNo
     || '';
 
+const toSearchText = (value: unknown) => String(value ?? '').toLowerCase();
+const includesSearch = (value: unknown, term: string) => toSearchText(value).includes(term);
+
 import { use } from 'react';
 
 export default function CustomersPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -433,12 +436,12 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         if (searchTerm) {
             const lowerTerm = searchTerm.toLowerCase();
             result = result.filter(c =>
-                c.fullName.toLowerCase().includes(lowerTerm) ||
-                c.email.toLowerCase().includes(lowerTerm) ||
-                (c.customerProfile?.companyName || '').toLowerCase().includes(lowerTerm) ||
-                getDisplayCustomerNo(c).toLowerCase().includes(lowerTerm) ||
-                (c.customerProfile?.contractStatus || '').toLowerCase().includes(lowerTerm) ||
-                (c.customerProfile?.subscriptionModel || '').toLowerCase().includes(lowerTerm)
+                includesSearch(c.fullName, lowerTerm) ||
+                includesSearch(c.email, lowerTerm) ||
+                includesSearch(c.customerProfile?.companyName, lowerTerm) ||
+                includesSearch(getDisplayCustomerNo(c), lowerTerm) ||
+                includesSearch(c.customerProfile?.contractStatus, lowerTerm) ||
+                includesSearch(c.customerProfile?.subscriptionModel, lowerTerm)
             );
         }
 
@@ -460,7 +463,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                     case 'phoneNumber': fieldValue = c.customerProfile?.phoneNumber || ''; break;
                     case 'status': fieldValue = c.status; break;
                 }
-                return fieldValue.toLowerCase().includes(lowerValue);
+                return includesSearch(fieldValue, lowerValue);
             });
         });
 
@@ -523,11 +526,11 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         if (searchTerm) {
             const lowerTerm = searchTerm.toLowerCase();
             result = result.filter(a =>
-                a.name.toLowerCase().includes(lowerTerm) ||
-                (a.industry || '').toLowerCase().includes(lowerTerm) ||
-                (a.website || '').toLowerCase().includes(lowerTerm) ||
-                (a.address || '').toLowerCase().includes(lowerTerm) ||
-                (a.accountNumber || '').toLowerCase().includes(lowerTerm)
+                includesSearch(a.name, lowerTerm) ||
+                includesSearch(a.industry, lowerTerm) ||
+                includesSearch(a.website, lowerTerm) ||
+                includesSearch(a.address, lowerTerm) ||
+                includesSearch(a.accountNumber, lowerTerm)
             );
         }
 
@@ -544,7 +547,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                     case 'website': fieldValue = a.website || ''; break;
                     case 'address': fieldValue = a.address || ''; break;
                 }
-                return fieldValue.toLowerCase().includes(lowerValue);
+                return includesSearch(fieldValue, lowerValue);
             });
         });
 

@@ -178,6 +178,20 @@ export class KnowledgePoolController {
         return this.learnNowCrawlerService.importCandidate(id);
     }
 
+    @Post('crawl/candidates/bulk-delete')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Delete multiple crawler candidates from the review queue' })
+    async bulkDeleteCrawlerCandidates(@Body() body: { ids: string[] }) {
+        return this.learnNowCrawlerService.bulkDeleteCandidates(body.ids);
+    }
+
+    @Delete('crawl/candidates/:id')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Delete a crawler candidate from the review queue' })
+    async deleteCrawlerCandidate(@Param('id') id: string) {
+        return this.learnNowCrawlerService.deleteCandidate(id);
+    }
+
     @Post('sources/bulk-delete')
     @Roles('admin', 'super-admin', 'manager', 'support-manager')
     @ApiOperation({ summary: 'Delete multiple knowledge sources' })

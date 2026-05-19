@@ -364,6 +364,10 @@ export const api = {
         },
         importCrawlCandidate: (id: string) =>
             request<any>(`/knowledge-pool/crawl/candidates/${id}/import`, { method: 'POST' }),
+        deleteCrawlCandidate: (id: string) =>
+            request<{ success: boolean; count: number }>(`/knowledge-pool/crawl/candidates/${id}`, { method: 'DELETE' }),
+        bulkDeleteCrawlCandidates: (ids: string[]) =>
+            request<{ success: boolean; count: number }>('/knowledge-pool/crawl/candidates/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
         delete: (id: string) => request<{ success: boolean; message: string }>(`/knowledge-pool/sources/${id}`, { method: 'DELETE' }),
         bulkDelete: (ids: string[]) => request<{ success: boolean; count: number }>('/knowledge-pool/sources/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
     },
