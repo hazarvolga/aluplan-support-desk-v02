@@ -12,6 +12,7 @@ export interface CrawlResult {
     isDynamic: boolean;
     provider?: 'basic' | 'crawl4ai';
     metadata?: Record<string, unknown>;
+    links?: string[];
 }
 
 @Injectable()
@@ -60,12 +61,23 @@ export class CrawlService {
         const { content, title } = this.extractContent(html);
         const hash = crypto.createHash('sha256').update(content).digest('hex');
 
-        return { content, title, hash, isDynamic, provider: 'basic' };
+        return {
+            content,
+            title,
+            hash,
+            isDynamic,
+            provider: 'basic',
+            links: this.extractHtmlLinks(html, url),
+        };
     }
 
     private isCrawl4AiEnabled(): boolean {
-        return (this.config.get<string>('CRAWL4AI_ENABLED') || '').toLowerCase() === 'true'
-            && !!this.getCrawl4AiBaseUrl();
+        const rawValue = this.config.get<string | boolean>('CRAWL4AI_ENABLED');
+        const enabled = typeof rawValue === 'boolean'
+            ? rawValue
+            : String(rawValue ?? '').toLowerCase() === 'true';
+
+        return enabled && !!this.getCrawl4AiBaseUrl();
     }
 
     private getCrawl4AiBaseUrl(): string | null {
@@ -131,6 +143,7 @@ export class CrawlService {
             hash,
             isDynamic: true,
             provider: 'crawl4ai',
+            links: this.extractLinksFromText(content, url),
             metadata: {
                 crawl4aiSuccess: item?.success,
                 crawl4aiUrl: item?.url ?? url,
@@ -168,6 +181,46 @@ export class CrawlService {
 
         const firstHeading = markdown.split('\n').find(line => line.trim().startsWith('# '));
         return firstHeading?.replace(/^#\s+/, '').trim() || item?.url || 'Untitled Source';
+    }
+
+    extractLinksFromText(text: string, baseUrl: string): string[] {
+        const links = new Set<string>();
+        const markdownPattern = /\[[^\]]{1,300}\]\((https?:\/\/[^)\s]+|\/[^)\s]+)\)/gi;
+        const rawUrlPattern = /https?:\/\/[^\s)<>"']+/gi;
+
+        for (const match of text.matchAll(markdownPattern)) {
+            const normalized = this.normalizeLink(match[1], baseUrl);
+            if (normalized) links.add(normalized);
+        }
+
+        for (const match of text.matchAll(rawUrlPattern)) {
+            const normalized = this.normalizeLink(match[0], baseUrl);
+            if (normalized) links.add(normalized);
+        }
+
+        return Array.from(links);
+    }
+
+    private extractHtmlLinks(html: string, baseUrl: string): string[] {
+        const $ = cheerio.load(html);
+        const links = new Set<string>();
+        $('a[href]').each((_, el) => {
+            const normalized = this.normalizeLink(String($(el).attr('href') ?? ''), baseUrl);
+            if (normalized) links.add(normalized);
+        });
+        return Array.from(links);
+    }
+
+    private normalizeLink(href: string, baseUrl: string): string | null {
+        if (!href || href.startsWith('#') || /^mailto:|^tel:|^javascript:/i.test(href)) return null;
+        try {
+            const url = new URL(href, baseUrl);
+            if (!['http:', 'https:'].includes(url.protocol)) return null;
+            url.hash = '';
+            return url.toString();
+        } catch {
+            return null;
+        }
     }
 
     private async fetchWithPlaywright(url: string): Promise<string> {

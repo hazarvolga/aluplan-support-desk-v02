@@ -2744,12 +2744,17 @@
         "under_review": "UNDER_REVIEW"
       },
       "crawler": {
-        "title": "LEARN NOW CRAWLER CANDIDATES",
-        "subtitle": "Stage public Allplan Learn Now content before Knowledge Pool import.",
+        "title": "CRAWLER CANDIDATES",
+        "subtitle": "Stage public web and Learn Now content before Knowledge Pool import.",
         "search_placeholder": "Search term or leave empty",
         "dry_run_title": "DRY-RUN PREVIEW",
         "discovered": "{count} CANDIDATES",
         "no_candidates": "No crawler candidates found",
+        "sources": {
+          "all": "ALL SOURCES",
+          "learnnow": "LEARN NOW",
+          "generic_web": "GENERIC WEB"
+        },
         "formats": {
           "article": "ARTICLE",
           "pdf": "PDF"
@@ -2761,9 +2766,11 @@
         },
         "table": {
           "title": "TITLE",
+          "source": "SOURCE",
           "format": "FORMAT",
           "category": "CATEGORY",
-          "status": "STATUS"
+          "status": "STATUS",
+          "discovered_from": "FROM"
         },
         "toasts": {
           "fetch_error": "Could not load crawler candidates",
@@ -2792,7 +2799,12 @@
         "new_url": "New URL Source",
         "name_label": "Source Name",
         "url_label": "URL Address",
-        "save_sync": "Save and Sync"
+        "url_mode_single": "Single URL",
+        "url_mode_single_desc": "Add only this page and sync it immediately.",
+        "url_mode_crawl": "Crawl Subpages",
+        "url_mode_crawl_desc": "Find same-domain pages and send them to crawler review.",
+        "save_sync": "Save and Sync",
+        "save_candidates": "Save Candidates"
       },
       "toasts": {
         "fetch_error": "Could not load resources",
@@ -4138,7 +4150,8 @@
     "placeholder": "Teknik Dokümantasyon",
     "tabs": {
       "raw_sources": "HAM KAYNAKLAR",
-      "seeded_content": "ÜRETİLMİŞ İÇERİK"
+      "seeded_content": "ÜRETİLMİŞ İÇERİK",
+      "crawler": "CRAWLER CANDIDATES"
     },
     "buttons": {
       "add_url": "URL EKLE",
@@ -4194,6 +4207,48 @@
       "author": "YAZAR",
       "under_review": "İNCELEMEDE"
     },
+    "crawler": {
+      "title": "CRAWLER CANDIDATES",
+      "subtitle": "Stage public web and Learn Now content before Knowledge Pool import.",
+      "search_placeholder": "Search term or leave empty",
+      "dry_run_title": "DRY-RUN PREVIEW",
+      "discovered": "{count} CANDIDATES",
+      "no_candidates": "No crawler candidates found",
+      "sources": {
+        "all": "ALL SOURCES",
+        "learnnow": "LEARN NOW",
+        "generic_web": "GENERIC WEB"
+      },
+      "formats": {
+        "article": "ARTICLE",
+        "pdf": "PDF"
+      },
+      "buttons": {
+        "dry_run": "PREVIEW",
+        "save_candidates": "SAVE CANDIDATES",
+        "import": "IMPORT"
+      },
+      "table": {
+        "title": "TITLE",
+        "source": "SOURCE",
+        "format": "FORMAT",
+        "category": "CATEGORY",
+        "status": "STATUS",
+        "discovered_from": "FROM"
+      },
+      "toasts": {
+        "fetch_error": "Could not load crawler candidates",
+        "dry_run_done": "Preview complete",
+        "dry_run_desc": "{count} candidates found",
+        "discover_done": "Discovery complete",
+        "discover_desc": "{count} new candidates saved",
+        "discover_error": "Crawler discovery failed",
+        "import_started": "Import started",
+        "import_desc": "Candidate was queued through the existing sync pipeline",
+        "import_skipped": "Candidate skipped",
+        "import_error": "Could not import candidate"
+      }
+    },
     "meta": {
       "locale": "tr-TR",
       "system": "SİSTEM"
@@ -4208,7 +4263,12 @@
       "new_url": "Yeni URL Kaynağı",
       "name_label": "Kaynak Adı",
       "url_label": "URL Adresi",
-      "save_sync": "Kaydet ve Eşitle"
+      "url_mode_single": "Single URL",
+      "url_mode_single_desc": "Add only this page and sync it immediately.",
+      "url_mode_crawl": "Crawl Subpages",
+      "url_mode_crawl_desc": "Find same-domain pages and send them to crawler review.",
+      "save_sync": "Kaydet ve Eşitle",
+      "save_candidates": "Save Candidates"
     },
     "toasts": {
       "fetch_error": "Kaynaklar yüklenemedi",

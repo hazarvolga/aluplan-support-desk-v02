@@ -5,7 +5,7 @@ jest.mock('axios');
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-const makeService = (env: Record<string, string | undefined>) => {
+const makeService = (env: Record<string, string | boolean | undefined>) => {
     const config = {
         get: jest.fn((key: string) => env[key]),
     };
@@ -79,5 +79,47 @@ describe('CrawlService', () => {
         expect(result.provider).toBe('basic');
         expect(result.title).toBe('Fallback Page');
         expect(result.content).toContain('Useful fallback content');
+    });
+
+    it('accepts boolean CRAWL4AI_ENABLED values from validated config', async () => {
+        const service = makeService({
+            CRAWL4AI_ENABLED: true,
+            CRAWL4AI_BASE_URL: 'http://crawl4ai:11235',
+        });
+        const markdown = '# Boolean Config\n\nCrawler output generated from a boolean validated environment flag.';
+        const fetchMock = jest.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                results: [{
+                    url: 'https://example.com/boolean-config',
+                    success: true,
+                    title: 'Boolean Config',
+                    markdown,
+                }],
+            }),
+        });
+        global.fetch = fetchMock as any;
+
+        const result = await service.fetch('https://example.com/boolean-config');
+
+        expect(fetchMock).toHaveBeenCalledWith(
+            'http://crawl4ai:11235/crawl',
+            expect.objectContaining({ method: 'POST' }),
+        );
+        expect(result.provider).toBe('crawl4ai');
+        expect(result.content).toBe(markdown);
+    });
+
+    it('extracts normalized links from markdown crawler output', async () => {
+        const service = makeService({});
+
+        expect(service.extractLinksFromText(
+            '[Install](/help/install)\n[License](https://example.com/license#section)\nhttps://example.com/raw?utm_source=test',
+            'https://example.com/docs/start',
+        )).toEqual([
+            'https://example.com/help/install',
+            'https://example.com/license',
+            'https://example.com/raw?utm_source=test',
+        ]);
     });
 });

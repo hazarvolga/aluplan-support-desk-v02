@@ -20,12 +20,16 @@ const makeService = () => {
     const pool = {
         triggerSync: jest.fn(),
     };
+    const crawl = {
+        fetch: jest.fn(),
+    };
 
     return {
-        service: new LearnNowCrawlerService(prisma as any, storage as any, pool as any),
+        service: new LearnNowCrawlerService(prisma as any, storage as any, pool as any, crawl as any),
         prisma,
         storage,
         pool,
+        crawl,
     };
 };
 
@@ -66,6 +70,46 @@ describe('LearnNowCrawlerService', () => {
             }),
         ]));
         expect(prisma.$executeRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    it('falls back to Crawler markdown discovery when static Learn Now search has no usable links', async () => {
+        const { service, crawl } = makeService();
+        mockedAxios.get.mockResolvedValue({
+            data: '<html><body><main>No static anchors rendered here</main></body></html>',
+        } as any);
+        crawl.fetch.mockResolvedValue({
+            content: [
+                '[License Server Access Rights](https://learnnow.allplan.com/course/view.php?id=301)',
+                '[Workgroup Checkout PDF](https://learnnow.allplan.com/mod/resource/view.php?id=302)',
+            ].join('\n'),
+            title: 'Learn Now Search',
+            hash: 'hash',
+            isDynamic: true,
+            provider: 'crawl4ai',
+            metadata: { crawl4aiSuccess: true },
+        });
+
+        const result = await service.discover({
+            formats: ['knowledge_article', 'pdf'],
+            maxPages: 1,
+            maxCandidates: 10,
+            dryRun: true,
+        });
+
+        expect(crawl.fetch).toHaveBeenCalled();
+        expect(result).toMatchObject({ dryRun: true, discovered: 2 });
+        expect(result.candidates).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                sourceUrl: 'https://learnnow.allplan.com/course/view.php?id=301',
+                format: 'KNOWLEDGE_ARTICLE',
+                metadata: expect.objectContaining({ discoveredVia: 'crawler_markdown', crawlerProvider: 'crawl4ai' }),
+            }),
+            expect.objectContaining({
+                sourceUrl: 'https://learnnow.allplan.com/mod/resource/view.php?id=302',
+                format: 'PDF',
+                metadata: expect.objectContaining({ discoveredVia: 'crawler_markdown', crawlerProvider: 'crawl4ai' }),
+            }),
+        ]));
     });
 
     it('imports an article candidate into the existing knowledge sync queue', async () => {

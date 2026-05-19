@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../common/services/storage.service';
 import { KnowledgePoolService } from './knowledge-pool.service';
 import { DiscoverLearnNowDto, LearnNowCrawlFormat } from './dto/learnnow-crawl.dto';
+import { CrawlService } from './crawl.service';
 
 type CandidateStatus =
     | 'PENDING_REVIEW'
@@ -55,6 +56,7 @@ export class LearnNowCrawlerService {
         private readonly prisma: PrismaService,
         private readonly storageService: StorageService,
         private readonly knowledgePoolService: KnowledgePoolService,
+        private readonly crawlService: CrawlService,
     ) { }
 
     async discover(dto: DiscoverLearnNowDto) {
@@ -69,7 +71,12 @@ export class LearnNowCrawlerService {
             for (let page = 0; page < maxPages && discovered.length < maxCandidates; page += 1) {
                 const url = this.buildSearchUrl(format, search, page);
                 const html = await this.fetchSearchHtml(url);
-                discovered.push(...this.extractCandidates(html, format, url));
+                const htmlCandidates = this.extractCandidates(html, format, url);
+                discovered.push(...htmlCandidates);
+
+                if (htmlCandidates.length === 0) {
+                    discovered.push(...await this.discoverWithCrawler(url, format));
+                }
             }
         }
 
@@ -98,15 +105,15 @@ export class LearnNowCrawlerService {
         };
     }
 
-    async listCandidates(status?: CandidateStatus, source = LEARNNOW_SOURCE) {
+    async listCandidates(status?: CandidateStatus, source?: string) {
         const rows = await this.prisma.$queryRawUnsafe<CrawlCandidateRecord[]>(
             `SELECT id, source, source_url, title, format, status, language, category_slug, content_hash, crawl_filter, rejection_reason, metadata
              FROM crawl_candidates
-             WHERE source = $1
+             WHERE ($1::text IS NULL OR source = $1)
                AND ($2::text IS NULL OR status::text = $2::text)
              ORDER BY crawled_at DESC
              LIMIT 200`,
-            source,
+            source ?? null,
             status ?? null,
         );
         return rows.map(this.mapCandidateRow);
@@ -228,6 +235,27 @@ export class LearnNowCrawlerService {
         return response.data;
     }
 
+    private async discoverWithCrawler(crawlUrl: string, format: LearnNowCrawlFormat): Promise<DiscoveredCandidate[]> {
+        try {
+            const result = await this.crawlService.fetch(crawlUrl);
+            const candidates = this.extractMarkdownCandidates(result.content, format, crawlUrl);
+            if (candidates.length > 0) {
+                this.logger.log(`✅ Crawler discovered ${candidates.length} Learn Now ${format} candidates via ${result.provider ?? 'basic'}`);
+            }
+            return candidates.map(candidate => ({
+                ...candidate,
+                metadata: {
+                    ...candidate.metadata,
+                    crawlerProvider: result.provider ?? 'basic',
+                    crawler: (result.metadata ?? {}) as Prisma.InputJsonObject,
+                },
+            }));
+        } catch (error: any) {
+            this.logger.warn(`⚠️ Learn Now crawler discovery fallback failed (${error.message}): ${crawlUrl}`);
+            return [];
+        }
+    }
+
     private extractCandidates(html: string, format: LearnNowCrawlFormat, crawlUrl: string): DiscoveredCandidate[] {
         const $ = cheerio.load(html);
         const candidates: DiscoveredCandidate[] = [];
@@ -257,6 +285,39 @@ export class LearnNowCrawlerService {
                 },
             });
         });
+
+        return candidates;
+    }
+
+    private extractMarkdownCandidates(markdown: string, format: LearnNowCrawlFormat, crawlUrl: string): DiscoveredCandidate[] {
+        const candidateFormat = format === 'pdf' ? 'PDF' : 'KNOWLEDGE_ARTICLE';
+        const candidates: DiscoveredCandidate[] = [];
+        const seen = new Set<string>();
+        const linkPattern = /\[([^\]]{3,240})\]\((https?:\/\/learnnow\.allplan\.com\/[^)\s]+)\)/gi;
+
+        for (const match of markdown.matchAll(linkPattern)) {
+            const title = this.cleanTitle(match[1]);
+            const sourceUrl = this.toLearnNowUrl(match[2]);
+            if (!sourceUrl || seen.has(sourceUrl) || !this.isAllowedResultUrl(sourceUrl, candidateFormat)) continue;
+            seen.add(sourceUrl);
+
+            candidates.push({
+                sourceUrl,
+                title: title || this.titleFromUrl(sourceUrl),
+                format: candidateFormat,
+                language: this.inferLanguage(sourceUrl),
+                categorySlug: this.inferCategorySlug(`${title} ${sourceUrl}`),
+                crawlFilter: format,
+                metadata: {
+                    source: LEARNNOW_SOURCE,
+                    sourceType: candidateFormat === 'PDF' ? 'pdf' : 'knowledge_article',
+                    sourceUrl,
+                    crawlFilter: format,
+                    discoveredFrom: crawlUrl,
+                    discoveredVia: 'crawler_markdown',
+                },
+            });
+        }
 
         return candidates;
     }
@@ -336,7 +397,7 @@ export class LearnNowCrawlerService {
     private buildImportMetadata(candidate: CrawlCandidateRecord, sourceType: 'knowledge_article' | 'pdf'): Prisma.InputJsonObject {
         return {
             ...((candidate.metadata ?? {}) as Record<string, unknown>),
-            source: LEARNNOW_SOURCE,
+            source: candidate.source,
             sourceType,
             sourceUrl: candidate.source_url,
             categorySlug: candidate.category_slug ?? 'uncategorized',

@@ -2424,3 +2424,19 @@ Maintenance rule:
 - `pnpm --filter @aluplan/frontend typecheck`
 - `pnpm i18n:check`
 - `git diff --check`
+
+## Generic Web Crawler Candidates - 2026-05-19
+
+### What changed
+- Existing Knowledge Pool URL ingestion keeps the single-URL sync path, but the URL modal now also supports a controlled "crawl subpages" mode.
+- Generic web discovery uses the shared Crawl4AI/basic crawler path, follows same-domain links with safe defaults, and writes discovered pages/PDFs to `crawl_candidates` as `generic_web`.
+- Crawler candidates can now be filtered by source (`All`, `Learn Now`, `Generic Web`) and show the source domain plus discovered-from URL.
+- LearnNow discovery falls back to Crawl4AI markdown links when the static search page does not expose usable anchors.
+- Crawl4AI config handling now accepts boolean `CRAWL4AI_ENABLED` values from validated config.
+
+### Validation
+- `pnpm --filter @aluplan/backend test -- crawl.service.spec.ts learnnow-crawler.service.spec.ts generic-web-crawler.service.spec.ts`
+- `pnpm --filter @aluplan/backend typecheck`
+- `pnpm --filter @aluplan/frontend typecheck`
+- `pnpm i18n:check`
+- `git diff --check`

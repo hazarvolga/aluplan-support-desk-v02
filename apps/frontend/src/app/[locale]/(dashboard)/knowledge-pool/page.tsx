@@ -66,6 +66,7 @@ export default function KnowledgePoolPage() {
     const [loadingCrawlCandidates, setLoadingCrawlCandidates] = useState(false);
     const [crawlSearch, setCrawlSearch] = useState('');
     const [crawlStatusFilter, setCrawlStatusFilter] = useState('PENDING_REVIEW');
+    const [crawlSourceFilter, setCrawlSourceFilter] = useState('');
     const [crawlFormats, setCrawlFormats] = useState<Set<LearnNowCrawlFormat>>(new Set(['knowledge_article', 'pdf']));
     const [crawlDryRun, setCrawlDryRun] = useState<any>(null);
     const [isDiscovering, setIsDiscovering] = useState(false);
@@ -75,7 +76,9 @@ export default function KnowledgePoolPage() {
 
     const [urlName, setUrlName] = useState('');
     const [urlAddress, setUrlAddress] = useState('');
+    const [urlIngestionMode, setUrlIngestionMode] = useState<'single' | 'crawl'>('single');
     const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
+    const [isUrlSubmitting, setIsUrlSubmitting] = useState(false);
 
     const loadSources = async () => {
         setLoadingSources(true);
@@ -122,7 +125,7 @@ export default function KnowledgePoolPage() {
 
     useEffect(() => {
         if (activeTab === 'crawler') loadCrawlCandidates();
-    }, [crawlStatusFilter]);
+    }, [crawlStatusFilter, crawlSourceFilter]);
 
     // ── Filtered + sorted sources ──────────────────────────────────────────
     const filteredSources = sources
@@ -264,14 +267,36 @@ export default function KnowledgePoolPage() {
 
     const handleAddUrl = async () => {
         if (!urlName || !urlAddress) return;
+        setIsUrlSubmitting(true);
         try {
-            await api.pool.addUrl(urlName, urlAddress);
-            toast({ title: t('logs.success'), description: t('toasts.url_added') });
+            if (urlIngestionMode === 'crawl') {
+                const result = await api.pool.discoverGenericWeb({
+                    name: urlName,
+                    startUrl: urlAddress,
+                    maxDepth: 2,
+                    maxCandidates: 50,
+                    sameDomainOnly: true,
+                    dryRun: false,
+                });
+                toast({
+                    title: t('crawler.toasts.discover_done'),
+                    description: t('crawler.toasts.discover_desc', { count: result.inserted ?? 0 }),
+                });
+                setActiveTab('crawler');
+                setCrawlSourceFilter('generic_web');
+                setCrawlStatusFilter('PENDING_REVIEW');
+            } else {
+                await api.pool.addUrl(urlName, urlAddress);
+                toast({ title: t('logs.success'), description: t('toasts.url_added') });
+                loadSources();
+            }
             setIsUrlModalOpen(false);
             setUrlName(''); setUrlAddress('');
-            loadSources();
+            setUrlIngestionMode('single');
         } catch (err: any) {
             toast({ title: t('logs.error'), description: err.message, variant: 'destructive' });
+        } finally {
+            setIsUrlSubmitting(false);
         }
     };
 
@@ -307,7 +332,7 @@ export default function KnowledgePoolPage() {
     const loadCrawlCandidates = async () => {
         setLoadingCrawlCandidates(true);
         try {
-            const data = await api.pool.crawlCandidates(crawlStatusFilter || undefined);
+            const data = await api.pool.crawlCandidates(crawlStatusFilter || undefined, crawlSourceFilter || undefined);
             setCrawlCandidates(data);
         } catch (error: any) {
             toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.fetch_error'), variant: 'destructive' });
@@ -415,9 +440,28 @@ export default function KnowledgePoolPage() {
                                             <Label>{t('dialogs.url_label')}</Label>
                                             <Input value={urlAddress} onChange={e => setUrlAddress(e.target.value)} placeholder="https://example.com/docs" />
                                         </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[
+                                                { value: 'single' as const, label: t('dialogs.url_mode_single'), desc: t('dialogs.url_mode_single_desc') },
+                                                { value: 'crawl' as const, label: t('dialogs.url_mode_crawl'), desc: t('dialogs.url_mode_crawl_desc') },
+                                            ].map(mode => (
+                                                <button
+                                                    key={mode.value}
+                                                    type="button"
+                                                    onClick={() => setUrlIngestionMode(mode.value)}
+                                                    className={`border p-3 text-left rounded-sm transition-colors ${urlIngestionMode === mode.value ? 'border-primary bg-primary/10 text-primary' : 'border-border/50 bg-muted/10 text-muted-foreground hover:text-foreground'}`}
+                                                >
+                                                    <span className="block text-[10px] font-bold uppercase tracking-widest">{mode.label}</span>
+                                                    <span className="mt-1 block text-[9px] leading-snug text-current/70">{mode.desc}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <DialogFooter>
-                                        <Button onClick={handleAddUrl} className="w-full">{t('dialogs.save_sync')}</Button>
+                                        <Button onClick={handleAddUrl} disabled={isUrlSubmitting || !urlName || !urlAddress} className="w-full">
+                                            {isUrlSubmitting && <RefreshCw className="h-3.5 w-3.5 mr-2 animate-spin" />}
+                                            {urlIngestionMode === 'crawl' ? t('dialogs.save_candidates') : t('dialogs.save_sync')}
+                                        </Button>
                                     </DialogFooter>
                                 </DialogContent>
                             </Dialog>
@@ -839,16 +883,33 @@ export default function KnowledgePoolPage() {
                         )}
 
                         <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                                {['PENDING_REVIEW', 'IMPORTED', 'SKIPPED_DUPLICATE', 'FAILED', ''].map(status => (
-                                    <button
-                                        key={status || 'ALL'}
-                                        onClick={() => setCrawlStatusFilter(status)}
-                                        className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest border rounded ${crawlStatusFilter === status ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}
-                                    >
-                                        {status || t('filters.all')}
-                                    </button>
-                                ))}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    {[
+                                        { value: '', label: t('crawler.sources.all') },
+                                        { value: 'allplan_learnnow', label: t('crawler.sources.learnnow') },
+                                        { value: 'generic_web', label: t('crawler.sources.generic_web') },
+                                    ].map(source => (
+                                        <button
+                                            key={source.value || 'all-sources'}
+                                            onClick={() => setCrawlSourceFilter(source.value)}
+                                            className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest border rounded ${crawlSourceFilter === source.value ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}
+                                        >
+                                            {source.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    {['PENDING_REVIEW', 'IMPORTED', 'SKIPPED_DUPLICATE', 'FAILED', ''].map(status => (
+                                        <button
+                                            key={status || 'ALL'}
+                                            onClick={() => setCrawlStatusFilter(status)}
+                                            className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest border rounded ${crawlStatusFilter === status ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60 hover:text-muted-foreground'}`}
+                                        >
+                                            {status || t('filters.all')}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                             <Button onClick={loadCrawlCandidates} variant="outline" className="h-8 text-[10px] uppercase font-bold tracking-widest gap-2">
                                 <RefreshCw className={`h-3.5 w-3.5 ${loadingCrawlCandidates ? 'animate-spin' : ''}`} />
@@ -861,6 +922,7 @@ export default function KnowledgePoolPage() {
                                 <TableHeader>
                                     <TableRow className="bg-muted/10 hover:bg-muted/10 border-b border-border/40">
                                         <TableHead className="text-[9px] font-bold uppercase tracking-widest">{t('crawler.table.title')}</TableHead>
+                                        <TableHead className="text-[9px] font-bold uppercase tracking-widest w-32">{t('crawler.table.source')}</TableHead>
                                         <TableHead className="text-[9px] font-bold uppercase tracking-widest w-28">{t('crawler.table.format')}</TableHead>
                                         <TableHead className="text-[9px] font-bold uppercase tracking-widest w-40">{t('crawler.table.category')}</TableHead>
                                         <TableHead className="text-[9px] font-bold uppercase tracking-widest w-36">{t('crawler.table.status')}</TableHead>
@@ -870,13 +932,13 @@ export default function KnowledgePoolPage() {
                                 <TableBody>
                                     {loadingCrawlCandidates ? (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-12">
+                                            <TableCell colSpan={6} className="text-center py-12">
                                                 <RefreshCw className="h-5 w-5 animate-spin mx-auto text-primary" />
                                             </TableCell>
                                         </TableRow>
                                     ) : crawlCandidates.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                                            <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
                                                 <Globe className="h-8 w-8 mx-auto mb-3 opacity-20" />
                                                 <p className="text-[10px] uppercase font-mono tracking-widest">{t('crawler.no_candidates')}</p>
                                             </TableCell>
@@ -893,6 +955,23 @@ export default function KnowledgePoolPage() {
                                                 >
                                                     {candidate.sourceUrl}
                                                 </a>
+                                                {typeof candidate.metadata?.discoveredFrom === 'string' && (
+                                                    <p className="text-[8px] font-mono text-muted-foreground/40 truncate max-w-[420px] mt-0.5">
+                                                        {t('crawler.table.discovered_from')}: {String(candidate.metadata.discoveredFrom)}
+                                                    </p>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="space-y-0.5">
+                                                    <Badge variant="outline" className="text-[8px] font-mono rounded-none px-1.5">
+                                                        {candidate.source === 'generic_web' ? t('crawler.sources.generic_web') : t('crawler.sources.learnnow')}
+                                                    </Badge>
+                                                    <p className="text-[8px] font-mono text-muted-foreground/50 truncate max-w-[120px]">
+                                                        {(() => {
+                                                            try { return new URL(candidate.sourceUrl).hostname; } catch { return candidate.source; }
+                                                        })()}
+                                                    </p>
+                                                </div>
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant="outline" className="text-[9px] font-mono rounded-none px-1.5">

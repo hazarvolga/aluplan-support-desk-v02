@@ -15,6 +15,8 @@ import { StorageService } from '../common/services/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LearnNowCrawlerService } from './learnnow-crawler.service';
 import { DiscoverLearnNowDto } from './dto/learnnow-crawl.dto';
+import { GenericWebCrawlerService } from './generic-web-crawler.service';
+import { DiscoverGenericWebDto } from './dto/generic-crawl.dto';
 
 // Production Knowledge Base Stabilization Sync v1.0.3 - Final RAG Fixes (Multi-chunk + High-precision 1536 aligned)
 @ApiTags('Knowledge Pool')
@@ -28,6 +30,7 @@ export class KnowledgePoolController {
         private readonly storageService: StorageService,
         private readonly prisma: PrismaService,
         private readonly learnNowCrawlerService: LearnNowCrawlerService,
+        private readonly genericWebCrawlerService: GenericWebCrawlerService,
     ) { }
 
     @Post('sources')
@@ -154,11 +157,18 @@ export class KnowledgePoolController {
         return this.learnNowCrawlerService.discover(dto);
     }
 
+    @Post('crawl/discover')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Discover public same-domain web crawler candidates from a start URL' })
+    async discoverGenericWeb(@Body() dto: DiscoverGenericWebDto): Promise<any> {
+        return this.genericWebCrawlerService.discover(dto);
+    }
+
     @Get('crawl/candidates')
     @Roles('admin', 'super-admin', 'manager', 'support-manager')
     @ApiOperation({ summary: 'List crawler candidates awaiting review/import' })
-    async listCrawlerCandidates(@Query('status') status?: any): Promise<any> {
-        return this.learnNowCrawlerService.listCandidates(status);
+    async listCrawlerCandidates(@Query('status') status?: any, @Query('source') source?: string): Promise<any> {
+        return this.learnNowCrawlerService.listCandidates(status, source && source !== 'all' ? source : undefined);
     }
 
     @Post('crawl/candidates/:id/import')

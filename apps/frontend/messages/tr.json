@@ -2744,12 +2744,17 @@
         "under_review": "İNCELEMEDE"
       },
       "crawler": {
-        "title": "LEARN NOW CRAWLER ADAYLARI",
-        "subtitle": "Resmi Allplan Learn Now açık içeriklerini kontrollü aday havuzuna al.",
+        "title": "CRAWLER ADAYLARI",
+        "subtitle": "Web ve Learn Now içeriklerini Knowledge Pool'a almadan önce onay kuyruğunda yönetin.",
         "search_placeholder": "Arama terimi veya boş bırak",
         "dry_run_title": "DRY-RUN ÖNİZLEME",
         "discovered": "{count} ADAY",
         "no_candidates": "Crawler adayı bulunamadı",
+        "sources": {
+          "all": "TÜM KAYNAKLAR",
+          "learnnow": "LEARN NOW",
+          "generic_web": "GENEL WEB"
+        },
         "formats": {
           "article": "MAKALE",
           "pdf": "PDF"
@@ -2761,9 +2766,11 @@
         },
         "table": {
           "title": "BAŞLIK",
+          "source": "KAYNAK",
           "format": "FORMAT",
           "category": "KATEGORİ",
-          "status": "DURUM"
+          "status": "DURUM",
+          "discovered_from": "KAYNAK URL"
         },
         "toasts": {
           "fetch_error": "Crawler adayları yüklenemedi",
@@ -2792,7 +2799,12 @@
         "new_url": "Yeni URL Kaynağı",
         "name_label": "Kaynak Adı",
         "url_label": "URL Adresi",
-        "save_sync": "Kaydet ve Eşitle"
+        "url_mode_single": "Tek URL",
+        "url_mode_single_desc": "Sadece bu sayfayı ekler ve hemen eşitler.",
+        "url_mode_crawl": "Alt Sayfaları Tara",
+        "url_mode_crawl_desc": "Aynı domain altındaki sayfaları bulup onay kuyruğuna gönderir.",
+        "save_sync": "Kaydet ve Eşitle",
+        "save_candidates": "Adayları Kaydet"
       },
       "toasts": {
         "fetch_error": "Kaynaklar yüklenemedi",
@@ -4138,7 +4150,8 @@
     "placeholder": "Teknik Dokümantasyon",
     "tabs": {
       "raw_sources": "HAM KAYNAKLAR",
-      "seeded_content": "ÜRETİLMİŞ İÇERİK"
+      "seeded_content": "ÜRETİLMİŞ İÇERİK",
+      "crawler": "CRAWLER ADAYLARI"
     },
     "buttons": {
       "add_url": "URL EKLE",
@@ -4194,6 +4207,48 @@
       "author": "YAZAR",
       "under_review": "İNCELEMEDE"
     },
+    "crawler": {
+      "title": "CRAWLER ADAYLARI",
+      "subtitle": "Web ve Learn Now içeriklerini Knowledge Pool'a almadan önce onay kuyruğunda yönetin.",
+      "search_placeholder": "Arama terimi veya boş bırakın",
+      "dry_run_title": "ÖN İZLEME",
+      "discovered": "{count} ADAY",
+      "no_candidates": "Crawler adayı bulunamadı",
+      "sources": {
+        "all": "TÜM KAYNAKLAR",
+        "learnnow": "LEARN NOW",
+        "generic_web": "GENEL WEB"
+      },
+      "formats": {
+        "article": "MAKALE",
+        "pdf": "PDF"
+      },
+      "buttons": {
+        "dry_run": "ÖN İZLE",
+        "save_candidates": "ADAYLARI KAYDET",
+        "import": "İÇE AKTAR"
+      },
+      "table": {
+        "title": "BAŞLIK",
+        "source": "KAYNAK",
+        "format": "FORMAT",
+        "category": "KATEGORİ",
+        "status": "DURUM",
+        "discovered_from": "KAYNAK URL"
+      },
+      "toasts": {
+        "fetch_error": "Crawler adayları yüklenemedi",
+        "dry_run_done": "Ön izleme tamamlandı",
+        "dry_run_desc": "{count} aday bulundu",
+        "discover_done": "Keşif tamamlandı",
+        "discover_desc": "{count} yeni aday kaydedildi",
+        "discover_error": "Crawler keşfi başarısız",
+        "import_started": "İçe aktarma başladı",
+        "import_desc": "Aday mevcut eşitleme kuyruğuna alındı",
+        "import_skipped": "Aday atlandı",
+        "import_error": "Aday içe aktarılamadı"
+      }
+    },
     "meta": {
       "locale": "tr-TR",
       "system": "SİSTEM"
@@ -4208,7 +4263,12 @@
       "new_url": "Yeni URL Kaynağı",
       "name_label": "Kaynak Adı",
       "url_label": "URL Adresi",
-      "save_sync": "Kaydet ve Eşitle"
+      "url_mode_single": "Tek URL",
+      "url_mode_single_desc": "Sadece bu sayfayı ekler ve hemen eşitler.",
+      "url_mode_crawl": "Alt Sayfaları Tara",
+      "url_mode_crawl_desc": "Aynı domain altındaki sayfaları bulup onay kuyruğuna gönderir.",
+      "save_sync": "Kaydet ve Eşitle",
+      "save_candidates": "Adayları Kaydet"
     },
     "toasts": {
       "fetch_error": "Kaynaklar yüklenemedi",

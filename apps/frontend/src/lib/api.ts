@@ -64,6 +64,15 @@ export type DiscoverLearnNowPayload = {
     dryRun?: boolean;
 };
 
+export type DiscoverGenericWebPayload = {
+    startUrl: string;
+    name?: string;
+    maxDepth?: number;
+    maxCandidates?: number;
+    sameDomainOnly?: boolean;
+    dryRun?: boolean;
+};
+
 const processQueue = (error: Error | null, token: string | null = null) => {
     failedQueue.forEach(prom => {
         if (error) {
@@ -341,8 +350,16 @@ export const api = {
                 method: 'POST',
                 body: JSON.stringify(body),
             }),
-        crawlCandidates: (status?: string) => {
-            const q = status ? `?${new URLSearchParams({ status }).toString()}` : '';
+        discoverGenericWeb: (body: DiscoverGenericWebPayload) =>
+            request<any>('/knowledge-pool/crawl/discover', {
+                method: 'POST',
+                body: JSON.stringify(body),
+            }),
+        crawlCandidates: (status?: string, source?: string) => {
+            const params = new URLSearchParams();
+            if (status) params.set('status', status);
+            if (source) params.set('source', source);
+            const q = params.toString() ? `?${params.toString()}` : '';
             return request<CrawlCandidate[]>(`/knowledge-pool/crawl/candidates${q}`);
         },
         importCrawlCandidate: (id: string) =>

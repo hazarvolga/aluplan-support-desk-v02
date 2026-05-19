@@ -2744,12 +2744,17 @@
         "under_review": "IN_ÜBERPRÜFUNG"
       },
       "crawler": {
-        "title": "LEARN NOW CRAWLER-KANDIDATEN",
-        "subtitle": "Öffentliche Allplan Learn Now Inhalte vor dem Knowledge-Pool-Import prüfen.",
+        "title": "CRAWLER-KANDIDATEN",
+        "subtitle": "Web- und Learn-Now-Inhalte vor dem Import in den Knowledge Pool prüfen.",
         "search_placeholder": "Suchbegriff oder leer lassen",
         "dry_run_title": "DRY-RUN VORSCHAU",
         "discovered": "{count} KANDIDATEN",
         "no_candidates": "Keine Crawler-Kandidaten gefunden",
+        "sources": {
+          "all": "ALLE QUELLEN",
+          "learnnow": "LEARN NOW",
+          "generic_web": "GENERIC WEB"
+        },
         "formats": {
           "article": "ARTIKEL",
           "pdf": "PDF"
@@ -2761,9 +2766,11 @@
         },
         "table": {
           "title": "TITEL",
+          "source": "QUELLE",
           "format": "FORMAT",
           "category": "KATEGORIE",
-          "status": "STATUS"
+          "status": "STATUS",
+          "discovered_from": "AUS"
         },
         "toasts": {
           "fetch_error": "Crawler-Kandidaten konnten nicht geladen werden",
@@ -2792,7 +2799,12 @@
         "new_url": "Neue URL-Quelle",
         "name_label": "Quellenname",
         "url_label": "URL-Adresse",
-        "save_sync": "Speichern und Synchronisieren"
+        "url_mode_single": "Einzelne URL",
+        "url_mode_single_desc": "Fügt nur diese Seite hinzu und synchronisiert sofort.",
+        "url_mode_crawl": "Unterseiten crawlen",
+        "url_mode_crawl_desc": "Findet Seiten derselben Domain und sendet sie zur Prüfung.",
+        "save_sync": "Speichern und Synchronisieren",
+        "save_candidates": "Kandidaten speichern"
       },
       "toasts": {
         "fetch_error": "Ressourcen konnten nicht geladen werden",
@@ -4138,7 +4150,8 @@
     "placeholder": "Teknik Dokümantasyon",
     "tabs": {
       "raw_sources": "HAM KAYNAKLAR",
-      "seeded_content": "ÜRETİLMİŞ İÇERİK"
+      "seeded_content": "ÜRETİLMİŞ İÇERİK",
+      "crawler": "CRAWLER-KANDIDATEN"
     },
     "buttons": {
       "add_url": "URL EKLE",
@@ -4194,6 +4207,48 @@
       "author": "YAZAR",
       "under_review": "İNCELEMEDE"
     },
+    "crawler": {
+      "title": "CRAWLER-KANDIDATEN",
+      "subtitle": "Web- und Learn-Now-Inhalte vor dem Import in den Knowledge Pool prüfen.",
+      "search_placeholder": "Suchbegriff oder leer lassen",
+      "dry_run_title": "VORSCHAU",
+      "discovered": "{count} KANDIDATEN",
+      "no_candidates": "Keine Crawler-Kandidaten gefunden",
+      "sources": {
+        "all": "ALLE QUELLEN",
+        "learnnow": "LEARN NOW",
+        "generic_web": "GENERIC WEB"
+      },
+      "formats": {
+        "article": "ARTIKEL",
+        "pdf": "PDF"
+      },
+      "buttons": {
+        "dry_run": "VORSCHAU",
+        "save_candidates": "KANDIDATEN SPEICHERN",
+        "import": "IMPORTIEREN"
+      },
+      "table": {
+        "title": "TITEL",
+        "source": "QUELLE",
+        "format": "FORMAT",
+        "category": "KATEGORIE",
+        "status": "STATUS",
+        "discovered_from": "AUS"
+      },
+      "toasts": {
+        "fetch_error": "Crawler-Kandidaten konnten nicht geladen werden",
+        "dry_run_done": "Vorschau abgeschlossen",
+        "dry_run_desc": "{count} Kandidaten gefunden",
+        "discover_done": "Discovery abgeschlossen",
+        "discover_desc": "{count} neue Kandidaten gespeichert",
+        "discover_error": "Crawler-Discovery fehlgeschlagen",
+        "import_started": "Import gestartet",
+        "import_desc": "Kandidat wurde in die bestehende Sync-Pipeline eingereiht",
+        "import_skipped": "Kandidat übersprungen",
+        "import_error": "Kandidat konnte nicht importiert werden"
+      }
+    },
     "meta": {
       "locale": "tr-TR",
       "system": "SİSTEM"
@@ -4208,7 +4263,12 @@
       "new_url": "Yeni URL Kaynağı",
       "name_label": "Kaynak Adı",
       "url_label": "URL Adresi",
-      "save_sync": "Kaydet ve Eşitle"
+      "url_mode_single": "Einzelne URL",
+      "url_mode_single_desc": "Fügt nur diese Seite hinzu und synchronisiert sofort.",
+      "url_mode_crawl": "Unterseiten crawlen",
+      "url_mode_crawl_desc": "Findet Seiten derselben Domain und sendet sie zur Prüfung.",
+      "save_sync": "Kaydet ve Eşitle",
+      "save_candidates": "Kandidaten speichern"
     },
     "toasts": {
       "fetch_error": "Kaynaklar yüklenemedi",

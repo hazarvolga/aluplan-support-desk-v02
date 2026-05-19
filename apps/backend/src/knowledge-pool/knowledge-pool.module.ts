@@ -9,6 +9,7 @@ import { AiModule } from '../ai/ai.module';
 
 import { CrawlService } from './crawl.service';
 import { LearnNowCrawlerService } from './learnnow-crawler.service';
+import { GenericWebCrawlerService } from './generic-web-crawler.service';
 
 @Module({
     imports: [
@@ -19,7 +20,7 @@ import { LearnNowCrawlerService } from './learnnow-crawler.service';
         }),
     ],
     controllers: [KnowledgePoolController],
-    providers: [KnowledgePoolService, KnowledgePoolProcessor, KnowledgePoolParserService, CrawlService, LearnNowCrawlerService],
+    providers: [KnowledgePoolService, KnowledgePoolProcessor, KnowledgePoolParserService, CrawlService, LearnNowCrawlerService, GenericWebCrawlerService],
     exports: [KnowledgePoolService, KnowledgePoolParserService],
 })
 export class KnowledgePoolModule { }
