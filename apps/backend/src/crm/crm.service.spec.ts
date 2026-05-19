@@ -91,7 +91,10 @@ describe('CrmService', () => {
                 { provide: Dynamics365Adapter, useValue: mockAdapter },
                 { provide: CryptoService, useValue: mockCrypto },
                 { provide: getQueueToken('crm-sync'), useValue: mockQueue },
-                { provide: PiiMaskingService, useValue: { maskSensitiveData: jest.fn(val => val) } },
+                {
+                    provide: PiiMaskingService,
+                    useValue: { maskSensitiveData: jest.fn((val) => val) },
+                },
                 { provide: CrmRecordSyncService, useValue: mockRecordSync },
                 { provide: CrmDeltaSyncService, useValue: mockDeltaSync },
             ],
@@ -121,7 +124,10 @@ describe('CrmService', () => {
             mockPrisma.crmConnection.findFirst.mockResolvedValue(null);
 
             await expect(
-                service.upsertConnection({ provider: CrmProvider.DYNAMICS_365, clientSecret: 'sec' }),
+                service.upsertConnection({
+                    provider: CrmProvider.DYNAMICS_365,
+                    clientSecret: 'sec',
+                }),
             ).rejects.toThrow(BadRequestException);
         });
 
@@ -168,7 +174,9 @@ describe('CrmService', () => {
             expect(result.logId).toBe('log-1');
             expect(result.jobId).toBe('job-1');
             expect(mockPrisma.crmSyncLog.create).toHaveBeenCalledWith(
-                expect.objectContaining({ data: expect.objectContaining({ status: SyncStatus.SYNCING }) }),
+                expect.objectContaining({
+                    data: expect.objectContaining({ status: SyncStatus.SYNCING }),
+                }),
             );
             expect(mockQueue.add).toHaveBeenCalled();
         });
@@ -191,9 +199,7 @@ describe('CrmService', () => {
         });
 
         it('should NOT call syncContacts when syncAccounts returns ERROR', async () => {
-            mockAdapter.syncAccounts.mockResolvedValue(
-                makeResult({ status: SyncStatus.ERROR, errorMessage: 'API down' }),
-            );
+            mockAdapter.syncAccounts.mockResolvedValue(makeResult({ status: SyncStatus.ERROR, errorMessage: 'API down' }));
 
             await service.executeSyncProcess(connection, mockAdapter, 'log-1');
 
@@ -215,9 +221,7 @@ describe('CrmService', () => {
 
             await service.executeSyncProcess(connection, mockAdapter, 'log-1');
 
-            const updateCall = mockPrisma.crmSyncLog.update.mock.calls.find(
-                (call: any) => call[0].data?.status === SyncStatus.SUCCESS,
-            );
+            const updateCall = mockPrisma.crmSyncLog.update.mock.calls.find((call: any) => call[0].data?.status === SyncStatus.SUCCESS);
             expect(updateCall).toBeDefined();
             const details = updateCall[0].data.details;
             expect(details.failedRecords).toHaveLength(1);
@@ -227,15 +231,11 @@ describe('CrmService', () => {
         });
 
         it('should save details JSON to CrmSyncLog on error', async () => {
-            mockAdapter.syncAccounts.mockResolvedValue(
-                makeResult({ status: SyncStatus.ERROR, errorMessage: 'fail' }),
-            );
+            mockAdapter.syncAccounts.mockResolvedValue(makeResult({ status: SyncStatus.ERROR, errorMessage: 'fail' }));
 
             await service.executeSyncProcess(connection, mockAdapter, 'log-1');
 
-            const errorUpdateCall = mockPrisma.crmSyncLog.update.mock.calls.find(
-                (call: any) => call[0].data?.status === SyncStatus.ERROR,
-            );
+            const errorUpdateCall = mockPrisma.crmSyncLog.update.mock.calls.find((call: any) => call[0].data?.status === SyncStatus.ERROR);
             expect(errorUpdateCall).toBeDefined();
             expect(errorUpdateCall[0].data.details).toBeDefined();
         });
@@ -254,16 +254,64 @@ describe('CrmService', () => {
         });
 
         it('should set connection syncStatus to ERROR when sync fails', async () => {
-            mockAdapter.syncAccounts.mockResolvedValue(
-                makeResult({ status: SyncStatus.ERROR, errorMessage: 'fail' }),
-            );
+            mockAdapter.syncAccounts.mockResolvedValue(makeResult({ status: SyncStatus.ERROR, errorMessage: 'fail' }));
 
             await service.executeSyncProcess(connection, mockAdapter, 'log-1');
 
-            const errorConnUpdate = mockPrisma.crmConnection.update.mock.calls.find(
-                (call: any) => call[0].data?.syncStatus === SyncStatus.ERROR,
-            );
+            const errorConnUpdate = mockPrisma.crmConnection.update.mock.calls.find((call: any) => call[0].data?.syncStatus === SyncStatus.ERROR);
             expect(errorConnUpdate).toBeDefined();
+        });
+
+        it('should use shared Dynamics record sync for full imports when raw fetch is available', async () => {
+            const adapterWithRawFetch = {
+                ...mockAdapter,
+                fetchAccounts: jest.fn().mockResolvedValue([
+                    {
+                        accountid: 'acc-1',
+                        name: 'Betaş Beton',
+                        telephone1: '0352 322 20 50',
+                    },
+                ]),
+                fetchContacts: jest.fn().mockResolvedValue([
+                    {
+                        contactid: 'con-1',
+                        emailaddress1: 'hazar@example.com',
+                        parentcustomerid_account: {
+                            accountid: 'acc-1',
+                            name: 'Betaş Beton',
+                        },
+                    },
+                ]),
+            };
+            mockRecordSync.upsertAccountFromDynamics.mockResolvedValue({
+                id: 'local-acc-1',
+            });
+            mockRecordSync.upsertContactFromDynamics.mockResolvedValue({
+                id: 'local-profile-1',
+            });
+
+            await service.executeSyncProcess(connection, adapterWithRawFetch as any, 'log-1');
+
+            expect(adapterWithRawFetch.syncAccounts).not.toHaveBeenCalled();
+            expect(adapterWithRawFetch.syncContacts).not.toHaveBeenCalled();
+            expect(mockRecordSync.upsertAccountFromDynamics).toHaveBeenCalledWith(
+                expect.objectContaining({ accountid: 'acc-1' }),
+                connection,
+                expect.objectContaining({
+                    connectionId: 'conn-1',
+                    source: 'FULL_IMPORT',
+                    recordChanges: true,
+                }),
+            );
+            expect(mockRecordSync.upsertContactFromDynamics).toHaveBeenCalledWith(
+                expect.objectContaining({ contactid: 'con-1' }),
+                connection,
+                expect.objectContaining({
+                    connectionId: 'conn-1',
+                    source: 'FULL_IMPORT',
+                    recordChanges: true,
+                }),
+            );
         });
     });
 
@@ -282,17 +330,23 @@ describe('CrmService', () => {
             mockPrisma.crmSyncLog.update.mockResolvedValue({});
 
             mockAdapter.syncAccounts.mockResolvedValue(
-                makeResult({ successCount: 3, errorCount: 1, skippedRecords: [{ externalId: 'x', reason: 'r' }] }),
+                makeResult({
+                    successCount: 3,
+                    errorCount: 1,
+                    skippedRecords: [{ externalId: 'x', reason: 'r' }],
+                }),
             );
             mockAdapter.syncContacts.mockResolvedValue(
-                makeResult({ successCount: 7, errorCount: 2, skippedRecords: [{ externalId: 'y', reason: 'r' }] }),
+                makeResult({
+                    successCount: 7,
+                    errorCount: 2,
+                    skippedRecords: [{ externalId: 'y', reason: 'r' }],
+                }),
             );
 
             await service.executeSyncProcess(connection, mockAdapter, 'log-1');
 
-            const successUpdate = mockPrisma.crmSyncLog.update.mock.calls.find(
-                (call: any) => call[0].data?.status === SyncStatus.SUCCESS,
-            );
+            const successUpdate = mockPrisma.crmSyncLog.update.mock.calls.find((call: any) => call[0].data?.status === SyncStatus.SUCCESS);
             const details = successUpdate[0].data.details;
             expect(details.summary.successCount).toBe(10);
             expect(details.summary.errorCount).toBe(3);
@@ -405,7 +459,10 @@ describe('CrmService', () => {
             mockAdapter.verifyConnection.mockResolvedValue(true);
 
             const result = await service.verifyConnectionById('conn-1');
-            expect(result).toEqual({ success: true, provider: CrmProvider.DYNAMICS_365 });
+            expect(result).toEqual({
+                success: true,
+                provider: CrmProvider.DYNAMICS_365,
+            });
         });
 
         it('should return success:false when adapter rejects', async () => {
@@ -451,14 +508,15 @@ describe('CrmService', () => {
                 clientSecret: 'enc:plain-secret',
                 webhookSecret: 'enc:plain-webhook',
             });
-            mockAdapter.getDiscoveryData.mockResolvedValue({ account: [], contact: [] });
+            mockAdapter.getDiscoveryData.mockResolvedValue({
+                account: [],
+                contact: [],
+            });
 
             await service.getDiscoveryData('conn-1');
 
             expect(mockCrypto.decrypt).toHaveBeenCalledWith('enc:plain-secret');
-            expect(mockAdapter.getDiscoveryData).toHaveBeenCalledWith(
-                expect.objectContaining({ clientSecret: 'plain-secret' }),
-            );
+            expect(mockAdapter.getDiscoveryData).toHaveBeenCalledWith(expect.objectContaining({ clientSecret: 'plain-secret' }));
         });
 
         it('should return adapter discovery result', async () => {
@@ -470,7 +528,13 @@ describe('CrmService', () => {
             });
             const discoveryData = {
                 account: [{ logicalName: 'name', displayName: 'Name', sampleValue: 'Aluplan' }],
-                contact: [{ logicalName: 'firstname', displayName: 'First Name', sampleValue: 'Ali' }],
+                contact: [
+                    {
+                        logicalName: 'firstname',
+                        displayName: 'First Name',
+                        sampleValue: 'Ali',
+                    },
+                ],
             };
             mockAdapter.getDiscoveryData.mockResolvedValue(discoveryData);
 
@@ -534,17 +598,25 @@ describe('CrmService', () => {
             mockRecordSync.upsertContactFromDynamics.mockResolvedValue({});
             mockPrisma.$transaction = jest.fn((cb: any) => cb(mockTx));
             mockTx.user.findUnique.mockResolvedValue(null);
-            mockTx.role.findUnique.mockResolvedValue({ id: 'role-customer', name: 'customer' });
-            mockTx.user.create.mockResolvedValue({ id: 'user-1', email: 'test@test.com' });
-            mockTx.crmAccount.findUnique.mockResolvedValue({ id: 'db-acc-1', industry: 'Manufacturing', customerNo: 'C300001' });
+            mockTx.role.findUnique.mockResolvedValue({
+                id: 'role-customer',
+                name: 'customer',
+            });
+            mockTx.user.create.mockResolvedValue({
+                id: 'user-1',
+                email: 'test@test.com',
+            });
+            mockTx.crmAccount.findUnique.mockResolvedValue({
+                id: 'db-acc-1',
+                industry: 'Manufacturing',
+                customerNo: 'C300001',
+            });
             mockTx.customerProfile.upsert.mockResolvedValue({});
             mockPrisma.crmAccount.upsert.mockResolvedValue({});
         });
 
         it('should throw BadRequestException for unsupported entity type', async () => {
-            await expect(
-                service.processDynamics365Webhook({ entity: 'lead', data: {} }),
-            ).rejects.toThrow(BadRequestException);
+            await expect(service.processDynamics365Webhook({ entity: 'lead', data: {} })).rejects.toThrow(BadRequestException);
         });
 
         // ── syncSingleAccount (via webhook) ───────────────────────────────────
@@ -602,7 +674,10 @@ describe('CrmService', () => {
                     lastname: 'Yılmaz',
                     jobtitle: 'Engineer',
                     telephone1: '+49123456',
-                    parentcustomerid_account: { accountid: 'acc-ext-1', name: 'Aluplan GmbH' },
+                    parentcustomerid_account: {
+                        accountid: 'acc-ext-1',
+                        name: 'Aluplan GmbH',
+                    },
                     'new_musteridurumu@OData.Community.Display.V1.FormattedValue': 'Aktif',
                 };
 
@@ -611,7 +686,11 @@ describe('CrmService', () => {
                 expect(mockRecordSync.upsertContactFromDynamics).toHaveBeenCalledWith(
                     data,
                     expect.objectContaining({ id: 'conn-1' }),
-                    expect.objectContaining({ connectionId: 'conn-1', source: 'WEBHOOK', recordChanges: true }),
+                    expect.objectContaining({
+                        connectionId: 'conn-1',
+                        source: 'WEBHOOK',
+                        recordChanges: true,
+                    }),
                 );
             });
         });

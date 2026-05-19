@@ -100,6 +100,32 @@ describe('CrmRecordSyncService', () => {
         );
     });
 
+    it('honors lowercase CRM mapping keys saved by the mapping UI', async () => {
+        mockPrisma.crmAccount.findUnique.mockResolvedValue(null);
+        mockPrisma.crmAccount.upsert.mockResolvedValue({ id: 'acc-1' });
+
+        await service.upsertAccountFromDynamics(
+            {
+                accountid: 'dyn-acc-1',
+                name: 'Mapped Account',
+                accountnumber: 'LEGACY-ACCOUNT-NO',
+                new_customerid: 'ALLPLAN-CLIENT-ID',
+            },
+            { syncSettings: { accountMapping: { accountnumber: 'new_customerid' } } },
+        );
+
+        expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                update: expect.objectContaining({
+                    account_number: 'ALLPLAN-CLIENT-ID',
+                }),
+                create: expect.objectContaining({
+                    account_number: 'ALLPLAN-CLIENT-ID',
+                }),
+            }),
+        );
+    });
+
     it('reconciles stale linked customer profile snapshots', async () => {
         (mockPrisma.crmAccount as any).findMany = jest.fn().mockResolvedValue([
             {
@@ -134,35 +160,41 @@ describe('CrmRecordSyncService', () => {
             },
             user: {
                 findUnique: jest.fn().mockResolvedValue(null),
-                update: jest.fn().mockImplementation(({ data }) => Promise.resolve({
-                    id: 'user-existing',
-                    email: data.email || 'old@example.com',
-                    roleId: 'role-customer',
-                    status: 'ACTIVE',
-                    passwordHash: 'CRM_SYNCED',
-                })),
+                update: jest.fn().mockImplementation(({ data }) =>
+                    Promise.resolve({
+                        id: 'user-existing',
+                        email: data.email || 'old@example.com',
+                        roleId: 'role-customer',
+                        status: 'ACTIVE',
+                        passwordHash: 'CRM_SYNCED',
+                    }),
+                ),
                 create: jest.fn(),
             },
             crmAccount: {
-                findUnique: jest.fn().mockResolvedValue({ id: 'account-1', name: 'Promer', industry: 'Engineering', account_number: 'C300160737' }),
+                findUnique: jest.fn().mockResolvedValue({
+                    id: 'account-1',
+                    name: 'Promer',
+                    industry: 'Engineering',
+                    account_number: 'C300160737',
+                }),
             },
             customerProfile: {
-                findUnique: jest.fn()
-                    .mockResolvedValueOnce({
-                        id: 'profile-existing',
-                        userId: 'user-existing',
-                        externalContactId: 'crm-contact-1',
-                        firstName: 'Old',
-                        lastName: 'Name',
-                        companyName: 'Old Company',
-                        user: {
-                            id: 'user-existing',
-                            email: 'old@example.com',
-                            roleId: 'role-customer',
-                            status: 'ACTIVE',
-                            passwordHash: 'CRM_SYNCED',
-                        },
-                    }),
+                findUnique: jest.fn().mockResolvedValueOnce({
+                    id: 'profile-existing',
+                    userId: 'user-existing',
+                    externalContactId: 'crm-contact-1',
+                    firstName: 'Old',
+                    lastName: 'Name',
+                    companyName: 'Old Company',
+                    user: {
+                        id: 'user-existing',
+                        email: 'old@example.com',
+                        roleId: 'role-customer',
+                        status: 'ACTIVE',
+                        passwordHash: 'CRM_SYNCED',
+                    },
+                }),
                 update: jest.fn().mockResolvedValue({ id: 'profile-existing' }),
                 create: jest.fn(),
             },
@@ -197,16 +229,20 @@ describe('CrmRecordSyncService', () => {
             include: { user: true },
         });
         expect(tx.customerProfile.create).not.toHaveBeenCalled();
-        expect(tx.customerProfile.update).toHaveBeenCalledWith(expect.objectContaining({
-            where: { id: 'profile-existing' },
-            data: expect.objectContaining({
-                phoneNumber: '+90 555',
-                fax: '+90 216',
-                mobilePhone: '+90 532',
-                address: 'Istanbul',
-                preferredContactMethod: 'Email',
-                rawCrmPayload: expect.objectContaining({ contactid: 'crm-contact-1' }),
+        expect(tx.customerProfile.update).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: { id: 'profile-existing' },
+                data: expect.objectContaining({
+                    phoneNumber: '+90 555',
+                    fax: '+90 216',
+                    mobilePhone: '+90 532',
+                    address: 'Istanbul',
+                    preferredContactMethod: 'Email',
+                    rawCrmPayload: expect.objectContaining({
+                        contactid: 'crm-contact-1',
+                    }),
+                }),
             }),
-        }));
+        );
     });
 });

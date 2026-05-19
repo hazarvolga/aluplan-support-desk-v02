@@ -35,18 +35,20 @@ interface SyncDetails {
     };
 }
 
-function buildSyncDetails(
-    accountResult: SyncResult,
-    contactResult: SyncResult,
-): SyncDetails {
+type DynamicsRawFetchAdapter = ICrmAdapter & {
+    fetchAccounts: (config: any) => Promise<any[]>;
+    fetchContacts: (config: any) => Promise<any[]>;
+};
+
+function buildSyncDetails(accountResult: SyncResult, contactResult: SyncResult): SyncDetails {
     const failedRecords: FailedRecord[] = [
-        ...(accountResult.failedRecords ?? []).map(r => ({
+        ...(accountResult.failedRecords ?? []).map((r) => ({
             externalId: r.externalId,
             entityType: 'account' as const,
             errorMessage: r.errorMessage,
             errorCode: r.errorCode,
         })),
-        ...(contactResult.failedRecords ?? []).map(r => ({
+        ...(contactResult.failedRecords ?? []).map((r) => ({
             externalId: r.externalId,
             entityType: 'contact' as const,
             errorMessage: r.errorMessage,
@@ -54,15 +56,9 @@ function buildSyncDetails(
         })),
     ];
 
-    const skippedRecords: SkippedRecord[] = [
-        ...(accountResult.skippedRecords ?? []),
-        ...(contactResult.skippedRecords ?? []),
-    ];
+    const skippedRecords: SkippedRecord[] = [...(accountResult.skippedRecords ?? []), ...(contactResult.skippedRecords ?? [])];
 
-    const skippedLinks: SkippedLink[] = [
-        ...(accountResult.skippedLinks ?? []),
-        ...(contactResult.skippedLinks ?? []),
-    ];
+    const skippedLinks: SkippedLink[] = [...(accountResult.skippedLinks ?? []), ...(contactResult.skippedLinks ?? [])];
 
     return {
         failedRecords,
@@ -81,9 +77,9 @@ import { CrmRecordSyncService } from './services/crm-record-sync.service';
 import { CrmDeltaSyncService } from './services/crm-delta-sync.service';
 
 export interface CrmContact {
-    contactId: string;           // CustomerProfile.id
-    externalContactId?: string;  // CustomerProfile.externalContactId
-    emailAddress: string;        // User.email
+    contactId: string; // CustomerProfile.id
+    externalContactId?: string; // CustomerProfile.externalContactId
+    emailAddress: string; // User.email
     firstName?: string;
     lastName?: string;
     companyName?: string;
@@ -178,16 +174,16 @@ export class CrmService {
             where: { deletedAt: null },
             include: {
                 _count: {
-                    select: { syncLogs: true }
-                }
-            }
+                    select: { syncLogs: true },
+                },
+            },
         });
 
         // Use standard masking utility (Security Fix)
-        return connections.map(conn => ({
+        return connections.map((conn) => ({
             ...conn,
             clientSecret: this.maskSecret(conn.clientSecret),
-            webhookSecret: this.maskSecret(conn.webhookSecret)
+            webhookSecret: this.maskSecret(conn.webhookSecret),
         }));
     }
 
@@ -196,7 +192,7 @@ export class CrmService {
 
         // Fetch existing to handle masked secrets
         const existing = await this.prisma.crmConnection.findFirst({
-            where: { provider: provider as CrmProvider, deletedAt: null }
+            where: { provider: provider as CrmProvider, deletedAt: null },
         });
 
         if (config.clientSecret === '********' && existing?.clientSecret) {
@@ -218,7 +214,7 @@ export class CrmService {
         const encryptedConfig = {
             ...config,
             clientSecret: config.clientSecret ? this.crypto.encrypt(config.clientSecret) : null,
-            webhookSecret: config.webhookSecret ? this.crypto.encrypt(config.webhookSecret) : null
+            webhookSecret: config.webhookSecret ? this.crypto.encrypt(config.webhookSecret) : null,
         };
 
         if (existing) {
@@ -227,8 +223,8 @@ export class CrmService {
                 data: {
                     ...encryptedConfig,
                     isActive: true,
-                    syncStatus: SyncStatus.IDLE
-                }
+                    syncStatus: SyncStatus.IDLE,
+                },
             });
         }
         return this.prisma.crmConnection.create({
@@ -236,14 +232,14 @@ export class CrmService {
                 provider,
                 ...encryptedConfig,
                 isActive: true,
-                syncStatus: SyncStatus.IDLE
-            }
+                syncStatus: SyncStatus.IDLE,
+            },
         });
     }
 
     async verifyConnectionById(id: string) {
         const connection = await this.prisma.crmConnection.findFirst({
-            where: { id, deletedAt: null }
+            where: { id, deletedAt: null },
         });
 
         if (!connection) throw new NotFoundException('CRM bağlantısı bulunamadı.');
@@ -252,7 +248,7 @@ export class CrmService {
         const config = {
             ...connection,
             clientSecret: connection.clientSecret ? this.crypto.decrypt(connection.clientSecret) : null,
-            webhookSecret: connection.webhookSecret ? this.crypto.decrypt(connection.webhookSecret) : null
+            webhookSecret: connection.webhookSecret ? this.crypto.decrypt(connection.webhookSecret) : null,
         };
 
         try {
@@ -266,7 +262,7 @@ export class CrmService {
 
     async triggerSync(id: string) {
         const connection = await this.prisma.crmConnection.findFirst({
-            where: { id, deletedAt: null }
+            where: { id, deletedAt: null },
         });
 
         if (!connection) throw new NotFoundException('CRM bağlantısı bulunamadı.');
@@ -278,28 +274,36 @@ export class CrmService {
             data: {
                 connectionId: connection.id,
                 status: SyncStatus.SYNCING,
-            }
+            },
         });
 
         // Update connection status
         await this.prisma.crmConnection.update({
             where: { id },
-            data: { syncStatus: SyncStatus.SYNCING }
+            data: { syncStatus: SyncStatus.SYNCING },
         });
 
         // Enqueue the sync job instead of fire-and-forget logic
-        const job = await this.crmQueue.add('execute-sync', {
-            connectionId: connection.id,
-            logId: log.id
-        }, {
-            jobId: `crm-sync-${connection.id}-${log.id}`,
-            attempts: 3,
-            backoff: { type: 'exponential', delay: 5000 }
-        });
+        const job = await this.crmQueue.add(
+            'execute-sync',
+            {
+                connectionId: connection.id,
+                logId: log.id,
+            },
+            {
+                jobId: `crm-sync-${connection.id}-${log.id}`,
+                attempts: 3,
+                backoff: { type: 'exponential', delay: 5000 },
+            },
+        );
 
         this.logger.log(`✅ CRM Sync job enqueued: ${job.id} for connection ${connection.id}`);
 
-        return { message: 'Senkronizasyon kuyruğa alındı.', logId: log.id, jobId: job.id };
+        return {
+            message: 'Senkronizasyon kuyruğa alındı.',
+            logId: log.id,
+            jobId: job.id,
+        };
     }
 
     public decryptSecret(encrypted: string): string {
@@ -326,47 +330,91 @@ export class CrmService {
         let contactResult: SyncResult = { ...emptyResult };
 
         try {
-            // 1. Sync Accounts (Companies)
-            accountResult = await adapter.syncAccounts(connection, (stats) => {
-                totalAccountRecords = stats.total;
-                successAccountRecords = stats.success;
-                errorAccountRecords = stats.error;
+            const useSharedDynamicsFullImport = this.canUseSharedDynamicsFullImport(connection, adapter);
 
-                // Update progress every 10 records or at the end
-                if ((stats.success + stats.error) % 10 === 0 || stats.success + stats.error === stats.total) {
-                    this.prisma.crmSyncLog.update({
-                        where: { id: logId },
-                        data: {
-                            totalRecords: stats.total,
-                            successCount: stats.success,
-                            errorCount: stats.error,
-                        }
-                    }).catch(err => this.logger.error(`Failed to update partial account sync log`, err.stack));
-                }
-            });
+            // 1. Sync Accounts (Companies)
+            accountResult = useSharedDynamicsFullImport
+                ? await this.syncDynamicsAccountsThroughRecordService(connection, adapter, (stats) => {
+                      totalAccountRecords = stats.total;
+                      successAccountRecords = stats.success;
+                      errorAccountRecords = stats.error;
+
+                      if ((stats.success + stats.error) % 10 === 0 || stats.success + stats.error === stats.total) {
+                          this.prisma.crmSyncLog
+                              .update({
+                                  where: { id: logId },
+                                  data: {
+                                      totalRecords: stats.total,
+                                      successCount: stats.success,
+                                      errorCount: stats.error,
+                                  },
+                              })
+                              .catch((err) => this.logger.error(`Failed to update partial account sync log`, err.stack));
+                      }
+                  })
+                : await adapter.syncAccounts(connection, (stats) => {
+                      totalAccountRecords = stats.total;
+                      successAccountRecords = stats.success;
+                      errorAccountRecords = stats.error;
+
+                      // Update progress every 10 records or at the end
+                      if ((stats.success + stats.error) % 10 === 0 || stats.success + stats.error === stats.total) {
+                          this.prisma.crmSyncLog
+                              .update({
+                                  where: { id: logId },
+                                  data: {
+                                      totalRecords: stats.total,
+                                      successCount: stats.success,
+                                      errorCount: stats.error,
+                                  },
+                              })
+                              .catch((err) => this.logger.error(`Failed to update partial account sync log`, err.stack));
+                      }
+                  });
 
             if (accountResult.status === SyncStatus.ERROR) {
                 throw new Error(`Account Sync Error: ${accountResult.errorMessage}`);
             }
 
             // 2. Sync Contacts (People)
-            contactResult = await adapter.syncContacts(connection, (stats) => {
-                totalContactRecords = stats.total;
-                successContactRecords = stats.success;
-                errorContactRecords = stats.error;
+            contactResult = useSharedDynamicsFullImport
+                ? await this.syncDynamicsContactsThroughRecordService(connection, adapter, (stats) => {
+                      totalContactRecords = stats.total;
+                      successContactRecords = stats.success;
+                      errorContactRecords = stats.error;
 
-                // Update progress every 20 records or at the end
-                if ((stats.success + stats.error) % 20 === 0 || stats.success + stats.error === stats.total) {
-                    this.prisma.crmSyncLog.update({
-                        where: { id: logId },
-                        data: {
-                            totalRecords: totalAccountRecords + stats.total,
-                            successCount: successAccountRecords + stats.success,
-                            errorCount: errorAccountRecords + stats.error,
-                        }
-                    }).catch(err => this.logger.error(`Failed to update partial contact sync log`, err.stack));
-                }
-            });
+                      if ((stats.success + stats.error) % 20 === 0 || stats.success + stats.error === stats.total) {
+                          this.prisma.crmSyncLog
+                              .update({
+                                  where: { id: logId },
+                                  data: {
+                                      totalRecords: totalAccountRecords + stats.total,
+                                      successCount: successAccountRecords + stats.success,
+                                      errorCount: errorAccountRecords + stats.error,
+                                  },
+                              })
+                              .catch((err) => this.logger.error(`Failed to update partial contact sync log`, err.stack));
+                      }
+                  })
+                : await adapter.syncContacts(connection, (stats) => {
+                      totalContactRecords = stats.total;
+                      successContactRecords = stats.success;
+                      errorContactRecords = stats.error;
+
+                      // Update progress every 20 records or at the end
+                      if ((stats.success + stats.error) % 20 === 0 || stats.success + stats.error === stats.total) {
+                          this.prisma.crmSyncLog
+                              .update({
+                                  where: { id: logId },
+                                  data: {
+                                      totalRecords: totalAccountRecords + stats.total,
+                                      successCount: successAccountRecords + stats.success,
+                                      errorCount: errorAccountRecords + stats.error,
+                                  },
+                              })
+                              .catch((err) => this.logger.error(`Failed to update partial contact sync log`, err.stack));
+                      }
+                  });
 
             if (contactResult.status === SyncStatus.ERROR) {
                 throw new Error(`Contact Sync Error: ${contactResult.errorMessage}`);
@@ -384,17 +432,16 @@ export class CrmService {
                     successCount: accountResult.successCount + contactResult.successCount,
                     errorCount: accountResult.errorCount + contactResult.errorCount,
                     details: details as unknown as Prisma.InputJsonValue,
-                }
+                },
             });
 
             await this.prisma.crmConnection.update({
                 where: { id: connection.id },
                 data: {
                     syncStatus: SyncStatus.SUCCESS,
-                    lastSyncAt: new Date()
-                }
+                    lastSyncAt: new Date(),
+                },
             });
-
         } catch (error) {
             this.logger.error(`CRM sync process failed: ${error.message}`, error.stack);
 
@@ -411,50 +458,301 @@ export class CrmService {
                     successCount: successAccountRecords + successContactRecords,
                     errorCount: errorAccountRecords + errorContactRecords,
                     details: details as unknown as Prisma.InputJsonValue,
-                }
+                },
             });
 
             await this.prisma.crmConnection.update({
                 where: { id: connection.id },
-                data: { syncStatus: SyncStatus.ERROR }
+                data: { syncStatus: SyncStatus.ERROR },
             });
+        }
+    }
+
+    private canUseSharedDynamicsFullImport(connection: any, adapter: ICrmAdapter): adapter is DynamicsRawFetchAdapter {
+        return (
+            connection?.provider === CrmProvider.DYNAMICS_365 &&
+            typeof (adapter as any).fetchAccounts === 'function' &&
+            typeof (adapter as any).fetchContacts === 'function'
+        );
+    }
+
+    private async syncDynamicsAccountsThroughRecordService(
+        connection: any,
+        adapter: DynamicsRawFetchAdapter,
+        onProgress?: (stats: { success: number; error: number; total: number }) => void,
+    ): Promise<SyncResult> {
+        try {
+            const accounts = await adapter.fetchAccounts(connection);
+            let successCount = 0;
+            let errorCount = 0;
+            const skippedRecords: SyncResult['skippedRecords'] = [];
+            const failedRecords: SyncResult['failedRecords'] = [];
+
+            for (const account of accounts) {
+                const externalId = String(account?.accountid || account?.id || 'unknown');
+                try {
+                    const synced = await this.recordSync.upsertAccountFromDynamics(account, connection, {
+                        connectionId: connection.id,
+                        source: 'FULL_IMPORT',
+                        recordChanges: true,
+                    });
+
+                    if (synced) {
+                        successCount++;
+                    } else {
+                        skippedRecords.push({
+                            externalId,
+                            reason: 'record_sync_returned_null',
+                        });
+                    }
+                } catch (error) {
+                    failedRecords.push({
+                        externalId,
+                        entityType: 'account',
+                        errorMessage: error.message,
+                    });
+                    errorCount++;
+                } finally {
+                    onProgress?.({
+                        success: successCount,
+                        error: errorCount,
+                        total: accounts.length,
+                    });
+                }
+            }
+
+            return {
+                status: SyncStatus.SUCCESS,
+                totalRecords: accounts.length,
+                successCount,
+                errorCount,
+                skippedRecords,
+                failedRecords,
+            };
+        } catch (error) {
+            return {
+                status: SyncStatus.ERROR,
+                totalRecords: 0,
+                successCount: 0,
+                errorCount: 0,
+                errorMessage: error.message,
+            };
+        }
+    }
+
+    private async syncDynamicsContactsThroughRecordService(
+        connection: any,
+        adapter: DynamicsRawFetchAdapter,
+        onProgress?: (stats: { success: number; error: number; total: number }) => void,
+    ): Promise<SyncResult> {
+        try {
+            const contacts = await adapter.fetchContacts(connection);
+            let successCount = 0;
+            let errorCount = 0;
+            const skippedRecords: SyncResult['skippedRecords'] = [];
+            const failedRecords: SyncResult['failedRecords'] = [];
+
+            for (const contact of contacts) {
+                const externalId = String(contact?.contactid || contact?.id || 'unknown');
+                try {
+                    const synced = await this.recordSync.upsertContactFromDynamics(contact, connection, {
+                        connectionId: connection.id,
+                        source: 'FULL_IMPORT',
+                        recordChanges: true,
+                    });
+
+                    if (synced) {
+                        successCount++;
+                    } else {
+                        skippedRecords.push({
+                            externalId,
+                            reason: 'record_sync_returned_null',
+                        });
+                    }
+                } catch (error) {
+                    failedRecords.push({
+                        externalId,
+                        entityType: 'contact',
+                        errorMessage: error.message,
+                    });
+                    errorCount++;
+                } finally {
+                    onProgress?.({
+                        success: successCount,
+                        error: errorCount,
+                        total: contacts.length,
+                    });
+                }
+            }
+
+            return {
+                status: SyncStatus.SUCCESS,
+                totalRecords: contacts.length,
+                successCount,
+                errorCount,
+                skippedRecords,
+                failedRecords,
+            };
+        } catch (error) {
+            return {
+                status: SyncStatus.ERROR,
+                totalRecords: 0,
+                successCount: 0,
+                errorCount: 0,
+                errorMessage: error.message,
+            };
         }
     }
 
     async getFieldDefinitions() {
         return {
             account: [
-                { key: 'accountNumber', label: 'sync.mapping.fields.account.customerNo', defaultCrmField: 'accountnumber' },
-                { key: 'name', label: 'sync.mapping.fields.account.name', defaultCrmField: 'name', isRequired: true },
-                { key: 'industry', label: 'sync.mapping.fields.account.industry', defaultCrmField: 'industrycode@OData.Community.Display.V1.FormattedValue' },
-                { key: 'clientIdFrilo', label: 'sync.mapping.fields.account.client_id_frilo', defaultCrmField: 'new_clientidfrilo' },
-                { key: 'phone', label: 'sync.mapping.fields.account.phone', defaultCrmField: 'telephone1' },
-                { key: 'fax', label: 'sync.mapping.fields.account.fax', defaultCrmField: 'fax' },
-                { key: 'licenseManagerName', label: 'sync.mapping.fields.account.license_manager_name', defaultCrmField: 'new_lisansyoneticisiisimsoyisim' },
-                { key: 'website', label: 'sync.mapping.fields.account.website', defaultCrmField: 'websiteurl' },
-                { key: 'address', label: 'sync.mapping.fields.account.address', defaultCrmField: 'address1_composite' },
-                { key: 'serviceAddress', label: 'sync.mapping.fields.account.service_address', defaultCrmField: 'address1_composite' },
-                { key: 'crmVerified', label: 'sync.mapping.fields.account.crm_verification', defaultCrmField: '' },
-                { key: 'externalAccountId', label: 'sync.mapping.fields.account.system_id', defaultCrmField: 'accountid' },
+                {
+                    key: 'accountNumber',
+                    label: 'sync.mapping.fields.account.customerNo',
+                    defaultCrmField: 'accountnumber',
+                },
+                {
+                    key: 'name',
+                    label: 'sync.mapping.fields.account.name',
+                    defaultCrmField: 'name',
+                    isRequired: true,
+                },
+                {
+                    key: 'industry',
+                    label: 'sync.mapping.fields.account.industry',
+                    defaultCrmField: 'industrycode@OData.Community.Display.V1.FormattedValue',
+                },
+                {
+                    key: 'clientIdFrilo',
+                    label: 'sync.mapping.fields.account.client_id_frilo',
+                    defaultCrmField: 'new_clientidfrilo',
+                },
+                {
+                    key: 'phone',
+                    label: 'sync.mapping.fields.account.phone',
+                    defaultCrmField: 'telephone1',
+                },
+                {
+                    key: 'fax',
+                    label: 'sync.mapping.fields.account.fax',
+                    defaultCrmField: 'fax',
+                },
+                {
+                    key: 'licenseManagerName',
+                    label: 'sync.mapping.fields.account.license_manager_name',
+                    defaultCrmField: 'new_lisansyoneticisiisimsoyisim',
+                },
+                {
+                    key: 'website',
+                    label: 'sync.mapping.fields.account.website',
+                    defaultCrmField: 'websiteurl',
+                },
+                {
+                    key: 'address',
+                    label: 'sync.mapping.fields.account.address',
+                    defaultCrmField: 'address1_composite',
+                },
+                {
+                    key: 'serviceAddress',
+                    label: 'sync.mapping.fields.account.service_address',
+                    defaultCrmField: 'address1_composite',
+                },
+                {
+                    key: 'crmVerified',
+                    label: 'sync.mapping.fields.account.crm_verification',
+                    defaultCrmField: '',
+                },
+                {
+                    key: 'externalAccountId',
+                    label: 'sync.mapping.fields.account.system_id',
+                    defaultCrmField: 'accountid',
+                },
             ],
             contact: [
-                { key: 'customerNo', label: 'sync.mapping.fields.contact.customerNo', defaultCrmField: 'new_customerid' },
-                { key: 'fullName', label: 'sync.mapping.fields.contact.fullName', defaultCrmField: 'fullname', isRequired: true },
-                { key: 'email', label: 'sync.mapping.fields.contact.email', defaultCrmField: 'emailaddress1', isRequired: true },
-                { key: 'jobTitle', label: 'sync.mapping.fields.contact.jobTitle', defaultCrmField: 'jobtitle' },
-                { key: 'companyName', label: 'sync.mapping.fields.contact.companyName', defaultCrmField: 'parentcustomerid_account.name' },
-                { key: 'phoneNumber', label: 'sync.mapping.fields.contact.phoneNumber', defaultCrmField: 'telephone1' },
-                { key: 'fax', label: 'sync.mapping.fields.contact.fax', defaultCrmField: 'fax' },
-                { key: 'mobilePhone', label: 'sync.mapping.fields.contact.mobile_phone', defaultCrmField: 'mobilephone' },
-                { key: 'address', label: 'sync.mapping.fields.contact.address', defaultCrmField: 'address1_composite' },
-                { key: 'primaryTimeZone', label: 'sync.mapping.fields.contact.primary_time_zone', defaultCrmField: 'timezoneruleversionnumber' },
-                { key: 'preferredContactMethod', label: 'sync.mapping.fields.contact.preferred_contact_method', defaultCrmField: 'preferredcontactmethodcode' },
-                { key: 'contractStatus', label: 'sync.mapping.fields.contact.contractStatus', defaultCrmField: 'new_musteridurumu@OData.Community.Display.V1.FormattedValue' },
-                { key: 'subscriptionModel', label: 'sync.mapping.fields.contact.subscriptionModel', defaultCrmField: 'new_AbonelikModeli' },
-                { key: 'industry', label: 'sync.mapping.fields.contact.industry', defaultCrmField: 'parentcustomerid_account.industrycode@OData.Community.Display.V1.FormattedValue' },
-                { key: 'status', label: 'sync.mapping.fields.contact.status', defaultCrmField: '' },
-                { key: 'externalContactId', label: 'sync.mapping.fields.contact.system_id', defaultCrmField: 'contactid' },
-            ]
+                {
+                    key: 'customerNo',
+                    label: 'sync.mapping.fields.contact.customerNo',
+                    defaultCrmField: 'new_customerid',
+                },
+                {
+                    key: 'fullName',
+                    label: 'sync.mapping.fields.contact.fullName',
+                    defaultCrmField: 'fullname',
+                    isRequired: true,
+                },
+                {
+                    key: 'email',
+                    label: 'sync.mapping.fields.contact.email',
+                    defaultCrmField: 'emailaddress1',
+                    isRequired: true,
+                },
+                {
+                    key: 'jobTitle',
+                    label: 'sync.mapping.fields.contact.jobTitle',
+                    defaultCrmField: 'jobtitle',
+                },
+                {
+                    key: 'companyName',
+                    label: 'sync.mapping.fields.contact.companyName',
+                    defaultCrmField: 'parentcustomerid_account.name',
+                },
+                {
+                    key: 'phoneNumber',
+                    label: 'sync.mapping.fields.contact.phoneNumber',
+                    defaultCrmField: 'telephone1',
+                },
+                {
+                    key: 'fax',
+                    label: 'sync.mapping.fields.contact.fax',
+                    defaultCrmField: 'fax',
+                },
+                {
+                    key: 'mobilePhone',
+                    label: 'sync.mapping.fields.contact.mobile_phone',
+                    defaultCrmField: 'mobilephone',
+                },
+                {
+                    key: 'address',
+                    label: 'sync.mapping.fields.contact.address',
+                    defaultCrmField: 'address1_composite',
+                },
+                {
+                    key: 'primaryTimeZone',
+                    label: 'sync.mapping.fields.contact.primary_time_zone',
+                    defaultCrmField: 'timezoneruleversionnumber',
+                },
+                {
+                    key: 'preferredContactMethod',
+                    label: 'sync.mapping.fields.contact.preferred_contact_method',
+                    defaultCrmField: 'preferredcontactmethodcode',
+                },
+                {
+                    key: 'contractStatus',
+                    label: 'sync.mapping.fields.contact.contractStatus',
+                    defaultCrmField: 'new_musteridurumu@OData.Community.Display.V1.FormattedValue',
+                },
+                {
+                    key: 'subscriptionModel',
+                    label: 'sync.mapping.fields.contact.subscriptionModel',
+                    defaultCrmField: 'new_AbonelikModeli',
+                },
+                {
+                    key: 'industry',
+                    label: 'sync.mapping.fields.contact.industry',
+                    defaultCrmField: 'parentcustomerid_account.industrycode@OData.Community.Display.V1.FormattedValue',
+                },
+                {
+                    key: 'status',
+                    label: 'sync.mapping.fields.contact.status',
+                    defaultCrmField: '',
+                },
+                {
+                    key: 'externalContactId',
+                    label: 'sync.mapping.fields.contact.system_id',
+                    defaultCrmField: 'contactid',
+                },
+            ],
         };
     }
 
@@ -462,7 +760,7 @@ export class CrmService {
         return this.prisma.crmSyncLog.findMany({
             where: { connectionId },
             orderBy: { startedAt: 'desc' },
-            take: 20
+            take: 20,
         });
     }
 
@@ -498,7 +796,7 @@ export class CrmService {
 
     async getDiscoveryData(connectionId: string) {
         const connection = await this.prisma.crmConnection.findUnique({
-            where: { id: connectionId }
+            where: { id: connectionId },
         });
 
         if (!connection) {
@@ -514,7 +812,7 @@ export class CrmService {
         const decryptedConnection = {
             ...connection,
             clientSecret: connection.clientSecret ? this.crypto.decrypt(connection.clientSecret) : null,
-            webhookSecret: connection.webhookSecret ? this.crypto.decrypt(connection.webhookSecret) : null
+            webhookSecret: connection.webhookSecret ? this.crypto.decrypt(connection.webhookSecret) : null,
         };
 
         return adapter.getDiscoveryData(decryptedConnection);
@@ -524,10 +822,10 @@ export class CrmService {
         return this.prisma.crmAccount.findMany({
             include: {
                 _count: {
-                    select: { customers: true }
-                }
+                    select: { customers: true },
+                },
             },
-            orderBy: { name: 'asc' }
+            orderBy: { name: 'asc' },
         });
     }
 
@@ -542,25 +840,27 @@ export class CrmService {
                                 id: true,
                                 email: true,
                                 fullName: true,
-                                status: true
-                            }
-                        }
-                    }
-                }
-            }
+                                status: true,
+                            },
+                        },
+                    },
+                },
+            },
         });
 
         if (!account) throw new NotFoundException('Şirket kaydı bulunamadı.');
 
         // Mask PII in returned customers (SEC-002)
         if (account.customers) {
-            account.customers = account.customers.map(customer => ({
+            account.customers = account.customers.map((customer) => ({
                 ...customer,
                 phoneNumber: this.piiMasking.maskSensitiveData(customer.phoneNumber || ''),
-                user: customer.user ? {
-                    ...customer.user,
-                    email: this.piiMasking.maskSensitiveData(customer.user.email || '')
-                } : null
+                user: customer.user
+                    ? {
+                          ...customer.user,
+                          email: this.piiMasking.maskSensitiveData(customer.user.email || ''),
+                      }
+                    : null,
             })) as typeof account.customers;
         }
 
@@ -571,7 +871,7 @@ export class CrmService {
         if (!ids || ids.length === 0) return { deletedCount: 0 };
 
         const result = await this.prisma.crmAccount.deleteMany({
-            where: { id: { in: ids } }
+            where: { id: { in: ids } },
         });
 
         return { deletedCount: result.count };
@@ -592,7 +892,11 @@ export class CrmService {
 
     private async syncSingleAccount(data: any) {
         const connection = await this.prisma.crmConnection.findFirst({
-            where: { provider: CrmProvider.DYNAMICS_365, isActive: true, deletedAt: null },
+            where: {
+                provider: CrmProvider.DYNAMICS_365,
+                isActive: true,
+                deletedAt: null,
+            },
         });
         return this.recordSync.upsertAccountFromDynamics(data, connection, {
             connectionId: connection?.id,
@@ -603,7 +907,11 @@ export class CrmService {
 
     private async syncSingleContact(data: any) {
         const connection = await this.prisma.crmConnection.findFirst({
-            where: { provider: CrmProvider.DYNAMICS_365, isActive: true, deletedAt: null },
+            where: {
+                provider: CrmProvider.DYNAMICS_365,
+                isActive: true,
+                deletedAt: null,
+            },
         });
         return this.recordSync.upsertContactFromDynamics(data, connection, {
             connectionId: connection?.id,

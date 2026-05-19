@@ -20,7 +20,7 @@ interface ChangeCandidate {
 export class CrmRecordSyncService {
     private readonly logger = new Logger(CrmRecordSyncService.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async upsertAccountFromDynamics(data: any, config?: any, options: SyncOptions = {}) {
         const mappings = (config?.syncSettings?.accountMapping || {}) as Record<string, string>;
@@ -35,36 +35,35 @@ export class CrmRecordSyncService {
             name: this.limitString(this.resolveField(data, 'name', mappings, 'name') || 'Unknown', 255),
             website: this.asNullableString(this.resolveField(data, 'website', mappings, 'websiteurl'), 255),
             address: this.asNullableString(this.resolveField(data, 'address', mappings, 'address1_composite')),
-            serviceAddress: this.asNullableString(this.resolveFirstField(data, 'serviceAddress', mappings, [
-                'address1_composite',
-                'address1_line1',
-                'address1_name',
-            ])),
+            serviceAddress: this.asNullableString(
+                this.resolveFirstField(data, 'serviceAddress', mappings, ['address1_composite', 'address1_line1', 'address1_name']),
+            ),
             industry: this.asNullableString(
-                this.resolveField(data, 'industry', mappings, 'industrycode@OData.Community.Display.V1.FormattedValue')
-                || data.industrycode_display,
+                this.resolveField(data, 'industry', mappings, 'industrycode@OData.Community.Display.V1.FormattedValue') || data.industrycode_display,
                 255,
             ),
             account_number: this.asNullableString(this.resolveField(data, 'accountNumber', mappings, 'accountnumber'), 255),
-            clientIdFrilo: this.asNullableString(this.resolveFirstField(data, 'clientIdFrilo', mappings, [
-                'new_clientidfrilo',
-                'new_clientid_frilo',
-                'new_friloclientid',
-                'new_frilo_clientid',
-                'new_friloid',
-            ]), 255),
-            phone: this.asNullableString(this.resolveFirstField(data, 'phone', mappings, [
-                'telephone1',
-                'telephone2',
-                'telephone3',
-            ]), 50),
+            clientIdFrilo: this.asNullableString(
+                this.resolveFirstField(data, 'clientIdFrilo', mappings, [
+                    'new_clientidfrilo',
+                    'new_clientid_frilo',
+                    'new_friloclientid',
+                    'new_frilo_clientid',
+                    'new_friloid',
+                ]),
+                255,
+            ),
+            phone: this.asNullableString(this.resolveFirstField(data, 'phone', mappings, ['telephone1', 'telephone2', 'telephone3']), 50),
             fax: this.asNullableString(this.resolveFirstField(data, 'fax', mappings, ['fax']), 50),
-            licenseManagerName: this.asNullableString(this.resolveFirstField(data, 'licenseManagerName', mappings, [
-                'new_lisansyoneticisiisimsoyisim',
-                'new_lisans_yoneticisi_isim_soyisim',
-                'new_licensemanagername',
-                'new_license_manager_name',
-            ]), 255),
+            licenseManagerName: this.asNullableString(
+                this.resolveFirstField(data, 'licenseManagerName', mappings, [
+                    'new_lisansyoneticisiisimsoyisim',
+                    'new_lisans_yoneticisi_isim_soyisim',
+                    'new_licensemanagername',
+                    'new_license_manager_name',
+                ]),
+                255,
+            ),
             rawCrmPayload: data,
             crmVerified: true,
         };
@@ -112,7 +111,7 @@ export class CrmRecordSyncService {
 
         const adminEmails = (process.env.ADMIN_BYPASS_EMAILS || '')
             .split(',')
-            .map(e => e.trim().toLowerCase())
+            .map((e) => e.trim().toLowerCase())
             .filter(Boolean);
 
         if (adminEmails.includes(String(email).toLowerCase())) {
@@ -129,7 +128,11 @@ export class CrmRecordSyncService {
 
             if (!customerRole) {
                 customerRole = await tx.role.create({
-                    data: { name: 'CUSTOMER', isSystem: true, description: 'Default role for CRM-synced customers' },
+                    data: {
+                        name: 'CUSTOMER',
+                        isSystem: true,
+                        description: 'Default role for CRM-synced customers',
+                    },
                 });
             }
 
@@ -138,7 +141,7 @@ export class CrmRecordSyncService {
                 include: { user: true },
             });
 
-            let user = existingProfileByContactId?.user ?? await tx.user.findUnique({ where: { email } });
+            let user = existingProfileByContactId?.user ?? (await tx.user.findUnique({ where: { email } }));
             if (!user) {
                 user = await tx.user.create({
                     data: {
@@ -150,9 +153,7 @@ export class CrmRecordSyncService {
                     },
                 });
             } else {
-                const currentRole = user.roleId
-                    ? await tx.role.findUnique({ where: { id: user.roleId } })
-                    : null;
+                const currentRole = user.roleId ? await tx.role.findUnique({ where: { id: user.roleId } }) : null;
                 const isAlreadyCustomer = currentRole?.name.toUpperCase() === 'CUSTOMER';
 
                 if ((isAlreadyCustomer || !currentRole) && user.roleId !== customerRole.id) {
@@ -194,47 +195,52 @@ export class CrmRecordSyncService {
             const firstName = this.limitString(this.resolveField(data, 'fullName', mappings, 'firstname') || data.firstname || '-', 100);
             const lastName = this.limitString(this.resolveField(data, 'lastName', mappings, 'lastname') || data.lastname || '-', 100);
             const jobTitle = this.asNullableString(this.resolveField(data, 'jobTitle', mappings, 'jobtitle') || data.jobtitle, 255);
-            const phoneNumber = this.asNullableString(this.resolveFirstField(data, 'phoneNumber', mappings, [
-                'telephone1',
-                'telephone2',
-                'telephone3',
-            ]), 50);
+            const phoneNumber = this.asNullableString(this.resolveFirstField(data, 'phoneNumber', mappings, ['telephone1', 'telephone2', 'telephone3']), 50);
             const fax = this.asNullableString(this.resolveFirstField(data, 'fax', mappings, ['fax']), 50);
             const mobilePhone = this.asNullableString(this.resolveFirstField(data, 'mobilePhone', mappings, ['mobilephone']), 50);
-            const address = this.asNullableString(this.resolveFirstField(data, 'address', mappings, [
-                'address1_composite',
-                'address1_line1',
-                'address1_name',
-            ]));
-            const primaryTimeZone = this.asNullableString(this.resolveFirstField(data, 'primaryTimeZone', mappings, [
-                'timezoneruleversionnumber',
-                'utcconversiontimezonecode',
-            ]), 100);
-            const preferredContactMethod = this.asNullableString(this.resolveFirstField(data, 'preferredContactMethod', mappings, [
-                'preferredcontactmethodcode',
-            ]), 100);
-            const contractStatus = this.asNullableString(this.resolveField(data, 'contractStatus', mappings, 'new_musteridurumu@OData.Community.Display.V1.FormattedValue')
-                || data.new_musteridurumu_display
-                || null, 100);
+            const address = this.asNullableString(this.resolveFirstField(data, 'address', mappings, ['address1_composite', 'address1_line1', 'address1_name']));
+            const primaryTimeZone = this.asNullableString(
+                this.resolveFirstField(data, 'primaryTimeZone', mappings, ['timezoneruleversionnumber', 'utcconversiontimezonecode']),
+                100,
+            );
+            const preferredContactMethod = this.asNullableString(
+                this.resolveFirstField(data, 'preferredContactMethod', mappings, ['preferredcontactmethodcode']),
+                100,
+            );
+            const contractStatus = this.asNullableString(
+                this.resolveField(data, 'contractStatus', mappings, 'new_musteridurumu@OData.Community.Display.V1.FormattedValue') ||
+                    data.new_musteridurumu_display ||
+                    null,
+                100,
+            );
             const subscriptionModel = this.asNullableString(this.resolveField(data, 'subscriptionModel', mappings, 'new_AbonelikModeli'), 100);
-            const industryFromAccount = this.asNullableString(accountInfo?.industry
-                || data.parentcustomerid_account?.['industrycode@OData.Community.Display.V1.FormattedValue']
-                || null, 255);
-            const companyName = this.limitString(this.resolveField(data, 'companyName', mappings, 'parentcustomerid_account.name')
-                || data.parentcustomerid_account?.name
-                || accountInfo?.name
-                || 'Unknown', 255);
+            const industryFromAccount = this.asNullableString(
+                accountInfo?.industry || data.parentcustomerid_account?.['industrycode@OData.Community.Display.V1.FormattedValue'] || null,
+                255,
+            );
+            const companyName = this.limitString(
+                this.resolveField(data, 'companyName', mappings, 'parentcustomerid_account.name') ||
+                    data.parentcustomerid_account?.name ||
+                    accountInfo?.name ||
+                    'Unknown',
+                255,
+            );
             const mappedNo = this.resolveField(data, 'customerNo', mappings, 'new_customerid');
             const accountNum = accountInfo?.account_number || data.parentcustomerid_account?.accountnumber || data.accountnumber;
-            const customerNo = this.limitString(mappedNo && mappedNo !== '-'
-                ? mappedNo
-                : accountNum
-                    ? `${accountNum}-${String(contactId).substring(0, 5)}`
-                    : `DYN-${String(contactId).substring(0, 10)}`, 50);
+            const customerNo = this.limitString(
+                mappedNo && mappedNo !== '-'
+                    ? mappedNo
+                    : accountNum
+                      ? `${accountNum}-${String(contactId).substring(0, 5)}`
+                      : `DYN-${String(contactId).substring(0, 10)}`,
+                50,
+            );
 
-            const existingProfile = existingProfileByContactId ?? await tx.customerProfile.findUnique({
-                where: { userId: user.id },
-            });
+            const existingProfile =
+                existingProfileByContactId ??
+                (await tx.customerProfile.findUnique({
+                    where: { userId: user.id },
+                }));
 
             const profileData = {
                 firstName,
@@ -260,15 +266,15 @@ export class CrmRecordSyncService {
 
             const profile = existingProfile
                 ? await tx.customerProfile.update({
-                    where: { id: existingProfile.id },
-                    data: profileData,
-                })
+                      where: { id: existingProfile.id },
+                      data: profileData,
+                  })
                 : await tx.customerProfile.create({
-                    data: {
-                        ...profileData,
-                        userId: user.id,
-                    },
-                });
+                      data: {
+                          ...profileData,
+                          userId: user.id,
+                      },
+                  });
 
             await this.recordChanges('contact', contactId, profile.id, existingProfile, profileData, options, tx);
             return profile;
@@ -294,8 +300,8 @@ export class CrmRecordSyncService {
         let updatedCount = 0;
         for (const account of accounts) {
             const staleProfileIds = account.customers
-                .filter(profile => profile.companyName !== account.name || profile.industry !== account.industry)
-                .map(profile => profile.id);
+                .filter((profile) => profile.companyName !== account.name || profile.industry !== account.industry)
+                .map((profile) => profile.id);
 
             if (staleProfileIds.length === 0) continue;
 
@@ -330,13 +336,13 @@ export class CrmRecordSyncService {
                 oldValue: existing[fieldName],
                 newValue,
             }))
-            .filter(change => this.stringifyValue(change.oldValue) !== this.stringifyValue(change.newValue));
+            .filter((change) => this.stringifyValue(change.oldValue) !== this.stringifyValue(change.newValue));
 
         if (changes.length === 0) return;
 
         const client = tx ?? this.prisma;
         await client.crmChangeLog.createMany({
-            data: changes.map(change => ({
+            data: changes.map((change) => ({
                 connectionId: options.connectionId ?? null,
                 entityType,
                 entityId,
@@ -368,7 +374,7 @@ export class CrmRecordSyncService {
     }
 
     private resolveField(data: any, systemKey: string, mappings: Record<string, string>, defaultKey: string): any {
-        const rawKey = mappings[systemKey] || defaultKey;
+        const rawKey = this.resolveMappedCrmKey(systemKey, mappings) || defaultKey;
         const crmKey = rawKey.toLowerCase();
 
         const dataLower: Record<string, any> = {};
@@ -401,7 +407,7 @@ export class CrmRecordSyncService {
     }
 
     private resolveFirstField(data: any, systemKey: string, mappings: Record<string, string>, candidateKeys: string[]): any {
-        const mapped = mappings[systemKey];
+        const mapped = this.resolveMappedCrmKey(systemKey, mappings);
         if (mapped) {
             return this.resolveField(data, systemKey, mappings, mapped);
         }
@@ -412,5 +418,22 @@ export class CrmRecordSyncService {
         }
 
         return null;
+    }
+
+    private resolveMappedCrmKey(systemKey: string, mappings: Record<string, string>): string | undefined {
+        if (!mappings) return undefined;
+
+        const direct = mappings[systemKey];
+        if (direct) return direct;
+
+        const normalizedSystemKey = this.normalizeMappingKey(systemKey);
+        const matchingKey = Object.keys(mappings).find((key) => this.normalizeMappingKey(key) === normalizedSystemKey);
+        return matchingKey ? mappings[matchingKey] : undefined;
+    }
+
+    private normalizeMappingKey(key: string): string {
+        return String(key || '')
+            .replace(/[^a-z0-9]/gi, '')
+            .toLowerCase();
     }
 }

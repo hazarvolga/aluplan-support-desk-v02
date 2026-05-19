@@ -1,15 +1,18 @@
 # Session Summary - 2026-05-13
 
 ## Goal
+
 Stabilize the backend startup path, harden a few real code risks, reduce repo-root noise, and clean up frontend AI settings debt without trusting stale root markdown reports.
 
 ## What Was Done
 
 ### Faz 0 - Checkpoint
+
 - Commit: `137309c chore: checkpoint pending product code changes`
 - Preserved existing uncommitted product work before starting focused cleanup.
 
 ### Faz 1 - Backend startup blocker
+
 - Root cause reproduced: `nest build` failed with `EMFILE: too many open files, watch`
 - Fix: disabled asset watchers in `apps/backend/nest-cli.json`
 - Commit: `10a5d1e fix(backend): disable asset watchers during build`
@@ -19,12 +22,14 @@ Stabilize the backend startup path, harden a few real code risks, reduce repo-ro
   - App booted successfully on `http://localhost:4000/api/v1`
 
 ### Faz 2 - Security / ops hardening
+
 - Locked down `POST /products/internal/restore-faqs` behind `JwtAuthGuard + RbacGuard + Roles('admin')`
 - Tightened WebSocket CORS origin handling to configured origins only
 - Reduced handshake diagnostics so token prefixes are no longer logged
 - Commit: `6aebabe fix(backend): harden restore endpoint and ws origins`
 
 ### Faz 3 - Repo hygiene / archival cleanup
+
 - Moved misleading root-level legacy reports and artifacts into:
   - `archive/legacy-root-docs/2026-05-13/`
   - `archive/legacy-artifacts/2026-05-13/`
@@ -33,12 +38,14 @@ Stabilize the backend startup path, harden a few real code risks, reduce repo-ro
 - Commit: `6e3f81f chore(repo): archive legacy root reports`
 
 ### Faz 4 - Frontend stabilization
+
 - Fixed `useAiHealthSocket()` listener duplication on reconnect by binding handlers once per hook lifecycle
 - Replaced hardcoded AI settings strings with `next-intl` keys
 - Added new translation keys to `tr.json`, `en.json`, and `de.json`
 - Commit: `0f44840 fix(frontend): stabilize ai settings socket and i18n`
 
 ### Faz 5 - Verification / test reliability
+
 - Backend typecheck: passed
 - Backend build: passed
 - Frontend typecheck: passed
@@ -49,6 +56,7 @@ Stabilize the backend startup path, harden a few real code risks, reduce repo-ro
   - The bigger issue here was flaky command streaming in this environment; `spawnSync` produced reliable verification output
 
 ## Current Clean State
+
 - New commits in order:
   1. `10a5d1e fix(backend): disable asset watchers during build`
   2. `6aebabe fix(backend): harden restore endpoint and ws origins`
@@ -56,6 +64,7 @@ Stabilize the backend startup path, harden a few real code risks, reduce repo-ro
   4. `0f44840 fix(frontend): stabilize ai settings socket and i18n`
 
 ## Remaining Local Noise Not Touched
+
 - Modified:
   - `AGENTS.md`
   - `CLAUDE.md`
@@ -71,6 +80,7 @@ Stabilize the backend startup path, harden a few real code risks, reduce repo-ro
 These were left alone deliberately because they look like user/workflow artifacts rather than product-code fixes.
 
 ## Blockers / Follow-up
+
 - `graphify` CLI was not available in PATH during this session, so the requested post-phase graph refresh could not be executed here
 - If phase-by-phase graph updates are mandatory, install or expose `graphify` in PATH and run:
   - `graphify update .`
@@ -82,6 +92,7 @@ These were left alone deliberately because they look like user/workflow artifact
 ## Follow-up - 2026-05-13 Ticket Diagnosis Stabilization
 
 ### What changed
+
 - Frontend ticket creation is now explicitly **AI-optional**:
   - users can continue directly to ticket creation without waiting for diagnosis
   - `my-tickets` now shows a retryable degraded state when backend fetch fails
@@ -91,10 +102,12 @@ These were left alone deliberately because they look like user/workflow artifact
   - `FALLBACK` (top grounded content used after bounded generation timeout / empty response)
 
 ### Commits
+
 - `91777bb fix(frontend): make ai diagnosis optional for ticket creation`
 - `8e61383 fix(ai): surface bounded diagnosis fallback mode`
 
 ### Verification
+
 - Frontend:
   - `./node_modules/.bin/tsc --noEmit -p tsconfig.json` passed in `apps/frontend`
   - `./node_modules/.bin/vitest run src/lib/api.spec.ts` passed
@@ -103,22 +116,26 @@ These were left alone deliberately because they look like user/workflow artifact
   - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts` passed
 
 ### Important notes
+
 - `graphify update .` was attempted after each phase but the `graphify` binary is still unavailable in PATH in this shell.
 - `gitnexus detect_changes` reports HIGH risk because the repository already contains unrelated modified files from prior RAG/indexing work; phase commits were staged narrowly to avoid pulling unrelated changes into the new commits.
 
 ## Follow-up - 2026-05-13 Sync Diagnosis Spinner
 
 ### Root cause
+
 - A customer `POST /api/v1/ai/query?wait=true` reached backend and retrieval finished quickly.
 - The request then hung in LLM re-ranking because Gemini free-tier returned `429 RESOURCE_EXHAUSTED` for `gemini-2.5-flash`, including retry delays up to ~59s.
 - The existing 25s diagnosis fallback guarded the final answer generation, but not the earlier LLM re-ranking step.
 
 ### Fix applied
+
 - Propagated the resolved `wait` flag from `AiQueryService.query()` into `queryInternal()`.
 - For synchronous `wait=true` diagnosis calls, skipped LLM re-ranking and kept deterministic retrieval + heuristic re-ranking.
 - Added a regression test proving synchronous wait queries do not call `ai.generate()` for re-ranking.
 
 ### Verification
+
 - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts` passed
 - `pnpm --filter @aluplan/backend typecheck` passed
 - `pnpm --filter @aluplan/backend build` passed
@@ -146,6 +163,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-13 Regression Guard Stabilization
 
 ### Root cause
+
 - Backend regression guard failed because `AuthController` now depends on `ConfigService`, while `auth.controller.spec.ts` still only provided `AuthService`.
 - Frontend targeted test command was initially invoked through the package script with an extra `--`, causing Vitest to run a wider suite than intended.
 - The wider frontend run exposed two independent test harness issues:
@@ -153,6 +171,7 @@ Maintenance rule:
   - `customer-properties.pbt.spec.ts` expected null customer sort values to stay last, but the local test helper normalized null to an empty string that sorted first.
 
 ### Fix applied
+
 - Added a `ConfigService` mock to `auth.controller.spec.ts`.
 - Updated the `DocBreadcrumb` test translation mock to return `Yardım` for `help.nav.back`.
 - Updated the local customer sort test helper so empty/null values sort last in both directions.
@@ -160,6 +179,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-19 Hotinfo GPU and Download Revision
 
 ### What changed
+
 - Hotinfo parsing now preserves up to two graphics adapters as structured `graphicsCards` entries.
 - Each GPU card carries name, VRAM, RAM, resolution, driver date, driver version, and OpenGL when present.
 - The admin ticket Hotinfo modal now shows GPU 1 and GPU 2 as separate readable cards.
@@ -167,6 +187,7 @@ Maintenance rule:
 - Support/admin users can download the customer's raw `.hxl` Hotinfo file directly from the ticket Hotinfo modal.
 
 ### Verification
+
 - `pnpm --filter @aluplan/backend test -- hotinfo-parser.service.spec.ts` passed.
 - `pnpm --filter @aluplan/backend typecheck` passed.
 - `pnpm --filter @aluplan/frontend typecheck` passed.
@@ -175,6 +196,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-19 CRM Account and Contact Detail Fields
 
 ### What changed
+
 - Added persistent CRM account fields for Service Address, Phone, Fax, Client ID: Frilo, License Manager Name, and raw CRM payload snapshots.
 - Added persistent CRM contact/customer fields for Fax, Mobile Phone, Address, Primary Time Zone, Preferred Contact Method, and raw CRM payload snapshots.
 - Dynamics account/contact sync now writes those fields when they are present in the CRM response or mapped through the CRM field mapping UI.
@@ -182,6 +204,7 @@ Maintenance rule:
 - Customer profile page now includes a CRM Contact Details card in the same readable format.
 
 ### Verification
+
 - `pnpm --filter @aluplan/backend test -- crm-record-sync.service.spec.ts` passed.
 - `pnpm --filter @aluplan/backend typecheck` passed.
 - `pnpm --filter @aluplan/frontend typecheck` passed.
@@ -191,36 +214,66 @@ Maintenance rule:
 ## Follow-up - 2026-05-19 Inbound Bounce Email Filtering
 
 ### Root cause
+
 - Mail delivery failure notifications from `MAILER-DAEMON` / Postfix were being treated as normal inbound customer emails.
 - That allowed delivery status notifications such as `Reporting-MTA`, `Final-Recipient`, `Action: failed`, and `nullMX` bounces to create support tickets.
 - The visible `[E-POSTA GİZLENDİ: ...]` text is PII masking in stored/displayed message content; it is separate from the actual email sending address path.
 
 ### Fix applied
+
 - Added shared delivery-status-notification detection for IMAP inbound and omni-channel webhook inbound flows.
 - Delivery failure/bounce mails are now marked processed in `inbound_email_logs` with `Ignored delivery status notification` and do not create users, ticket messages, or tickets.
 
 ### Verification
+
 - `pnpm --filter @aluplan/backend test -- email-inbound.service.spec.ts omni-channel.service.spec.ts` passed.
 - `pnpm --filter @aluplan/backend typecheck` passed.
 
 ## Follow-up - 2026-05-19 Email Deliverability Guardrails
 
 ### Findings
+
 - Live DNS has MX `mail.allplan.net.tr` and SPF `v=spf1 mx ip4:167.86.84.107 ~all`.
 - DMARC exists as `v=DMARC1; p=none; rua=mailto:destek@allplan.net.tr; adkim=s; aspf=s`.
 - Reverse DNS for `167.86.84.107` resolves to `vmi3049865.contaboserver.net`, not `mail.allplan.net.tr`.
 - No public DKIM record was found for the common selectors checked, while docker-mailserver has DKIM milter configuration internally.
 
 ### Fix applied
+
 - Production email enqueue now skips reserved/test recipients such as `admin@example.com`, `example.org`, `.test`, `.invalid`, and `localhost` before they reach the queue.
 - Skipped invalid recipients are logged with `SKIPPED_INVALID_RECIPIENT`.
 - Email DNS validation now treats Null MX (`.`) as invalid, matching domains such as `example.com` that explicitly do not accept mail.
 
 ### Verification
+
 - `pnpm --filter @aluplan/backend test -- email.service.spec.ts email-validator.service.spec.ts email-inbound.service.spec.ts omni-channel.service.spec.ts` passed.
 - `pnpm --filter @aluplan/backend typecheck` passed.
 
+## Follow-up - 2026-05-19 CRM Full Sync Unification and Hotinfo GPU Memory
+
+### Root cause
+
+- Dynamics full sync still used the adapter's legacy direct DB persistence path, while delta/webhook sync used `CrmRecordSyncService`.
+- That split caused full sync records to miss newer CRM detail fields, raw payload snapshots, placeholder-email repair behavior, and consistent account/contact linking.
+- Hotinfo sometimes reports one `video` memory block for a multi-GPU machine, while additional GPU nodes only carry card name and driver metadata.
+
+### Fix applied
+
+- Added raw Dynamics full-fetch methods for accounts and contacts.
+- Updated `CrmService.executeSyncProcess()` to route Dynamics full imports through `CrmRecordSyncService` when raw fetch is available.
+- Added lowercase/normalized CRM mapping-key support, so saved mapping keys such as `accountnumber` can still populate the canonical `accountNumber` field.
+- Updated Hotinfo GPU parsing so shared display memory and resolution are carried to additional GPU cards when per-card memory is absent.
+
 ### Verification
+
+- `pnpm --filter @aluplan/backend test -- hotinfo-parser.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend test -- crm.service.spec.ts crm-record-sync.service.spec.ts dynamics365.adapter.spec.ts` passed.
+- `pnpm --filter @aluplan/backend test -- crm.processor.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- Real `/Users/hazarekiz/Downloads/_hotinf_.hxl` smoke showed both AMD and NVIDIA GPU cards with memory, resolution, driver date, and driver version.
+
+### Verification
+
 - Backend must-pass regression set passed:
   - `pnpm --filter @aluplan/backend test -- auth.controller.spec.ts tickets.controller.spec.ts notifications.gateway.spec.ts ai-query.service.spec.ts`
   - Result: 5 suites passed, 48 tests passed, 1 skipped.
@@ -229,16 +282,19 @@ Maintenance rule:
   - Result: 4 files passed, 58 tests passed.
 
 ### Note
+
 - Use `pnpm --filter @aluplan/frontend exec vitest run <files...>` for targeted frontend checks. Avoid adding an extra `--` after `test:unit` because it can widen the run unexpectedly.
 
 ## Follow-up - 2026-05-13 Grounded Fallback + Hotinfo Signals
 
 ### Root cause
+
 - Skipping sync LLM re-ranking fixed the quota stall, but fallback mode could still surface the wrong top document, e.g. an "Allplan running slow" FAQ for a Turkish graphics-card-driver update question.
 - Turkish UI/questions could receive raw English source text because fallback used source content directly when Gemini was quota-limited.
 - Hotinfo was available but not injected for Turkish phrases like "grafik kartı" and "sürüm güncelleme" because the hardware-query regex missed these variants.
 
 ### Fix applied
+
 - Added query-aware local reranking for sync diagnosis fallback, with stronger signal coverage for graphics card, driver, update, IFC, license, and performance intents.
 - Added deterministic fallback summaries:
   - Turkish locale now returns a Turkish safe summary plus the original source passage as a source excerpt.
@@ -246,6 +302,7 @@ Maintenance rule:
 - Replaced duplicated hardware regex checks with normalized hardware/system-query detection that includes Turkish variants such as `grafik kartı`, `ekran kartı`, `sürüm`, and `güncelleme`.
 
 ### Verification
+
 - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts` passed
 - `pnpm --filter @aluplan/backend typecheck` passed
 - `pnpm --filter @aluplan/backend build` passed
@@ -254,11 +311,13 @@ Maintenance rule:
 ## Follow-up - 2026-05-13 DevOps Standardization Checkpoints
 
 ### Goal
+
 - Preserve the currently working RAG/ticket system while moving the project toward cleaner DevOps practice.
 - Keep Qdrant out of scope; current direction remains pgvector + Gemini/LLMAPI.
 - Split changes into small, reversible commits rather than mixing docs, product code, tests, and generated graph output.
 
 ### Completed checkpoints
+
 - `54aaefe docs(memory): establish project memory system`
   - `.ai` now acts as project memory: bootstrap, current focus, ADRs, condensed handoff, retrieval policy, and session summary.
 - `21b8956 test(regression): stabilize guard tests`
@@ -282,6 +341,7 @@ Maintenance rule:
   - Repaired `ai.controller.spec.ts` provider mocks exposed during targeted tests.
 
 ### Verification already run
+
 - Backend RAG tests:
   - `pnpm --filter @aluplan/backend test -- embedding.service.spec.ts embedding-version.registry.spec.ts rag-maintenance.service.spec.ts gemini.service.spec.ts ai-query.service.spec.ts`
 - Backend config tests:
@@ -296,6 +356,7 @@ Maintenance rule:
   - `pnpm exec prisma validate --schema packages/database/prisma/schema.prisma`
 
 ### Current working tree after these commits
+
 - Still intentionally uncommitted / pending cleanup:
   - `AGENTS.md`
   - `CLAUDE.md`
@@ -307,10 +368,12 @@ Maintenance rule:
 - Do not mix these with product commits. Next phase should be AGENTS/tooling/docs cleanup.
 
 ### Tooling note
+
 - Graphify hook ran after each commit, but warned that the rebuilt graph has ~5572 nodes while existing `graph.json` has 11474 nodes, so it refused to overwrite the existing graph JSON. `GRAPH_REPORT.md` changed and should be treated as graph-output cleanup, not product code.
 - GitNexus `detect_changes` currently reports only dirty docs/tooling symbols because product code checkpoints are committed.
 
 ### Next recommended step
+
 - Finish Faz 4:
   - Clean `AGENTS.md` into one concise instruction file with a single GitNexus block.
   - Keep `.agents`, `.kiro`, `.github/agents`, `CLAUDE.md`, OpenAPI, and Graphify output in separate docs/tooling commits or archive decisions.
@@ -319,16 +382,19 @@ Maintenance rule:
 ## Follow-up - 2026-05-13 AGENTS Cleanup
 
 ### Root cause
+
 - `AGENTS.md` had grown to 2279 lines because multiple AI-agent exports were pasted into the same file.
 - It contained repeated AGENTS blocks, a Gemini/OpenCode chat transcript, n8n-as-code bootstrap text, imported Claude instructions, and duplicate GitNexus blocks.
 - This made the primary startup instruction file noisy and risky for future agents.
 
 ### Fix applied
+
 - Replaced `AGENTS.md` with a concise 215-line project instruction file.
 - Kept the current repo map, command set, truth hierarchy, RAG/Gemini direction, high-blast-radius areas, i18n/testing notes, DevOps commit hygiene, Graphify rules, and exactly one GitNexus block.
 - Removed embedded chat transcripts, duplicate AGENTS sections, n8n generated text, and imported Claude dump from `AGENTS.md`.
 
 ### Remaining docs/tooling state
+
 - `CLAUDE.md` only has a GitNexus index-count refresh and can be committed with AGENTS cleanup.
 - `apps/backend/openapi.json` is currently modified to empty by generated output; do not commit until regenerated or intentionally restored.
 - `graphify-out/GRAPH_REPORT.md` changed after commit hooks, but Graphify warned that rebuilt graph node count is much smaller than existing `graph.json`; do not commit graph output until that warning is resolved.
@@ -337,11 +403,13 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 Artifact Cleanup
 
 ### Decision
+
 - Preserve the currently working product behavior; no public API, backend, frontend, Prisma schema, or migration changes in this cleanup phase.
 - Keep Qdrant out of scope. Continue with the existing pgvector + Gemini/LLMAPI direction.
 - Treat generated outputs and local agent tooling separately from product commits.
 
 ### Fix applied
+
 - Restored generated `apps/backend/openapi.json` output instead of committing an accidental artifact diff.
 - Restored `graphify-out/GRAPH_REPORT.md` after commit hooks because Graphify still warns that the rebuilt graph has 5572 nodes while the existing graph has 11474 nodes.
 - Committed local agent-tool ignore rules in `042fe81 chore(tooling): ignore local agent artifacts`:
@@ -354,22 +422,26 @@ Maintenance rule:
   - `.kiro/specs/ui-contrast-accessibility/`
 
 ### Verification
+
 - Confirmed the Kiro spec commit contains docs/spec files only.
 - Checked new Kiro specs for obvious secret patterns such as API keys, tokens, passwords, private keys, and database URLs; no real secrets were found.
 - Kept Graphify output uncommitted until the graph node-count mismatch is investigated.
 
 ### Remaining
+
 - Investigate the Graphify source/chunk mismatch before accepting any regenerated graph output.
 - Run non-mutating gates after this memory update: `git status --short`, typechecks, targeted backend RAG/config tests, and Prisma schema validation.
 
 ## Follow-up - 2026-05-14 AI Quota-Safe Fallback
 
 ### Decision
+
 - Keep Gemini as the primary provider and OpenAI as fallback.
 - Do not spend OpenAI credits during normal operation unless the primary provider is unavailable or a quota-safe fallback path is needed.
 - Treat daily Gemini quota exhaustion differently from short transient rate limits: daily quota should skip retry loops and move to fallback/cooldown; transient 429s should keep the existing retry behavior.
 
 ### Fix applied
+
 - Added provider/task scoped quota cooldown in `AiService` using `AI_PROVIDER_QUOTA_COOLDOWN_MS` with a one-hour default.
 - Recorded explicit AI health events when daily quota exhaustion is detected.
 - Disabled optional automatic sentiment and context-suggestion AI calls by default behind settings flags:
@@ -378,6 +450,7 @@ Maintenance rule:
 - Kept required ticket AI diagnosis/auto-resolution behavior intact.
 
 ### Verification
+
 - Live OpenAI fallback credential smoke test succeeded with `gpt-4o-mini` and used only 13 tokens.
 - Backend focused tests passed:
   - `pnpm --filter @aluplan/backend test -- ai.service.spec.ts ai-auto-resolver.service.spec.ts env-validation.spec.ts`
@@ -387,16 +460,19 @@ Maintenance rule:
 - `git diff --check` passed.
 
 ### Remaining
+
 - Email retry noise and failed background jobs remain unrelated operational cleanup items.
 
 ## Follow-up - 2026-05-14 PDF-First RAG Dataset Pilot
 
 ### Decision
+
 - Use PDF as the canonical source for the next RAG import; keep generated MD files out unless a PDF parses poorly or no PDF exists.
 - Keep raw incoming PDFs under `.archive/rag-incoming/pdf/` and copy only curated, deduped files into `dataset/`.
 - Categorize Knowledge Pool sources before import so the admin UI does not show all FAQ data as `General`.
 
 ### Fix applied
+
 - Added a dataset classifier for local Knowledge Pool imports:
   - language detection: `tr`, `en`, `de`
   - category metadata: license, license server, installation, performance, network, export/import, share/cloud, project data, release info, manuals, review backlog
@@ -414,6 +490,7 @@ Maintenance rule:
   - DE: `Performance & Hardware`
 
 ### Verification
+
 - Backend tests passed:
   - `pnpm --filter @aluplan/backend test -- dataset-classifier.spec.ts knowledge-pool-job.spec.ts`
 - Backend typecheck passed:
@@ -434,6 +511,7 @@ Maintenance rule:
   - Targeted TR license-transfer queries return the TR pilot source first.
 
 ### Remaining
+
 - Broad Turkish wording such as “Allplan lisansını yeni bilgisayara nasıl aktarırım?” can still retrieve adjacent EN license-server content first; treat this as a retrieval tuning issue, not an import failure.
 - Do not commit `apps/backend/openapi.json` unless intentionally regenerated or restored.
 - Continue imports in 5-file support batches from `.archive/rag-staging/pdf-first/ready/manifest-ready.json`.
@@ -441,12 +519,14 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 Language/Category-Aware RAG Retrieval
 
 ### Decision
+
 - RAG search should not hard-filter by source language. User/UI language controls answer language, while source retrieval may still use EN/DE/TR documents.
 - Same-language and same-category sources should be boosted, not made mandatory.
 - Repeated chunks from the same source should be de-duplicated in returned search results.
 - UI-uploaded Knowledge Pool files should use the same classifier metadata as local dataset imports.
 
 ### Fix applied
+
 - UI uploads now classify file metadata through the shared dataset classifier:
   - `language`
   - `category`
@@ -463,6 +543,7 @@ Maintenance rule:
 - German query detection was tightened for support terms such as `Echtzeit`, `blockiert`, `wenn`, `nicht`, and related German signals.
 
 ### Verification
+
 - Backend tests passed:
   - `pnpm --filter @aluplan/backend test -- dataset-classifier.spec.ts knowledge-pool-job.spec.ts embedding.service.spec.ts`
 - Backend typecheck passed:
@@ -474,16 +555,19 @@ Maintenance rule:
   - DE real-time scanner query returns the DE `Performance & Hardware` pilot first.
 
 ### Remaining
+
 - Older sources with `General` category still appear lower in result lists; clean/reclassify them separately if they continue to add noise.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
 
 ## Follow-up - 2026-05-14 PDF Batch 001 Import
 
 ### Decision
+
 - Continue imports with small support-first batches instead of bulk-loading all PDFs.
 - Keep sync sequential to avoid provider quota pressure; trigger the next file only after the previous source is `ACTIVE` with embeddings.
 
 ### Batch 001 files
+
 - TR / `Export Import & IFC DWG`: `FAQ_TR_Allplan Pafta Düzenleme'den X-Ref ile Karmaşık Veri Gönderme -(Export-).pdf`
 - TR / `License & Activation`: `faq-softlock-SSS-Allplan-da-Lisans-Nasil-Kayitlandirabilirim-(Register).pdf`
 - EN / `Network & Workgroup`: `FAQ_EN_Allplan_in_the_home-office.pdf`
@@ -491,6 +575,7 @@ Maintenance rule:
 - DE / `Performance & Hardware`: `FAQ_DE_Geschwindigkeit_von_Allplan_verbessern_bzw_analysieren.pdf`
 
 ### Verification
+
 - Product code committed:
   - `0c2f1fb fix(rag): boost title-specific retrieval matches`
 - Dataset scan result:
@@ -512,17 +597,20 @@ Maintenance rule:
   - DE performance query returns the new performance PDF first.
 
 ### Remaining
+
 - Continue with Batch 002 using the same sequential sync pattern.
 - Watch legacy `General` category results; they may need separate cleanup/reclassification after enough PDF sources are imported.
 
 ## Follow-up - 2026-05-14 PDF Batch 002 Import and Retrieval Tuning
 
 ### Decision
+
 - Batch 002 stayed support-first and sequential to protect Gemini quota.
 - Retrieval should prefer source title specificity when vector similarity, language, and category are otherwise close.
 - Foreign-language sources remain eligible as fallback evidence; this is a ranking improvement, not a language hard filter.
 
 ### Batch 002 files
+
 - TR / `License & Activation`: `faq-softlock-SSS-Bilgisayarimi-formatladim-lisansimi-nasil-geri-alirim.pdf`
 - EN / `Installation & Setup`: `FAQ_EN_Allplan_silent_installation_(Allplan_2017_and_later).pdf`
 - EN / `Export Import & IFC DWG`: `FAQ_EN_Export_resolving_and_transferring_layouts.pdf`
@@ -530,6 +618,7 @@ Maintenance rule:
 - DE / `License & Activation`: `FAQ_DE_Lizenz_auf_neuen_anderen_Rechner_uebertragen.pdf`
 
 ### Verification
+
 - Dataset scan result:
   - discovered 5 new files
   - checked 15 existing files
@@ -550,6 +639,7 @@ Maintenance rule:
   - EN silent-install query returns `FAQ_EN_Allplan_silent_installation_(Allplan_2017_and_later).pdf` first.
 
 ### Remaining
+
 - Continue with Batch 003 using the same sequential sync pattern.
 - Similar multilingual license FAQs can still show capped similarity ties; rank order is now improved by language, category, and title tokens.
 - Graphify hook ran on commit but warned that the rebuilt graph had 5596 nodes while the existing graph has 11474; `graphify-out/GRAPH_REPORT.md` was restored and not committed.
@@ -558,16 +648,19 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 Settings Secret Hardening
 
 ### Decision
+
 - Secret classification for provider credentials must be enforced on the backend, not trusted from UI payloads.
 - Existing plaintext secret-like settings should be remediated safely without printing secret values.
 
 ### Fix applied
+
 - `SettingsService` now forces secret storage for keys matching credential patterns such as `.api_key`, `.secret_key`, `.client_secret`, `.webhook_secret`, `.credentials_json`, `.token`, and legacy `resend_api_key`.
 - Existing plaintext secret-like settings are encrypted and flipped to `isSecret=true` when read through `get` / `getValue` / `getAll`.
 - Added regression coverage for forced encrypted API key storage and read-time plaintext secret migration.
 - Checked live DB metadata for `ai.gemini.api_key` without printing the value; it is currently `is_secret=true`.
 
 ### Verification
+
 - Backend provider/settings tests passed:
   - `pnpm --filter @aluplan/backend test -- settings.service.spec.ts gemini.service.spec.ts llm-api.service.spec.ts ai.service.spec.ts ai-provider-router.service.spec.ts`
 - Backend typecheck passed:
@@ -577,11 +670,13 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 PDF Batch 003 Safety Fix
 
 ### Decision
+
 - OpenAI remains enabled as chat fallback, but embedding fallback is disabled for the active Gemini corpus.
 - Embedding compatibility must check both vector dimension and embedding model identity; same dimension is not enough.
 - An unchanged source hash is not sufficient for sync success when the source has zero embeddings.
 
 ### Batch 003 status
+
 - 5 files were discovered under `dataset/.../batch-003`.
 - 4/5 sources synced successfully and are `ACTIVE`.
 - Successful Batch 003 embeddings: 15 rows, all `3072 / v2_2`.
@@ -589,12 +684,14 @@ Maintenance rule:
 - Earlier bad OpenAI fallback embeddings for this source were removed; the pool is not polluted by mixed-provider vectors.
 
 ### Fix applied
+
 - `EmbeddingService` now rejects embedding results whose dimension or model does not match the active embedding version config.
 - `EmbeddingService.indexPoolContent()` now fails if no embeddings are generated for a source.
 - `KnowledgePoolProcessor` now re-indexes unchanged files when their embedding count is zero instead of marking them successful.
 - `.env.example` now documents the active 3072-dim expectation.
 
 ### Verification
+
 - Backend tests passed:
   - `pnpm --filter @aluplan/backend test -- embedding.service.spec.ts`
   - `pnpm --filter @aluplan/backend test -- knowledge-pool.processor.spec.ts`
@@ -605,6 +702,7 @@ Maintenance rule:
 - Backend restarted from `dist/main.js` and `/api/v1/health` is green.
 
 ### Remaining
+
 - Retry the failed Batch 003 source after Gemini embedding quota recovers.
 - Do not enable OpenAI embedding fallback unless a new embedding version and full re-embedding plan are created.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
@@ -612,6 +710,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 PDF Batch 003 Completed
 
 ### Result
+
 - The previously failed Batch 003 source was retried after Gemini embedding quota recovered.
 - Batch 003 is now fully synced:
   - 5/5 sources `ACTIVE`
@@ -620,6 +719,7 @@ Maintenance rule:
   - embedding distribution: `3072 / v2_2` only
 
 ### Search smoke
+
 - TR Softlock computer-change query returned `faq-softlock-SSS-Bilgisayar-değişikliği-yapmak-istiyorum-Softlock-2013.pdf` first.
 - TR temporary online license-transfer query returned `faq-softlock-SSS-Geçici-lisans-transferi-Online.pdf` first.
 - EN offline activation query returned `FAQ_EN_Activating_license_offline_(without_Internet_access).pdf` first.
@@ -627,6 +727,7 @@ Maintenance rule:
 - DE license-server no-license query returned `FAQ_DE_Lizenzserver_-_Es_wird_keine_Lizenz_gefunden_.pdf` first.
 
 ### Remaining
+
 - Continue with Batch 004 using the same sequential, low-rate import pattern.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
@@ -634,6 +735,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 PDF Batch 004 Completed
 
 ### Batch 004 files
+
 - DE / `License & Activation`: `FAQ_DE_Dienst_fuer_die_Lizenzierung_laeuft_nicht.pdf`
 - DE / `License & Activation`: `FAQ_DE_Lizenz_offline_aktivieren_und_zurueckgeben_(ohne_Internet.pdf`
 - DE / `License Server & CodeMeter`: `FAQ_DE_Fehlermeldung_CodeMeter_ist_nicht_installiert_CodeMeter_n.pdf`
@@ -641,6 +743,7 @@ Maintenance rule:
 - EN / `License Server & CodeMeter`: `FAQ_EN_Finding_license_server_automatically_or_entering_addition.pdf`
 
 ### Result
+
 - Dataset scan result:
   - discovered 5 new files
   - checked 25 existing files
@@ -653,6 +756,7 @@ Maintenance rule:
   - embedding distribution: `3072 / v2_2` only
 
 ### Search smoke
+
 - DE licensing service query returned `FAQ_DE_Dienst_fuer_die_Lizenzierung_laeuft_nicht.pdf` first.
 - DE offline license activate/return query returned `FAQ_DE_Lizenz_offline_aktivieren_und_zurueckgeben_(ohne_Internet.pdf` first.
 - DE CodeMeter not-installed query returned `FAQ_DE_Fehlermeldung_CodeMeter_ist_nicht_installiert_CodeMeter_n.pdf` first.
@@ -660,6 +764,7 @@ Maintenance rule:
 - EN finding license server query returned `FAQ_EN_Finding_license_server_automatically_or_entering_addition.pdf` first.
 
 ### Remaining
+
 - Continue with Batch 005 using the same sequential, low-rate import pattern.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
@@ -667,6 +772,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 PDF Batch 005 Completed
 
 ### Batch 005 files
+
 - DE / `License Server & CodeMeter`: `FAQ_DE_Installation_und_Konfiguration_des_Lizenzservers.pdf`
 - DE / `License Server & CodeMeter`: `FAQ_DE_Keine_Lizenz_am_Client_nach_Update_von_Codemeter_Runtime.pdf`
 - EN / `License Server & CodeMeter`: `FAQ_EN_License_server_-_borrowing_licenses_temporarily.pdf`
@@ -674,6 +780,7 @@ Maintenance rule:
 - TR / `License & Activation`: `faq-softlock-SSS-Geçici-lisans-transferi-Manuel.pdf`
 
 ### Result
+
 - Dataset scan result:
   - discovered 5 new files
   - checked 30 existing files
@@ -686,6 +793,7 @@ Maintenance rule:
   - embedding distribution: `3072 / v2_2` only
 
 ### Search smoke
+
 - DE license-server install/config query returned `FAQ_DE_Installation_und_Konfiguration_des_Lizenzservers.pdf` first.
 - DE no-license-after-CodeMeter-update query returned `FAQ_DE_Keine_Lizenz_am_Client_nach_Update_von_Codemeter_Runtime.pdf` first.
 - EN temporary license borrowing query returned `FAQ_EN_License_server_-_borrowing_licenses_temporarily.pdf` first.
@@ -693,6 +801,7 @@ Maintenance rule:
 - TR manual temporary license transfer query returned `faq-softlock-SSS-Geçici-lisans-transferi-Manuel.pdf` first.
 
 ### Remaining
+
 - Continue with Batch 006 using the same sequential, low-rate import pattern.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
@@ -700,6 +809,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 PDF Batch 006 Completed
 
 ### Batch 006 files
+
 - DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_-_Lizenz_ausleihen_temporaer.pdf`
 - DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_auf_neuen_Server_umziehen.pdf`
 - EN / `License Server & CodeMeter`: `FAQ_EN_License_server_-_assigning_access_rights_for_seats_to_ind.pdf`
@@ -707,6 +817,7 @@ Maintenance rule:
 - TR / `License & Activation`: `faq-softlock-SSS-Lisansimi-artik-başka-bir-bilgisayarda-kullanmak-istiyorum.pdf`
 
 ### Result
+
 - Dataset scan result:
   - discovered 5 new files
   - checked 35 existing files
@@ -719,6 +830,7 @@ Maintenance rule:
   - embedding distribution: `3072 / v2_2` only
 
 ### Search smoke
+
 - DE temporary license borrowing query returned `FAQ_DE_Lizenzserver_-_Lizenz_ausleihen_temporaer.pdf` first.
 - DE move license server query returned `FAQ_DE_Lizenzserver_auf_neuen_Server_umziehen.pdf` first.
 - EN assign license-server seat access rights query returned `FAQ_EN_License_server_-_assigning_access_rights_for_seats_to_ind.pdf` first.
@@ -726,6 +838,7 @@ Maintenance rule:
 - TR use license on another computer query returned `faq-softlock-SSS-Lisansimi-artik-başka-bir-bilgisayarda-kullanmak-istiyorum.pdf` first.
 
 ### Remaining
+
 - Continue with Batch 007 using the same sequential, low-rate import pattern.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
@@ -733,6 +846,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 PDF Batch 007 Completed
 
 ### Batch 007 files
+
 - DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_-_Lizenz_ausleihen_Nachverfolgung_welche_Ben.pdf`
 - DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_-_Lizenz_offline_am_Server_aktivieren_und_zu.pdf`
 - EN / `License Server & CodeMeter`: `FAQ_EN_License_server_-_activating_a_license_offline_on_the_serv.pdf`
@@ -740,6 +854,7 @@ Maintenance rule:
 - TR / `License & Activation`: `faq-softlock-SSS-Allplan-Lisansinin-Kayitlandirma-İşlemi.pdf`
 
 ### Result
+
 - Dataset scan result:
   - discovered 5 new files
   - checked 40 existing files
@@ -752,6 +867,7 @@ Maintenance rule:
   - embedding distribution: `3072 / v2_2` only
 
 ### Search smoke
+
 - DE license borrowing tracking query returned `FAQ_DE_Lizenzserver_-_Lizenz_ausleihen_Nachverfolgung_welche_Ben.pdf` first.
 - DE license-server offline activation query returned `FAQ_DE_Lizenzserver_-_Lizenz_offline_am_Server_aktivieren_und_zu.pdf` first when the query explicitly targeted server-side offline activation.
 - EN license-server offline activation query returned `FAQ_EN_License_server_-_activating_a_license_offline_on_the_serv.pdf` first.
@@ -759,9 +875,11 @@ Maintenance rule:
 - TR Allplan license registration query returned `faq-softlock-SSS-Allplan-Lisansinin-Kayitlandirma-İşlemi.pdf` first.
 
 ### Note
+
 - A broader DE query mentioning both offline activation and return (`zurueckgeben`) correctly preferred the workstation/offline activation-return PDF from Batch 004 over the server-specific Batch 007 PDF. This is expected; server-specific wording ranks the Batch 007 source first.
 
 ### Remaining
+
 - Continue with Batch 008 using the same sequential, low-rate import pattern.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
@@ -769,6 +887,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 PDF Batch 008 Completed
 
 ### Batch 008 files
+
 - DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_-_Lizenz_offline_am_Server_aktualisieren.pdf`
 - DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_-_Lizenzen_ueber_VPN_beziehen_.pdf`
 - EN / `License Server & CodeMeter`: `FAQ_EN_License_server_-_updating_a_license_offline_on_the_server.pdf`
@@ -776,6 +895,7 @@ Maintenance rule:
 - TR / `License & Activation`: `faq-softlock-Softlock-Destek-2006.pdf`
 
 ### Result
+
 - Dataset scan result:
   - discovered 5 new files
   - checked 45 existing files
@@ -788,6 +908,7 @@ Maintenance rule:
   - embedding distribution: `3072 / v2_2` only
 
 ### Search smoke
+
 - DE license-server offline update query returned `FAQ_DE_Lizenzserver_-_Lizenz_offline_am_Server_aktualisieren.pdf` first.
 - DE license server via VPN query returned `FAQ_DE_Lizenzserver_-_Lizenzen_ueber_VPN_beziehen_.pdf` first.
 - EN license-server offline update query returned `FAQ_EN_License_server_-_updating_a_license_offline_on_the_server.pdf` first.
@@ -795,6 +916,7 @@ Maintenance rule:
 - TR Softlock support query returned `faq-softlock-Softlock-Destek-2006.pdf` first.
 
 ### Remaining
+
 - Continue with Batch 009 using the same sequential, low-rate import pattern.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
 - `apps/backend/openapi.json` remains an unrelated modified artifact.
@@ -802,12 +924,14 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 PDF Batch 009 Completed
 
 ### Runtime restart
+
 - After a local machine restart, both backend and frontend were down.
 - Backend restarted with `pnpm --filter @aluplan/backend start`.
 - Frontend restarted on `http://localhost:3000`.
 - Backend health returned `ok` with database, Redis, and BullMQ all up.
 
 ### Batch 009 files
+
 - DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_-_Zugriffsrechte_von_Arbeitsplaetzen_fuer_ei.pdf`
 - DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_automatisch_finden_oder_zusaetzlichen_Server.pdf`
 - DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzserver_und_oder_Lizenzen_aktualisieren_.pdf`
@@ -815,6 +939,7 @@ Maintenance rule:
 - EN / `License Server & CodeMeter`: `FAQ_EN_License_server_installation_failed.pdf`
 
 ### Result
+
 - Dataset scan result:
   - discovered 5 new files
   - checked 50 existing files
@@ -831,6 +956,7 @@ Maintenance rule:
   - corpus embedding distribution: `3072 / v2_2` only
 
 ### Search smoke
+
 - DE license-server access-rights query returned `FAQ_DE_Lizenzserver_-_Zugriffsrechte_von_Arbeitsplaetzen_fuer_ei.pdf` first.
 - DE license-server update query returned `FAQ_DE_Lizenzserver_und_oder_Lizenzen_aktualisieren_.pdf` first.
 - EN obtain-license-via-VPN query returned `FAQ_EN_License_server_-_obtain_licenses_via_VPN_.pdf` first.
@@ -838,6 +964,7 @@ Maintenance rule:
 - DE automatic/additional license-server query initially tied with other license-server docs at capped score `1`; title/keyword-specific queries returned `FAQ_DE_Lizenzserver_automatisch_finden_oder_zusaetzlichen_Server.pdf` first.
 
 ### Remaining
+
 - Continue with Batch 010 using the same sequential, low-rate import pattern.
 - Watch capped-score ties among very similar license-server FAQs; source title/metadata still resolves the specific document when the query is explicit.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
@@ -846,6 +973,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 PDF Batch 010 Completed
 
 ### Batch 010 files
+
 - DE / `License Server & CodeMeter`: `FAQ_DE_Lizenzservereinstellungen_auf_mehrere_Rechner_verteilen.pdf`
 - DE / `License Server & CodeMeter`: `FAQ_DE_Rueckgabe_von_Einzelplatzlizenzen_am_Lizenzserver.pdf`
 - EN / `License Server & CodeMeter`: `FAQ_EN_Updating_license_server_and_licenses_.pdf`
@@ -853,6 +981,7 @@ Maintenance rule:
 - EN / `Performance & Hardware`: `FAQ_EN_Updating_the_driver_of_the_graphics_card.pdf`
 
 ### Result
+
 - Dataset scan result:
   - discovered 5 new files
   - checked 55 existing files
@@ -869,6 +998,7 @@ Maintenance rule:
   - corpus embedding distribution: `3072 / v2_2` only
 
 ### Search smoke
+
 - DE license-server settings distribution query returned `FAQ_DE_Lizenzservereinstellungen_auf_mehrere_Rechner_verteilen.pdf` first.
 - DE return standalone licenses at license server query returned `FAQ_DE_Rueckgabe_von_Einzelplatzlizenzen_am_Lizenzserver.pdf` first.
 - EN update license server and licenses query returned `FAQ_EN_Updating_license_server_and_licenses_.pdf` first.
@@ -876,9 +1006,11 @@ Maintenance rule:
 - EN graphics-card-driver update query returned `FAQ_EN_Updating_the_driver_of_the_graphics_card.pdf` first.
 
 ### Note
+
 - A legacy `General` category source for `FAQ_EN_Updating_the_driver_of_the_graphics_card` still appears behind the new categorized dataset source for English graphics-driver queries. The top result is correct, but legacy source cleanup/reclassification remains a future RAG quality task.
 
 ### Remaining
+
 - Continue with Batch 011 using the same sequential, low-rate import pattern.
 - Prefer remaining support-first FAQ sources, especially installation, network/workgroup, export/import, and practical license/activation issues.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
@@ -887,6 +1019,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 PDF Batch 011 Completed
 
 ### Batch 011 files
+
 - DE / `Installation & Setup`: `FAQ_DE_Allplan_Silent-Installation_ab_Allplan_2017-2021.pdf`
 - DE / `Installation & Setup`: `FAQ_DE_Infos_zur_laenderspezifischen_Installation_Allplan_2019.pdf`
 - EN / `Installation & Setup`: `FAQ_EN_Installing_loopback_adapter_for_a_stand-alone_version_wit.pdf`
@@ -894,6 +1027,7 @@ Maintenance rule:
 - EN / `Network & Workgroup`: `FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf`
 
 ### Result
+
 - Dataset scan result:
   - discovered 5 new files
   - checked 60 existing files
@@ -910,6 +1044,7 @@ Maintenance rule:
   - corpus embedding distribution: `3072 / v2_2` only
 
 ### Search smoke
+
 - DE country-specific installation query returned `FAQ_DE_Infos_zur_laenderspezifischen_Installation_Allplan_2019.pdf` first.
 - EN loopback adapter standalone query returned `FAQ_EN_Installing_loopback_adapter_for_a_stand-alone_version_wit.pdf` first.
 - DE workgroup-manager computer-add query returned `FAQ_DE_Workgroupmanager_Rechner_aufnehmen_nicht_moeglich.pdf` first.
@@ -917,10 +1052,12 @@ Maintenance rule:
 - DE silent-installation title query returned `FAQ_DE_Allplan_Silent-Installation_ab_Allplan_2017-2021.pdf` first.
 
 ### Note
+
 - A broader silent-installation query tied with the already-imported English silent-installation source at score `1`, so the English counterpart appeared first and the new German source second. Explicit title/source wording resolves the German source first.
 - The word `deutsch` alone does not currently force German source preference in raw search results; locale-aware answer generation may still choose Turkish/German response language separately.
 
 ### Remaining
+
 - Continue with Batch 012 using the same sequential, low-rate import pattern.
 - Watch multilingual near-duplicate ties when English and German FAQs cover the same topic.
 - Keep OpenAI disabled for embedding fallback; chat fallback can remain OpenAI.
@@ -929,11 +1066,13 @@ Maintenance rule:
 ## Pause Checkpoint - 2026-05-14 RAG Dataset Status
 
 ### Current answer
+
 - The full dataset operation is **not finished**.
 - The support-first, controlled seed corpus is now usable enough to pause importing and run acceptance tests.
 - Do not continue importing every remaining PDF before testing real customer questions.
 
 ### Completed import state
+
 - Completed staged batches: Batch 001 through Batch 011.
 - Last verified corpus state:
   - knowledge sources: 79
@@ -945,6 +1084,7 @@ Maintenance rule:
   - remaining ready manifest files: 62
 
 ### Remaining ready files by category
+
 - `License & Activation`: 18
 - `Project Data Management`: 18
 - `Release Package Info`: 6
@@ -956,6 +1096,7 @@ Maintenance rule:
 - `Allplan Share & Cloud`: 1
 
 ### Next recommended phase
+
 - Pause bulk import.
 - Build a 20-30 question RAG acceptance test set using real customer-style questions in Turkish, English, and German.
 - For each question, check:
@@ -966,6 +1107,7 @@ Maintenance rule:
 - Resume Batch 012 only after the test set shows which categories are actually missing.
 
 ### Import priority after acceptance test
+
 - First: `License & Activation`
 - Then: `Network & Workgroup`
 - Then: `Export Import & IFC DWG`
@@ -973,6 +1115,7 @@ Maintenance rule:
 - Last: broad manuals, release/package info, and project-data documents.
 
 ### Notes for resume
+
 - Keep OpenAI disabled for embedding fallback; OpenAI may remain chat fallback only.
 - Keep using the sequential low-rate import pattern for any future batch.
 - `apps/backend/openapi.json` remains an unrelated modified artifact and should not be mixed into RAG/memory commits.
@@ -980,6 +1123,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 Local Browser CSP Fix
 
 ### Root cause
+
 - Backend auth was healthy: `POST /api/v1/auth/login` returned 200, set `alu_at`/`alu_rt`, and `/auth/me` returned 200 after login.
 - Frontend middleware saw auth cookies correctly; `curl` with the same cookie reached `/tr/dashboard` with 200.
 - The browser flow was broken by CSP in local dev:
@@ -987,6 +1131,7 @@ Maintenance rule:
   - `connect-src` allowed `http://localhost:4000` but not `ws://localhost:4000`, so Socket.io WebSocket was blocked.
 
 ### Fix
+
 - Commit: `c99076f fix(frontend): allow local websocket and http navigation in csp`
 - Changed `apps/frontend/src/middleware.ts`:
   - added websocket origin derived from `NEXT_PUBLIC_API_URL`
@@ -994,6 +1139,7 @@ Maintenance rule:
   - limited `upgrade-insecure-requests` to production only
 
 ### Verification
+
 - `pnpm --filter @aluplan/frontend typecheck` passed.
 - GitNexus detect changes:
   - risk level: medium
@@ -1005,6 +1151,7 @@ Maintenance rule:
   - console shows `[WS] Connected to http://localhost:4000/ws`.
 
 ### Notes
+
 - The in-app Browser and Chrome plugin bridges timed out in this session, so Playwright was used as the fallback browser automation path.
 - Graphify hook ran during commit and warned that the rebuilt graph is much smaller than the existing graph; hook-generated `graphify-out/GRAPH_REPORT.md` was restored and not committed.
 - `apps/backend/openapi.json` remains the only unrelated modified artifact.
@@ -1012,6 +1159,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 RAG Quality Root Fix In Progress
 
 ### User-facing problem
+
 - During live RAG testing, Turkish customer questions could still receive weak or wrong grounded fallback answers.
 - Example problematic question:
   - `Allplan açılışta birkaç dakika bekliyor, ağ veya isim çözümleme kaynaklı olabilir mi?`
@@ -1020,6 +1168,7 @@ Maintenance rule:
   - Cached old answers could continue serving stale wrong results even after retrieval logic improved.
 
 ### Root causes found
+
 - `generateHypotheticalDocument()` injected generic causes into HyDE text, including license-related wording, which polluted non-license queries.
 - Hotinfo raw context was previously appended into retrieval text for hardware/system queries, so traces containing license paths could pull license PDFs into unrelated searches.
 - Knowledge pool search was mostly vector-led; keyword/lexical evidence from `knowledge_pool_embeddings.content` did not strongly help exact phrases like `name resolution`.
@@ -1027,6 +1176,7 @@ Maintenance rule:
 - Exact and semantic AI caches could keep returning stale pre-fix answers; cache versioning was inconsistent between `RAG_CONFIG.CACHE.VERSION` and `AiSemanticCache` exact keys.
 
 ### Code changes made in this session
+
 - `apps/backend/src/ai/utils/hypothetical-document.ts`
   - Made HyDE templates neutral and source-intent focused.
   - Removed generic license/performance/plugin cause injection.
@@ -1060,6 +1210,7 @@ Maintenance rule:
   - Added name-resolution/DNS signals to `Network & Workgroup` classification.
 
 ### Tests / verification run
+
 - Backend targeted RAG/cache tests passed:
   - `pnpm --filter @aluplan/backend test -- ai-semantic-cache.service.spec.ts ai-query.service.spec.ts embedding.service.spec.ts rag-improvements.spec.ts`
   - Result: 5 suites passed, 72 passed, 1 skipped.
@@ -1077,6 +1228,7 @@ Maintenance rule:
 - Backend was restarted from `dist/main` on port `4000`.
 
 ### Live smoke results
+
 - `/api/v1/ai/search` for the startup/name-resolution question now ranks:
   1. `[Dataset] FAQ_EN_Allplan_is_running_slow.pdf`
   2. `[Dataset] FAQ_EN_Workgroupmanager_Adding_the_computer_is_not_possible.pdf`
@@ -1087,6 +1239,7 @@ Maintenance rule:
     - `Name resolution on the network If Allplan takes several minutes to start, name resolution on the network may not work.`
 
 ### Current status / caution
+
 - This fix is **not committed yet**.
 - Important modified files currently include:
   - `apps/backend/src/config/rag.config.ts`
@@ -1106,6 +1259,7 @@ Maintenance rule:
 - Do not mix `apps/backend/openapi.json` into the RAG quality commit unless intentionally regenerated.
 
 ### Next step after resume
+
 - Re-run final quick verification:
   - backend typecheck
   - targeted RAG/cache tests
@@ -1117,11 +1271,13 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 Faz 1 Final Verification
 
 ### Additional fix before commit
+
 - `RAG_CONFIG.CACHE.VERSION` was bumped from `v7` to `v8` after the last source-reranking tweak.
 - Reason: the live endpoint returned the old `v7` exact-cache result with the previous source list, including a license source for a network/startup question.
 - The network/startup reranker now applies a stronger license-source penalty only when the query itself is not about licensing.
 
 ### Final verification run
+
 - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts ai-semantic-cache.service.spec.ts`
   - 3 suites passed, 39 passed, 1 skipped.
 - `pnpm --filter @aluplan/backend build`
@@ -1129,6 +1285,7 @@ Maintenance rule:
 - Backend restarted from the fresh `dist/main` build on port `4000`.
 
 ### Live smoke after cache v8
+
 - Startup/network Turkish query:
   - Search top 3:
     1. `[Dataset] FAQ_EN_Allplan_is_running_slow.pdf`
@@ -1146,10 +1303,12 @@ Maintenance rule:
   - Answer remains Turkish fallback summary and cites graphics driver source.
 
 ### Residual quality note
+
 - One non-license but off-intent source (`FAQ_DE_Export_Plaene_aufgeloest_uebertragen`) still appeared as the third answer source for the startup/network query.
 - This is not the original critical license contamination bug; it should be handled in the next quality phases with an acceptance query set, metadata cleanup, and stricter final source diversity/filtering.
 
 ### Graphify / GitNexus phase-end check
+
 - `graphify update .` ran successfully but warned:
   - new graph: 5605 nodes
   - existing graph: 11474 nodes
@@ -1165,6 +1324,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-14 Faz 2 Started
 
 ### Acceptance set created
+
 - Added `.ai/rag-quality/README.md`.
 - Added `.ai/rag-quality/acceptance-questions.json`.
 - The acceptance set currently contains 25 customer-like questions across Turkish, English, and German.
@@ -1176,6 +1336,7 @@ Maintenance rule:
   - answer hints that should be mentioned
 
 ### Validation
+
 - JSON parse and shape validation passed:
   - 25 questions
   - no duplicate IDs
@@ -1188,15 +1349,18 @@ Maintenance rule:
   - No changes detected.
 
 ### Next step
+
 - Execute the acceptance set against localhost and classify failures by root cause before touching more retrieval code.
 
 ## Interrupt Summary - 2026-05-14 Session Limit Checkpoint
 
 ### User request
+
 - User warned that session limit is around 30% and asked for an intermediate summary.
 - This note captures the current state so the next session can continue without losing context.
 
 ### Completed commits this session
+
 - `65d8a54 fix(rag): improve grounded retrieval relevance and cache invalidation`
   - Neutralized HyDE so it no longer injects generic license/performance/plugin causes.
   - Removed Hotinfo raw trace pollution from retrieval query.
@@ -1211,11 +1375,13 @@ Maintenance rule:
   - 25 multilingual customer-like RAG acceptance questions are now the active quality gate.
 
 ### Current working tree
+
 - Only known uncommitted file:
   - `apps/backend/openapi.json`
 - This file was already identified as an unrelated generated artifact and must not be mixed into RAG quality commits unless intentionally regenerated/restored.
 
 ### Graphify / GitNexus status
+
 - `graphify update .` was run after phases, but it repeatedly warned:
   - new graph: 5605 nodes
   - existing graph: 11474 nodes
@@ -1227,12 +1393,14 @@ Maintenance rule:
   - No changes detected.
 
 ### Services
+
 - Backend was rebuilt and restarted from `dist/main`.
 - Backend was running on `localhost:4000` at the time of the checkpoint.
 - Redis and Postgres were reachable.
 - Frontend status was not changed in this checkpoint.
 
 ### Acceptance run state
+
 - Faz 3 started as retrieval-only dry-run through `/api/v1/ai/search`.
 - First run:
   - 25 total
@@ -1244,6 +1412,7 @@ Maintenance rule:
   - 8 failed
 
 ### Combined acceptance signal so far
+
 - Non-throttle passes observed:
   - TR network/startup
   - TR performance
@@ -1283,6 +1452,7 @@ Maintenance rule:
   - `rag-tr-duplicate-canonical-001`
 
 ### Important interpretation
+
 - Current failures are not the original critical bug.
 - The original critical bug was Turkish network/startup query receiving license-contaminated answer sources. That is fixed in live smoke after cache v8:
   - top source: `[Dataset] FAQ_EN_Allplan_is_running_slow.pdf`
@@ -1295,6 +1465,7 @@ Maintenance rule:
   - duplicate/pilot canonical preference needs a measured check.
 
 ### Recommended next step after resume
+
 1. Do not change retrieval code immediately.
 2. Finish Faz 3 by rerunning only the 5 unresolved `429` questions after throttle cooldown, one by one or with a larger delay.
 3. Write a small local acceptance runner script or npm task that:
@@ -1309,6 +1480,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-15 Faz 3 Completed
 
 ### Resume state
+
 - Continued from checkpoint `99a76b2 docs(memory): add rag quality checkpoint`.
 - Working tree still had only the known unrelated `apps/backend/openapi.json` artifact before Faz 3 edits.
 - Backend was not running at resume, so it was started with:
@@ -1317,6 +1489,7 @@ Maintenance rule:
 - Redis and Postgres were reachable.
 
 ### Unresolved acceptance questions rerun
+
 - The 5 previously unresolved `429` questions were rerun with a 15 second delay.
 - Result:
   - 5 total
@@ -1325,12 +1498,14 @@ Maintenance rule:
   - 0 throttle failures
 
 ### Final Faz 3 acceptance result
+
 - 25 total questions.
 - 19 passed.
 - 6 real quality/data failures.
 - 0 remaining throttle-only failures.
 
 ### Real failures
+
 - `rag-tr-project-backup-001`
   - Top source: `[Dataset] FAQ_TR_Lisansı_yeni_bir_bilgisayara_veya_baska_bir_bilgisayara_aktarma.pdf`
   - Root cause: likely project backup/data-management source gap or over-broad acceptance wording.
@@ -1351,6 +1526,7 @@ Maintenance rule:
   - Root cause: duplicate/pilot source outranks canonical FAQ source.
 
 ### Files added
+
 - `.ai/rag-quality/run-acceptance.mjs`
   - Local retrieval-only acceptance runner.
   - Handles login, CSRF headers, throttled delay, JSON output, and ID filtering.
@@ -1358,6 +1534,7 @@ Maintenance rule:
   - Human-readable Faz 3 result and failure classification.
 
 ### Verification
+
 - Smoke-tested the runner with:
   - `node .ai/rag-quality/run-acceptance.mjs --ids rag-tr-network-startup-001 --delay-ms 1000 --output /private/tmp/rag-acceptance-smoke.json`
 - Result:
@@ -1367,6 +1544,7 @@ Maintenance rule:
   - 0 throttle
 
 ### Next step
+
 - Commit Faz 3 docs/tooling/memory separately.
 - Then start Faz 4 with the smallest product-code fix:
   - canonical/duplicate source preference,
@@ -1376,12 +1554,14 @@ Maintenance rule:
 ## Follow-up - 2026-05-15 Faz 4 Target Fix
 
 ### Change
+
 - Updated `EmbeddingService` ranking with two narrow deterministic multipliers:
   - negated license intent handling for phrases like `lisans değil`, `not license`, `keine lizenz`.
   - pilot/copy source quality demotion so canonical FAQ sources outrank pilot duplicates.
 - Updated `.ai/rag-quality/run-acceptance.mjs` so source hint matching includes retrieved content, not only title/category/metadata.
 
 ### Tests
+
 - `pnpm --filter @aluplan/backend test -- embedding.service.spec.ts`
   - 17 passed.
 - `pnpm --filter @aluplan/backend typecheck`
@@ -1390,6 +1570,7 @@ Maintenance rule:
   - Passed.
 
 ### Live target acceptance
+
 - `rag-tr-general-demotion-001`
   - PASS.
   - Top source changed to `[Dataset] FAQ_EN_Allplan_is_running_slow.pdf`.
@@ -1398,11 +1579,13 @@ Maintenance rule:
   - Top source changed to `[Dataset] FAQ_DE_Grafikkartentreiber_aktualisieren.pdf`.
 
 ### Live regression acceptance
+
 - `rag-tr-network-startup-001`: PASS.
 - `rag-tr-license-offline-001`: PASS.
 - `rag-en-license-server-001`: PASS.
 
 ### Remaining failures
+
 - Remaining known failures are dataset/acceptance-scope decisions, not immediate retrieval-code defects:
   - `rag-tr-project-backup-001`
   - `rag-tr-share-cloud-001`
@@ -1412,6 +1595,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-15 Faz 5 Source Gap Decision
 
 ### Active corpus finding
+
 - Queried active `knowledge_sources` for Share/Cloud, Hotinfo, backup/project, and ticket/support/help terms.
 - Active pool has weak/no canonical source coverage for:
   - Allplan Share / Cloud usage.
@@ -1420,6 +1604,7 @@ Maintenance rule:
   - AI-optional ticket creation product help.
 
 ### Archive candidates found
+
 - Allplan Share / Cloud PDF candidates exist under `.archive/rag-incoming/pdf/`:
   - `Allplan_Share_2022_Manual.pdf`
   - `Allplan_Share_2023_Manual.pdf`
@@ -1434,6 +1619,7 @@ Maintenance rule:
   - `bilgi-bankasi-Hotlinetools.md`
 
 ### Decision
+
 - Do not broaden retrieval logic to solve missing-source questions.
 - Use Batch 012 for selected canonical PDFs covering:
   - Allplan Share & Cloud
@@ -1443,11 +1629,13 @@ Maintenance rule:
   - AI-optional ticket creation is product-help content, not vendor RAG content.
 
 ### File added
+
 - `.ai/rag-quality/source-gap-plan-2026-05-15.md`
 
 ## Follow-up - 2026-05-15 Batch 012 Source-Gap Import
 
 ### Scope
+
 - Imported only selected canonical PDFs for the confirmed source gaps:
   - `dataset/en/allplan-share-cloud/batch-012/Allplan_Share_2023_Manual.pdf`
   - `dataset/en/allplan-share-cloud/batch-012/System_Requirements_Allplan_Share_EN_GmbH.pdf`
@@ -1457,6 +1645,7 @@ Maintenance rule:
 - `apps/backend/openapi.json` remained an unrelated uncommitted artifact and was not included.
 
 ### Dataset scan and sync
+
 - Dataset scan result:
   - 4 new files discovered.
   - 65 existing files checked.
@@ -1473,6 +1662,7 @@ Maintenance rule:
   - total `179` embeddings.
 
 ### Targeted acceptance
+
 - `rag-tr-project-backup-001`: PASS.
   - Top source: `[Dataset] FAQ_DE_Projektaustausch_incl_aller_Einstellungen_mit_Partnerbuer.pdf`
 - `rag-tr-share-cloud-001`: PASS.
@@ -1481,10 +1671,12 @@ Maintenance rule:
 - Throttle count: 0.
 
 ### Remaining source decisions
+
 - `rag-tr-hotinfo-001` still needs a canonical source decision. Current confirmed candidates are MD-only, so do not import them into the PDF-first corpus without an explicit exception.
 - `rag-tr-no-ai-ticket-001` should be handled as product-help/app copy, not vendor PDF RAG.
 
 ### Phase-end mapping
+
 - Graphify was run with `graphify update .`.
 - Graphify warning repeated:
   - existing `graph.json`: 11474 nodes.
@@ -1497,6 +1689,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-15 Hotinfo Diagnostic Context Phase
 
 ### Problem clarified
+
 - User clarified that Hotinfo is not a canonical vendor RAG source.
 - Correct model:
   - uploaded `.hxl` = ticket-specific diagnostic context about the customer's machine.
@@ -1504,12 +1697,14 @@ Maintenance rule:
   - AI diagnosis should combine both without importing user Hotinfo into the global knowledge pool.
 
 ### Code findings
+
 - Frontend `tickets/new` uploads `.hxl` to `/customers/me/hotinfo`, stores parsed profile Hotinfo, and sends confirmed `hotinfoContext` to `/ai/query`.
 - Ticket creation stores `hotinfoContext` into `Ticket.hotinfoSnapshot`.
 - Backend prompt context already included a basic Hotinfo section, but missed several useful diagnostic fields.
 - Retrieval correctly avoided raw Hotinfo trace pollution, but explicit Hotinfo analysis lacked safe system-signal enrichment.
 
 ### Change
+
 - `AiQueryService` now builds safe Hotinfo retrieval signals for explicit Hotinfo/system analysis:
   - includes OS, Allplan version, GPU/driver/OpenGL, RAM/VRAM, resolution, conflicting processes, security services, and an error-present marker.
   - excludes raw trace/path strings such as `_SEC.NSE` and `License` path fragments from the retrieval query.
@@ -1517,6 +1712,7 @@ Maintenance rule:
   - OpenGL, license type, Allplan hotfix, installed modules/worksets, security services, printers/default printer, conflicting processes, and truncated error trace.
 
 ### Verification
+
 - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts prompt-context-builder.service.pbt.spec.ts`
   - 3 suites passed.
   - 36 passed, 1 skipped.
@@ -1526,6 +1722,7 @@ Maintenance rule:
   - Passed after GitNexus reported high risk.
 
 ### Phase-end mapping
+
 - GitNexus impact:
   - `AiQueryService`: `MEDIUM`, 34 upstream impacts, 0 affected processes.
   - `PromptContextBuilderService`: `MEDIUM`, 32 upstream impacts, 0 affected processes.
@@ -1539,6 +1736,7 @@ Maintenance rule:
   - `graphify-out/GRAPH_REPORT.md` was restored and not accepted into git.
 
 ### Next step
+
 - Browser/manual flow:
   - upload `.hxl` from the customer ticket form.
   - ask a Hotinfo-specific AI diagnosis question.
@@ -1548,6 +1746,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-15 IFC Fallback Answer Quality
 
 ### Problem observed
+
 - User asked in Turkish: `IFC aktarımında hangi ayarlar kritik?`
 - Because model generation was delayed, deterministic fallback returned an English raw excerpt:
   - `The model response was delayed...`
@@ -1555,6 +1754,7 @@ Maintenance rule:
 - This was not useful for a customer-facing support answer.
 
 ### Change
+
 - Improved deterministic fallback in `AiQueryService`:
   - supports locale variants such as `tr-TR`.
   - detects Turkish query language when explicit language is missing or malformed.
@@ -1568,6 +1768,7 @@ Maintenance rule:
     - advanced geometry/quantity/element options.
 
 ### Verification
+
 - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts`
   - 2 suites passed.
   - 33 passed, 1 skipped.
@@ -1579,22 +1780,26 @@ Maintenance rule:
 - Health check passed at `/api/v1/health`.
 
 ### Remaining note
+
 - This improves the fallback path. The deeper product decision remains whether sync diagnosis timeout should be raised or whether the UI should communicate fallback mode more softly.
 
 ## Follow-up - 2026-05-15 DWG/DXF Fallback Source Hygiene
 
 ### Problem observed
+
 - User asked in Turkish: `DWG/DXF export sırasında layer ve referans dosyaları nasıl korunur?`
 - Customer fallback answer incorrectly drifted to the IFC checklist because fallback intent detection mixed the user query with retrieved source title/excerpt.
 - Customer fallback also exposed raw `Kaynak:` and `İlgili pasaj:` lines, which is useful for traceability but not suitable as end-user support copy.
 
 ### Change
+
 - `AiQueryService` now passes `showSourceDetails: isStaff` into deterministic fallback generation.
 - Customer fallback answers no longer include raw source/passage lines; staff/admin fallback traceability is preserved.
 - Turkish fallback intent detection now uses query-only intent for IFC/DWG/DXF/graphics-driver special cases.
 - Added a DWG/DXF-specific Turkish fallback checklist for layer/katman, reference/XRef, export scope, scale/coordinates, and final viewer validation.
 
 ### Verification
+
 - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts`
   - 2 suites passed.
   - 34 passed, 1 skipped.
@@ -1612,20 +1817,24 @@ Maintenance rule:
   - answer text did not contain `Kaynak:` or `İlgili pasaj:`.
 
 ### Remaining note
+
 - This fixes customer-facing fallback hygiene and one concrete DWG/DXF drift case. Broader RAG quality work should still evaluate retrieval source coverage and answer freshness with the planned regression question set.
 
 ## Follow-up - 2026-05-15 Live RAG Acceptance Closure
 
 ### Goal
+
 - Decide whether the current support-first vendor PDF RAG corpus can be treated as stable enough to stop broad RAG changes.
 - Use API-driven validation while preserving quota-safe pacing.
 
 ### Execution
+
 - Ran `.ai/rag-quality/run-acceptance.mjs` against localhost API with 15000ms delay.
 - Added `rag-tr-dwg-layer-reference-001` to the acceptance set because it represents the recently observed DWG/DXF layer/reference failure.
 - Added `.ai/rag-quality/run-answer-smoke.mjs` for focused customer-facing `/ai/query?wait=true` answer checks.
 
 ### Retrieval results
+
 - Initial live run:
   - 25 total.
   - 23 pass.
@@ -1640,6 +1849,7 @@ Maintenance rule:
   - 2 failures remain out-of-scope for vendor PDF RAG.
 
 ### Known out-of-scope failures
+
 - `rag-tr-hotinfo-001`
   - Hotinfo is ticket-specific diagnostic context, not global vendor PDF RAG.
   - Keep outside vendor RAG acceptance unless a canonical Hotinfo PDF/TXT support source is approved.
@@ -1648,6 +1858,7 @@ Maintenance rule:
   - Move to product-flow acceptance, not vendor PDF RAG.
 
 ### Customer answer smoke
+
 - Ran `.ai/rag-quality/run-answer-smoke.mjs` for:
   - `rag-tr-network-startup-001`
   - `rag-tr-graphics-driver-001`
@@ -1661,6 +1872,7 @@ Maintenance rule:
   - 0 `NO_MATCH`.
 
 ### Decision
+
 - Vendor PDF RAG can be considered stable for the current support-first corpus.
 - Do not continue broad RAG refactors right now.
 - Future source imports or retrieval/fallback changes should rerun:
@@ -1670,12 +1882,14 @@ Maintenance rule:
 ## Follow-up - 2026-05-15 Product Flow Acceptance Phase 1
 
 ### Goal
+
 - Move the two out-of-scope RAG failures into product-flow validation:
   - Hotinfo diagnostic flow.
   - AI-optional ticket creation.
 - Validate by API first before browser/UI work.
 
 ### Added
+
 - `.ai/product-flow/README.md`
 - `.ai/product-flow/acceptance-flows.json`
 - `.ai/product-flow/run-product-flow-acceptance.mjs`
@@ -1683,6 +1897,7 @@ Maintenance rule:
 - `.ai/product-flow/results-2026-05-15-phase-1.md`
 
 ### API validation
+
 - Ran `.ai/product-flow/run-product-flow-acceptance.mjs` against `http://localhost:4000/api/v1`.
 - Result:
   - 9 total.
@@ -1690,6 +1905,7 @@ Maintenance rule:
   - 0 fail.
 
 ### Passed checks
+
 - Backend health returned `200`.
 - Customer uploaded `_hotinf_.hxl`; parsed profile included:
   - Allplan 2026.
@@ -1707,6 +1923,7 @@ Maintenance rule:
 - Admin raw Hotinfo download returned `200` XML.
 
 ### Decision
+
 - Faz 1 is complete.
 - The product API supports Hotinfo context and AI-optional ticket creation.
 - Next product-flow phase should verify the same behavior in the browser/UI:
@@ -1718,15 +1935,18 @@ Maintenance rule:
 ## Follow-up - 2026-05-15 Product Flow Acceptance Phase 2
 
 ### Goal
+
 - Verify the critical Hotinfo + AI-optional ticket flow through the real browser UI, not only API calls.
 - Keep this as product-flow acceptance, separate from vendor PDF RAG quality.
 
 ### Added
+
 - `.ai/product-flow/run-product-flow-ui-smoke.mjs`
 - `.ai/product-flow/results-2026-05-15-phase-2-ui-20260515041454.json`
 - `.ai/product-flow/results-2026-05-15-phase-2-ui-20260515041454.md`
 
 ### UI validation
+
 - Ran `.ai/product-flow/run-product-flow-ui-smoke.mjs` through the frontend workspace against:
   - frontend: `http://localhost:3000`
   - backend: `http://localhost:4000/api/v1`
@@ -1736,6 +1956,7 @@ Maintenance rule:
   - 0 fail.
 
 ### Passed checks
+
 - Backend health returned `200`.
 - Customer logged in through the UI as `e2e-customer@aluplan.com`.
 - Customer opened `/tr/tickets/new`.
@@ -1750,6 +1971,7 @@ Maintenance rule:
 - Admin saw the Hotinfo snapshot in the ticket detail sidebar.
 
 ### Notes
+
 - The runner was hardened to avoid a false-positive where `/tr/tickets/new` matched a broad `/tr/tickets/` URL predicate.
 - It now waits for the real `POST /api/v1/tickets` response and extracts the created ticket id.
 - Live notification behavior was not included in this smoke result; treat it as the next product-flow sub-phase if it remains a priority.
@@ -1759,23 +1981,27 @@ Maintenance rule:
 ## Follow-up - 2026-05-15 Customer Answer Quality Phase 3
 
 ### Trigger
+
 - User tested: `How do I borrow a license temporarily from the license server?`
 - Customer-facing AI diagnosis fell back to a raw excerpt-style answer.
 - Admin Copilot draft produced a much better structured solution.
 
 ### Root cause
+
 - Customer `/ai/query?wait=true` used synchronous generation with a short timeout.
 - `AiQueryService.SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS` was `6000`.
 - When the model timed out, deterministic fallback only had special handling for a few intents such as IFC, DWG/DXF, and graphics driver update.
 - License borrowing had no structured fallback, so the customer saw a low-quality excerpt even though retrieval found the right document.
 
 ### Changes
+
 - Increased synchronous customer diagnosis generation timeout from `6000ms` to `15000ms`.
 - Added structured deterministic fallback for license borrowing intent in Turkish.
 - Added structured deterministic fallback for license borrowing intent in English.
 - Added regression coverage for both Turkish UI-language and English requested-language variants.
 
 ### Validation
+
 - GitNexus impact for `AiQueryService`:
   - risk: `MEDIUM`
   - direct impacted files include AI controller, ticket service, AI query processor, AI copilot service.
@@ -1791,6 +2017,7 @@ Maintenance rule:
 - Graphify update was attempted, but it again warned about a smaller rebuilt graph (`5613` nodes vs existing `11474`); `graphify-out/GRAPH_REPORT.md` was restored and not committed.
 
 ### Decision
+
 - This is the first narrow step toward admin-quality customer answers.
 - Retrieval is not the issue for this case; answer synthesis/fallback quality was the issue.
 - Next improvement should generalize this from individual fallback intents into a shared customer/admin answer quality contract, but only after this narrow fix is live-tested.
@@ -1798,12 +2025,14 @@ Maintenance rule:
 ## Follow-up - 2026-05-15 Answer Drift Reset Phase 4
 
 ### Trigger
+
 - User observed that customer and admin answers use different structures and asked why the two sides do not use the same system.
 - Live evidence:
   - customer answer now has a good structured fallback for license borrowing.
   - admin Copilot draft still drifted toward unrelated root-cause troubleshooting for a how-to question.
 
 ### Root cause
+
 - Customer query flow used `MASTER_DIAGNOSIS_PROMPT`.
 - Admin Copilot imported `MASTER_DIAGNOSIS_PROMPT` but then appended its own shortened `STEP 7` output block.
 - The two paths did not share a single answer quality contract for:
@@ -1813,6 +2042,7 @@ Maintenance rule:
   - no raw source/excerpt leakage in customer answers.
 
 ### Changes
+
 - Added `apps/backend/src/ai/ai-answer-contract.ts`.
 - Added shared `buildSupportAnswerContractPrompt(...)`.
 - Customer `AiQueryService` now builds system prompts through the shared contract.
@@ -1822,6 +2052,7 @@ Maintenance rule:
   - `AiCopilotService` prompt now asserts the shared answer contract is present.
 
 ### Validation
+
 - GitNexus impact before edits:
   - `AiQueryService`: `MEDIUM`
   - `AiCopilotService`: `LOW`
@@ -1836,6 +2067,7 @@ Maintenance rule:
 - Graphify update was attempted, but it again warned about a smaller rebuilt graph (`5617` nodes vs existing `11474`); `graphify-out/GRAPH_REPORT.md` was restored and not committed.
 
 ### Decision
+
 - This phase does not change retrieval, DB schema, embeddings, or provider routing.
 - It resets customer/admin answer-format drift at the prompt-contract layer.
 - Next live test should compare the same ticket question on both customer answer and admin ANN draft after backend rebuild/reload.
@@ -1843,12 +2075,14 @@ Maintenance rule:
 ## Follow-up - 2026-05-15 Ticket Interaction Idempotency Phase 5
 
 ### Trigger
+
 - User live-tested the improved customer answer for:
   - `How do I borrow a license temporarily from the license server?`
 - Customer answer quality was acceptable and stayed on the license borrowing procedure.
 - Creating a ticket from the same AI interaction failed with HTTP 500.
 
 ### Root cause
+
 - `Ticket.interactionId` is intentionally unique in Prisma/DB.
 - The frontend can retry ticket creation with the same `interactionId`.
 - `TicketsService.create(...)` did not treat duplicate interaction ticket creation as an idempotent retry.
@@ -1856,6 +2090,7 @@ Maintenance rule:
   - `Unique constraint failed on the fields: (interaction_id)`.
 
 ### Changes
+
 - `TicketsService.create(...)` now checks whether the AI interaction is already linked to a ticket before creating a new one.
 - If the same user retries with the same interaction, the existing ticket is returned with `alreadyCreated: true`.
 - A race condition on `interaction_id` uniqueness is also handled by catching Prisma `P2002` and returning the existing ticket when safe.
@@ -1863,6 +2098,7 @@ Maintenance rule:
 - New ticket UI now skips duplicate initial message/attachment upload when the backend returns `alreadyCreated: true`.
 
 ### Validation
+
 - Targeted backend test passed:
   - `pnpm --filter @aluplan/backend test -- tickets.service.spec.ts`
 - Backend typecheck passed:
@@ -1877,6 +2113,7 @@ Maintenance rule:
   - Graphify should still be attempted before commit; if the graph rebuild is smaller than the existing graph, restore `graphify-out/GRAPH_REPORT.md` and do not commit graph output.
 
 ### Decision
+
 - This phase is not a RAG retrieval change.
 - It removes a ticket-flow drift where an otherwise successful AI answer could not become a ticket because the interaction retry path was not idempotent.
 - Next live validation: user should click ticket creation again from the same customer screen and verify it routes to the existing/new ticket without 500.
@@ -1884,17 +2121,20 @@ Maintenance rule:
 ## Follow-up - 2026-05-15 Customer Dashboard 403 Cleanup
 
 ### Trigger
+
 - User reported a browser console error before retesting ticket creation:
   - `API Error [403]`
   - stack pointed to `DashboardClient.useEffect.loadData`.
 
 ### Root cause
+
 - Customer dashboard loaded three requests in parallel for every role.
 - One request was `/api/v1/ai/health-metrics`.
 - Backend correctly protects that endpoint with `ADMIN | SUPERUSER`.
 - Customer users therefore received a valid 403, but frontend still produced console noise.
 
 ### Changes
+
 - `DashboardClient` now computes user role before loading dashboard data.
 - Customer/viewer users skip `api.ai.getHealthMetrics()`.
 - Admin/superuser users still load AI health metrics.
@@ -1903,18 +2143,21 @@ Maintenance rule:
   - admin role does call `getHealthMetrics`.
 
 ### Validation
+
 - Frontend dashboard spec passed:
   - `pnpm --filter @aluplan/frontend exec vitest run 'src/app/[locale]/(dashboard)/dashboard/DashboardClient.spec.tsx'`
 - Frontend typecheck passed:
   - `pnpm --filter @aluplan/frontend typecheck`
 
 ### Decision
+
 - Backend RBAC stays strict.
 - This is a frontend role-aware data loading fix, not a security relaxation.
 
 ## Follow-up - 2026-05-15 Rich Message Composer MVP
 
 ### Trigger
+
 - `.kiro/specs/rich-text-editor` ihtiyacı incelendi.
 - Tam spec ilk faz için fazla büyük olduğu için güvenli MVP uygulandı:
   - ticket detayında admin/customer rich reply composer
@@ -1923,6 +2166,7 @@ Maintenance rule:
   - Prisma migration olmadan mevcut `TicketMessage.message` alanında sanitized HTML saklama
 
 ### Changes
+
 - Frontend:
   - `RichTextEditor` eklendi: TipTap `StarterKit`, placeholder, toolbar, `Ctrl/Cmd+Enter` ile gönderme.
   - `RichTextRenderer` eklendi: eski plain text mesajları bozmadan, rich HTML mesajları sanitize ederek render eder.
@@ -1937,6 +2181,7 @@ Maintenance rule:
   - `TicketsService.addMessage` kaydetmeden önce ikinci kez rich-text sanitizasyon yapar ve boş kalan mesajı reddeder.
 
 ### Validation
+
 - Frontend targeted tests passed:
   - `pnpm --filter @aluplan/frontend exec vitest run src/lib/content-sanitizer.spec.ts src/lib/markdown-to-html.spec.ts src/components/ui/rich-text-renderer.spec.tsx src/components/ui/rich-text-editor.spec.tsx`
   - 4 files, 13 tests passed.
@@ -1950,12 +2195,14 @@ Maintenance rule:
   - `pnpm i18n:check`
 
 ### Decision
+
 - First phase stores sanitized HTML in the existing `message` field.
 - No Prisma `contentFormat` migration was added.
 - Global XSS protection remains strict; rich HTML is a narrow exception for ticket message bodies only.
 - `apps/backend/openapi.json` remains a separate drift and was not part of this phase.
 
 ### Next
+
 - Manual smoke should verify:
   - admin formatted reply send/render
   - customer formatted reply send/render
@@ -1966,6 +2213,7 @@ Maintenance rule:
 ## Follow-up - 2026-05-15 RAG Fallback + AI Operations Topology Plan
 
 ### Trigger
+
 - Customer-facing AI diagnosis still fell back to raw-ish excerpts for unknown intents, even when retrieval found the right document.
 - The system already has approved learning surfaces:
   - `/en/faq-learning`
@@ -1981,6 +2229,7 @@ Maintenance rule:
   - `/en/admin/settings?tab=ai`
 
 ### Decisions
+
 - Do not create a second learning system.
 - Connect published FAQ learning outputs into the main RAG retrieval path.
 - Use product/category keywords as deterministic fallback signals, not only diagnosis/prompt context.
@@ -1990,6 +2239,7 @@ Maintenance rule:
 - Treat AI Operations Dashboard consolidation as a separate frontend/ops debt phase after RAG/fallback stabilization.
 
 ### Planned Backend Work
+
 - Add approved `faq_entries` to main search as a first-class `FAQ` source.
 - Keep customer retrieval limited to published/public FAQ entries.
 - Allow staff/admin retrieval to include internal approved FAQ entries where appropriate.
@@ -2000,6 +2250,7 @@ Maintenance rule:
 - Enrich AI interaction context with source/fallback strategy details for AI health/intelligence dashboards.
 
 ### Restore Point
+
 - Before product-code changes, create a dedicated docs/memory commit and restore checkpoint:
   - commit: `docs(memory): record rag fallback topology plan`
   - checkpoint branch: `restore/rag-fallback-before-integration-20260515`
@@ -2008,12 +2259,14 @@ Maintenance rule:
 ## Restore Point - 2026-05-16 Customer/Agent RAG Answer Parity
 
 ### Trigger
+
 - Customer tarafında RAG yanıtları fallback'e erken düşüyor ve admin Copilot yanıtlarından belirgin biçimde daha zayıf kalıyordu.
 - Örnek: "Lisans sunucusunu yeni bir makineye taşımak istiyorum, süreç nedir?"
   - Customer: 15 saniye sonunda kısa/mixed-language deterministic fallback.
   - Admin: 60 saniyelik Copilot synthesis ile detaylı Türkçe prosedür.
 
 ### Implemented
+
 - `AiQueryService` synchronous customer diagnosis generation timeout'u 15s -> 60s yapıldı.
 - Cevap dili URL locale yerine soru diline göre belirlenir hale getirildi.
   - `/en` UI altında Türkçe soru Türkçe answer contract kullanır.
@@ -2021,6 +2274,7 @@ Maintenance rule:
 - RBAC seed/auth refresh drift'i düzeltildi; CUSTOMER ve AGENT rolleri `ticket:read` dahil gerekli ticket izinlerine sahip.
 
 ### Validation
+
 - Backend:
   - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts --runInBand`
   - `pnpm --filter @aluplan/backend typecheck`
@@ -2035,11 +2289,13 @@ Maintenance rule:
 - User confirmed the latest customer flow works.
 
 ### Commits
+
 - `74c859f fix(auth): restore customer ticket permissions`
 - `457076a fix(frontend): refresh stale permission tokens`
 - `3b7b82d fix(rag): align customer answer synthesis with agent flow`
 
 ### Restore Policy
+
 - This point is considered a stable restore checkpoint for RAG customer/admin answer parity.
 - `apps/backend/openapi.json` is still unrelated drift and must not be mixed into product/RAG commits.
 - Graphify still warns that a fresh graph has about 5.6k nodes vs existing 11.4k nodes; graph output should not be force-overwritten until chunk/source mismatch is understood.
@@ -2047,10 +2303,12 @@ Maintenance rule:
 ## Follow-up - 2026-05-16 CRM Live Delta Notifications
 
 ### Trigger
+
 - Dynamics 365 delta sync was updating local account/contact records and writing `crm_change_logs`, but the admin experience still required watching the CRM page or pressing "Check CRM Updates" to feel confident.
 - User expectation: CRM remains source of truth; support DB updates automatically; admins receive live notification and can see refreshed change history.
 
 ### Implemented
+
 - CRM scheduled delta sync default interval changed from 15 minutes to 5 minutes.
 - Existing backend `crm:changes` and `crm:sync_error` websocket events were connected to the global frontend notification listener.
 - Admins now receive localized toast notifications for CRM account/customer changes and CRM sync errors.
@@ -2058,6 +2316,7 @@ Maintenance rule:
 - CRM persistent notification recipient lookup now accepts uppercase and lowercase role names, preventing admin notification misses caused by role-name casing.
 
 ### Validation
+
 - Backend:
   - `pnpm --filter @aluplan/backend test -- notifications.gateway.spec.ts crm-record-sync.service.spec.ts`
   - `pnpm --filter @aluplan/backend typecheck`
@@ -2070,6 +2329,7 @@ Maintenance rule:
   - `/api/v1/health` returned `200`.
 
 ### Notes
+
 - Manual "Check CRM Updates" remains useful as an immediate force-check button.
 - Automatic polling is still delta-poll based, not Dataverse webhook push. Webhook registration can be a later phase if true instant sync is required.
 - Existing Resend `401 invalid API key` email queue noise is unrelated and should be handled in a separate email/config cleanup phase.
@@ -2077,10 +2337,12 @@ Maintenance rule:
 ## Deployment Note - 2026-05-16 Email Branding Logo URLs
 
 ### Trigger
+
 - Announcement and transactional email templates now use branding/contact settings dynamically.
 - Uploaded logo must be visible inside real email clients, not only inside the admin UI preview.
 
 ### Must Remember Before Deploy
+
 - Production must set a public HTTPS backend API URL:
   - `API_URL=https://api.<domain>/api/v1`
 - This URL is used to build email-safe logo URLs such as:
@@ -2089,6 +2351,7 @@ Maintenance rule:
 - After deploy, upload/save the logo once from admin settings so `branding.logo_url` stores the new public URL shape.
 
 ### Deploy Verification
+
 - Unauthenticated asset check:
   - `curl -I https://api.<domain>/api/v1/branding/assets/<logo-key>` should return a successful image response or a valid public redirect.
 - Email HTML check:
@@ -2097,14 +2360,17 @@ Maintenance rule:
   - Send one test announcement or transactional email to Gmail/Outlook and confirm the logo renders.
 
 ### Related Commit
+
 - `798cc52 fix(email): use public branding logo urls`
 
 ## Follow-up - 2026-05-16 Remotion Promo Video
 
 ### Trigger
+
 - User requested a 10-second dynamic motion graphic promo video using live application screenshots.
 
 ### Implemented
+
 - Added isolated Remotion workspace app:
   - `apps/promo-video`
   - Composition: `AluplanPromo`
@@ -2118,6 +2384,7 @@ Maintenance rule:
   - `apps/promo-video/out/preview.png`
 
 ### Validation
+
 - Live app screenshots were captured from `localhost:3000` with backend auth from `localhost:4000`.
 - Remotion still preview succeeded:
   - `pnpm --filter @aluplan/promo-video still`
@@ -2126,12 +2393,14 @@ Maintenance rule:
   - 300/300 frames rendered and encoded.
 
 ### Notes
+
 - `ffprobe` is not installed in the shell, so duration was verified from Remotion composition/render output rather than external media probing.
 - Backend `/api/v1/health` returned 503 during the session because storage threshold health was down, but auth and screenshot routes were usable.
 
 ## Deployment Readiness - 2026-05-17 Repo Hygiene and Env Blockers
 
 ### Completed
+
 - Removed local agent/tooling dumps from Git tracking so they will disappear from the remote repository after push:
   - `.agent/`
   - `.agents/`
@@ -2150,12 +2419,14 @@ Maintenance rule:
   - `docs/PRODUCTION_SECRETS.md`
 
 ### Validation
+
 - `pnpm --filter @aluplan/backend test -- env-validation.spec.ts`
 - `pnpm i18n:check`
 - `docker compose --env-file /dev/null config` with production-like placeholder values.
 - `docker compose --env-file /dev/null -f docker-compose.staging.yml config` with staging-like placeholder values.
 
 ### Current Deploy Blockers
+
 - Live secrets were pasted into chat. Rotate before deploy/push:
   - database password/URL
   - Redis password/URL
@@ -2182,6 +2453,7 @@ Maintenance rule:
   - Current stable direction is Gemini/LLMAPI with `gemini-embedding-2` and `3072` dimensions unless there is a deliberate migration plan.
 
 ### Safe Next Step
+
 - Rotate exposed secrets first.
 - Update Coolify backend/frontend env values from `.env.example`.
 - Then run a staging deploy smoke:
@@ -2195,6 +2467,7 @@ Maintenance rule:
 ## Email Branding and KVKK Unsubscribe Hardening - 2026-05-17
 
 ### Completed
+
 - Diagnosed why uploaded branding logo did not render inside email templates:
   - `branding.logo_url` was already saved as an absolute backend asset URL.
   - Production CORS was blocking requests that had no `Origin` header.
@@ -2215,12 +2488,14 @@ Maintenance rule:
   - creates `email_unsubscribe_feedbacks`.
 
 ### Validation
+
 - `pnpm --filter @aluplan/backend test -- email.service.spec.ts`
 - `pnpm exec prisma validate --schema packages/database/prisma/schema.prisma`
 - `pnpm --filter @aluplan/frontend typecheck`
 - `pnpm --filter @aluplan/backend typecheck`
 
 ### Deploy Smoke After Redeploy
+
 - Re-test email logo:
   - `curl -I -L https://api.allplan.net.tr/api/v1/branding/assets/...`
   - expected: no backend 500; should return/redirect to a reachable image.
@@ -2231,11 +2506,13 @@ Maintenance rule:
   - subsequent non-essential emails should be skipped when `ALL=false` exists.
 
 ### Follow-Up
+
 - Decide whether `ALL=false` should suppress ticket/system transactional emails too, or only announcement/marketing-style mail. Current implementation follows the existing endpoint wording and blocks all categories.
 
 ## AI Settings and Embedding 400 Investigation - 2026-05-17
 
 ### Root Cause
+
 - Dataset indexing errors saying `OpenAI HTTP 400` mean the embedding call was going through `OpenAiService.embed()`, not Gemini.
 - The production/env defaults had an inconsistent combination:
   - `EMBEDDING_PROVIDER=OPENAI`
@@ -2245,6 +2522,7 @@ Maintenance rule:
 - This also explains the UI confusion: selecting Gemini models in AI settings does not help if the active embedding provider/env still resolves to OpenAI.
 
 ### Completed
+
 - OpenAI embedding requests now cap dimensions per OpenAI model:
   - `text-embedding-3-small` max 1536.
   - `text-embedding-3-large` max 3072.
@@ -2255,11 +2533,13 @@ Maintenance rule:
 - Gemini setting validation now requires `ai.gemini.embed_model` when Gemini is selected as the embedding provider.
 
 ### Validation
+
 - `pnpm --filter @aluplan/backend test -- openai.service.spec.ts ai-provider-router.service.spec.ts env-validation.spec.ts`
 - `pnpm exec prisma validate --schema packages/database/prisma/schema.prisma`
 - `pnpm --filter @aluplan/backend typecheck`
 
 ### Production Follow-Up
+
 - In Coolify backend env, use:
   - `EMBEDDING_PROVIDER=GEMINI`
   - `EMBEDDING_MODEL=gemini-embedding-2`
@@ -2273,12 +2553,14 @@ Maintenance rule:
 ## Optional Crawl4AI URL Ingestion Sidecar - 2026-05-17
 
 ### Decision
+
 - Current URL ingestion remains available as the safe default.
 - Crawl4AI is added as an optional URL-to-markdown extraction sidecar for higher-quality web source ingestion.
 - The sidecar is disabled by default to avoid unnecessary RAM use on the VPS.
 - If Crawl4AI fails, times out, or returns weak content, the backend automatically falls back to the existing basic crawler.
 
 ### Completed
+
 - Added backend Crawl4AI adapter in `CrawlService`.
 - Added env validation for:
   - `CRAWL4AI_ENABLED`
@@ -2290,6 +2572,7 @@ Maintenance rule:
 - Default compose remains lightweight; sidecar starts only when explicitly enabled.
 
 ### Validation
+
 - `pnpm --filter @aluplan/backend test -- crawl.service.spec.ts knowledge-pool.processor.spec.ts env-validation.spec.ts`
 - `pnpm --filter @aluplan/backend typecheck`
 - `docker compose --env-file /dev/null config`
@@ -2297,6 +2580,7 @@ Maintenance rule:
 - `git diff --check`
 
 ### Production Follow-Up
+
 - For Coolify, only enable this after the current production fixes are deployed and stable.
 - If enabled through Compose:
   - set `COMPOSE_PROFILES=crawl4ai`
@@ -2309,6 +2593,7 @@ Maintenance rule:
 ## Embedding Index Isolation Decision - 2026-05-17
 
 ### Decision
+
 - Keep Gemini embedding as the active production embedding path because answer quality was validated against that corpus.
 - Do not pretend provider normalization makes OpenAI/Gemini/Ollama vectors interchangeable.
 - Use index isolation instead:
@@ -2319,6 +2604,7 @@ Maintenance rule:
 - Qdrant is added to the roadmap for later benchmark/pilot, not for the pre-test delivery.
 
 ### Implementation Direction
+
 - PostgreSQL/pgvector remains the production store.
 - Vector columns should be unconstrained `vector` so Gemini `3072` and future provider dimensions can coexist physically.
 - HNSW is skipped for active dimensions over pgvector's practical HNSW limit; exact search remains available for the current support-test corpus.
@@ -2327,6 +2613,7 @@ Maintenance rule:
 ## Production RAG / Dataset Upload Fixes - 2026-05-17
 
 ### What changed
+
 - Production AI ticket/customer answer flow failed because the live `macros` table missed `deleted_at` while Prisma `Macro.deletedAt` and the global soft-delete filter expected it.
 - Added migration `20260517000006_add_macro_deleted_at` and applied the same safe SQL live.
 - A Turkish Workgroup Manager question fell back to German raw source text when Gemini response timed out.
@@ -2336,6 +2623,7 @@ Maintenance rule:
 - Knowledge pool upload/parser now accepts Word documents as `FILE_DOCX` via `mammoth` raw text extraction.
 
 ### Validation
+
 - `pnpm --filter @aluplan/database db:generate`
 - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts knowledge-pool-parser.service.spec.ts knowledge-pool-job.spec.ts`
 - `pnpm --filter @aluplan/backend typecheck`
@@ -2343,6 +2631,7 @@ Maintenance rule:
 - `pnpm exec prisma validate --schema packages/database/prisma/schema.prisma`
 
 ### Deploy note
+
 - Deploy backend for the RAG fallback and DOCX enum/parser changes.
 - Deploy frontend for the bulk upload UI.
 - Production DB has already received `macros.deleted_at`; the new DOCX enum migration will apply during backend deploy.
@@ -2350,12 +2639,14 @@ Maintenance rule:
 ## AI Settings / Answer Tone Fixes - 2026-05-17
 
 ### Root cause
+
 - Admin AI settings still allowed and persisted the deprecated `gemini-2.0-flash-exp` chat model.
 - Gemini `v1beta generateContent` returns 404 for that model, which broke admin AI Copilot/ANN draft generation.
 - Gemini model list UI could show a recommended model in the dropdown while the underlying setting state still held the old unsupported value.
 - Customer fallback copy was technically useful but too mechanical for a corporate support experience.
 
 ### Changes
+
 - Gemini service now normalizes deprecated `gemini-2.0-flash-exp` / `models/gemini-2.0-flash-exp` to `gemini-2.5-flash` before API calls.
 - Production sync now repairs existing `ai.gemini.chat_model=gemini-2.0-flash-exp` records to `gemini-2.5-flash` during deploy.
 - Admin AI settings model listing now updates the actual setting state to the recommended/supported model when the current value is unsupported.
@@ -2366,6 +2657,7 @@ Maintenance rule:
 - Hotinfo modal no longer shows the raw JSON/kopyalama block; it keeps the structured Hotinfo view.
 
 ### Validation
+
 - `pnpm --filter @aluplan/backend test -- gemini.service.spec.ts ai-query.service.spec.ts`
 - `pnpm --filter @aluplan/backend typecheck`
 - `pnpm --filter @aluplan/frontend typecheck`
@@ -2373,6 +2665,7 @@ Maintenance rule:
 ## CRM Placeholder Email / Hotinfo Display Fixes - 2026-05-19
 
 ### What changed
+
 - CRM contacts without a real email still keep an internal placeholder user for relational integrity, but `no-email-...@internal.aluplan` is now hidden from customer list/detail API responses.
 - Admin password reset for CRM contacts without a real email now fails safely instead of trying to send mail to the internal placeholder.
 - Email recipient guard treats `internal.aluplan` placeholder recipients as reserved/blocked.
@@ -2382,6 +2675,7 @@ Maintenance rule:
 - Hotinfo modal/header and GPU detail cards have more padding and more readable typography.
 
 ### Validation
+
 - `pnpm --filter @aluplan/backend test -- customers.service.spec.ts hotinfo-parser.service.spec.ts email.service.spec.ts`
 - `pnpm --filter @aluplan/backend typecheck`
 - `pnpm --filter @aluplan/frontend typecheck`
@@ -2390,6 +2684,7 @@ Maintenance rule:
 ## AI Fallback Grounding Hardening - 2026-05-19
 
 ### Root cause
+
 - The customer/admin answer quality regression was not a schema or deployment revert.
 - When the model path timed out or returned no-knowledge, the deterministic fallback path was still allowed to:
   - use canned topic summaries even if the retrieved source did not directly cover the topic,
@@ -2398,6 +2693,7 @@ Maintenance rule:
 - This made unrelated sources look authoritative, for example IFC answers citing licensing/virus-scanner FAQs.
 
 ### What changed
+
 - Customer fallback now requires direct query/source topic coverage before producing any deterministic answer.
 - Turkish canned fallback summaries now only fire when the retrieved evidence contains the matching topic signal.
 - Staff-visible customer fallback no longer appends `Kaynak:` labels in the generated answer body.
@@ -2405,6 +2701,7 @@ Maintenance rule:
 - Regression tests cover unrelated IFC/licensing source leakage and admin raw-excerpt fallback.
 
 ### Validation
+
 - `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts ai-copilot.service.spec.ts`
 - `pnpm --filter @aluplan/backend typecheck`
 - `git diff --check`
@@ -2412,6 +2709,7 @@ Maintenance rule:
 ## Live Verification Follow-up - 2026-05-19
 
 ### What changed
+
 - Live deploy verification confirmed backend and frontend were running commit `4a4c372`.
 - Customer/admin AI query smokes returned structured answers without raw `Kaynak:`/strongest-match excerpt leakage.
 - Live customer ticket creation failure was traced to backend validation: `subject must be shorter than or equal to 255 characters`.
@@ -2419,6 +2717,7 @@ Maintenance rule:
 - Legacy Hotinfo snapshots with a collapsed dual-GPU name now split into two GPU cards at render time, so old tickets also show `1/2 Graphics Card / GPU`.
 
 ### Validation
+
 - Browser smoke opened the live new-ticket page and confirmed the form flow is reachable.
 - Live API smoke created a customer-role ticket (`SUP-00087`) with a valid short subject and then cleaned it up by soft-delete.
 - `pnpm --filter @aluplan/frontend typecheck`
@@ -2428,6 +2727,7 @@ Maintenance rule:
 ## Generic Web Crawler Candidates - 2026-05-19
 
 ### What changed
+
 - Existing Knowledge Pool URL ingestion keeps the single-URL sync path, but the URL modal now also supports a controlled "crawl subpages" mode.
 - Generic web discovery uses the shared Crawl4AI/basic crawler path, follows same-domain links with safe defaults, and writes discovered pages/PDFs to `crawl_candidates` as `generic_web`.
 - Crawler candidates can now be filtered by source (`All`, `Learn Now`, `Generic Web`) and show the source domain plus discovered-from URL.
@@ -2435,6 +2735,7 @@ Maintenance rule:
 - Crawl4AI config handling now accepts boolean `CRAWL4AI_ENABLED` values from validated config.
 
 ### Validation
+
 - `pnpm --filter @aluplan/backend test -- crawl.service.spec.ts learnnow-crawler.service.spec.ts generic-web-crawler.service.spec.ts`
 - `pnpm --filter @aluplan/backend typecheck`
 - `pnpm --filter @aluplan/frontend typecheck`

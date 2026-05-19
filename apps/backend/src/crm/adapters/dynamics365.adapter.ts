@@ -14,7 +14,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
     constructor(
         private readonly prisma: PrismaService,
         private readonly config: ConfigService,
-    ) { }
+    ) {}
 
     /**
      * Patch system integrity (Ghost user check)
@@ -27,18 +27,18 @@ export class Dynamics365Adapter implements ICrmAdapter {
         try {
             const adminEmail = this.config.get<string>('ADMIN_EMAIL') || 'admin@example.com';
             const mainUser = await this.prisma.user.findUnique({
-                where: { email: adminEmail }
+                where: { email: adminEmail },
             });
 
             if (mainUser) {
                 const adminRole = await this.prisma.role.findFirst({
-                    where: { name: 'ADMIN' }
+                    where: { name: 'ADMIN' },
                 });
 
                 if (adminRole && mainUser.roleId !== adminRole.id) {
                     await this.prisma.user.update({
                         where: { id: mainUser.id },
-                        data: { roleId: adminRole.id }
+                        data: { roleId: adminRole.id },
                     });
                     this.logger.log(`🛡️ System Integrity: Role for ${adminEmail} updated to ADMIN.`);
                 }
@@ -61,36 +61,16 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
     async syncAccounts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult> {
         try {
-            const token = await this.getAccessToken(config);
-            // Removed $select to ensure custom mapped fields are returned and to prevent 400 errors if a field doesn't exist
-            const baseUrl = `${config.instanceUrl}/api/data/v9.2/accounts`;
-            this.logger.debug(`Fetching accounts from: ${baseUrl}`);
-
-            const headers = {
-                Authorization: `Bearer ${token}`,
-                'OData-MaxVersion': '4.0',
-                'OData-Version': '4.0',
-                Accept: 'application/json',
-                'Prefer': 'odata.include-annotations="*"',
-            };
-
-            // Pagination: follow @odata.nextLink until exhausted
-            const accounts: any[] = [];
-            let nextUrl: string | null = baseUrl;
-            while (nextUrl) {
-                const response: { status: number; data: any } = await axios.get(nextUrl, {
-                    headers,
-                    timeout: 30000 // 30s timeout
-                });
-                this.logger.debug(`Accounts page status: ${response.status}, count: ${response.data.value?.length}`);
-                accounts.push(...(response.data.value ?? []));
-                nextUrl = response.data['@odata.nextLink'] ?? null;
-            }
-
+            const accounts = await this.fetchAccounts(config);
             this.logger.debug(`Total accounts fetched: ${accounts.length}`);
             let successCount = 0;
             let errorCount = 0;
-            const failedRecords: Array<{ externalId: string; entityType: string; errorMessage: string; errorCode?: string }> = [];
+            const failedRecords: Array<{
+                externalId: string;
+                entityType: string;
+                errorMessage: string;
+                errorCode?: string;
+            }> = [];
 
             for (const account of accounts) {
                 try {
@@ -114,11 +94,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                         'new_frilo_clientid',
                         'new_friloid',
                     ]);
-                    const phone = this.resolveFirstField(account, 'phone', mappings, [
-                        'telephone1',
-                        'telephone2',
-                        'telephone3',
-                    ]);
+                    const phone = this.resolveFirstField(account, 'phone', mappings, ['telephone1', 'telephone2', 'telephone3']);
                     const fax = this.resolveFirstField(account, 'fax', mappings, ['fax']);
                     const licenseManagerName = this.resolveFirstField(account, 'licenseManagerName', mappings, [
                         'new_lisansyoneticisiisimsoyisim',
@@ -171,7 +147,11 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     errorCount++;
                 } finally {
                     if (onProgress) {
-                        onProgress({ success: successCount, error: errorCount, total: accounts.length });
+                        onProgress({
+                            success: successCount,
+                            error: errorCount,
+                            total: accounts.length,
+                        });
                     }
                 }
             }
@@ -198,50 +178,35 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
     async syncContacts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult> {
         try {
-            const token = await this.getAccessToken(config);
-
-            // Build URL without $select to ensure all custom mapped fields are returned safely, 
-            // otherwise Dataverse throws a 400 error if a requested field doesn't exist.
-            const baseUrl = `${config.instanceUrl}/api/data/v9.2/contacts?$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
-            this.logger.debug(`Fetching contacts from: ${baseUrl}`);
-
-            const headers = {
-                Authorization: `Bearer ${token}`,
-                'OData-MaxVersion': '4.0',
-                'OData-Version': '4.0',
-                Accept: 'application/json',
-                'Prefer': 'odata.include-annotations="*"',
-            };
-
-            // Pagination: follow @odata.nextLink until exhausted
-            const contacts: any[] = [];
-            let nextUrl: string | null = baseUrl;
-            while (nextUrl) {
-                const response: { status: number; data: any } = await axios.get(nextUrl, {
-                    headers,
-                    timeout: 30000 // 30s timeout
-                });
-                this.logger.debug(`Contacts page status: ${response.status}, count: ${response.data.value?.length}`);
-                contacts.push(...(response.data.value ?? []));
-                nextUrl = response.data['@odata.nextLink'] ?? null;
-            }
-
+            const contacts = await this.fetchContacts(config);
             this.logger.debug(`Total contacts fetched: ${contacts.length}`);
             let successCount = 0;
             let errorCount = 0;
             const skippedRecords: Array<{ externalId: string; reason: string }> = [];
-            const skippedLinks: Array<{ contactExternalId: string; missingAccountExternalId: string }> = [];
-            const failedRecords: Array<{ externalId: string; entityType: string; errorMessage: string; errorCode?: string }> = [];
+            const skippedLinks: Array<{
+                contactExternalId: string;
+                missingAccountExternalId: string;
+            }> = [];
+            const failedRecords: Array<{
+                externalId: string;
+                entityType: string;
+                errorMessage: string;
+                errorCode?: string;
+            }> = [];
 
             // Pre-fetch or create CUSTOMER role
             let customerRole = await this.prisma.role.findFirst({
-                where: { name: { equals: 'CUSTOMER', mode: 'insensitive' } }
+                where: { name: { equals: 'CUSTOMER', mode: 'insensitive' } },
             });
 
             if (!customerRole) {
-                this.logger.warn("CUSTOMER role not found, creating it systemwide");
+                this.logger.warn('CUSTOMER role not found, creating it systemwide');
                 customerRole = await this.prisma.role.create({
-                    data: { name: 'CUSTOMER', isSystem: true, description: 'Default role for CRM-synced customers' }
+                    data: {
+                        name: 'CUSTOMER',
+                        isSystem: true,
+                        description: 'Default role for CRM-synced customers',
+                    },
                 });
             }
             this.logger.debug(`Using CUSTOMER role ID: ${customerRole.id}`);
@@ -275,12 +240,14 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                     passwordHash: 'CRM_SYNCED',
                                     roleId: customerRole?.id,
                                 },
-                                include: { role: true }
+                                include: { role: true },
                             });
                             this.logger.debug(`Created user ID: ${user.id} with role: ${customerRole?.name}`);
                         } else {
                             // BROADEN PROTECTION: Don't demote any user who is NOT currently a CUSTOMER
-                            const currentRole = await tx.role.findUnique({ where: { id: user.roleId || '' } });
+                            const currentRole = await tx.role.findUnique({
+                                where: { id: user.roleId || '' },
+                            });
                             const isAlreadyCustomer = currentRole?.name.toUpperCase() === 'CUSTOMER';
 
                             if (!isAlreadyCustomer && currentRole) {
@@ -289,14 +256,17 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                 user = await tx.user.update({
                                     where: { id: user.id },
                                     data: { roleId: customerRole.id },
-                                    include: { role: true }
+                                    include: { role: true },
                                 });
                                 this.logger.debug(`Updated existing user ID: ${user.id} to CUSTOMER role`);
                             }
 
                             // Update status if it was placeholder but now has email (unlikely but safe)
                             if (!isPlaceholderEmail && user.status === 'INACTIVE' && user.passwordHash === 'CRM_SYNCED') {
-                                await tx.user.update({ where: { id: user.id }, data: { status: 'ACTIVE' } });
+                                await tx.user.update({
+                                    where: { id: user.id },
+                                    data: { status: 'ACTIVE' },
+                                });
                             }
                         }
 
@@ -306,12 +276,16 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
                         if (contact.parentcustomerid_account?.accountid) {
                             accountInfo = await tx.crmAccount.findUnique({
-                                where: { externalAccountId: contact.parentcustomerid_account.accountid },
+                                where: {
+                                    externalAccountId: contact.parentcustomerid_account.accountid,
+                                },
                             });
                             linkedAccountId = accountInfo?.id;
 
                             if (!linkedAccountId) {
-                                this.logger.warn(`Contact ${contact.contactid}: parent account ${contact.parentcustomerid_account.accountid} not found in DB, saving with accountId=null`);
+                                this.logger.warn(
+                                    `Contact ${contact.contactid}: parent account ${contact.parentcustomerid_account.accountid} not found in DB, saving with accountId=null`,
+                                );
                                 skippedLinks.push({
                                     contactExternalId: contact.contactid,
                                     missingAccountExternalId: contact.parentcustomerid_account.accountid,
@@ -321,35 +295,43 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
                         const mappings = (config.syncSettings?.contactMapping || {}) as Record<string, string>;
 
-                        // Resolving names: if fullName is mapped specifically, use it. 
+                        // Resolving names: if fullName is mapped specifically, use it.
                         // Otherwise try to find firstname/lastname maps OR use defaults.
                         const firstName = this.limitString(this.resolveField(contact, 'fullName', mappings, 'firstname') || '-', 100);
                         const lastName = this.limitString(this.resolveField(contact, 'lastName', mappings, 'lastname') || '-', 100);
                         const jobTitle = this.asNullableString(this.resolveField(contact, 'jobTitle', mappings, 'jobtitle'), 255);
                         const phoneNumber = this.asNullableString(this.resolveField(contact, 'phoneNumber', mappings, 'telephone1'), 50);
                         const contactId = this.resolveField(contact, 'externalContactId', mappings, 'contactid');
-                        const contractStatus = this.asNullableString(this.resolveField(contact, 'contractStatus', mappings, 'new_musteridurumu@OData.Community.Display.V1.FormattedValue'), 100);
+                        const contractStatus = this.asNullableString(
+                            this.resolveField(contact, 'contractStatus', mappings, 'new_musteridurumu@OData.Community.Display.V1.FormattedValue'),
+                            100,
+                        );
                         const subscriptionModel = this.asNullableString(this.resolveField(contact, 'subscriptionModel', mappings, 'new_AbonelikModeli'), 100);
 
                         // industry: account expand'dan gelir, contact'ta bu veri yok
-                        const industryFromAccount = this.asNullableString(accountInfo?.industry
-                            || (contact.parentcustomerid_account
-                                ? contact.parentcustomerid_account['industrycode@OData.Community.Display.V1.FormattedValue']
-                                : null), 255);
+                        const industryFromAccount = this.asNullableString(
+                            accountInfo?.industry ||
+                                (contact.parentcustomerid_account
+                                    ? contact.parentcustomerid_account['industrycode@OData.Community.Display.V1.FormattedValue']
+                                    : null),
+                            255,
+                        );
 
                         // companyName: mapping'den veya expand'dan gelen account adı
-                        const companyName = this.limitString(this.resolveField(contact, 'companyName', mappings, 'parentcustomerid_account.name')
-                            || contact.parentcustomerid_account?.name
-                            || accountInfo?.name
-                            || 'Unknown', 255);
+                        const companyName = this.limitString(
+                            this.resolveField(contact, 'companyName', mappings, 'parentcustomerid_account.name') ||
+                                contact.parentcustomerid_account?.name ||
+                                accountInfo?.name ||
+                                'Unknown',
+                            255,
+                        );
 
-                        // customerNo: 
+                        // customerNo:
                         // 1. CRM Mapping'den gelen özel bir değer varsa onu kullanalım (en yüksek öncelikli)
                         // 2. Eğer o yoksa hesap numarasını (Account Number) baz alalım ama çakışmayı önlemek için contact fragment ekleyelim
                         // 3. O da yoksa contactId'den türetelim.
                         const mappedNo = this.resolveField(contact, 'customerNo', mappings, 'new_customerid');
-                        let accountNum = accountInfo?.account_number
-                            || contact.parentcustomerid_account?.accountnumber;
+                        let accountNum = accountInfo?.account_number || contact.parentcustomerid_account?.accountnumber;
 
                         let clientNo: string;
                         if (mappedNo && mappedNo !== '-') {
@@ -365,7 +347,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
                         // 3. Sync CustomerProfile manually to bypass Prisma upsert ghost column bug
                         const existingProfile = await tx.customerProfile.findUnique({
-                            where: { userId: user.id }
+                            where: { userId: user.id },
                         });
 
                         const profileData = {
@@ -388,7 +370,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                 data: {
                                     ...profileData,
                                     accountId: linkedAccountId || null,
-                                }
+                                },
                             });
                         } else {
                             await tx.customerProfile.create({
@@ -396,7 +378,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                                     ...profileData,
                                     user: { connect: { id: user.id } },
                                     ...(linkedAccountId ? { account: { connect: { id: linkedAccountId } } } : {}),
-                                }
+                                },
                             });
                         }
                     });
@@ -411,7 +393,11 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     errorCount++;
                 } finally {
                     if (onProgress) {
-                        onProgress({ success: successCount, error: errorCount, total: contacts.length });
+                        onProgress({
+                            success: successCount,
+                            error: errorCount,
+                            total: contacts.length,
+                        });
                     }
                 }
             }
@@ -435,6 +421,21 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 errorMessage: error.message,
             };
         }
+    }
+
+    async fetchAccounts(config: any): Promise<any[]> {
+        const token = await this.getAccessToken(config);
+        const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
+        // No $select: custom mapped fields vary by tenant and some Dynamics
+        // environments reject missing optional fields.
+        return this.fetchPagedRecords(`${instanceUrl}/api/data/v9.2/accounts`, token, 'Accounts');
+    }
+
+    async fetchContacts(config: any): Promise<any[]> {
+        const token = await this.getAccessToken(config);
+        const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
+        const url = `${instanceUrl}/api/data/v9.2/contacts?$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
+        return this.fetchPagedRecords(url, token, 'Contacts');
     }
 
     async getDiscoveryData(config: any): Promise<any> {
@@ -498,19 +499,19 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 const seenLogicalNames = new Set<string>();
 
                 // 1. Process metadata fields
-                fields.forEach(f => {
+                fields.forEach((f) => {
                     const logicalName = f.LogicalName;
                     results.push({
                         logicalName,
                         displayName: f.DisplayName?.UserLocalizedLabel?.Label || logicalName,
-                        sampleValue: sample ? sample[logicalName] : null
+                        sampleValue: sample ? sample[logicalName] : null,
                     });
                     seenLogicalNames.add(logicalName.toLowerCase());
                 });
 
                 // 2. Add extra fields from sample that weren't in metadata
                 if (sample) {
-                    Object.keys(sample).forEach(key => {
+                    Object.keys(sample).forEach((key) => {
                         // Skip internal OData fields starting with _ or @
                         if (key.startsWith('_') || key.startsWith('@')) return;
 
@@ -518,7 +519,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                             results.push({
                                 logicalName: key,
                                 displayName: key, // fallback to logical name
-                                sampleValue: sample[key]
+                                sampleValue: sample[key],
                             });
                             seenLogicalNames.add(key.toLowerCase());
                         }
@@ -531,7 +532,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
             this.logger.log(`${connIdStr} Discovery complete ✅ (Fields: A:${accountFields.length}, C:${contactFields.length})`);
             return {
                 account: mapSampleToFields(accountFields, accountSample),
-                contact: mapSampleToFields(contactFields, contactSample)
+                contact: mapSampleToFields(contactFields, contactSample),
             };
         } catch (error) {
             const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
@@ -540,11 +541,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
         }
     }
 
-    async fetchDeltaRecords(
-        config: any,
-        entityType: 'account' | 'contact',
-        deltaLink?: string | null,
-    ): Promise<{ records: any[]; deltaLink: string | null }> {
+    async fetchDeltaRecords(config: any, entityType: 'account' | 'contact', deltaLink?: string | null): Promise<{ records: any[]; deltaLink: string | null }> {
         const token = await this.getAccessToken(config);
         const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
         const entitySet = entityType === 'account' ? 'accounts' : 'contacts';
@@ -561,9 +558,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 'OData-Version': '4.0',
                 Accept: 'application/json',
             };
-            headers.Prefer = deltaLink
-                ? 'odata.include-annotations="*"'
-                : 'odata.track-changes, odata.include-annotations="*"';
+            headers.Prefer = deltaLink ? 'odata.include-annotations="*"' : 'odata.track-changes, odata.include-annotations="*"';
 
             const response: { data: any } = await axios.get(nextUrl, {
                 headers,
@@ -592,8 +587,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     'OData-MaxVersion': '4.0',
                     'OData-Version': '4.0',
                     Accept: 'application/json',
-                    'Prefer': 'odata.include-annotations="*"'
-                }
+                    Prefer: 'odata.include-annotations="*"',
+                },
             });
             return response.data.value;
         } catch (error) {
@@ -614,8 +609,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     'OData-MaxVersion': '4.0',
                     'OData-Version': '4.0',
                     Accept: 'application/json',
-                    'Prefer': 'odata.include-annotations="*"'
-                }
+                    Prefer: 'odata.include-annotations="*"',
+                },
             });
             return response.data.value?.[0] || null;
         } catch (error) {
@@ -678,6 +673,32 @@ export class Dynamics365Adapter implements ICrmAdapter {
         return null;
     }
 
+    private async fetchPagedRecords(baseUrl: string, token: string, label: string): Promise<any[]> {
+        this.logger.debug(`Fetching ${label.toLowerCase()} from: ${baseUrl}`);
+
+        const headers = {
+            Authorization: `Bearer ${token}`,
+            'OData-MaxVersion': '4.0',
+            'OData-Version': '4.0',
+            Accept: 'application/json',
+            Prefer: 'odata.include-annotations="*"',
+        };
+
+        const records: any[] = [];
+        let nextUrl: string | null = baseUrl;
+        while (nextUrl) {
+            const response: { status: number; data: any } = await axios.get(nextUrl, {
+                headers,
+                timeout: 30000,
+            });
+            this.logger.debug(`${label} page status: ${response.status}, count: ${response.data.value?.length}`);
+            records.push(...(response.data.value ?? []));
+            nextUrl = response.data['@odata.nextLink'] ?? null;
+        }
+
+        return records;
+    }
+
     private limitString(value: unknown, maxLength: number): string {
         return String(value ?? '').slice(0, maxLength);
     }
@@ -692,8 +713,10 @@ export class Dynamics365Adapter implements ICrmAdapter {
         const { tenantId, clientId, clientSecret, instanceUrl: rawInstanceUrl } = config;
 
         // Debug Phase: Secure Parameter Verification
-        const mask = (str: string) => str ? `${str.substring(0, 4)}...${str.substring(str.length - 4)}` : 'NULL';
-        this.logger.log(`[TOKEN_ACQUISITION] Params: Tenant=${mask(tenantId)} (${tenantId?.length}), ClientID=${mask(clientId)} (${clientId?.length}), Secret=${mask(clientSecret)} (${clientSecret?.length}), Instance=${rawInstanceUrl}`);
+        const mask = (str: string) => (str ? `${str.substring(0, 4)}...${str.substring(str.length - 4)}` : 'NULL');
+        this.logger.log(
+            `[TOKEN_ACQUISITION] Params: Tenant=${mask(tenantId)} (${tenantId?.length}), ClientID=${mask(clientId)} (${clientId?.length}), Secret=${mask(clientSecret)} (${clientSecret?.length}), Instance=${rawInstanceUrl}`,
+        );
 
         if (!tenantId || !clientId || !clientSecret || !rawInstanceUrl) {
             throw new Error(`Missing required Dynamics 365 credentials: T:${!!tenantId}, C:${!!clientId}, S:${!!clientSecret}, U:${!!rawInstanceUrl}`);
@@ -710,7 +733,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
         try {
             const response = await axios.post(tokenUrl, params, {
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             });
             return response.data.access_token;
         } catch (error) {

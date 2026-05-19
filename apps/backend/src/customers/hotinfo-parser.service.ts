@@ -45,14 +45,12 @@ export class HotinfoParserService {
             let allplanHotfix = '';
             let allplanBuildId = '';
             if (cadinfo?.allplanversion?.item) {
-                const items = Array.isArray(cadinfo.allplanversion.item)
-                    ? cadinfo.allplanversion.item
-                    : [cadinfo.allplanversion.item];
+                const items = Array.isArray(cadinfo.allplanversion.item) ? cadinfo.allplanversion.item : [cadinfo.allplanversion.item];
                 const versionItem = items.find((i: any) => i['@_name'] === 'Version');
                 const editionItem = items.find((i: any) => i['@_name'] === 'Edition');
                 const hotfixItem = items.find((i: any) => i['@_name'] === 'Hotfix' || i['@_name'] === 'Patch');
                 const buildIdItem = items.find((i: any) => i['@_name'] === 'Build-ID');
-                
+
                 if (versionItem) allplanVersion = this.extractValue(versionItem);
                 if (editionItem) allplanEdition = this.extractValue(editionItem);
                 if (hotfixItem) allplanHotfix = this.extractValue(hotfixItem);
@@ -69,10 +67,16 @@ export class HotinfoParserService {
             let installedModules: string[] = [];
             if (cadinfo?.modules?.module) {
                 const modules = Array.isArray(cadinfo.modules.module) ? cadinfo.modules.module : [cadinfo.modules.module];
-                installedModules = modules.map((m: any) => m['@_name'] || this.extractValue(m)).filter(Boolean).slice(0, 20);
+                installedModules = modules
+                    .map((m: any) => m['@_name'] || this.extractValue(m))
+                    .filter(Boolean)
+                    .slice(0, 20);
             } else if (cadinfo?.worksets?.workset) {
                 const ws = Array.isArray(cadinfo.worksets.workset) ? cadinfo.worksets.workset : [cadinfo.worksets.workset];
-                installedModules = ws.map((w: any) => w['@_name'] || this.extractValue(w)).filter(Boolean).slice(0, 20);
+                installedModules = ws
+                    .map((w: any) => w['@_name'] || this.extractValue(w))
+                    .filter(Boolean)
+                    .slice(0, 20);
             }
 
             // ── Operating System ──
@@ -144,7 +148,12 @@ export class HotinfoParserService {
             }
 
             // ── Drive Info ──
-            let drives: Array<{ root: string; total: string; free: string; fs: string }> = [];
+            let drives: Array<{
+                root: string;
+                total: string;
+                free: string;
+                fs: string;
+            }> = [];
             if (system?.drives?.drive) {
                 const driveItems = Array.isArray(system.drives.drive) ? system.drives.drive : [system.drives.drive];
                 drives = driveItems.map((d: any) => {
@@ -154,7 +163,7 @@ export class HotinfoParserService {
                         root: d['@_root'] || d.root || '?',
                         total: !isNaN(total) ? `${Math.round(total / (1024 * 1024 * 1024))} GB` : '?',
                         free: !isNaN(free) ? `${Math.round(free / (1024 * 1024 * 1024))} GB` : '?',
-                        fs: d.filesystem || d['@_filesystem'] || '?'
+                        fs: d.filesystem || d['@_filesystem'] || '?',
                     };
                 });
             }
@@ -177,14 +186,17 @@ export class HotinfoParserService {
                 if (!screenResolution && d['@_width'] && d['@_height']) {
                     screenResolution = `${d['@_width']}x${d['@_height']}`;
                 }
-            } 
+            }
             if (!screenResolution && system?.video) {
-                screenResolution = this.safeString(system.video['@_screen-resolution']) || 
-                                 this.safeString(system.video['screen-resolution']) || 
-                                 this.safeString(system.video['@_resolution']) || 
-                                 this.safeString(system.video['resolution']) || 
-                                 (system.video['@_screen-width'] && system.video['@_screen-height'] ? `${this.extractValue(system.video['@_screen-width'])}x${this.extractValue(system.video['@_screen-height'])}` : '') ||
-                                 (system.video['screen-width'] && system.video['screen-height'] ? `${system.video['screen-width']}x${system.video['screen-height']}` : '');
+                screenResolution =
+                    this.safeString(system.video['@_screen-resolution']) ||
+                    this.safeString(system.video['screen-resolution']) ||
+                    this.safeString(system.video['@_resolution']) ||
+                    this.safeString(system.video['resolution']) ||
+                    (system.video['@_screen-width'] && system.video['@_screen-height']
+                        ? `${this.extractValue(system.video['@_screen-width'])}x${this.extractValue(system.video['@_screen-height'])}`
+                        : '') ||
+                    (system.video['screen-width'] && system.video['screen-height'] ? `${system.video['screen-width']}x${system.video['screen-height']}` : '');
             }
             graphicsCards = graphicsCards.map((card) => ({
                 ...card,
@@ -196,23 +208,41 @@ export class HotinfoParserService {
             if (system?.processes?.process) {
                 const procs = Array.isArray(system.processes.process) ? system.processes.process : [system.processes.process];
                 const knownConflicts = [
-                    'onedrive.exe', 'dropbox.exe', 'googledrive.exe', 'box.exe', 'icloud.exe',
-                    'ms-teams.exe', 'teams.exe', 'slack.exe', 'discord.exe', 'zoom.exe',
-                    'anydesk.exe', 'teamviewer.exe',
+                    'onedrive.exe',
+                    'dropbox.exe',
+                    'googledrive.exe',
+                    'box.exe',
+                    'icloud.exe',
+                    'ms-teams.exe',
+                    'teams.exe',
+                    'slack.exe',
+                    'discord.exe',
+                    'zoom.exe',
+                    'anydesk.exe',
+                    'teamviewer.exe',
                     'msmpeng.exe', // Windows Defender
-                    'avp.exe', 'kaspersky.exe', // Kaspersky
-                    'mcshield.exe', 'mcafee.exe', // McAfee
-                    'avastsvc.exe', 'avastui.exe', // Avast
-                    'avgnsx.exe', 'avg.exe', // AVG
-                    'rtvscan.exe', 'symantec.exe', // Symantec
-                    'tmproxy.exe', 'trendmicro.exe', // Trend Micro
-                    'sentinelagent.exe', 'sentinelone.exe',
-                    'csfalconservice.exe', 'crowdstrike.exe',
-                    'ksweb.exe', 'ksafesvc.exe' // Kingsoft/Others
+                    'avp.exe',
+                    'kaspersky.exe', // Kaspersky
+                    'mcshield.exe',
+                    'mcafee.exe', // McAfee
+                    'avastsvc.exe',
+                    'avastui.exe', // Avast
+                    'avgnsx.exe',
+                    'avg.exe', // AVG
+                    'rtvscan.exe',
+                    'symantec.exe', // Symantec
+                    'tmproxy.exe',
+                    'trendmicro.exe', // Trend Micro
+                    'sentinelagent.exe',
+                    'sentinelone.exe',
+                    'csfalconservice.exe',
+                    'crowdstrike.exe',
+                    'ksweb.exe',
+                    'ksafesvc.exe', // Kingsoft/Others
                 ];
                 conflictingProcesses = procs
                     .map((p: any) => this.extractValue(p).toLowerCase())
-                    .filter((p: string) => knownConflicts.some(c => p.includes(c)))
+                    .filter((p: string) => knownConflicts.some((c) => p.includes(c)))
                     .map((p: string) => {
                         const parts = p.split(/[\\/]/);
                         return parts[parts.length - 1]; // get just the executable name
@@ -225,14 +255,30 @@ export class HotinfoParserService {
             if (system?.services?.windows?.service) {
                 const svcs = Array.isArray(system.services.windows.service) ? system.services.windows.service : [system.services.windows.service];
                 const securityKeywords = [
-                    'defender', 'antivirus', 'firewall', 'security', 'protection', 'guard', 'agent', 'sentinel', 'crowdstrike', 'mcafee', 'kaspersky', 'avast', 'avg',
-                    'koruma', 'güvenlik', 'savunma', 'denetim' // Turkish keywords
+                    'defender',
+                    'antivirus',
+                    'firewall',
+                    'security',
+                    'protection',
+                    'guard',
+                    'agent',
+                    'sentinel',
+                    'crowdstrike',
+                    'mcafee',
+                    'kaspersky',
+                    'avast',
+                    'avg',
+                    'koruma',
+                    'güvenlik',
+                    'savunma',
+                    'denetim', // Turkish keywords
                 ];
                 svcs.forEach((s: any) => {
                     const name = (s['@_name'] || s['name'] || '').toLowerCase();
                     const status = s['@_status'] || s['status'];
-                    if (status === '4' || status === 4) { // 4 = Running
-                        if (securityKeywords.some(k => name.includes(k))) {
+                    if (status === '4' || status === 4) {
+                        // 4 = Running
+                        if (securityKeywords.some((k) => name.includes(k))) {
                             securityServices.push(s['@_name'] || s['name']);
                         }
                     }
@@ -247,7 +293,9 @@ export class HotinfoParserService {
             if (jsonObj?.hotinfo?.traceinfo?.trace) {
                 let traceStr = '';
                 const traces = Array.isArray(jsonObj.hotinfo.traceinfo.trace) ? jsonObj.hotinfo.traceinfo.trace : [jsonObj.hotinfo.traceinfo.trace];
-                traces.forEach((t: any) => { traceStr += this.extractValue(t) + ' '; });
+                traces.forEach((t: any) => {
+                    traceStr += this.extractValue(t) + ' ';
+                });
                 if (traceStr.trim()) {
                     errorTrace += `Trace: ${traceStr.trim()}`;
                 }
@@ -290,9 +338,8 @@ export class HotinfoParserService {
                 securityServices,
                 errorTrace,
                 envVars,
-                parsedAt: new Date().toISOString()
+                parsedAt: new Date().toISOString(),
             };
-
         } catch (error) {
             this.logger.error('Failed to parse Hotinfo XML', error);
             return null;
@@ -326,16 +373,8 @@ export class HotinfoParserService {
     private pickItemString(node: any, labels: string[]): string {
         if (!node || typeof node !== 'object') return '';
 
-        const normalizedLabels = labels
-            .map(label => this.normalizeHotinfoKey(label))
-            .filter(Boolean);
-        const itemContainers = [
-            node.item,
-            node.property,
-            node.entry,
-            node.value,
-            node.info,
-        ].filter(Boolean);
+        const normalizedLabels = labels.map((label) => this.normalizeHotinfoKey(label)).filter(Boolean);
+        const itemContainers = [node.item, node.property, node.entry, node.value, node.info].filter(Boolean);
 
         for (const container of itemContainers) {
             const items = Array.isArray(container) ? container : [container];
@@ -346,7 +385,7 @@ export class HotinfoParserService {
                 const normalizedName = this.normalizeHotinfoKey(rawName);
                 if (!normalizedName) continue;
 
-                const matches = normalizedLabels.some(label => normalizedName === label || (label.length > 3 && normalizedName.includes(label)));
+                const matches = normalizedLabels.some((label) => normalizedName === label || (label.length > 3 && normalizedName.includes(label)));
                 if (!matches) continue;
 
                 const value = this.pickStringDirect(item, ['@_value', 'value', '@_text', 'text']) || this.extractValue(item);
@@ -394,6 +433,7 @@ export class HotinfoParserService {
     }
 
     private collectGraphicsCards(video: any): GraphicsCardInfo[] {
+        const rootCard = this.extractGraphicsCard(video);
         const candidates: any[] = [video];
         const adapterGroups = [
             video?.['additional-graphics-adapters']?.['graphics-adapter'],
@@ -413,16 +453,22 @@ export class HotinfoParserService {
         }
 
         const cards = candidates
-            .flatMap((candidate) => this.expandCombinedGraphicsCard(this.extractGraphicsCard(candidate)))
+            .flatMap((candidate, index) => {
+                const card = this.extractGraphicsCard(candidate);
+                const cardWithSharedDisplayData = index === 0 ? card : this.applySharedGraphicsCardData(card, rootCard);
+                return this.expandCombinedGraphicsCard(cardWithSharedDisplayData);
+            })
             .filter((card) => card.name && card.name !== 'Unknown');
 
         const seen = new Set<string>();
-        return cards.filter((card) => {
-            const key = this.normalizeHotinfoKey(card.name);
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        }).slice(0, 4);
+        return cards
+            .filter((card) => {
+                const key = this.normalizeHotinfoKey(card.name);
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            })
+            .slice(0, 4);
     }
 
     private expandCombinedGraphicsCard(card: GraphicsCardInfo): GraphicsCardInfo[] {
@@ -430,7 +476,7 @@ export class HotinfoParserService {
 
         const names = card.name
             .split(/\s+(?:\/|\+|\|)\s+|;\s*/g)
-            .map(name => name.trim())
+            .map((name) => name.trim())
             .filter(Boolean);
 
         if (names.length <= 1) return [card];
@@ -438,46 +484,44 @@ export class HotinfoParserService {
         return names.map((name, index) => ({
             ...card,
             name,
-            // When Hotinfo collapses two adapters into one display string, memory
-            // and driver fields may belong to only one adapter. Keep the first card
-            // faithful and leave ambiguous per-card values empty for the others.
-            vram: index === 0 ? card.vram : '',
-            ram: index === 0 ? card.ram : '',
+            // When Hotinfo collapses two adapters into one display string, driver
+            // fields usually belong to the first adapter. Display memory/resolution
+            // are often reported once for the whole video node, so keep those visible.
             driverDate: index === 0 ? card.driverDate : '',
             driverVersion: index === 0 ? card.driverVersion : '',
             openglVersion: index === 0 ? card.openglVersion : '',
         }));
     }
 
+    private applySharedGraphicsCardData(card: GraphicsCardInfo, shared: GraphicsCardInfo): GraphicsCardInfo {
+        return {
+            ...card,
+            vram: card.vram || shared.vram || '',
+            ram: card.ram || shared.ram || '',
+            resolution: card.resolution || shared.resolution || '',
+            openglVersion: card.openglVersion || shared.openglVersion || '',
+        };
+    }
+
     private extractGraphicsCard(node: any): GraphicsCardInfo {
-        const name = this.pickString(node, [
-            '@_card-description',
-            'card-description',
-            '@_chip-type',
-            'chip-type',
-            '@_name',
-            'name',
-            '@_description',
-            'description',
-        ], ['card description', 'graphics card', 'display adapter', 'adapter name', 'gpu', 'chip type', 'name']) || 'Unknown';
+        const name =
+            this.pickString(
+                node,
+                ['@_card-description', 'card-description', '@_chip-type', 'chip-type', '@_name', 'name', '@_description', 'description'],
+                ['card description', 'graphics card', 'display adapter', 'adapter name', 'gpu', 'chip type', 'name'],
+            ) || 'Unknown';
 
         const driverNode = node?.driver && typeof node.driver === 'object' ? node.driver : undefined;
-        const dedicatedMemory = this.pickString(node, [
-            '@_dedicated-memory',
-            'dedicated-memory',
-            '@_dedicated-vram',
-            'dedicated-vram',
-            '@_vram',
-            'vram',
-        ], ['dedicated memory', 'dedicated vram', 'vram', 'video memory']);
-        const adapterMemory = this.pickString(node, [
-            '@_adapter-ram',
-            'adapter-ram',
-            '@_memory-size',
-            'memory-size',
-            '@_ram',
-            'ram',
-        ], ['adapter ram', 'memory size', 'graphics ram', 'gpu ram', 'ram']);
+        const dedicatedMemory = this.pickString(
+            node,
+            ['@_dedicated-memory', 'dedicated-memory', '@_dedicated-vram', 'dedicated-vram', '@_vram', 'vram', '@_memory-size', 'memory-size'],
+            ['dedicated memory', 'dedicated vram', 'vram', 'video memory', 'memory size'],
+        );
+        const adapterMemory = this.pickString(
+            node,
+            ['@_adapter-ram', 'adapter-ram', '@_memory-size', 'memory-size', '@_ram', 'ram'],
+            ['adapter ram', 'memory size', 'graphics ram', 'gpu ram', 'ram'],
+        );
         const width = this.pickString(node, ['@_screen-width', 'screen-width', '@_width', 'width']);
         const height = this.pickString(node, ['@_screen-height', 'screen-height', '@_height', 'height']);
 
@@ -485,56 +529,32 @@ export class HotinfoParserService {
             name,
             vram: this.formatMemory(dedicatedMemory),
             ram: this.formatMemory(adapterMemory),
-            resolution: this.pickString(node, [
-                '@_screen-resolution',
-                'screen-resolution',
-                '@_resolution',
-                'resolution',
-            ], ['screen resolution', 'resolution']) || (width && height ? `${width}x${height}` : ''),
-            driverDate: this.pickString(node, [
-                '@_driver-date',
-                'driver-date',
-                '@_driver-date-string',
-                'driver-date-string',
-                '@_driverdate',
-                'driverdate',
-                '@_driverDate',
-                'driverDate',
-            ], ['driver date', 'driverdate', 'driver datum', 'treiber datum', 'sürücü tarihi', 'surucu tarihi'])
-                || this.pickString(driverNode, [
-                    '@_driver-date',
-                    'driver-date',
-                    '@_driverdate',
-                    'driverdate',
-                    '@_date',
-                    'date',
-                    '@_driverDate',
-                    'driverDate',
-                ], ['driver date', 'driverdate', 'driver datum', 'treiber datum', 'sürücü tarihi', 'surucu tarihi']),
-            driverVersion: this.pickString(node, [
-                '@_driver-version',
-                'driver-version',
-                '@_version',
-                'version',
-                '@_driver',
-                'driver',
-                '@_driverVersion',
-                'driverVersion',
-            ], ['driver version', 'driverversion', 'treiber version', 'sürücü versiyonu', 'surucu versiyonu'])
-                || this.pickString(driverNode, [
-                    '@_driver-version',
-                    'driver-version',
-                    '@_version',
-                    'version',
-                    '@_driverVersion',
-                    'driverVersion',
-                ], ['driver version', 'driverversion', 'treiber version', 'sürücü versiyonu', 'surucu versiyonu']),
-            openglVersion: this.pickString(node, [
-                '@_opengl-version',
-                'opengl-version',
-                '@_opengl',
-                'opengl',
-            ], ['opengl version', 'opengl']),
+            resolution:
+                this.pickString(node, ['@_screen-resolution', 'screen-resolution', '@_resolution', 'resolution'], ['screen resolution', 'resolution']) ||
+                (width && height ? `${width}x${height}` : ''),
+            driverDate:
+                this.pickString(
+                    node,
+                    ['@_driver-date', 'driver-date', '@_driver-date-string', 'driver-date-string', '@_driverdate', 'driverdate', '@_driverDate', 'driverDate'],
+                    ['driver date', 'driverdate', 'driver datum', 'treiber datum', 'sürücü tarihi', 'surucu tarihi'],
+                ) ||
+                this.pickString(
+                    driverNode,
+                    ['@_driver-date', 'driver-date', '@_driverdate', 'driverdate', '@_date', 'date', '@_driverDate', 'driverDate'],
+                    ['driver date', 'driverdate', 'driver datum', 'treiber datum', 'sürücü tarihi', 'surucu tarihi'],
+                ),
+            driverVersion:
+                this.pickString(
+                    node,
+                    ['@_driver-version', 'driver-version', '@_version', 'version', '@_driver', 'driver', '@_driverVersion', 'driverVersion'],
+                    ['driver version', 'driverversion', 'treiber version', 'sürücü versiyonu', 'surucu versiyonu'],
+                ) ||
+                this.pickString(
+                    driverNode,
+                    ['@_driver-version', 'driver-version', '@_version', 'version', '@_driverVersion', 'driverVersion'],
+                    ['driver version', 'driverversion', 'treiber version', 'sürücü versiyonu', 'surucu versiyonu'],
+                ),
+            openglVersion: this.pickString(node, ['@_opengl-version', 'opengl-version', '@_opengl', 'opengl'], ['opengl version', 'opengl']),
         };
     }
 

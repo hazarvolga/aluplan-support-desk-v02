@@ -116,6 +116,7 @@ describe('HotinfoParserService', () => {
         expect(data?.graphicsCards).toHaveLength(2);
         expect(data?.graphicsCards[0]).toMatchObject({
             name: 'AMD Radeon(TM) 880M Graphics',
+            vram: '512 MB',
             ram: '512 MB',
             resolution: '1920 x 1080 x Gerçek Renk (32bit)',
             driverDate: '4.06.2025',
@@ -123,11 +124,12 @@ describe('HotinfoParserService', () => {
         });
         expect(data?.graphicsCards[1]).toMatchObject({
             name: 'NVIDIA GeForce RTX 5070 Laptop GPU',
+            vram: '512 MB',
+            ram: '512 MB',
             resolution: '1920 x 1080 x Gerçek Renk (32bit)',
             driverDate: '20.01.2026',
             driverVersion: '32.0.15.9186',
         });
-        expect(data?.graphicsCards[1].ram).toBe('');
         expect(data?.gpuDriverVersion).toBe('32.0.13046.10001');
     });
 
@@ -158,9 +160,10 @@ describe('HotinfoParserService', () => {
         });
         expect(data?.graphicsCards[1]).toMatchObject({
             name: 'AMD Radeon(TM) 880M Graphics',
+            vram: '512 MB',
+            ram: '2 GB',
             resolution: '1920 x 1080 x Gerçek Renk (32bit)',
         });
-        expect(data?.graphicsCards[1].vram).toBe('');
         expect(data?.gpu).toBe('NVIDIA GeForce RTX 5070 Laptop GPU / AMD Radeon(TM) 880M Graphics');
     });
 

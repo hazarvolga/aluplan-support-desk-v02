@@ -58,3 +58,11 @@ and consequence. Use session summaries for implementation history.
 - Context: The product must keep the higher-quality Gemini embedding path, but production still had fixed `vector(1536)` columns that rejected Gemini `3072` vectors. Normalizing all providers into one shared vector space is not a reliable professional solution because providers produce different semantic spaces.
 - Decision: Use embedding index isolation. pgvector columns are stored as unconstrained `vector`, while all writes/searches are isolated by active `embedding_version + embedding_dim`. Gemini `v2_2 / 3072` remains the active embedding index. Other providers require their own embedding version and reindex before activation.
 - Consequence: Provider changes become explicit index lifecycle events instead of silent fallback. PostgreSQL remains the near-term production store; Qdrant migration is a roadmap item to benchmark later, not a pre-delivery change.
+
+## ADR-008 - Use One CRM Record Sync Path For Dynamics Writes
+
+- Date: 2026-05-19
+- Status: Accepted
+- Context: Dynamics full sync, delta sync, and webhook sync had drifted into separate persistence paths, so the same CRM record could produce different local fields depending on how it arrived.
+- Decision: Dynamics full import should fetch raw account/contact payloads from the adapter, then persist through `CrmRecordSyncService`, the same shared path used by delta and webhook sync.
+- Consequence: New CRM field mapping, raw payload snapshots, placeholder-email repair, account linking, and change logs must be implemented once in `CrmRecordSyncService` instead of duplicated in the adapter.
