@@ -610,6 +610,66 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             expect(result.answer).not.toContain('####');
         });
 
+        it('does not produce IFC fallback from an unrelated licensing source', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'license-service',
+                        sourceType: 'DOCUMENT',
+                        title: 'FAQ_EN_Windows_service_for_licensing_is_blocked_by_virus_scanner',
+                        content: 'Answer: If the Windows service for licensing is blocked by virus scanner, check CodeMeter runtime, antivirus exclusions, and licensing service access.',
+                        similarity: 0.96,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.96, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'IFC aktarımında hangi ayarlar kritik?',
+                wait: true,
+                language: 'tr',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('yeterince güvenilir ve doğrudan eşleşen içerik bulunamadı');
+            expect(result.answer).not.toContain('IFC aktarımında kritik kontroller');
+            expect(result.answer).not.toContain('FAQ_EN_Windows_service_for_licensing');
+            expect(result.answer).not.toContain('Kaynak:');
+            expect(result.answer).not.toContain('en güçlü eşleşme');
+        });
+
+        it('does not expose source labels in staff deterministic fallback answers', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue({ role: { name: 'ADMIN' } });
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'ifc-export',
+                        sourceType: 'DOCUMENT',
+                        title: '[Dataset] ifc_aktarim_el_kitabi.pdf',
+                        content: 'IFC Export Settings include Exchange Profiles, Attribute Mapping, Coordinates and Length Parameters, Element Filter, and Advanced Options.',
+                        similarity: 0.95,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.95, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'IFC aktarımında hangi ayarlar kritik?',
+                userId: 'admin-1',
+                wait: true,
+                language: 'tr',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('IFC aktarımında kritik kontroller');
+            expect(result.answer).not.toContain('Kaynak:');
+            expect(result.answer).not.toContain('[Dataset] ifc_aktarim_el_kitabi.pdf');
+        });
+
         it('returns a Turkish DWG/DXF fallback without leaking customer source details or drifting to IFC', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [

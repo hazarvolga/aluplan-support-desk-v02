@@ -126,6 +126,32 @@ describe('AiCopilotService', () => {
 
             expect(result.draft).toContain('AI_ERROR');
         });
+
+        it('does not replace no-knowledge draft with raw unrelated source excerpts', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue({
+                ...mockTicket,
+                subject: 'IFC aktarımı',
+                description: 'IFC aktarımında hangi ayarlar kritik?',
+                messages: [{ id: 'm1', message: 'IFC aktarımında hangi ayarlar kritik?', attachments: [] }],
+            });
+            mockEmbedding.search.mockResolvedValue({
+                results: [
+                    {
+                        title: 'faq-license-FAQ-TR-Lisansi-yeni-bir-bilgisayara-veya-baska-bir-bilgisayara-aktarma',
+                        content: 'Lisansı bir Ürün Anahtarı girerek çevrimiçi olarak etkinleştirdiyseniz, Ürün Anahtarını iade edebilirsiniz.',
+                        similarity: 0.94,
+                    },
+                ],
+            });
+            mockAi.generate.mockResolvedValue('Bilgi kaynağımda yeterli döküman bulunmuyor. Lütfen destek talebi oluşturun.');
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(result.draft).toContain('Bu konu için bilgi kaynağında yeterince güvenilir');
+            expect(result.draft).not.toContain('Bilgi kaynağındaki en güçlü eşleşme');
+            expect(result.draft).not.toContain('faq-license');
+            expect(result.draft).not.toContain('Ürün Anahtarı');
+        });
     });
 
     describe('generateDraft — Shift Detection Messages Trimming', () => {

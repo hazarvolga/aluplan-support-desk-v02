@@ -224,8 +224,10 @@ RESPONSE DRAFT:`;
             /(?:lisans|license|lizenz|codemeter|wibu)/.test(normalizedQuery) &&
             /(?:sunucu|server)/.test(normalizedQuery) &&
             /(?:erisim|access|zugriff|hak|rights|permission|izin|kullanici|user|benutzer|bazli)/.test(normalizedQuery);
+        const top = results[0];
+        const normalizedEvidence = this.normalizeSearchText(`${top?.title ?? ''} ${top?.content ?? ''}`);
 
-        if (isTurkish && asksWorkgroupCheckout) {
+        if (isTurkish && asksWorkgroupCheckout && /(?:workgroup|workgroupmanager|benutzer|kullanici|projekt|proje|dezentral|lck)/.test(normalizedEvidence)) {
             return [
                 'Merhaba,',
                 '',
@@ -237,7 +239,7 @@ RESPONSE DRAFT:`;
             ].join('\n');
         }
 
-        if (isTurkish && asksLicenseAccessRights) {
+        if (isTurkish && asksLicenseAccessRights && /(?:license|lisans|codemeter|wibu|access|erisim|zugriff|hak|permission|user|kullanici|benutzer)/.test(normalizedEvidence)) {
             return [
                 'Merhaba,',
                 '',
@@ -249,19 +251,15 @@ RESPONSE DRAFT:`;
             ].join('\n');
         }
 
-        const top = results[0];
-        const excerpt = this.cleanExcerpt(top?.content ?? '');
         if (isTurkish) {
             return [
                 'Merhaba,',
                 '',
-                `Bilgi kaynağındaki en güçlü eşleşme "${top?.title || 'ilgili kaynak'}" dokümanından geliyor. Bu kaynak, sorunun genel bir hata değil, uygulanacak bir kontrol/prosedür konusu olduğunu gösteriyor.`,
-                '',
-                excerpt || 'İlgili kaynak bulundu ancak kısa özet çıkarılamadı. Kaynak dokümanı kontrol ederek prosedürü netleştirmenizi öneririm.',
+                'Bu konu için bilgi kaynağında yeterince güvenilir ve doğrudan eşleşen içerik bulunamadı. Lütfen ilgili dökümanı ekleyin veya destek talebini manuel incelemeye alın.',
             ].join('\n');
         }
 
-        return responseFallback(top?.title, excerpt);
+        return responseFallback();
     }
 
     private cleanExcerpt(value: string): string {
@@ -287,10 +285,8 @@ RESPONSE DRAFT:`;
     }
 }
 
-const responseFallback = (title?: string, excerpt?: string) => [
+const responseFallback = () => [
     'Hello,',
     '',
-    `The strongest knowledge-base match is "${title || 'the matched source'}".`,
-    '',
-    excerpt || 'A matching source was found, but the excerpt could not be summarized safely.',
+    'The knowledge base does not contain enough reliable information for this exact question. Please add the relevant document or handle this support request manually.',
 ].join('\n');

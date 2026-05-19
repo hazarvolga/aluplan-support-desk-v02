@@ -850,7 +850,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
     ): string {
         const responseLanguage = this.resolveFallbackLanguage(language, query);
         const snippets = this.extractRelevantFallbackSnippets(query, results, options.diagnosis);
-        if (snippets.length === 0) {
+        if (snippets.length === 0 || !this.hasDirectFallbackCoverage(query, snippets[0], options.diagnosis)) {
             return this.buildNoUsableFallbackContentMessage(responseLanguage);
         }
 
@@ -877,13 +877,6 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             '',
             turkishSummary,
         ];
-
-        if (options.showSourceDetails) {
-            answerLines.push(
-                '',
-                `Kaynak: ${snippets[0].title}`,
-            );
-        }
 
         return answerLines.join('\n');
     }
@@ -912,7 +905,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             /(?:workgroup|workgroupmanager|workgroup manager|calisma grubu|çalisma grubu)/.test(normalizedQuery) &&
             /(?:checkout|check out|disa|disarida|offline|uzaktan|ofis disi|merkezi olmayan|dezentral)/.test(normalizedQuery);
 
-        if (asksIfcExport) {
+        if (asksIfcExport && normalizedEvidence.includes('ifc')) {
             return [
                 'IFC aktarımında kritik kontroller şunlar:',
                 '- Doğru IFC gönderim yolunu seçin: genel IFC gönderimi veya özellikle IFC 2x3 gönderimi.',
@@ -924,7 +917,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             ].join('\n');
         }
 
-        if (asksDwgDxfExport) {
+        if (asksDwgDxfExport && /(?:dwg|dxf|xref|layer|katman|referans)/.test(normalizedEvidence)) {
             return [
                 'DWG/DXF aktarımında layer ve referans yapısını korumak için kritik kontroller şunlar:',
                 '- Export profilinde layer/katman eşlemesini kontrol edin; Allplan katmanlarının DWG layer adlarına nasıl çevrileceğini doğrulayın.',
@@ -935,11 +928,11 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             ].join('\n');
         }
 
-        if (asksGraphicsDriverUpdate) {
+        if (asksGraphicsDriverUpdate && /(?:grafik|graphics|gpu|nvidia|amd|driver|surucu)/.test(normalizedEvidence)) {
             return 'Grafik kartı sürücüsü güncellemesi için bilgi kaynağı, güncel NVIDIA Studio veya AMD Pro sürücüsünün üreticinin resmi sitesinden indirilmesini ve kurulumdan sonra Windows sisteminin yeniden başlatılmasını işaret ediyor.';
         }
 
-        if (asksWorkgroupCheckout) {
+        if (asksWorkgroupCheckout && /(?:workgroup|workgroupmanager|benutzer|kullanici|projekt|proje|dezentral|lck)/.test(normalizedEvidence)) {
             return [
                 '## 📌 Sorun Yorumu',
                 'Workgroup Manager ortamında bir bilgisayarı veya ilgili proje/kullanıcı verilerini merkezi yapıdan ayırıp ofis dışında çalışma senaryosu soruluyor. Bu bir hata değil; Workgroup Manager veri konumu ve erişim yönetimi prosedürüdür.',
@@ -965,7 +958,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             ].join('\n');
         }
 
-        if (asksWorkgroupComputerAdd) {
+        if (asksWorkgroupComputerAdd && /(?:workgroup|workgroupmanager|bilgisayar|computer|rechner|arbeitsplatz)/.test(normalizedEvidence)) {
             return [
                 '## 📌 Sorun Yorumu',
                 'Workgroup Manager’da bilgisayar ekleme işlemi genelde yetki, sürüm uyumu, Workgroup Manager aktivasyonu veya ağ/paylaşım erişimi koşullarından biri sağlanmadığında başarısız olur.',
@@ -990,7 +983,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             ].join('\n');
         }
 
-        if (asksLicenseAccessRights) {
+        if (asksLicenseAccessRights && /(?:license|lisans|codemeter|wibu|access|erisim|zugriff|hak|permission|user|kullanici|benutzer)/.test(normalizedEvidence)) {
             return [
                 '## 📌 Sorun Yorumu',
                 'Lisans sunucusunda kullanıcı bazlı erişim hakkı yönetimi soruluyor. Bu işlem genel Allplan proje yetkisinden farklıdır; lisans sunucusu/CodeMeter erişim kuralı tarafında yönetilmelidir.',
@@ -1016,7 +1009,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             ].join('\n');
         }
 
-        if (asksLicenseBorrowing) {
+        if (asksLicenseBorrowing && /(?:license|lisans|borrow|odunc|ausleihen|offline|temporary|gecici)/.test(normalizedEvidence)) {
             return [
                 'Lisans sunucusundan geçici lisans ödünç almak için temel akış şöyledir:',
                 '',
@@ -1183,6 +1176,44 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
     private isLicenseBorrowingQuery(normalizedQuery: string): boolean {
         return /(?:license|lisans|lizenz|wibu|codemeter)/.test(normalizedQuery) &&
             /(?:borrow|borrowing|odunc|ausleihen|offline|temporary|temporar|gecici)/.test(normalizedQuery);
+    }
+
+    private hasDirectFallbackCoverage(
+        query: string,
+        snippet: { title: string; excerpt: string },
+        diagnosis?: DiagnosisResult,
+    ): boolean {
+        const normalizedQuery = this.normalizeSearchText(query);
+        const normalizedEvidence = this.normalizeSearchText(`${snippet.title} ${snippet.excerpt}`);
+        const requiredGroups = this.getQuerySignalGroups()
+            .map(group => ({
+                ...group,
+                terms: group.terms.map(term => this.normalizeSearchText(term)).filter(Boolean),
+            }))
+            .filter(group => group.terms.some(term => normalizedQuery.includes(term)));
+
+        if (requiredGroups.length > 0) {
+            const coveredGroups = requiredGroups.filter(group =>
+                group.terms.some(term => normalizedEvidence.includes(term)),
+            );
+            if (coveredGroups.length > 0) return true;
+        }
+
+        const queryTokens = normalizedQuery
+            .split(/\s+/)
+            .filter(token => token.length >= 5 && !['allplan', 'nasil', 'nedir', 'hangi', 'should', 'check', 'what', 'when', 'where'].includes(token));
+        const keywordTokens = [
+            ...(diagnosis?.matchedKeywords ?? []),
+            ...(diagnosis?.categoryNames ?? []),
+        ]
+            .flatMap(value => this.normalizeSearchText(value).split(/\s+/))
+            .filter(token => token.length >= 5);
+
+        const uniqueSignals = Array.from(new Set([...queryTokens, ...keywordTokens]));
+        if (uniqueSignals.length === 0) return true;
+
+        const matches = uniqueSignals.filter(token => normalizedEvidence.includes(token)).length;
+        return matches >= Math.min(2, uniqueSignals.length);
     }
 
     private resolveResponseLanguage(language: string | undefined, _query: string): 'tr' | 'en' | 'de' {

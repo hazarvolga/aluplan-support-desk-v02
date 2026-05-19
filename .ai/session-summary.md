@@ -2386,3 +2386,25 @@ Maintenance rule:
 - `pnpm --filter @aluplan/backend typecheck`
 - `pnpm --filter @aluplan/frontend typecheck`
 - `pnpm i18n:check`
+
+## AI Fallback Grounding Hardening - 2026-05-19
+
+### Root cause
+- The customer/admin answer quality regression was not a schema or deployment revert.
+- When the model path timed out or returned no-knowledge, the deterministic fallback path was still allowed to:
+  - use canned topic summaries even if the retrieved source did not directly cover the topic,
+  - expose source labels in staff/customer fallback output,
+  - replace admin no-knowledge drafts with raw "strongest match" excerpts.
+- This made unrelated sources look authoritative, for example IFC answers citing licensing/virus-scanner FAQs.
+
+### What changed
+- Customer fallback now requires direct query/source topic coverage before producing any deterministic answer.
+- Turkish canned fallback summaries now only fire when the retrieved evidence contains the matching topic signal.
+- Staff-visible customer fallback no longer appends `Kaynak:` labels in the generated answer body.
+- Admin Copilot fallback no longer turns no-knowledge into raw excerpt summaries; it returns a safe manual-review message unless the evidence directly supports the canned Workgroup/license procedure.
+- Regression tests cover unrelated IFC/licensing source leakage and admin raw-excerpt fallback.
+
+### Validation
+- `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts ai-copilot.service.spec.ts`
+- `pnpm --filter @aluplan/backend typecheck`
+- `git diff --check`
