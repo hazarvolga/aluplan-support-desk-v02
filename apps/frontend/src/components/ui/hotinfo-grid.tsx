@@ -256,17 +256,27 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
                 <div className={itemWrapperClass}>
                     <div className={labelClass}>{t('license')}</div>
                     <div className={valContainerClass}>
-                        <div className={valClass}>{sr(data.licenseType) || '-'}</div>
+                        {/* B4: ⚠ prefix'li değerler (SEC hata mesajı) amber rengiyle gösterilir */}
+                        <div className={cn(
+                            valClass,
+                            sr(data.licenseType)?.startsWith('⚠')
+                                ? 'text-amber-400 dark:text-amber-400'
+                                : ''
+                        )}>
+                            {sr(data.licenseType) || '-'}
+                        </div>
                     </div>
                 </div>
 
-                {/* .NET Framework */}
-                <div className={itemWrapperClass}>
-                    <div className={labelClass}>{t('dotnet')}</div>
-                    <div className={valContainerClass}>
-                        <div className={valClass}>{sr(data.dotnetVersion) || '-'}</div>
+                {/* .NET Framework — yalnızca değer varsa render et (B5) */}
+                {sr(data.dotnetVersion) && (
+                    <div className={itemWrapperClass}>
+                        <div className={labelClass}>{t('dotnet')}</div>
+                        <div className={valContainerClass}>
+                            <div className={valClass}>{sr(data.dotnetVersion)}</div>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {!isCompact && (

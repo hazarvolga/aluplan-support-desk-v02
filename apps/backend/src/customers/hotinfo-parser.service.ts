@@ -62,6 +62,11 @@ export class HotinfoParserService {
             if (cadinfo?.license) {
                 licenseType = cadinfo.license['@_type'] || cadinfo.license['@_name'] || this.extractValue(cadinfo.license) || '';
             }
+            // B4: licenseType boşsa SEC hata dosyasından uyarı üret
+            if (!licenseType && cadinfo?.sec) {
+                const secText = this.extractValue(cadinfo.sec);
+                if (secText) licenseType = '⚠ Lisans dosyası okunamadı';
+            }
 
             // ── Installed Modules ──
             let installedModules: string[] = [];
@@ -413,20 +418,32 @@ export class HotinfoParserService {
             .replace(/[^a-z0-9]+/g, '');
     }
 
-    private formatMemory(value: any): string {
+    /**
+     * Bellek değerini okunabilir string'e çevirir.
+     * @param value  Ham değer (string | number)
+     * @param alreadyMB  true: değer MB cinsinden → byte'a çevirerek hesapla
+     *                   false (default): değer byte cinsinden
+     *
+     * Hotinfo'nun <memory-size> tag'i MB cinsinden saklar (örn. 512 = 512 MB).
+     * Bu field için alreadyMB=true geçilmeli; byte cinsinden büyük sayılar için false.
+     */
+    private formatMemory(value: any, alreadyMB = false): string {
         const raw = this.safeString(value);
         if (!raw) return '';
 
         const normalized = raw.replace(',', '.');
-        const bytes = Number(normalized);
-        if (!Number.isNaN(bytes) && bytes > 0) {
+        const num = Number(normalized);
+        if (!Number.isNaN(num) && num > 0) {
+            // alreadyMB=true → Hotinfo'nun MB-cinsinden memory-size değeri; byte'a çevir
+            const bytes = alreadyMB ? num * 1024 * 1024 : num;
             if (bytes >= 1024 * 1024 * 1024) {
                 return `${Math.round(bytes / (1024 * 1024 * 1024))} GB`;
             }
             if (bytes >= 1024 * 1024) {
                 return `${Math.round(bytes / (1024 * 1024))} MB`;
             }
-            return `${Math.round(bytes)} MB`;
+            // Bytes cinsinden küçük değer gelirse MB olarak etiketle
+            return `${Math.round(num)} MB`;
         }
 
         return /\b(mb|gb|kb)\b/i.test(raw) ? raw : `${raw} MB`;
@@ -496,8 +513,9 @@ export class HotinfoParserService {
     private applySharedGraphicsCardData(card: GraphicsCardInfo, shared: GraphicsCardInfo): GraphicsCardInfo {
         return {
             ...card,
-            vram: card.vram || shared.vram || '',
-            ram: card.ram || shared.ram || '',
+            // B1 FIX: vram ve ram artık kopyalanmıyor.
+            // Ek adaptörün XML'inde bellek bilgisi yoksa boş kalır (yanlış değer gösterilmez).
+            // Yalnızca çözünürlük ve OpenGL versiyonu — gerçekten paylaşılan ekran bilgileri — fallback alıyor.
             resolution: card.resolution || shared.resolution || '',
             openglVersion: card.openglVersion || shared.openglVersion || '',
         };
@@ -512,23 +530,32 @@ export class HotinfoParserService {
             ) || 'Unknown';
 
         const driverNode = node?.driver && typeof node.driver === 'object' ? node.driver : undefined;
+        // B2 FIX: dedicatedMemory (VRAM) için 'memory-size' artık fallback olarak kullanılmıyor.
+        // Hotinfo'nun <memory-size> tag'i adapter RAM'ini (paylaşımlı/toplam) raporlar; ayrı
+        // bir dedicated VRAM tag'i olmadığında VRAM bilinemiyor — yanlış değer göstermekten iyidir.
         const dedicatedMemory = this.pickString(
             node,
-            ['@_dedicated-memory', 'dedicated-memory', '@_dedicated-vram', 'dedicated-vram', '@_vram', 'vram', '@_memory-size', 'memory-size'],
-            ['dedicated memory', 'dedicated vram', 'vram', 'video memory', 'memory size'],
+            ['@_dedicated-memory', 'dedicated-memory', '@_dedicated-vram', 'dedicated-vram', '@_vram', 'vram'],
+            ['dedicated memory', 'dedicated vram', 'vram', 'video memory'],
         );
-        const adapterMemory = this.pickString(
+        // adapter RAM → Hotinfo'da MB cinsinden gelir; formatMemory alreadyMB=true ile çağrılır
+        const adapterMemoryRaw = this.pickString(
             node,
             ['@_adapter-ram', 'adapter-ram', '@_memory-size', 'memory-size', '@_ram', 'ram'],
             ['adapter ram', 'memory size', 'graphics ram', 'gpu ram', 'ram'],
         );
+        // Belirle: memory-size field'ından mı geldi? Öyleyse alreadyMB=true
+        const isMemorySizeField = !this.pickString(node, ['@_adapter-ram', 'adapter-ram', '@_ram', 'ram']) && !!this.pickString(node, ['@_memory-size', 'memory-size']);
+        const adapterMemory = adapterMemoryRaw;
         const width = this.pickString(node, ['@_screen-width', 'screen-width', '@_width', 'width']);
         const height = this.pickString(node, ['@_screen-height', 'screen-height', '@_height', 'height']);
 
         return {
             name,
-            vram: this.formatMemory(dedicatedMemory),
-            ram: this.formatMemory(adapterMemory),
+            // B3 FIX: dedicatedMemory byte cinsinden (dedicated-memory tag'leri byte kullanır)
+            // adapterMemory: memory-size field'ından geldiyse MB cinsinden → alreadyMB=true
+            vram: this.formatMemory(dedicatedMemory, false),
+            ram: this.formatMemory(adapterMemory, isMemorySizeField),
             resolution:
                 this.pickString(node, ['@_screen-resolution', 'screen-resolution', '@_resolution', 'resolution'], ['screen resolution', 'resolution']) ||
                 (width && height ? `${width}x${height}` : ''),

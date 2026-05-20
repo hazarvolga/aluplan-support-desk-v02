@@ -116,7 +116,9 @@ describe('HotinfoParserService', () => {
         expect(data?.graphicsCards).toHaveLength(2);
         expect(data?.graphicsCards[0]).toMatchObject({
             name: 'AMD Radeon(TM) 880M Graphics',
-            vram: '512 MB',
+            // B2 FIX: memory-size artık VRAM fallback'e düşmüyor → vram boş
+            vram: '',
+            // B3 FIX: memory-size MB cinsinden (alreadyMB=true) → 512 MB doğru
             ram: '512 MB',
             resolution: '1920 x 1080 x Gerçek Renk (32bit)',
             driverDate: '4.06.2025',
@@ -124,13 +126,52 @@ describe('HotinfoParserService', () => {
         });
         expect(data?.graphicsCards[1]).toMatchObject({
             name: 'NVIDIA GeForce RTX 5070 Laptop GPU',
-            vram: '512 MB',
-            ram: '512 MB',
+            // B1 FIX: NVIDIA'nın XML'inde belleği yok → AMD değeri kopyalanmıyor, boş kalır
+            vram: '',
+            ram: '',
             resolution: '1920 x 1080 x Gerçek Renk (32bit)',
             driverDate: '20.01.2026',
             driverVersion: '32.0.15.9186',
         });
         expect(data?.gpuDriverVersion).toBe('32.0.13046.10001');
+    });
+
+    it('should show warning text when SEC license file is missing (B4)', () => {
+        const xml = `<hotinfo>
+            <cadinfo>
+                <license></license>
+                <sec>Dosya kullanılamıyor. (C:\\ProgramData\\Nemetschek\\Allplan\\2026\\License\\_SEC.NSE)</sec>
+            </cadinfo>
+            <system><platform name="Win"><build>26100</build></platform></system>
+        </hotinfo>`;
+
+        const data = service.parseHotinfo(xml);
+
+        expect(data?.licenseType).toBe('⚠ Lisans dosyası okunamadı');
+    });
+
+    it('should NOT copy vram/ram from primary to secondary adapter when secondary has no memory info (B1)', () => {
+        const xml = `<hotinfo>
+            <system>
+                <video>
+                    <memory-size>4096</memory-size>
+                    <card-description>AMD Radeon RX 7900 XT</card-description>
+                    <additional-graphics-adapters>
+                        <graphics-adapter card-description="Intel Arc A770" version="31.0.101.5522" driverdate="2026-03-01"/>
+                    </additional-graphics-adapters>
+                </video>
+            </system>
+        </hotinfo>`;
+
+        const data = service.parseHotinfo(xml);
+
+        expect(data?.graphicsCards).toHaveLength(2);
+        // B3: memory-size=4096 MB → 4 GB (artık "4096 MB" değil)
+        expect(data?.graphicsCards[0].ram).toBe('4 GB');
+        expect(data?.graphicsCards[0].vram).toBe(''); // memory-size VRAM'e düşmüyor
+        // B1: Intel'in belleği yok → boş kalır, AMD değeri kopyalanmaz
+        expect(data?.graphicsCards[1].vram).toBe('');
+        expect(data?.graphicsCards[1].ram).toBe('');
     });
 
     it('should split collapsed dual-GPU names and read item-style driver fields', () => {
