@@ -1,0 +1,52 @@
+[
+  {
+    "prompt": "Dynamics 365 Sales Hub'dan gelen bir webhook bildirimi ile yeni bir account oluşturulduğunda, bu account'un Aluplan sistemimizdeki CrmAccount tablosuna senkronize edilmesi gerekiyor. Webhook ingestion akışını ve idempotency stratejisini açıklar mısın?",
+    "expected_behavior": "Must reference CrmRecordSyncService as the only persistence path (ADR-008). Must use externalAccountId @unique + Prisma upsert for idempotency — no separate processed_jobs table. Must mention rawCrmPayload preservation, ADMIN_BYPASS_EMAILS check, CrmChangeLog field-level audit, and webhookSecret verification. Must NOT propose a second persistence path.",
+    "tags": ["crm", "idempotency", "ADR-008", "webhook"]
+  },
+  {
+    "prompt": "CRM delta sync servisinin mevcut çalışma mantığını ve bir hata durumunda ne yaptığını açıkla. Bu servise yeni bir alan (örneğin müşterinin vergi numarası) eklemem gerekiyor — adım adım nasıl yaparım?",
+    "expected_behavior": "Must describe CrmDeltaSyncService with */5 * * * * cron, per-connection error isolation, deltaLink continuation, and NotificationsGateway error emission. For new field: must use config-driven field mapping (resolveField with mapping config + Dynamics fallback names), add to CrmAccount Prisma model with @map, add to reconciliation in reconcileLinkedCustomerProfileSnapshots if denormalized, and write change to CrmChangeLog. Must NOT skip CrmRecordSyncService.",
+    "tags": ["crm", "delta-sync", "field-mapping"]
+  },
+  {
+    "prompt": "Mevcut RAG retrieval pipeline'ımızda bir kullanıcı sorgusu LOW confidence alıyor ama aslında bilgi tabanımızda alakalı bir makale var. Bu durumu nasıl debug ederim ve retrieval kalitesini nasıl artırabilirim?",
+    "expected_behavior": "Must reference RagObservabilityService retrieval log as the first investigation step. Must mention rag.config.ts as single source of truth (not CLAUDE.md stale values). Must list the rerank factors (ARTICLE 1.30, FAQ 1.35 etc.) and weights (SEMANTIC 0.70, RECENCY 0.15, RATING 0.15). Must suggest checking embedding version isolation (v2_2/3072), PRE_RERANK_LIMIT (20), and the RAG acceptance set. Must NOT propose a new model as the first step.",
+    "tags": ["rag", "retrieval", "debugging", "observability"]
+  },
+  {
+    "prompt": "AI diagnosis pipeline'ında müşteriye dönen cevabın formatını ve kalite kontrolünü açıkla. Cevap formatına yeni bir bölüm eklemek istesem (örneğin 'Önleyici Tedbirler'), bu değişikliği nasıl güvenli şekilde yaparım?",
+    "expected_behavior": "Must describe buildSupportAnswerContractPrompt from ai-answer-contract.ts — 5 emoji'd sections, 3 languages, shared between customer and agent. Must explain no-drift tests (expect(prompt).toContain). Must warn that adding a section is a breaking change requiring coordinated PR across ai-answer-contract.ts, ai-query.service.ts, ai-copilot.service.ts, and spec files. Must mention isNoKnowledgeAnswer as the quality gate. Must NOT describe a JSON schema — the contract is prompt + markdown sections.",
+    "tags": ["ai-contract", "answer-quality", "no-drift"]
+  },
+  {
+    "prompt": "Backend'e yeni bir metriks endpoint'i eklemek istiyorum: her AI sorgusunun ortalama yanıt süresini provider bazında gösteren bir dashboard verisi. Bunu mevcut mimari içinde nasıl yapmalıyım?",
+    "expected_behavior": "Must propose using MetricsService (apps/backend/src/metrics/) for Prometheus metrics. Must reference AiInteraction inline telemetry (provider, model, tokens, cost as Decimal) as the data source — not a separate telemetry table. Must mention Langfuse as the existing LLM-specific tracing layer. Must wire through AiService.dispatch() for uniform telemetry. Must NOT invent a new ai_telemetry table.",
+    "tags": ["observability", "metrics", "telemetry"]
+  },
+  {
+    "prompt": "Yeni bir BullMQ kuyruğu oluşturmam gerekiyor: bilgi tabanına yeni eklenen makalelerin otomatik olarak embedding'lerinin oluşturulması için. Bu kuyruğun güvenilir, idempotent ve maliyet-kontrollü olması lazım.",
+    "expected_behavior": "Must follow canonical queue pattern: BullModule.registerQueue inline in module, @Processor with concurrency + limiter, extends WorkerHost, attempts 3 + exponential backoff + removeOnFail false. Must reference ADR-002 (low-rate ingestion) and ADR-006 (no embedding fallback). Must use business-key @unique for idempotency (not processed_jobs table). Must reference KNOWLEDGE_SYNC_EMBED_BUDGET_GUARD and KNOWLEDGE_SYNC_DAILY_EMBED_USD_CAP for cost control. Must mention embedding version isolation (ADR-007).",
+    "tags": ["queue", "bullmq", "embedding", "cost-governance", "ADR-002"]
+  },
+  {
+    "prompt": "Destek ajanı arayüzüne bir AI Copilot cevabını düzenleme özelliği eklemek istiyorum. Ajan cevabı düzenlediğinde bu değişiklik nasıl izlenmeli ve saklanmalı?",
+    "expected_behavior": "Must reference AiInteraction.editedResponse and AiInteraction.isAccepted fields (inline on the existing model). Must use buildSupportAnswerContractPrompt for the initial draft (shared customer/agent parity). Must mention toast() as high-blast-radius hook. Must use Zustand for client state (NOT TanStack Query). Must mention Socket.io for real-time updates (NOT SSE). Must use next-intl Link (not next/link). Must follow existing frontend conventions.",
+    "tags": ["frontend", "copilot", "telemetry", "conventions"]
+  },
+  {
+    "prompt": "Prisma schema'ya yeni bir model eklemem gerekiyor: TicketFeedback — müşterilerin bilet kapandıktan sonra verdiği CSAT puanı ve yorum. Bu modeli mevcut konvansiyonlara uygun şekilde nasıl tasarlarım?",
+    "expected_behavior": "Must follow Prisma conventions: UUID PK with gen_random_uuid(), snake_case columns with @map, camelCase model fields, @@map for table name, createdAt + updatedAt, deletedAt for soft-delete, Decimal for scores (not Float), explicit VarChar lengths, compound indexes with explicit map names. Must reference Ticket relation. Must mention R-T3 (tickets with CSAT < 3/5 cannot become FAQ sources) as a downstream constraint. Must NOT use Float for the score. Must NOT skip deletedAt.",
+    "tags": ["prisma", "schema", "conventions", "R-T3"]
+  },
+  {
+    "prompt": "Production ortamında bir sorun var: AI cevapları bazen Türkçe soru sorulmasına rağmen İngilizce dönüyor. Bu sorunu nasıl teşhis eder ve düzeltirim?",
+    "expected_behavior": "Must reference resolveAnswerLanguage from ai-answer-contract.ts (normalizes locale). Must mention languageMismatch field on AiQueryResult. Must reference the language detection step in retrieval orchestration. Must suggest checking RagObservabilityService retrieval logs for the detected vs requested language. Must reference ai-answer-contract.md §4 no-drift rules about language hygiene. Must mention that Turkish UI-language + English requested-language fallback has regression coverage (from .ai/current-focus.md). Must NOT propose a new language detection library as the first step.",
+    "tags": ["ai-contract", "language", "debugging", "production"]
+  },
+  {
+    "prompt": "Güvenlik açısından endişeliyim: mevcut sistemde AI guardrail'leri yeterli mi? Confidence band'leri nasıl çalışıyor, hangi R-rule'lar var, ve yeni bir guardrail (örneğin PII tespiti) eklemek istesem nasıl yaparım?",
+    "expected_behavior": "Must list all 6 R-rules (R-T1, R-T3, R-T5, R-S5, R-S7, R-P1) with their constraints. Must describe the 4-level runtime confidence (HIGH/MEDIUM/LOW/NO_MATCH) with thresholds from rag.config.ts (0.85/0.70/0.62 — NOT the stale CLAUDE.md values). Must explain the intentional 3-vs-4-level asymmetry (Prisma enum vs runtime type). Must mention isNoKnowledgeAnswer validator. Must reference ADR-003 (AI optional for ticket creation). For PII detection: must suggest adding to existing pipeline (not a parallel system), mention PiiMaskingService as existing capability, and recommend adding validation before AiInteraction persistence. Must NOT propose weakening any R-rule.",
+    "tags": ["guardrails", "R-rules", "confidence", "security", "ADR-003"]
+  }
+]
