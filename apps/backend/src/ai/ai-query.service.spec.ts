@@ -198,7 +198,7 @@ describe('AiQueryService', () => {
             // Assert
             expect(result.confidence).toBe('NO_MATCH');
             expect(result.suggestTicket).toBe(true);
-            expect(result.answer).toContain('Bu konu mevcut bilgi kaynağında yer almıyor');
+            expect(result.answer).toContain('Bu konu için bilgi kaynağında yeterince güvenilir bilgi bulunamadı');
             expect(mockAiService.reformat).not.toHaveBeenCalled();
         });
     });
@@ -394,7 +394,7 @@ describe('AiQueryService', () => {
             const result = await service.queryInternal({ userQuery: 'How do I update the graphics driver?' });
 
             expect(result.answerMode).toBe('FALLBACK');
-            expect(result.answer).toContain('Use the certified graphics driver package.');
+            expect(result.answer).toContain('Grafik kartı sürücüsü güncellemesi');
             expect(mockPrismaService.aiInteraction.create).toHaveBeenCalledWith(expect.objectContaining({
                 data: expect.objectContaining({
                     userContext: expect.objectContaining({
@@ -545,7 +545,7 @@ describe('AiQueryService', () => {
             expect(result.answer).not.toContain('en güçlü eşleşme');
         });
 
-        it('answers in the selected UI language even when the query language differs and strict mode is off', async () => {
+        it('returns a safe localized fallback in the selected UI language when generation is unavailable', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [
                     {
@@ -575,12 +575,80 @@ describe('AiQueryService', () => {
             });
 
             expect(result.answerMode).toBe('FALLBACK');
-            expect(result.answer).toContain('## 📌 Problem Interpretation');
-            expect(result.answer).toContain('## 🛠️ Solution Steps');
+            expect(result.answer).toContain('The knowledge base does not contain enough reliable information');
             expect(result.answer).not.toContain('## 📌 Sorun Yorumu');
             expect(result.answer).not.toContain('## 🛠️ Çözüm Adımları');
+            expect(result.answer).not.toContain('FAQ_EN_Moving_license_server');
+            expect(result.answer).not.toContain('best matching knowledge base');
             expect(mockAiService.reformat.mock.calls[0][0]).toContain('## 📌 Issue Summary');
             expect(mockAiService.reformat.mock.calls[0][0]).toContain('## 🛠️ Solution Steps');
+        });
+
+        it('persists the active UI language on the AI interaction for downstream admin drafts', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'loopback',
+                        sourceType: 'DOCUMENT',
+                        title: 'FAQ_EN_Loopback_adapter_for_Workgroup_Manager',
+                        content: 'A loopback adapter is used for Workgroup Manager offline or standalone network scenarios. Run hdwwiz as administrator and install Microsoft KM-TEST Loopback Adapter.',
+                        similarity: 0.96,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.96, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue({
+                response: '## 📌 Issue Summary\nLoopback adapter guidance.\n\n## 🎯 Most Probable Cause\nNetwork dependency.\n\n## ⚠️ Critical Checks\n- Admin rights.\n\n## 🛠️ Solution Steps\n1. Run hdwwiz.\n\n## ✅ Verification\n- Check Device Manager.',
+            });
+
+            const result = await service.query({
+                userQuery: 'When is a loopback adapter needed?',
+                wait: true,
+                language: 'en',
+                strictLanguage: true,
+            });
+
+            expect(result.responseLanguage).toBe('en');
+            expect(mockPrismaService.aiInteraction.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    userContext: expect.objectContaining({
+                        responseLanguage: 'en',
+                        requestLocale: 'en',
+                        languageSource: 'ui',
+                    }),
+                }),
+            }));
+        });
+
+        it('returns a structured English loopback fallback without leaking the source title', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'loopback',
+                        sourceType: 'DOCUMENT',
+                        title: 'FAQ_EN_Loopback_adapter_for_Workgroup_Manager',
+                        content: 'Answer: A loopback adapter is used for Allplan Workgroup Manager when the workstation is disconnected from the network. Run hdwwiz as administrator. Select Network adapters, Microsoft, and Microsoft KM-TEST Loopback Adapter.',
+                        similarity: 0.96,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.96, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'When is a loopback adapter needed for Workgroup Manager?',
+                wait: true,
+                language: 'en',
+                strictLanguage: true,
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('## 📌 Issue Summary');
+            expect(result.answer).toContain('Microsoft KM-TEST Loopback Adapter');
+            expect(result.answer).not.toContain('FAQ_EN_Loopback_adapter');
+            expect(result.answer).not.toContain('best matching knowledge base');
         });
 
         it('returns a Turkish actionable IFC fallback instead of raw headings when generation is unavailable', async () => {

@@ -152,7 +152,7 @@ export class AiCopilotService {
             diagnosis
         });
 
-        const targetLanguage = ticket.creator?.language || 'tr';
+        const targetLanguage = this.resolveTicketAnswerLanguage(ticket);
 
         const systemPrompt = buildSupportAnswerContractPrompt({
             basePrompt: MASTER_DIAGNOSIS_PROMPT,
@@ -282,6 +282,36 @@ RESPONSE DRAFT:`;
             .replace(/[^a-z0-9]+/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
+    }
+
+    private resolveTicketAnswerLanguage(ticket: {
+        interaction?: { userContext?: unknown } | null;
+        creator?: { language?: string | null } | null;
+    }): 'tr' | 'en' | 'de' {
+        const interactionLanguage = this.extractInteractionLanguage(ticket.interaction?.userContext);
+        if (interactionLanguage) return interactionLanguage;
+
+        const creatorLanguage = ticket.creator?.language?.toLowerCase() ?? '';
+        if (creatorLanguage.startsWith('en')) return 'en';
+        if (creatorLanguage.startsWith('de')) return 'de';
+        return 'tr';
+    }
+
+    private extractInteractionLanguage(userContext: unknown): 'tr' | 'en' | 'de' | null {
+        if (!userContext || typeof userContext !== 'object' || Array.isArray(userContext)) return null;
+
+        const context = userContext as Record<string, unknown>;
+        const rawLanguage = String(
+            context.responseLanguage ||
+            context.requestLocale ||
+            context.language ||
+            '',
+        ).toLowerCase();
+
+        if (rawLanguage.startsWith('en')) return 'en';
+        if (rawLanguage.startsWith('de')) return 'de';
+        if (rawLanguage.startsWith('tr')) return 'tr';
+        return null;
     }
 }
 

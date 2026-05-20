@@ -28,6 +28,7 @@ import { isNoKnowledgeAnswer } from './ai-answer-quality';
 
 // local type with NO_MATCH
 export type LocalConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
+type SupportedAnswerLanguage = 'tr' | 'en' | 'de';
 
 export interface AiQueryOptions {
     userQuery: string;
@@ -54,6 +55,7 @@ export interface AiQueryResult {
     diagnosis?: DiagnosisResult;
     cacheVersion?: string;
     languageMismatch?: boolean;
+    responseLanguage?: SupportedAnswerLanguage;
 }
 
 export const MASTER_DIAGNOSIS_PROMPT = `
@@ -495,7 +497,7 @@ RESPONSE DRAFT:`;
                     userId: userId || undefined,
                     channel,
                     userQuery,
-                    responseGenerated: 'Bu konu mevcut bilgi kaynağında yer almıyor. İşleminize destek temsilcisi ile devam edilecektir.',
+                    responseGenerated: this.buildNoMatchMessage(lang, false),
                     confidenceBand: null,
                     autoAnswered: false,
                     similarityScore: searchResponse.diagnostics.topScore || undefined,
@@ -505,16 +507,18 @@ RESPONSE DRAFT:`;
                     outputTokens: 0,
                     totalTokens: 0,
                     estimatedCost: 0,
+                    userContext: this.buildInteractionLanguageContext(lang, options.language, 'NO_MATCH') as Prisma.InputJsonValue,
                 }
             });
 
             return {
                 query: userQuery,
-                answer: 'Bu konu mevcut bilgi kaynağında yer almıyor. Sistem analizi için lütfen destek talebi oluşturun ve \'_hotinf_.hxl\' dosyanızı ekleyiniz.',
+                answer: this.buildNoMatchMessage(lang, true),
                 confidence: 'NO_MATCH' as LocalConfidenceBand,
                 sources: [],
                 interactionId: interaction.id,
                 suggestTicket: true,
+                responseLanguage: lang,
             };
         }
 
@@ -646,6 +650,7 @@ RESPONSE DRAFT:`;
                 totalTokens,
                 estimatedCost,
                 userContext: {
+                    ...this.buildInteractionLanguageContext(lang, options.language, answerMode ?? 'UNKNOWN'),
                     answerMode,
                     fallbackStrategy: answerMode === 'FALLBACK' ? 'DETERMINISTIC_STRUCTURED' : null,
                     translations,
@@ -710,18 +715,23 @@ RESPONSE DRAFT:`;
             interactionId: interaction.id,
             suggestTicket,
             translations,
-            diagnosis
+            diagnosis,
+            responseLanguage: lang,
         };
 
         // Cache with centralized TTL
-        await this.redis.set(cacheKey, JSON.stringify(finalResult), RAG_CONFIG.CACHE.DEFAULT_TTL);
+        if (answerMode === 'LLM') {
+            await this.redis.set(cacheKey, JSON.stringify(finalResult), RAG_CONFIG.CACHE.DEFAULT_TTL);
 
-        // R-P1: Store in semantic cache for similarity-based future hits
-        this.semanticCache.set(userQuery, 'system', finalResult, {
-            userId: userId ?? undefined,
-            language: lang,
-            hotinfoContext,
-        }).catch(() => {});  // non-blocking, cache failure must not break the query
+            // R-P1: Store in semantic cache for similarity-based future hits.
+            // Fallback answers are intentionally not cached; a transient model timeout
+            // must not lock future users into a weaker deterministic answer.
+            this.semanticCache.set(userQuery, 'system', finalResult, {
+                userId: userId ?? undefined,
+                language: lang,
+                hotinfoContext,
+            }).catch(() => {});  // non-blocking, cache failure must not break the query
+        }
 
         // NO_MATCH escalation: queue interaction for admin training review (non-blocking)
         if (finalResult.confidence === 'NO_MATCH') {
@@ -860,17 +870,19 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
         if (responseLanguage === 'en') {
             const englishSummary = this.buildEnglishFallbackSummary(query, snippets[0]);
+            if (!englishSummary && !options.showSourceDetails) {
+                return this.buildNoUsableFallbackContentMessage(responseLanguage);
+            }
             return [
-                'As Aluplan AI Support, here is the most useful guidance I can provide from the available knowledge base match:',
-                '',
                 englishSummary ?? this.buildGenericFallbackSummary(query, snippets[0], 'en', options.diagnosis),
             ].join('\n');
         }
 
         if (responseLanguage === 'de') {
+            if (!options.showSourceDetails) {
+                return this.buildNoUsableFallbackContentMessage(responseLanguage);
+            }
             return [
-                'Als Aluplan AI Support gebe ich Ihnen auf Basis des besten Wissensbasis-Treffers die folgende praxisnahe Orientierung:',
-                '',
                 this.buildGenericFallbackSummary(query, snippets[0], 'de', options.diagnosis),
             ].join('\n');
         }
@@ -888,6 +900,9 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
     private buildTurkishFallbackSummary(query: string, snippet: { title: string; excerpt: string }, diagnosis?: DiagnosisResult): string {
         const normalizedQuery = this.normalizeSearchText(query);
         const normalizedEvidence = this.normalizeSearchText(`${snippet.title} ${snippet.excerpt}`);
+        const asksLoopbackAdapter =
+            /(?:loopback|loopback adapter|geri dongu|network adapter|ag bagdastirici|bagdastirici)/.test(normalizedQuery) &&
+            /(?:workgroup|workgroupmanager|offline|ag|network|tek basina|standalone|baglanti|adapter|bagdastirici|gerekir|kurulur|install)/.test(normalizedQuery);
         const asksLicenseBorrowing = this.isLicenseBorrowingQuery(normalizedQuery);
         const asksLicenseAccessRights =
             /(?:lisans|license|lizenz|codemeter|wibu)/.test(normalizedQuery) &&
@@ -900,7 +915,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             /(?:dwg|dxf|autocad)/.test(normalizedQuery) &&
             /(?:layer|katman|referans|xref|dosya|export|disa aktar|aktarim|koru|korunur|korumak)/.test(normalizedQuery);
         const asksGraphicsDriverUpdate =
-            /(?:grafik karti|grafik kartlari|ekran karti|ekran kartlari|graphics card|gpu|nvidia|amd)/.test(normalizedQuery) &&
+            /(?:grafik karti|grafik kartlari|ekran karti|ekran kartlari|graphics card|graphics|gpu|display adapter|driver|nvidia|amd)/.test(normalizedQuery) &&
             /(?:guncelle|guncelleme|update|current|surum)/.test(normalizedQuery);
         const asksWorkgroupComputerAdd =
             /(?:workgroup|workgroupmanager|workgroup manager|calisma grubu|çalisma grubu)/.test(normalizedQuery) &&
@@ -929,6 +944,32 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                 '- Aktarılacak çizim dosyası, katman ve eleman setini daraltın; gereksiz veya gizli katmanları export kapsamından çıkarın.',
                 '- Birim, ölçek ve koordinat ayarlarını kontrol edin; alıcı tarafta kayma veya ölçek bozulması genelde bu ayarlardan kaynaklanır.',
                 '- Teslimden önce küçük bir deneme exportu yapıp DWG viewer veya AutoCAD tarafında layer adlarını, görünürlüğü ve referans bağlantılarını kontrol edin.',
+            ].join('\n');
+        }
+
+        if (asksLoopbackAdapter && /(?:loopback|workgroup|workgroupmanager|network|netzwerk|adapter|bagdastirici|standalone|offline|hdwwiz)/.test(normalizedEvidence)) {
+            return [
+                '## 📌 Sorun Yorumu',
+                'Loopback adaptörü, Workgroup Manager kullanılan bir bilgisayar ağdan ayrıldığında veya tek başına çalışırken Windows ağ işlevselliğinin tamamen kapanmasını önlemek için gerekir.',
+                '',
+                '## 🎯 En Olası Neden',
+                'Allplan Workgroup Manager bazı ağ protokollerine ihtiyaç duyar. Fiziksel ağ bağlantısı yoksa Windows ağ arabirimlerini pasifleştirebilir; loopback adaptörü bu durumda sanal bir ağ arabirimi sağlayarak Allplan’ın ağ bağımlı bileşenlerinin çalışmaya devam etmesine yardımcı olur.',
+                '',
+                '## ⚠️ Kritik Kontroller',
+                '- Kurulum için Windows yönetici yetkisi gerekir.',
+                '- Bu ihtiyaç genelde Workgroup Manager ile offline/standalone çalışma senaryosunda ortaya çıkar.',
+                '- İşlem öncesinde mevcut ağ ve Workgroup Manager yapılandırmasını not alın.',
+                '',
+                '## 🛠️ Çözüm Adımları',
+                '1. Windows Başlat menüsünde Çalıştır ekranını açın.',
+                '2. `hdwwiz` komutunu çalıştırın ve Donanım Ekleme Sihirbazı’nı yönetici olarak başlatın.',
+                '3. Listeden el ile donanım seçme seçeneğiyle devam edin.',
+                '4. Ağ bağdaştırıcıları kategorisini seçin.',
+                '5. Microsoft üreticisi altında Microsoft KM-TEST Loopback Adaptörü’nü seçip kurulumu tamamlayın.',
+                '',
+                '## ✅ Doğrulama',
+                '- Aygıt Yöneticisi > Ağ bağdaştırıcıları altında loopback adaptörünün göründüğünü kontrol edin.',
+                '- Ağ bağlantısı yokken Allplan Workgroup Manager senaryosunu tekrar deneyin.',
             ].join('\n');
         }
 
@@ -1040,11 +1081,133 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             ].join('\n');
         }
 
-        return this.buildGenericFallbackSummary(query, snippet, 'tr', diagnosis);
+        return this.buildNoUsableFallbackContentMessage('tr');
     }
 
     private buildEnglishFallbackSummary(query: string, snippet: { title: string; excerpt: string }): string | null {
         const normalizedQuery = this.normalizeSearchText(query);
+        const normalizedEvidence = this.normalizeSearchText(`${snippet.title} ${snippet.excerpt}`);
+        const asksGraphicsDriverUpdate =
+            /(?:graphics|gpu|display adapter|nvidia|amd|driver)/.test(normalizedQuery) &&
+            /(?:update|latest|certified|current|install)/.test(normalizedQuery);
+        const asksLoopbackAdapter =
+            /(?:loopback|loopback adapter|network adapter)/.test(normalizedQuery) &&
+            /(?:workgroup|workgroupmanager|offline|network|standalone|adapter|install|needed|need|required|when|why)/.test(normalizedQuery);
+        const asksLicenseInstallFailure =
+            /(?:license|codemeter|wibu)/.test(normalizedQuery) &&
+            /(?:server)/.test(normalizedQuery) &&
+            /(?:install|installation|setup|failed|failure)/.test(normalizedQuery);
+        const asksLicenseAccessRights =
+            /(?:license|codemeter|wibu)/.test(normalizedQuery) &&
+            /(?:server)/.test(normalizedQuery) &&
+            /(?:access|rights|permission|permissions|user|users|seat|seats|assign)/.test(normalizedQuery);
+
+        if (asksGraphicsDriverUpdate && /(?:graphics|gpu|display|driver|nvidia|amd|certified)/.test(normalizedEvidence)) {
+            return [
+                '## 📌 Problem Interpretation',
+                'You want to update or verify the graphics driver used by Allplan.',
+                '',
+                '## 🎯 Most Probable Cause',
+                'Graphics and display issues are often related to an outdated, non-certified, or unsuitable GPU driver package.',
+                '',
+                '## ⚠️ Critical Checks',
+                '- Confirm the exact GPU model in the workstation.',
+                '- Use the certified or manufacturer-recommended driver package for that GPU.',
+                '- Restart Windows after installing the driver.',
+                '',
+                '## 🛠️ Solution Steps',
+                `1. ${this.cleanSupportEvidence(snippet.excerpt, 220)}`,
+                '2. Download the appropriate driver from the GPU manufacturer or certified Allplan guidance.',
+                '3. Install the driver with administrator rights.',
+                '4. Restart the workstation before testing Allplan again.',
+                '',
+                '## ✅ Verification',
+                '- Check Device Manager or the GPU control panel to confirm the new driver version.',
+                '- Start Allplan and repeat the affected operation.',
+            ].join('\n');
+        }
+
+        if (asksLoopbackAdapter && /(?:loopback|workgroup|workgroupmanager|network|adapter|standalone|offline|hdwwiz)/.test(normalizedEvidence)) {
+            return [
+                '## 📌 Issue Summary',
+                'A loopback adapter is needed when an Allplan Workgroup Manager workstation must keep network-dependent functionality available while it is disconnected from the physical network or used in a standalone/offline scenario.',
+                '',
+                '## 🎯 Most Probable Cause',
+                'Workgroup Manager depends on Windows networking components. When the computer is disconnected, Windows can disable normal network functionality; a loopback adapter provides a virtual network adapter so those components remain available.',
+                '',
+                '## ⚠️ Critical Checks',
+                '- You need Windows administrator rights to install the adapter.',
+                '- This applies mainly to Workgroup Manager standalone/offline scenarios.',
+                '- Note the existing Workgroup Manager and network configuration before changing adapters.',
+                '',
+                '## 🛠️ Solution Steps',
+                '1. Open the Windows Run dialog.',
+                '2. Run `hdwwiz` as administrator to open the Add Hardware wizard.',
+                '3. Choose the option to manually select hardware from a list.',
+                '4. Select Network adapters.',
+                '5. Select Microsoft and install Microsoft KM-TEST Loopback Adapter.',
+                '',
+                '## ✅ Verification',
+                '- Confirm that the loopback adapter appears under Device Manager > Network adapters.',
+                '- Test the Allplan Workgroup Manager scenario again while disconnected from the physical network.',
+            ].join('\n');
+        }
+
+        if (asksLicenseInstallFailure && /(?:license|codemeter|wibu|installation|install|setup|administrator|antivirus|runtime)/.test(normalizedEvidence)) {
+            return [
+                '## 📌 Problem Interpretation',
+                'The Allplan license server installation failed and you need the first checks before retrying the setup.',
+                '',
+                '## 🎯 Most Probable Cause',
+                'The installation can fail when CodeMeter Runtime components, administrator rights, security software, or setup logs indicate a blocked or incomplete installation.',
+                '',
+                '## ⚠️ Critical Checks',
+                '- Check whether Wibu CodeMeter Runtime is installed correctly.',
+                '- Run the license server setup as administrator.',
+                '- Temporarily disable antivirus real-time protection only for the installation test if it blocks setup files.',
+                '- Review the installation log for the exact error message.',
+                '',
+                '## 🛠️ Solution Steps',
+                '1. Save the license server setup locally on the server.',
+                '2. Right-click the setup file and run it as administrator.',
+                '3. If the setup still fails, verify or reinstall CodeMeter Runtime.',
+                '4. Temporarily disable blocking antivirus protection during the retry, then re-enable it after the test.',
+                '5. Use the installation log to identify the exact failing component.',
+                '',
+                '## ✅ Verification',
+                '- The license server setup should complete without the installation failed message.',
+                '- CodeMeter service should be visible and running after installation.',
+                '- Allplan clients should be able to detect the license server after setup.',
+            ].join('\n');
+        }
+
+        if (asksLicenseAccessRights && /(?:license|codemeter|wibu|access|permission|permissions|rights|users|groups|seats|webadmin)/.test(normalizedEvidence)) {
+            return [
+                '## 📌 Problem Interpretation',
+                'You want to assign license server access rights to individual users or groups.',
+                '',
+                '## 🎯 Most Probable Cause',
+                'License access is managed in the license server or CodeMeter access rules, separate from general Allplan project permissions.',
+                '',
+                '## ⚠️ Critical Checks',
+                '- Open the license server administration with administrator rights.',
+                '- Confirm the users, groups, computers, or IP ranges that should receive access.',
+                '- Note the existing access rules before changing them.',
+                '',
+                '## 🛠️ Solution Steps',
+                '1. Open CodeMeter WebAdmin or the license server administration interface.',
+                '2. Go to Server access permissions.',
+                '3. Assign the required users or groups to the relevant license seats.',
+                '4. Deny access for users who should not select those seats.',
+                '5. Restart or refresh the license service if changes are not visible.',
+                '',
+                '## ✅ Verification',
+                '- An allowed user should be able to obtain a license from the server.',
+                '- A denied user should not be able to select the restricted seats.',
+                '- CodeMeter or license server logs should reflect the access decision.',
+            ].join('\n');
+        }
+
         if (!this.isLicenseBorrowingQuery(normalizedQuery)) {
             return null;
         }
@@ -1156,6 +1319,35 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             'Bu konu için bilgi kaynağında yeterince güvenilir ve doğrudan eşleşen içerik bulunamadı.',
             'Lütfen destek talebi oluşturun; ürün sürümü, ortam bilgisi, ekran görüntüsü ve varsa tam hata metnini ekleyin.',
         ].join('\n');
+    }
+
+    private buildNoMatchMessage(language: SupportedAnswerLanguage, includeHotinfoHint: boolean): string {
+        const messages = {
+            en: includeHotinfoHint
+                ? 'The knowledge base does not contain enough reliable information for this exact question yet. Please create a support request and include the product version, environment details, screenshots, and the exact error or scenario.'
+                : 'The knowledge base does not contain enough reliable information for this exact question yet. A support agent will continue the review.',
+            de: includeHotinfoHint
+                ? 'Die Wissensbasis enthält für diese konkrete Frage noch keine ausreichend verlässlichen Informationen. Bitte erstellen Sie eine Support-Anfrage und fügen Sie Produktversion, Umgebungsdetails, Screenshots und die genaue Fehlermeldung oder Situation hinzu.'
+                : 'Die Wissensbasis enthält für diese konkrete Frage noch keine ausreichend verlässlichen Informationen. Ein Support-Mitarbeiter setzt die Prüfung fort.',
+            tr: includeHotinfoHint
+                ? 'Bu konu için bilgi kaynağında yeterince güvenilir bilgi bulunamadı. Lütfen destek talebi oluşturun; ürün sürümü, ortam bilgisi, ekran görüntüsü ve varsa tam hata metnini ekleyin.'
+                : 'Bu konu mevcut bilgi kaynağında yeterince güvenilir şekilde yer almıyor. İşleminize destek temsilcisi ile devam edilecektir.',
+        };
+
+        return messages[language];
+    }
+
+    private buildInteractionLanguageContext(
+        responseLanguage: SupportedAnswerLanguage,
+        requestLocale: string | undefined,
+        generationState: string,
+    ): Record<string, string> {
+        return {
+            responseLanguage,
+            requestLocale: requestLocale || responseLanguage,
+            languageSource: requestLocale ? 'ui' : 'resolved',
+            generationState,
+        };
     }
 
     private inferFallbackTopic(

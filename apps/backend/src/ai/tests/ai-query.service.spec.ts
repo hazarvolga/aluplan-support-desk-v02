@@ -201,7 +201,7 @@ describe('AiQueryService', () => {
             // Even though it found something, threshold logic should reject it.
             const result = await service.query({ userQuery: customerQuery, userId: 'session-456' });
 
-            expect(result.answer).toContain('Bu konu mevcut bilgi kaynağında yer almıyor');
+            expect(result.answer).toContain('Bu konu için bilgi kaynağında yeterince güvenilir bilgi bulunamadı');
             expect(result.confidence).toBe('NO_MATCH');
             expect(mockAiService.generateResponse).not.toHaveBeenCalled();
         });

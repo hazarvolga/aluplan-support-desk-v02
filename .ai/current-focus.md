@@ -50,6 +50,8 @@
   - customer `AiQueryService` and admin `AiCopilotService` now share `buildSupportAnswerContractPrompt(...)`.
   - admin Copilot no longer has its own shortened answer structure layered over the master diagnosis prompt.
   - shared contract enforces exact intent, no how-to-to-outage drift, same customer/admin core solution, and no raw excerpt/source leakage for customer answers.
+  - ticket-opening UI language is now persisted on `AiInteraction.userContext.responseLanguage` and admin Copilot prioritizes that language over the creator profile language.
+  - deterministic customer fallbacks no longer cache transient model timeouts or expose generic source-title/snippet summaries when no structured fallback exists.
 - Ticket Interaction Idempotency Phase 5 started:
   - repeated ticket creation from the same AI interaction no longer leaks Prisma `interaction_id` uniqueness as HTTP 500.
   - backend returns the existing ticket for the same user with `alreadyCreated: true`.

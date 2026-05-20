@@ -78,6 +78,28 @@ describe('AiCopilotService', () => {
             expect(prompt).toContain('do not convert it into an outage/root-cause diagnosis');
         });
 
+        it('uses the ticket-opening interaction language before the creator profile language', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue({
+                ...mockTicket,
+                interaction: {
+                    userContext: {
+                        responseLanguage: 'en',
+                        requestLocale: 'en',
+                        languageSource: 'ui',
+                    },
+                },
+                creator: { id: 'u1', language: 'tr', customerProfile: { hotinfoData: {} } },
+            });
+            mockAi.generate.mockResolvedValue('Generated English draft response');
+
+            await service.generateDraft('tik-1');
+
+            const prompt = mockAi.generate.mock.calls[0][0];
+            expect(prompt).toContain('Output language must be English');
+            expect(prompt).toContain('## 📌 Issue Summary');
+            expect(prompt).not.toContain('Output language must be Turkish');
+        });
+
         it('should handle image attachments correctly', async () => {
             const ticketWithImg = {
                 ...mockTicket,
