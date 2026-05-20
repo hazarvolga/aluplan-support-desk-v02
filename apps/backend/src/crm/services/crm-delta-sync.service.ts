@@ -76,7 +76,7 @@ export class CrmDeltaSyncService {
     }
 
     async getRecentChanges(connectionId?: string, limit = 50) {
-        return (this.prisma as any).crmChangeLog.findMany({
+        return this.prisma.crmChangeLog.findMany({
             where: connectionId ? { connectionId } : undefined,
             orderBy: { changedAt: 'desc' },
             take: Math.min(Math.max(limit, 1), 200),
@@ -84,7 +84,7 @@ export class CrmDeltaSyncService {
     }
 
     private async syncEntity(connection: any, entityType: EntityType): Promise<DeltaResult> {
-        const state = await (this.prisma as any).crmDeltaSyncState.findUnique({
+        const state = await this.prisma.crmDeltaSyncState.findUnique({
             where: {
                 connectionId_entityType: {
                     connectionId: connection.id,
@@ -98,7 +98,7 @@ export class CrmDeltaSyncService {
         let errorCount = 0;
 
         try {
-            const before = await (this.prisma as any).crmChangeLog.count({
+            const before = await this.prisma.crmChangeLog.count({
                 where: {
                     connectionId: connection.id,
                     entityType,
@@ -137,7 +137,7 @@ export class CrmDeltaSyncService {
                 }
             }
 
-            await (this.prisma as any).crmDeltaSyncState.upsert({
+            await this.prisma.crmDeltaSyncState.upsert({
                 where: {
                     connectionId_entityType: {
                         connectionId: connection.id,
@@ -158,7 +158,7 @@ export class CrmDeltaSyncService {
                 },
             });
 
-            const after = await (this.prisma as any).crmChangeLog.count({
+            const after = await this.prisma.crmChangeLog.count({
                 where: {
                     connectionId: connection.id,
                     entityType,
@@ -184,7 +184,7 @@ export class CrmDeltaSyncService {
                 changeCount,
             };
         } catch (error) {
-            await (this.prisma as any).crmDeltaSyncState.upsert({
+            await this.prisma.crmDeltaSyncState.upsert({
                 where: {
                     connectionId_entityType: {
                         connectionId: connection.id,
@@ -217,7 +217,7 @@ export class CrmDeltaSyncService {
                 where: { id: existing.id },
                 data: { crmVerified: false },
             });
-            await (this.prisma as any).crmChangeLog.create({
+            await this.prisma.crmChangeLog.create({
                 data: {
                     connectionId,
                     entityType,
@@ -258,7 +258,7 @@ export class CrmDeltaSyncService {
                 }
             }
 
-            await (tx as any).crmChangeLog.create({
+            await tx.crmChangeLog.create({
                 data: {
                     connectionId,
                     entityType,

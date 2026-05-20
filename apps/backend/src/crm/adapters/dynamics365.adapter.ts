@@ -3,8 +3,8 @@ import { CrmProvider, SyncStatus } from '@aluplan/database';
 import { ICrmAdapter, SyncResult } from './crm-adapter.interface';
 import axios from 'axios';
 import { PrismaService } from '../../prisma/prisma.service';
-
 import { ConfigService } from '@nestjs/config';
+import { CrmRecordSyncService } from '../services/crm-record-sync.service';
 
 @Injectable()
 export class Dynamics365Adapter implements ICrmAdapter {
@@ -14,39 +14,9 @@ export class Dynamics365Adapter implements ICrmAdapter {
     constructor(
         private readonly prisma: PrismaService,
         private readonly config: ConfigService,
+        private readonly recordSync: CrmRecordSyncService,
     ) {}
 
-    /**
-     * Patch system integrity (Ghost user check)
-     * In some environments, the primary admin user might be missing from DB
-     * even if seeds were run. This ensures the admin specified in env exists.
-     */
-    async onModuleInit() {
-        if (process.env.NODE_ENV === 'provision') return;
-
-        try {
-            const adminEmail = this.config.get<string>('ADMIN_EMAIL') || 'admin@example.com';
-            const mainUser = await this.prisma.user.findUnique({
-                where: { email: adminEmail },
-            });
-
-            if (mainUser) {
-                const adminRole = await this.prisma.role.findFirst({
-                    where: { name: 'ADMIN' },
-                });
-
-                if (adminRole && mainUser.roleId !== adminRole.id) {
-                    await this.prisma.user.update({
-                        where: { id: mainUser.id },
-                        data: { roleId: adminRole.id },
-                    });
-                    this.logger.log(`🛡️ System Integrity: Role for ${adminEmail} updated to ADMIN.`);
-                }
-            }
-        } catch (e: any) {
-            this.logger.warn(`System integrity check failed: ${e.message}`);
-        }
-    }
 
     async verifyConnection(config: any): Promise<boolean> {
         try {
@@ -59,7 +29,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
         }
     }
 
-    async syncAccounts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult> {
+    async syncAccounts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void | Promise<void>): Promise<SyncResult> {
         try {
             const accounts = await this.fetchAccounts(config);
             this.logger.debug(`Total accounts fetched: ${accounts.length}`);
@@ -74,71 +44,14 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
             for (const account of accounts) {
                 try {
-                    const mappings = (config.syncSettings?.accountMapping || {}) as Record<string, string>;
-
-                    const name = this.resolveField(account, 'name', mappings, 'name');
-                    const industry = this.resolveField(account, 'industry', mappings, 'industrycode@OData.Community.Display.V1.FormattedValue');
-                    const website = this.resolveField(account, 'website', mappings, 'websiteurl');
-                    const address = this.resolveField(account, 'address', mappings, 'address1_composite');
-                    const externalId = this.resolveField(account, 'externalAccountId', mappings, 'accountid');
-                    const accountNumber = this.resolveField(account, 'accountNumber', mappings, 'accountnumber');
-                    const serviceAddress = this.resolveFirstField(account, 'serviceAddress', mappings, [
-                        'address1_composite',
-                        'address1_line1',
-                        'address1_name',
-                    ]);
-                    const clientIdFrilo = this.resolveFirstField(account, 'clientIdFrilo', mappings, [
-                        'new_clientidfrilo',
-                        'new_clientid_frilo',
-                        'new_friloclientid',
-                        'new_frilo_clientid',
-                        'new_friloid',
-                    ]);
-                    const phone = this.resolveFirstField(account, 'phone', mappings, ['telephone1', 'telephone2', 'telephone3']);
-                    const fax = this.resolveFirstField(account, 'fax', mappings, ['fax']);
-                    const licenseManagerName = this.resolveFirstField(account, 'licenseManagerName', mappings, [
-                        'new_lisansyoneticisiisimsoyisim',
-                        'new_lisans_yoneticisi_isim_soyisim',
-                        'new_licensemanagername',
-                        'new_license_manager_name',
-                    ]);
-
-                    await this.prisma.crmAccount.upsert({
-                        where: { externalAccountId: externalId },
-                        update: {
-                            name,
-                            website,
-                            address,
-                            serviceAddress,
-                            industry,
-                            account_number: accountNumber,
-                            clientIdFrilo,
-                            phone,
-                            fax,
-                            licenseManagerName,
-                            rawCrmPayload: account,
-                            crmVerified: true,
-                        },
-                        create: {
-                            name,
-                            externalAccountId: externalId,
-                            website,
-                            address,
-                            serviceAddress,
-                            industry,
-                            account_number: accountNumber,
-                            clientIdFrilo,
-                            phone,
-                            fax,
-                            licenseManagerName,
-                            rawCrmPayload: account,
-                            crmVerified: true,
-                        },
+                    await this.recordSync.upsertAccountFromDynamics(account, config, {
+                        connectionId: config.id,
+                        source: 'FULL_IMPORT',
+                        recordChanges: true,
                     });
-
                     successCount++;
                 } catch (err) {
-                    this.logger.error(`Failed to sync account ${account.name}`, err.stack);
+                    this.logger.error(`Failed to sync account ${account.name || account.accountid}`, err.stack);
                     failedRecords.push({
                         externalId: account.accountid,
                         entityType: 'account',
@@ -147,7 +60,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     errorCount++;
                 } finally {
                     if (onProgress) {
-                        onProgress({
+                        await onProgress({
                             success: successCount,
                             error: errorCount,
                             total: accounts.length,
@@ -176,7 +89,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
         }
     }
 
-    async syncContacts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult> {
+    async syncContacts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void | Promise<void>): Promise<SyncResult> {
         try {
             const contacts = await this.fetchContacts(config);
             this.logger.debug(`Total contacts fetched: ${contacts.length}`);
@@ -194,197 +107,31 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 errorCode?: string;
             }> = [];
 
-            // Pre-fetch or create CUSTOMER role
-            let customerRole = await this.prisma.role.findFirst({
-                where: { name: { equals: 'CUSTOMER', mode: 'insensitive' } },
-            });
-
-            if (!customerRole) {
-                this.logger.warn('CUSTOMER role not found, creating it systemwide');
-                customerRole = await this.prisma.role.create({
-                    data: {
-                        name: 'CUSTOMER',
-                        isSystem: true,
-                        description: 'Default role for CRM-synced customers',
-                    },
-                });
-            }
-            this.logger.debug(`Using CUSTOMER role ID: ${customerRole.id}`);
-
             for (const contact of contacts) {
-                let email = contact.emailaddress1;
-                let isPlaceholderEmail = false;
-
-                if (!email) {
-                    // Placeholder Strategy: generate a deterministic internal email for visibility
-                    email = `no-email-${contact.contactid}@internal.aluplan`;
-                    isPlaceholderEmail = true;
-                    this.logger.debug(`Contact ${contact.contactid} missing email, using placeholder: ${email}`);
-                }
-
                 try {
-                    await this.prisma.$transaction(async (tx) => {
-                        // 1. Find or create User
-                        let user = await tx.user.findUnique({
-                            where: { email: email },
-                        });
-
-                        if (!user) {
-                            this.logger.debug(`Creating new user for email: ${email}`);
-
-                            user = await tx.user.create({
-                                data: {
-                                    email: email,
-                                    fullName: `${contact.firstname || ''} ${contact.lastname || ''}`.trim() || 'CRM Contact',
-                                    status: isPlaceholderEmail ? 'INACTIVE' : 'ACTIVE',
-                                    passwordHash: 'CRM_SYNCED',
-                                    roleId: customerRole?.id,
-                                },
-                                include: { role: true },
-                            });
-                            this.logger.debug(`Created user ID: ${user.id} with role: ${customerRole?.name}`);
-                        } else {
-                            // BROADEN PROTECTION: Don't demote any user who is NOT currently a CUSTOMER
-                            const currentRole = await tx.role.findUnique({
-                                where: { id: user.roleId || '' },
-                            });
-                            const isAlreadyCustomer = currentRole?.name.toUpperCase() === 'CUSTOMER';
-
-                            if (!isAlreadyCustomer && currentRole) {
-                                this.logger.debug(`Preserving protected role "${currentRole.name}" for user: ${user.email}`);
-                            } else if (customerRole && user.roleId !== customerRole.id) {
-                                user = await tx.user.update({
-                                    where: { id: user.id },
-                                    data: { roleId: customerRole.id },
-                                    include: { role: true },
-                                });
-                                this.logger.debug(`Updated existing user ID: ${user.id} to CUSTOMER role`);
-                            }
-
-                            // Update status if it was placeholder but now has email (unlikely but safe)
-                            if (!isPlaceholderEmail && user.status === 'INACTIVE' && user.passwordHash === 'CRM_SYNCED') {
-                                await tx.user.update({
-                                    where: { id: user.id },
-                                    data: { status: 'ACTIVE' },
-                                });
-                            }
-                        }
-
-                        // 2. Find Linked Account if any
-                        let linkedAccountId: string | undefined = undefined;
-                        let accountInfo: any = null;
-
-                        if (contact.parentcustomerid_account?.accountid) {
-                            accountInfo = await tx.crmAccount.findUnique({
-                                where: {
-                                    externalAccountId: contact.parentcustomerid_account.accountid,
-                                },
-                            });
-                            linkedAccountId = accountInfo?.id;
-
-                            if (!linkedAccountId) {
-                                this.logger.warn(
-                                    `Contact ${contact.contactid}: parent account ${contact.parentcustomerid_account.accountid} not found in DB, saving with accountId=null`,
-                                );
-                                skippedLinks.push({
-                                    contactExternalId: contact.contactid,
-                                    missingAccountExternalId: contact.parentcustomerid_account.accountid,
-                                });
-                            }
-                        }
-
-                        const mappings = (config.syncSettings?.contactMapping || {}) as Record<string, string>;
-
-                        // Resolving names: if fullName is mapped specifically, use it.
-                        // Otherwise try to find firstname/lastname maps OR use defaults.
-                        const firstName = this.limitString(this.resolveField(contact, 'fullName', mappings, 'firstname') || '-', 100);
-                        const lastName = this.limitString(this.resolveField(contact, 'lastName', mappings, 'lastname') || '-', 100);
-                        const jobTitle = this.asNullableString(this.resolveField(contact, 'jobTitle', mappings, 'jobtitle'), 255);
-                        const phoneNumber = this.asNullableString(this.resolveField(contact, 'phoneNumber', mappings, 'telephone1'), 50);
-                        const contactId = this.resolveField(contact, 'externalContactId', mappings, 'contactid');
-                        const contractStatus = this.asNullableString(
-                            this.resolveField(contact, 'contractStatus', mappings, 'new_musteridurumu@OData.Community.Display.V1.FormattedValue'),
-                            100,
-                        );
-                        const subscriptionModel = this.asNullableString(this.resolveField(contact, 'subscriptionModel', mappings, 'new_AbonelikModeli'), 100);
-
-                        // industry: account expand'dan gelir, contact'ta bu veri yok
-                        const industryFromAccount = this.asNullableString(
-                            accountInfo?.industry ||
-                                (contact.parentcustomerid_account
-                                    ? contact.parentcustomerid_account['industrycode@OData.Community.Display.V1.FormattedValue']
-                                    : null),
-                            255,
-                        );
-
-                        // companyName: mapping'den veya expand'dan gelen account adı
-                        const companyName = this.limitString(
-                            this.resolveField(contact, 'companyName', mappings, 'parentcustomerid_account.name') ||
-                                contact.parentcustomerid_account?.name ||
-                                accountInfo?.name ||
-                                'Unknown',
-                            255,
-                        );
-
-                        // customerNo:
-                        // 1. CRM Mapping'den gelen özel bir değer varsa onu kullanalım (en yüksek öncelikli)
-                        // 2. Eğer o yoksa hesap numarasını (Account Number) baz alalım ama çakışmayı önlemek için contact fragment ekleyelim
-                        // 3. O da yoksa contactId'den türetelim.
-                        const mappedNo = this.resolveField(contact, 'customerNo', mappings, 'new_customerid');
-                        let accountNum = accountInfo?.account_number || contact.parentcustomerid_account?.accountnumber;
-
-                        let clientNo: string;
-                        if (mappedNo && mappedNo !== '-') {
-                            clientNo = this.limitString(mappedNo, 50);
-                        } else if (accountNum) {
-                            // Birden fazla çalışan aynı hesap numarasına sahip olabileceği için benzersizlik için ek takı kullanıyoruz
-                            clientNo = this.limitString(`${accountNum}-${contactId.substring(0, 5)}`, 50);
-                        } else {
-                            clientNo = this.limitString(`DYN-${contactId.substring(0, 10)}`, 50);
-                        }
-
-                        this.logger.debug(`Generated unique customerNo: ${clientNo} for contact: ${email} (Account: ${accountNum || 'N/A'})`);
-
-                        // 3. Sync CustomerProfile manually to bypass Prisma upsert ghost column bug
-                        const existingProfile = await tx.customerProfile.findUnique({
-                            where: { userId: user.id },
-                        });
-
-                        const profileData = {
-                            firstName,
-                            lastName,
-                            jobTitle,
-                            phoneNumber,
-                            companyName,
-                            externalContactId: contactId,
-                            customerNo: clientNo,
-                            contractStatus,
-                            subscriptionModel: subscriptionModel || null,
-                            industry: industryFromAccount || null,
-                            crmVerified: true,
-                        };
-
-                        if (existingProfile) {
-                            await tx.customerProfile.update({
-                                where: { id: existingProfile.id },
-                                data: {
-                                    ...profileData,
-                                    accountId: linkedAccountId || null,
-                                },
-                            });
-                        } else {
-                            await tx.customerProfile.create({
-                                data: {
-                                    ...profileData,
-                                    user: { connect: { id: user.id } },
-                                    ...(linkedAccountId ? { account: { connect: { id: linkedAccountId } } } : {}),
-                                },
-                            });
-                        }
+                    const profile = await this.recordSync.upsertContactFromDynamics(contact, config, {
+                        connectionId: config.id,
+                        source: 'FULL_IMPORT',
+                        recordChanges: true,
                     });
-                    successCount++;
+
+                    if (profile) {
+                        successCount++;
+                        const parentAccountId = contact.parentcustomerid_account?.accountid || contact._parentcustomerid_value;
+                        if (parentAccountId && !profile.accountId) {
+                            skippedLinks.push({
+                                contactExternalId: contact.contactid,
+                                missingAccountExternalId: parentAccountId,
+                            });
+                        }
+                    } else {
+                        skippedRecords.push({
+                            externalId: contact.contactid,
+                            reason: 'Skipped by record sync service (e.g. protected admin email)',
+                        });
+                    }
                 } catch (err) {
-                    this.logger.error(`Failed to sync contact ${contact.emailaddress1}`, err.stack);
+                    this.logger.error(`Failed to sync contact ${contact.emailaddress1 || contact.contactid}`, err.stack);
                     failedRecords.push({
                         externalId: contact.contactid,
                         entityType: 'contact',
@@ -393,7 +140,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     errorCount++;
                 } finally {
                     if (onProgress) {
-                        onProgress({
+                        await onProgress({
                             success: successCount,
                             error: errorCount,
                             total: contacts.length,
@@ -713,7 +460,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
         const { tenantId, clientId, clientSecret, instanceUrl: rawInstanceUrl } = config;
 
         // Debug Phase: Secure Parameter Verification
-        const mask = (str: string) => (str ? `${str.substring(0, 4)}...${str.substring(str.length - 4)}` : 'NULL');
+        const mask = (str: string) => (str ? (str.length < 8 ? '****' : `${str.substring(0, 4)}...${str.substring(str.length - 4)}`) : 'NULL');
         this.logger.log(
             `[TOKEN_ACQUISITION] Params: Tenant=${mask(tenantId)} (${tenantId?.length}), ClientID=${mask(clientId)} (${clientId?.length}), Secret=${mask(clientSecret)} (${clientSecret?.length}), Instance=${rawInstanceUrl}`,
         );

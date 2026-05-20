@@ -2,6 +2,7 @@ import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from
 import { PrismaService } from '../../prisma/prisma.service';
 import { CryptoService } from '../../utils/crypto.service';
 import { CrmProvider } from '@aluplan/database';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class CrmWebhookGuard implements CanActivate {
@@ -19,7 +20,11 @@ export class CrmWebhookGuard implements CanActivate {
         }
 
         const connection = await this.prisma.crmConnection.findFirst({
-            where: { provider: CrmProvider.DYNAMICS_365 }
+            where: {
+                provider: CrmProvider.DYNAMICS_365,
+                isActive: true,
+                deletedAt: null,
+            }
         });
 
         if (!connection || !connection.webhookSecret) {
@@ -28,7 +33,15 @@ export class CrmWebhookGuard implements CanActivate {
 
         const decryptedSecret = this.crypto.decrypt(connection.webhookSecret);
 
-        if (apiKey !== decryptedSecret) {
+        const a = Buffer.from(apiKey);
+        const b = Buffer.from(decryptedSecret);
+
+        if (a.length !== b.length) {
+            crypto.timingSafeEqual(a, a); // dummy run to prevent timing discrepancies
+            throw new UnauthorizedException('Invalid CRM API Key');
+        }
+
+        if (!crypto.timingSafeEqual(a, b)) {
             throw new UnauthorizedException('Invalid CRM API Key');
         }
 

@@ -52,12 +52,12 @@ export interface ICrmAdapter {
     /**
      * Syncs accounts from CRM to Support Desk
      */
-    syncAccounts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult>;
+    syncAccounts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void | Promise<void>): Promise<SyncResult>;
 
     /**
      * Syncs contacts from CRM to Support Desk
      */
-    syncContacts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void): Promise<SyncResult>;
+    syncContacts(config: any, onProgress?: (stats: { success: number; error: number; total: number }) => void | Promise<void>): Promise<SyncResult>;
 
     /**
      * Fetches metadata and sample records for discovery

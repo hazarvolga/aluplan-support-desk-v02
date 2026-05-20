@@ -330,91 +330,55 @@ export class CrmService {
         let contactResult: SyncResult = { ...emptyResult };
 
         try {
-            const useSharedDynamicsFullImport = this.canUseSharedDynamicsFullImport(connection, adapter);
-
             // 1. Sync Accounts (Companies)
-            accountResult = useSharedDynamicsFullImport
-                ? await this.syncDynamicsAccountsThroughRecordService(connection, adapter, (stats) => {
-                      totalAccountRecords = stats.total;
-                      successAccountRecords = stats.success;
-                      errorAccountRecords = stats.error;
+            accountResult = await adapter.syncAccounts(connection, async (stats) => {
+                totalAccountRecords = stats.total;
+                successAccountRecords = stats.success;
+                errorAccountRecords = stats.error;
 
-                      if ((stats.success + stats.error) % 10 === 0 || stats.success + stats.error === stats.total) {
-                          this.prisma.crmSyncLog
-                              .update({
-                                  where: { id: logId },
-                                  data: {
-                                      totalRecords: stats.total,
-                                      successCount: stats.success,
-                                      errorCount: stats.error,
-                                  },
-                              })
-                              .catch((err) => this.logger.error(`Failed to update partial account sync log`, err.stack));
-                      }
-                  })
-                : await adapter.syncAccounts(connection, (stats) => {
-                      totalAccountRecords = stats.total;
-                      successAccountRecords = stats.success;
-                      errorAccountRecords = stats.error;
-
-                      // Update progress every 10 records or at the end
-                      if ((stats.success + stats.error) % 10 === 0 || stats.success + stats.error === stats.total) {
-                          this.prisma.crmSyncLog
-                              .update({
-                                  where: { id: logId },
-                                  data: {
-                                      totalRecords: stats.total,
-                                      successCount: stats.success,
-                                      errorCount: stats.error,
-                                  },
-                              })
-                              .catch((err) => this.logger.error(`Failed to update partial account sync log`, err.stack));
-                      }
-                  });
+                // Update progress every 10 records or at the end
+                if ((stats.success + stats.error) % 10 === 0 || stats.success + stats.error === stats.total) {
+                    try {
+                        await this.prisma.crmSyncLog.update({
+                            where: { id: logId },
+                            data: {
+                                totalRecords: stats.total,
+                                successCount: stats.success,
+                                errorCount: stats.error,
+                            },
+                        });
+                    } catch (err) {
+                        this.logger.error(`Failed to update partial account sync log: ${err.message}`, err.stack);
+                    }
+                }
+            });
 
             if (accountResult.status === SyncStatus.ERROR) {
                 throw new Error(`Account Sync Error: ${accountResult.errorMessage}`);
             }
 
             // 2. Sync Contacts (People)
-            contactResult = useSharedDynamicsFullImport
-                ? await this.syncDynamicsContactsThroughRecordService(connection, adapter, (stats) => {
-                      totalContactRecords = stats.total;
-                      successContactRecords = stats.success;
-                      errorContactRecords = stats.error;
+            contactResult = await adapter.syncContacts(connection, async (stats) => {
+                totalContactRecords = stats.total;
+                successContactRecords = stats.success;
+                errorContactRecords = stats.error;
 
-                      if ((stats.success + stats.error) % 20 === 0 || stats.success + stats.error === stats.total) {
-                          this.prisma.crmSyncLog
-                              .update({
-                                  where: { id: logId },
-                                  data: {
-                                      totalRecords: totalAccountRecords + stats.total,
-                                      successCount: successAccountRecords + stats.success,
-                                      errorCount: errorAccountRecords + stats.error,
-                                  },
-                              })
-                              .catch((err) => this.logger.error(`Failed to update partial contact sync log`, err.stack));
-                      }
-                  })
-                : await adapter.syncContacts(connection, (stats) => {
-                      totalContactRecords = stats.total;
-                      successContactRecords = stats.success;
-                      errorContactRecords = stats.error;
-
-                      // Update progress every 20 records or at the end
-                      if ((stats.success + stats.error) % 20 === 0 || stats.success + stats.error === stats.total) {
-                          this.prisma.crmSyncLog
-                              .update({
-                                  where: { id: logId },
-                                  data: {
-                                      totalRecords: totalAccountRecords + stats.total,
-                                      successCount: successAccountRecords + stats.success,
-                                      errorCount: errorAccountRecords + stats.error,
-                                  },
-                              })
-                              .catch((err) => this.logger.error(`Failed to update partial contact sync log`, err.stack));
-                      }
-                  });
+                // Update progress every 20 records or at the end
+                if ((stats.success + stats.error) % 20 === 0 || stats.success + stats.error === stats.total) {
+                    try {
+                        await this.prisma.crmSyncLog.update({
+                            where: { id: logId },
+                            data: {
+                                totalRecords: totalAccountRecords + stats.total,
+                                successCount: successAccountRecords + stats.success,
+                                errorCount: errorAccountRecords + stats.error,
+                            },
+                        });
+                    } catch (err) {
+                        this.logger.error(`Failed to update partial contact sync log: ${err.message}`, err.stack);
+                    }
+                }
+            });
 
             if (contactResult.status === SyncStatus.ERROR) {
                 throw new Error(`Contact Sync Error: ${contactResult.errorMessage}`);
@@ -447,160 +411,32 @@ export class CrmService {
 
             const details = buildSyncDetails(accountResult, contactResult);
 
-            await this.prisma.crmSyncLog.update({
-                where: { id: logId },
-                data: {
-                    status: SyncStatus.ERROR,
-                    completedAt: new Date(),
-                    errorMessage: error.message,
-                    // Keep current counts in the log even on error
-                    totalRecords: totalAccountRecords + totalContactRecords,
-                    successCount: successAccountRecords + successContactRecords,
-                    errorCount: errorAccountRecords + errorContactRecords,
-                    details: details as unknown as Prisma.InputJsonValue,
-                },
-            });
-
-            await this.prisma.crmConnection.update({
-                where: { id: connection.id },
-                data: { syncStatus: SyncStatus.ERROR },
-            });
-        }
-    }
-
-    private canUseSharedDynamicsFullImport(connection: any, adapter: ICrmAdapter): adapter is DynamicsRawFetchAdapter {
-        return (
-            connection?.provider === CrmProvider.DYNAMICS_365 &&
-            typeof (adapter as any).fetchAccounts === 'function' &&
-            typeof (adapter as any).fetchContacts === 'function'
-        );
-    }
-
-    private async syncDynamicsAccountsThroughRecordService(
-        connection: any,
-        adapter: DynamicsRawFetchAdapter,
-        onProgress?: (stats: { success: number; error: number; total: number }) => void,
-    ): Promise<SyncResult> {
-        try {
-            const accounts = await adapter.fetchAccounts(connection);
-            let successCount = 0;
-            let errorCount = 0;
-            const skippedRecords: SyncResult['skippedRecords'] = [];
-            const failedRecords: SyncResult['failedRecords'] = [];
-
-            for (const account of accounts) {
-                const externalId = String(account?.accountid || account?.id || 'unknown');
-                try {
-                    const synced = await this.recordSync.upsertAccountFromDynamics(account, connection, {
-                        connectionId: connection.id,
-                        source: 'FULL_IMPORT',
-                        recordChanges: true,
-                    });
-
-                    if (synced) {
-                        successCount++;
-                    } else {
-                        skippedRecords.push({
-                            externalId,
-                            reason: 'record_sync_returned_null',
-                        });
-                    }
-                } catch (error) {
-                    failedRecords.push({
-                        externalId,
-                        entityType: 'account',
+            try {
+                await this.prisma.crmSyncLog.update({
+                    where: { id: logId },
+                    data: {
+                        status: SyncStatus.ERROR,
+                        completedAt: new Date(),
                         errorMessage: error.message,
-                    });
-                    errorCount++;
-                } finally {
-                    onProgress?.({
-                        success: successCount,
-                        error: errorCount,
-                        total: accounts.length,
-                    });
-                }
+                        // Keep current counts in the log even on error
+                        totalRecords: totalAccountRecords + totalContactRecords,
+                        successCount: successAccountRecords + successContactRecords,
+                        errorCount: errorAccountRecords + errorContactRecords,
+                        details: details as unknown as Prisma.InputJsonValue,
+                    },
+                });
+            } catch (logErr) {
+                this.logger.error(`Failed to update error sync log: ${logErr.message}`, logErr.stack);
             }
 
-            return {
-                status: SyncStatus.SUCCESS,
-                totalRecords: accounts.length,
-                successCount,
-                errorCount,
-                skippedRecords,
-                failedRecords,
-            };
-        } catch (error) {
-            return {
-                status: SyncStatus.ERROR,
-                totalRecords: 0,
-                successCount: 0,
-                errorCount: 0,
-                errorMessage: error.message,
-            };
-        }
-    }
-
-    private async syncDynamicsContactsThroughRecordService(
-        connection: any,
-        adapter: DynamicsRawFetchAdapter,
-        onProgress?: (stats: { success: number; error: number; total: number }) => void,
-    ): Promise<SyncResult> {
-        try {
-            const contacts = await adapter.fetchContacts(connection);
-            let successCount = 0;
-            let errorCount = 0;
-            const skippedRecords: SyncResult['skippedRecords'] = [];
-            const failedRecords: SyncResult['failedRecords'] = [];
-
-            for (const contact of contacts) {
-                const externalId = String(contact?.contactid || contact?.id || 'unknown');
-                try {
-                    const synced = await this.recordSync.upsertContactFromDynamics(contact, connection, {
-                        connectionId: connection.id,
-                        source: 'FULL_IMPORT',
-                        recordChanges: true,
-                    });
-
-                    if (synced) {
-                        successCount++;
-                    } else {
-                        skippedRecords.push({
-                            externalId,
-                            reason: 'record_sync_returned_null',
-                        });
-                    }
-                } catch (error) {
-                    failedRecords.push({
-                        externalId,
-                        entityType: 'contact',
-                        errorMessage: error.message,
-                    });
-                    errorCount++;
-                } finally {
-                    onProgress?.({
-                        success: successCount,
-                        error: errorCount,
-                        total: contacts.length,
-                    });
-                }
+            try {
+                await this.prisma.crmConnection.update({
+                    where: { id: connection.id },
+                    data: { syncStatus: SyncStatus.ERROR },
+                });
+            } catch (connErr) {
+                this.logger.error(`Failed to update connection error status: ${connErr.message}`, connErr.stack);
             }
-
-            return {
-                status: SyncStatus.SUCCESS,
-                totalRecords: contacts.length,
-                successCount,
-                errorCount,
-                skippedRecords,
-                failedRecords,
-            };
-        } catch (error) {
-            return {
-                status: SyncStatus.ERROR,
-                totalRecords: 0,
-                successCount: 0,
-                errorCount: 0,
-                errorMessage: error.message,
-            };
         }
     }
 
@@ -898,8 +734,11 @@ export class CrmService {
                 deletedAt: null,
             },
         });
+        if (!connection) {
+            throw new NotFoundException('Active CRM connection not found');
+        }
         return this.recordSync.upsertAccountFromDynamics(data, connection, {
-            connectionId: connection?.id,
+            connectionId: connection.id,
             source: 'WEBHOOK',
             recordChanges: true,
         });
@@ -913,8 +752,11 @@ export class CrmService {
                 deletedAt: null,
             },
         });
+        if (!connection) {
+            throw new NotFoundException('Active CRM connection not found');
+        }
         return this.recordSync.upsertContactFromDynamics(data, connection, {
-            connectionId: connection?.id,
+            connectionId: connection.id,
             source: 'WEBHOOK',
             recordChanges: true,
         });

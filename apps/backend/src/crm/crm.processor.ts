@@ -38,7 +38,7 @@ export class CrmProcessor extends WorkerHost {
             };
 
             // Use the existing internal logic but wrapped in the processor
-            await (this.crmService as any).executeSyncProcess(decryptedConnection, adapter, logId);
+            await this.crmService.executeSyncProcess(decryptedConnection, adapter, logId);
 
             return { status: 'completed', connectionId };
         } catch (error) {
