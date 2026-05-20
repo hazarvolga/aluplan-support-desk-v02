@@ -262,57 +262,7 @@ describe('CrmService', () => {
             expect(errorConnUpdate).toBeDefined();
         });
 
-        it('should use shared Dynamics record sync for full imports when raw fetch is available', async () => {
-            const adapterWithRawFetch = {
-                ...mockAdapter,
-                fetchAccounts: jest.fn().mockResolvedValue([
-                    {
-                        accountid: 'acc-1',
-                        name: 'Betaş Beton',
-                        telephone1: '0352 322 20 50',
-                    },
-                ]),
-                fetchContacts: jest.fn().mockResolvedValue([
-                    {
-                        contactid: 'con-1',
-                        emailaddress1: 'hazar@example.com',
-                        parentcustomerid_account: {
-                            accountid: 'acc-1',
-                            name: 'Betaş Beton',
-                        },
-                    },
-                ]),
-            };
-            mockRecordSync.upsertAccountFromDynamics.mockResolvedValue({
-                id: 'local-acc-1',
-            });
-            mockRecordSync.upsertContactFromDynamics.mockResolvedValue({
-                id: 'local-profile-1',
-            });
 
-            await service.executeSyncProcess(connection, adapterWithRawFetch as any, 'log-1');
-
-            expect(adapterWithRawFetch.syncAccounts).not.toHaveBeenCalled();
-            expect(adapterWithRawFetch.syncContacts).not.toHaveBeenCalled();
-            expect(mockRecordSync.upsertAccountFromDynamics).toHaveBeenCalledWith(
-                expect.objectContaining({ accountid: 'acc-1' }),
-                connection,
-                expect.objectContaining({
-                    connectionId: 'conn-1',
-                    source: 'FULL_IMPORT',
-                    recordChanges: true,
-                }),
-            );
-            expect(mockRecordSync.upsertContactFromDynamics).toHaveBeenCalledWith(
-                expect.objectContaining({ contactid: 'con-1' }),
-                connection,
-                expect.objectContaining({
-                    connectionId: 'conn-1',
-                    source: 'FULL_IMPORT',
-                    recordChanges: true,
-                }),
-            );
-        });
     });
 
     // ── buildSyncDetails (via summary counts) ────────────────────────────────
