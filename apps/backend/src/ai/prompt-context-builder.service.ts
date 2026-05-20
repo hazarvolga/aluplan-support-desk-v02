@@ -165,6 +165,7 @@ export class PromptContextBuilderService {
             'Bilgi kaynağında menu yolları veya buton adları varsa, bunları EKSİKSİZ ve KAYNAKTAKI DILDE ver.',
             'Çince, Japonca veya tanınmayan karakter kalıntılarını (Örn: 了解) yanıta EKLEME.',
             'KULLANICI SISTEM BILGILERI (Hotinfo) mevcutsa, yanıtı bu verilere göre özelleştir (Örn: Versiyon 2026 ise 2026 prosedürlerini ver, GPU eskiyse sürücü güncellemesi öner).',
+            'Eğer bir ekran kartının VRAM değeri "Bilinmiyor (Kart Uyku Modunda)" ise donanım yetersizliği teşhisi koyma. Kullanıcıya, "Ekran kartınız uyku modunda olduğu için tam tarayamadım, Allplan açıkken Hotinfo dosyasını yeniden oluşturup gönderir misiniz?" şeklinde kibarca yönlendirme yap.',
             'Hata kodları yakalandığında "ERROR_LOG_PATTERNS" veri kümesine öncelik ver.',
             'Kaynaklarda tam metin eşleşmesi olmasa da en yakın prosedürü öner, tamamen cevapsız bırakma.'
         ];

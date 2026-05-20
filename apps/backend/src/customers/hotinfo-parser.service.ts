@@ -550,11 +550,17 @@ export class HotinfoParserService {
         const width = this.pickString(node, ['@_screen-width', 'screen-width', '@_width', 'width']);
         const height = this.pickString(node, ['@_screen-height', 'screen-height', '@_height', 'height']);
 
+        let vramStr = this.formatMemory(dedicatedMemory, false);
+        if (!vramStr) {
+            const isIntegrated = /intel|amd radeon.*graphics|uhd|iris|vega/i.test(name);
+            vramStr = isIntegrated ? 'Bilinmiyor (Paylaşımlı Bellek)' : 'Bilinmiyor (Kart Uyku Modunda)';
+        }
+
         return {
             name,
             // B3 FIX: dedicatedMemory byte cinsinden (dedicated-memory tag'leri byte kullanır)
             // adapterMemory: memory-size field'ından geldiyse MB cinsinden → alreadyMB=true
-            vram: this.formatMemory(dedicatedMemory, false),
+            vram: vramStr,
             ram: this.formatMemory(adapterMemory, isMemorySizeField),
             resolution:
                 this.pickString(node, ['@_screen-resolution', 'screen-resolution', '@_resolution', 'resolution'], ['screen resolution', 'resolution']) ||
