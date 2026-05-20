@@ -117,7 +117,7 @@ describe('HotinfoParserService', () => {
         expect(data?.graphicsCards[0]).toMatchObject({
             name: 'AMD Radeon(TM) 880M Graphics',
             // B2 FIX: memory-size artık VRAM fallback'e düşmüyor → vram boş
-            vram: '',
+            vram: 'Bilinmiyor (Paylaşımlı Bellek)',
             // B3 FIX: memory-size MB cinsinden (alreadyMB=true) → 512 MB doğru
             ram: '512 MB',
             resolution: '1920 x 1080 x Gerçek Renk (32bit)',
@@ -127,7 +127,7 @@ describe('HotinfoParserService', () => {
         expect(data?.graphicsCards[1]).toMatchObject({
             name: 'NVIDIA GeForce RTX 5070 Laptop GPU',
             // B1 FIX: NVIDIA'nın XML'inde belleği yok → AMD değeri kopyalanmıyor, boş kalır
-            vram: '',
+            vram: 'Bilinmiyor (Kart Uyku Modunda)',
             ram: '',
             resolution: '1920 x 1080 x Gerçek Renk (32bit)',
             driverDate: '20.01.2026',
@@ -168,9 +168,9 @@ describe('HotinfoParserService', () => {
         expect(data?.graphicsCards).toHaveLength(2);
         // B3: memory-size=4096 MB → 4 GB (artık "4096 MB" değil)
         expect(data?.graphicsCards[0].ram).toBe('4 GB');
-        expect(data?.graphicsCards[0].vram).toBe(''); // memory-size VRAM'e düşmüyor
+        expect(data?.graphicsCards[0].vram).toBe('Bilinmiyor (Kart Uyku Modunda)'); // memory-size VRAM'e düşmüyor
         // B1: Intel'in belleği yok → boş kalır, AMD değeri kopyalanmaz
-        expect(data?.graphicsCards[1].vram).toBe('');
+        expect(data?.graphicsCards[1].vram).toBe('Bilinmiyor (Paylaşımlı Bellek)');
         expect(data?.graphicsCards[1].ram).toBe('');
     });
 
