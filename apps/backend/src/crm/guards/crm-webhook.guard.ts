@@ -13,10 +13,10 @@ export class CrmWebhookGuard implements CanActivate {
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
-        const apiKey = request.headers['x-api-key'];
+        const signature = request.headers['x-signature'];
 
-        if (!apiKey) {
-            throw new UnauthorizedException('Missing x-api-key header');
+        if (!signature) {
+            throw new UnauthorizedException('Missing x-signature header');
         }
 
         const connection = await this.prisma.crmConnection.findFirst({
@@ -33,16 +33,28 @@ export class CrmWebhookGuard implements CanActivate {
 
         const decryptedSecret = this.crypto.decrypt(connection.webhookSecret);
 
-        const a = Buffer.from(apiKey);
-        const b = Buffer.from(decryptedSecret);
+        let payload = '';
+        if (request.rawBody) {
+            payload = request.rawBody.toString();
+        } else if (request.body) {
+            payload = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+        }
+
+        const computedSignature = crypto
+            .createHmac('sha256', decryptedSecret)
+            .update(payload)
+            .digest('hex');
+
+        const a = Buffer.from(signature);
+        const b = Buffer.from(computedSignature);
 
         if (a.length !== b.length) {
             crypto.timingSafeEqual(a, a); // dummy run to prevent timing discrepancies
-            throw new UnauthorizedException('Invalid CRM API Key');
+            throw new UnauthorizedException('Invalid CRM Webhook Signature');
         }
 
         if (!crypto.timingSafeEqual(a, b)) {
-            throw new UnauthorizedException('Invalid CRM API Key');
+            throw new UnauthorizedException('Invalid CRM Webhook Signature');
         }
 
         return true;

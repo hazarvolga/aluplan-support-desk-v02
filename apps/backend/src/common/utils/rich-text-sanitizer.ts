@@ -1,55 +1,67 @@
-const ALLOWED_TAGS = ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'h2', 'h3', 'a', 'blockquote', 'code', 'pre'];
+import * as cheerio from 'cheerio';
+
+const ALLOWED_TAGS = new Set(['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'h2', 'h3', 'a', 'blockquote', 'code', 'pre']);
+const DANGEROUS_TAGS = new Set(['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'select', 'textarea', 'meta', 'link']);
 const EMPTY_PATTERN = /^(<p>(<br\s*\/?>)?<\/p>|<br\s*\/?>|\s)*$/i;
 
-const escapeAttribute = (value: string) =>
-    value
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-
-const stripDangerousBlocks = (input: string) =>
-    input
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/<(script|iframe|object|embed|form|input)\b[\s\S]*?<\/\1>/gi, '')
-        .replace(/<(script|iframe|object|embed|form|input)\b[^>]*\/?>/gi, '');
-
-export const stripHtml = (input: string): string => {
-    return stripDangerousBlocks(input).replace(/<[^>]*>/g, '');
+export const stripHtml = (input: string | null | undefined): string => {
+    if (!input) return '';
+    const $ = cheerio.load(input, null, false);
+    // Remove all script and other dangerous blocks completely along with their text contents
+    $('script, style, iframe, object, embed, form, input, button, select, textarea, meta, link').remove();
+    return $.text() || '';
 };
 
 export const sanitizeRichTextHtml = (input: string | null | undefined): string => {
     if (!input) return '';
 
-    return stripDangerousBlocks(input).replace(/<\/?([a-z0-9]+)([^>]*)>/gi, (raw, tagName: string, attrs: string) => {
-        const tag = tagName.toLowerCase();
-        if (!ALLOWED_TAGS.includes(tag)) return '';
+    const $ = cheerio.load(input, null, false);
 
-        if (raw.startsWith('</')) {
-            return tag === 'br' ? '' : `</${tag}>`;
+    // We traverse all elements to strip/whitelist tags and attributes
+    $('*').each((_, elemNode) => {
+        const elem = elemNode as any;
+        if (!elem || !elem.tagName) {
+            return;
+        }
+        const tagName = elem.tagName.toLowerCase();
+
+        if (DANGEROUS_TAGS.has(tagName)) {
+            $(elem).remove();
+            return;
         }
 
-        if (tag !== 'a') {
-            return tag === 'br' ? '<br>' : `<${tag}>`;
+        if (!ALLOWED_TAGS.has(tagName)) {
+            // Replace the element tag wrapper with its children/contents to preserve rich text contents
+            $(elem).replaceWith($(elem).contents());
+            return;
         }
 
-        const hrefMatch = attrs.match(/\shref\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/i);
-        const targetMatch = attrs.match(/\starget\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/i);
-        const href = hrefMatch?.[2] ?? hrefMatch?.[3] ?? hrefMatch?.[4] ?? '';
-        const target = targetMatch?.[2] ?? targetMatch?.[3] ?? targetMatch?.[4] ?? '';
-        const safeAttrs: string[] = [];
+        // Clean attributes for allowed tags
+        const attribs = elem.attribs || {};
+        const keys = Object.keys(attribs);
+        for (const key of keys) {
+            const attrName = key.toLowerCase();
 
-        if (href && !href.trim().toLowerCase().startsWith('javascript:')) {
-            safeAttrs.push(`href="${escapeAttribute(href)}"`);
+            if (attrName === 'href' && tagName === 'a') {
+                const val = (attribs[key] || '').trim().toLowerCase();
+                if (val.startsWith('javascript:') || val.startsWith('data:') || val.startsWith('vbscript:')) {
+                    $(elem).removeAttr(key);
+                }
+            } else if (attrName === 'target' && tagName === 'a') {
+                const targetVal = attribs[key];
+                if (targetVal === '_blank') {
+                    $(elem).attr('rel', 'noopener noreferrer');
+                }
+            } else if (attrName === 'rel' && tagName === 'a') {
+                // Keep allowed rel attribute
+            } else {
+                // Strip all other unsafe attributes (events, class, style, id, etc.)
+                $(elem).removeAttr(key);
+            }
         }
-
-        if (target) {
-            safeAttrs.push(`target="${escapeAttribute(target)}"`);
-            safeAttrs.push('rel="noopener noreferrer"');
-        }
-
-        return safeAttrs.length ? `<a ${safeAttrs.join(' ')}>` : '<a>';
     });
+
+    return $.html() || '';
 };
 
 export const isRichTextEffectivelyEmpty = (input: string | null | undefined): boolean => {
@@ -57,11 +69,6 @@ export const isRichTextEffectivelyEmpty = (input: string | null | undefined): bo
     if (!clean) return true;
     if (EMPTY_PATTERN.test(clean)) return true;
 
-    const textOnly = clean
-        .replace(/<br\s*\/?>/gi, '')
-        .replace(/<\/?(p|strong|em|ul|ol|li|h2|h3|blockquote|code|pre|a)(\s[^>]*)?>/gi, '')
-        .replace(/&nbsp;/g, ' ')
-        .trim();
-
+    const textOnly = stripHtml(clean).replace(/&nbsp;/g, ' ').trim();
     return textOnly.length === 0;
 };

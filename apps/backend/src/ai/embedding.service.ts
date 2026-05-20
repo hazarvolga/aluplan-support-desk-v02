@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { hierarchicalChunk } from '../knowledge-base/utils/smart-chunker';
 import { RAG_CONFIG, getConfidenceBand } from '../config/rag.config';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { classifyDatasetFile } from '../knowledge-pool/dataset-classifier';
@@ -195,35 +195,93 @@ export class EmbeddingService {
         const hierarchies = hierarchicalChunk(content, { title, maxTokens: parentMax });
         const config = await this.registry.getActiveVersionConfig();
 
-        await this.prisma.$executeRaw`DELETE FROM knowledge_embeddings WHERE article_version_id = ${versionId}::uuid`;
+        // 1. Generate all embeddings in memory first (external API network calls outside DB transaction)
+        const embeddingsToInsert: {
+            id: string;
+            content: string;
+            sequence: number;
+            parentId: string | null;
+            embedding: number[];
+        }[] = [];
 
-        for (const h of hierarchies) {
-            const parentId = crypto.randomUUID();
-            const parentEmb = this.ensureEmbeddingCompatibility(await this.ai.embed(h.parent), config, `article parent ${articleId}`);
-            if (!parentEmb) continue;
-
-            await this.prisma.$executeRaw`
-                INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, parent_id, embedding_version, embedding_dim)
-                VALUES (${parentId}::uuid, ${articleId}::uuid, ${versionId}::uuid,
-                        ${JSON.stringify(parentEmb.embedding)}::vector, ${h.parent}, 0, NULL, ${config.version}, ${config.dimension})
-            `;
-
-            for (let i = 0; i < h.children.length; i++) {
-                const childContent = h.children[i];
-                const childEmb = this.ensureEmbeddingCompatibility(await this.ai.embed(childContent), config, `article child ${articleId}`);
-                if (childEmb) {
-                    await this.prisma.$executeRaw`
-                        INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, parent_id, embedding_version, embedding_dim)
-                        VALUES (gen_random_uuid(), ${articleId}::uuid, ${versionId}::uuid,
-                                ${JSON.stringify(childEmb.embedding)}::vector, ${childContent}, ${i + 1}, ${parentId}::uuid, ${config.version}, ${config.dimension})
-                    `;
+        try {
+            for (const h of hierarchies) {
+                const parentId = randomUUID();
+                const parentEmb = this.ensureEmbeddingCompatibility(
+                    await this.ai.embed(h.parent),
+                    config,
+                    `article parent ${articleId}`
+                );
+                if (!parentEmb) {
+                    throw new Error(`Parent embedding generation returned null for article ${articleId}`);
                 }
+
+                embeddingsToInsert.push({
+                    id: parentId,
+                    content: h.parent,
+                    sequence: 0,
+                    parentId: null,
+                    embedding: parentEmb.embedding,
+                });
+
+                for (let i = 0; i < h.children.length; i++) {
+                    const childContent = h.children[i];
+                    const childEmb = this.ensureEmbeddingCompatibility(
+                        await this.ai.embed(childContent),
+                        config,
+                        `article child ${articleId}`
+                    );
+                    if (!childEmb) {
+                        throw new Error(`Child embedding generation returned null for article ${articleId}`);
+                    }
+
+                    embeddingsToInsert.push({
+                        id: randomUUID(),
+                        content: childContent,
+                        sequence: i + 1,
+                        parentId: parentId,
+                        embedding: childEmb.embedding,
+                    });
+                }
+                
+                // Low-rate pacing to avoid hitting AI model quota limits
+                await new Promise(resolve => setTimeout(resolve, 300));
             }
-            await new Promise(resolve => setTimeout(resolve, 300));
+        } catch (err: any) {
+            this.logger.error(`❌ Failed to generate embeddings for article ${articleId}: ${err?.message ?? err}`);
+            throw err;
         }
 
-        this.logger.log(`📐 Indexed ${hierarchies.length} hierarchies for article ${articleId}`);
-        this.eventEmitter.emit('article.published', { articleId });
+        // 2. Perform DB operations inside an atomic transaction
+        try {
+            await this.prisma.$transaction(async (tx) => {
+                // Delete existing embeddings for this version
+                await tx.$executeRaw`DELETE FROM knowledge_embeddings WHERE article_version_id = ${versionId}::uuid`;
+
+                // Insert all new embeddings sequentially under the transaction context
+                for (const item of embeddingsToInsert) {
+                    if (item.parentId) {
+                        await tx.$executeRaw`
+                            INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, parent_id, embedding_version, embedding_dim)
+                            VALUES (${item.id}::uuid, ${articleId}::uuid, ${versionId}::uuid,
+                                    ${JSON.stringify(item.embedding)}::vector, ${item.content}, ${item.sequence}, ${item.parentId}::uuid, ${config.version}, ${config.dimension})
+                        `;
+                    } else {
+                        await tx.$executeRaw`
+                            INSERT INTO knowledge_embeddings (id, article_id, article_version_id, embedding, content, sequence, parent_id, embedding_version, embedding_dim)
+                            VALUES (${item.id}::uuid, ${articleId}::uuid, ${versionId}::uuid,
+                                    ${JSON.stringify(item.embedding)}::vector, ${item.content}, ${item.sequence}, NULL, ${config.version}, ${config.dimension})
+                        `;
+                    }
+                }
+            });
+
+            this.logger.log(`📐 Successfully indexed ${hierarchies.length} hierarchies for article ${articleId}`);
+            this.eventEmitter.emit('article.published', { articleId });
+        } catch (dbErr: any) {
+            this.logger.error(`❌ Database transaction failed when writing embeddings for article ${articleId}: ${dbErr?.message ?? dbErr}`);
+            throw dbErr;
+        }
     }
 
     /**
@@ -469,13 +527,14 @@ export class EmbeddingService {
     }
 
     private dedupeSearchResults<T extends { articleId: string; sourceType: string }>(rows: T[], limit: number): T[] {
-        const seen = new Set<string>();
+        const counts = new Map<string, number>();
         const deduped: T[] = [];
 
         for (const row of rows) {
             const key = `${row.sourceType}:${row.articleId}`;
-            if (seen.has(key)) continue;
-            seen.add(key);
+            const count = counts.get(key) ?? 0;
+            if (count >= 3) continue;
+            counts.set(key, count + 1);
             deduped.push(row);
             if (deduped.length >= limit) break;
         }
@@ -491,12 +550,17 @@ export class EmbeddingService {
         // [DEBUG] Log entry
         this.logger.log(`🧬 Starting indexing for source ${sourceId}. Content length: ${content?.length}`);
 
-        // Use Unsafe for reliable type casting with variables
-        const deleted = await this.prisma.$executeRawUnsafe(
-            `DELETE FROM knowledge_pool_embeddings WHERE source_id = $1::uuid`,
-            sourceId
-        );
+        // Use secure $executeRaw template literals with cast operators to ensure safety and type correctness
+        const deleted = await this.prisma.$executeRaw`
+            DELETE FROM knowledge_pool_embeddings WHERE source_id = ${sourceId}::uuid
+        `;
         this.logger.log(`🗑️ Deleted ${deleted} existing chunks for source ${sourceId}`);
+
+        if (!content || !content.trim()) {
+            this.logger.log(`⚠️ Empty content passed for source ${sourceId}. Cleared existing embeddings.`);
+            this.eventEmitter.emit('knowledge-pool.synced', { sourceId });
+            return;
+        }
 
         try {
             const hierarchies = hierarchicalChunk(content, { maxTokens: parentMax });
@@ -519,11 +583,10 @@ export class EmbeddingService {
                 const parentVector = JSON.stringify(parentEmb.embedding);
                 const parentMeta = JSON.stringify({ ...metadata, hash: contentHash, total_children: h.children.length });
 
-                const res = await this.prisma.$executeRawUnsafe(
-                    `INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, embedding_version, embedding_dim)
-                     VALUES ($1::uuid, $2::uuid, NULL, $3::vector, $4, $5::jsonb, $6, $7)`,
-                    parentId, sourceId, parentVector, h.parent, parentMeta, config.version, config.dimension
-                );
+                const res = await this.prisma.$executeRaw`
+                    INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, embedding_version, embedding_dim)
+                    VALUES (${parentId}::uuid, ${sourceId}::uuid, NULL, ${parentVector}::vector, ${h.parent}, ${parentMeta}::jsonb, ${config.version}, ${config.dimension})
+                `;
                 this.logger.log(`✅ Parent Insert Res: ${res} | ID: ${parentId}`);
                 totalInserted++;
 
@@ -536,11 +599,10 @@ export class EmbeddingService {
                     if (childEmb) {
                         const childVector = JSON.stringify(childEmb.embedding);
                         const childMeta = JSON.stringify(metadata);
-                        const cRes = await this.prisma.$executeRawUnsafe(
-                            `INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, embedding_version, embedding_dim)
-                             VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3::vector, $4, $5::jsonb, $6, $7)`,
-                            sourceId, parentId, childVector, childContent, childMeta, config.version, config.dimension
-                        );
+                        const cRes = await this.prisma.$executeRaw`
+                            INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, embedding_version, embedding_dim)
+                            VALUES (gen_random_uuid(), ${sourceId}::uuid, ${parentId}::uuid, ${childVector}::vector, ${childContent}, ${childMeta}::jsonb, ${config.version}, ${config.dimension})
+                        `;
                         this.logger.log(`✅ Child Insert Res: ${cRes}`);
                         totalInserted++;
                     }
@@ -556,10 +618,9 @@ export class EmbeddingService {
             this.logger.log(`📐 FINISHED: Indexed ${totalInserted} chunks for pool source ${sourceId}`);
             this.eventEmitter.emit('knowledge-pool.synced', { sourceId });
         } catch (error) {
-            await this.prisma.$executeRawUnsafe(
-                `DELETE FROM knowledge_pool_embeddings WHERE source_id = $1::uuid`,
-                sourceId
-            );
+            await this.prisma.$executeRaw`
+                DELETE FROM knowledge_pool_embeddings WHERE source_id = ${sourceId}::uuid
+            `;
             this.logger.warn(`🧹 Removed partial embeddings after failure for source ${sourceId}`);
             throw error;
         }

@@ -10,6 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { OnEvent } from '@nestjs/event-emitter';
@@ -115,17 +116,18 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             this.connectedClients++;
             this.logger.log(`🔌 Client connected: ${payload.sub} | Role: ${payload.role} (total: ${this.connectedClients})`);
 
+            const redis = this.redisService.getClient();
+            const presenceKey = `ws:presence:user:${payload.sub}`;
+            await redis.set(presenceKey, 'active', 'EX', 60);
+
             // Join role room for targeted notifications (lowercase for consistency)
             if (payload.role) {
                 await client.join(`role:${payload.role.toLowerCase()}`);
 
                 // Track active users in role-specific Redis Sets for ultra-fast targeting (GAP-PERF-002)
-                if (payload.role) {
-                    const redis = this.redisService.getClient();
-                    const roleKey = `ws:active:role:${payload.role.toLowerCase()}`;
-                    await redis.sadd(roleKey, payload.sub);
-                    await redis.expire(roleKey, 86400); // 24h safety
-                }
+                const roleKey = `ws:active:role:${payload.role.toLowerCase()}`;
+                await redis.sadd(roleKey, payload.sub);
+                await redis.expire(roleKey, 86400); // 24h safety
             }
             await client.join(`user:${payload.sub}`);
 
@@ -174,6 +176,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
                 const roleKey = `ws:active:role:${client.data.role.toLowerCase()}`;
                 await redis.srem(roleKey, userId);
             }
+
+            // Remove presence key on disconnect
+            await redis.del(`ws:presence:user:${userId}`);
 
             // Proactive chat: schedule disconnect-timeout for active sessions
             try {
@@ -578,5 +583,38 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     sendToUser(userId: string, event: string, payload: any) {
         this.server.to(`user:${userId}`).emit(event, payload);
+    }
+
+    @SubscribeMessage('heartbeat')
+    async handleHeartbeat(@ConnectedSocket() client: Socket) {
+        const userId = client.data.userId;
+        if (!userId) return;
+        const redis = this.redisService.getClient();
+        const presenceKey = `ws:presence:user:${userId}`;
+        await redis.set(presenceKey, 'active', 'EX', 60);
+    }
+
+    @Cron('*/1 * * * *')
+    async cleanupGhostUsers() {
+        this.logger.log('🧹 Running ghost user presence cleanup...');
+        const redis = this.redisService.getClient();
+        const roles = ['admin', 'super-admin', 'department-manager', 'team-lead', 'agent'];
+
+        for (const role of roles) {
+            const roleKey = `ws:active:role:${role}`;
+            const members = await redis.smembers(roleKey);
+            for (const userId of members) {
+                const presenceKey = `ws:presence:user:${userId}`;
+                const hasPresence = await redis.exists(presenceKey);
+
+                if (!hasPresence) {
+                    const localSockets = await this.server.in(`user:${userId}`).fetchSockets();
+                    if (localSockets.length === 0) {
+                        await redis.srem(roleKey, userId);
+                        this.logger.log(`Cleaned up ghost user ${userId} from active set for role ${role}`);
+                    }
+                }
+            }
+        }
     }
 }

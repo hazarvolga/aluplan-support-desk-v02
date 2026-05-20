@@ -166,6 +166,8 @@ export class AiQueryService {
     private readonly logger = new Logger(AiQueryService.name);
     private readonly DIAGNOSIS_GENERATION_TIMEOUT_MS = 25000;
     private readonly SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS = 60000;
+    private invalidationTimeout: NodeJS.Timeout | null = null;
+    private readonly pendingInvalidationReasons = new Set<string>();
     constructor(
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
@@ -671,12 +673,14 @@ RESPONSE DRAFT:`;
         const userQueryKey = `ai:quota:user:${userId || 'guest'}:count:${today}`;
         const rClient = this.redis.getClient();
 
-        await Promise.all([
-            rClient.incrbyfloat(globalCostKey, estimatedCost).catch(() => { }),
-            rClient.incr(userQueryKey).catch(() => { }),
-            rClient.expire(globalCostKey, 86400).catch(() => { }),
-            rClient.expire(userQueryKey, 86400).catch(() => { })
-        ]);
+        const pipeline = rClient.pipeline();
+        pipeline.incrbyfloat(globalCostKey, estimatedCost);
+        pipeline.incr(userQueryKey);
+        pipeline.expire(globalCostKey, 86400);
+        pipeline.expire(userQueryKey, 86400);
+        await pipeline.exec().catch((err) => {
+            this.logger.error(`❌ Redis quota pipeline execution failed: ${err?.message ?? err}`);
+        });
         // --- END INCREMENT ---
 
         this.logger.log(
@@ -1246,8 +1250,8 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         const tokens = normalized.match(/[a-zçğıöşüäöüß]+/gi) ?? [];
         if (tokens.length < 2) return null;
 
-        if (/[çğıöşüÇĞİÖŞÜ]/.test(query)) return 'tr';
-        if (/[äöüßÄÖÜ]/.test(query)) return 'de';
+        if (/[çğışÇĞİŞ]/.test(query)) return 'tr';
+        if (/[äßÄ]/.test(query)) return 'de';
 
         const tokenSet = new Set(tokens);
         const score = (words: string[]) => words.reduce((total, word) => total + (tokenSet.has(word) ? 1 : 0), 0);
@@ -1822,12 +1826,14 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         const userQueryKey = `ai:quota:user:${userId || 'guest'}:count:${today}`;
         const rClient = this.redis.getClient();
 
-        await Promise.all([
-            rClient.incrbyfloat(globalCostKey, estimatedCost).catch(() => { }),
-            rClient.incr(userQueryKey).catch(() => { }),
-            rClient.expire(globalCostKey, 86400).catch(() => { }),
-            rClient.expire(userQueryKey, 86400).catch(() => { })
-        ]);
+        const pipeline = rClient.pipeline();
+        pipeline.incrbyfloat(globalCostKey, estimatedCost);
+        pipeline.incr(userQueryKey);
+        pipeline.expire(globalCostKey, 86400);
+        pipeline.expire(userQueryKey, 86400);
+        await pipeline.exec().catch((err) => {
+            this.logger.error(`❌ Redis quota pipeline execution failed (stream): ${err?.message ?? err}`);
+        });
         // --- END INCREMENT ---
 
         // Cache for 1 hour
@@ -1892,13 +1898,28 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
     @OnEvent('article.published', { async: true })
     @OnEvent('article.updated', { async: true })
     async handleArticleChange(payload: { articleId?: string }) {
-        await this.invalidateQueryCaches('article change');
+        await this.debounceInvalidateQueryCaches('article change');
     }
 
     @OnEvent('knowledge-pool.synced', { async: true })
     @OnEvent('knowledge-pool.source_processed', { async: true })
     async handleKnowledgePoolChange(payload: { sourceId?: string }) {
-        await this.invalidateQueryCaches('knowledge pool sync');
+        await this.debounceInvalidateQueryCaches('knowledge pool sync');
+    }
+
+    private async debounceInvalidateQueryCaches(reason: string) {
+        this.pendingInvalidationReasons.add(reason);
+
+        if (this.invalidationTimeout) {
+            clearTimeout(this.invalidationTimeout);
+        }
+
+        this.invalidationTimeout = setTimeout(async () => {
+            this.invalidationTimeout = null;
+            const combinedReasons = Array.from(this.pendingInvalidationReasons).join(' & ');
+            this.pendingInvalidationReasons.clear();
+            await this.invalidateQueryCaches(combinedReasons);
+        }, 1000);
     }
 
     private async invalidateQueryCaches(reason: string) {

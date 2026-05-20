@@ -27,6 +27,7 @@ describe('EmbeddingService', () => {
             $executeRaw: jest.fn().mockResolvedValue(1),
             $executeRawUnsafe: jest.fn().mockResolvedValue(1),
             $queryRaw: jest.fn(),
+            $transaction: jest.fn().mockImplementation((cb) => cb(mockPrismaService)),
             knowledgeArticle: {
                 findMany: jest.fn(),
             },
@@ -188,7 +189,7 @@ describe('EmbeddingService', () => {
 
             const { results } = await service.search('Allplan lisansını yeni bilgisayara nasıl aktarırım?', 3);
 
-            expect(results.map((result) => result.articleId)).toEqual(['src-tr', 'src-en']);
+            expect(results.map((result) => result.articleId)).toEqual(['src-tr', 'src-tr', 'src-en']);
             expect(results[0]).toEqual(expect.objectContaining({
                 language: 'tr',
                 category: 'License & Activation',
@@ -298,8 +299,13 @@ describe('EmbeddingService', () => {
             );
 
             // Assert
-            const deleteCalls = mockPrismaService.$executeRawUnsafe.mock.calls
-                .map((call: unknown[]) => String(call[0]))
+            const deleteCalls = mockPrismaService.$executeRaw.mock.calls
+                .map((call: unknown[]) => {
+                    const arg = call[0];
+                    if (Array.isArray(arg)) return arg.join('');
+                    if (arg && typeof arg === 'object' && 'strings' in arg) return (arg as any).strings.join('');
+                    return String(arg);
+                })
                 .filter((sql: string) => sql.includes('DELETE FROM knowledge_pool_embeddings'));
             expect(deleteCalls).toHaveLength(2);
         });
@@ -312,9 +318,14 @@ describe('EmbeddingService', () => {
             await service.indexPoolContent('src-1', 'content', { type: 'parent' });
 
             // Assert
-            expect(mockPrismaService.$executeRawUnsafe).toHaveBeenCalled();
-            const insertCalls = mockPrismaService.$executeRawUnsafe.mock.calls
-                .map((call: unknown[]) => String(call[0]))
+            expect(mockPrismaService.$executeRaw).toHaveBeenCalled();
+            const insertCalls = mockPrismaService.$executeRaw.mock.calls
+                .map((call: unknown[]) => {
+                    const arg = call[0];
+                    if (Array.isArray(arg)) return arg.join('');
+                    if (arg && typeof arg === 'object' && 'strings' in arg) return (arg as any).strings.join('');
+                    return String(arg);
+                })
                 .filter((sql: string) => sql.includes('INSERT INTO knowledge_pool_embeddings'));
             expect(insertCalls.every((sql: string) => !sql.includes('model_name'))).toBe(true);
         });
@@ -326,8 +337,13 @@ describe('EmbeddingService', () => {
 
             await expect(service.indexPoolContent('src-1', 'content')).rejects.toThrow('429 rate limit');
 
-            const deleteCalls = mockPrismaService.$executeRawUnsafe.mock.calls
-                .map((call: unknown[]) => String(call[0]))
+            const deleteCalls = mockPrismaService.$executeRaw.mock.calls
+                .map((call: unknown[]) => {
+                    const arg = call[0];
+                    if (Array.isArray(arg)) return arg.join('');
+                    if (arg && typeof arg === 'object' && 'strings' in arg) return (arg as any).strings.join('');
+                    return String(arg);
+                })
                 .filter((sql: string) => sql.includes('DELETE FROM knowledge_pool_embeddings'));
             expect(deleteCalls).toHaveLength(2);
         });
@@ -342,13 +358,23 @@ describe('EmbeddingService', () => {
                 'Embedding dimension mismatch for knowledge pool parent src-1: expected 1536, got 3 from wrong-dimension-model',
             );
 
-            const insertCalls = mockPrismaService.$executeRawUnsafe.mock.calls
-                .map((call: unknown[]) => String(call[0]))
+            const insertCalls = mockPrismaService.$executeRaw.mock.calls
+                .map((call: unknown[]) => {
+                    const arg = call[0];
+                    if (Array.isArray(arg)) return arg.join('');
+                    if (arg && typeof arg === 'object' && 'strings' in arg) return (arg as any).strings.join('');
+                    return String(arg);
+                })
                 .filter((sql: string) => sql.includes('INSERT INTO knowledge_pool_embeddings'));
             expect(insertCalls).toHaveLength(0);
 
-            const deleteCalls = mockPrismaService.$executeRawUnsafe.mock.calls
-                .map((call: unknown[]) => String(call[0]))
+            const deleteCalls = mockPrismaService.$executeRaw.mock.calls
+                .map((call: unknown[]) => {
+                    const arg = call[0];
+                    if (Array.isArray(arg)) return arg.join('');
+                    if (arg && typeof arg === 'object' && 'strings' in arg) return (arg as any).strings.join('');
+                    return String(arg);
+                })
                 .filter((sql: string) => sql.includes('DELETE FROM knowledge_pool_embeddings'));
             expect(deleteCalls).toHaveLength(2);
         });
@@ -363,8 +389,13 @@ describe('EmbeddingService', () => {
                 'Embedding model mismatch for knowledge pool parent src-1: expected text-embedding-3-small, got text-embedding-3-large',
             );
 
-            const insertCalls = mockPrismaService.$executeRawUnsafe.mock.calls
-                .map((call: unknown[]) => String(call[0]))
+            const insertCalls = mockPrismaService.$executeRaw.mock.calls
+                .map((call: unknown[]) => {
+                    const arg = call[0];
+                    if (Array.isArray(arg)) return arg.join('');
+                    if (arg && typeof arg === 'object' && 'strings' in arg) return (arg as any).strings.join('');
+                    return String(arg);
+                })
                 .filter((sql: string) => sql.includes('INSERT INTO knowledge_pool_embeddings'));
             expect(insertCalls).toHaveLength(0);
         });

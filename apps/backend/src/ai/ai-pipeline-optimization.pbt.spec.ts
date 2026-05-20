@@ -31,12 +31,21 @@ import { AiSemanticCache } from './ai-semantic-cache.service';
 // Shared mock factories
 // ---------------------------------------------------------------------------
 
-const makeRedisClient = () => ({
-    get: jest.fn().mockResolvedValue('0'),
-    incrbyfloat: jest.fn().mockResolvedValue(0),
-    incr: jest.fn().mockResolvedValue(1),
-    expire: jest.fn().mockResolvedValue(1),
-});
+const makeRedisClient = () => {
+    const mockPipeline = {
+        incrbyfloat: jest.fn().mockReturnThis(),
+        incr: jest.fn().mockReturnThis(),
+        expire: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
+    };
+    return {
+        get: jest.fn().mockResolvedValue('0'),
+        incrbyfloat: jest.fn().mockResolvedValue(0),
+        incr: jest.fn().mockResolvedValue(1),
+        expire: jest.fn().mockResolvedValue(1),
+        pipeline: jest.fn(() => mockPipeline),
+    };
+};
 
 const makePrisma = () => ({
     aiInteraction: { create: jest.fn().mockResolvedValue({ id: 'interaction-id' }) },

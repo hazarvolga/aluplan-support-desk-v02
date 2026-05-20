@@ -35,6 +35,8 @@ describe('NotificationsGateway', () => {
                 sunion: jest.fn().mockResolvedValue([]),
                 del: jest.fn(),
                 expire: jest.fn(),
+                set: jest.fn(),
+                exists: jest.fn(),
             }),
         };
         mockEmail = { cancelEmail: jest.fn() };
@@ -188,6 +190,49 @@ describe('NotificationsGateway', () => {
                 entityType: 'contact',
                 changeCount: 3,
             }));
+        });
+    });
+
+    describe('handleHeartbeat', () => {
+        it('should update Redis presence key TTL', async () => {
+            const mockSocket: any = {
+                data: { userId: 'user-1' },
+            };
+            const mockSet = jest.fn();
+            mockRedis.getClient.mockReturnValue({
+                set: mockSet,
+            });
+
+            await gateway.handleHeartbeat(mockSocket);
+
+            expect(mockSet).toHaveBeenCalledWith('ws:presence:user:user-1', 'active', 'EX', 60);
+        });
+    });
+
+    describe('cleanupGhostUsers', () => {
+        it('should clean up ghost users from active sets if missing from presence and local sockets', async () => {
+            const mockSmembers = jest.fn().mockResolvedValue(['ghost-user', 'active-user']);
+            const mockExists = jest.fn().mockImplementation((key) => {
+                if (key === 'ws:presence:user:ghost-user') return 0;
+                return 1;
+            });
+            const mockSrem = jest.fn();
+
+            mockRedis.getClient.mockReturnValue({
+                smembers: mockSmembers,
+                exists: mockExists,
+                srem: mockSrem,
+            });
+
+            const mockFetchSockets = jest.fn().mockResolvedValue([]);
+            mockServer.in = jest.fn().mockReturnValue({
+                fetchSockets: mockFetchSockets,
+            });
+
+            await gateway.cleanupGhostUsers();
+
+            expect(mockSrem).toHaveBeenCalledWith('ws:active:role:admin', 'ghost-user');
+            expect(mockSrem).not.toHaveBeenCalledWith('ws:active:role:admin', 'active-user');
         });
     });
 });

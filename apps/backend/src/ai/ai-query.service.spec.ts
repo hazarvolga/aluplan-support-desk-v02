@@ -68,13 +68,22 @@ describe('AiQueryService', () => {
     const mockRedisService = {
         get: jest.fn().mockResolvedValue(null), // No cache by default
         set: jest.fn(),
-        getClient: jest.fn(() => ({
-            get: jest.fn().mockResolvedValue(null),
-            mget: jest.fn().mockResolvedValue([]),
-            incrbyfloat: jest.fn().mockResolvedValue(1.0),
-            incr: jest.fn().mockResolvedValue(1),
-            expire: jest.fn().mockResolvedValue(1),
-        })),
+        getClient: jest.fn(() => {
+            const mockPipeline = {
+                incrbyfloat: jest.fn().mockReturnThis(),
+                incr: jest.fn().mockReturnThis(),
+                expire: jest.fn().mockReturnThis(),
+                exec: jest.fn().mockResolvedValue([]),
+            };
+            return {
+                get: jest.fn().mockResolvedValue(null),
+                mget: jest.fn().mockResolvedValue([]),
+                incrbyfloat: jest.fn().mockResolvedValue(1.0),
+                incr: jest.fn().mockResolvedValue(1),
+                expire: jest.fn().mockResolvedValue(1),
+                pipeline: jest.fn(() => mockPipeline),
+            };
+        }),
     };
 
     const mockConfigService = {
@@ -1093,6 +1102,45 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
                 where: { id: 'int-1' },
                 data: { isAccepted: true, editedResponse: 'edited response' },
             });
+        });
+    });
+
+    describe('event-driven cache invalidation (debounced)', () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        it('should debounce invalidation calls and execute only once after 1 second', async () => {
+            const mockScan = jest.fn().mockResolvedValue(['0', []]);
+            const mockDel = jest.fn();
+
+            const originalImplementation = mockRedisService.getClient.getMockImplementation();
+
+            mockRedisService.getClient.mockImplementation(() => ({
+                scan: mockScan,
+                del: mockDel,
+            } as any));
+
+            try {
+                // Call multiple changes successively
+                service.handleArticleChange({});
+                service.handleKnowledgePoolChange({});
+
+                // Fast-forward timers by 500ms -> should not have called invalidate yet
+                jest.advanceTimersByTime(500);
+                expect(mockScan).not.toHaveBeenCalled();
+
+                // Fast-forward another 500ms -> total 1000ms, should trigger invalidation once
+                jest.advanceTimersByTime(500);
+                expect(mockScan).toHaveBeenCalledTimes(1);
+                expect(mockScan).toHaveBeenCalledWith('0', 'MATCH', expect.any(String), 'COUNT', 100);
+            } finally {
+                mockRedisService.getClient.mockImplementation(originalImplementation);
+            }
         });
     });
 

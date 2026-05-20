@@ -21,7 +21,11 @@ export class XssValidationPipe implements PipeTransform {
 
     private sanitize(obj: any, key?: string, parent?: any): any {
         if (typeof obj === 'string') {
-            if (key === 'message' && parent?.contentFormat === 'HTML') {
+            if (
+                (key === 'message' && parent?.contentFormat === 'HTML') ||
+                key === 'content' ||
+                key === 'body'
+            ) {
                 return sanitizeRichTextHtml(obj);
             }
 

@@ -30,5 +30,19 @@ describe('XssValidationPipe', () => {
 
         expect(result.message).toBe('<a target="_blank" rel="noopener noreferrer">bad</a>');
     });
+
+    it('keeps allowed rich text tags and removes scripts from content and body fields', () => {
+        const result = pipe.transform({
+            title: '<strong>New Article</strong>',
+            content: '<h2>Heading</h2><p>Safe content</p><script>alert("hack")</script>',
+            body: '<blockquote>Safe body</blockquote><iframe src="unsafe.html"></iframe>',
+        }, metadata);
+
+        expect(result).toEqual({
+            title: 'New Article',
+            content: '<h2>Heading</h2><p>Safe content</p>',
+            body: '<blockquote>Safe body</blockquote>',
+        });
+    });
 });
 

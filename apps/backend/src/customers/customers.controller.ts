@@ -44,7 +44,18 @@ export class CustomersController {
 
     @Post('me/hotinfo')
     @UseGuards(JwtAuthGuard)
-    @UseInterceptors(FileInterceptor('file'))
+    @UseInterceptors(
+        FileInterceptor('file', {
+            limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+            fileFilter: (req, file, callback) => {
+                const lowName = file.originalname.toLowerCase();
+                if (!lowName.endsWith('.hxl')) {
+                    return callback(new BadRequestException('Sadece .hxl uzantılı Hotinfo dosyaları yüklenebilir.'), false);
+                }
+                callback(null, true);
+            },
+        }),
+    )
     async uploadHotinfo(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
         if (!file) {
             throw new BadRequestException('Lütfen bir dosya yükleyin.');

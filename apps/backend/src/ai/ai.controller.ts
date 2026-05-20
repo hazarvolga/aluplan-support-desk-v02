@@ -84,7 +84,7 @@ export class AiTelemetryDto {
 
 @ApiTags('AI Engine')
 @ApiBearerAuth()
-@UseGuards(RbacGuard, ThrottlerGuard)
+@UseGuards(JwtAuthGuard, RbacGuard, ThrottlerGuard)
 @Controller('ai')
 export class AiController {
     constructor(
@@ -133,7 +133,6 @@ export class AiController {
         });
     }
 
-    @UseGuards(JwtAuthGuard)
     @Get('status/:jobId')
     @ApiOperation({ summary: 'Check the status of a background AI job' })
     @ApiParam({ name: 'jobId', description: 'The unique ID of the AI query job' })

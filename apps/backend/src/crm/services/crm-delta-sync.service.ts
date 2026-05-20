@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { CrmProvider } from '@aluplan/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CryptoService } from '../../utils/crypto.service';
@@ -18,10 +19,11 @@ interface DeltaResult {
 }
 
 @Injectable()
-export class CrmDeltaSyncService {
+export class CrmDeltaSyncService implements OnApplicationBootstrap {
     private readonly logger = new Logger(CrmDeltaSyncService.name);
 
     constructor(
+        @InjectQueue('crm-sync') private readonly crmQueue: Queue,
         private readonly prisma: PrismaService,
         private readonly crypto: CryptoService,
         private readonly dynamics365: Dynamics365Adapter,
@@ -29,7 +31,24 @@ export class CrmDeltaSyncService {
         private readonly notifications: NotificationsGateway,
     ) { }
 
-    @Cron(process.env.CRM_DELTA_SYNC_INTERVAL || '*/5 * * * *')
+    async onApplicationBootstrap() {
+        try {
+            await this.crmQueue.add(
+                'delta-sync',
+                {},
+                {
+                    repeat: {
+                        pattern: process.env.CRM_DELTA_SYNC_INTERVAL || '*/5 * * * *',
+                    },
+                    jobId: 'crm-delta-sync-repeatable',
+                },
+            );
+            this.logger.log(`📢 CRM Delta Sync repeatable job registered successfully with interval: ${process.env.CRM_DELTA_SYNC_INTERVAL || '*/5 * * * *'}`);
+        } catch (error) {
+            this.logger.error(`❌ Failed to register CRM Delta Sync repeatable job: ${error.message}`, error.stack);
+        }
+    }
+
     async runScheduledDeltaSync() {
         const connections = await this.prisma.crmConnection.findMany({
             where: {
