@@ -364,3 +364,23 @@ This project is indexed by GitNexus as **aluplan-support-desk-v02** (10855 symbo
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+## Aluplan Support Intelligence Skill
+
+When working on AI, CRM, RAG, retrieval, queue, or support features, load the relevant reference from `.aluplan-skill/references/` before responding.
+
+**Always load first:** `.aluplan-skill/references/repository-conventions.md` — truth hierarchy, conventions, ADRs, high-blast-radius symbols.
+
+| Domain | Reference |
+|---|---|
+| Architecture, module boundaries | `.aluplan-skill/references/architecture-overview.md` |
+| Dynamics 365, CRM sync | `.aluplan-skill/references/crm-dynamics365-rules.md` |
+| RAG, retrieval, reranking, embeddings | `.aluplan-skill/references/rag-retrieval-rules.md` |
+| AI guardrails, R-rules, confidence | `.aluplan-skill/references/ai-safety-guardrails.md` |
+| AI answer contract, prompt builder | `.aluplan-skill/references/ai-answer-contract.md` |
+| NestJS backend patterns | `.aluplan-skill/references/backend-development-rules.md` |
+| Next.js frontend patterns | `.aluplan-skill/references/frontend-development-rules.md` |
+| Observability, logging, metrics | `.aluplan-skill/references/observability-operations.md` |
+| BullMQ workers, queues | `.aluplan-skill/references/queue-workers-patterns.md` |
+| Testing, quality gates | `.aluplan-skill/references/testing-quality-gates.md` |
+| Production, deployment, DR | `.aluplan-skill/references/production-reliability.md` |
