@@ -2741,3 +2741,17 @@ Maintenance rule:
 - `pnpm --filter @aluplan/frontend typecheck`
 - `pnpm i18n:check`
 - `git diff --check`
+
+## Follow-up - 2026-05-20 Hotinfo VRAM Tespiti Çözüm Planı (Seçenek A - AI Yönlendirmesi)
+
+### What changed
+
+- Harici ekran kartının VRAM bilgisi XML'de bulunamadığında (uyku modundayken Hotinfo oluşturulduğunda), VRAM değeri `Bilinmiyor (Kart Uyku Modunda)` olarak işaretlendi.
+- AI sistem prompt'u güncellendi: Ekran kartının VRAM değeri `Bilinmiyor (Kart Uyku Modunda)` ise, AI kesin donanım tanısı koymayıp, kullanıcıdan Allplan'ı açarak ekran kartını aktif hale getirip Hotinfo'yu yeniden yüklemesini rica edecek.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- hotinfo-parser.service.spec.ts prompt-context-builder.service.pbt.spec.ts`
+- `pnpm --filter @aluplan/backend typecheck`
+- `gitnexus detect_changes` (attempted)
+
