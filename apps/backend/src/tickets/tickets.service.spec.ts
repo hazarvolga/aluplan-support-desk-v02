@@ -7,8 +7,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiQueryService } from '../ai/ai-query.service';
 import { RedisService } from '../redis/redis.service';
 import { mockPrismaService } from '../test/mock.utils';
-import { TicketStatus, TicketPriority, Prisma } from '@aluplan/database';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { TicketStatus, TicketPriority, ChatStatus, Prisma } from '@aluplan/database';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 
 describe('TicketsService', () => {
     let service: TicketsService;
@@ -101,6 +101,10 @@ describe('TicketsService', () => {
             expect(result).toEqual({ ...existingTicket, alreadyCreated: true });
             expect(prisma.$queryRaw).not.toHaveBeenCalled();
             expect(prisma.ticket.create).not.toHaveBeenCalled();
+            expect(prisma.aiInteraction.update).toHaveBeenCalledWith({
+                where: { id: dto.interactionId },
+                data: { ticketCreated: true },
+            });
             expect(mockEventEmitter.emit).not.toHaveBeenCalledWith('ticket.created', expect.anything());
         });
 
@@ -139,6 +143,72 @@ describe('TicketsService', () => {
 
             expect(result).toEqual({ ...existingTicket, alreadyCreated: true });
             expect(mockEventEmitter.emit).not.toHaveBeenCalledWith('ticket.created', expect.anything());
+        });
+    });
+
+    describe('update live chat policy', () => {
+        it('should reject customer live chat requests when creator is not VIP', async () => {
+            prisma.ticket.findFirst.mockResolvedValue({
+                id: 'tik1',
+                userId: 'customer1',
+                chatStatus: ChatStatus.NORMAL,
+                creator: { customerProfile: { isVip: false } },
+                messages: [],
+                escalations: [],
+            });
+
+            await expect(service.update(
+                'tik1',
+                { chatStatus: ChatStatus.REQUESTED },
+                { id: 'customer1', role: 'CUSTOMER' },
+            )).rejects.toThrow(ForbiddenException);
+            expect(prisma.ticket.update).not.toHaveBeenCalled();
+        });
+
+        it('should allow customer live chat requests when creator is VIP', async () => {
+            const ticket = {
+                id: 'tik1',
+                userId: 'customer1',
+                chatStatus: ChatStatus.NORMAL,
+                creator: { customerProfile: { isVip: true } },
+                messages: [],
+                escalations: [],
+            };
+            prisma.ticket.findFirst.mockResolvedValue(ticket);
+            prisma.ticket.update.mockResolvedValue({ ...ticket, chatStatus: ChatStatus.REQUESTED });
+
+            const result = await service.update(
+                'tik1',
+                { chatStatus: ChatStatus.REQUESTED },
+                { id: 'customer1', role: 'CUSTOMER' },
+            );
+
+            expect(result.chatStatus).toBe(ChatStatus.REQUESTED);
+            expect(prisma.ticket.update).toHaveBeenCalledWith(expect.objectContaining({
+                where: { id: 'tik1' },
+                data: expect.objectContaining({ chatStatus: ChatStatus.REQUESTED }),
+            }));
+        });
+
+        it('should allow staff to start live chat regardless of VIP status', async () => {
+            const ticket = {
+                id: 'tik1',
+                userId: 'customer1',
+                chatStatus: ChatStatus.NORMAL,
+                creator: { customerProfile: { isVip: false } },
+                messages: [],
+                escalations: [],
+            };
+            prisma.ticket.findFirst.mockResolvedValue(ticket);
+            prisma.ticket.update.mockResolvedValue({ ...ticket, chatStatus: ChatStatus.LIVE });
+
+            const result = await service.update(
+                'tik1',
+                { chatStatus: ChatStatus.LIVE },
+                { id: 'agent1', role: 'AGENT' },
+            );
+
+            expect(result.chatStatus).toBe(ChatStatus.LIVE);
         });
     });
 

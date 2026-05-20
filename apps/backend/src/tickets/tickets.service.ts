@@ -16,7 +16,7 @@ import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { AddMessageDto } from './dto/add-message.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { BulkUpdateTicketDto } from './dto/bulk-update-ticket.dto';
-import { TicketStatus, TicketPriority, Prisma } from '@aluplan/database';
+import { TicketStatus, TicketPriority, ChatStatus, Prisma } from '@aluplan/database';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiQueryService } from '../ai/ai-query.service';
 import { MessageContentFormat } from './dto/add-message.dto';
@@ -67,6 +67,7 @@ export class TicketsService {
             const existingTicket = await this.findTicketByInteractionId(dto.interactionId);
             if (existingTicket) {
                 this.assertInteractionTicketOwner(existingTicket, createdByUserId);
+                await this.markInteractionTicketCreated(dto.interactionId);
                 this.logger.log(`🎫 Reusing ticket ${existingTicket.ticketNumber} for AI interaction ${dto.interactionId}`);
                 return { ...existingTicket, alreadyCreated: true };
             }
@@ -104,6 +105,7 @@ export class TicketsService {
                 const existingTicket = await this.findTicketByInteractionId(dto.interactionId);
                 if (existingTicket) {
                     this.assertInteractionTicketOwner(existingTicket, createdByUserId);
+                    await this.markInteractionTicketCreated(dto.interactionId);
                     this.logger.log(`🎫 Reusing ticket ${existingTicket.ticketNumber} after interaction uniqueness race`);
                     return { ...existingTicket, alreadyCreated: true };
                 }
@@ -112,6 +114,9 @@ export class TicketsService {
         }
 
         this.logger.log(`🎫 Created ticket ${ticket.ticketNumber} (${priority})`);
+        if (dto.interactionId) {
+            await this.markInteractionTicketCreated(dto.interactionId);
+        }
 
         // Option A + C Logic: If the user provided a productId, do auto-tagging
         if (dto.productId) {
@@ -127,7 +132,16 @@ export class TicketsService {
 
     private ticketListInclude() {
         return {
-            creator: { select: { id: true, fullName: true, email: true } },
+            creator: {
+                select: {
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    customerProfile: {
+                        select: { isVip: true, contractStatus: true, companyName: true },
+                    },
+                },
+            },
             product: { select: { name: true } },
         };
     }
@@ -156,6 +170,17 @@ export class TicketsService {
         }
 
         return String(target).includes('interaction_id') || String(target).includes('interactionId');
+    }
+
+    private async markInteractionTicketCreated(interactionId: string) {
+        try {
+            await this.prisma.aiInteraction.update({
+                where: { id: interactionId },
+                data: { ticketCreated: true },
+            });
+        } catch (error) {
+            this.logger.warn(`AI interaction ${interactionId} ticketCreated flag could not be updated: ${(error as Error).message}`);
+        }
     }
 
     private async runAutoTaggingAsync(ticketId: string, productId: string, text: string, hotinfoContext?: any) {
@@ -236,10 +261,11 @@ export class TicketsService {
                                 select: {
                                     companyName: true,
                                     contractStatus: true,
-                                    customerNo: true
-                                }
+                                    customerNo: true,
+                                    isVip: true,
+                                },
                             }
-                        }
+                        },
                     },
                     assignee: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
                     _count: { select: { messages: true } },
@@ -261,7 +287,22 @@ export class TicketsService {
         const ticket = await this.prisma.ticket.findFirst({
             where: { id, deletedAt: null },
             include: {
-                creator: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
+                creator: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true,
+                        avatarUrl: true,
+                        customerProfile: {
+                            select: {
+                                isVip: true,
+                                contractStatus: true,
+                                companyName: true,
+                                customerNo: true,
+                            },
+                        },
+                    },
+                },
                 assignee: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
                 messages: {
                     where: (requester?.role?.toLowerCase() === 'customer' || requester?.role?.toLowerCase() === 'viewer') ? { isInternal: false } : {},
@@ -299,7 +340,11 @@ export class TicketsService {
     // UPDATE
     // =============================================
     async update(id: string, dto: UpdateTicketDto, requester: any) {
-        await this.findOne(id, requester); // throws if not found or no access
+        const ticket = await this.findOne(id, requester); // throws if not found or no access
+
+        if (dto.chatStatus) {
+            this.assertChatStatusUpdateAllowed(ticket, dto.chatStatus, requester);
+        }
 
         let slaUpdate = {};
         if (dto.priority) {
@@ -319,6 +364,194 @@ export class TicketsService {
                 ...slaUpdate,
             },
         });
+    }
+
+    private assertChatStatusUpdateAllowed(
+        ticket: { chatStatus?: ChatStatus | string; creator?: { customerProfile?: { isVip?: boolean | null } | null } | null },
+        nextStatus: ChatStatus,
+        requester: any,
+    ) {
+        const role = String(requester?.role ?? '').toUpperCase();
+        const isCustomer = role === 'CUSTOMER' || role === 'VIEWER';
+
+        if (!isCustomer) return;
+
+        if (nextStatus !== ChatStatus.REQUESTED) {
+            throw new ForbiddenException('LIVE_CHAT_AGENT_ONLY');
+        }
+
+        const isVip = Boolean(ticket.creator?.customerProfile?.isVip);
+        if (!isVip) {
+            throw new ForbiddenException('LIVE_CHAT_VIP_REQUIRED');
+        }
+    }
+
+    async getAiTrace(id: string, requester: any) {
+        const role = String(requester?.role ?? '').toUpperCase();
+        if (role === 'CUSTOMER' || role === 'VIEWER') {
+            throw new ForbiddenException('AI ticket trace is available to support staff only');
+        }
+
+        const ticket = await this.prisma.ticket.findFirst({
+            where: { id, deletedAt: null },
+            include: {
+                creator: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true,
+                        customerProfile: {
+                            select: {
+                                isVip: true,
+                                contractStatus: true,
+                                companyName: true,
+                                customerNo: true,
+                            },
+                        },
+                    },
+                },
+                interaction: {
+                    include: {
+                        matchedArticle: { select: { id: true, title: true, category: true, language: true } },
+                        matchedVersion: { select: { id: true, title: true, version: true } },
+                        feedbacks: {
+                            select: { rating: true, comment: true, createdAt: true },
+                            orderBy: { createdAt: 'desc' },
+                            take: 5,
+                        },
+                        shiftDetections: {
+                            select: { detectedAt: true, previousKeywords: true, newKeywords: true, confirmed: true },
+                            orderBy: { detectedAt: 'desc' },
+                            take: 5,
+                        },
+                    },
+                },
+                messages: {
+                    select: {
+                        id: true,
+                        senderId: true,
+                        isInternal: true,
+                        createdAt: true,
+                        message: true,
+                        sender: { select: { id: true, fullName: true, role: { select: { name: true } } } },
+                    },
+                    orderBy: { createdAt: 'asc' },
+                    take: 20,
+                },
+            },
+        }) as any;
+
+        if (!ticket) throw new NotFoundException(`Ticket not found`);
+
+        const interaction = ticket.interaction;
+        const response = interaction?.responseGenerated ?? '';
+        const userContext = (interaction?.userContext ?? {}) as Record<string, any>;
+        const contractSections = this.evaluateAnswerContract(response);
+
+        return {
+            ticket: {
+                id: ticket.id,
+                ticketNumber: ticket.ticketNumber,
+                subject: ticket.subject,
+                status: ticket.status,
+                chatStatus: ticket.chatStatus,
+                createdAt: ticket.createdAt,
+                creator: ticket.creator,
+            },
+            interaction: interaction ? {
+                id: interaction.id,
+                userQuery: interaction.userQuery,
+                responseGenerated: interaction.responseGenerated,
+                confidenceBand: interaction.confidenceBand,
+                similarityScore: interaction.similarityScore ? Number(interaction.similarityScore) : null,
+                autoAnswered: interaction.autoAnswered,
+                ticketCreated: interaction.ticketCreated,
+                provider: interaction.provider,
+                model: interaction.model,
+                inputTokens: interaction.inputTokens,
+                outputTokens: interaction.outputTokens,
+                totalTokens: interaction.totalTokens,
+                estimatedCost: interaction.estimatedCost ? Number(interaction.estimatedCost) : null,
+                channel: interaction.channel,
+                createdAt: interaction.createdAt,
+                userContext,
+                matchedArticle: interaction.matchedArticle,
+                matchedVersion: interaction.matchedVersion,
+                feedbacks: interaction.feedbacks,
+                shiftDetections: interaction.shiftDetections,
+            } : null,
+            quality: {
+                hasInteraction: Boolean(interaction),
+                ticketCreatedFlagMatches: Boolean(interaction?.ticketCreated),
+                sourceLeakDetected: this.detectSourceLeak(response),
+                mixedLanguageRisk: this.detectMixedLanguageRisk(response, userContext.responseLanguage ?? userContext.requestLocale),
+                contractSections,
+                responseLanguage: userContext.responseLanguage ?? null,
+                requestLocale: userContext.requestLocale ?? null,
+                sourceLanguage: userContext.source?.language ?? null,
+                answerMode: userContext.answerMode ?? null,
+                languageSource: userContext.languageSource ?? null,
+                strictLanguage: userContext.strictLanguage ?? null,
+            },
+            timeline: {
+                interactionCreatedAt: interaction?.createdAt ?? null,
+                ticketCreatedAt: ticket.createdAt,
+                firstStaffMessageAt: ticket.messages.find((m: any) => this.isStaffRole(m.sender?.role?.name))?.createdAt ?? null,
+                messageCount: ticket.messages.length,
+            },
+            recentMessages: ticket.messages.map((message: any) => ({
+                id: message.id,
+                senderId: message.senderId,
+                senderName: message.sender?.fullName ?? null,
+                senderRole: message.sender?.role?.name ?? null,
+                isInternal: message.isInternal,
+                createdAt: message.createdAt,
+                preview: this.previewText(message.message),
+            })),
+        };
+    }
+
+    private evaluateAnswerContract(answer: string) {
+        const sections = {
+            problem: /📌|Problem Interpretation|Sorun Yorumu|Probleminterpretation|Problemdeutung/i.test(answer),
+            cause: /🎯|Most Probable Cause|En Olası Neden|Wahrscheinlichste Ursache/i.test(answer),
+            checks: /⚠️|Critical Checks|Kritik Kontroller|Kritische Prüfungen/i.test(answer),
+            steps: /🛠️|Solution Steps|Çözüm Adımları|Lösungsschritte/i.test(answer),
+            verification: /✅|Verification|Doğrulama|Überprüfung/i.test(answer),
+        };
+        const passed = Object.values(sections).filter(Boolean).length;
+        return { ...sections, passed, expected: 5, isComplete: passed === 5 };
+    }
+
+    private detectSourceLeak(answer: string) {
+        return /\b(Kaynak|Source|Quelle)\s*:/i.test(answer);
+    }
+
+    private detectMixedLanguageRisk(answer: string, expectedLanguage?: string | null) {
+        const language = String(expectedLanguage ?? '').toLowerCase();
+        if (!answer || !language) return false;
+
+        const turkishMarkers = /\b(olarak|sorun|çözüm|talep|müşteri|destek|kontrol|doğrulama)\b/i;
+        const germanMarkers = /\b(Problem|Lösung|Überprüfung|Schritte|Ursache|Kunde|Anfrage)\b/i;
+        const englishMarkers = /\b(problem|solution|verification|steps|customer|request|support)\b/i;
+
+        if (language.startsWith('tr')) return germanMarkers.test(answer) || englishMarkers.test(answer);
+        if (language.startsWith('de')) return turkishMarkers.test(answer) || englishMarkers.test(answer);
+        if (language.startsWith('en')) return turkishMarkers.test(answer) || germanMarkers.test(answer);
+        return false;
+    }
+
+    private isStaffRole(role?: string | null) {
+        const value = String(role ?? '').toUpperCase();
+        return ['ADMIN', 'SUPER_ADMIN', 'AGENT', 'SENIOR_AGENT', 'TEAM_LEAD', 'DEPARTMENT_MANAGER'].includes(value);
+    }
+
+    private previewText(value?: string | null) {
+        const text = String(value ?? '')
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        return text.length > 180 ? `${text.slice(0, 180)}...` : text;
     }
 
     // =============================================

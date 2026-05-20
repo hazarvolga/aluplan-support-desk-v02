@@ -56,6 +56,11 @@
   - repeated ticket creation from the same AI interaction no longer leaks Prisma `interaction_id` uniqueness as HTTP 500.
   - backend returns the existing ticket for the same user with `alreadyCreated: true`.
   - frontend avoids adding duplicate initial messages/attachments when the existing ticket is reused.
+- Live Chat Policy + AI Ticket Trace completed:
+  - customer-initiated live chat requests are VIP-gated in `TicketsService`, not only in the frontend.
+  - staff can still start proactive/live chat for any customer.
+  - ticket creation marks linked AI interactions as `ticketCreated=true`.
+  - support users can inspect ticket-level AI trace signals from the ticket detail UI.
 - Customer Dashboard 403 Cleanup completed:
   - customer/viewer dashboard no longer calls admin-only `/ai/health-metrics`.
   - admin/superuser dashboard still loads AI health metrics.

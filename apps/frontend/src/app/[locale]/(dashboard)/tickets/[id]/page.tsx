@@ -86,6 +86,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const [loading, setLoading] = useState(true);
     const [drafting, setDrafting] = useState(false);
     const [downloadingHotinfo, setDownloadingHotinfo] = useState(false);
+    const [aiTrace, setAiTrace] = useState<any>(null);
 
     // CSAT States
     const [csatScore, setCsatScore] = useState<number>(0);
@@ -119,6 +120,19 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             ]);
             setTicket(ticketRes);
             setUser(userRes);
+            const resolvedUser = userRes as any;
+            const userRoleName = (typeof resolvedUser?.role === 'string' ? resolvedUser.role : resolvedUser?.role?.name)?.toLowerCase();
+            const resolvedUserRoles = (resolvedUser?.roles || []).map((r: string) => r.toLowerCase());
+            const isCustomerRole = resolvedUserRoles.includes('customer') || resolvedUserRoles.includes('viewer') || userRoleName === 'customer' || userRoleName === 'viewer';
+            if (isCustomerRole) {
+                setAiTrace(null);
+            } else {
+                const trace = await api.tickets.getAiTrace(id).catch((err) => {
+                    console.warn('[TicketDetail] AI trace unavailable:', err);
+                    return null;
+                });
+                setAiTrace(trace);
+            }
             // Initial scroll to bottom
             setTimeout(() => scrollToBottom('auto'), 100);
         } catch (err) {
@@ -253,6 +267,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer') || roleName === 'customer' || roleName === 'viewer';
     const isReplyEffectivelyEmpty = ContentSanitizer.isEffectivelyEmpty(reply);
     const isComposerDisabled = ['CLOSED', 'RESOLVED', 'PENDING_CUSTOMER_REVIEW'].includes(ticket?.status);
+    const isLiveChatEligible = !isCustomer || Boolean(ticket?.creator?.customerProfile?.isVip);
 
     const handleRequestLiveChat = async () => {
         try {
@@ -261,7 +276,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             toast.success(isCustomer ? t('live_request_success') : t('live_start_success'));
             load(); // Refresh state to show WAITING_AGENT UI
         } catch (err) {
-            toast.error(t('chat_update_error'));
+            const message = err instanceof Error ? err.message : '';
+            toast.error(message.includes('LIVE_CHAT_VIP_REQUIRED') ? t('live_chat_vip_required') : t('chat_update_error'));
         }
     };
 
@@ -506,6 +522,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                         variant="outline"
                                         size="sm"
                                         onClick={handleRequestLiveChat}
+                                        disabled={!isLiveChatEligible}
+                                        title={!isLiveChatEligible ? t('live_chat_vip_only') : undefined}
                                         className="h-7 border-blue-500/30 text-blue-500 bg-blue-500/5 hover:bg-blue-500/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
                                     >
                                         <MessageCircle className="h-3 w-3" />
@@ -852,6 +870,83 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         )}
                     </CardContent>
                 </Card>
+
+                {!isCustomer && aiTrace && (
+                    <Card className="border-purple-500/25 bg-purple-500/[0.03]">
+                        <CardHeader className="py-2 border-b border-purple-500/15">
+                            <CardTitle className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.18em] text-purple-300">
+                                <Bot className="h-3.5 w-3.5" />
+                                {t('ai_trace_title')}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-3 py-3 space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-0.5">
+                                    <label className="text-[8px] uppercase font-bold text-muted-foreground/70 tracking-[0.1em]">{t('ai_trace_provider')}</label>
+                                    <p className="text-[10px] font-mono text-foreground truncate">{aiTrace.interaction?.provider || '-'}</p>
+                                </div>
+                                <div className="space-y-0.5">
+                                    <label className="text-[8px] uppercase font-bold text-muted-foreground/70 tracking-[0.1em]">{t('ai_trace_model')}</label>
+                                    <p className="text-[10px] font-mono text-foreground truncate">{aiTrace.interaction?.model || '-'}</p>
+                                </div>
+                                <div className="space-y-0.5">
+                                    <label className="text-[8px] uppercase font-bold text-muted-foreground/70 tracking-[0.1em]">{t('ai_trace_language')}</label>
+                                    <p className="text-[10px] font-mono text-foreground uppercase">{aiTrace.quality?.responseLanguage || aiTrace.quality?.requestLocale || '-'}</p>
+                                </div>
+                                <div className="space-y-0.5">
+                                    <label className="text-[8px] uppercase font-bold text-muted-foreground/70 tracking-[0.1em]">{t('ai_trace_confidence')}</label>
+                                    <p className="text-[10px] font-mono text-foreground">{aiTrace.interaction?.confidenceBand || '-'}</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground">{t('ai_trace_contract')}</span>
+                                    <Badge variant="outline" className={`h-5 rounded-none text-[9px] ${aiTrace.quality?.contractSections?.isComplete ? 'border-emerald-500/40 text-emerald-300 bg-emerald-500/10' : 'border-amber-500/40 text-amber-300 bg-amber-500/10'}`}>
+                                        {aiTrace.quality?.contractSections?.passed || 0}/5
+                                    </Badge>
+                                </div>
+                                <div className="grid grid-cols-5 gap-1">
+                                    {['problem', 'cause', 'checks', 'steps', 'verification'].map((key) => (
+                                        <div
+                                            key={key}
+                                            className={`h-1.5 ${aiTrace.quality?.contractSections?.[key] ? 'bg-emerald-400' : 'bg-amber-500/50'}`}
+                                            title={key}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <div className="flex items-center justify-between gap-2 text-[9px] font-mono uppercase">
+                                    <span className="text-muted-foreground">{t('ai_trace_source_leak')}</span>
+                                    <span className={aiTrace.quality?.sourceLeakDetected ? 'text-red-300' : 'text-emerald-300'}>
+                                        {aiTrace.quality?.sourceLeakDetected ? t('ai_trace_fail') : t('ai_trace_pass')}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 text-[9px] font-mono uppercase">
+                                    <span className="text-muted-foreground">{t('ai_trace_language_risk')}</span>
+                                    <span className={aiTrace.quality?.mixedLanguageRisk ? 'text-amber-300' : 'text-emerald-300'}>
+                                        {aiTrace.quality?.mixedLanguageRisk ? t('ai_trace_risk') : t('ai_trace_pass')}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 text-[9px] font-mono uppercase">
+                                    <span className="text-muted-foreground">{t('ai_trace_ticket_flag')}</span>
+                                    <span className={aiTrace.quality?.ticketCreatedFlagMatches ? 'text-emerald-300' : 'text-amber-300'}>
+                                        {aiTrace.quality?.ticketCreatedFlagMatches ? t('ai_trace_pass') : t('ai_trace_risk')}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {aiTrace.interaction?.userQuery && (
+                                <div className="pt-2 border-t border-purple-500/15">
+                                    <label className="text-[8px] uppercase font-bold text-muted-foreground/70 tracking-[0.1em]">{t('ai_trace_query')}</label>
+                                    <p className="mt-1 text-[11px] leading-relaxed text-foreground/85 line-clamp-3">{aiTrace.interaction.userQuery}</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
 
                 {!isCustomer && ticket.hotinfoSnapshot && (
                     <Dialog>

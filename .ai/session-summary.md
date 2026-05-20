@@ -2755,3 +2755,19 @@ Maintenance rule:
 - `pnpm --filter @aluplan/backend typecheck`
 - `gitnexus detect_changes` (attempted)
 
+## Live Chat Policy + AI Ticket Trace - 2026-05-20
+
+### What changed
+
+- Customer-initiated live chat requests are now server-side gated: only VIP customers can move a ticket chat status to `REQUESTED`.
+- Support staff can still start or accept live chat regardless of customer VIP status, preserving the intended proactive support workflow.
+- Ticket creation now marks linked `AiInteraction.ticketCreated=true`, including idempotent/reused ticket paths.
+- Added a staff-only `GET /tickets/:id/ai-trace` endpoint with interaction telemetry, language/source/contract checks, source-leak detection, and recent message context.
+- Ticket detail UI now shows an AI Ticket Trace card for support users and disables customer live-chat request controls when the ticket creator is not VIP.
+
+### Validation
+
+- `pnpm --filter @aluplan/backend test -- tickets.service.spec.ts`
+- `pnpm --filter @aluplan/backend typecheck`
+- `pnpm --filter @aluplan/frontend typecheck`
+- `pnpm i18n:check`

@@ -377,6 +377,7 @@ export const api = {
             return request<{ data: any[]; total: number }>(`/tickets${q}`);
         },
         get: (id: string) => request<any>(`/tickets/${id}`),
+        getAiTrace: (id: string) => request<any>(`/tickets/${id}/ai-trace`),
         create: (body: any) => request<any>('/tickets', { method: 'POST', body: JSON.stringify(body) }),
         updateStatus: (id: string, status: string) =>
             request<any>(`/tickets/${id}/status/${status}`, { method: 'PATCH' }),

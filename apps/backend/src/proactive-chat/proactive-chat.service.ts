@@ -32,7 +32,8 @@ export class ProactiveChatService {
 
     async createSession(agentId: string, customerId: string) {
         // 1. Verify customer profile exists.
-        // VIP filtresi bu fazda yoktur — yalnızca sonraki fazdaki customer-initiated akış için ayrılmıştır (Req 1.4).
+        // Agent-initiated proactive chat can target any customer. Customer-initiated
+        // live chat requests are gated separately in TicketsService.
         const profile = await this.prisma.customerProfile.findUnique({
             where: { userId: customerId },
             include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },

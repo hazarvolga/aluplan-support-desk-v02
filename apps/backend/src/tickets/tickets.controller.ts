@@ -73,6 +73,15 @@ export class TicketsController {
         return this.ticketsService.getSlaStats(req.user);
     }
 
+    // ─── AI TRACE ───────────────────────────────
+    @Get(':id/ai-trace')
+    @RequirePermissions('ticket:read')
+    @ApiOperation({ summary: 'Get AI trace and quality signals for a ticket' })
+    @ApiParam({ name: 'id', required: true, description: 'The UUID of the ticket' })
+    getAiTrace(@Param('id') id: string, @Request() req: any) {
+        return this.ticketsService.getAiTrace(id, { id: req.user.sub, role: req.user.role });
+    }
+
     // ─── GET ONE ────────────────────────────────
     @Get(':id')
     @RequirePermissions('ticket:read')
