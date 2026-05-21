@@ -100,6 +100,69 @@ describe('AiCopilotService', () => {
             expect(prompt).not.toContain('Output language must be Turkish');
         });
 
+        it('grounds the admin draft in the linked ticket-opening AI answer', async () => {
+            const openingAnswer = [
+                'Merhaba,',
+                '',
+                '## 📌 Sorun Yorumu',
+                'İstemci bilgisayar lisans sunucusunu otomatik olarak bulamıyorsa, sunucu manuel olarak eklenmelidir.',
+                '',
+                '## 🛠️ Çözüm Adımları',
+                'Allplan lisans ayarlarında manuel sunucu alanına lisans sunucusunun adını veya IP adresini girin.',
+            ].join('\n');
+            mockPrisma.ticket.findUnique.mockResolvedValue({
+                ...mockTicket,
+                interaction: {
+                    responseGenerated: openingAnswer,
+                    userContext: {
+                        responseLanguage: 'tr',
+                        requestLocale: 'tr',
+                    },
+                },
+            });
+            mockAi.generate.mockResolvedValue('Generated admin draft');
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(result.draft).toBe('Generated admin draft');
+            const prompt = mockAi.generate.mock.calls[0][0];
+            expect(prompt).toContain('[LINKED_CUSTOMER_AI_ANSWER]');
+            expect(prompt).toContain('Use it as the primary grounding signal');
+            expect(prompt).toContain('sunucu manuel olarak eklenmelidir');
+        });
+
+        it('reuses the linked ticket-opening AI answer when the admin model returns no-knowledge', async () => {
+            const openingAnswer = [
+                'Merhaba,',
+                '',
+                '## 📌 Sorun Yorumu',
+                'İstemci bilgisayar lisans sunucusunu otomatik bulamıyorsa manuel sunucu ekleme akışı kullanılmalıdır.',
+                '',
+                '## 🛠️ Çözüm Adımları',
+                'Lisans ayarlarında sunucu adını veya IP adresini girin ve lisans listesini yenileyin.',
+                '',
+                'Kaynak: FAQ_TR_test',
+            ].join('\n');
+            mockPrisma.ticket.findUnique.mockResolvedValue({
+                ...mockTicket,
+                interaction: {
+                    responseGenerated: openingAnswer,
+                    userContext: {
+                        responseLanguage: 'tr',
+                        requestLocale: 'tr',
+                    },
+                },
+            });
+            mockEmbedding.search.mockResolvedValue({ results: [] });
+            mockAi.generate.mockResolvedValue('Bilgi kaynağımda yeterli döküman bulunmuyor. Lütfen destek talebi oluşturun.');
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(result.draft).toContain('manuel sunucu ekleme akışı kullanılmalıdır');
+            expect(result.draft).not.toContain('yeterli döküman bulunmuyor');
+            expect(result.draft).not.toContain('Kaynak:');
+        });
+
         it('should handle image attachments correctly', async () => {
             const ticketWithImg = {
                 ...mockTicket,
@@ -173,6 +236,32 @@ describe('AiCopilotService', () => {
             expect(result.draft).not.toContain('Bilgi kaynağındaki en güçlü eşleşme');
             expect(result.draft).not.toContain('faq-license');
             expect(result.draft).not.toContain('Ürün Anahtarı');
+        });
+
+        it('uses a structured fallback for manual license server discovery questions', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue({
+                ...mockTicket,
+                subject: 'License server istemcide otomatik bulunmuyor, manuel server nasıl eklenir?',
+                description: 'License server istemcide otomatik bulunmuyor, manuel server nasıl eklenir?',
+                messages: [{ id: 'm1', message: 'License server istemcide otomatik bulunmuyor, manuel server nasıl eklenir?', attachments: [] }],
+            });
+            mockEmbedding.search.mockResolvedValue({
+                results: [
+                    {
+                        title: 'FAQ_TR_Lisans sunucusu otomatik bulunmuyor',
+                        content: 'License server otomatik bulunmazsa ek sunucu manuel girilebilir. CodeMeter ve 22350 portu kontrol edilmelidir.',
+                        similarity: 0.91,
+                    },
+                ],
+            });
+            mockAi.generate.mockResolvedValue('Bilgi kaynağımda yeterli döküman bulunmuyor. Lütfen destek talebi oluşturun.');
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(result.draft).toContain('## 📌 Sorun Yorumu');
+            expect(result.draft).toContain('manuel olarak eklenmelidir');
+            expect(result.draft).toContain('## 🛠️ Çözüm Adımları');
+            expect(result.draft).not.toContain('yeterli döküman bulunmuyor');
         });
     });
 

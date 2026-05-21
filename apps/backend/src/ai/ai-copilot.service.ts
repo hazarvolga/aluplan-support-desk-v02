@@ -143,6 +143,8 @@ export class AiCopilotService {
         }
 
         // 6. Build final context
+        const targetLanguage = this.resolveTicketAnswerLanguage(ticket);
+        const linkedCustomerAnswer = this.extractUsableInteractionAnswer(ticket.interaction);
         const context = await this.promptContextBuilder.buildContext({
             userId: ticket.creator?.id,
             userQuery: latestMessage?.message || '',
@@ -151,8 +153,6 @@ export class AiCopilotService {
             messages,
             diagnosis
         });
-
-        const targetLanguage = this.resolveTicketAnswerLanguage(ticket);
 
         const systemPrompt = buildSupportAnswerContractPrompt({
             basePrompt: MASTER_DIAGNOSIS_PROMPT,
@@ -172,6 +172,7 @@ ${isShift ? '### 📢 [ÖNEMLİ] KONU DEĞİŞİKLİĞİ TESPİT EDİLDİ\nKulla
 [CONVERSATION_CONTEXT]
 ${context}
 ${parsedDocumentTexts}
+${linkedCustomerAnswer ? this.buildLinkedCustomerAnswerContext(linkedCustomerAnswer) : ''}
 
 RESPONSE DRAFT:`;
 
@@ -182,6 +183,7 @@ RESPONSE DRAFT:`;
                 latestMessage?.message || ticket.description || ticket.subject || '',
                 searchResponse.results,
                 targetLanguage,
+                linkedCustomerAnswer,
             );
             return {
                 draft: draft || 'Draft could not be generated.',
@@ -201,8 +203,18 @@ RESPONSE DRAFT:`;
         query: string,
         results: Array<{ title?: string; content?: string; similarity?: number }> = [],
         language = 'tr',
+        linkedCustomerAnswer?: string | null,
     ): string | null | undefined {
-        if (!isNoKnowledgeAnswer(response) || results.length === 0) {
+        if (!isNoKnowledgeAnswer(response)) {
+            return response;
+        }
+
+        if (linkedCustomerAnswer) {
+            this.logger.warn(`⚠️ Copilot LLM returned no-knowledge despite a usable ticket-opening AI answer. Reusing linked answer as grounded fallback.`);
+            return this.formatLinkedCustomerAnswerForAgent(linkedCustomerAnswer);
+        }
+
+        if (results.length === 0) {
             return response;
         }
 
@@ -224,6 +236,10 @@ RESPONSE DRAFT:`;
             /(?:lisans|license|lizenz|codemeter|wibu)/.test(normalizedQuery) &&
             /(?:sunucu|server)/.test(normalizedQuery) &&
             /(?:erisim|access|zugriff|hak|rights|permission|izin|kullanici|user|benutzer|bazli)/.test(normalizedQuery);
+        const asksManualLicenseServer =
+            /(?:lisans|license|lizenz|codemeter|wibu)/.test(normalizedQuery) &&
+            /(?:sunucu|server)/.test(normalizedQuery) &&
+            /(?:otomatik|automatic|auto|bulunmuyor|bulamiyor|find|finden|discovery|manuel|manual|ekle|add|eintragen)/.test(normalizedQuery);
         const top = results[0];
         const normalizedEvidence = this.normalizeSearchText(`${top?.title ?? ''} ${top?.content ?? ''}`);
 
@@ -251,6 +267,32 @@ RESPONSE DRAFT:`;
             ].join('\n');
         }
 
+        if (isTurkish && asksManualLicenseServer && /(?:license|lisans|lizenz|codemeter|wibu|server|sunucu|automatic|automatisch|manuel|manual|ek|additional|zusatzlich|22350)/.test(normalizedEvidence)) {
+            return [
+                'Merhaba,',
+                '',
+                '## 📌 Sorun Yorumu',
+                'İstemci bilgisayar lisans sunucusunu otomatik olarak bulamıyorsa, lisans sunucusu Allplan lisans ayarlarından manuel olarak eklenmelidir.',
+                '',
+                '## 🎯 En Olası Neden',
+                'Bu genellikle otomatik sunucu keşfinin ağ, VPN, güvenlik duvarı veya isim çözümleme nedeniyle çalışmamasından kaynaklanır. Bu durumda istemciye lisans sunucusunun adı veya IP adresi elle tanıtılır.',
+                '',
+                '## ⚠️ Kritik Kontroller',
+                '- Lisans sunucusunun çalıştığını ve istemci bilgisayardan erişilebilir olduğunu doğrulayın.',
+                '- Güvenlik duvarı veya ağ kurallarının CodeMeter lisans iletişimini engellemediğini kontrol edin.',
+                '- Sunucu adını kullanacaksanız DNS/isim çözümlemesinin doğru çalıştığından emin olun; emin değilseniz IP adresiyle test edin.',
+                '',
+                '## 🛠️ Çözüm Adımları',
+                '1. İstemci bilgisayarda Allplan lisans ayarlarını açın.',
+                '2. Lisans sunucusunu otomatik bulma seçeneği sonuç vermiyorsa manuel sunucu ekleme alanına lisans sunucusunun adını veya IP adresini girin.',
+                '3. Ayarı kaydedin ve lisans listesinin yenilenmesini bekleyin.',
+                '4. Lisans görünmüyorsa CodeMeter servisini ve ağ erişimini kontrol edin, ardından Allplan lisans ayarlarını tekrar açın.',
+                '',
+                '## ✅ Doğrulama',
+                'Lisans ayarlarında sunucudan gelen lisansların listelendiğini ve istemci bilgisayarda Allplan’ın lisans alarak açıldığını doğrulayın.',
+            ].join('\n');
+        }
+
         if (isTurkish) {
             return [
                 'Merhaba,',
@@ -268,6 +310,39 @@ RESPONSE DRAFT:`;
             .replace(/\[Kaynak:[^\]]+\]/gi, '')
             .trim()
             .slice(0, 700);
+    }
+
+    private extractUsableInteractionAnswer(interaction?: { responseGenerated?: string | null } | null): string | null {
+        const answer = interaction?.responseGenerated?.trim();
+        if (!answer) return null;
+        if (answer.startsWith('AI_ERROR:')) return null;
+        if (isNoKnowledgeAnswer(answer)) return null;
+        if (answer.length < 80) return null;
+        return this.sanitizeLinkedCustomerAnswer(answer);
+    }
+
+    private buildLinkedCustomerAnswerContext(answer: string): string {
+        return `
+[LINKED_CUSTOMER_AI_ANSWER]
+The customer-facing AI answer below was generated at ticket opening from the same user intent.
+Use it as the primary grounding signal for this agent draft. Keep the same core solution and language.
+If the new draft would otherwise say the knowledge base is insufficient, reuse this answer instead of contradicting it.
+
+${answer}
+[/LINKED_CUSTOMER_AI_ANSWER]`;
+    }
+
+    private formatLinkedCustomerAnswerForAgent(answer: string): string {
+        return this.sanitizeLinkedCustomerAnswer(answer);
+    }
+
+    private sanitizeLinkedCustomerAnswer(answer: string): string {
+        return answer
+            .split('\n')
+            .filter(line => !/^\s*(kaynak|source|quelle)\s*:/i.test(line))
+            .join('\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
     }
 
     private normalizeSearchText(value: string): string {
