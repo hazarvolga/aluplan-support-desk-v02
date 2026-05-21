@@ -510,6 +510,9 @@
         "hotinfo_upload_name": "Hotinfo Yükleme"
       },
       "fields": {
+        "department": "Destek Kategorisi",
+        "department_placeholder": "Talebinizin kategorisini seçin",
+        "department_hint": "Bu seçim talebinizi doğru destek ekibine yönlendirmek için kullanılır.",
         "product": "İlgili Ürün",
         "product_placeholder": "Ürün seçin (opsiyonel)",
         "product_general": "Genel Soru / Diğer",
@@ -583,6 +586,7 @@
         "select_file": "Dosya Seç",
         "report": "Özet Rapor",
         "subject_label": "Konu:",
+        "department_label": "Kategori:",
         "product_label": "Ürün:",
         "desc_label": "Açıklama:"
       },
@@ -592,6 +596,7 @@
         "description_min": "Açıklama en az 10 karakter olmalıdır"
       },
       "toasts": {
+        "departments_load_error": "Destek kategorileri yüklenirken hata oluştu",
         "products_load_error": "Ürünler yüklenirken hata oluştu",
         "hotinfo_loaded": "Profilinizdeki sistem bilgileri yüklendi. Lütfen güncel olduğunu onaylayın.",
         "invalid_hxl": "Lütfen geçerli bir .hxl dosyası yükleyin",

@@ -11,6 +11,7 @@ export const CreateTicketSchema = z.object({
         .min(10, 'Açıklama en az 10 karakter olmalıdır.')
         .max(5000, 'Açıklama en fazla 5000 karakter olabilir.'),
     productId: UuidSchema.nullish(),
+    departmentId: UuidSchema.nullish(),
     category: z.string().max(100).nullish(),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).default('MEDIUM'),
     attachments: z.array(z.string().url()).max(10).optional(),

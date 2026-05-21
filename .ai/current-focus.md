@@ -65,6 +65,10 @@
   - public `knowledge_article`, `pdf`, `technical_manual`, `explaining_video`, and `recorded_online_session` filters are available in the crawler UI.
   - non-PDF formats are staged as review candidates through the existing URL sync path while preserving original LearnNow source type metadata.
   - next LearnNow phase should focus on detail-page image extraction quality and video transcript availability before broader pilot imports.
+- Ticket routing hardening started:
+  - new ticket creation now collects support category/department before product selection.
+  - ticket create payload includes `departmentId` so SLA and auto-assignment can route by department.
+  - auto-assignment no longer falls back to global agents when department routing is missing or no auto-assignment team exists.
 - Admin Copilot drift hardening completed:
   - admin ANN/Copilot drafts now receive the linked ticket-opening AI answer as primary grounding context when one exists.
   - if the admin model returns a no-knowledge response despite a usable ticket-opening answer, Copilot reuses the linked answer instead of contradicting it.

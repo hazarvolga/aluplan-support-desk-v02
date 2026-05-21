@@ -54,8 +54,11 @@ export default function NewTicketPage() {
     const [currentStep, setCurrentStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [loadingProducts, setLoadingProducts] = useState(true);
+    const [loadingDepartments, setLoadingDepartments] = useState(true);
     const [files, setFiles] = useState<File[]>([]);
     const [products, setProducts] = useState<any[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);
+    const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('');
     const [selectedProductId, setSelectedProductId] = useState<string>('');
     const [hotinfoData, setHotinfoData] = useState<any | null>(null);
     const [isHotinfoConfirmed, setIsHotinfoConfirmed] = useState(false);
@@ -76,16 +79,21 @@ export default function NewTicketPage() {
     });
 
     useEffect(() => {
-        api.products.list()
-            .then(data => {
-                setProducts(data);
-                setLoadingProducts(false);
+        api.teams.departments()
+            .then(data => setDepartments(data))
+            .catch(err => {
+                console.error(err);
+                toast.error(t('toasts.departments_load_error'));
             })
+            .finally(() => setLoadingDepartments(false));
+
+        api.products.list()
+            .then(data => setProducts(data))
             .catch(err => {
                 console.error(err);
                 toast.error(t('toasts.products_load_error'));
-                setLoadingProducts(false);
-            });
+            })
+            .finally(() => setLoadingProducts(false));
     }, []);
 
     const handleProductChange = async (value: string) => {
@@ -225,6 +233,7 @@ export default function NewTicketPage() {
         try {
             const ticket = await api.tickets.create({
                 ...values,
+                departmentId: selectedDepartmentId || undefined,
                 productId: selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId,
                 hotinfoContext: isHotinfoConfirmed && hotinfoData ? hotinfoData : undefined,
                 interactionId: interactionId ?? undefined,
@@ -265,7 +274,7 @@ export default function NewTicketPage() {
         }
     };
 
-    if (loadingProducts) {
+    if (loadingProducts || loadingDepartments) {
         return (
             <div className="flex h-[50vh] items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -274,6 +283,7 @@ export default function NewTicketPage() {
     }
 
     const selectedProductDetails = products.find(p => p.id === selectedProductId);
+    const selectedDepartmentDetails = departments.find(d => d.id === selectedDepartmentId);
     const isAllplanSelected = selectedProductDetails?.name?.toUpperCase().includes('ALLPLAN');
 
     // ── STEP 1: Ticket Form (Subject, Product, Priority, Hotinfo) ──
@@ -294,6 +304,27 @@ export default function NewTicketPage() {
                 <CardContent className="space-y-6">
                     <Form {...form}>
                         <div className="space-y-6">
+                            {/* Department / Category Selection Dropdown */}
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium flex items-center gap-2">
+                                    <ShieldAlert className="h-4 w-4 text-brand-400" />
+                                    {t('fields.department')}
+                                </Label>
+                                <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
+                                    <SelectTrigger className="bg-slate-950/50 border-white/10">
+                                        <SelectValue placeholder={t('fields.department_placeholder')} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {departments.map(department => (
+                                            <SelectItem key={department.id} value={department.id}>
+                                                {department.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-[11px] text-muted-foreground/60">{t('fields.department_hint')}</p>
+                            </div>
+
                             {/* Product Selection Dropdown */}
                             <div className="space-y-2">
                                 <Label className="text-sm font-medium flex items-center gap-2">
@@ -399,7 +430,7 @@ export default function NewTicketPage() {
                                 </div>
                             )}
 
-                            {selectedProductId !== '' && (!isAllplanSelected || isHotinfoConfirmed) && (
+                            {selectedDepartmentId !== '' && selectedProductId !== '' && (!isAllplanSelected || isHotinfoConfirmed) && (
                                 <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
                                     {/* Priority */}
                                     <FormField
@@ -458,7 +489,7 @@ export default function NewTicketPage() {
                     </Form>
                 </CardContent>
 
-                {form.watch('priority') && (
+                {selectedDepartmentId && selectedProductId && form.watch('priority') && (
                     <CardFooter className="justify-end border-t border-white/5 pt-6 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <Button
                             disabled={!form.getValues('subject') || form.getValues('subject').length < 5 || form.getValues('subject').length > MAX_TICKET_SUBJECT_LENGTH}
@@ -652,6 +683,7 @@ export default function NewTicketPage() {
                         <Label className="text-brand-400 text-[10px] uppercase font-bold">{t('summary.report')}</Label>
                         <p className="text-sm leading-relaxed text-white/80">
                             <strong>{t('summary.subject_label')}</strong> {form.getValues('subject')}<br />
+                            <strong>{t('summary.department_label')}</strong> {selectedDepartmentDetails?.name || '-'}<br />
                             <strong>{t('summary.product_label')}</strong> {selectedProductDetails?.name || t('fields.product_general')}<br />
                             <strong>{t('summary.desc_label')}</strong> {form.getValues('description').slice(0, 100)}...
                         </p>

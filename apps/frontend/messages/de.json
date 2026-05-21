@@ -510,6 +510,9 @@
         "hotinfo_upload_name": "Hotinfo Hochladen"
       },
       "fields": {
+        "department": "Support-Kategorie",
+        "department_placeholder": "Kategorie der Anfrage auswählen",
+        "department_hint": "Diese Auswahl leitet Ihre Anfrage an das richtige Support-Team weiter.",
         "product": "Zugehöriges Produkt",
         "product_placeholder": "Produkt wählen (optional)",
         "product_general": "Allgemeine Frage / Sonstiges",
@@ -583,6 +586,7 @@
         "select_file": "Datei auswählen",
         "report": "Zusammenfassungsbericht",
         "subject_label": "Thema:",
+        "department_label": "Kategorie:",
         "product_label": "Produkt:",
         "desc_label": "Beschreibung:"
       },
@@ -592,6 +596,7 @@
         "description_min": "Beschreibung muss mindestens 10 Zeichen lang sein"
       },
       "toasts": {
+        "departments_load_error": "Fehler beim Laden der Support-Kategorien",
         "products_load_error": "Fehler beim Laden der Produkte",
         "hotinfo_loaded": "Systeminformationen aus Ihrem Profil geladen. Bitte bestätigen Sie die Aktualität.",
         "invalid_hxl": "Bitte laden Sie eine gültige .hxl-Datei hoch",

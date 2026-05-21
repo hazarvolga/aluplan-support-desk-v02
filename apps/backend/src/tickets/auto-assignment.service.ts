@@ -18,6 +18,10 @@ export class AutoAssignmentService {
 
         const currentTicket = await this.prisma.ticket.findUnique({ where: { id: ticket.id } });
         if (!currentTicket || currentTicket.assignedTo) return;
+        if (!currentTicket.departmentId) {
+            this.logger.warn(`⚠️ Ticket ${ticket.ticketNumber} has no department; leaving it unassigned for triage.`);
+            return;
+        }
 
         try {
             const agents = await this.findAssignableAgents(currentTicket.departmentId);
@@ -62,7 +66,7 @@ export class AutoAssignmentService {
         }
     }
 
-    private async findAssignableAgents(departmentId?: string | null) {
+    private async findAssignableAgents(departmentId: string) {
         const baseWhere = {
             deletedAt: null,
             role: {
@@ -74,22 +78,14 @@ export class AutoAssignmentService {
             status: 'ACTIVE' as const,
         };
 
-        const activeTeamFilter = {
+        const departmentTeamFilter = {
             team: {
+                departmentId,
                 isArchived: false,
                 deletedAt: null,
+                autoAssignmentEnabled: true,
             },
         };
-
-        const departmentTeamFilter = departmentId
-            ? {
-                team: {
-                    departmentId,
-                    isArchived: false,
-                    deletedAt: null,
-                },
-            }
-            : activeTeamFilter;
 
         const agents = await this.prisma.user.findMany({
             where: {
@@ -99,15 +95,10 @@ export class AutoAssignmentService {
             select: { id: true },
         });
 
-        if (agents.length > 0 || !departmentId) return agents;
+        if (agents.length === 0) {
+            this.logger.warn(`⚠️ No auto-assignment agents found for department ${departmentId}; leaving ticket unassigned.`);
+        }
 
-        this.logger.warn(`⚠️ No department agents found for department ${departmentId}; falling back to global support team members.`);
-        return this.prisma.user.findMany({
-            where: {
-                ...baseWhere,
-                teamMembers: { some: activeTeamFilter },
-            },
-            select: { id: true },
-        });
+        return agents;
     }
 }

@@ -510,6 +510,9 @@
         "hotinfo_upload_name": "Hotinfo Upload"
       },
       "fields": {
+        "department": "Support Category",
+        "department_placeholder": "Select the category for your request",
+        "department_hint": "This selection routes your request to the right support team.",
         "product": "Related Product",
         "product_placeholder": "Select product (optional)",
         "product_general": "General Question / Other",
@@ -583,6 +586,7 @@
         "select_file": "Select File",
         "report": "Summary Report",
         "subject_label": "Subject:",
+        "department_label": "Category:",
         "product_label": "Product:",
         "desc_label": "Description:"
       },
@@ -592,6 +596,7 @@
         "description_min": "Description must be at least 10 characters"
       },
       "toasts": {
+        "departments_load_error": "Error loading support categories",
         "products_load_error": "Error loading products",
         "hotinfo_loaded": "System information from your profile loaded. Please confirm it's up to date.",
         "invalid_hxl": "Please upload a valid .hxl file",

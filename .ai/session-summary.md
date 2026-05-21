@@ -2849,3 +2849,25 @@ Maintenance rule:
 ### Next
 
 - Phase 2 should inspect LearnNow detail pages for image assets and video transcript availability before importing visual/video content into RAG answers.
+
+## Follow-up - 2026-05-21 Ticket Routing Foundation
+
+### What changed
+
+- Customer ticket creation now asks for support category/department before product selection.
+- The selected department is submitted as `departmentId`, so ticket SLA and routing have an explicit department anchor.
+- The shared ticket schema now includes optional `departmentId` for frontend/backend DTO alignment.
+- Auto-assignment no longer assigns departmentless tickets or falls back to global support agents.
+- Auto-assignment only considers active users in non-archived teams where `autoAssignmentEnabled=true` and the team belongs to the ticket department.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- auto-assignment.service.spec.ts tickets.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+- `git diff --check` passed.
+
+### Note
+
+- This phase is local-only until the remaining routing/admin team phases are complete and explicitly pushed.

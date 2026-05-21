@@ -12,6 +12,7 @@ describe('AutoAssignmentService', () => {
         subject: 'Test Ticket',
         assignedTo: null,
         status: 'NEW',
+        departmentId: 'department-1',
     };
 
     beforeEach(async () => {
@@ -49,7 +50,17 @@ describe('AutoAssignmentService', () => {
         expect(prisma.ticket.update).not.toHaveBeenCalled();
     });
 
-    it('should only find active support team members as available agents', async () => {
+    it('should leave tickets without department unassigned for manual triage', async () => {
+        const ticketWithoutDepartment = { ...mockTicket, departmentId: null };
+        prisma.ticket.findUnique.mockResolvedValueOnce(ticketWithoutDepartment);
+
+        await service.handleTicketCreated(ticketWithoutDepartment as any);
+
+        expect(prisma.user.findMany).not.toHaveBeenCalled();
+        expect(prisma.ticket.update).not.toHaveBeenCalled();
+    });
+
+    it('should only find active members from auto-assignment teams in the ticket department', async () => {
         await service.handleTicketCreated(mockTicket as any);
 
         expect(prisma.user.findMany).toHaveBeenCalledWith({
@@ -60,13 +71,24 @@ describe('AutoAssignmentService', () => {
                 teamMembers: {
                     some: {
                         team: {
+                            departmentId: 'department-1',
                             isArchived: false,
                             deletedAt: null,
+                            autoAssignmentEnabled: true,
                         },
                     },
                 },
             },
             select: { id: true }
         });
+    });
+
+    it('should not fall back to global agents when the department has no auto-assignment agents', async () => {
+        prisma.user.findMany.mockResolvedValueOnce([]);
+
+        await service.handleTicketCreated(mockTicket as any);
+
+        expect(prisma.user.findMany).toHaveBeenCalledTimes(1);
+        expect(prisma.ticket.update).not.toHaveBeenCalled();
     });
 });
