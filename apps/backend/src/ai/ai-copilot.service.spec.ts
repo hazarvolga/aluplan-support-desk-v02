@@ -54,8 +54,9 @@ describe('AiCopilotService', () => {
             ticketNumber: 'SUP-001',
             subject: 'Subject',
             description: 'Desc',
+            userId: 'u1',
             messages: [{ id: 'm1', message: 'Hello', attachments: [] }],
-            creator: { id: 'u1', language: 'tr', customerProfile: { hotinfoData: {} } }
+            creator: { id: 'u1', fullName: 'Test Customer', language: 'tr', customerProfile: { hotinfoData: {} } }
         };
 
         it('should throw NotFoundException if ticket not found', async () => {
@@ -76,6 +77,56 @@ describe('AiCopilotService', () => {
             expect(prompt).toContain('Audience: support agent draft');
             expect(prompt).toContain('Keep the same core solution for customer and agent outputs');
             expect(prompt).toContain('do not convert it into an outage/root-cause diagnosis');
+        });
+
+        it('targets the ticket requester, not the support agent generating the draft', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue({
+                ...mockTicket,
+                userId: 'customer-1',
+                creator: {
+                    id: 'customer-1',
+                    fullName: 'Melih Dinekli',
+                    language: 'tr',
+                    customerProfile: { hotinfoData: {} },
+                },
+                messages: [
+                    {
+                        id: 'm2',
+                        senderId: 'admin-1',
+                        sender: { fullName: 'Hazar Volga' },
+                        message: 'Admin internal review note',
+                        isInternal: false,
+                        attachments: [],
+                    },
+                    {
+                        id: 'm1',
+                        senderId: 'customer-1',
+                        sender: { fullName: 'Melih Dinekli' },
+                        message: 'License server istemcide otomatik bulunmuyor, manuel server nasıl eklenir?',
+                        isInternal: false,
+                        attachments: [],
+                    },
+                ],
+            });
+            mockAi.generate.mockResolvedValue('Generated draft response');
+
+            await service.generateDraft('tik-1');
+
+            const prompt = mockAi.generate.mock.calls[0][0];
+            expect(prompt).toContain('[TICKET_RESPONSE_TARGET]');
+            expect(prompt).toContain('Melih Dinekli');
+            expect(prompt).toContain('The support agent/admin generating this draft is NOT the recipient');
+            expect(prompt).toContain('Do not address Hazar Volga');
+            expect(mockPromptBuilder.buildContext).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    userId: 'customer-1',
+                    userQuery: 'License server istemcide otomatik bulunmuyor, manuel server nasıl eklenir?',
+                    messages: expect.arrayContaining([
+                        expect.objectContaining({ role: 'user', content: expect.stringContaining('License server') }),
+                        expect.objectContaining({ role: 'assistant', content: expect.stringContaining('Admin internal review note') }),
+                    ]),
+                }),
+            );
         });
 
         it('uses the ticket-opening interaction language before the creator profile language', async () => {

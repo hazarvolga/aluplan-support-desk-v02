@@ -52,6 +52,9 @@ export class AiCopilotService {
         // Extract Hotinfo
         const hotinfoSnapshot = (ticket.hotinfoSnapshot || ticket.creator?.customerProfile?.hotinfoData) as Record<string, unknown> | null;
         const latestMessage = ticket.messages[0];
+        const customerMessages = ticket.messages.filter((message) => !message.isInternal && this.isCustomerMessage(message, ticket.userId));
+        const latestCustomerMessage = customerMessages[0] ?? ticket.messages.find((message) => !message.isInternal) ?? latestMessage;
+        const activeUserMessage = latestCustomerMessage?.message || ticket.description || ticket.subject || '';
 
         // 1. Process Attachments (Early)
         let parsedDocumentTexts = '';
@@ -98,7 +101,7 @@ export class AiCopilotService {
         }
 
         // 2. Expand Search Query with Parser results
-        const searchQuery = ticket.subject + '\n' + (ticket.description || '') + '\n' + (latestMessage?.message || '') + '\n' + parsedDocumentTexts;
+        const searchQuery = ticket.subject + '\n' + (ticket.description || '') + '\n' + activeUserMessage + '\n' + parsedDocumentTexts;
         const isHardwareQuery = /çökme|crash|donma|freeze|yavaş|slow|performans|hata|error|gpu|driver|sürücü|ram|bellek/i.test(searchQuery);
 
         let expandedSearchQuery = searchQuery;
@@ -109,7 +112,7 @@ export class AiCopilotService {
         // 3. Technical Diagnosis (Aggregating context for shift detection)
         const historyText = ticket.messages.slice(1).map(m => m.message).join('\n');
         const diagnosis = await this.diagnosisService.analyze(
-            latestMessage?.message || ticket.description || '',
+            activeUserMessage,
             [historyText],
             ticket.productId
         );
@@ -131,7 +134,7 @@ export class AiCopilotService {
                     contentStr += `\n[EK: Bu mesajda { ${fileNames} } adlı görsel/dosya sistemden iletilmiştir. Görüntüler Vision API ile incelenir, dokümanlar ise CONTEXT'e eklenmiştir.]`;
                 }
                 return {
-                    role: m.sender?.fullName ? 'user' : 'assistant',
+                    role: this.isCustomerMessage(m, ticket.userId) ? 'user' : 'assistant',
                     content: contentStr
                 };
             });
@@ -145,9 +148,11 @@ export class AiCopilotService {
         // 6. Build final context
         const targetLanguage = this.resolveTicketAnswerLanguage(ticket);
         const linkedCustomerAnswer = this.extractUsableInteractionAnswer(ticket.interaction);
+        const requesterName = this.resolveTicketRequesterName(ticket);
+        const latestAgentName = this.resolveLatestAgentName(ticket);
         const context = await this.promptContextBuilder.buildContext({
             userId: ticket.creator?.id,
-            userQuery: latestMessage?.message || '',
+            userQuery: activeUserMessage,
             kbContent,
             hotinfoSnapshot,
             messages,
@@ -174,6 +179,7 @@ ${!isShift ? '### KONU DEĞİŞİKLİĞİ YOK\nBu ticket için konu değişikli�
 ${context}
 ${parsedDocumentTexts}
 ${linkedCustomerAnswer ? this.buildLinkedCustomerAnswerContext(linkedCustomerAnswer) : ''}
+${this.buildTicketResponseTargetContext(requesterName, latestAgentName)}
 
 RESPONSE DRAFT:`;
 
@@ -181,7 +187,7 @@ RESPONSE DRAFT:`;
             const response = await this.ai.generate(prompt, 60_000, aiParts);
             const draft = this.replaceNoKnowledgeDraftIfContextExists(
                 response,
-                latestMessage?.message || ticket.description || ticket.subject || '',
+                activeUserMessage,
                 searchResponse.results,
                 targetLanguage,
                 linkedCustomerAnswer,
@@ -349,6 +355,21 @@ ${answer}
 [/LINKED_CUSTOMER_AI_ANSWER]`;
     }
 
+    private buildTicketResponseTargetContext(requesterName: string | null, latestAgentName: string | null): string {
+        const requesterLine = requesterName
+            ? `Respond to the ticket requester/customer: ${requesterName}.`
+            : 'Respond to the ticket requester/customer.';
+        const agentLine = latestAgentName ? `Do not address ${latestAgentName}; that person is the support agent/admin, not the customer.` : '';
+
+        return `
+[TICKET_RESPONSE_TARGET]
+${requesterLine}
+The support agent/admin generating this draft is NOT the recipient.
+${agentLine}
+Opening greeting must address the ticket requester/customer once when a requester name is available.
+[/TICKET_RESPONSE_TARGET]`;
+    }
+
     private formatLinkedCustomerAnswerForAgent(answer: string): string {
         return this.sanitizeLinkedCustomerAnswer(answer);
     }
@@ -374,6 +395,24 @@ ${answer}
             .replace(/[^a-z0-9]+/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
+    }
+
+    private isCustomerMessage(message: { senderId?: string | null }, ticketUserId?: string | null): boolean {
+        return Boolean(ticketUserId && message.senderId && message.senderId === ticketUserId);
+    }
+
+    private resolveTicketRequesterName(ticket: { creator?: { fullName?: string | null } | null }): string | null {
+        const fullName = ticket.creator?.fullName?.trim();
+        return fullName || null;
+    }
+
+    private resolveLatestAgentName(ticket: {
+        userId?: string | null;
+        messages?: Array<{ senderId?: string | null; sender?: { fullName?: string | null } | null }>;
+    }): string | null {
+        const latestAgentMessage = ticket.messages?.find((message) => message.senderId && message.senderId !== ticket.userId && message.sender?.fullName);
+        const fullName = latestAgentMessage?.sender?.fullName?.trim();
+        return fullName || null;
     }
 
     private resolveTicketAnswerLanguage(ticket: {
