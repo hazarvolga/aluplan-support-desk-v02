@@ -259,6 +259,28 @@ Maintenance rule:
 - Reverse DNS for `167.86.84.107` resolves to `vmi3049865.contaboserver.net`, not `mail.allplan.net.tr`.
 - No public DKIM record was found for the common selectors checked, while docker-mailserver has DKIM milter configuration internally.
 
+## Follow-up - 2026-05-21 Admin Routing Configuration
+
+### What changed
+
+- Added a backend `PATCH /teams/:id` endpoint for team routing settings.
+- `TeamsService` now returns team member status in team/detail department views so the UI can identify active assignable agents.
+- Team detail now lets admins save `autoAssignmentEnabled` and `assignmentStrategy` instead of showing a passive Configure button.
+- Department detail team cards now show assignable agent counts and names, making routing gaps visible before ticket assignment fails.
+- Added `teams.routing.*` translation keys for TR/EN/DE.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- teams.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+- `git diff --check` passed.
+
+### Deployment note
+
+- Not deployed and not pushed in this phase. User requested holding deploy/push until the broader phase batch is ready.
+
 ### Fix applied
 
 - Production email enqueue now skips reserved/test recipients such as `admin@example.com`, `example.org`, `.test`, `.invalid`, and `localhost` before they reach the queue.

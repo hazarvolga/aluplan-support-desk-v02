@@ -20,7 +20,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { AgentStatusBadge } from '@/components/team/AgentStatusBadge';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
@@ -141,31 +140,64 @@ export default function DepartmentDetailPage() {
                 {/* Teams List */}
                 <TabsContent value="teams" className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {dept.teams?.map((team: any) => (
-                            <Card key={team.id} className="group hover:border-primary/40 transition-all border-border/40 shadow-none">
-                                <CardHeader className="flex flex-row justify-between items-start pb-2">
-                                    <div className="space-y-1">
-                                        <CardTitle className="text-xl group-hover:text-primary transition-colors cursor-pointer">{team.name}</CardTitle>
-                                        <CardDescription>{team.assignmentStrategy}</CardDescription>
-                                    </div>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" asChild>
-                                        <Link href={`/teams/team-detail/${team.id}`}>
-                                            <ArrowUpRight className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                        <div className="flex items-center gap-1.5">
-                                            <Users className="h-4 w-4" /> {t('labels.agent_count', { count: team._count?.members || 0 })}
+                        {dept.teams?.map((team: any) => {
+                            const assignableMembers = (team.members || []).filter((member: any) => {
+                                const roleName = String(member.user?.role?.name || member.user?.role || '').toLowerCase();
+                                return member.user?.status === 'ACTIVE' && roleName !== 'customer';
+                            });
+
+                            return (
+                                <Card key={team.id} className="group hover:border-primary/40 transition-all border-border/40 shadow-none">
+                                    <CardHeader className="flex flex-row justify-between items-start pb-2">
+                                        <div className="space-y-1">
+                                            <CardTitle className="text-xl group-hover:text-primary transition-colors cursor-pointer">{team.name}</CardTitle>
+                                            <CardDescription>{t(`routing.strategies.${team.assignmentStrategy || 'MANUAL'}`)}</CardDescription>
                                         </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <Calendar className="h-4 w-4" /> {team.autoAssignmentEnabled ? t('labels.auto_assign_on') : t('labels.auto_assign_off')}
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" asChild>
+                                            <Link href={`/teams/team-detail/${team.id}`}>
+                                                <ArrowUpRight className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                            <div className="flex items-center gap-1.5">
+                                                <Users className="h-4 w-4" /> {t('labels.agent_count', { count: team._count?.members || 0 })}
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <Calendar className="h-4 w-4" /> {team.autoAssignmentEnabled ? t('labels.auto_assign_on') : t('labels.auto_assign_off')}
+                                            </div>
                                         </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                        <div className="rounded-xl border border-border/40 bg-muted/20 p-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                                    {t('routing.assignable_agents')}
+                                                </span>
+                                                <Badge variant={team.autoAssignmentEnabled ? 'default' : 'outline'} className="text-[10px] font-bold">
+                                                    {assignableMembers.length} / {team.members?.length || 0}
+                                                </Badge>
+                                            </div>
+                                            {assignableMembers.length > 0 ? (
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {assignableMembers.slice(0, 4).map((member: any) => (
+                                                        <Badge key={member.user.id} variant="secondary" className="text-[11px] font-semibold">
+                                                            {member.user.fullName}
+                                                        </Badge>
+                                                    ))}
+                                                    {assignableMembers.length > 4 ? (
+                                                        <Badge variant="outline" className="text-[11px] font-semibold">
+                                                            +{assignableMembers.length - 4}
+                                                        </Badge>
+                                                    ) : null}
+                                                </div>
+                                            ) : (
+                                                <p className="mt-2 text-xs text-muted-foreground">{t('routing.no_assignable_agents')}</p>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
                     </div>
                 </TabsContent>
 

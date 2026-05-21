@@ -17,6 +17,7 @@ describe('TeamsService', () => {
             findFirst: jest.fn(),
             findUnique: jest.fn(),
             create: jest.fn(),
+            update: jest.fn(),
         },
         teamMember: {
             findUnique: jest.fn(),
@@ -86,6 +87,31 @@ describe('TeamsService', () => {
 
             const result = await service.getDepartment('d1');
 
+            expect(prisma.department.findFirst).toHaveBeenCalledWith({
+                where: { id: 'd1' },
+                include: {
+                    teams: {
+                        include: {
+                            members: {
+                                include: {
+                                    user: {
+                                        select: expect.objectContaining({
+                                            id: true,
+                                            fullName: true,
+                                            email: true,
+                                            status: true,
+                                            agentStatus: true,
+                                            role: true,
+                                        }),
+                                    },
+                                },
+                            },
+                            _count: { select: { members: true } },
+                        },
+                    },
+                    slaPolicies: true,
+                },
+            });
             expect(result).toEqual(mockDept);
         });
 
@@ -132,6 +158,35 @@ describe('TeamsService', () => {
         it('should throw NotFoundException when team does not exist', async () => {
             mockPrismaService.team.findFirst.mockResolvedValue(null);
             await expect(service.getTeam('invalid')).rejects.toThrow(NotFoundException);
+        });
+    });
+
+    describe('updateTeam', () => {
+        it('should update routing settings for an active team', async () => {
+            const existing = { id: 't1', name: 'Support' };
+            const updated = { ...existing, autoAssignmentEnabled: true, assignmentStrategy: 'SKILL_BASED' };
+            mockPrismaService.team.findFirst.mockResolvedValue(existing);
+            mockPrismaService.team.update.mockResolvedValue(updated);
+
+            const result = await service.updateTeam('t1', {
+                autoAssignmentEnabled: true,
+                assignmentStrategy: 'SKILL_BASED' as any,
+            });
+
+            expect(prisma.team.update).toHaveBeenCalledWith({
+                where: { id: 't1' },
+                data: {
+                    assignmentStrategy: 'SKILL_BASED',
+                    autoAssignmentEnabled: true,
+                },
+            });
+            expect(result).toEqual(updated);
+        });
+
+        it('should throw NotFoundException when updating a missing team', async () => {
+            mockPrismaService.team.findFirst.mockResolvedValue(null);
+
+            await expect(service.updateTeam('missing', { autoAssignmentEnabled: true })).rejects.toThrow(NotFoundException);
         });
     });
 

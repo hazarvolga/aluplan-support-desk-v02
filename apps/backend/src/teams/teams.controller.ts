@@ -56,6 +56,18 @@ export class TeamsController {
         return this.teamsService.getTeam(id);
     }
 
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD')
+    @Patch(':id')
+    @ApiOperation({ summary: 'Update team routing settings' })
+    updateTeam(@Param('id') id: string, @Body() dto: {
+        name?: string;
+        description?: string;
+        assignmentStrategy?: AssignmentStrategy;
+        autoAssignmentEnabled?: boolean;
+    }) {
+        return this.teamsService.updateTeam(id, dto);
+    }
+
     @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'AGENT')
     @Get(':id/stats')
     @ApiOperation({ summary: 'Get team statistics' })

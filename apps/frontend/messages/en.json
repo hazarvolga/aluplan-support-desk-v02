@@ -4203,6 +4203,26 @@
       "overload": "Fazla Yüklenme",
       "sla_stable": "SLA Stabil"
     },
+    "routing": {
+      "success_title": "Routing updated",
+      "success_desc": "Team auto-assignment settings were saved.",
+      "error_title": "Routing could not be saved",
+      "error_desc": "An error occurred while updating team auto-assignment settings.",
+      "desc": "These settings control whether new tickets can be assigned automatically to this team.",
+      "auto_assign_label": "Include this team in auto-assignment",
+      "auto_assign_desc": "When enabled, new tickets in the same department can be assigned to this team's members.",
+      "strategy_label": "Assignment Strategy",
+      "assignable_agents": "Assignable agents",
+      "assignable_desc": "Active team members who are not customer users enter the auto-assignment pool.",
+      "no_assignable_agents": "This team has no active agent eligible for auto-assignment.",
+      "saving": "Saving...",
+      "save": "Save Routing",
+      "strategies": {
+        "MANUAL": "Manual",
+        "ROUND_ROBIN": "Round Robin",
+        "SKILL_BASED": "Skill Based"
+      }
+    },
     "creation": {
       "title": "Yeni Ekip Oluştur",
       "description": "Operasyonel süreçleri yönetmek için yeni bir ekip tanımlayın.",

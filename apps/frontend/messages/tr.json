@@ -4203,6 +4203,26 @@
       "overload": "Fazla Yüklenme",
       "sla_stable": "SLA Stabil"
     },
+    "routing": {
+      "success_title": "Yönlendirme güncellendi",
+      "success_desc": "Ekip otomatik atama ayarları kaydedildi.",
+      "error_title": "Yönlendirme kaydedilemedi",
+      "error_desc": "Ekip otomatik atama ayarları güncellenirken hata oluştu.",
+      "desc": "Bu ayarlar yeni ticketların bu ekip tarafından otomatik karşılanıp karşılanmayacağını belirler.",
+      "auto_assign_label": "Bu ekibi otomatik atamaya dahil et",
+      "auto_assign_desc": "Açık olduğunda aynı departmandaki yeni ticketlar bu ekip üyelerine atanabilir.",
+      "strategy_label": "Atama Stratejisi",
+      "assignable_agents": "Atanabilir ajanlar",
+      "assignable_desc": "Aktif ve müşteri rolünde olmayan ekip üyeleri otomatik atama havuzuna girer.",
+      "no_assignable_agents": "Bu ekipte otomatik atanabilecek aktif ajan yok.",
+      "saving": "Kaydediliyor...",
+      "save": "Yönlendirmeyi Kaydet",
+      "strategies": {
+        "MANUAL": "Manuel",
+        "ROUND_ROBIN": "Round Robin",
+        "SKILL_BASED": "Yetkinlik Bazlı"
+      }
+    },
     "creation": {
       "title": "Yeni Ekip Oluştur",
       "description": "Operasyonel süreçleri yönetmek için yeni bir ekip tanımlayın.",

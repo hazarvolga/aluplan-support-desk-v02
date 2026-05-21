@@ -4203,6 +4203,26 @@
       "overload": "Fazla Yüklenme",
       "sla_stable": "SLA Stabil"
     },
+    "routing": {
+      "success_title": "Routing aktualisiert",
+      "success_desc": "Die Auto-Zuweisungseinstellungen des Teams wurden gespeichert.",
+      "error_title": "Routing konnte nicht gespeichert werden",
+      "error_desc": "Beim Aktualisieren der Auto-Zuweisungseinstellungen ist ein Fehler aufgetreten.",
+      "desc": "Diese Einstellungen steuern, ob neue Tickets automatisch diesem Team zugewiesen werden können.",
+      "auto_assign_label": "Dieses Team in die Auto-Zuweisung aufnehmen",
+      "auto_assign_desc": "Wenn aktiviert, können neue Tickets derselben Abteilung den Mitgliedern dieses Teams zugewiesen werden.",
+      "strategy_label": "Zuweisungsstrategie",
+      "assignable_agents": "Zuweisbare Agenten",
+      "assignable_desc": "Aktive Teammitglieder, die keine Kundenbenutzer sind, werden in den Auto-Zuweisungspool aufgenommen.",
+      "no_assignable_agents": "Dieses Team hat keinen aktiven Agenten, der automatisch zugewiesen werden kann.",
+      "saving": "Wird gespeichert...",
+      "save": "Routing speichern",
+      "strategies": {
+        "MANUAL": "Manuell",
+        "ROUND_ROBIN": "Round Robin",
+        "SKILL_BASED": "Fähigkeitsbasiert"
+      }
+    },
     "creation": {
       "title": "Yeni Ekip Oluştur",
       "description": "Operasyonel süreçleri yönetmek için yeni bir ekip tanımlayın.",

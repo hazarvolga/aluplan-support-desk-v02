@@ -574,6 +574,7 @@ export const api = {
         get: (id: string) => request<any>(`/teams/${id}`),
         getStats: (id: string) => request<any>(`/teams/${id}/stats`),
         create: (body: any) => request<any>('/teams', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: any) => request<any>(`/teams/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
         addMember: (teamId: string, body: any) => request<any>(`/teams/${teamId}/members`, { method: 'POST', body: JSON.stringify(body) }),
         removeMember: (teamId: string, userId: string) => request<any>(`/teams/${teamId}/members/${userId}`, { method: 'DELETE' }),
         getAgentProfile: (id: string) => request<any>(`/teams/agents/${id}`),

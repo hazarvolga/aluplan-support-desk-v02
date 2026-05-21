@@ -26,6 +26,9 @@ import { RoleBadge } from '@/components/team/RoleBadge';
 import { TeamMemberAddDialog } from '@/components/team/TeamMemberAddDialog';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const assignmentStrategies = ['MANUAL', 'ROUND_ROBIN', 'SKILL_BASED'] as const;
 
 export default function TeamDetailPage() {
     const t = useTranslations('teams');
@@ -35,6 +38,11 @@ export default function TeamDetailPage() {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+    const [savingRouting, setSavingRouting] = useState(false);
+    const [routingConfig, setRoutingConfig] = useState({
+        autoAssignmentEnabled: false,
+        assignmentStrategy: 'MANUAL',
+    });
     const { toast } = useToast();
 
     useEffect(() => {
@@ -45,6 +53,10 @@ export default function TeamDetailPage() {
                     api.teams.getStats(id as string)
                 ]);
                 setTeam(teamRes);
+                setRoutingConfig({
+                    autoAssignmentEnabled: Boolean(teamRes.autoAssignmentEnabled),
+                    assignmentStrategy: teamRes.assignmentStrategy || 'MANUAL',
+                });
                 setStats(statsRes);
             } catch (error) {
                 toast({ title: 'Hata', description: 'Ekip bilgileri alınamadı.', variant: 'destructive' });
@@ -67,6 +79,24 @@ export default function TeamDetailPage() {
             toast({ title: 'Başarılı', description: 'Üye ekipten çıkarıldı.' });
         } catch (error) {
             toast({ title: 'Hata', description: 'Üye çıkarılamadı.', variant: 'destructive' });
+        }
+    };
+
+    const assignableMembers = (team?.members || []).filter((m: any) => {
+        const roleName = String(m.user?.role?.name || m.user?.role || '').toLowerCase();
+        return m.user?.status === 'ACTIVE' && roleName !== 'customer';
+    });
+
+    const handleSaveRouting = async () => {
+        setSavingRouting(true);
+        try {
+            const updated = await api.teams.update(id as string, routingConfig);
+            setTeam({ ...team, ...updated });
+            toast({ title: t('routing.success_title'), description: t('routing.success_desc') });
+        } catch (error) {
+            toast({ title: t('routing.error_title'), description: t('routing.error_desc'), variant: 'destructive' });
+        } finally {
+            setSavingRouting(false);
         }
     };
 
@@ -110,7 +140,7 @@ export default function TeamDetailPage() {
                     </p>
                 </div>
 
-                <div className="bg-muted/30 rounded-3xl p-6 border border-border/40 flex flex-col justify-between">
+                <div className="bg-muted/30 rounded-3xl p-6 border border-border/40 flex flex-col justify-between gap-4">
                     <div className="flex justify-between items-start">
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('labels.automation_status')}</span>
                         {team.autoAssignmentEnabled ? (
@@ -121,12 +151,57 @@ export default function TeamDetailPage() {
                             <Badge variant="outline" className="text-rose-500 border-rose-500/20 font-bold">{t('labels.passive')}</Badge>
                         )}
                     </div>
-                    <div className="mt-4">
-                        <div className="text-4xl font-black text-foreground">{t('labels.round_robin')}</div>
-                        <div className="text-xs text-muted-foreground mt-1">{t('labels.rr_desc')}</div>
+                    <div className="space-y-4">
+                        <div>
+                            <div className="text-3xl font-black text-foreground">{t(`routing.strategies.${routingConfig.assignmentStrategy}`)}</div>
+                            <div className="text-xs text-muted-foreground mt-1">{t('routing.desc')}</div>
+                        </div>
+
+                        <label className="flex items-start gap-3 rounded-xl border border-border/50 bg-background/50 p-3">
+                            <input
+                                type="checkbox"
+                                className="mt-1 h-4 w-4 accent-primary"
+                                checked={routingConfig.autoAssignmentEnabled}
+                                onChange={(event) => setRoutingConfig({ ...routingConfig, autoAssignmentEnabled: event.target.checked })}
+                            />
+                            <span className="space-y-1">
+                                <span className="block text-sm font-bold">{t('routing.auto_assign_label')}</span>
+                                <span className="block text-xs text-muted-foreground">{t('routing.auto_assign_desc')}</span>
+                            </span>
+                        </label>
+
+                        <div className="space-y-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('routing.strategy_label')}</span>
+                            <Select
+                                value={routingConfig.assignmentStrategy}
+                                onValueChange={(value) => setRoutingConfig({ ...routingConfig, assignmentStrategy: value })}
+                            >
+                                <SelectTrigger className="bg-background/70 border-border/60">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {assignmentStrategies.map(strategy => (
+                                        <SelectItem key={strategy} value={strategy}>{t(`routing.strategies.${strategy}`)}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="rounded-xl border border-border/40 bg-background/40 p-3">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('routing.assignable_agents')}</div>
+                            <div className="mt-1 text-sm font-bold text-foreground">
+                                {assignableMembers.length} / {team.members?.length || 0}
+                            </div>
+                            <p className="mt-1 text-[11px] text-muted-foreground">{t('routing.assignable_desc')}</p>
+                        </div>
                     </div>
-                    <Button variant="outline" className="w-full mt-6 h-10 font-bold border-border/60 hover:bg-background">
-                        {t('actions.configure')}
+                    <Button
+                        variant="outline"
+                        className="w-full h-10 font-bold border-border/60 hover:bg-background"
+                        onClick={handleSaveRouting}
+                        disabled={savingRouting}
+                    >
+                        {savingRouting ? t('routing.saving') : t('routing.save')}
                     </Button>
                 </div>
             </div>

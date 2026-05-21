@@ -29,6 +29,27 @@ export class TeamsService {
             include: {
                 teams: {
                     include: {
+                        members: {
+                            include: {
+                                user: {
+                                    select: {
+                                        id: true,
+                                        fullName: true,
+                                        email: true,
+                                        status: true,
+                                        agentStatus: true,
+                                        role: true,
+                                        _count: {
+                                            select: {
+                                                ticketsAssigned: {
+                                                    where: { status: { notIn: ['RESOLVED', 'CLOSED'] } }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
                         _count: { select: { members: true } }
                     }
                 },
@@ -53,6 +74,7 @@ export class TeamsService {
                                 fullName: true,
                                 email: true,
                                 avatarUrl: true,
+                                status: true,
                                 role: true,
                                 agentStatus: true,
                                 _count: {
@@ -111,6 +133,7 @@ export class TeamsService {
                                 fullName: true,
                                 email: true,
                                 avatarUrl: true,
+                                status: true,
                                 role: true,
                                 agentStatus: true,
                                 title: true,
@@ -129,6 +152,29 @@ export class TeamsService {
         });
         if (!team) throw new NotFoundException('Team not found');
         return team;
+    }
+
+    async updateTeam(id: string, data: {
+        name?: string;
+        description?: string;
+        assignmentStrategy?: AssignmentStrategy;
+        autoAssignmentEnabled?: boolean;
+    }) {
+        const existing = await this.prisma.team.findFirst({
+            where: { id, deletedAt: null, isArchived: false },
+        });
+
+        if (!existing) throw new NotFoundException('Team not found');
+
+        return this.prisma.team.update({
+            where: { id },
+            data: {
+                ...(data.name !== undefined ? { name: data.name } : {}),
+                ...(data.description !== undefined ? { description: data.description } : {}),
+                ...(data.assignmentStrategy !== undefined ? { assignmentStrategy: data.assignmentStrategy } : {}),
+                ...(data.autoAssignmentEnabled !== undefined ? { autoAssignmentEnabled: data.autoAssignmentEnabled } : {}),
+            },
+        });
     }
 
     async getTeamStats(id: string) {
