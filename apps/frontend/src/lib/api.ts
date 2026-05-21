@@ -278,6 +278,7 @@ export const api = {
             permissions: string[];
             status?: string;
             agentStatus?: string;
+            isSupportTeamMember?: boolean;
             customerProfile?: {
                 id: string;
                 hotinfoData?: any;

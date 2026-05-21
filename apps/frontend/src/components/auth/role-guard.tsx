@@ -28,6 +28,8 @@ interface User {
     role: string;
     roles?: string[];
     permissions?: string[];
+    agentStatus?: string;
+    isSupportTeamMember?: boolean;
 }
 
 interface AuthContextType {

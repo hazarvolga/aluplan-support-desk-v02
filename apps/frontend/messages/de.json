@@ -363,6 +363,7 @@
     "delete_confirm_title": "Ticket löschen",
     "delete_confirm_desc": "Sind Sie sicher, dass Sie dieses Ticket löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
     "filters": {
+      "mine": "Mir Zugewiesen",
       "all": "Alle Anfragen"
     },
     "new_ticket": "NEUE ANFRAGE",

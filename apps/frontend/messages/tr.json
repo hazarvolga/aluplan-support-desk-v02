@@ -363,6 +363,7 @@
     "delete_confirm_title": "Bileti Sil",
     "delete_confirm_desc": "Bu destek talebini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
     "filters": {
+      "mine": "Bana Atananlar",
       "all": "Tüm Talepler"
     },
     "new_ticket": "YENİ TALEP",

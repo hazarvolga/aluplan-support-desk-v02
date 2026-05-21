@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '@/lib/api';
 import {
     Ticket,
@@ -66,6 +66,8 @@ interface TicketsClientProps {
     initialTotal: number;
 }
 
+type TicketScope = 'mine' | 'all';
+
 export default function TicketsClient({ initialTickets, initialTotal }: TicketsClientProps) {
     const t = useTranslations('tickets');
     const tc = useTranslations('common');
@@ -78,32 +80,41 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [bulkLoading, setBulkLoading] = useState(false);
     const { user } = useAuth();
+    const [scope, setScope] = useState<TicketScope>('all');
+    const didInitializeQueueRef = useRef(false);
 
-    const isAdmin = (() => {
-        const userRole = user?.role;
-        const r = typeof userRole === 'object' && userRole !== null ? (userRole as { name?: string }).name : userRole || (user?.roles && user.roles[0]);
-        const roleStr = (typeof r === 'string' ? r : '').toUpperCase();
-        return roleStr === 'ADMIN' || roleStr === 'DEPARTMENT_MANAGER' || roleStr === 'TEAM_LEAD' || roleStr === 'SENIOR_AGENT';
-    })();
+    const userRole = user?.role;
+    const r = typeof userRole === 'object' && userRole !== null ? (userRole as { name?: string }).name : userRole || (user?.roles && user.roles[0]);
+    const roleStr = (typeof r === 'string' ? r : '').toUpperCase();
+    const isCustomer = roleStr === 'CUSTOMER' || roleStr === 'VIEWER';
+    const isAdmin = roleStr === 'ADMIN' || roleStr === 'DEPARTMENT_MANAGER' || roleStr === 'TEAM_LEAD' || roleStr === 'SENIOR_AGENT';
+    const canScopeTickets = Boolean(user && !isCustomer);
 
-    // Auto-load tickets on mount when no initial data was provided
-    useEffect(() => {
-        if (initialTickets.length === 0) {
-            load();
-        }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const load = async (statusFilter?: string) => {
+    const load = useCallback(async (statusFilter: string = filter, scopeFilter: TicketScope = scope) => {
         setLoading(true);
         try {
-            const params: Record<string, string> = {};
+            const params: Record<string, string> = { limit: '100' };
             if (statusFilter) params.status = statusFilter;
+            if (scopeFilter === 'mine' && user?.id && !isCustomer) {
+                params.assignedTo = user.id;
+            }
             const res = await api.tickets.list(params);
             setTickets(res.data ?? []);
             setTotal(res.total ?? 0);
         } catch { /* handled */ }
         setLoading(false);
-    };
+    }, [filter, isCustomer, scope, user?.id]);
+
+    // Auto-load tickets after the authenticated user is known.
+    // Support team members should land directly on their own operational queue.
+    useEffect(() => {
+        if (initialTickets.length > 0 || !user || didInitializeQueueRef.current) return;
+
+        const initialScope: TicketScope = user.isSupportTeamMember ? 'mine' : 'all';
+        didInitializeQueueRef.current = true;
+        setScope(initialScope);
+        load(filter, initialScope);
+    }, [filter, initialTickets.length, load, user]);
 
     const toggleSelect = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
@@ -126,7 +137,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
             await api.tickets.bulkUpdate({ ticketIds: selectedIds, status });
             toast.success(t('bulk.success', { count: selectedIds.length }));
             setSelectedIds([]);
-            load(filter);
+            load(filter, scope);
         } catch (err: any) {
             toast.error(t('bulk.error', { message: err.message }));
         } finally {
@@ -141,7 +152,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
             await api.tickets.bulkDelete(selectedIds);
             toast.success(t('bulk.delete_success', { count: selectedIds.length }) || `${selectedIds.length} tickets deleted.`);
             setSelectedIds([]);
-            load(filter);
+            load(filter, scope);
         } catch (err: any) {
             toast.error(err.message);
         } finally {
@@ -155,7 +166,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
         try {
             await api.tickets.delete(id);
             toast.success(t('delete_success', { number }) || `Ticket #${number} deleted.`);
-            load(filter);
+            load(filter, scope);
         } catch (err: any) {
             toast.error(err.message);
         }
@@ -164,7 +175,14 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value;
         setFilter(value);
-        load(value);
+        setSelectedIds([]);
+        load(value, scope);
+    };
+
+    const handleScopeChange = (nextScope: TicketScope) => {
+        setScope(nextScope);
+        setSelectedIds([]);
+        load(filter, nextScope);
     };
 
     return (
@@ -186,7 +204,26 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap justify-end">
+                    {canScopeTickets && (
+                        <div className="inline-flex h-9 overflow-hidden rounded-lg border border-white/10 bg-white/5">
+                            <button
+                                type="button"
+                                onClick={() => handleScopeChange('mine')}
+                                className={`px-3 text-[10px] font-bold uppercase tracking-widest transition-all ${scope === 'mine' ? 'bg-primary text-black' : 'text-muted-foreground hover:bg-white/10 hover:text-white'}`}
+                            >
+                                {t('filters.mine')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleScopeChange('all')}
+                                className={`px-3 text-[10px] font-bold uppercase tracking-widest transition-all ${scope === 'all' ? 'bg-primary text-black' : 'text-muted-foreground hover:bg-white/10 hover:text-white'}`}
+                            >
+                                {t('filters.all')}
+                            </button>
+                        </div>
+                    )}
+
                     <Button
                         onClick={() => window.location.href = `/${locale}/tickets/new`}
                         data-testid="create-ticket-button"

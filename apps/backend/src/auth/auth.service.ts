@@ -346,8 +346,24 @@ export class AuthService {
             avatarUrl: user.avatarUrl,
             status: user.status,
             role: user.role?.name || 'CUSTOMER',
+            agentStatus: user.agentStatus,
+            isSupportTeamMember: await this.isActiveSupportTeamMember(user.id),
             customerProfile: user.customerProfile
         };
+    }
+
+    private async isActiveSupportTeamMember(userId: string): Promise<boolean> {
+        const count = await this.prisma.teamMember.count({
+            where: {
+                userId,
+                team: {
+                    isArchived: false,
+                    deletedAt: null,
+                },
+            },
+        });
+
+        return count > 0;
     }
 
     private async generateTokens(

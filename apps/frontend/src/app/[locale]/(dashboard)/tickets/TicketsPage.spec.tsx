@@ -107,6 +107,54 @@ describe('TicketsPage', () => {
         });
     });
 
+    it('loads the support agent queue scoped to the signed-in user', async () => {
+        (useAuth as any).mockReturnValue({
+            user: { id: 'agent-1', role: 'ADMIN', isSupportTeamMember: true },
+        });
+
+        let requestedUrl = '';
+        server.use(
+            http.get(`${API_BASE}/tickets`, ({ request }) => {
+                requestedUrl = request.url;
+                return HttpResponse.json({ data: [], total: 0 });
+            }),
+        );
+
+        render(<TicketsClient initialTickets={[]} initialTotal={0} />);
+
+        await waitFor(() => {
+            expect(screen.getByText(/table.empty/i)).toBeDefined();
+        }, { timeout: 10000 });
+
+        const url = new URL(requestedUrl);
+        expect(url.searchParams.get('assignedTo')).toBe('agent-1');
+        expect(url.searchParams.get('limit')).toBe('100');
+    });
+
+    it('loads the full queue by default for admins outside support teams', async () => {
+        (useAuth as any).mockReturnValue({
+            user: { id: 'admin-1', role: 'ADMIN', isSupportTeamMember: false },
+        });
+
+        let requestedUrl = '';
+        server.use(
+            http.get(`${API_BASE}/tickets`, ({ request }) => {
+                requestedUrl = request.url;
+                return HttpResponse.json({ data: [], total: 0 });
+            }),
+        );
+
+        render(<TicketsClient initialTickets={[]} initialTotal={0} />);
+
+        await waitFor(() => {
+            expect(screen.getByText(/table.empty/i)).toBeDefined();
+        }, { timeout: 10000 });
+
+        const url = new URL(requestedUrl);
+        expect(url.searchParams.get('assignedTo')).toBeNull();
+        expect(url.searchParams.get('limit')).toBe('100');
+    });
+
     it('handles empty state', async () => {
         (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
 
