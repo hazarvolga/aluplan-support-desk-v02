@@ -163,6 +163,55 @@ describe('AiCopilotService', () => {
             expect(result.draft).not.toContain('Kaynak:');
         });
 
+        it('removes problem-shift sections when no problem shift was detected', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue(mockTicket);
+            mockDiagnosis.analyze.mockResolvedValue({ isProblemShift: false });
+            mockAi.generate.mockResolvedValue([
+                'Merhaba,',
+                '',
+                '## 📌 Sorun Yorumu',
+                'Lisans sunucusu taşınmak isteniyor.',
+                '',
+                '## 🔄 Problem Değişimi',
+                'Önceki sorgudan farklı bir konuya geçildi.',
+                '',
+                '## 🛠️ Çözüm Adımları',
+                'Lisansı eski sunucudan iade edip yeni sunucuda etkinleştirin.',
+            ].join('\n'));
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(result.draft).toContain('## 📌 Sorun Yorumu');
+            expect(result.draft).toContain('## 🛠️ Çözüm Adımları');
+            expect(result.draft).not.toContain('Problem Değişimi');
+            expect(result.draft).not.toContain('Önceki sorgudan farklı');
+
+            const prompt = mockAi.generate.mock.calls[0][0];
+            expect(prompt).toContain('KONU DEĞİŞİKLİĞİ YOK');
+        });
+
+        it('keeps problem-shift sections when a problem shift was detected', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue(mockTicket);
+            mockDiagnosis.analyze.mockResolvedValue({ isProblemShift: true });
+            mockAi.generate.mockResolvedValue([
+                'Merhaba,',
+                '',
+                '## 📌 Sorun Yorumu',
+                'Yeni konuya geçildi.',
+                '',
+                '## 🔄 Problem Değişimi',
+                'Önceki lisans sorusundan farklı bir konu soruldu.',
+                '',
+                '## 🛠️ Çözüm Adımları',
+                'Yeni konuya göre ilerleyin.',
+            ].join('\n'));
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(result.draft).toContain('Problem Değişimi');
+            expect(result.draft).toContain('Önceki lisans sorusundan farklı');
+        });
+
         it('should handle image attachments correctly', async () => {
             const ticketWithImg = {
                 ...mockTicket,

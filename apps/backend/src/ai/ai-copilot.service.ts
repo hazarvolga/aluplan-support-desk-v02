@@ -163,11 +163,12 @@ export class AiCopilotService {
             audience: 'agent',
         });
 
-        const isShift = diagnosis.isProblemShift;
+        const isShift = Boolean(diagnosis.isProblemShift);
         const prompt = `
 ${systemPrompt}
 
 ${isShift ? '### 📢 [ÖNEMLİ] KONU DEĞİŞİKLİĞİ TESPİT EDİLDİ\nKullanıcı önceki teknik konudan bağımsız yeni bir soru sormaktadır. Lütfen geçmişteki alakasız teknik detayları dikkate almadan, YENİ konuya odaklı bir yanıt hazırla.' : ''}
+${!isShift ? '### KONU DEĞİŞİKLİĞİ YOK\nBu ticket için konu değişikliği tespit edilmedi. Yanıtta "Problem Değişimi", "Konu Değişikliği", "Problem Shift", "Topic Shift" veya benzeri ayrı bir bölüm üretme.' : ''}
 
 [CONVERSATION_CONTEXT]
 ${context}
@@ -185,8 +186,9 @@ RESPONSE DRAFT:`;
                 targetLanguage,
                 linkedCustomerAnswer,
             );
+            const cleanedDraft = this.removeProblemShiftSectionUnlessDetected(draft, isShift);
             return {
-                draft: draft || 'Draft could not be generated.',
+                draft: cleanedDraft || 'Draft could not be generated.',
                 model: 'dynamic'
             };
         } catch (error) {
@@ -220,6 +222,21 @@ RESPONSE DRAFT:`;
 
         this.logger.warn(`⚠️ Copilot LLM returned no-knowledge despite retrieved context. Using grounded fallback draft.`);
         return this.buildGroundedFallbackDraft(query, results, language);
+    }
+
+    private removeProblemShiftSectionUnlessDetected(
+        draft: string | null | undefined,
+        isProblemShift: boolean,
+    ): string | null | undefined {
+        if (!draft || isProblemShift) return draft;
+
+        return draft
+            .replace(
+                /(^|\n)#{1,6}\s*(?:🔄\s*)?(?:Problem Değişimi|Konu Değişikliği|Problem Shift|Topic Shift|Problemwechsel|Themenwechsel)[^\n]*\n[\s\S]*?(?=\n#{1,6}\s|$)/gi,
+                '$1',
+            )
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
     }
 
     private buildGroundedFallbackDraft(
