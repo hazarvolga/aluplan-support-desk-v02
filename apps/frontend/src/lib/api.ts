@@ -40,7 +40,12 @@ export type KnowledgePoolBulkUploadResult = {
     total: number;
 };
 
-export type LearnNowCrawlFormat = 'knowledge_article' | 'pdf';
+export type LearnNowCrawlFormat =
+    | 'knowledge_article'
+    | 'pdf'
+    | 'technical_manual'
+    | 'explaining_video'
+    | 'recorded_online_session';
 
 export type CrawlCandidate = {
     id: string;
@@ -154,6 +159,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const headers: any = {
         'X-Requested-With': 'XMLHttpRequest',
         'X-Request-Id': (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
         ...options?.headers,
     };
 
@@ -169,6 +176,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         ...options,
         headers,
         credentials: 'include',
+        cache: 'no-store',
     };
 
     let res = await safeFetch(`${getApiUrl()}${path}`, fetchOptions);

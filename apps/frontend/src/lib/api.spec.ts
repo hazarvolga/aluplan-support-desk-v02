@@ -24,7 +24,12 @@ describe('api.ts', () => {
         const response = await api.get('/test');
         expect(response).toEqual({ success: true });
         expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/test'), expect.objectContaining({
-            credentials: 'include'
+            credentials: 'include',
+            cache: 'no-store',
+            headers: expect.objectContaining({
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                Pragma: 'no-cache',
+            }),
         }));
     });
 
