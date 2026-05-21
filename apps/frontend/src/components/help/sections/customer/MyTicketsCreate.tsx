@@ -82,10 +82,10 @@ export function MyTicketsCreate() {
         </h3>
         <div className="grid gap-2 sm:grid-cols-2 text-sm">
           {[
-            { level: 'Düşük', color: 'text-slate-400', desc: t('priority_low') },
-            { level: 'Orta', color: 'text-blue-400', desc: t('priority_medium') },
-            { level: 'Yüksek', color: 'text-amber-400', desc: t('priority_high') },
-            { level: 'Acil', color: 'text-red-400', desc: t('priority_urgent') },
+            { level: t('priority_low_label'), color: 'text-slate-400', desc: t('priority_low') },
+            { level: t('priority_medium_label'), color: 'text-blue-400', desc: t('priority_medium') },
+            { level: t('priority_high_label'), color: 'text-amber-400', desc: t('priority_high') },
+            { level: t('priority_urgent_label'), color: 'text-red-400', desc: t('priority_urgent') },
           ].map(({ level, color, desc }) => (
             <div key={level} className="rounded-lg border border-white/10 bg-white/5 p-3">
               <p className={`font-medium ${color}`}>{level}</p>
