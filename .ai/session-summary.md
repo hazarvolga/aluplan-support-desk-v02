@@ -2893,3 +2893,27 @@ Maintenance rule:
 ### Note
 
 - This phase is local-only until the remaining routing/admin team phases are complete and explicitly pushed.
+
+## Follow-up - 2026-05-21 Assignment UI Guardrails
+
+### What changed
+
+- Ticket detail now asks the backend for ticket-scoped assignable agents instead of loading the global agent list.
+- The new `GET /tickets/:id/assignable-agents` endpoint returns only active non-customer users who belong to a non-archived team for the ticket department.
+- Ticket assignment dropdown now shows agent e-mail addresses to make same-name accounts distinguishable.
+- Team member add dialog now uses a searchable combobox and loads only staff/agent users instead of all users, preventing CRM/customer records from appearing in support-team assignment.
+- Team detail member cards now display member e-mail addresses under the name so duplicate identities are visible before editing team membership.
+- Team member removal now uses the app dialog/toast design instead of the browser-native `confirm()` prompt.
+- `teams.roles.*` labels were added for TR/EN/DE so role dropdowns render localized role names instead of raw i18n keys.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- tickets.service.spec.ts tickets.controller.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+- `git diff --check` passed.
+
+### Live finding
+
+- Production has two `Melih Dinekli` identities: `melih@aluplan.com.tr` is the staff/admin account, while `melihdinekli@gmail.com` is a CUSTOMER account currently present in the `Teknik Destek` team. The team should be corrected from UI by removing the customer identity and adding the staff e-mail.

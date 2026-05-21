@@ -16,7 +16,8 @@ import {
     Zap,
     BarChart3,
     Clock,
-    UserCircle2
+    UserCircle2,
+    Mail
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,7 @@ import { TeamMemberAddDialog } from '@/components/team/TeamMemberAddDialog';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const assignmentStrategies = ['MANUAL', 'ROUND_ROBIN', 'SKILL_BASED'] as const;
 
@@ -39,6 +41,7 @@ export default function TeamDetailPage() {
     const [loading, setLoading] = useState(true);
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
     const [savingRouting, setSavingRouting] = useState(false);
+    const [memberToRemove, setMemberToRemove] = useState<any>(null);
     const [routingConfig, setRoutingConfig] = useState({
         autoAssignmentEnabled: false,
         assignmentStrategy: 'MANUAL',
@@ -69,16 +72,16 @@ export default function TeamDetailPage() {
     }, [id]);
 
     const handleRemoveMember = async (userId: string) => {
-        if (!confirm('Bu üyeyi ekipten çıkarmak istediğinize emin misiniz?')) return;
         try {
             await api.teams.removeMember(id as string, userId);
             setTeam({
                 ...team,
                 members: team.members.filter((m: any) => m.user.id !== userId)
             });
-            toast({ title: 'Başarılı', description: 'Üye ekipten çıkarıldı.' });
+            setMemberToRemove(null);
+            toast({ title: t('member_remove.success_title'), description: t('member_remove.success_desc') });
         } catch (error) {
-            toast({ title: 'Hata', description: 'Üye çıkarılamadı.', variant: 'destructive' });
+            toast({ title: t('member_remove.error_title'), description: t('member_remove.error_desc'), variant: 'destructive' });
         }
     };
 
@@ -119,6 +122,34 @@ export default function TeamDetailPage() {
                     api.teams.get(id as string).then(setTeam).catch(console.error);
                 }}
             />
+            <Dialog open={Boolean(memberToRemove)} onOpenChange={(open) => !open && setMemberToRemove(null)}>
+                <DialogContent className="max-w-sm rounded-none border-border/70 bg-background">
+                    <DialogHeader>
+                        <DialogTitle className="text-sm font-black uppercase tracking-wider">
+                            {t('member_remove.title')}
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-muted-foreground">
+                            {t('member_remove.description')}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {memberToRemove ? (
+                        <div className="rounded-none border border-border/60 bg-muted/20 p-3">
+                            <div className="text-sm font-bold text-foreground">{memberToRemove.user?.fullName || memberToRemove.user?.email}</div>
+                            {memberToRemove.user?.email ? (
+                                <div className="mt-1 text-[11px] font-medium text-muted-foreground">{memberToRemove.user.email}</div>
+                            ) : null}
+                        </div>
+                    ) : null}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setMemberToRemove(null)}>
+                            {t('member_remove.cancel')}
+                        </Button>
+                        <Button variant="destructive" onClick={() => memberToRemove && handleRemoveMember(memberToRemove.user.id)}>
+                            {t('member_remove.submit')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Header Dashboard */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -230,8 +261,14 @@ export default function TeamDetailPage() {
                                             <UserCircle2 className="h-6 w-6 text-muted-foreground" />
                                         )}
                                     </div>
-                                    <div className="flex flex-col">
+                                    <div className="min-w-0 flex flex-col">
                                         <CardTitle className="text-base group-hover:text-primary transition-colors font-bold">{m.user.fullName}</CardTitle>
+                                        {m.user.email ? (
+                                            <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-foreground/70">
+                                                <Mail className="h-3 w-3 shrink-0 text-muted-foreground" />
+                                                <span className="truncate normal-case tracking-normal">{m.user.email}</span>
+                                            </div>
+                                        ) : null}
                                         <div className="flex items-center gap-2 mt-1">
                                             <RoleBadge role={m.roleOverride || m.user.role} className="text-[10px] h-5" />
                                             <AgentStatusBadge status={m.user.agentStatus} className="text-[10px] h-5" showIcon={false} />
@@ -255,7 +292,7 @@ export default function TeamDetailPage() {
                                         variant="ghost"
                                         size="icon"
                                         className="h-8 w-8 text-muted-foreground hover:text-rose-500"
-                                        onClick={() => handleRemoveMember(m.user.id)}
+                                        onClick={() => setMemberToRemove(m)}
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
                                     </Button>

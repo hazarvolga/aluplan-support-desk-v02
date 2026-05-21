@@ -336,6 +336,63 @@ export class TicketsService {
         return this.findOne(ticket.id, requester);
     }
 
+    async getAssignableAgents(id: string) {
+        const ticket = await this.prisma.ticket.findFirst({
+            where: { id, deletedAt: null },
+            select: { id: true, departmentId: true },
+        });
+
+        if (!ticket) throw new NotFoundException(`Ticket not found`);
+
+        return this.prisma.user.findMany({
+            where: {
+                deletedAt: null,
+                status: 'ACTIVE',
+                role: {
+                    name: {
+                        not: 'CUSTOMER',
+                        mode: 'insensitive',
+                    },
+                },
+                teamMembers: {
+                    some: {
+                        team: {
+                            isArchived: false,
+                            deletedAt: null,
+                            ...(ticket.departmentId ? { departmentId: ticket.departmentId } : {}),
+                        },
+                    },
+                },
+            },
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                avatarUrl: true,
+                role: true,
+                teamMembers: {
+                    where: {
+                        team: {
+                            isArchived: false,
+                            deletedAt: null,
+                            ...(ticket.departmentId ? { departmentId: ticket.departmentId } : {}),
+                        },
+                    },
+                    select: {
+                        team: {
+                            select: {
+                                id: true,
+                                name: true,
+                                departmentId: true,
+                            },
+                        },
+                    },
+                },
+            },
+            orderBy: { fullName: 'asc' },
+        });
+    }
+
     // =============================================
     // UPDATE
     // =============================================

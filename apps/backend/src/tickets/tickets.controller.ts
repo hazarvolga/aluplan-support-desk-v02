@@ -82,6 +82,15 @@ export class TicketsController {
         return this.ticketsService.getAiTrace(id, { id: req.user.sub, role: req.user.role });
     }
 
+    // ─── ASSIGNABLE AGENTS ──────────────────────
+    @Get(':id/assignable-agents')
+    @RequirePermissions('ticket:assign')
+    @ApiOperation({ summary: 'List support agents eligible for assignment on this ticket' })
+    @ApiParam({ name: 'id', required: true, description: 'The UUID of the ticket' })
+    getAssignableAgents(@Param('id') id: string) {
+        return this.ticketsService.getAssignableAgents(id);
+    }
+
     // ─── GET ONE ────────────────────────────────
     @Get(':id')
     @RequirePermissions('ticket:read')

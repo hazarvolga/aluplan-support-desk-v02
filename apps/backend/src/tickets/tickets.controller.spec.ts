@@ -21,6 +21,7 @@ describe('TicketsController', () => {
         bulkUpdate: jest.fn(),
         transition: jest.fn(),
         assign: jest.fn(),
+        getAssignableAgents: jest.fn(),
         escalate: jest.fn(),
         linkTicket: jest.fn(),
         submitFeedback: jest.fn(),
@@ -100,6 +101,18 @@ describe('TicketsController', () => {
             // Assert
             expect(mockTicketsService.assign).toHaveBeenCalledWith('tik1', 'agent1', 'admin1');
             expect(mockNotificationsGateway.emitTicketUpdated).toHaveBeenCalledWith(expectedResult);
+            expect(result).toEqual(expectedResult);
+        });
+    });
+
+    describe('getAssignableAgents', () => {
+        it('should list agents eligible for assignment', async () => {
+            const expectedResult = [{ id: 'agent1', fullName: 'Agent One' }];
+            mockTicketsService.getAssignableAgents.mockResolvedValue(expectedResult);
+
+            const result = await controller.getAssignableAgents('tik1');
+
+            expect(mockTicketsService.getAssignableAgents).toHaveBeenCalledWith('tik1');
             expect(result).toEqual(expectedResult);
         });
     });

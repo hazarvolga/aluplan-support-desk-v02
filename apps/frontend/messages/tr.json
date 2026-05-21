@@ -2763,6 +2763,22 @@
         "error_select": "Lütfen bir ajan seçin.",
         "error_server": "Üye eklenirken bir hata oluştu."
       },
+      "member_remove": {
+        "title": "Üyeyi Ekipten Çıkar",
+        "description": "Bu kullanıcı artık bu ekip üzerinden ticket alamayacak. İşlem geri alınabilir.",
+        "cancel": "Vazgeç",
+        "submit": "Ekipten Çıkar",
+        "success_title": "Üye çıkarıldı",
+        "success_desc": "Kullanıcı ekipten başarıyla çıkarıldı.",
+        "error_title": "İşlem başarısız",
+        "error_desc": "Üye ekipten çıkarılamadı."
+      },
+      "roles": {
+        "agent": "Ajan",
+        "senior_agent": "Kıdemli Ajan",
+        "team_lead": "Ekip Lideri",
+        "department_manager": "Departman Yöneticisi"
+      },
       "errors": {
         "fetch_profile": "Ajan profili alınamadı.",
         "fetch_dept": "Departman bilgileri alınamadı."

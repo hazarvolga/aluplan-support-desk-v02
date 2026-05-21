@@ -142,8 +142,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     console.warn('[TicketDetail] AI trace unavailable:', err);
                     return null;
                     }),
-                    api.users.list('agent').then(setAgents).catch((err) => {
-                        console.warn('[TicketDetail] Agent list unavailable:', err);
+                    api.tickets.assignableAgents(id).then(setAgents).catch((err) => {
+                        console.warn('[TicketDetail] Assignable agent list unavailable:', err);
                         setAgents([]);
                     }),
                 ]);
@@ -902,7 +902,14 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     <SelectContent>
                                         {agents.map((agent) => (
                                             <SelectItem key={agent.id} value={agent.id}>
-                                                {agent.fullName || agent.email}
+                                                <span className="flex flex-col">
+                                                    <span>{agent.fullName || agent.email}</span>
+                                                    {agent.email ? (
+                                                        <span className="text-[10px] font-medium normal-case tracking-normal text-muted-foreground">
+                                                            {agent.email}
+                                                        </span>
+                                                    ) : null}
+                                                </span>
                                             </SelectItem>
                                         ))}
                                     </SelectContent>

@@ -239,6 +239,41 @@ describe('TicketsService', () => {
         });
     });
 
+    describe('getAssignableAgents', () => {
+        it('should list only agents eligible for the ticket department', async () => {
+            prisma.ticket.findFirst.mockResolvedValue({ id: 'tik1', departmentId: 'dep1' });
+            prisma.user.findMany.mockResolvedValue([
+                { id: 'agent1', fullName: 'Agent One', email: 'agent@example.com' },
+            ]);
+
+            const result = await service.getAssignableAgents('tik1');
+
+            expect(result).toHaveLength(1);
+            expect(prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({
+                    deletedAt: null,
+                    status: 'ACTIVE',
+                    teamMembers: {
+                        some: {
+                            team: expect.objectContaining({
+                                departmentId: 'dep1',
+                                isArchived: false,
+                                deletedAt: null,
+                            }),
+                        },
+                    },
+                }),
+            }));
+        });
+
+        it('should throw NotFoundException when ticket does not exist', async () => {
+            prisma.ticket.findFirst.mockResolvedValue(null);
+
+            await expect(service.getAssignableAgents('missing')).rejects.toThrow(NotFoundException);
+            expect(prisma.user.findMany).not.toHaveBeenCalled();
+        });
+    });
+
     describe('assign', () => {
         it('should assign a ticket to an agent', async () => {
             // Arrange
