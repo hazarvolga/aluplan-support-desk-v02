@@ -58,6 +58,34 @@ describe('CrawlService', () => {
         });
     });
 
+    it('extracts image references from Crawl4AI markdown', async () => {
+        const service = makeService({
+            CRAWL4AI_ENABLED: 'true',
+            CRAWL4AI_BASE_URL: 'http://crawl4ai:11235',
+        });
+        const markdown = '# Visual Help\n\n![Dialog showing option](/pluginfile.php/123/dialog.png)\n\nThis markdown content is long enough to be accepted by the crawler adapter.';
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                results: [{
+                    url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=8572',
+                    success: true,
+                    metadata: { title: 'Visual Help' },
+                    markdown,
+                }],
+            }),
+        }) as any;
+
+        const result = await service.fetch('https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=8572');
+
+        expect(result.images).toEqual([
+            {
+                url: 'https://learnnow.allplan.com/pluginfile.php/123/dialog.png',
+                alt: 'Dialog showing option',
+            },
+        ]);
+    });
+
     it('falls back to the basic crawler when Crawl4AI fails', async () => {
         const service = makeService({
             CRAWL4AI_ENABLED: 'true',
@@ -79,6 +107,26 @@ describe('CrawlService', () => {
         expect(result.provider).toBe('basic');
         expect(result.title).toBe('Fallback Page');
         expect(result.content).toContain('Useful fallback content');
+    });
+
+    it('extracts image references with captions from static HTML', async () => {
+        const service = makeService({});
+        const fallbackContent = 'Useful fallback content for indexing. '.repeat(80);
+        mockedAxios.get.mockResolvedValue({
+            data: `<html><head><title>Fallback Page</title></head><body><main>${fallbackContent}<figure><img src="/images/dialog.png" alt="Wireframe option dialog" width="640" height="480"><figcaption>Display fixtures as wireframe</figcaption></figure></main></body></html>`,
+        } as any);
+
+        const result = await service.fetch('https://example.com/help/start');
+
+        expect(result.images).toEqual([
+            {
+                url: 'https://example.com/images/dialog.png',
+                alt: 'Wireframe option dialog',
+                caption: 'Display fixtures as wireframe',
+                width: 640,
+                height: 480,
+            },
+        ]);
     });
 
     it('accepts boolean CRAWL4AI_ENABLED values from validated config', async () => {

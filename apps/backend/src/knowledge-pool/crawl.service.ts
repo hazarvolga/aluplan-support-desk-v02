@@ -13,6 +13,16 @@ export interface CrawlResult {
     provider?: 'basic' | 'crawl4ai';
     metadata?: Record<string, unknown>;
     links?: string[];
+    images?: CrawledImage[];
+}
+
+export interface CrawledImage {
+    url: string;
+    alt?: string;
+    title?: string;
+    caption?: string;
+    width?: number;
+    height?: number;
 }
 
 @Injectable()
@@ -68,6 +78,7 @@ export class CrawlService {
             isDynamic,
             provider: 'basic',
             links: this.extractHtmlLinks(html, url),
+            images: this.extractHtmlImages(html, url),
         };
     }
 
@@ -144,6 +155,7 @@ export class CrawlService {
             isDynamic: true,
             provider: 'crawl4ai',
             links: this.extractLinksFromText(content, url),
+            images: this.extractMarkdownImages(content, url),
             metadata: {
                 crawl4aiSuccess: item?.success,
                 crawl4aiUrl: item?.url ?? url,
@@ -209,6 +221,52 @@ export class CrawlService {
             if (normalized) links.add(normalized);
         });
         return Array.from(links);
+    }
+
+    private extractHtmlImages(html: string, baseUrl: string): CrawledImage[] {
+        const $ = cheerio.load(html);
+        const images = new Map<string, CrawledImage>();
+
+        $('img[src], img[data-src], img[data-original]').each((_, el) => {
+            const $el = $(el);
+            const src = String($el.attr('src') || $el.attr('data-src') || $el.attr('data-original') || '');
+            const normalized = this.normalizeLink(src, baseUrl);
+            if (!normalized) return;
+
+            const caption = $el.closest('figure').find('figcaption').first().text().replace(/\s\s+/g, ' ').trim();
+            images.set(normalized, {
+                url: normalized,
+                alt: String($el.attr('alt') || '').trim() || undefined,
+                title: String($el.attr('title') || '').trim() || undefined,
+                caption: caption || undefined,
+                width: this.parseDimension($el.attr('width')),
+                height: this.parseDimension($el.attr('height')),
+            });
+        });
+
+        return Array.from(images.values());
+    }
+
+    private extractMarkdownImages(markdown: string, baseUrl: string): CrawledImage[] {
+        const images = new Map<string, CrawledImage>();
+        const imagePattern = /!\[([^\]]{0,300})\]\((https?:\/\/[^)\s]+|\/[^)\s]+)\)/gi;
+
+        for (const match of markdown.matchAll(imagePattern)) {
+            const normalized = this.normalizeLink(match[2], baseUrl);
+            if (!normalized) continue;
+            images.set(normalized, {
+                url: normalized,
+                alt: match[1]?.trim() || undefined,
+            });
+        }
+
+        return Array.from(images.values());
+    }
+
+    private parseDimension(value: string | undefined): number | undefined {
+        if (!value) return undefined;
+        const parsed = Number.parseInt(value, 10);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
     }
 
     private normalizeLink(href: string, baseUrl: string): string | null {

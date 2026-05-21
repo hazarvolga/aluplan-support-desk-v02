@@ -397,6 +397,7 @@ export const api = {
                 answer: string | null;
                 confidence: string;
                 sources: any[];
+                visuals?: Array<{ url: string; alt?: string; caption?: string; summary: string; sourceTitle: string; sourceId: string }>;
                 interactionId: string;
                 suggestTicket: boolean;
                 jobId?: string;

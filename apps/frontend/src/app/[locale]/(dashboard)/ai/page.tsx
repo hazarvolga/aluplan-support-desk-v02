@@ -29,6 +29,7 @@ interface QueryResult {
     answer: string | null;
     confidence: string;
     sources: Array<{ articleId: string; title: string; similarity: number }>;
+    visuals?: Array<{ url: string; alt?: string; caption?: string; summary: string; sourceTitle: string; sourceId: string }>;
     interactionId: string;
     suggestTicket: boolean;
 }

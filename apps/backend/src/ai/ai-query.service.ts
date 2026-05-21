@@ -50,6 +50,7 @@ export interface AiQueryResult {
     answerMode?: 'LLM' | 'FALLBACK';
     confidence: LocalConfidenceBand;
     sources: Array<{ articleId: string; title: string; similarity: number }>;
+    visuals?: Array<{ url: string; alt?: string; caption?: string; summary: string; sourceTitle: string; sourceId: string }>;
     interactionId: string;
     suggestTicket: boolean;
     translations?: Record<string, string>;
@@ -722,6 +723,7 @@ RESPONSE DRAFT:`;
                 title: r.title,
                 similarity: r.similarity,
             })) : [],
+            visuals: this.collectVisualReferences(results),
             interactionId: interaction.id,
             suggestTicket,
             translations,
@@ -864,6 +866,22 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             })
             .sort((a, b) => b.__rankingScore - a.__rankingScore)
             .map(({ __rankingScore, ...result }) => result);
+    }
+
+    private collectVisualReferences(results: SearchResult[]): AiQueryResult['visuals'] {
+        const visuals = results
+            .filter(result => result.sourceType === 'URL' || result.sourceType === 'DOCUMENT')
+            .flatMap(result => (result.visualSummaries ?? []).map(visual => ({
+                url: visual.url,
+                alt: visual.alt,
+                caption: visual.caption,
+                summary: visual.summary,
+                sourceTitle: result.title,
+                sourceId: result.articleId,
+            })))
+            .slice(0, 4);
+
+        return visuals.length > 0 ? visuals : undefined;
     }
 
     private buildDeterministicFallbackAnswer(

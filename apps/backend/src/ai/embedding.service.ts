@@ -20,6 +20,13 @@ export interface SearchResult {
     language?: string;
     category?: string | null;
     updatedAt?: Date;
+    visualSummaries?: Array<{
+        url: string;
+        alt?: string;
+        title?: string;
+        caption?: string;
+        summary: string;
+    }>;
 }
 
 export interface SearchDiagnostics {
@@ -329,6 +336,7 @@ export class EmbeddingService {
                 language: string;
                 category: string | null;
                 updated_at: Date;
+                visual_summaries: unknown;
             }>
         >`
       WITH keyword_search AS (
@@ -390,7 +398,8 @@ export class EmbeddingService {
             ka.trust_score,
             ka.language,
             NULL::text AS category,
-            ka.updated_at
+            ka.updated_at,
+            NULL::jsonb AS visual_summaries
         FROM knowledge_embeddings ke
         JOIN knowledge_articles ka ON ka.id = ke.article_id
         LEFT JOIN knowledge_embeddings parent ON ke.parent_id = parent.id
@@ -422,7 +431,8 @@ export class EmbeddingService {
             ks.trust_score,
             ks.language,
             ks.metadata->>'category' AS category,
-            ks.updated_at
+            ks.updated_at,
+            ks.metadata->'visualSummaries' AS visual_summaries
         FROM knowledge_pool_embeddings kpe
         JOIN knowledge_sources ks ON kpe.source_id = ks.id
         LEFT JOIN knowledge_pool_embeddings parent_kpe ON kpe.parent_id = parent_kpe.id
@@ -452,7 +462,8 @@ export class EmbeddingService {
             LEAST((fe.trust_score * fe.feedback_weight)::float, 1.2) AS trust_score,
             fe.language,
             NULL::text AS category,
-            fe.updated_at
+            fe.updated_at,
+            NULL::jsonb AS visual_summaries
         FROM faq_entries fe
         LEFT JOIN faq_semantic fs ON fs.id = fe.id
         WHERE fe.status = 'PUBLISHED'
@@ -506,6 +517,7 @@ export class EmbeddingService {
                     language: row.language,
                     category: row.category,
                     updatedAt: row.updated_at,
+                    visualSummaries: this.normalizeVisualSummaries(row.visual_summaries),
                     rankScore,
                 };
             })
@@ -540,6 +552,24 @@ export class EmbeddingService {
         }
 
         return deduped;
+    }
+
+    private normalizeVisualSummaries(value: unknown): SearchResult['visualSummaries'] {
+        if (!Array.isArray(value)) return undefined;
+
+        const summaries = value
+            .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+            .map(item => ({
+                url: typeof item.url === 'string' ? item.url : '',
+                alt: typeof item.alt === 'string' ? item.alt : undefined,
+                title: typeof item.title === 'string' ? item.title : undefined,
+                caption: typeof item.caption === 'string' ? item.caption : undefined,
+                summary: typeof item.summary === 'string' ? item.summary : '',
+            }))
+            .filter(item => item.url && item.summary)
+            .slice(0, 4);
+
+        return summaries.length > 0 ? summaries : undefined;
     }
 
     async indexPoolContent(sourceId: string, content: string, metadata: any = {}): Promise<void> {

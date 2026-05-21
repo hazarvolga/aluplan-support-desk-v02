@@ -17,6 +17,7 @@ import { AiService } from '../ai/ai.service';
 import { OnModuleInit } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
 import { countTokens } from '../ai/utils/token-counter';
+import { VisualContentService } from './visual-content.service';
 
 const parseWorkerNumber = (value: string | undefined, fallback: number): number => {
     const parsed = Number.parseInt(value ?? '', 10);
@@ -48,6 +49,7 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         private readonly embeddingService: EmbeddingService,
         private readonly parserService: KnowledgePoolParserService,
         private readonly crawlService: CrawlService,
+        private readonly visualContentService: VisualContentService,
         private readonly aiService: AiService,
         private readonly storageService: StorageService,
         private readonly config: ConfigService,
@@ -126,14 +128,24 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
 
     private async handleUrlSync(source: { id: string; url?: string | null; name?: string; language?: string; metadata?: unknown }, logId: string) {
         if (!source.url) throw new Error('URL is required for URL sync');
-        const { content, hash, title, provider, metadata } = await this.crawlService.fetch(source.url);
+        const { content, title, provider, metadata, images } = await this.crawlService.fetch(source.url);
         const sourceMetadata = (source.metadata as Record<string, unknown>) || {};
         const displayName = this.resolveUrlSourceDisplayName(source.name, title, sourceMetadata);
+        const visualResult = await this.visualContentService.enrichUrlContent({
+            sourceUrl: source.url,
+            title,
+            content,
+            images,
+            language: source.language,
+            existingMetadata: sourceMetadata,
+        });
+        const enrichedContent = visualResult.content;
+        const finalHash = crypto.createHash('sha256').update(enrichedContent).digest('hex');
 
         // Section 3.5.3: Change Monitor
         // If content length changes significantly (>30%), mark as major
         const oldLength = sourceMetadata.lastContentLength as number | undefined || 0;
-        const newLength = content.length;
+        const newLength = enrichedContent.length;
         const delta = oldLength > 0 ? Math.abs(newLength - oldLength) / oldLength : 0;
         const isMajorChange = delta > 0.30;
 
@@ -141,17 +153,18 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
             this.logger.warn(`🚨 Major change detected (${(delta * 100).toFixed(1)}%) for ${source.url}. Mark for review.`);
         }
 
-        const hierarchies = hierarchicalChunk(content, { title });
+        const hierarchies = hierarchicalChunk(enrichedContent, { title });
         this.logger.log(`🧩 Content split into ${hierarchies.length} hierarchies for ${source.url}`);
 
         const totalChunks = hierarchies.reduce((sum, h) => sum + h.children.length, 0);
-        await this.reserveEmbeddingBudgetOrPause(content, source.id);
-        await this.embeddingService.indexPoolContent(source.id, content, {
+        await this.reserveEmbeddingBudgetOrPause(enrichedContent, source.id);
+        await this.embeddingService.indexPoolContent(source.id, enrichedContent, {
             url: source.url,
             title,
             sourceType: 'url',
             crawlerProvider: provider ?? 'basic',
             status: isMajorChange ? 'PENDING_REVIEW' : 'ACTIVE',
+            visualSummaryCount: visualResult.summaries.length,
         });
 
         const category = (source.metadata as any)?.category || 'General';
@@ -159,7 +172,7 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         await this.prisma.knowledgeSource.update({
             where: { id: source.id },
             data: {
-                lastHash: hash,
+                lastHash: finalHash,
                 name: displayName,
                 status: isMajorChange ? KnowledgeSourceStatus.PENDING_REVIEW : KnowledgeSourceStatus.ACTIVE,
                 lastSyncedAt: new Date(),
@@ -173,13 +186,15 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
                     displayNameSource: displayName === title ? 'crawler_title' : 'user_provided_name',
                     crawlerProvider: provider ?? 'basic',
                     crawler: metadata ?? {},
-                } as Prisma.InputJsonValue
+                    images: images ?? [],
+                    ...visualResult.metadata,
+                } as unknown as Prisma.InputJsonValue
             }
         });
 
         await this.prisma.knowledgeSourceSyncLog.update({
             where: { id: logId },
-            data: { chunksProcessed: totalChunks, newHash: hash }
+            data: { chunksProcessed: totalChunks, newHash: finalHash }
         });
     }
 

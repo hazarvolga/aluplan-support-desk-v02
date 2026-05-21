@@ -10,6 +10,7 @@ import { AiModule } from '../ai/ai.module';
 import { CrawlService } from './crawl.service';
 import { LearnNowCrawlerService } from './learnnow-crawler.service';
 import { GenericWebCrawlerService } from './generic-web-crawler.service';
+import { VisualContentService } from './visual-content.service';
 
 @Module({
     imports: [
@@ -20,7 +21,7 @@ import { GenericWebCrawlerService } from './generic-web-crawler.service';
         }),
     ],
     controllers: [KnowledgePoolController],
-    providers: [KnowledgePoolService, KnowledgePoolProcessor, KnowledgePoolParserService, CrawlService, LearnNowCrawlerService, GenericWebCrawlerService],
+    providers: [KnowledgePoolService, KnowledgePoolProcessor, KnowledgePoolParserService, CrawlService, LearnNowCrawlerService, GenericWebCrawlerService, VisualContentService],
     exports: [KnowledgePoolService, KnowledgePoolParserService],
 })
 export class KnowledgePoolModule { }

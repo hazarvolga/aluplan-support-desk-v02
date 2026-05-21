@@ -2811,3 +2811,20 @@ Maintenance rule:
 - `pnpm --filter @aluplan/frontend typecheck`
 - `pnpm i18n:check`
 - `git diff --check`
+
+## Follow-up - 2026-05-21 LearnNow URL Visual Evidence Ingestion
+
+### What changed
+
+- URL crawler results now include discovered content image references from static HTML and Crawl4AI markdown.
+- New `VisualContentService` selects non-decorative article images, fetches them with safe limits, summarizes them through the existing multimodal AI dispatcher, and appends useful summaries to the text sent into Knowledge Pool embeddings.
+- Visual summaries are cached in `KnowledgeSource.metadata.visualSummaries` and image references are stored in metadata, preparing the next UI step where AI answers can show original source visuals alongside text.
+- Retrieval results now carry `visualSummaries`, and AI query responses can return a `visuals` array for matched URL/document sources.
+- Vision enrichment is bounded by env defaults: enabled, max 4 images/source, 2 MB/image, same host only, timeout guarded. Failures skip visual enrichment without failing the URL sync.
+
+### Validation
+
+- `pnpm --filter @aluplan/backend test -- crawl.service.spec.ts visual-content.service.spec.ts knowledge-pool.processor.spec.ts`
+- `pnpm --filter @aluplan/backend typecheck`
+- `pnpm --filter @aluplan/frontend typecheck`
+- `git diff --check`

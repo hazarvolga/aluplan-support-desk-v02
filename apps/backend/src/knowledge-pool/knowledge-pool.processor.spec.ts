@@ -74,6 +74,9 @@ describe('KnowledgePoolProcessor file sync', () => {
         const storageService = {
             getFile: jest.fn().mockResolvedValue(Buffer.from('pdf bytes')),
         };
+        const visualContentService = {
+            enrichUrlContent: jest.fn(),
+        };
         const configService = {
             get: jest.fn().mockImplementation((key: string, fallback?: string) => {
                 if (key === 'KNOWLEDGE_SYNC_EMBED_BUDGET_GUARD') return 'false';
@@ -93,6 +96,7 @@ describe('KnowledgePoolProcessor file sync', () => {
             embeddingService as any,
             parserService as any,
             {} as any,
+            visualContentService as any,
             {} as any,
             storageService as any,
             configService as any,
@@ -100,7 +104,7 @@ describe('KnowledgePoolProcessor file sync', () => {
             syncQueue as any,
         );
 
-        return { processor, prisma, embeddingService, parserService, storageService };
+        return { processor, prisma, embeddingService, parserService, storageService, visualContentService };
     };
 
     const source = {
@@ -163,16 +167,23 @@ describe('KnowledgePoolProcessor file sync', () => {
             fetch: jest.fn().mockResolvedValue({
                 content: 'Crawl4AI markdown content with enough detail for URL indexing.',
                 title: 'Crawled URL',
-                hash: 'url-hash',
                 provider: 'crawl4ai',
                 metadata: { crawl4aiSuccess: true },
             }),
+        };
+        const visualContentService = {
+            enrichUrlContent: jest.fn().mockImplementation(({ content }) => Promise.resolve({
+                content,
+                summaries: [],
+                metadata: { visualEnrichment: { enabled: false, selectedImageCount: 0, summarizedImageCount: 0 } },
+            })),
         };
         const processor = new KnowledgePoolProcessor(
             prisma as any,
             embeddingService as any,
             {} as any,
             crawlService as any,
+            visualContentService as any,
             {} as any,
             {} as any,
             { get: jest.fn((key: string, fallback?: string) => key === 'KNOWLEDGE_SYNC_EMBED_BUDGET_GUARD' ? 'false' : fallback) } as any,
@@ -202,6 +213,84 @@ describe('KnowledgePoolProcessor file sync', () => {
                     displayNameSource: 'user_provided_name',
                     crawlerProvider: 'crawl4ai',
                     crawler: { crawl4aiSuccess: true },
+                    visualEnrichment: expect.objectContaining({ enabled: false }),
+                }),
+            }),
+        });
+    });
+
+    it('indexes visual summaries together with URL text content', async () => {
+        const prisma = {
+            knowledgeSource: {
+                update: jest.fn().mockResolvedValue({}),
+            },
+            knowledgeSourceSyncLog: {
+                update: jest.fn().mockResolvedValue({}),
+            },
+        };
+        const embeddingService = {
+            indexPoolContent: jest.fn().mockResolvedValue(undefined),
+        };
+        const crawlService = {
+            fetch: jest.fn().mockResolvedValue({
+                content: 'Article body text.',
+                title: 'Visual Article',
+                provider: 'basic',
+                metadata: {},
+                images: [{ url: 'https://example.com/images/dialog.png', alt: 'Settings dialog' }],
+            }),
+        };
+        const visualContentService = {
+            enrichUrlContent: jest.fn().mockResolvedValue({
+                content: 'Article body text.\n\nVISUAL EVIDENCE EXTRACTED FROM SOURCE IMAGES\nVisual 1:\nSummary: Dialog shows the Wireframe option.',
+                summaries: [{
+                    url: 'https://example.com/images/dialog.png',
+                    alt: 'Settings dialog',
+                    summary: 'Dialog shows the Wireframe option.',
+                }],
+                metadata: {
+                    visualEnrichment: { enabled: true, selectedImageCount: 1, summarizedImageCount: 1 },
+                    visualSummaries: [{
+                        url: 'https://example.com/images/dialog.png',
+                        alt: 'Settings dialog',
+                        summary: 'Dialog shows the Wireframe option.',
+                    }],
+                },
+            }),
+        };
+        const processor = new KnowledgePoolProcessor(
+            prisma as any,
+            embeddingService as any,
+            {} as any,
+            crawlService as any,
+            visualContentService as any,
+            {} as any,
+            {} as any,
+            { get: jest.fn((key: string, fallback?: string) => key === 'KNOWLEDGE_SYNC_EMBED_BUDGET_GUARD' ? 'false' : fallback) } as any,
+            { get: jest.fn(), getClient: jest.fn() } as any,
+            { pause: jest.fn() } as any,
+        );
+
+        await (processor as any).handleUrlSync({
+            id: '8551f74c-e2e1-432c-af47-8ee988f86d14',
+            url: 'https://example.com/help',
+            name: 'Visual Article',
+            metadata: {},
+        }, 'log-visual');
+
+        expect(embeddingService.indexPoolContent).toHaveBeenCalledWith(
+            '8551f74c-e2e1-432c-af47-8ee988f86d14',
+            expect.stringContaining('Dialog shows the Wireframe option.'),
+            expect.objectContaining({ visualSummaryCount: 1 }),
+        );
+        expect(prisma.knowledgeSource.update).toHaveBeenCalledWith({
+            where: { id: '8551f74c-e2e1-432c-af47-8ee988f86d14' },
+            data: expect.objectContaining({
+                metadata: expect.objectContaining({
+                    visualEnrichment: expect.objectContaining({ summarizedImageCount: 1 }),
+                    visualSummaries: expect.arrayContaining([
+                        expect.objectContaining({ summary: 'Dialog shows the Wireframe option.' }),
+                    ]),
                 }),
             }),
         });
@@ -223,16 +312,23 @@ describe('KnowledgePoolProcessor file sync', () => {
             fetch: jest.fn().mockResolvedValue({
                 content: 'Learn Now article content with enough detail for URL indexing.',
                 title: 'LEARNNOW Allplan',
-                hash: 'learnnow-hash',
                 provider: 'crawl4ai',
                 metadata: { crawl4aiSuccess: true },
             }),
+        };
+        const visualContentService = {
+            enrichUrlContent: jest.fn().mockImplementation(({ content }) => Promise.resolve({
+                content,
+                summaries: [],
+                metadata: {},
+            })),
         };
         const processor = new KnowledgePoolProcessor(
             prisma as any,
             embeddingService as any,
             {} as any,
             crawlService as any,
+            visualContentService as any,
             {} as any,
             {} as any,
             { get: jest.fn((key: string, fallback?: string) => key === 'KNOWLEDGE_SYNC_EMBED_BUDGET_GUARD' ? 'false' : fallback) } as any,
@@ -307,6 +403,7 @@ describe('KnowledgePoolProcessor file sync', () => {
             embeddingService as any,
             parserService as any,
             {} as any,
+            { enrichUrlContent: jest.fn() } as any,
             {} as any,
             storageService as any,
             configService as any,
