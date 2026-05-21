@@ -381,6 +381,8 @@ export const api = {
         create: (body: any) => request<any>('/tickets', { method: 'POST', body: JSON.stringify(body) }),
         updateStatus: (id: string, status: string) =>
             request<any>(`/tickets/${id}/status/${status}`, { method: 'PATCH' }),
+        assign: (id: string, userId: string) =>
+            request<any>(`/tickets/${id}/assign/${userId}`, { method: 'PATCH' }),
         addMessage: (id: string, body: any) =>
             request<any>(`/tickets/${id}/messages`, { method: 'POST', body: JSON.stringify(body) }),
         getSlaStats: () => request<any>('/tickets/sla/stats'),

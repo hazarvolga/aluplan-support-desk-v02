@@ -617,6 +617,34 @@ export class TicketsService {
             throw new BadRequestException('Cannot assign a closed ticket');
         }
 
+        const assignee = await this.prisma.user.findFirst({
+            where: {
+                id: assigneeId,
+                deletedAt: null,
+                status: 'ACTIVE',
+                role: {
+                    name: {
+                        not: 'CUSTOMER',
+                        mode: 'insensitive',
+                    },
+                },
+                teamMembers: {
+                    some: {
+                        team: {
+                            isArchived: false,
+                            deletedAt: null,
+                            ...(ticket.departmentId ? { departmentId: ticket.departmentId } : {}),
+                        },
+                    },
+                },
+            },
+            select: { id: true },
+        });
+
+        if (!assignee) {
+            throw new BadRequestException('Ticket can only be assigned to an active support team member');
+        }
+
         const updated = await this.prisma.ticket.update({
             where: { id },
             data: {

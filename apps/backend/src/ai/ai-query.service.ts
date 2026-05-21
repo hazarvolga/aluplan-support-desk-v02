@@ -244,7 +244,7 @@ RESPONSE DRAFT:`;
     }
 
     async query(options: AiQueryOptions): Promise<any> {
-        const { userQuery, userId, channel = 'WEB', hotinfoContext, wait = true } = options;
+        const { userQuery, userId, channel = 'WEB', hotinfoContext, wait = true, attachments } = options;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
         const lang = this.resolveResponseLanguage(options.language, userQuery);
@@ -274,7 +274,7 @@ RESPONSE DRAFT:`;
         // --- END QUOTA CHECK ---
 
         // 1. Precise unique cache key
-        const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
+        const queryHash = this.buildQueryHash(userQuery, isStaff, lang, hotinfoContext, attachments);
         const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
         const cached = await this.redis.get(cacheKey);
 
@@ -319,19 +319,24 @@ RESPONSE DRAFT:`;
         }
 
         // Setup cache key for later saving
-        const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
+        const queryHash = this.buildQueryHash(userQuery, isStaff, lang, hotinfoContext, attachments);
         const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
 
         // R-P1: Semantic cache lookup — same query within 5 min served from cache
-        const semanticCached = await this.semanticCache.get(userQuery, 'system', {
-            userId: userId ?? undefined,
-            language: lang,
-            hotinfoContext,
-        });
-        if (semanticCached) {
-            this.ragObs.recordQuery(Date.now() - startTime, true);
-            this.logger.log(`🔍 [Semantic Cache Hit] query="${userQuery.slice(0, 40)}"`);
-            return semanticCached;
+        const hasAttachments = (attachments?.length ?? 0) > 0;
+        if (!hasAttachments) {
+            const semanticCached = await this.semanticCache.get(userQuery, 'system', {
+                userId: userId ?? undefined,
+                language: lang,
+                hotinfoContext,
+            });
+            if (semanticCached) {
+                this.ragObs.recordQuery(Date.now() - startTime, true);
+                this.logger.log(`🔍 [Semantic Cache Hit] query="${userQuery.slice(0, 40)}"`);
+                return semanticCached;
+            }
+        } else {
+            this.logger.log(`📎 Semantic cache bypassed for multimodal query with ${attachments?.length ?? 0} attachment(s).`);
         }
 
         // Phase 3: Immediate Adaptive Analysis for Thresholding
@@ -1382,6 +1387,31 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         };
     }
 
+    private buildQueryHash(
+        userQuery: string,
+        isStaff: boolean,
+        lang: SupportedAnswerLanguage,
+        hotinfoContext?: any,
+        attachments?: any[],
+    ): string {
+        const attachmentFingerprint = (attachments ?? [])
+            .map((att) => [
+                att?.fileName || '',
+                att?.mimeType || '',
+                att?.url || '',
+                typeof att?.data === 'string' ? att.data.length : 0,
+            ].join(':'))
+            .join('|');
+
+        return createHash('sha256')
+            .update(userQuery)
+            .update(String(isStaff))
+            .update(lang)
+            .update(hotinfoContext ? JSON.stringify(hotinfoContext) : '')
+            .update(attachmentFingerprint)
+            .digest('hex');
+    }
+
     private async getUserProfileLanguage(userId?: string | null): Promise<string | null> {
         if (!userId) return null;
         const user = await this.prisma.user.findUnique({
@@ -1875,8 +1905,8 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         const { userQuery, userId, channel = 'WEB', hotinfoContext, attachments } = options;
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
-        const lang = options.language || 'tr';
-        const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
+        const lang = this.resolveResponseLanguage(options.language, userQuery);
+        const queryHash = this.buildQueryHash(userQuery, isStaff, lang, hotinfoContext, attachments);
         const cacheKey = `ai:query:stream_cache:${queryHash}`;
         const cached = await this.redis.get(cacheKey);
 
@@ -2841,9 +2871,9 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
     private async prepareQueryContext(options: AiQueryOptions) {
         const { userQuery, userId, hotinfoContext, attachments, history, productId } = options;
         const isStaff = await this.isStaff(userId);
-        const lang = options.language || 'tr';
+        const lang = this.resolveResponseLanguage(options.language, userQuery);
 
-        const queryHash = createHash('sha256').update(userQuery + isStaff + lang + (hotinfoContext ? JSON.stringify(hotinfoContext) : '')).digest('hex');
+        const queryHash = this.buildQueryHash(userQuery, isStaff, lang, hotinfoContext, attachments);
         const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
 
         let expandedQuery = userQuery;

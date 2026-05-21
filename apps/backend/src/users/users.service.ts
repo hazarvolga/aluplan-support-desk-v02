@@ -76,6 +76,15 @@ export class UsersService {
                     not: 'CUSTOMER'
                 }
             };
+            where.status = 'ACTIVE';
+            where.teamMembers = {
+                some: {
+                    team: {
+                        isArchived: false,
+                        deletedAt: null,
+                    },
+                },
+            };
         } else if (type === 'customer') {
             where.role = {
                 name: 'CUSTOMER'

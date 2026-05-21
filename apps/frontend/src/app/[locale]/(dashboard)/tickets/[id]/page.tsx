@@ -21,6 +21,13 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -87,6 +94,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const [drafting, setDrafting] = useState(false);
     const [downloadingHotinfo, setDownloadingHotinfo] = useState(false);
     const [aiTrace, setAiTrace] = useState<any>(null);
+    const [agents, setAgents] = useState<any[]>([]);
+    const [assigning, setAssigning] = useState(false);
 
     // CSAT States
     const [csatScore, setCsatScore] = useState<number>(0);
@@ -126,11 +135,18 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             const isCustomerRole = resolvedUserRoles.includes('customer') || resolvedUserRoles.includes('viewer') || userRoleName === 'customer' || userRoleName === 'viewer';
             if (isCustomerRole) {
                 setAiTrace(null);
+                setAgents([]);
             } else {
-                const trace = await api.tickets.getAiTrace(id).catch((err) => {
+                const [trace] = await Promise.all([
+                    api.tickets.getAiTrace(id).catch((err) => {
                     console.warn('[TicketDetail] AI trace unavailable:', err);
                     return null;
-                });
+                    }),
+                    api.users.list('agent').then(setAgents).catch((err) => {
+                        console.warn('[TicketDetail] Agent list unavailable:', err);
+                        setAgents([]);
+                    }),
+                ]);
                 setAiTrace(trace);
             }
             // Initial scroll to bottom
@@ -288,6 +304,21 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             load(); // Refresh state to show LIVE_SESSION_ACTIVE UI
         } catch (err) {
             toast.error(t('chat_start_error'));
+        }
+    };
+
+    const handleAssignTicket = async (assigneeId: string) => {
+        if (!assigneeId || assigneeId === ticket?.assignedTo || assigning) return;
+
+        setAssigning(true);
+        try {
+            await api.tickets.assign(ticket.id, assigneeId);
+            toast.success(t('assign_success'));
+            await load();
+        } catch (err) {
+            toast.error(t('assign_error'));
+        } finally {
+            setAssigning(false);
         }
     };
 
@@ -857,17 +888,34 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('open_date')}</label>
                             <p className="text-[9px] font-mono font-medium text-foreground truncate">{new Date(ticket.createdAt).toLocaleDateString(locale)} {new Date(ticket.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
-                        {ticket.assignee && (
-                            <div className="space-y-0.5 col-span-2 pt-2 border-t border-border/20">
-                                <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('assignee_label')}</label>
+                        <div className="space-y-1 col-span-2 pt-2 border-t border-border/20">
+                            <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('assignee_label')}</label>
+                            {!isCustomer ? (
+                                <Select
+                                    value={ticket.assignedTo || ''}
+                                    onValueChange={handleAssignTicket}
+                                    disabled={assigning || agents.length === 0 || ticket.status === 'CLOSED'}
+                                >
+                                    <SelectTrigger className="h-8 rounded-none border-border/60 bg-background/60 text-[10px] font-bold uppercase tracking-tight">
+                                        <SelectValue placeholder={agents.length === 0 ? t('assign_no_agents') : t('assign_placeholder')} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {agents.map((agent) => (
+                                            <SelectItem key={agent.id} value={agent.id}>
+                                                {agent.fullName || agent.email}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
                                 <div className="flex items-center gap-2">
                                     <div className="h-5 w-5 bg-muted border border-border flex items-center justify-center text-[8px] font-bold">
                                         {ticket.assignee?.fullName?.[0] || 'AX'}
                                     </div>
                                     <span className="text-[9px] font-bold uppercase tracking-tight">{ticket.assignee?.fullName || tc('unassigned')}</span>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
 

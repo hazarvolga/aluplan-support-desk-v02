@@ -56,6 +56,7 @@ export class PromptContextBuilderService {
                 if (!options.skipHotinfoProfile) {
                     const h = hotinfoSnapshot || user?.customerProfile?.hotinfoData;
                     if (h) {
+                        const licenseContext = this.buildLicenseContext(h, userQuery);
                         let hotinfoContent = `[MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)]
 - Allplan Sürümü: ${h.allplanVersion || 'Bilinmiyor'} (Build: ${h.allplanBuildId || 'Bilinmiyor'})
 - İşletim Sistemi: ${h.osVersion || 'Bilinmiyor'}
@@ -64,7 +65,7 @@ export class PromptContextBuilderService {
 - OpenGL: ${h.openglVersion || 'Bilinmiyor'}
 - RAM: ${h.ram || 'Bilinmiyor'}
 - Ekran Çözünürlüğü: ${h.screenResolution || 'Bilinmiyor'}
-- Lisans Tipi: ${h.licenseType || 'Bilinmiyor'}
+- ${licenseContext}
 - Allplan Hotfix/Patch: ${h.allplanHotfix || 'Bilinmiyor'}
 `;
                         if (h.installedModules && h.installedModules.length > 0) {
@@ -89,8 +90,10 @@ export class PromptContextBuilderService {
                             hotinfoContent += `- Olası Çakışmalar: ${h.conflictingProcesses.join(', ')}\n`;
                         }
                         if (h.errorTrace) {
-                            const errorTrace = String(h.errorTrace);
-                            hotinfoContent += `- Hata Kaydı/Trace: ${errorTrace.length > 1200 ? `${errorTrace.slice(0, 1200)}... [trace truncated]` : errorTrace}\n`;
+                            const errorTrace = this.sanitizeHotinfoTrace(h.errorTrace, userQuery);
+                            if (errorTrace) {
+                                hotinfoContent += `- Hata Kaydı/Trace: ${errorTrace.length > 1200 ? `${errorTrace.slice(0, 1200)}... [trace truncated]` : errorTrace}\n`;
+                            }
                         }
                         sections.push({ name: 'HOTINFO_DATA', priority: P.HOTINFO_DATA, content: hotinfoContent });
                     } else {
@@ -166,6 +169,7 @@ export class PromptContextBuilderService {
             'Çince, Japonca veya tanınmayan karakter kalıntılarını (Örn: 了解) yanıta EKLEME.',
             'KULLANICI SISTEM BILGILERI (Hotinfo) mevcutsa, yanıtı bu verilere göre özelleştir (Örn: Versiyon 2026 ise 2026 prosedürlerini ver, GPU eskiyse sürücü güncellemesi öner).',
             'Eğer bir ekran kartının VRAM değeri "Bilinmiyor (Kart Uyku Modunda)" ise donanım yetersizliği teşhisi koyma. Kullanıcıya, "Ekran kartınız uyku modunda olduğu için tam tarayamadım, Allplan açıkken Hotinfo dosyasını yeniden oluşturup gönderir misiniz?" şeklinde kibarca yönlendirme yap.',
+            'Hotinfo içinde "Lisans dosyası okunamadı" veya _SEC.NSE gibi eski yerel lisans dosyası sinyalleri varsa bunu TEK BAŞINA lisans geçersizliği, deneme/öğrenci lisansı veya BIMPLUS/Share depolama limiti nedeni olarak kullanma. Modern Allplan Cloud/Wibu lisanslarında bu düşük güvenli legacy telemetridir; lisans kök nedeni ancak kullanıcı lisans soruyorsa ve bilgi kaynağı bunu destekliyorsa önerilebilir.',
             'Hata kodları yakalandığında "ERROR_LOG_PATTERNS" veri kümesine öncelik ver.',
             'Kaynaklarda tam metin eşleşmesi olmasa da en yakın prosedürü öner, tamamen cevapsız bırakma.'
         ];
@@ -185,6 +189,55 @@ export class PromptContextBuilderService {
 
         // BUILD with budget enforcement
         return this.assembleWithBudget(sections);
+    }
+
+    private buildLicenseContext(hotinfo: any, userQuery: string): string {
+        const licenseType = hotinfo?.licenseType || hotinfo?.hotinfoLicense || hotinfo?.licenseNumber;
+        if (!this.isLegacyUnreadableLicenseSignal(licenseType)) {
+            return `Lisans Tipi: ${licenseType || 'Bilinmiyor'}`;
+        }
+
+        const asksLicense = this.isLicenseIntent(userQuery);
+        return asksLicense
+            ? 'Lisans Telemetrisi: Hotinfo eski yerel lisans dosyasını okuyamamış. Bu düşük güvenli bir sinyaldir; modern Cloud/Wibu lisanslarında lisans geçersizliği kanıtı değildir. Lisans yorumu yapmadan önce License Manager/BIMPLUS portalı gibi birincil lisans kaynağını doğrulat.'
+            : 'Lisans Telemetrisi: Yerel lisans dosyası Hotinfo tarafından okunamadı; modern Cloud/Wibu lisanslarında bu tek başına lisans/abonelik veya BIMPLUS depolama limiti kanıtı değildir. Bu talepte kök neden olarak kullanma.';
+    }
+
+    private sanitizeHotinfoTrace(trace: unknown, userQuery: string): string {
+        const value = String(trace || '');
+        if (!value.trim()) return '';
+        if (this.isLegacyUnreadableLicenseSignal(value) && !this.isLicenseIntent(userQuery)) {
+            return 'Legacy yerel lisans trace sinyali mevcut; talep lisans odaklı olmadığı için kök neden olarak kullanılmamalı.';
+        }
+        return value;
+    }
+
+    private isLegacyUnreadableLicenseSignal(value: unknown): boolean {
+        const normalized = String(value || '')
+            .toLowerCase()
+            .replace(/[ıİ]/g, 'i')
+            .replace(/[şŞ]/g, 's')
+            .replace(/[ğĞ]/g, 'g')
+            .replace(/[üÜ]/g, 'u')
+            .replace(/[öÖ]/g, 'o')
+            .replace(/[çÇ]/g, 'c');
+
+        return normalized.includes('lisans dosyasi okunamadi')
+            || normalized.includes('_sec.nse')
+            || /license file.*(unreadable|missing|not read|could not)/i.test(normalized);
+    }
+
+    private isLicenseIntent(query: string): boolean {
+        const normalized = String(query || '')
+            .toLowerCase()
+            .replace(/[ıİ]/g, 'i')
+            .replace(/[şŞ]/g, 's')
+            .replace(/[ğĞ]/g, 'g')
+            .replace(/[üÜ]/g, 'u')
+            .replace(/[öÖ]/g, 'o')
+            .replace(/[çÇ]/g, 'c');
+
+        return /\b(lisans|license|codemeter|wibu|aktivasyon|activation|product key|license manager)\b/.test(normalized);
     }
 
     /**

@@ -94,6 +94,36 @@ describe('PromptContextBuilderService — Property-Based Tests', () => {
         expect(result).toContain('Hata Kaydı/Trace: SEC Hata: test trace');
     });
 
+    it('treats legacy unreadable license Hotinfo signals as low-confidence telemetry for non-license questions', async () => {
+        mockPrisma.user.findUnique.mockResolvedValue({
+            id: 'user-1',
+            fullName: 'Murat Şahin',
+            email: 'murat@example.com',
+            customerProfile: {
+                companyName: 'ENKA',
+                industry: 'AEC',
+                hotinfoData: null,
+            },
+        });
+
+        const result = await service.buildContext({
+            userId: 'user-1',
+            userQuery: 'BIMPLUS depolama alanı yetersiz uyarısı alıyoruz',
+            kbContent: 'BIMPLUS storage knowledge.',
+            hotinfoSnapshot: {
+                allplanVersion: 'Allplan 2026-1-3 Unicode 64-bit',
+                allplanBuildId: '39.1613.8530.664',
+                licenseType: '⚠ Lisans dosyası okunamadı',
+                errorTrace: 'SEC Hata: C:\\ProgramData\\Nemetschek\\Allplan\\2026\\License\\_SEC.NSE',
+            },
+        });
+
+        expect(result).toContain('Lisans Telemetrisi: Yerel lisans dosyası Hotinfo tarafından okunamadı');
+        expect(result).toContain('kök neden olarak kullanma');
+        expect(result).not.toContain('- Lisans Tipi: ⚠ Lisans dosyası okunamadı');
+        expect(result).not.toContain('C:\\ProgramData\\Nemetschek\\Allplan\\2026\\License\\_SEC.NSE');
+    });
+
     // Feature: rag-faq-improvements, Property 1.5: boş kbContent için bölüm eklenmez
     it('P1.5: boş veya whitespace-only kbContent için [APPROVED KNOWLEDGE SOURCE] bölümü eklenmez', async () => {
         await fc.assert(

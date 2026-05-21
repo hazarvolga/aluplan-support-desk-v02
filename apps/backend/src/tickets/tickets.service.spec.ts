@@ -246,6 +246,7 @@ describe('TicketsService', () => {
             const updatedTicket = { ...ticket, assignedTo: 'agent1', status: 'OPEN' };
 
             prisma.ticket.findFirst.mockResolvedValue(ticket);
+            prisma.user.findFirst.mockResolvedValue({ id: 'agent1' });
             prisma.ticket.update.mockResolvedValue(updatedTicket);
 
             // Act

@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 describe('AutoAssignmentService', () => {
     let service: AutoAssignmentService;
-    let prisma: { ticket: { findUnique: jest.Mock; update: jest.Mock }; user: { findMany: jest.Mock } };
+    let prisma: { ticket: { findUnique: jest.Mock; update: jest.Mock; groupBy: jest.Mock }; user: { findMany: jest.Mock } };
 
     const mockTicket = {
         id: 'ticket-123',
@@ -19,6 +19,7 @@ describe('AutoAssignmentService', () => {
             ticket: {
                 findUnique: jest.fn().mockResolvedValue(mockTicket),
                 update: jest.fn().mockResolvedValue({ ...mockTicket, assignedTo: 'user-2' }),
+                groupBy: jest.fn().mockResolvedValue([]),
             },
             user: {
                 findMany: jest.fn().mockResolvedValue([{ id: 'user-1' }, { id: 'user-2' }]),
@@ -48,13 +49,22 @@ describe('AutoAssignmentService', () => {
         expect(prisma.ticket.update).not.toHaveBeenCalled();
     });
 
-    it('should find available agents', async () => {
+    it('should only find active support team members as available agents', async () => {
         await service.handleTicketCreated(mockTicket as any);
 
         expect(prisma.user.findMany).toHaveBeenCalledWith({
             where: {
                 role: { name: { not: 'CUSTOMER', mode: 'insensitive' } },
-                status: 'ACTIVE'
+                status: 'ACTIVE',
+                deletedAt: null,
+                teamMembers: {
+                    some: {
+                        team: {
+                            isArchived: false,
+                            deletedAt: null,
+                        },
+                    },
+                },
             },
             select: { id: true }
         });

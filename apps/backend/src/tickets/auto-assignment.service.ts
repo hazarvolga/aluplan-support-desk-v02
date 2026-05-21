@@ -20,19 +20,7 @@ export class AutoAssignmentService {
         if (!currentTicket || currentTicket.assignedTo) return;
 
         try {
-            // Find all active agent users — exclude users with 'customer' role
-            const agents = await this.prisma.user.findMany({
-                where: {
-                    role: {
-                        name: {
-                            not: 'CUSTOMER',
-                            mode: 'insensitive'
-                        }
-                    },
-                    status: 'ACTIVE'
-                },
-                select: { id: true }
-            });
+            const agents = await this.findAssignableAgents(currentTicket.departmentId);
 
             if (agents.length === 0) {
                 this.logger.warn(`⚠️ No agents available to auto-assign ticket ${ticket.ticketNumber}`);
@@ -72,5 +60,54 @@ export class AutoAssignmentService {
         } catch (error: any) {
             this.logger.error(`❌ Auto-assignment failed for ticket ${ticket.id}`, error.stack);
         }
+    }
+
+    private async findAssignableAgents(departmentId?: string | null) {
+        const baseWhere = {
+            deletedAt: null,
+            role: {
+                name: {
+                    not: 'CUSTOMER',
+                    mode: 'insensitive' as const,
+                },
+            },
+            status: 'ACTIVE' as const,
+        };
+
+        const activeTeamFilter = {
+            team: {
+                isArchived: false,
+                deletedAt: null,
+            },
+        };
+
+        const departmentTeamFilter = departmentId
+            ? {
+                team: {
+                    departmentId,
+                    isArchived: false,
+                    deletedAt: null,
+                },
+            }
+            : activeTeamFilter;
+
+        const agents = await this.prisma.user.findMany({
+            where: {
+                ...baseWhere,
+                teamMembers: { some: departmentTeamFilter },
+            },
+            select: { id: true },
+        });
+
+        if (agents.length > 0 || !departmentId) return agents;
+
+        this.logger.warn(`⚠️ No department agents found for department ${departmentId}; falling back to global support team members.`);
+        return this.prisma.user.findMany({
+            where: {
+                ...baseWhere,
+                teamMembers: { some: activeTeamFilter },
+            },
+            select: { id: true },
+        });
     }
 }
