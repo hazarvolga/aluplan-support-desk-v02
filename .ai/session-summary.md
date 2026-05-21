@@ -158,6 +158,27 @@ Maintenance rule:
 - Update `current-focus.md` when the next active objective changes.
 - Add or revise an ADR when a technical direction should persist across sessions.
 - Refresh `summaries/condensed.md` after major phase changes or stabilization milestones.
+
+## Follow-up - 2026-05-21 Admin Copilot Drift Hardening
+
+### Root cause
+
+- Customer ticket opening and admin ANN/Copilot draft generation were still separate runtime passes.
+- A ticket could have a strong customer-facing AI answer linked through `AiInteraction`, while the later admin draft model call independently returned a no-knowledge answer.
+- This caused customer and admin surfaces to disagree even when the original ticket-opening answer was usable and grounded.
+
+### Fix applied
+
+- `AiCopilotService` now extracts the linked ticket-opening AI answer when it is usable.
+- The linked answer is injected into the admin prompt as `[LINKED_CUSTOMER_AI_ANSWER]` and treated as the primary grounding signal.
+- If the admin model returns no-knowledge while a linked answer exists, Copilot reuses the linked answer instead of contradicting it.
+- Added a structured fallback for manual license server discovery / manual server add questions.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- ai-copilot.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `git diff --check` passed.
 - Prefer code, tests, Git history, GitNexus, Graphify, and `.ai` memory over stale root-level Markdown.
 
 ## Follow-up - 2026-05-13 Regression Guard Stabilization
