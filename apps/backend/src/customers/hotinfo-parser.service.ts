@@ -38,6 +38,30 @@ export class HotinfoParserService {
 
             const cadinfo = hotinfo.cadinfo;
             const system = hotinfo.system;
+            const headerCustomer = hotinfo.header?.customer;
+
+            const licenseNumber = this.pickString(
+                cadinfo,
+                ['licensenr', 'license-nr', 'license-number', 'licenseNumber'],
+                ['license no', 'license number', 'license nr', 'lisans no', 'lisans numarasi'],
+            );
+            const hotinfoLicense =
+                this.pickString(
+                    headerCustomer,
+                    ['@_license', '@_license-no', '@_license-number', '@_licensenr', 'license', 'license-no', 'license-number', 'licensenr', 'number'],
+                    ['license', 'license no', 'license number', 'lisans', 'lisans no', 'lisans numarasi'],
+                ) ||
+                this.pickString(
+                    hotinfo.header,
+                    ['@_license', '@_license-no', '@_license-number', 'license', 'license-no', 'license-number', 'licensenr'],
+                    ['license', 'license no', 'license number', 'lisans', 'lisans no', 'lisans numarasi'],
+                ) ||
+                licenseNumber;
+            const hotinfoContactName = this.pickString(headerCustomer, ['@_name', 'name'], ['name', 'customer name', 'isim', 'ad soyad']);
+            const hotinfoContactPhone = this.pickString(headerCustomer, ['@_phone', 'phone', 'telephone', 'tel'], ['phone', 'telephone', 'telefon']);
+            const hotinfoContactEmail =
+                this.pickString(headerCustomer, ['@_email', 'email', 'e-mail', 'mail'], ['email', 'e-mail', 'mail', 'e posta']) ||
+                this.safeString(cadinfo?.customer);
 
             // ── Allplan Version ──
             let allplanVersion = 'Unknown';
@@ -330,6 +354,11 @@ export class HotinfoParserService {
                 allplanEdition,
                 allplanHotfix,
                 licenseType,
+                licenseNumber,
+                hotinfoLicense,
+                hotinfoContactName,
+                hotinfoContactPhone,
+                hotinfoContactEmail,
                 gpuDriverVersion,
                 openglVersion,
                 vram,

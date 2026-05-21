@@ -136,6 +136,36 @@ describe('HotinfoParserService', () => {
         expect(data?.gpuDriverVersion).toBe('32.0.13046.10001');
     });
 
+    it('should extract Hotinfo request contact and license header fields', () => {
+        const xml = `<hotinfo>
+            <header>
+                <customer>
+                    <license>1014361a</license>
+                    <name>Melih Dinekli</name>
+                    <phone>+90 549 499 73 79</phone>
+                    <email>melih@aluplan.com.tr</email>
+                </customer>
+            </header>
+            <cadinfo>
+                <licensenr>ABC-2026</licensenr>
+                <allplanversion>
+                    <item name="Version">Allplan 2026-1-3 Unicode 64-bit</item>
+                    <item name="Build-ID">39.1613.8530.664</item>
+                </allplanversion>
+            </cadinfo>
+        </hotinfo>`;
+
+        const data = service.parseHotinfo(xml);
+
+        expect(data).toMatchObject({
+            hotinfoLicense: '1014361a',
+            hotinfoContactName: 'Melih Dinekli',
+            hotinfoContactPhone: '+90 549 499 73 79',
+            hotinfoContactEmail: 'melih@aluplan.com.tr',
+            licenseNumber: 'ABC-2026',
+        });
+    });
+
     it('should show warning text when SEC license file is missing (B4)', () => {
         const xml = `<hotinfo>
             <cadinfo>

@@ -109,12 +109,19 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
     };
 
     const graphicsCards = normalizeGraphicsCards(data);
+    const hotinfoIdentityFields = [
+        { key: 'hotinfoLicense', label: t('request_license'), value: sr(data.hotinfoLicense) },
+        { key: 'hotinfoContactPhone', label: t('request_phone'), value: sr(data.hotinfoContactPhone) },
+        { key: 'hotinfoContactEmail', label: t('request_email'), value: sr(data.hotinfoContactEmail) },
+        { key: 'hotinfoContactName', label: t('request_name'), value: sr(data.hotinfoContactName) },
+    ].filter((field) => field.value);
 
     const copyToClipboard = () => {
         const gpuSummary = graphicsCards.map((card, index) => (
             `GPU ${index + 1}: ${card.name} | VRAM: ${card.vram || 'N/A'} | RAM: ${card.ram || 'N/A'} | Resolution: ${card.resolution || 'N/A'} | Driver Date: ${card.driverDate || 'N/A'} | Driver Version: ${card.driverVersion || 'N/A'}`
         ));
         const summary = [
+            ...hotinfoIdentityFields.map((field) => `${field.label}: ${field.value}`),
             `Allplan: ${data.allplanVersion} (${data.allplanEdition || 'N/A'}) - Build: ${data.allplanBuildId || 'N/A'}`,
             `OS: ${data.osVersion}`,
             `CPU: ${data.cpu}`,
@@ -185,6 +192,23 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
             )}
 
             <div className={containerClass}>
+                {hotinfoIdentityFields.length > 0 && (
+                    <div className={`${itemWrapperClass} ${!isCompact ? 'md:col-span-3' : 'flex-col items-start gap-1 py-2'}`}>
+                        <div className={`${labelClass} ${isCompact ? 'w-full mb-1' : ''}`}>
+                            <User size={12} className="hidden md:inline mr-1" />
+                            {t('request_info')}
+                        </div>
+                        <div className={`${isCompact ? 'grid grid-cols-1 gap-1 w-full' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-2 w-full'}`}>
+                            {hotinfoIdentityFields.map((field) => (
+                                <div key={field.key} className="min-w-0">
+                                    <div className={detailLabelClass}>{field.label}</div>
+                                    <div className={`${detailTextClass} break-words`}>{field.value}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Allplan Versiyon */}
                 <div className={`${itemWrapperClass} ${!isCompact ? 'md:col-span-1' : ''}`}>
                     <div className={labelClass}>{t('allplan_version')}</div>
@@ -265,6 +289,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
                         )}>
                             {sr(data.licenseType) || '-'}
                         </div>
+                        {sr(data.licenseNumber) && <div className="text-[11px] leading-5 text-slate-300 dark:text-cyan-300/85 mt-1">{t('license_number')}: {sr(data.licenseNumber)}</div>}
                     </div>
                 </div>
 
