@@ -91,15 +91,74 @@ export class UsersService {
             };
         }
 
-        return this.prisma.user.findMany({
+        const users = await this.prisma.user.findMany({
             where,
-            include: {
-                role: true,
-                customerProfile: true,
-                teamMembers: { include: { team: true } }
+            select: {
+                id: true,
+                email: true,
+                fullName: true,
+                avatarUrl: true,
+                status: true,
+                createdAt: true,
+                updatedAt: true,
+                roleId: true,
+                agentStatus: true,
+                title: true,
+                bio: true,
+                timezone: true,
+                language: true,
+                maxActiveTickets: true,
+                role: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                    },
+                },
+                ...(type === 'customer' ? {
+                    customerProfile: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            companyName: true,
+                            customerNo: true,
+                            industry: true,
+                            jobTitle: true,
+                            phoneNumber: true,
+                            contractStatus: true,
+                            crmVerified: true,
+                            isVip: true,
+                        },
+                    },
+                } : {}),
+                teamMembers: {
+                    select: {
+                        id: true,
+                        userId: true,
+                        teamId: true,
+                        roleOverride: true,
+                        joinedAt: true,
+                        team: {
+                            select: {
+                                id: true,
+                                name: true,
+                                departmentId: true,
+                                isArchived: true,
+                                autoAssignmentEnabled: true,
+                                assignmentStrategy: true,
+                            },
+                        },
+                    },
+                },
             },
             orderBy: { createdAt: 'desc' },
         });
+
+        return users.map((user) => ({
+            ...user,
+            userRoles: user.role ? [{ role: user.role }] : [],
+        }));
     }
 
     async findOne(id: string) {

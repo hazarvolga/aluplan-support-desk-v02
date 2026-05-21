@@ -2917,3 +2917,4 @@ Maintenance rule:
 ### Live finding
 
 - Production has two `Melih Dinekli` identities: `melih@aluplan.com.tr` is the staff/admin account, while `melihdinekli@gmail.com` is a CUSTOMER account currently present in the `Teknik Destek` team. The team should be corrected from UI by removing the customer identity and adding the staff e-mail.
+- Live API smoke found `/users?type=agent` was returning overly broad user records, including fields that are not needed by the UI. `UsersService.findAll()` was narrowed to safe summary fields only and now maps role data into a frontend-compatible `userRoles` shape without exposing hashes, raw CRM payloads, or Hotinfo raw data.

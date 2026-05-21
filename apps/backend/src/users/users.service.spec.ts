@@ -77,6 +77,44 @@ describe('UsersService', () => {
         });
     });
 
+    describe('findAll', () => {
+        it('should return safe staff summaries without secret or raw CRM fields', async () => {
+            const role = { id: 'role-admin', name: 'ADMIN', description: 'Admin' };
+            prisma.user.findMany.mockResolvedValue([{
+                id: 'agent1',
+                email: 'agent@example.com',
+                fullName: 'Agent One',
+                role,
+                teamMembers: [],
+            }]);
+
+            const result = await service.findAll('agent');
+
+            expect(prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({
+                    status: 'ACTIVE',
+                    role: expect.objectContaining({
+                        name: expect.objectContaining({ not: 'CUSTOMER' }),
+                    }),
+                }),
+                select: expect.not.objectContaining({
+                    passwordHash: expect.anything(),
+                    refreshTokenHash: expect.anything(),
+                    hotinfoRaw: expect.anything(),
+                    rawCrmPayload: expect.anything(),
+                }),
+            }));
+            expect(result[0]).toEqual(expect.objectContaining({
+                id: 'agent1',
+                email: 'agent@example.com',
+                userRoles: [{ role }],
+            }));
+            expect(result[0]).not.toHaveProperty('passwordHash');
+            expect(result[0]).not.toHaveProperty('refreshTokenHash');
+            expect(result[0]).not.toHaveProperty('customerProfile.rawCrmPayload');
+        });
+    });
+
     describe('updateProfile', () => {
         it('should update user and create customer profile if it does not exist', async () => {
             // Arrange
