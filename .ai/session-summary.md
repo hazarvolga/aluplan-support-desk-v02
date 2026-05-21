@@ -2828,3 +2828,24 @@ Maintenance rule:
 - `pnpm --filter @aluplan/backend typecheck`
 - `pnpm --filter @aluplan/frontend typecheck`
 - `git diff --check`
+
+## Follow-up - 2026-05-21 LearnNow Public Format Discovery
+
+### What changed
+
+- LearnNow crawler discovery now supports the public resource filters `knowledge_article`, `pdf`, `technical_manual`, `explaining_video`, and `recorded_online_session`.
+- `knowledge_article` remains the default article path and PDF remains the dedicated PDF import path.
+- Non-PDF LearnNow formats are staged as `KNOWLEDGE_ARTICLE` candidates so the existing review/import/sync pipeline stays unchanged.
+- Candidate metadata preserves the original LearnNow source type, so admin review and future RAG provenance can distinguish articles, manuals, videos, and recorded sessions.
+- The Knowledge Pool crawler UI now exposes all five public format toggles in Turkish, English, and German.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- learnnow-crawler.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+
+### Next
+
+- Phase 2 should inspect LearnNow detail pages for image assets and video transcript availability before importing visual/video content into RAG answers.

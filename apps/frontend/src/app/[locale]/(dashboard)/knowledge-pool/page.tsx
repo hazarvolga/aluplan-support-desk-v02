@@ -893,10 +893,13 @@ export default function KnowledgePoolPage() {
                                         className="pl-8 h-8 text-[11px] bg-muted/10 border-border/50"
                                     />
                                 </div>
-                                <div className="flex gap-1.5">
+                                <div className="flex flex-wrap gap-1.5">
                                     {[
                                         { value: 'knowledge_article' as const, label: t('crawler.formats.article') },
                                         { value: 'pdf' as const, label: t('crawler.formats.pdf') },
+                                        { value: 'technical_manual' as const, label: t('crawler.formats.technical_manual') },
+                                        { value: 'explaining_video' as const, label: t('crawler.formats.explaining_video') },
+                                        { value: 'recorded_online_session' as const, label: t('crawler.formats.recorded_online_session') },
                                     ].map(format => (
                                         <button
                                             key={format.value}

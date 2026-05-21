@@ -1,6 +1,11 @@
 import { IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
-export type LearnNowCrawlFormat = 'knowledge_article' | 'pdf';
+export type LearnNowCrawlFormat =
+    | 'knowledge_article'
+    | 'pdf'
+    | 'technical_manual'
+    | 'explaining_video'
+    | 'recorded_online_session';
 
 export class DiscoverLearnNowDto {
     @IsOptional()
@@ -9,7 +14,7 @@ export class DiscoverLearnNowDto {
 
     @IsOptional()
     @IsArray()
-    @IsIn(['knowledge_article', 'pdf'], { each: true })
+    @IsIn(['knowledge_article', 'pdf', 'technical_manual', 'explaining_video', 'recorded_online_session'], { each: true })
     formats?: LearnNowCrawlFormat[];
 
     @IsOptional()

@@ -112,6 +112,58 @@ describe('LearnNowCrawlerService', () => {
         ]));
     });
 
+    it('discovers public Totara howto resources for article and video filters without changing import format', async () => {
+        const { service } = makeService();
+        mockedAxios.get
+            .mockResolvedValueOnce({
+                data: `
+                  <html><body>
+                    <a href="/totara/engage/resources/howto/index.php?id=8572&source=howto">
+                      Operate Allplan with a QHD/UHD/4K monitor from Allplan 2023
+                    </a>
+                  </body></html>
+                `,
+            } as any)
+            .mockResolvedValueOnce({
+                data: `
+                  <html><body>
+                    <a href="/totara/engage/resources/howto/index.php?id=2740&source=howto">
+                      NEUERUNG 2024 - IFC VERBESSERUNGEN INFRASTRUKTUR
+                    </a>
+                  </body></html>
+                `,
+            } as any);
+
+        const result = await service.discover({
+            formats: ['knowledge_article', 'explaining_video'],
+            maxPages: 1,
+            maxCandidates: 10,
+            dryRun: true,
+        });
+
+        expect(result).toMatchObject({ dryRun: true, discovered: 2 });
+        expect(result.candidates).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                sourceUrl: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=8572&source=howto',
+                format: 'KNOWLEDGE_ARTICLE',
+                crawlFilter: 'knowledge_article',
+                metadata: expect.objectContaining({
+                    sourceType: 'knowledge_article',
+                    candidateFormat: 'KNOWLEDGE_ARTICLE',
+                }),
+            }),
+            expect.objectContaining({
+                sourceUrl: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=2740&source=howto',
+                format: 'KNOWLEDGE_ARTICLE',
+                crawlFilter: 'explaining_video',
+                metadata: expect.objectContaining({
+                    sourceType: 'explaining_video',
+                    candidateFormat: 'KNOWLEDGE_ARTICLE',
+                }),
+            }),
+        ]));
+    });
+
     it('imports an article candidate into the existing knowledge sync queue', async () => {
         const { service, prisma, pool } = makeService();
         prisma.$queryRawUnsafe.mockResolvedValueOnce([{

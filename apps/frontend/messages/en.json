@@ -2896,7 +2896,10 @@
         },
         "formats": {
           "article": "ARTICLE",
-          "pdf": "PDF"
+          "pdf": "PDF",
+          "technical_manual": "TECHNICAL MANUAL",
+          "explaining_video": "EXPLAINING VIDEO",
+          "recorded_online_session": "RECORDED SESSION"
         },
         "buttons": {
           "dry_run": "PREVIEW",
@@ -4371,7 +4374,10 @@
       },
       "formats": {
         "article": "ARTICLE",
-        "pdf": "PDF"
+        "pdf": "PDF",
+        "technical_manual": "TECHNICAL MANUAL",
+        "explaining_video": "EXPLAINING VIDEO",
+        "recorded_online_session": "RECORDED SESSION"
       },
       "buttons": {
         "dry_run": "PREVIEW",

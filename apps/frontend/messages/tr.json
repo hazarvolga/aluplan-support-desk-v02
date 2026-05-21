@@ -2896,7 +2896,10 @@
         },
         "formats": {
           "article": "MAKALE",
-          "pdf": "PDF"
+          "pdf": "PDF",
+          "technical_manual": "TEKNİK KILAVUZ",
+          "explaining_video": "AÇIKLAYICI VİDEO",
+          "recorded_online_session": "KAYITLI OTURUM"
         },
         "buttons": {
           "dry_run": "ÖNİZLE",
@@ -4371,7 +4374,10 @@
       },
       "formats": {
         "article": "MAKALE",
-        "pdf": "PDF"
+        "pdf": "PDF",
+        "technical_manual": "TEKNİK KILAVUZ",
+        "explaining_video": "AÇIKLAYICI VİDEO",
+        "recorded_online_session": "KAYITLI OTURUM"
       },
       "buttons": {
         "dry_run": "ÖN İZLE",

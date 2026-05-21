@@ -19,6 +19,12 @@ type CandidateStatus =
     | 'FAILED';
 
 type CandidateFormat = 'KNOWLEDGE_ARTICLE' | 'PDF';
+type LearnNowFilterValue =
+    | 'knowledge_article'
+    | 'pdf'
+    | 'technical_manual'
+    | 'explaining_video'
+    | 'recorded_online_session';
 
 type CrawlCandidateRecord = {
     id: string;
@@ -47,6 +53,13 @@ type DiscoveredCandidate = {
 
 const LEARNNOW_BASE_URL = 'https://learnnow.allplan.com';
 const LEARNNOW_SOURCE = 'allplan_learnnow';
+const LEARNNOW_FORMAT_FILTERS: Record<LearnNowCrawlFormat, LearnNowFilterValue> = {
+    knowledge_article: 'knowledge_article',
+    pdf: 'pdf',
+    technical_manual: 'technical_manual',
+    explaining_video: 'explaining_video',
+    recorded_online_session: 'recorded_online_session',
+};
 
 @Injectable()
 export class LearnNowCrawlerService {
@@ -245,7 +258,7 @@ export class LearnNowCrawlerService {
         url.searchParams.set('type', 'resource');
         url.searchParams.set('sort_by', 'score:desc');
         url.searchParams.set('search', search);
-        url.searchParams.append('filter[format][]', format);
+        url.searchParams.append('filter[format][]', LEARNNOW_FORMAT_FILTERS[format] ?? format);
         if (page > 0) url.searchParams.set('page', String(page));
         return url.toString();
     }
@@ -288,7 +301,7 @@ export class LearnNowCrawlerService {
     private extractCandidates(html: string, format: LearnNowCrawlFormat, crawlUrl: string): DiscoveredCandidate[] {
         const $ = cheerio.load(html);
         const candidates: DiscoveredCandidate[] = [];
-        const candidateFormat = format === 'pdf' ? 'PDF' : 'KNOWLEDGE_ARTICLE';
+        const candidateFormat = this.toCandidateFormat(format);
 
         $('a[href]').each((_, el) => {
             const href = String($(el).attr('href') ?? '');
@@ -307,7 +320,8 @@ export class LearnNowCrawlerService {
                 crawlFilter: format,
                 metadata: {
                     source: LEARNNOW_SOURCE,
-                    sourceType: candidateFormat === 'PDF' ? 'pdf' : 'knowledge_article',
+                    sourceType: format,
+                    candidateFormat,
                     sourceUrl,
                     crawlFilter: format,
                     discoveredFrom: crawlUrl,
@@ -319,7 +333,7 @@ export class LearnNowCrawlerService {
     }
 
     private extractMarkdownCandidates(markdown: string, format: LearnNowCrawlFormat, crawlUrl: string): DiscoveredCandidate[] {
-        const candidateFormat = format === 'pdf' ? 'PDF' : 'KNOWLEDGE_ARTICLE';
+        const candidateFormat = this.toCandidateFormat(format);
         const candidates: DiscoveredCandidate[] = [];
         const seen = new Set<string>();
         const linkPattern = /\[([^\]]{3,240})\]\((https?:\/\/learnnow\.allplan\.com\/[^)\s]+)\)/gi;
@@ -339,7 +353,8 @@ export class LearnNowCrawlerService {
                 crawlFilter: format,
                 metadata: {
                     source: LEARNNOW_SOURCE,
-                    sourceType: candidateFormat === 'PDF' ? 'pdf' : 'knowledge_article',
+                    sourceType: format,
+                    candidateFormat,
                     sourceUrl,
                     crawlFilter: format,
                     discoveredFrom: crawlUrl,
@@ -371,7 +386,8 @@ export class LearnNowCrawlerService {
 
         return parsed.pathname.includes('/course/view.php')
             || parsed.pathname.includes('/course/preview')
-            || parsed.pathname.includes('/mod/page/view.php');
+            || parsed.pathname.includes('/mod/page/view.php')
+            || this.isTotaraHowtoResource(parsed);
     }
 
     private async upsertCandidate(candidate: DiscoveredCandidate): Promise<{ inserted: boolean }> {
@@ -439,10 +455,15 @@ export class LearnNowCrawlerService {
     }
 
     private buildImportMetadata(candidate: CrawlCandidateRecord, sourceType: 'knowledge_article' | 'pdf'): Prisma.InputJsonObject {
+        const candidateMetadata = (candidate.metadata ?? {}) as Record<string, unknown>;
+        const candidateSourceType = typeof candidateMetadata.sourceType === 'string'
+            ? candidateMetadata.sourceType
+            : sourceType;
+
         return {
-            ...((candidate.metadata ?? {}) as Record<string, unknown>),
+            ...candidateMetadata,
             source: candidate.source,
-            sourceType,
+            sourceType: candidateSourceType,
             sourceUrl: candidate.source_url,
             categorySlug: candidate.category_slug ?? 'uncategorized',
             crawlFilter: candidate.crawl_filter ?? sourceType,
@@ -491,6 +512,15 @@ export class LearnNowCrawlerService {
     private inferLanguage(url: string): string {
         const match = url.match(/learnnow\.allplan\.com\/([a-z]{2})(?:\/|$)/i);
         return match?.[1]?.toLowerCase() ?? 'en';
+    }
+
+    private toCandidateFormat(format: LearnNowCrawlFormat): CandidateFormat {
+        return format === 'pdf' ? 'PDF' : 'KNOWLEDGE_ARTICLE';
+    }
+
+    private isTotaraHowtoResource(url: URL): boolean {
+        return url.pathname.includes('/totara/engage/resources/howto/index.php')
+            && Boolean(url.searchParams.get('id'));
     }
 
     private inferCategorySlug(text: string): string {
