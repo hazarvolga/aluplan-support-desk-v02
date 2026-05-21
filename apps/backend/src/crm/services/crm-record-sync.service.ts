@@ -66,6 +66,7 @@ export class CrmRecordSyncService {
             ),
             rawCrmPayload: data,
             crmVerified: true,
+            deletedAt: null,
         };
 
         const existing = await this.prisma.crmAccount.findUnique({
@@ -281,6 +282,157 @@ export class CrmRecordSyncService {
         });
     }
 
+    async markAccountDeletedOrInactive(data: any, options: SyncOptions = {}) {
+        const externalId = this.resolveDeletedEntityId(data, 'account');
+        if (!externalId) {
+            this.logger.warn('CRM account delete skipped because external account id is missing');
+            return null;
+        }
+
+        const existing = await this.prisma.crmAccount.findUnique({
+            where: { externalAccountId: externalId },
+        });
+        if (!existing) return null;
+
+        const deletedAt = new Date();
+        const account = await this.prisma.crmAccount.update({
+            where: { id: existing.id },
+            data: {
+                deletedAt,
+                crmVerified: false,
+            },
+        });
+
+        await this.recordDeletionChanges('account', externalId, existing.id, existing, deletedAt, options);
+        return account;
+    }
+
+    async markContactDeletedOrInactive(data: any, options: SyncOptions = {}) {
+        const externalId = this.resolveDeletedEntityId(data, 'contact');
+        if (!externalId) {
+            this.logger.warn('CRM contact delete skipped because external contact id is missing');
+            return null;
+        }
+
+        const profile = await this.prisma.customerProfile.findUnique({
+            where: { externalContactId: externalId },
+            include: { user: true },
+        });
+        if (!profile) return null;
+
+        const deletedAt = new Date();
+        await this.prisma.$transaction(async (tx) => {
+            await tx.customerProfile.update({
+                where: { id: profile.id },
+                data: {
+                    deletedAt,
+                    crmVerified: false,
+                },
+            });
+
+            if (this.shouldInactivateCrmSyncedUser(profile.user)) {
+                await tx.user.update({
+                    where: { id: profile.user.id },
+                    data: { status: 'INACTIVE' },
+                });
+            }
+
+            await this.recordDeletionChanges('contact', externalId, profile.id, profile, deletedAt, options, tx);
+        });
+
+        return { id: profile.id, deletedAt, crmVerified: false };
+    }
+
+    async reconcileMissingAccountsFromFullImport(activeExternalIds: Array<string | null | undefined>, options: SyncOptions = {}): Promise<number> {
+        const activeIds = this.uniqueExternalIds(activeExternalIds);
+        if (activeIds.length === 0) {
+            this.logger.warn('CRM full-import account reconciliation skipped because active id list is empty');
+            return 0;
+        }
+
+        const missingAccounts = await this.prisma.crmAccount.findMany({
+            where: {
+                externalAccountId: { not: null, notIn: activeIds },
+                deletedAt: null,
+            },
+            select: {
+                id: true,
+                externalAccountId: true,
+                crmVerified: true,
+                deletedAt: true,
+            },
+        });
+
+        if (missingAccounts.length === 0) return 0;
+
+        const deletedAt = new Date();
+        await this.prisma.crmAccount.updateMany({
+            where: { id: { in: missingAccounts.map((account) => account.id) } },
+            data: {
+                deletedAt,
+                crmVerified: false,
+            },
+        });
+
+        if (options.recordChanges) {
+            await this.prisma.crmChangeLog.createMany({
+                data: missingAccounts.flatMap((account) =>
+                    this.buildDeletionChangeRows('account', account.externalAccountId ?? account.id, account.id, account, deletedAt, options),
+                ),
+            });
+        }
+
+        return missingAccounts.length;
+    }
+
+    async reconcileMissingContactsFromFullImport(activeExternalIds: Array<string | null | undefined>, options: SyncOptions = {}): Promise<number> {
+        const activeIds = this.uniqueExternalIds(activeExternalIds);
+        if (activeIds.length === 0) {
+            this.logger.warn('CRM full-import contact reconciliation skipped because active id list is empty');
+            return 0;
+        }
+
+        const missingProfiles = await this.prisma.customerProfile.findMany({
+            where: {
+                externalContactId: { not: null, notIn: activeIds },
+                deletedAt: null,
+            },
+            include: { user: true },
+        });
+
+        if (missingProfiles.length === 0) return 0;
+
+        const deletedAt = new Date();
+        await this.prisma.$transaction(async (tx) => {
+            for (const profile of missingProfiles) {
+                await tx.customerProfile.update({
+                    where: { id: profile.id },
+                    data: {
+                        deletedAt,
+                        crmVerified: false,
+                    },
+                });
+
+                if (this.shouldInactivateCrmSyncedUser(profile.user)) {
+                    await tx.user.update({
+                        where: { id: profile.user.id },
+                        data: { status: 'INACTIVE' },
+                    });
+                }
+            }
+
+            if (options.recordChanges) {
+                await tx.crmChangeLog.createMany({
+                    data: missingProfiles.flatMap((profile) =>
+                        this.buildDeletionChangeRows('contact', profile.externalContactId ?? profile.id, profile.id, profile, deletedAt, options),
+                    ),
+                });
+            }
+        });
+
+        return missingProfiles.length;
+    }
+
     async reconcileLinkedCustomerProfileSnapshots(): Promise<number> {
         const accounts = await this.prisma.crmAccount.findMany({
             select: {
@@ -354,6 +506,84 @@ export class CrmRecordSyncService {
                 status: 'SUCCESS',
             })),
         });
+    }
+
+    private async recordDeletionChanges(
+        entityType: EntityType,
+        entityId: string,
+        localRecordId: string,
+        existing: any,
+        deletedAt: Date,
+        options: SyncOptions,
+        tx?: any,
+    ) {
+        if (!options.recordChanges) return;
+
+        const rows = this.buildDeletionChangeRows(entityType, entityId, localRecordId, existing, deletedAt, options);
+        if (rows.length === 0) return;
+
+        const client = tx ?? this.prisma;
+        await client.crmChangeLog.createMany({ data: rows });
+    }
+
+    private buildDeletionChangeRows(
+        entityType: EntityType,
+        entityId: string,
+        localRecordId: string,
+        existing: any,
+        deletedAt: Date,
+        options: SyncOptions,
+    ) {
+        const rows = [
+            {
+                connectionId: options.connectionId ?? null,
+                entityType,
+                entityId,
+                localRecordId,
+                fieldName: 'deletedAt',
+                oldValue: this.stringifyValue(existing?.deletedAt),
+                newValue: deletedAt.toISOString(),
+                source: options.source ?? 'DELTA_SYNC',
+                status: 'SUCCESS',
+            },
+        ];
+
+        if (existing?.crmVerified !== false) {
+            rows.push({
+                connectionId: options.connectionId ?? null,
+                entityType,
+                entityId,
+                localRecordId,
+                fieldName: 'crmVerified',
+                oldValue: this.stringifyValue(existing?.crmVerified),
+                newValue: 'false',
+                source: options.source ?? 'DELTA_SYNC',
+                status: 'SUCCESS',
+            });
+        }
+
+        return rows;
+    }
+
+    private resolveDeletedEntityId(data: any, entityType: EntityType): string | null {
+        const primaryKey = entityType === 'account' ? 'accountid' : 'contactid';
+        const externalKey = entityType === 'account' ? 'externalAccountId' : 'externalContactId';
+        return this.asNullableString(data?.id || data?.[primaryKey] || data?.externalId || data?.[externalKey], 255);
+    }
+
+    private shouldInactivateCrmSyncedUser(user: any): boolean {
+        if (!user || user.passwordHash !== 'CRM_SYNCED') return false;
+
+        const adminEmails = (process.env.ADMIN_BYPASS_EMAILS || '')
+            .split(',')
+            .map((email) => email.trim().toLowerCase())
+            .filter(Boolean);
+
+        return !adminEmails.includes(String(user.email || '').toLowerCase());
+    }
+
+    private uniqueExternalIds(values: Array<string | null | undefined>): string[] {
+        return [...new Set(values.map((value) => this.asNullableString(value, 255)).filter((value): value is string => Boolean(value)))];
     }
 
     private stringifyValue(value: unknown): string | null {

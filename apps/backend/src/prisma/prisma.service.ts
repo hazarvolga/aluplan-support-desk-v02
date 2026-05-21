@@ -74,7 +74,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             'User', 'Department', 'Team', 'Category', 'KnowledgeArticle',
             'CustomerProfile', 'CrmConnection', 'Ticket', 'TicketMessage',
             'Attachment', 'FaqEntry', 'Macro', 'Product', 'ProductCategory',
-            'Announcement',
+            'Announcement', 'CrmAccount',
         ]);
 
         const softDeleteMiddleware = async ({ model, operation, args, query }: any) => {

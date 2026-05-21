@@ -71,6 +71,8 @@ const mockCrypto = {
 const mockRecordSync = {
     upsertAccountFromDynamics: jest.fn(),
     upsertContactFromDynamics: jest.fn(),
+    markAccountDeletedOrInactive: jest.fn(),
+    markContactDeletedOrInactive: jest.fn(),
 };
 
 const mockDeltaSync = {
@@ -546,6 +548,8 @@ describe('CrmService', () => {
             });
             mockRecordSync.upsertAccountFromDynamics.mockResolvedValue({});
             mockRecordSync.upsertContactFromDynamics.mockResolvedValue({});
+            mockRecordSync.markAccountDeletedOrInactive.mockResolvedValue({});
+            mockRecordSync.markContactDeletedOrInactive.mockResolvedValue({});
             mockPrisma.$transaction = jest.fn((cb: any) => cb(mockTx));
             mockTx.user.findUnique.mockResolvedValue(null);
             mockTx.role.findUnique.mockResolvedValue({
@@ -597,6 +601,25 @@ describe('CrmService', () => {
                     }),
                 );
             });
+
+            it('should route account delete webhooks to the shared delete handler', async () => {
+                const data = {
+                    accountid: 'acc-ext-1',
+                    statecode: 1,
+                };
+
+                await service.processDynamics365Webhook({ entity: 'account', operation: 'delete', data });
+
+                expect(mockRecordSync.markAccountDeletedOrInactive).toHaveBeenCalledWith(
+                    data,
+                    expect.objectContaining({
+                        connectionId: 'conn-1',
+                        source: 'WEBHOOK',
+                        recordChanges: true,
+                    }),
+                );
+                expect(mockRecordSync.upsertAccountFromDynamics).not.toHaveBeenCalled();
+            });
         });
 
         // ── syncSingleContact (via webhook) ───────────────────────────────────
@@ -614,6 +637,25 @@ describe('CrmService', () => {
                     expect.objectContaining({ id: 'conn-1' }),
                     expect.objectContaining({ source: 'WEBHOOK', recordChanges: true }),
                 );
+            });
+
+            it('should route contact delete webhooks to the shared delete handler', async () => {
+                const data = {
+                    contactid: 'con-ext-1',
+                    statecode: 1,
+                };
+
+                await service.processDynamics365Webhook({ entity: 'contact', operation: 'delete', data });
+
+                expect(mockRecordSync.markContactDeletedOrInactive).toHaveBeenCalledWith(
+                    data,
+                    expect.objectContaining({
+                        connectionId: 'conn-1',
+                        source: 'WEBHOOK',
+                        recordChanges: true,
+                    }),
+                );
+                expect(mockRecordSync.upsertContactFromDynamics).not.toHaveBeenCalled();
             });
 
             it('should pass linked-account contact payload through unchanged', async () => {

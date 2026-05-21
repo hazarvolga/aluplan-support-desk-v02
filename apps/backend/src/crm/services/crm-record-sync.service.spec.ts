@@ -6,14 +6,24 @@ describe('CrmRecordSyncService', () => {
     const mockPrisma = {
         crmAccount: {
             findUnique: jest.fn(),
+            findMany: jest.fn(),
+            update: jest.fn(),
+            updateMany: jest.fn(),
             upsert: jest.fn(),
         },
         customerProfile: {
+            findMany: jest.fn(),
+            update: jest.fn(),
             updateMany: jest.fn(),
         },
+        user: {
+            update: jest.fn(),
+        },
         crmChangeLog: {
+            create: jest.fn(),
             createMany: jest.fn(),
         },
+        $transaction: jest.fn((callback) => callback(mockPrisma)),
     };
 
     beforeEach(() => {
@@ -66,6 +76,34 @@ describe('CrmRecordSyncService', () => {
                 industry: '8',
             },
         });
+    });
+
+    it('restores a previously soft-deleted CRM account when Dynamics sends it again', async () => {
+        mockPrisma.crmAccount.findUnique.mockResolvedValue({
+            id: 'acc-1',
+            externalAccountId: 'dyn-acc-1',
+            deletedAt: new Date('2026-05-01T00:00:00.000Z'),
+            crmVerified: false,
+        });
+        mockPrisma.crmAccount.upsert.mockResolvedValue({ id: 'acc-1' });
+
+        await service.upsertAccountFromDynamics({
+            accountid: 'dyn-acc-1',
+            name: 'Restored Account',
+        });
+
+        expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                update: expect.objectContaining({
+                    crmVerified: true,
+                    deletedAt: null,
+                }),
+                create: expect.objectContaining({
+                    crmVerified: true,
+                    deletedAt: null,
+                }),
+            }),
+        );
     });
 
     it('persists extended CRM account detail fields', async () => {
@@ -149,6 +187,66 @@ describe('CrmRecordSyncService', () => {
                 companyName: 'AffeXAI',
                 industry: '8',
             },
+        });
+    });
+
+    it('soft-deletes missing CRM accounts after a trusted full import', async () => {
+        mockPrisma.crmAccount.findMany.mockResolvedValue([
+            { id: 'acc-missing', externalAccountId: 'dyn-missing', crmVerified: true, deletedAt: null },
+        ]);
+        mockPrisma.crmAccount.updateMany.mockResolvedValue({ count: 1 });
+        mockPrisma.crmChangeLog.createMany.mockResolvedValue({ count: 1 });
+
+        const result = await service.reconcileMissingAccountsFromFullImport(['dyn-active'], {
+            connectionId: 'conn-1',
+            source: 'FULL_IMPORT',
+            recordChanges: true,
+        });
+
+        expect(result).toBe(1);
+        expect(mockPrisma.crmAccount.updateMany).toHaveBeenCalledWith({
+            where: { id: { in: ['acc-missing'] } },
+            data: {
+                deletedAt: expect.any(Date),
+                crmVerified: false,
+            },
+        });
+    });
+
+    it('soft-deletes missing CRM contacts and inactivates CRM-synced users after a trusted full import', async () => {
+        mockPrisma.customerProfile.findMany.mockResolvedValue([
+            {
+                id: 'profile-missing',
+                externalContactId: 'dyn-contact-missing',
+                deletedAt: null,
+                user: {
+                    id: 'user-missing',
+                    email: 'crm-user@example.com',
+                    passwordHash: 'CRM_SYNCED',
+                },
+            },
+        ]);
+        mockPrisma.customerProfile.update.mockResolvedValue({});
+        mockPrisma.user.update.mockResolvedValue({});
+        mockPrisma.crmChangeLog.createMany.mockResolvedValue({ count: 1 });
+
+        const result = await service.reconcileMissingContactsFromFullImport(['dyn-contact-active'], {
+            connectionId: 'conn-1',
+            source: 'FULL_IMPORT',
+            recordChanges: true,
+        });
+
+        expect(result).toBe(1);
+        expect(mockPrisma.customerProfile.update).toHaveBeenCalledWith({
+            where: { id: 'profile-missing' },
+            data: {
+                deletedAt: expect.any(Date),
+                crmVerified: false,
+            },
+        });
+        expect(mockPrisma.user.update).toHaveBeenCalledWith({
+            where: { id: 'user-missing' },
+            data: { status: 'INACTIVE' },
         });
     });
 

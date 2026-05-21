@@ -69,6 +69,15 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 }
             }
 
+            await this.recordSync.reconcileMissingAccountsFromFullImport(
+                accounts.map((account) => account.accountid || account.id),
+                {
+                    connectionId: config.id,
+                    source: 'FULL_IMPORT',
+                    recordChanges: true,
+                },
+            );
+
             return {
                 status: SyncStatus.SUCCESS,
                 totalRecords: accounts.length,
@@ -148,6 +157,15 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     }
                 }
             }
+
+            await this.recordSync.reconcileMissingContactsFromFullImport(
+                contacts.map((contact) => contact.contactid || contact.id),
+                {
+                    connectionId: config.id,
+                    source: 'FULL_IMPORT',
+                    recordChanges: true,
+                },
+            );
 
             return {
                 status: SyncStatus.SUCCESS,

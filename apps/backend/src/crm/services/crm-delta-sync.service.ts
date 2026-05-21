@@ -134,20 +134,22 @@ export class CrmDeltaSyncService implements OnApplicationBootstrap {
 
             for (const record of records) {
                 try {
+                    const syncOptions = {
+                        connectionId: connection.id,
+                        source: 'DELTA_SYNC' as const,
+                        recordChanges: true,
+                    };
+
                     if (this.dynamics365.isDeletedDeltaRecord(record) || record.statecode === 1) {
-                        await this.handleDeletedOrInactive(connection.id, entityType, record);
+                        if (entityType === 'account') {
+                            await this.recordSync.markAccountDeletedOrInactive(record, syncOptions);
+                        } else {
+                            await this.recordSync.markContactDeletedOrInactive(record, syncOptions);
+                        }
                     } else if (entityType === 'account') {
-                        await this.recordSync.upsertAccountFromDynamics(record, connection, {
-                            connectionId: connection.id,
-                            source: 'DELTA_SYNC',
-                            recordChanges: true,
-                        });
+                        await this.recordSync.upsertAccountFromDynamics(record, connection, syncOptions);
                     } else {
-                        await this.recordSync.upsertContactFromDynamics(record, connection, {
-                            connectionId: connection.id,
-                            source: 'DELTA_SYNC',
-                            recordChanges: true,
-                        });
+                        await this.recordSync.upsertContactFromDynamics(record, connection, syncOptions);
                     }
                     successCount++;
                 } catch (error) {
@@ -220,76 +222,5 @@ export class CrmDeltaSyncService implements OnApplicationBootstrap {
             });
             throw error;
         }
-    }
-
-    private async handleDeletedOrInactive(connectionId: string, entityType: EntityType, record: any) {
-        const externalId = record.id || record.accountid || record.contactid;
-        if (!externalId) return;
-
-        if (entityType === 'account') {
-            const existing = await this.prisma.crmAccount.findUnique({
-                where: { externalAccountId: externalId },
-            });
-            if (!existing) return;
-
-            await this.prisma.crmAccount.update({
-                where: { id: existing.id },
-                data: { crmVerified: false },
-            });
-            await this.prisma.crmChangeLog.create({
-                data: {
-                    connectionId,
-                    entityType,
-                    entityId: externalId,
-                    localRecordId: existing.id,
-                    fieldName: 'crmVerified',
-                    oldValue: String(existing.crmVerified),
-                    newValue: 'false',
-                    source: 'DELTA_SYNC',
-                    status: 'SUCCESS',
-                },
-            });
-            return;
-        }
-
-        const profile = await this.prisma.customerProfile.findUnique({
-            where: { externalContactId: externalId },
-            include: { user: true },
-        });
-        if (!profile) return;
-
-        await this.prisma.$transaction(async (tx) => {
-            await tx.customerProfile.update({
-                where: { id: profile.id },
-                data: { deletedAt: new Date(), crmVerified: false },
-            });
-
-            if (profile.user?.passwordHash === 'CRM_SYNCED') {
-                const adminEmails = (process.env.ADMIN_BYPASS_EMAILS || '')
-                    .split(',')
-                    .map(e => e.trim().toLowerCase())
-                    .filter(Boolean);
-                if (!adminEmails.includes(profile.user.email.toLowerCase())) {
-                    await tx.user.update({
-                        where: { id: profile.user.id },
-                        data: { status: 'INACTIVE' },
-                    });
-                }
-            }
-
-            await tx.crmChangeLog.create({
-                data: {
-                    connectionId,
-                    entityType,
-                    entityId: externalId,
-                    localRecordId: profile.id,
-                    fieldName: 'deletedAt',
-                    oldValue: profile.deletedAt?.toISOString() ?? null,
-                    newValue: new Date().toISOString(),
-                    source: 'DELTA_SYNC',
-                    status: 'SUCCESS',
-                },
-            });
-        });
     }
 }

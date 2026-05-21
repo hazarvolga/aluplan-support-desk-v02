@@ -62,6 +62,8 @@ const mockPrisma = {};
 const mockRecordSync = {
     upsertAccountFromDynamics: jest.fn(),
     upsertContactFromDynamics: jest.fn(),
+    reconcileMissingAccountsFromFullImport: jest.fn(),
+    reconcileMissingContactsFromFullImport: jest.fn(),
 };
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -98,6 +100,8 @@ describe('Dynamics365Adapter', () => {
         mockedAxios.post = jest.fn().mockResolvedValue({ data: { access_token: 'mock-token' } });
         mockRecordSync.upsertAccountFromDynamics.mockResolvedValue({ id: 'local-acc-1' });
         mockRecordSync.upsertContactFromDynamics.mockResolvedValue({ id: 'local-profile-1', accountId: 'local-acc-1' });
+        mockRecordSync.reconcileMissingAccountsFromFullImport.mockResolvedValue(0);
+        mockRecordSync.reconcileMissingContactsFromFullImport.mockResolvedValue(0);
     });
 
     // ── syncAccounts ──────────────────────────────────────────────────────────
@@ -186,6 +190,22 @@ describe('Dynamics365Adapter', () => {
             expect((mockedAxios.get as jest.Mock).mock.calls[1][0]).toContain('$skiptoken=abc');
             expect(mockRecordSync.upsertAccountFromDynamics).toHaveBeenCalledTimes(2);
         });
+
+        it('reconciles local accounts missing from a trusted full import result', async () => {
+            const account = buildAccount({ accountid: 'acc-active' });
+            mockedAxios.get = jest.fn().mockResolvedValue({ data: { value: [account] }, status: 200 });
+
+            await adapter.syncAccounts(buildConfig());
+
+            expect(mockRecordSync.reconcileMissingAccountsFromFullImport).toHaveBeenCalledWith(
+                ['acc-active'],
+                expect.objectContaining({
+                    connectionId: 'conn-1',
+                    source: 'FULL_IMPORT',
+                    recordChanges: true,
+                }),
+            );
+        });
     });
 
     // ── syncContacts ──────────────────────────────────────────────────────────
@@ -204,6 +224,22 @@ describe('Dynamics365Adapter', () => {
             expect(mockRecordSync.upsertContactFromDynamics).toHaveBeenCalledWith(
                 contact,
                 expect.objectContaining({ id: 'conn-1' }),
+                expect.objectContaining({
+                    connectionId: 'conn-1',
+                    source: 'FULL_IMPORT',
+                    recordChanges: true,
+                }),
+            );
+        });
+
+        it('reconciles local contacts missing from a trusted full import result', async () => {
+            const contact = buildContact({ contactid: 'contact-active' });
+            mockedAxios.get = jest.fn().mockResolvedValue({ data: { value: [contact] }, status: 200 });
+
+            await adapter.syncContacts(buildConfig());
+
+            expect(mockRecordSync.reconcileMissingContactsFromFullImport).toHaveBeenCalledWith(
+                ['contact-active'],
                 expect.objectContaining({
                     connectionId: 'conn-1',
                     source: 'FULL_IMPORT',

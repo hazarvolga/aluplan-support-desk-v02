@@ -716,11 +716,12 @@ export class CrmService {
     async processDynamics365Webhook(payload: any) {
         this.logger.debug(`Processing Dynamics 365 Webhook payload for entity: ${payload.entity}`);
         const _adapter = this.getAdapter(CrmProvider.DYNAMICS_365) as Dynamics365Adapter;
+        const isDeletedOrInactive = this.isDeletedOrInactiveWebhookPayload(payload);
 
         if (payload.entity === 'account') {
-            return this.syncSingleAccount(payload.data);
+            return isDeletedOrInactive ? this.syncDeletedAccount(payload.data) : this.syncSingleAccount(payload.data);
         } else if (payload.entity === 'contact') {
-            return this.syncSingleContact(payload.data);
+            return isDeletedOrInactive ? this.syncDeletedContact(payload.data) : this.syncSingleContact(payload.data);
         } else {
             throw new BadRequestException(`Unsupported entity type: ${payload.entity}`);
         }
@@ -760,5 +761,50 @@ export class CrmService {
             source: 'WEBHOOK',
             recordChanges: true,
         });
+    }
+
+    private async syncDeletedAccount(data: any) {
+        const connection = await this.findActiveDynamicsConnection();
+        return this.recordSync.markAccountDeletedOrInactive(data, {
+            connectionId: connection.id,
+            source: 'WEBHOOK',
+            recordChanges: true,
+        });
+    }
+
+    private async syncDeletedContact(data: any) {
+        const connection = await this.findActiveDynamicsConnection();
+        return this.recordSync.markContactDeletedOrInactive(data, {
+            connectionId: connection.id,
+            source: 'WEBHOOK',
+            recordChanges: true,
+        });
+    }
+
+    private async findActiveDynamicsConnection() {
+        const connection = await this.prisma.crmConnection.findFirst({
+            where: {
+                provider: CrmProvider.DYNAMICS_365,
+                isActive: true,
+                deletedAt: null,
+            },
+        });
+        if (!connection) {
+            throw new NotFoundException('Active CRM connection not found');
+        }
+        return connection;
+    }
+
+    private isDeletedOrInactiveWebhookPayload(payload: any): boolean {
+        const data = payload?.data ?? {};
+        const operation = String(payload?.operation || payload?.action || payload?.messageName || payload?.eventName || payload?.event || '').toLowerCase();
+        const reason = String(data?.reason || data?.status || data?.state || '').toLowerCase();
+
+        return (
+            ['delete', 'deleted', 'remove', 'removed', 'deactivate', 'inactive'].some((term) => operation.includes(term) || reason.includes(term)) ||
+            data?.statecode === 1 ||
+            data?.statecode === '1' ||
+            String(data?.['@odata.context'] || '').includes('$deletedEntity')
+        );
     }
 }
