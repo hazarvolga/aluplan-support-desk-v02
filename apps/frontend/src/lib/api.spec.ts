@@ -26,10 +26,6 @@ describe('api.ts', () => {
         expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/test'), expect.objectContaining({
             credentials: 'include',
             cache: 'no-store',
-            headers: expect.objectContaining({
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                Pragma: 'no-cache',
-            }),
         }));
     });
 

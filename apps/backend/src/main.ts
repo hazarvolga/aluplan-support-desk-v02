@@ -119,6 +119,23 @@ async function bootstrap() {
     app.use(json({ limit: '10mb' }));
     app.use(urlencoded({ extended: true, limit: '10mb' }));
 
+    const cacheableApiPaths = [
+        '/api/v1/branding/logo',
+    ];
+
+    app.use((req: Request, res: Response, next: NextFunction) => {
+        const isApiRequest = req.path.startsWith('/api/v1');
+        const isCacheableApiPath = cacheableApiPaths.some(path => req.path.startsWith(path));
+
+        if (isApiRequest && !isCacheableApiPath) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+
+        next();
+    });
+
     // CSRF & Security Middlewares
     app.use((req: Request, res: Response, next: NextFunction) => {
         const csrfBypassPaths = [
@@ -213,7 +230,11 @@ async function bootstrap() {
             'X-XSRF-TOKEN',
             'X-Request-Id', // GAP: Crucial for tracing
             'Sentry-Trace', // GAP: For production observability
-            'baggage'
+            'baggage',
+            'Cache-Control',
+            'Pragma',
+            'If-None-Match',
+            'If-Modified-Since',
         ],
     });
 
