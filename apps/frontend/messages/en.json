@@ -442,6 +442,8 @@
       "ai_trace_provider": "Provider",
       "ai_trace_model": "Model",
       "ai_trace_language": "Language",
+      "ai_trace_route_locale": "Route Locale",
+      "ai_trace_profile_language": "Profile Language",
       "ai_trace_confidence": "Confidence",
       "ai_trace_contract": "Answer Contract",
       "ai_trace_source_leak": "Source Leak",

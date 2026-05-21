@@ -585,6 +585,11 @@ describe('AiQueryService', () => {
         });
 
         it('persists the active UI language on the AI interaction for downstream admin drafts', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue({
+                role: { name: 'CUSTOMER' },
+                language: 'de',
+                fullName: 'Test User',
+            });
             mockEmbeddingService.search.mockResolvedValue({
                 results: [
                     {
@@ -604,8 +609,10 @@ describe('AiQueryService', () => {
 
             const result = await service.query({
                 userQuery: 'When is a loopback adapter needed?',
+                userId: 'user-1',
                 wait: true,
                 language: 'en',
+                routeLocale: 'en',
                 strictLanguage: true,
             });
 
@@ -615,7 +622,10 @@ describe('AiQueryService', () => {
                     userContext: expect.objectContaining({
                         responseLanguage: 'en',
                         requestLocale: 'en',
+                        routeLocale: 'en',
+                        profileLanguage: 'de',
                         languageSource: 'ui',
+                        strictLanguage: true,
                     }),
                 }),
             }));

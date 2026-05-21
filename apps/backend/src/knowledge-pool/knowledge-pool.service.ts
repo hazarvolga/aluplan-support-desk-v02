@@ -45,6 +45,15 @@ export class KnowledgePoolService {
                 type: dto.type,
                 url: dto.url,
                 status: KnowledgeSourceStatus.ACTIVE,
+                metadata: dto.type === KnowledgeSourceType.URL
+                    ? {
+                        userProvidedName: dto.name,
+                        sourceName: dto.name,
+                        sourceUrl: dto.url ?? null,
+                        ingestionMode: 'bulk-safe',
+                        useAiPreprocessing: false,
+                    }
+                    : undefined,
             },
         });
 

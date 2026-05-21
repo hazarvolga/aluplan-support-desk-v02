@@ -30,6 +30,30 @@ export function isDeliveryStatusNotification(input: {
     if (from.includes('mailer-daemon') || from.includes('postmaster@')) return true;
     if (autoSubmitted.includes('auto-replied') || autoSubmitted.includes('auto-generated')) return true;
     if (contentType.includes('multipart/report') && contentType.includes('delivery-status')) return true;
+    if (contentType.includes('multipart/report') && contentType.includes('feedback-report')) return true;
+    if (contentType.includes('message/feedback-report')) return true;
+
+    const automatedReportSenders = [
+        'dmarc',
+        'dmarcreport',
+        'postmaster',
+        'mailer-daemon',
+    ];
+    const localPart = from.split('@')[0] ?? '';
+    if (automatedReportSenders.some(sender => localPart.includes(sender))) {
+        const reportSignals = [
+            'report domain:',
+            'report-id:',
+            'submitter:',
+            'dmarc',
+            'aggregate report',
+            'feedback report',
+            'feedback-type:',
+            'policy_published',
+            'record',
+        ];
+        if (reportSignals.some(signal => combined.includes(signal))) return true;
+    }
 
     const deliverySignals = [
         'delivery status notification',
@@ -43,6 +67,11 @@ export function isDeliveryStatusNotification(input: {
         'status: 5.',
         'does not accept mail',
         'nullmx',
+        'report domain:',
+        'report-id:',
+        'feedback-type:',
+        'policy_published',
+        'dmarc aggregate',
     ];
 
     return deliverySignals.some(signal => combined.includes(signal));

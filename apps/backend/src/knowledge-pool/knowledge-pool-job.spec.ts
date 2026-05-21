@@ -6,7 +6,7 @@ import { Queue } from 'bullmq';
 import { getQueueToken } from '@nestjs/bullmq';
 import { mockPrismaService } from '../test/mock.utils';
 import { NotFoundException } from '@nestjs/common';
-import { KnowledgeSourceStatus } from '@aluplan/database';
+import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
 
 describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
     let service: KnowledgePoolService;
@@ -98,6 +98,43 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
             } else {
                 process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS = original;
             }
+        });
+    });
+
+    describe('createSource', () => {
+        it('stores the user supplied URL name in metadata before initial sync', async () => {
+            const source = {
+                id: 'source-url',
+                name: 'License server manual add article',
+                type: KnowledgeSourceType.URL,
+                url: 'https://learnnow.allplan.com/mod/page/view.php?id=42',
+                metadata: { ingestionMode: 'bulk-safe' },
+            };
+            localMockPrismaService.knowledgeSource.create.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue({
+                ...source,
+                status: KnowledgeSourceStatus.SYNCING,
+            });
+
+            await service.createSource({
+                name: 'License server manual add article',
+                type: KnowledgeSourceType.URL,
+                url: 'https://learnnow.allplan.com/mod/page/view.php?id=42',
+            });
+
+            expect(localMockPrismaService.knowledgeSource.create).toHaveBeenCalledWith({
+                data: expect.objectContaining({
+                    name: 'License server manual add article',
+                    type: KnowledgeSourceType.URL,
+                    metadata: expect.objectContaining({
+                        userProvidedName: 'License server manual add article',
+                        sourceName: 'License server manual add article',
+                        ingestionMode: 'bulk-safe',
+                        useAiPreprocessing: false,
+                    }),
+                }),
+            });
         });
     });
 

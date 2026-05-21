@@ -38,6 +38,7 @@ export interface AiQueryOptions {
     attachments?: any[];
     history?: Array<{ role: 'user' | 'assistant'; content: string }>;
     language?: string; // tr, en, de or auto
+    routeLocale?: string;
     strictLanguage?: boolean;
     productId?: string | null;
     wait?: boolean;
@@ -310,6 +311,7 @@ RESPONSE DRAFT:`;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
         const lang = this.resolveResponseLanguage(options.language, userQuery);
+        const profileLanguage = await this.getUserProfileLanguage(userId);
         const languageMismatch = this.getStrictLanguageMismatch(userQuery, lang, options.strictLanguage);
         if (languageMismatch) {
             return this.buildLanguageMismatchResult(userQuery, lang, languageMismatch);
@@ -507,7 +509,11 @@ RESPONSE DRAFT:`;
                     outputTokens: 0,
                     totalTokens: 0,
                     estimatedCost: 0,
-                    userContext: this.buildInteractionLanguageContext(lang, options.language, 'NO_MATCH') as Prisma.InputJsonValue,
+                    userContext: this.buildInteractionLanguageContext(lang, options.language, 'NO_MATCH', {
+                        routeLocale: options.routeLocale,
+                        profileLanguage,
+                        strictLanguage: options.strictLanguage,
+                    }) as Prisma.InputJsonValue,
                 }
             });
 
@@ -650,7 +656,11 @@ RESPONSE DRAFT:`;
                 totalTokens,
                 estimatedCost,
                 userContext: {
-                    ...this.buildInteractionLanguageContext(lang, options.language, answerMode ?? 'UNKNOWN'),
+                    ...this.buildInteractionLanguageContext(lang, options.language, answerMode ?? 'UNKNOWN', {
+                        routeLocale: options.routeLocale,
+                        profileLanguage,
+                        strictLanguage: options.strictLanguage,
+                    }),
                     answerMode,
                     fallbackStrategy: answerMode === 'FALLBACK' ? 'DETERMINISTIC_STRUCTURED' : null,
                     translations,
@@ -1341,13 +1351,26 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         responseLanguage: SupportedAnswerLanguage,
         requestLocale: string | undefined,
         generationState: string,
-    ): Record<string, string> {
+        trace: { routeLocale?: string | null; profileLanguage?: string | null; strictLanguage?: boolean } = {},
+    ): Record<string, string | boolean | null> {
         return {
             responseLanguage,
             requestLocale: requestLocale || responseLanguage,
+            routeLocale: trace.routeLocale || requestLocale || responseLanguage,
+            profileLanguage: trace.profileLanguage || null,
             languageSource: requestLocale ? 'ui' : 'resolved',
+            strictLanguage: trace.strictLanguage ?? false,
             generationState,
         };
+    }
+
+    private async getUserProfileLanguage(userId?: string | null): Promise<string | null> {
+        if (!userId) return null;
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { language: true },
+        });
+        return user?.language ?? null;
     }
 
     private inferFallbackTopic(

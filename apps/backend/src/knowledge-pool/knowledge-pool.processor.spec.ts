@@ -195,10 +195,68 @@ describe('KnowledgePoolProcessor file sync', () => {
         expect(prisma.knowledgeSource.update).toHaveBeenCalledWith({
             where: { id: '8551f74c-e2e1-432c-af47-8ee988f86d14' },
             data: expect.objectContaining({
+                name: 'Help',
                 metadata: expect.objectContaining({
                     category: 'Installation & Setup',
+                    pageTitle: 'Crawled URL',
+                    displayNameSource: 'user_provided_name',
                     crawlerProvider: 'crawl4ai',
                     crawler: { crawl4aiSuccess: true },
+                }),
+            }),
+        });
+    });
+
+    it('preserves a user supplied URL source name when crawler title is generic', async () => {
+        const prisma = {
+            knowledgeSource: {
+                update: jest.fn().mockResolvedValue({}),
+            },
+            knowledgeSourceSyncLog: {
+                update: jest.fn().mockResolvedValue({}),
+            },
+        };
+        const embeddingService = {
+            indexPoolContent: jest.fn().mockResolvedValue(undefined),
+        };
+        const crawlService = {
+            fetch: jest.fn().mockResolvedValue({
+                content: 'Learn Now article content with enough detail for URL indexing.',
+                title: 'LEARNNOW Allplan',
+                hash: 'learnnow-hash',
+                provider: 'crawl4ai',
+                metadata: { crawl4aiSuccess: true },
+            }),
+        };
+        const processor = new KnowledgePoolProcessor(
+            prisma as any,
+            embeddingService as any,
+            {} as any,
+            crawlService as any,
+            {} as any,
+            {} as any,
+            { get: jest.fn((key: string, fallback?: string) => key === 'KNOWLEDGE_SYNC_EMBED_BUDGET_GUARD' ? 'false' : fallback) } as any,
+            { get: jest.fn(), getClient: jest.fn() } as any,
+            { pause: jest.fn() } as any,
+        );
+
+        await (processor as any).handleUrlSync({
+            id: '8551f74c-e2e1-432c-af47-8ee988f86d14',
+            url: 'https://learnnow.allplan.com/mod/page/view.php?id=42',
+            name: 'License server manual add article',
+            metadata: {
+                userProvidedName: 'License server manual add article',
+                category: 'License Server & CodeMeter',
+            },
+        }, 'log-3');
+
+        expect(prisma.knowledgeSource.update).toHaveBeenCalledWith({
+            where: { id: '8551f74c-e2e1-432c-af47-8ee988f86d14' },
+            data: expect.objectContaining({
+                name: 'License server manual add article',
+                metadata: expect.objectContaining({
+                    crawlerTitle: 'LEARNNOW Allplan',
+                    displayNameSource: 'user_provided_name',
                 }),
             }),
         });

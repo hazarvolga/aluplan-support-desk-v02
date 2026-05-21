@@ -127,10 +127,12 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
     private async handleUrlSync(source: { id: string; url?: string | null; name?: string; language?: string; metadata?: unknown }, logId: string) {
         if (!source.url) throw new Error('URL is required for URL sync');
         const { content, hash, title, provider, metadata } = await this.crawlService.fetch(source.url);
+        const sourceMetadata = (source.metadata as Record<string, unknown>) || {};
+        const displayName = this.resolveUrlSourceDisplayName(source.name, title, sourceMetadata);
 
         // Section 3.5.3: Change Monitor
         // If content length changes significantly (>30%), mark as major
-        const oldLength = (source.metadata as Record<string, unknown>)?.lastContentLength as number | undefined || 0;
+        const oldLength = sourceMetadata.lastContentLength as number | undefined || 0;
         const newLength = content.length;
         const delta = oldLength > 0 ? Math.abs(newLength - oldLength) / oldLength : 0;
         const isMajorChange = delta > 0.30;
@@ -158,14 +160,17 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
             where: { id: source.id },
             data: {
                 lastHash: hash,
-                name: title,
+                name: displayName,
                 status: isMajorChange ? KnowledgeSourceStatus.PENDING_REVIEW : KnowledgeSourceStatus.ACTIVE,
                 lastSyncedAt: new Date(),
                 metadata: {
-                    ...((source.metadata as Record<string, unknown>) || {}),
+                    ...sourceMetadata,
                     lastContentLength: newLength,
                     isMajorChange,
                     category: category,
+                    pageTitle: title,
+                    crawlerTitle: title,
+                    displayNameSource: displayName === title ? 'crawler_title' : 'user_provided_name',
                     crawlerProvider: provider ?? 'basic',
                     crawler: metadata ?? {},
                 } as Prisma.InputJsonValue
@@ -176,6 +181,22 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
             where: { id: logId },
             data: { chunksProcessed: totalChunks, newHash: hash }
         });
+    }
+
+    private resolveUrlSourceDisplayName(
+        currentName: string | undefined,
+        crawlerTitle: string,
+        metadata: Record<string, unknown>,
+    ): string {
+        const userProvidedName = typeof metadata.userProvidedName === 'string'
+            ? metadata.userProvidedName.trim()
+            : '';
+        const existingName = currentName?.trim() ?? '';
+        const genericCrawlerTitle = /^(learnnow\s+allplan|allplan|untitled source)$/i.test(crawlerTitle.trim());
+
+        if (userProvidedName) return userProvidedName;
+        if (existingName && (genericCrawlerTitle || existingName !== crawlerTitle.trim())) return existingName;
+        return crawlerTitle.trim() || existingName || 'Untitled URL Source';
     }
 
     private async handleFileSync(source: { id: string; filePath?: string | null; fileName?: string | null; lastHash?: string | null; type?: string; name?: string; language?: string; metadata?: unknown }, logId: string) {

@@ -897,6 +897,14 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     <label className="text-[8px] uppercase font-bold text-muted-foreground/70 tracking-[0.1em]">{t('ai_trace_confidence')}</label>
                                     <p className="text-[10px] font-mono text-foreground">{aiTrace.interaction?.confidenceBand || '-'}</p>
                                 </div>
+                                <div className="space-y-0.5">
+                                    <label className="text-[8px] uppercase font-bold text-muted-foreground/70 tracking-[0.1em]">{t('ai_trace_route_locale')}</label>
+                                    <p className="text-[10px] font-mono text-foreground uppercase">{aiTrace.quality?.routeLocale || '-'}</p>
+                                </div>
+                                <div className="space-y-0.5">
+                                    <label className="text-[8px] uppercase font-bold text-muted-foreground/70 tracking-[0.1em]">{t('ai_trace_profile_language')}</label>
+                                    <p className="text-[10px] font-mono text-foreground uppercase">{aiTrace.quality?.profileLanguage || '-'}</p>
+                                </div>
                             </div>
 
                             <div className="space-y-1.5">

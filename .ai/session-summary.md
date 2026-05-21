@@ -2792,3 +2792,22 @@ Maintenance rule:
 - `pnpm --filter @aluplan/backend typecheck`
 - `pnpm --filter @aluplan/frontend typecheck`
 - `pnpm i18n:check`
+
+## Follow-up - 2026-05-21 Inbound Reports, AI Trace Locale, and URL Source Names
+
+### What changed
+
+- DMARC/authentication aggregate reports and feedback reports are ignored before inbound email/webhook ticket creation.
+- AI interactions now persist request locale, route locale, profile language, response language, strict language, and generation state for trace diagnostics.
+- Staff ticket detail AI Trace now displays route locale and profile language.
+- Direct Knowledge Pool URL sync preserves the admin-provided source/article name and stores crawler/page titles in metadata, preventing generic `LEARNNOW Allplan` titles from replacing the visible source name.
+
+### Validation
+
+- `pnpm --filter @aluplan/backend test -- email-bounce.util.spec.ts email-inbound.service.spec.ts omni-channel.service.spec.ts`
+- `pnpm --filter @aluplan/backend test -- knowledge-pool.processor.spec.ts knowledge-pool-job.spec.ts`
+- `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts`
+- `pnpm --filter @aluplan/backend typecheck`
+- `pnpm --filter @aluplan/frontend typecheck`
+- `pnpm i18n:check`
+- `git diff --check`

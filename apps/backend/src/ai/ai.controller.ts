@@ -51,6 +51,11 @@ export class AiQueryDto {
     @IsString()
     language?: string;
 
+    @ApiPropertyOptional({ description: 'Active UI route locale when the query was submitted', example: 'tr' })
+    @IsOptional()
+    @IsString()
+    routeLocale?: string;
+
     @ApiPropertyOptional({ description: 'Reject answers when query language does not match requested language' })
     @IsOptional()
     @IsBoolean()
@@ -127,6 +132,7 @@ export class AiController {
             attachments: dto.attachments,
             productId: dto.productId,
             language: dto.language,
+            routeLocale: dto.routeLocale,
             strictLanguage: dto.strictLanguage,
             history: dto.history,
             wait: wait !== undefined ? wait === 'true' : false, // Default to async for WEB (non-blocking)

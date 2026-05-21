@@ -442,6 +442,8 @@
       "ai_trace_provider": "Sağlayıcı",
       "ai_trace_model": "Model",
       "ai_trace_language": "Dil",
+      "ai_trace_route_locale": "Route Locale",
+      "ai_trace_profile_language": "Profil Dili",
       "ai_trace_confidence": "Güven",
       "ai_trace_contract": "Yanıt Sözleşmesi",
       "ai_trace_source_leak": "Kaynak Sızıntısı",

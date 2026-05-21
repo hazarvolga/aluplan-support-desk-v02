@@ -400,6 +400,7 @@ export class TicketsService {
                         id: true,
                         fullName: true,
                         email: true,
+                        language: true,
                         customerProfile: {
                             select: {
                                 isVip: true,
@@ -488,6 +489,8 @@ export class TicketsService {
                 contractSections,
                 responseLanguage: userContext.responseLanguage ?? null,
                 requestLocale: userContext.requestLocale ?? null,
+                routeLocale: userContext.routeLocale ?? null,
+                profileLanguage: userContext.profileLanguage ?? ticket.creator?.language ?? null,
                 sourceLanguage: userContext.source?.language ?? null,
                 answerMode: userContext.answerMode ?? null,
                 languageSource: userContext.languageSource ?? null,
