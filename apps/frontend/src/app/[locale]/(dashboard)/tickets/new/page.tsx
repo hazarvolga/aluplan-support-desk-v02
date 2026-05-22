@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useTranslations, useLocale } from 'next-intl';
 import { HotinfoGrid } from '@/components/ui/hotinfo-grid';
+import { getDepartmentDisplayName } from '@/lib/department-display';
 
 const MAX_TICKET_SUBJECT_LENGTH = 255;
 
@@ -46,6 +47,7 @@ export default function NewTicketPage() {
     const t = useTranslations('tickets.new');
     const ct = useTranslations('common');
     const tt = useTranslations('tickets');
+    const departmentLabels = t.raw('departments') as Record<string, string>;
     const router = useRouter();
     const intlLocale = useLocale();
     const params = useParams<{ locale?: string }>();
@@ -317,7 +319,7 @@ export default function NewTicketPage() {
                                     <SelectContent>
                                         {departments.map(department => (
                                             <SelectItem key={department.id} value={department.id}>
-                                                {department.name}
+                                                {getDepartmentDisplayName(department, departmentLabels)}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -683,7 +685,7 @@ export default function NewTicketPage() {
                         <Label className="text-brand-400 text-[10px] uppercase font-bold">{t('summary.report')}</Label>
                         <p className="text-sm leading-relaxed text-white/80">
                             <strong>{t('summary.subject_label')}</strong> {form.getValues('subject')}<br />
-                            <strong>{t('summary.department_label')}</strong> {selectedDepartmentDetails?.name || '-'}<br />
+                            <strong>{t('summary.department_label')}</strong> {selectedDepartmentDetails ? getDepartmentDisplayName(selectedDepartmentDetails, departmentLabels) : '-'}<br />
                             <strong>{t('summary.product_label')}</strong> {selectedProductDetails?.name || t('fields.product_general')}<br />
                             <strong>{t('summary.desc_label')}</strong> {form.getValues('description').slice(0, 100)}...
                         </p>

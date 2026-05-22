@@ -509,6 +509,13 @@
         "hotinfo_added_desc": "Bu bilgiler teknik ekibe otomatik olarak iletilecek.",
         "hotinfo_upload_name": "Hotinfo Yükleme"
       },
+      "departments": {
+        "technical_support": "Teknik Destek",
+        "billing_payments": "Fatura ve Ödemeler",
+        "sales_pre_sales": "Satış ve Ön Satış",
+        "general_support": "Genel Destek",
+        "licensing": "Lisanslama"
+      },
       "fields": {
         "department": "Destek Kategorisi",
         "department_placeholder": "Talebinizin kategorisini seçin",

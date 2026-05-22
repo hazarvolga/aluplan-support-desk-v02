@@ -509,6 +509,13 @@
         "hotinfo_added_desc": "Diese Informationen werden automatisch an das technische Team weitergeleitet.",
         "hotinfo_upload_name": "Hotinfo Hochladen"
       },
+      "departments": {
+        "technical_support": "Technischer Support",
+        "billing_payments": "Abrechnung & Zahlungen",
+        "sales_pre_sales": "Vertrieb & Pre-Sales",
+        "general_support": "Allgemeiner Support",
+        "licensing": "Lizenzierung"
+      },
       "fields": {
         "department": "Support-Kategorie",
         "department_placeholder": "Kategorie der Anfrage auswählen",

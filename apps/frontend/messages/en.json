@@ -509,6 +509,13 @@
         "hotinfo_added_desc": "This information will be automatically sent to the technical team.",
         "hotinfo_upload_name": "Hotinfo Upload"
       },
+      "departments": {
+        "technical_support": "Technical Support",
+        "billing_payments": "Billing & Payments",
+        "sales_pre_sales": "Sales & Pre-Sales",
+        "general_support": "General Support",
+        "licensing": "Licensing"
+      },
       "fields": {
         "department": "Support Category",
         "department_placeholder": "Select the category for your request",
