@@ -4284,6 +4284,22 @@
       "error_select": "Lütfen bir ajan seçin.",
       "error_server": "Üye eklenirken bir hata oluştu."
     },
+    "member_remove": {
+      "title": "Teammitglied Entfernen",
+      "description": "Dieser Benutzer erhält über dieses Team keine Tickets mehr. Sie können ihn später wieder hinzufügen.",
+      "cancel": "Abbrechen",
+      "submit": "Entfernen",
+      "success_title": "Mitglied entfernt",
+      "success_desc": "Der Benutzer wurde aus dem Team entfernt.",
+      "error_title": "Aktion fehlgeschlagen",
+      "error_desc": "Das Mitglied konnte nicht aus dem Team entfernt werden."
+    },
+    "roles": {
+      "agent": "Agent",
+      "senior_agent": "Senior Agent",
+      "team_lead": "Teamleiter",
+      "department_manager": "Abteilungsleiter"
+    },
     "errors": {
       "fetch_profile": "Ajan profili alınamadı.",
       "fetch_dept": "Departman bilgileri alınamadı."
