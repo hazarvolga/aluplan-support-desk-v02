@@ -52,6 +52,7 @@ export class TicketsController {
     findAll(@Query() query: any, @Request() req: any) {
         // If user is a customer, force filter by their own userId
         const userId = (req.user?.role?.toUpperCase() === 'CUSTOMER' || req.user?.role?.toUpperCase() === 'VIEWER') ? req.user.sub : query.userId;
+        const isSlaBreached = query.isSlaBreached === undefined ? undefined : query.isSlaBreached === 'true';
 
         return this.ticketsService.findAll({
             status: query.status,
@@ -59,7 +60,7 @@ export class TicketsController {
             assignedTo: query.assignedTo,
             teamId: query.teamId,
             userId,
-            isSlaBreached: query.isSlaBreached === 'true',
+            isSlaBreached,
             page: query.page ? parseInt(query.page) : 1,
             limit: query.limit ? parseInt(query.limit) : 20,
         });

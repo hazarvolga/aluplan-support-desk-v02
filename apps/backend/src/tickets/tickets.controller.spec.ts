@@ -71,6 +71,35 @@ describe('TicketsController', () => {
         });
     });
 
+    describe('findAll', () => {
+        it('should not apply SLA breach filter when query param is omitted', async () => {
+            const req = { user: { sub: 'admin1', role: 'ADMIN' } };
+            const expectedResult = { data: [], total: 0 };
+            mockTicketsService.findAll.mockResolvedValue(expectedResult);
+
+            const result = await controller.findAll({ assignedTo: 'agent1', limit: '100' }, req);
+
+            expect(mockTicketsService.findAll).toHaveBeenCalledWith(expect.objectContaining({
+                assignedTo: 'agent1',
+                isSlaBreached: undefined,
+                limit: 100,
+            }));
+            expect(result).toEqual(expectedResult);
+        });
+
+        it('should apply explicit SLA breach filter when query param is provided', async () => {
+            const req = { user: { sub: 'admin1', role: 'ADMIN' } };
+            const expectedResult = { data: [], total: 0 };
+            mockTicketsService.findAll.mockResolvedValue(expectedResult);
+
+            await controller.findAll({ isSlaBreached: 'false' }, req);
+
+            expect(mockTicketsService.findAll).toHaveBeenCalledWith(expect.objectContaining({
+                isSlaBreached: false,
+            }));
+        });
+    });
+
     describe('transition', () => {
         it('should transition status and emit notification', async () => {
             // Arrange
