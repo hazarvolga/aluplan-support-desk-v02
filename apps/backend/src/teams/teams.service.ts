@@ -23,6 +23,19 @@ export class TeamsService {
         });
     }
 
+    async getDepartmentOptions() {
+        return this.prisma.department.findMany({
+            where: { isArchived: false },
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                description: true,
+            },
+            orderBy: { name: 'asc' },
+        });
+    }
+
     async getDepartment(id: string) {
         const dept = await this.prisma.department.findFirst({
             where: { id },

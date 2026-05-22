@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { api } from '@/lib/api';
 import {
     Table,
@@ -129,6 +129,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
     const [logsLoading, setLogsLoading] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState('');
+    const hasMountedCustomerSearch = useRef(false);
     const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
     const [groupBy, setGroupBy] = useState<string | null>(null);
     const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -285,6 +286,21 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         loadAccounts();
         loadConnections();
     }, []);
+
+    useEffect(() => {
+        if (!hasMountedCustomerSearch.current) {
+            hasMountedCustomerSearch.current = true;
+            return;
+        }
+
+        if (activeTab !== 'list') return;
+
+        const timer = setTimeout(() => {
+            loadCustomers(1);
+        }, 350);
+
+        return () => clearTimeout(timer);
+    }, [searchTerm, activeTab]);
 
     const handleSort = (field: SortField, order?: SortOrder) => {
         if (order) {

@@ -81,7 +81,7 @@ export default function NewTicketPage() {
     });
 
     useEffect(() => {
-        api.teams.departments()
+        api.teams.departmentOptions()
             .then(data => setDepartments(data))
             .catch(err => {
                 console.error(err);

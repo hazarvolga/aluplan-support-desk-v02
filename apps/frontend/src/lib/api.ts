@@ -570,6 +570,7 @@ export const api = {
     },
     teams: {
         departments: () => request<any[]>('/teams/departments'),
+        departmentOptions: () => request<Array<{ id: string; name: string; slug?: string; description?: string | null }>>('/teams/departments/options'),
         getDepartment: (id: string) => request<any>(`/teams/departments/${id}`),
         list: () => request<any[]>('/teams'),
         get: (id: string) => request<any>(`/teams/${id}`),

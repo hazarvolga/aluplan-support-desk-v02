@@ -80,6 +80,29 @@ describe('TeamsService', () => {
         });
     });
 
+    describe('getDepartmentOptions', () => {
+        it('should return only safe department option fields', async () => {
+            const mockDepartments = [
+                { id: 'd1', name: 'Technical Support', slug: 'technical-support', description: 'Support requests' },
+            ];
+            mockPrismaService.department.findMany.mockResolvedValue(mockDepartments);
+
+            const result = await service.getDepartmentOptions();
+
+            expect(prisma.department.findMany).toHaveBeenCalledWith({
+                where: { isArchived: false },
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    description: true,
+                },
+                orderBy: { name: 'asc' },
+            });
+            expect(result).toEqual(mockDepartments);
+        });
+    });
+
     describe('getDepartment', () => {
         it('should return a department by id with teams and slaPolicies', async () => {
             const mockDept = { id: 'd1', name: 'Sales', teams: [], slaPolicies: [] };

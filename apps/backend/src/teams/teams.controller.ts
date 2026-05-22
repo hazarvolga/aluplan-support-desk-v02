@@ -20,6 +20,13 @@ export class TeamsController {
         return this.teamsService.getDepartments();
     }
 
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'SUPPORT_AGENT', 'SUPPORT_MANAGER', 'CUSTOMER')
+    @Get('departments/options')
+    @ApiOperation({ summary: 'List department options for ticket routing' })
+    getDepartmentOptions() {
+        return this.teamsService.getDepartmentOptions();
+    }
+
     @Roles('ADMIN', 'DEPARTMENT_MANAGER')
     @Get('departments/:id')
     @ApiOperation({ summary: 'Get department details' })
