@@ -13,8 +13,14 @@ COPY . .
 
 # Remove any pre-existing generated client to avoid version conflicts
 RUN rm -rf packages/database/client packages/database/generated
-# Use npm mirror for faster and more reliable downloads
-RUN pnpm config set registry https://registry.npmmirror.com/
+# Use the canonical npm registry for production builds. The mirror has caused
+# intermittent 502/504 failures during Coolify deployments.
+RUN pnpm config set registry https://registry.npmjs.org/ && \
+    pnpm config set fetch-retries 5 && \
+    pnpm config set fetch-retry-mintimeout 20000 && \
+    pnpm config set fetch-retry-maxtimeout 120000 && \
+    pnpm config set fetch-timeout 120000 && \
+    pnpm config set network-concurrency 4
 # Perform full build in builder stage
 RUN pnpm install --frozen-lockfile && \
     NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/database db:generate && \
@@ -48,11 +54,13 @@ COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.ya
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/packages/database/package.json ./packages/database/
 
-# 2. Install production deps (with npm mirror fallback)
-RUN pnpm config set registry https://registry.npmmirror.com/ && \
+# 2. Install production deps with resilient network retry settings
+RUN pnpm config set registry https://registry.npmjs.org/ && \
     pnpm config set fetch-retries 5 && \
     pnpm config set fetch-retry-mintimeout 20000 && \
     pnpm config set fetch-retry-maxtimeout 120000 && \
+    pnpm config set fetch-timeout 120000 && \
+    pnpm config set network-concurrency 4 && \
     pnpm install --prod --frozen-lockfile || pnpm install --prod
 
 # 3. Copy database package source files (NOT the generated client)

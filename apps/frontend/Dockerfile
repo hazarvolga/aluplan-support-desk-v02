@@ -13,7 +13,9 @@ COPY . .
 RUN pnpm config set fetch-retries 5 && \
     pnpm config set fetch-retry-mintimeout 20000 && \
     pnpm config set fetch-retry-maxtimeout 120000 && \
-    pnpm config set registry https://registry.npmmirror.com
+    pnpm config set fetch-timeout 120000 && \
+    pnpm config set network-concurrency 4 && \
+    pnpm config set registry https://registry.npmjs.org/
 
 # Install dependencies (fallback to non-frozen if registry issues occur)
 RUN pnpm install --frozen-lockfile || pnpm install
