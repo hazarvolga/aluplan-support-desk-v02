@@ -274,6 +274,22 @@ describe('TicketsService', () => {
         });
     });
 
+    describe('getSlaStats', () => {
+        it('should exclude soft-deleted tickets from every SLA count', async () => {
+            mockRedisService.get.mockResolvedValue(null);
+            prisma.ticket.count.mockResolvedValue(0);
+
+            await service.getSlaStats();
+
+            expect(prisma.ticket.count).toHaveBeenCalledTimes(5);
+            for (const call of prisma.ticket.count.mock.calls) {
+                expect(call[0]).toEqual(expect.objectContaining({
+                    where: expect.objectContaining({ deletedAt: null }),
+                }));
+            }
+        });
+    });
+
     describe('assign', () => {
         it('should assign a ticket to an agent', async () => {
             // Arrange

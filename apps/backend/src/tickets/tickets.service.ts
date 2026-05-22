@@ -726,7 +726,11 @@ export class TicketsService {
         const cached = await this.redis.get(cacheKey);
         if (cached) return JSON.parse(cached);
 
-        const baseWhere = isCustomer && user?.sub ? { userId: user.sub } : {};
+        // Keep dashboard SLA totals aligned with ticket lists even if the global
+        // Prisma soft-delete extension is bypassed by a count path in production.
+        const baseWhere = isCustomer && user?.sub
+            ? { userId: user.sub, deletedAt: null }
+            : { deletedAt: null };
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
