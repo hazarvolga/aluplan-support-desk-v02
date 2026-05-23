@@ -2997,3 +2997,26 @@ Maintenance rule:
 ### Note
 
 - This closes the prompt-only parity gap: previous work shared the prompt contract, but customer/admin still had separate orchestration behavior. The shared orchestrator is now the production path for final answer/draft generation policy.
+
+## Follow-up - 2026-05-23 Customer ANN-Quality Synthesis
+
+### What changed
+
+- Customer ticket-opening AI now explicitly uses the same analytical depth target as admin ANN drafts instead of a quick match-summary posture.
+- `SupportAnswerOrchestrator` now retries no-knowledge model responses through an ANN-style second-pass synthesis before using any deterministic fallback.
+- Customer sync diagnosis timeout was increased to 120s and wait-mode no-knowledge recovery gets two synthesis attempts.
+- Ticket-opening prompt now forbids broad category labels as the problem topic and instructs the model to inspect screenshots/files before refusing.
+- Ticket-opening UI now shows a compact “answer is being synthesized” state with source, attachment, and final-answer progress cues instead of implying a fast search.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- support-answer-orchestrator.service.spec.ts ai-query.service.spec.ts ai-answer-quality.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+- `git diff --check` passed.
+
+### Deployment note
+
+- Backend deploy is required for the ANN-quality synthesis behavior.
+- Frontend deploy is required for the new synthesis wait UX and translations.

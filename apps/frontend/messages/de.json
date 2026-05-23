@@ -564,22 +564,33 @@
         "attachments_select": "Datei hinzufügen",
         "attachments_ai_note": "Screenshots werden während der KI-Diagnose ausgewertet. Dokumente werden der Anfrage beigefügt und nach Möglichkeit ausgelesen.",
         "search_btn": "Lösung suchen (KI)",
+        "synthesizing_btn": "Antwort wird synthetisiert...",
+        "synthesis": {
+          "title": "Supportfähige Antwort wird synthetisiert",
+          "desc": "Wir verwenden denselben Antwortkern wie der Admin-ANN-Entwurf und prüfen Wissensbasis, Anfragedetails und Screenshots gemeinsam.",
+          "patience": "Das kann etwas länger dauern als eine schnelle Suche, verhindert aber schwache oder irreführende Antworten.",
+          "steps": {
+            "sources": "Freigegebene Quellen prüfen",
+            "attachments": "Screenshots auswerten",
+            "answer": "Endgültige Antwort erstellen"
+          }
+        },
         "result_title": "KI-Diagnoseergebnis",
         "feedback_question": "\"Hat diese von unserem KI-Assistenten angebotene Lösung geholfen, Ihr Problem zu lösen?\"",
         "yes_resolved": "Ja, gelöst",
         "no_create_ticket": "Nein, Anfrage erstellen",
         "status": {
           "running": {
-            "title": "Wissensbasis wird durchsucht",
-            "desc": "Passende Inhalte werden geprüft und eine fundierte Antwort wird vorbereitet."
+            "title": "Fundierte Antwort wird synthetisiert",
+            "desc": "Eine vollständige Antwort wird aus freigegebenen Inhalten und angehängten Nachweisen vorbereitet."
           },
           "ready": {
             "title": "KI-Vorschlag ist bereit",
             "desc": "Eine Antwort wurde erzeugt. Sie können sie ausprobieren oder direkt mit der Anfrage fortfahren."
           },
           "fallback": {
-            "title": "Fallback-Antwort wurde verwendet",
-            "desc": "Das Modell war zu langsam, daher zeigen wir eine sichere Zusammenfassung aus dem stärksten Treffer. Sie können weiterhin direkt ein Ticket erstellen."
+            "title": "Konservative Antwort wurde verwendet",
+            "desc": "Die KI konnte die vollständige Synthese nicht abschließen, daher zeigen wir nur eine sichere begrenzte Antwort. Sie können weiterhin direkt ein Ticket erstellen."
           },
           "backend_unavailable": {
             "title": "KI-Dienst ist derzeit nicht erreichbar",

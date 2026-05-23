@@ -9,6 +9,11 @@
   - customer list search no longer hides backend CRM account-name matches with a second client-side global filter.
   - SLA stats now return priority buckets for the dashboard distribution cards.
   - deterministic AI fallback refuses BIMPLUS storage answers from unrelated license/home-office evidence.
+- Customer ANN-quality synthesis now replaces the quick-answer posture:
+  - ticket-opening answers target the same analytical depth as admin ANN drafts.
+  - no-knowledge responses with retrieved context are retried through a second-pass synthesis before any deterministic fallback.
+  - wait-mode customer diagnosis allows up to 120s and two no-knowledge recovery attempts.
+  - ticket-opening UI tells the user a grounded answer is being synthesized and uses screenshots/files as first-class evidence.
 - Rich Message Composer MVP completed:
   - ticket detail now uses a TipTap rich reply composer for admin/customer replies.
   - message history and ticket descriptions render through a safe rich/plain renderer.
@@ -124,7 +129,7 @@
 - A source can have an unchanged content hash while still having zero embeddings from an earlier failed run; sync must verify embeddings before treating unchanged content as healthy.
 - `graphify` CLI was previously unavailable in PATH, so graph updates may need environment repair.
 - `apps/backend/openapi.json` is modified separately; do not mix it into RAG import commits unless intentionally regenerated.
-- Customer answer quality can still diverge from admin Copilot for topics that do not yet have either successful LLM generation or structured deterministic fallback coverage.
+- Customer answer quality should no longer diverge through the old quick-summary path, but can still fail when the LLM refuses after both synthesis attempts or when retrieved context is genuinely missing.
 - Customer/admin answer parity now has a shared `SupportAnswerOrchestrator` generation policy; future answer-quality changes should go through this layer instead of patching `AiQueryService` and `AiCopilotService` separately.
 - Ticket creation from AI diagnosis depends on `interactionId` idempotency; keep this path covered when changing ticket creation or AI query interaction persistence.
 - Dashboard data loading must remain role-aware; do not call admin-only observability endpoints from customer pages.

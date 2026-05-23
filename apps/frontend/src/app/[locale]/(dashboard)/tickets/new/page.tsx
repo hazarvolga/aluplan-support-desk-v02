@@ -606,11 +606,49 @@ export default function NewTicketPage() {
                         onClick={runDiagnosis}
                     >
                         {isDiagnosing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-                        {t('ai.search_btn')}
+                        {isDiagnosing ? t('ai.synthesizing_btn') : t('ai.search_btn')}
                     </Button>
                 </div>
 
-                {diagnosisState !== 'idle' && (
+                {diagnosisState === 'running' && (
+                    <div className="relative overflow-hidden rounded-2xl border border-brand-500/20 bg-slate-950/60 px-5 py-5 shadow-lg shadow-brand-500/10">
+                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-400 to-transparent" />
+                        <div className="flex items-start gap-4">
+                            <div className="relative mt-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-brand-500/10 text-brand-300">
+                                <span className="absolute h-full w-full animate-ping rounded-full bg-brand-400/20" />
+                                <Sparkles className="relative h-5 w-5" />
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-4">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-white">{t('ai.synthesis.title')}</p>
+                                    <p className="text-sm leading-relaxed text-muted-foreground">{t('ai.synthesis.desc')}</p>
+                                </div>
+                                <div className="grid gap-2 sm:grid-cols-3">
+                                    {[
+                                        { icon: Monitor, label: t('ai.synthesis.steps.sources') },
+                                        { icon: Paperclip, label: t('ai.synthesis.steps.attachments') },
+                                        { icon: CheckCircle2, label: t('ai.synthesis.steps.answer') },
+                                    ].map((step, index) => {
+                                        const Icon = step.icon;
+                                        return (
+                                            <div key={step.label} className="flex min-h-14 items-center gap-2 rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2">
+                                                <Icon className="h-4 w-4 shrink-0 text-brand-300" />
+                                                <span className="text-xs leading-snug text-white/75">{step.label}</span>
+                                                <span
+                                                    className="ml-auto h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-brand-300"
+                                                    style={{ animationDelay: `${index * 160}ms` }}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-[11px] leading-relaxed text-brand-200/80">{t('ai.synthesis.patience')}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {diagnosisState !== 'idle' && diagnosisState !== 'running' && (
                     <div className={`rounded-2xl border px-4 py-4 ${
                         diagnosisState === 'backend_unavailable'
                             ? 'border-orange-500/20 bg-orange-500/5'

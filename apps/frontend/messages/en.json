@@ -564,22 +564,33 @@
         "attachments_select": "Add File",
         "attachments_ai_note": "Screenshots are evaluated during AI diagnosis. Documents are attached to the request and parsed when possible.",
         "search_btn": "Search Solution (AI)",
+        "synthesizing_btn": "Synthesizing answer...",
+        "synthesis": {
+          "title": "Synthesizing a support-grade answer",
+          "desc": "We are using the same answer core as the admin ANN draft and checking the knowledge base, ticket details, and screenshots together.",
+          "patience": "This can take a little longer than a quick search, but it helps avoid weak or misleading answers.",
+          "steps": {
+            "sources": "Checking approved sources",
+            "attachments": "Inspecting screenshots",
+            "answer": "Building the final answer"
+          }
+        },
         "result_title": "AI Diagnosis Result",
         "feedback_question": "\"Did this solution provided by our AI assistant help resolve your issue?\"",
         "yes_resolved": "Yes, Resolved",
         "no_create_ticket": "No, Create Request",
         "status": {
           "running": {
-            "title": "Searching the knowledge base",
-            "desc": "We are scanning matching content and preparing a grounded response."
+            "title": "Synthesizing a grounded answer",
+            "desc": "We are preparing a complete answer from approved content and attached evidence."
           },
           "ready": {
             "title": "AI suggestion is ready",
             "desc": "A response was generated. You can try it now or keep going with ticket creation."
           },
           "fallback": {
-            "title": "Fallback answer was used",
-            "desc": "The model took too long, so we showed a safe summary from the strongest matching content. You can still create a ticket directly."
+            "title": "Conservative answer was used",
+            "desc": "AI could not complete a full synthesis, so we are showing only a safe limited response. You can still create a ticket directly."
           },
           "backend_unavailable": {
             "title": "AI service is currently unavailable",

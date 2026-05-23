@@ -170,7 +170,7 @@ import { StorageService } from '../common/services/storage.service';
 export class AiQueryService {
     private readonly logger = new Logger(AiQueryService.name);
     private readonly DIAGNOSIS_GENERATION_TIMEOUT_MS = 25000;
-    private readonly SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS = 60000;
+    private readonly SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS = 120000;
     private invalidationTimeout: NodeJS.Timeout | null = null;
     private readonly pendingInvalidationReasons = new Set<string>();
     constructor(
@@ -524,7 +524,15 @@ export class AiQueryService {
                 diagnosis,
             });
             // aiParts is already prepared at the beginning of the query func
-            const finalPrompt = `${dynamicSystemPrompt} \n\n${contextPrompt} `;
+            const finalPrompt = [
+                dynamicSystemPrompt,
+                contextPrompt,
+                this.buildTicketOpeningAnswerContext({
+                    isStaff,
+                    hasAttachments: aiParts.length > 0,
+                    language: lang,
+                }),
+            ].join('\n\n');
 
             const genStartTime = Date.now();
             const kbContent = results.slice(0, 10).map(r => r.content).join('\n\n');
@@ -543,6 +551,7 @@ export class AiQueryService {
                     }),
                     fallbackOnNoKnowledge: results.length > 0,
                     fallbackLabel: 'deterministic-structured',
+                    synthesisRetries: options.wait === true ? 2 : 1,
                 });
             } catch (generationError: any) {
                 this.logger.warn(`⚠️ Diagnosis generation failed: ${generationError?.message ?? generationError}`);
@@ -1330,6 +1339,38 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         ].join('\n');
     }
 
+    private buildTicketOpeningAnswerContext(options: {
+        isStaff: boolean;
+        hasAttachments: boolean;
+        language: 'tr' | 'en' | 'de';
+    }): string {
+        const languageName = options.language === 'en'
+            ? 'English'
+            : options.language === 'de'
+                ? 'German'
+                : 'Turkish';
+
+        if (options.isStaff) {
+            return `
+[ANSWER_SYNTHESIS_MODE]
+Generate an ANN-quality support draft for the support agent.
+Use the retrieved knowledge, ticket context, and attachments to produce a complete, customer-ready draft.
+[/ANSWER_SYNTHESIS_MODE]`;
+        }
+
+        return `
+[TICKET_OPENING_ANSWER_MODE]
+Generate the customer-facing answer with the same analytical depth as the admin ANN draft.
+This is not a quick match preview. The user can wait for a complete synthesis.
+Write directly to the customer in ${languageName}; do not mention that this is an internal draft.
+Use the user's exact issue as the problem topic. Do not use broad category names as the topic.
+If screenshots or files are attached, inspect them before deciding that the knowledge base is insufficient.
+${options.hasAttachments ? 'Attachments are present. Treat visible UI state, labels, errors, and selected modules as primary evidence.' : 'No attachment evidence is present; rely on retrieved context and the user description.'}
+Do not expose source names, raw chunks, source filenames, "best match" wording, confidence, fallback, or debug details.
+If context contains usable procedural evidence, synthesize the answer instead of returning a no-knowledge message.
+[/TICKET_OPENING_ANSWER_MODE]`;
+    }
+
     private buildNoMatchMessage(language: SupportedAnswerLanguage, includeHotinfoHint: boolean): string {
         const messages = {
             en: includeHotinfoHint
@@ -1509,14 +1550,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         diagnosis: DiagnosisResult | undefined,
         language: 'tr' | 'en' | 'de',
     ): string {
-        const signals = [
-            diagnosis?.categoryNames?.[0],
-            diagnosis?.matchedKeywords?.slice(0, 3).join(', '),
-            this.cleanSupportEvidence(snippet.title, 120),
-            query,
-        ].filter(Boolean);
-
-        const rawTopic = String(signals[0] || query);
+        const rawTopic = query || this.cleanSupportEvidence(snippet.title, 120) || diagnosis?.matchedKeywords?.slice(0, 3).join(', ') || diagnosis?.categoryNames?.[0];
         if (language === 'tr') return rawTopic || 'teknik destek';
         if (language === 'de') return rawTopic || 'technischer Support';
         return rawTopic || 'technical support';

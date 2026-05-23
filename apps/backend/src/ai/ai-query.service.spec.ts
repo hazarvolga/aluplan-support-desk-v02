@@ -248,6 +248,8 @@ describe('AiQueryService', () => {
             expect(mockAiService.generate).toHaveBeenCalledTimes(1);
             expect(mockAiService.generate.mock.calls[0][0]).toContain('RESPONSE DRAFT:');
             expect(mockAiService.generate.mock.calls[0][0]).toContain('Audience: customer self-service answer');
+            expect(mockAiService.generate.mock.calls[0][0]).toContain('[TICKET_OPENING_ANSWER_MODE]');
+            expect(mockAiService.generate.mock.calls[0][0]).toContain('same analytical depth as the admin ANN draft');
             expect(mockAiService.reformat).not.toHaveBeenCalled();
             expect(mockLangfuseService.trace).toHaveBeenCalledTimes(1);
         });
@@ -407,6 +409,38 @@ describe('AiQueryService', () => {
                             type: 'ARTICLE',
                             title: 'Graphics Driver Guide',
                         }),
+                    }),
+                }),
+            }));
+        });
+
+        it('recovers customer no-knowledge answers with ANN-style synthesis before deterministic fallback', async () => {
+            mockAiService.generate.mockResolvedValue('The knowledge base does not contain enough reliable information for this exact question yet.');
+            mockAiService.reformat.mockResolvedValue({
+                response: '## 📌 Issue Summary\nCreate the fixture, then place the reinforcement with the documented reinforcement workflow.',
+                model: 'gemini-2.5-flash',
+            });
+
+            const result = await service.queryInternal({
+                userQuery: 'How to create a fixture with reinforcement?',
+                language: 'en',
+                wait: true,
+            });
+
+            expect(result.answerMode).toBe('LLM');
+            expect(result.answer).toContain('Create the fixture');
+            expect(result.answer).not.toContain('This looks like a support question about');
+            expect(mockAiService.reformat).toHaveBeenCalledWith(
+                expect.stringContaining('[SECOND_PASS_SYNTHESIS]'),
+                'How to create a fixture with reinforcement?',
+                expect.stringContaining('Use the certified graphics driver package.'),
+                [],
+            );
+            expect(mockPrismaService.aiInteraction.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    userContext: expect.objectContaining({
+                        answerMode: 'LLM',
+                        fallbackStrategy: null,
                     }),
                 }),
             }));

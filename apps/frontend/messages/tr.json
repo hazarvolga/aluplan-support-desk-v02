@@ -564,22 +564,33 @@
         "attachments_select": "Dosya Ekle",
         "attachments_ai_note": "Ekran görüntüleri AI teşhisinde değerlendirilir. Dokümanlar talebe eklenir ve mümkün olduğunda ayrıştırılır.",
         "search_btn": "Çözüm Ara (AI)",
+        "synthesizing_btn": "Yanıt sentezleniyor...",
+        "synthesis": {
+          "title": "Destek kalitesinde yanıt sentezleniyor",
+          "desc": "Admin ANN taslak ile aynı yanıt çekirdeğini kullanıyor; bilgi kaynağını, talep detaylarını ve ekran görüntülerini birlikte değerlendiriyoruz.",
+          "patience": "Bu işlem hızlı aramadan biraz uzun sürebilir, ama zayıf veya yanıltıcı yanıt vermemek için gerekli.",
+          "steps": {
+            "sources": "Onaylı kaynaklar kontrol ediliyor",
+            "attachments": "Ekran görüntüleri inceleniyor",
+            "answer": "Nihai yanıt hazırlanıyor"
+          }
+        },
         "result_title": "Yapay Zeka Teşhis Sonucu",
         "feedback_question": "\"Yapay zeka asistanımızın sunduğu bu çözüm sorununuzu gidermeye yardımcı oldu mu?\"",
         "yes_resolved": "Evet, Çözüldü",
         "no_create_ticket": "Hayır, Talebi Oluştur",
         "status": {
           "running": {
-            "title": "Bilgi havuzunda çözüm aranıyor",
-            "desc": "Eşleşen içerikler taranıyor ve uygun bir yanıt hazırlanıyor."
+            "title": "Güvenilir yanıt sentezleniyor",
+            "desc": "Onaylı içeriklerden ve eklenen kanıtlardan tamamlanmış bir yanıt hazırlanıyor."
           },
           "ready": {
             "title": "AI önerisi hazır",
             "desc": "Yanıt üretildi. Dilerseniz bu çözümü deneyebilir veya talep oluşturmaya devam edebilirsiniz."
           },
           "fallback": {
-            "title": "Yedek modla yanıt üretildi",
-            "desc": "Model geciktiği için en güçlü eşleşen içerikten güvenli bir özet gösteriliyor. İsterseniz yine doğrudan talep açabilirsiniz."
+            "title": "Sınırlı güvenli yanıt gösteriliyor",
+            "desc": "AI tam sentezi tamamlayamadığı için yalnızca güvenli ve sınırlı bir yanıt gösteriliyor. İsterseniz doğrudan talep açabilirsiniz."
           },
           "backend_unavailable": {
             "title": "AI servisi şu anda erişilemiyor",

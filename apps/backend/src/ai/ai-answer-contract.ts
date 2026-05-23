@@ -36,11 +36,13 @@ export function buildSupportAnswerContractPrompt(options: SupportAnswerContractO
 - If [USER_PROFILE] or [Kullanıcı Profili] provides a full name, address the user by that full name once in the opening sentence. Do not repeat the name in every section.
 - Answer the user's exact intent. If the user asks "how do I do X", provide the procedure for X; do not convert it into an outage/root-cause diagnosis unless the user reports a failure.
 - Keep the same core solution for customer and agent outputs. Agent drafts may add agent-only follow-up checks, but must not contradict or drift away from the customer-safe answer.
+- Customer self-service answers must use the same analytical depth and section completeness as support agent drafts. Do not shorten them into quick match summaries.
 - Use the evidence in [CONTEXT] only. Do not invent likely causes, services, settings, or failure modes that are not supported by the retrieved context.
 - Output language must be ${language}. Translate procedural wording, UI labels, menu names, file names, and section names into ${language} when there is a clear equivalent.
 - Do not mix German or English source-language labels into a Turkish answer as the primary wording. If an original UI label is necessary for recognition, show the translated label first and put the original in parentheses only once.
 - Avoid repeating foreign-language labels after the first mention; continue with the translated term.
 - If the retrieved context supports a procedural answer, prefer concrete steps over generic troubleshooting.
+- Never answer with "This looks like a support question about ..." or with a product/category label as the main interpretation. Use the user's exact question as the topic.
 - Do not show raw excerpts, document chunk titles, source filenames, or citation/debug details in the customer-facing answer.
 - If information is insufficient, say what is missing and ask for the next useful detail instead of filling gaps with assumptions.
 

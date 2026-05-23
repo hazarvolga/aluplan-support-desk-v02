@@ -68,6 +68,34 @@ describe('SupportAnswerOrchestrator', () => {
         expect(result.response).toBe('Grounded fallback');
     });
 
+    it('retries no-knowledge responses through ANN-style synthesis before using fallback', async () => {
+        ai.generate.mockResolvedValue('The knowledge base does not contain enough reliable information for this exact question yet.');
+        ai.reformat.mockResolvedValue({
+            response: '## 📌 Issue Summary\nCreate the fixture first, then add reinforcement using the supported reinforcement workflow.',
+            model: 'gemini-2.5-flash',
+        });
+
+        const result = await service.generate({
+            finalPrompt: 'SYSTEM\n[CONTEXT]\nFixture and reinforcement procedure.',
+            userQuery: 'How to create a fixture with reinforcement?',
+            kbContent: 'Fixture and reinforcement procedure.',
+            timeoutMs: 1000,
+            audience: 'customer',
+            fallback: () => 'Grounded fallback',
+            fallbackOnNoKnowledge: true,
+            synthesisRetries: 2,
+        });
+
+        expect(result.mode).toBe('LLM');
+        expect(result.response).toContain('Create the fixture first');
+        expect(ai.reformat).toHaveBeenCalledWith(
+            expect.stringContaining('[SECOND_PASS_SYNTHESIS]'),
+            'How to create a fixture with reinforcement?',
+            'Fixture and reinforcement procedure.',
+            [],
+        );
+    });
+
     it('repairs a localized greeting that leaks into the wrong answer language', async () => {
         ai.generate.mockResolvedValue('Hello hazarvolga,\n\n## 📌 Issue Summary\nCheck CodeMeter.');
 

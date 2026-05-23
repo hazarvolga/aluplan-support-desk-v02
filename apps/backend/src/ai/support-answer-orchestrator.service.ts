@@ -18,6 +18,7 @@ export interface SupportAnswerGenerationOptions {
     fallback?: () => string | null | undefined;
     fallbackOnNoKnowledge?: boolean;
     fallbackLabel?: string;
+    synthesisRetries?: number;
 }
 
 export interface SupportAnswerGenerationResult {
@@ -75,6 +76,23 @@ export class SupportAnswerOrchestrator {
         }
 
         if (options.fallbackOnNoKnowledge && isNoKnowledgeAnswer(generated.response)) {
+            const recovered = await this.recoverNoKnowledgeAnswer({
+                finalPrompt: options.finalPrompt,
+                userQuery: options.userQuery,
+                kbContent: options.kbContent,
+                attachments: options.attachments ?? [],
+                attempts: options.synthesisRetries ?? 1,
+            });
+
+            if (recovered?.response && !isNoKnowledgeAnswer(recovered.response)) {
+                this.logger.log(`✅ Support answer ${options.audience} recovered from no-knowledge response with a grounded synthesis retry.`);
+                return {
+                    response: recovered.response,
+                    mode: 'LLM',
+                    model: recovered.model,
+                };
+            }
+
             return this.useFallback(options, 'NO_KNOWLEDGE_WITH_CONTEXT');
         }
 
@@ -144,6 +162,29 @@ export class SupportAnswerOrchestrator {
         return this.ai.reformat(options.finalPrompt, options.userQuery, options.kbContent, options.attachments);
     }
 
+    private async recoverNoKnowledgeAnswer(options: {
+        finalPrompt: string;
+        userQuery: string;
+        kbContent: string;
+        attachments: AiPart[];
+        attempts: number;
+    }): Promise<{ response: string; model?: string } | null> {
+        const recoveryPrompt = this.buildNoKnowledgeRecoveryPrompt(options.finalPrompt);
+
+        for (let attempt = 1; attempt <= Math.max(1, options.attempts); attempt += 1) {
+            try {
+                const recovered = await this.ai.reformat(recoveryPrompt, options.userQuery, options.kbContent, options.attachments);
+                if (recovered?.response && !isNoKnowledgeAnswer(recovered.response)) {
+                    return recovered;
+                }
+            } catch (error: any) {
+                this.logger.warn(`⚠️ No-knowledge recovery synthesis attempt ${attempt} failed: ${error?.message ?? error}`);
+            }
+        }
+
+        return null;
+    }
+
     private useFallback(
         options: SupportAnswerGenerationOptions,
         reason: SupportFallbackReason,
@@ -168,6 +209,20 @@ export class SupportAnswerOrchestrator {
 
     private buildResponseDraftPrompt(finalPrompt: string): string {
         return `${finalPrompt.trim()}
+
+RESPONSE DRAFT:`;
+    }
+
+    private buildNoKnowledgeRecoveryPrompt(finalPrompt: string): string {
+        return `${finalPrompt.trim()}
+
+[SECOND_PASS_SYNTHESIS]
+The previous draft claimed that the knowledge base did not contain enough information, but retrieved context is available.
+Before refusing, re-check the approved context, ticket details, and any image attachments for concrete procedural evidence.
+If the context contains usable steps, checks, UI labels, module names, or screenshots related to the user's exact question, synthesize a complete support answer from that evidence.
+Do not mention "best match", source names, internal confidence, or fallback behavior.
+If the context truly lacks evidence for the exact question, return the no-knowledge message required by the main contract.
+[/SECOND_PASS_SYNTHESIS]
 
 RESPONSE DRAFT:`;
     }
