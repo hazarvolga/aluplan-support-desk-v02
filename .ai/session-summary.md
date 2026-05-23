@@ -1,5 +1,20 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-23 Customer Synthesis Wait UX
+
+### What changed
+
+- Added a desktop-only semantic data-rain layer behind the customer ticket AI synthesis wait panel.
+- The animation uses sanitized question/context tokens plus safe system concepts; emails, long numbers, phone-like values, license-like numbers, and raw attachment names are not rendered.
+- Mobile does not render the effect.
+- The synthesis panel now stays visible until the AI request resolves and then fades out smoothly instead of disappearing abruptly.
+
+### Verification
+
+- Frontend typecheck: passed.
+- i18n integrity check: passed.
+- `git diff --check`: passed.
+
 ## Follow-up - 2026-05-23 Live Bug Closure Pass
 
 ### What changed

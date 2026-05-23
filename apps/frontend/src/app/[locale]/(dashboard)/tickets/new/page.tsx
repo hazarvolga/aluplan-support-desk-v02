@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,6 +54,145 @@ const buildDiagnosisQuery = (subject: string, description: string) => {
     return `${subject.trim()}\n\n${description.trim()}`;
 };
 
+const DATA_RAIN_COLUMNS = 12;
+const BASE_RAIN_TOKENS = [
+    'ANN SYNTHESIS',
+    'APPROVED SOURCE',
+    'CRITICAL CHECKS',
+    'SOLUTION STEPS',
+    'VERIFICATION',
+    'RAG CONTEXT',
+    'TICKET SIGNAL',
+    'ANSWER CORE',
+];
+
+const TOKEN_STOP_WORDS = new Set([
+    'about',
+    'after',
+    'allplan',
+    'also',
+    'and',
+    'bir',
+    'bunu',
+    'can',
+    'create',
+    'das',
+    'der',
+    'die',
+    'ein',
+    'eine',
+    'for',
+    'from',
+    'how',
+    'ile',
+    'icin',
+    'için',
+    'need',
+    'nedir',
+    'soru',
+    'the',
+    'und',
+    'what',
+    'with',
+    'yanit',
+    'yanıt',
+]);
+
+const sanitizeRainInput = (value: string) => value
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, ' ')
+    .replace(/\+?\d[\d\s().-]{6,}\d/g, ' ')
+    .replace(/\b\d{4,}\b/g, ' ')
+    .replace(/[^\p{L}\p{N}\s/-]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const extractRainTokens = (value: string) => {
+    const tokens = sanitizeRainInput(value)
+        .split(/\s+/)
+        .map(token => token.trim())
+        .filter(token => token.length >= 4 && token.length <= 22)
+        .filter(token => !TOKEN_STOP_WORDS.has(token.toLocaleLowerCase('tr-TR')));
+
+    return Array.from(new Set(tokens)).slice(0, 14);
+};
+
+const getAttachmentToken = (file: File) => {
+    if (file.type.startsWith('image/')) return 'SCREENSHOT';
+    if (file.type === 'application/pdf' || file.name.toLocaleLowerCase('tr-TR').endsWith('.pdf')) return 'PDF';
+    if (file.name.toLocaleLowerCase('tr-TR').endsWith('.hxl')) return 'HOTINFO';
+    return 'ATTACHMENT';
+};
+
+const buildRainTokens = ({
+    subject,
+    description,
+    productName,
+    departmentName,
+    files,
+}: {
+    subject: string;
+    description: string;
+    productName?: string;
+    departmentName?: string;
+    files: File[];
+}) => {
+    const contentTokens = extractRainTokens(`${subject} ${description}`);
+    const contextTokens = [
+        productName ? sanitizeRainInput(productName).toUpperCase() : null,
+        departmentName ? sanitizeRainInput(departmentName).toUpperCase() : null,
+        ...Array.from(new Set(files.map(getAttachmentToken))),
+    ].filter(Boolean) as string[];
+
+    return Array.from(new Set([...contextTokens, ...contentTokens, ...BASE_RAIN_TOKENS]))
+        .filter(token => token.length > 0)
+        .slice(0, 28);
+};
+
+const getRainColumnTokens = (tokens: string[], columnIndex: number) => {
+    const fallbackTokens = tokens.length > 0 ? tokens : BASE_RAIN_TOKENS;
+    return Array.from({ length: 12 }, (_, rowIndex) => {
+        const tokenIndex = (columnIndex * 3 + rowIndex * 2) % fallbackTokens.length;
+        return fallbackTokens[tokenIndex];
+    });
+};
+
+function KnowledgeRain({ tokens }: { tokens: string[] }) {
+    const columns = useMemo(() => Array.from({ length: DATA_RAIN_COLUMNS }, (_, index) => ({
+        id: index,
+        tokens: getRainColumnTokens(tokens, index),
+        duration: 14 + (index % 4) * 2,
+        delay: -(index % 6) * 1.7,
+    })), [tokens]);
+
+    return (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden overflow-hidden md:block">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(0,255,209,0.12),transparent_42%)]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-transparent to-slate-950" />
+            <div className="absolute inset-0 flex justify-around px-3">
+                {columns.map(column => (
+                    <div
+                        key={column.id}
+                        className="animate-knowledge-rain motion-reduce:animate-none flex flex-col gap-3 font-mono text-[10px] uppercase tracking-[0.26em] text-brand-300/30 blur-[0.1px]"
+                        style={{
+                            '--rain-duration': `${column.duration}s`,
+                            animationDelay: `${column.delay}s`,
+                        } as CSSProperties}
+                    >
+                        {column.tokens.map((token, rowIndex) => (
+                            <span
+                                key={`${column.id}-${rowIndex}-${token}`}
+                                className={rowIndex % 4 === 0 ? 'text-brand-100/50' : 'text-brand-300/30'}
+                            >
+                                {token}
+                            </span>
+                        ))}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function NewTicketPage() {
     const t = useTranslations('tickets.new');
     const ct = useTranslations('common');
@@ -81,6 +220,9 @@ export default function NewTicketPage() {
     const [aiAnswer, setAiAnswer] = useState<string | null>(null);
     const [interactionId, setInteractionId] = useState<string | null>(null);
     const [diagnosisState, setDiagnosisState] = useState<'idle' | 'running' | 'ready' | 'fallback' | 'backend_unavailable' | 'failed'>('idle');
+    const [isSynthesisPanelVisible, setIsSynthesisPanelVisible] = useState(false);
+    const [isSynthesisPanelClosing, setIsSynthesisPanelClosing] = useState(false);
+    const synthesisPanelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const form = useForm<TicketFormValues>({
         resolver: zodResolver(getTicketSchema(t)) as any,
@@ -108,6 +250,32 @@ export default function NewTicketPage() {
             })
             .finally(() => setLoadingProducts(false));
     }, []);
+
+    useEffect(() => () => {
+        if (synthesisPanelTimer.current) {
+            clearTimeout(synthesisPanelTimer.current);
+        }
+    }, []);
+
+    const openSynthesisPanel = () => {
+        if (synthesisPanelTimer.current) {
+            clearTimeout(synthesisPanelTimer.current);
+        }
+        setIsSynthesisPanelVisible(true);
+        setIsSynthesisPanelClosing(false);
+    };
+
+    const closeSynthesisPanel = () => {
+        if (synthesisPanelTimer.current) {
+            clearTimeout(synthesisPanelTimer.current);
+        }
+        setIsSynthesisPanelClosing(true);
+        synthesisPanelTimer.current = setTimeout(() => {
+            setIsSynthesisPanelVisible(false);
+            setIsSynthesisPanelClosing(false);
+            synthesisPanelTimer.current = null;
+        }, 420);
+    };
 
     const handleProductChange = async (value: string) => {
         setSelectedProductId(value);
@@ -179,6 +347,7 @@ export default function NewTicketPage() {
         setCurrentStep(2);
         setAiAnswer(null);
         setDiagnosisState('running');
+        openSynthesisPanel();
 
         try {
             // Include confirmed hotinfo context for deep diagnostics
@@ -204,6 +373,7 @@ export default function NewTicketPage() {
 
             if (!resolvedResponse || !resolvedResponse.answer) {
                 setDiagnosisState('failed');
+                closeSynthesisPanel();
                 toast.warning(t('toasts.ai_unavailable'));
                 return;
             }
@@ -211,6 +381,7 @@ export default function NewTicketPage() {
             setAiAnswer(resolvedResponse.answer);
             setInteractionId(resolvedResponse.interactionId ?? null);
             setDiagnosisState(resolvedResponse.languageMismatch ? 'failed' : resolvedResponse.answerMode === 'FALLBACK' ? 'fallback' : 'ready');
+            closeSynthesisPanel();
 
             if (resolvedResponse.languageMismatch) {
                 toast.info(t('toasts.ai_language_mismatch'));
@@ -221,12 +392,15 @@ export default function NewTicketPage() {
             console.error('Diagnosis failed', err);
             if (isBackendUnavailableError(err)) {
                 setDiagnosisState('backend_unavailable');
+                closeSynthesisPanel();
                 toast.error(t('toasts.ai_backend_unavailable'));
             } else if (err.message === 'AI_TIMEOUT') {
                 setDiagnosisState('failed');
+                closeSynthesisPanel();
                 toast.error(t('toasts.ai_timeout'));
             } else {
                 setDiagnosisState('failed');
+                closeSynthesisPanel();
                 toast.error(t('toasts.ai_error'));
             }
         } finally {
@@ -288,6 +462,22 @@ export default function NewTicketPage() {
         }
     };
 
+    const selectedProductDetails = products.find(p => p.id === selectedProductId);
+    const selectedDepartmentDetails = departments.find(d => d.id === selectedDepartmentId);
+    const isAllplanSelected = selectedProductDetails?.name?.toUpperCase().includes('ALLPLAN');
+    const watchedSubject = form.watch('subject');
+    const watchedDescription = form.watch('description');
+    const selectedDepartmentName = selectedDepartmentDetails
+        ? getDepartmentDisplayName(selectedDepartmentDetails, departmentLabels)
+        : undefined;
+    const rainTokens = useMemo(() => buildRainTokens({
+        subject: watchedSubject,
+        description: watchedDescription,
+        productName: selectedProductDetails?.name,
+        departmentName: selectedDepartmentName,
+        files,
+    }), [watchedSubject, watchedDescription, selectedProductDetails?.name, selectedDepartmentName, files]);
+
     if (loadingProducts || loadingDepartments) {
         return (
             <div className="flex h-[50vh] items-center justify-center">
@@ -295,10 +485,6 @@ export default function NewTicketPage() {
             </div>
         );
     }
-
-    const selectedProductDetails = products.find(p => p.id === selectedProductId);
-    const selectedDepartmentDetails = departments.find(d => d.id === selectedDepartmentId);
-    const isAllplanSelected = selectedProductDetails?.name?.toUpperCase().includes('ALLPLAN');
 
     // ── STEP 1: Ticket Form (Subject, Product, Priority, Hotinfo) ──
     const renderStep1 = () => (
@@ -610,10 +796,13 @@ export default function NewTicketPage() {
                     </Button>
                 </div>
 
-                {diagnosisState === 'running' && (
-                    <div className="relative overflow-hidden rounded-2xl border border-brand-500/20 bg-slate-950/60 px-5 py-5 shadow-lg shadow-brand-500/10">
-                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-400 to-transparent" />
-                        <div className="flex items-start gap-4">
+                {isSynthesisPanelVisible && (
+                    <div className={`relative overflow-hidden rounded-2xl border border-brand-500/20 bg-slate-950/60 px-5 py-5 shadow-lg shadow-brand-500/10 transition-all duration-500 ${
+                        isSynthesisPanelClosing ? 'translate-y-1 opacity-0' : 'translate-y-0 opacity-100'
+                    }`}>
+                        <KnowledgeRain tokens={rainTokens} />
+                        <div className="absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-brand-400 to-transparent" />
+                        <div className="relative z-10 flex items-start gap-4">
                             <div className="relative mt-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-brand-500/10 text-brand-300">
                                 <span className="absolute h-full w-full animate-ping rounded-full bg-brand-400/20" />
                                 <Sparkles className="relative h-5 w-5" />

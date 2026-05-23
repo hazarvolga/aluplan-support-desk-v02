@@ -14,6 +14,7 @@
   - no-knowledge responses with retrieved context are retried through a second-pass synthesis before any deterministic fallback.
   - wait-mode customer diagnosis allows up to 120s and two no-knowledge recovery attempts.
   - ticket-opening UI tells the user a grounded answer is being synthesized and uses screenshots/files as first-class evidence.
+  - desktop ticket-opening wait UX now shows a subtle sanitized semantic data-rain background and fades out only after the AI response resolves; mobile skips this effect.
 - Rich Message Composer MVP completed:
   - ticket detail now uses a TipTap rich reply composer for admin/customer replies.
   - message history and ticket descriptions render through a safe rich/plain renderer.

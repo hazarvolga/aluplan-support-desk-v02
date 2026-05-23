@@ -78,6 +78,7 @@ module.exports = {
                 'slide-up': 'slideUp 0.3s ease both',
                 'pulse-warn': 'pulseWarn 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                 'scanline': 'scanline 8s linear infinite',
+                'knowledge-rain': 'knowledgeRain var(--rain-duration, 16s) linear infinite',
                 // Accordion open/close animations (used by @radix-ui/react-accordion)
                 'accordion-down': 'accordionDown 0.2s ease-out',
                 'accordion-up': 'accordionUp 0.2s ease-out',
@@ -87,6 +88,12 @@ module.exports = {
                 slideUp: { from: { opacity: '0', transform: 'translateY(8px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
                 pulseWarn: { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.5 } },
                 scanline: { '0%': { transform: 'translateY(-100%)' }, '100%': { transform: 'translateY(100%)' } },
+                knowledgeRain: {
+                    '0%': { transform: 'translateY(-55%)', opacity: '0' },
+                    '12%': { opacity: '0.55' },
+                    '88%': { opacity: '0.4' },
+                    '100%': { transform: 'translateY(55%)', opacity: '0' },
+                },
                 // Accordion keyframes
                 accordionDown: { from: { height: '0' }, to: { height: 'var(--radix-accordion-content-height)' } },
                 accordionUp: { from: { height: 'var(--radix-accordion-content-height)' }, to: { height: '0' } },
