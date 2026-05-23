@@ -99,4 +99,23 @@ describe('DashboardClient', () => {
         expect(screen.getByText(/chart_title/i)).toBeInTheDocument();
         expect(screen.getAllByText(/SUP-00001/i).length).toBeGreaterThan(0);
     });
+
+    it('allows manual refresh of the operations payload', async () => {
+        (useAuth as any).mockReturnValue({
+            user: { fullName: 'Admin User', roles: ['admin'] }
+        });
+        const opsSpy = vi.spyOn(api.dashboard, 'ops');
+
+        render(<DashboardClient />);
+
+        await waitFor(() => {
+            expect(screen.getByText(/refresh/i)).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText(/refresh/i));
+
+        await waitFor(() => {
+            expect(opsSpy).toHaveBeenCalledTimes(2);
+        });
+    });
 });

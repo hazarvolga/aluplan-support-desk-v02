@@ -1,5 +1,34 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-23 Operations Dashboard Phase 4
+
+### What changed
+
+- Added controlled live refresh behavior to the admin/staff operations dashboard.
+- Dashboard now supports:
+  - manual refresh from the header
+  - visible refresh/spinner state
+  - visible last-updated timestamp
+  - 60-second background refresh for staff/admin dashboards
+- Customer/viewer dashboard does not start the operations polling loop.
+- Added a regression test for manual refresh calling the operations endpoint again.
+
+### Verification
+
+- `pnpm i18n:check` passed for `tr`, `en`, and `de`.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm --filter @aluplan/frontend exec vitest run 'src/app/[locale]/(dashboard)/dashboard/DashboardClient.spec.tsx'` passed with 6 tests.
+- `pnpm --filter @aluplan/frontend build` passed.
+- `git diff --check` passed.
+
+### Notes
+
+- Local frontend/backend servers were not already running in this workspace, so Phase 4 used build/type/unit validation instead of a live authenticated browser smoke. Final phase should include browser smoke if local auth/backend can be started safely.
+
+### Next
+
+- Phase 5 should run final audit, broader verification, commit any remaining docs, and produce the deployment-ready report without pushing.
+
 ## Follow-up - 2026-05-23 Operations Dashboard Phase 3
 
 ### What changed

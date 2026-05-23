@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ElementType } from 'react';
 import {
     Activity,
@@ -15,6 +15,7 @@ import {
     DollarSign,
     Info,
     PlusCircle,
+    RefreshCw,
     Search,
     Server,
     ShieldCheck,
@@ -80,6 +81,11 @@ function formatNumber(value: unknown) {
 function formatCurrency(value: unknown, currency = 'USD') {
     const numeric = Number(value ?? 0);
     return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 4 }).format(Number.isFinite(numeric) ? numeric : 0);
+}
+
+function formatRefreshTime(value: Date | null) {
+    if (!value) return '';
+    return new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(value);
 }
 
 function roleList(user: any) {
@@ -172,11 +178,26 @@ function QuickCard({ icon: Icon, title, description, cta, href, tone }: {
     );
 }
 
-function HeaderActions({ data, drawer, setDrawer }: { data: OpsDashboardData; drawer: DrawerMode; setDrawer: (mode: DrawerMode) => void }) {
+function HeaderActions({ data, drawer, refreshing, setDrawer, onRefresh }: {
+    data: OpsDashboardData;
+    drawer: DrawerMode;
+    refreshing: boolean;
+    setDrawer: (mode: DrawerMode) => void;
+    onRefresh: () => void;
+}) {
     const t = useTranslations('dashboard.ops');
     const isSystemHealthy = data.system.status === 'HEALTHY';
     return (
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+            <button
+                type="button"
+                onClick={onRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground transition hover:bg-white/[0.07] hover:text-white disabled:cursor-wait disabled:opacity-60"
+            >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? t('refreshing') : t('refresh')}
+            </button>
             <button
                 type="button"
                 onClick={() => setDrawer(drawer === 'cost' ? null : 'cost')}
@@ -751,47 +772,69 @@ function EmptyState({ title, description }: { title: string; description: string
 
 export default function DashboardClient() {
     const t = useTranslations('dashboard');
+    const tOps = useTranslations('dashboard.ops');
     const { user } = useAuth();
+    const mountedRef = useRef(true);
     const [aiStatus, setAiStatus] = useState<{ available: boolean; model?: string } | null>(null);
     const [customerStats, setCustomerStats] = useState<any>(null);
     const [opsData, setOpsData] = useState<OpsDashboardData | null>(null);
     const [drawer, setDrawer] = useState<DrawerMode>(null);
     const [selectedPulse, setSelectedPulse] = useState<PulseId | null>(null);
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
 
     const userRoles = useMemo(() => roleList(user), [user]);
     const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer');
 
-    useEffect(() => {
-        let mounted = true;
-        const loadData = async () => {
-            try {
-                if (isCustomer) {
-                    const statsRes = await (api.tickets as unknown as { getSlaStats: () => Promise<unknown> }).getSlaStats().catch(() => null);
-                    if (mounted) setCustomerStats(statsRes);
-                    return;
-                }
-
-                const [statusRes, opsRes] = await Promise.all([
-                    api.ai.status().catch(() => null),
-                    api.dashboard.ops(7).catch(() => emptyOpsData()),
-                ]);
-                if (mounted) {
-                    setAiStatus(statusRes);
-                    setOpsData(opsRes);
-                }
-            } catch (err) {
-                console.error('Dashboard load failed', err);
-                if (mounted && !isCustomer) setOpsData(emptyOpsData());
-            } finally {
-                if (mounted) setLoading(false);
+    const loadData = useCallback(async (background = false) => {
+        if (background) setRefreshing(true);
+        try {
+            if (isCustomer) {
+                const statsRes = await (api.tickets as unknown as { getSlaStats: () => Promise<unknown> }).getSlaStats().catch(() => null);
+                if (mountedRef.current) setCustomerStats(statsRes);
+                return;
             }
-        };
-        loadData();
-        return () => {
-            mounted = false;
-        };
+
+            const [statusRes, opsRes] = await Promise.all([
+                api.ai.status().catch(() => null),
+                api.dashboard.ops(7).catch(() => emptyOpsData()),
+            ]);
+            if (mountedRef.current) {
+                setAiStatus(statusRes);
+                setOpsData(opsRes);
+                setLastUpdated(new Date());
+            }
+        } catch (err) {
+            console.error('Dashboard load failed', err);
+            if (mountedRef.current && !isCustomer) setOpsData(emptyOpsData());
+        } finally {
+            if (mountedRef.current) {
+                setLoading(false);
+                setRefreshing(false);
+            }
+        }
     }, [isCustomer]);
+
+    useEffect(() => {
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        void loadData(false);
+    }, [loadData]);
+
+    useEffect(() => {
+        if (isCustomer) return;
+        const interval = window.setInterval(() => {
+            void loadData(true);
+        }, 60000);
+        return () => {
+            window.clearInterval(interval);
+        };
+    }, [isCustomer, loadData]);
 
     if (loading) {
         return (
@@ -819,8 +862,13 @@ export default function DashboardClient() {
                         {t('title')}
                     </h1>
                     <p className="ml-11 mt-1 text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground">{t('telemetry_version')}</p>
+                    {lastUpdated ? (
+                        <p className="ml-11 mt-1 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
+                            {tOps('last_updated', { time: formatRefreshTime(lastUpdated) })}
+                        </p>
+                    ) : null}
                 </div>
-                <HeaderActions data={effectiveSystem} drawer={drawer} setDrawer={setDrawer} />
+                <HeaderActions data={effectiveSystem} drawer={drawer} refreshing={refreshing} setDrawer={setDrawer} onRefresh={() => void loadData(true)} />
             </div>
 
             <TopDrawer mode={drawer} data={effectiveSystem} onClose={() => setDrawer(null)} />

@@ -310,6 +310,9 @@
       "live_cost": "Live Cost",
       "system_active": "System Active",
       "system_watch": "System Watch",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing",
+      "last_updated": "Last updated {time}",
       "close": "Close",
       "kpis": {
         "active_tickets": "Active Tickets",

@@ -310,6 +310,9 @@
       "live_cost": "Canlı Maliyet",
       "system_active": "Sistem Aktif",
       "system_watch": "Sistem İzleniyor",
+      "refresh": "Yenile",
+      "refreshing": "Yenileniyor",
+      "last_updated": "Son güncelleme {time}",
       "close": "Kapat",
       "kpis": {
         "active_tickets": "Aktif Bilet",
