@@ -278,8 +278,11 @@ describe('TicketsService', () => {
         it('should exclude soft-deleted tickets from every SLA count', async () => {
             mockRedisService.get.mockResolvedValue(null);
             prisma.ticket.count.mockResolvedValue(0);
+            prisma.ticket.groupBy.mockResolvedValue([
+                { priority: TicketPriority.HIGH, _count: { _all: 1 } },
+            ]);
 
-            await service.getSlaStats();
+            const result = await service.getSlaStats();
 
             expect(prisma.ticket.count).toHaveBeenCalledTimes(5);
             for (const call of prisma.ticket.count.mock.calls) {
@@ -287,6 +290,10 @@ describe('TicketsService', () => {
                     where: expect.objectContaining({ deletedAt: null }),
                 }));
             }
+            expect(prisma.ticket.groupBy).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({ deletedAt: null }),
+            }));
+            expect(result.byPriority).toEqual([{ priority: TicketPriority.HIGH, _count: 1 }]);
         });
     });
 

@@ -545,6 +545,36 @@ describe('AiQueryService', () => {
             expect(result.answer).not.toContain('en güçlü eşleşme');
         });
 
+        it('does not infer BIMPLUS storage limits from unrelated license telemetry evidence', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'home-office-license',
+                        sourceType: 'DOCUMENT',
+                        title: 'FAQ_EN_Allplan_in_the_home-office',
+                        content: 'Allplan in the home office. Workgroup Manager can be used over VPN. If licensing is unavailable, check CodeMeter and the local license file before starting Allplan.',
+                        similarity: 0.96,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.96, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'BIMPLUS depolama alanı yetersiz uyarısı alıyoruz',
+                wait: true,
+                language: 'tr',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('yeterince güvenilir ve doğrudan eşleşen içerik bulunamadı');
+            expect(result.answer).not.toContain('Lisans dosyası okunamadı');
+            expect(result.answer).not.toContain('CodeMeter');
+            expect(result.answer).not.toContain('home-office');
+            expect(result.answer).not.toContain('en güçlü eşleşme');
+        });
+
         it('returns a safe localized fallback in the selected UI language when generation is unavailable', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [

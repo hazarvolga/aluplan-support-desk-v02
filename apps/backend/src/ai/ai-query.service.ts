@@ -1452,6 +1452,11 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
     ): boolean {
         const normalizedQuery = this.normalizeSearchText(query);
         const normalizedEvidence = this.normalizeSearchText(`${snippet.title} ${snippet.excerpt}`);
+
+        if (this.isBimplusStorageQuery(normalizedQuery)) {
+            return this.hasBimplusStorageEvidence(normalizedEvidence);
+        }
+
         const requiredGroups = this.getQuerySignalGroups()
             .map(group => ({
                 ...group,
@@ -1481,6 +1486,18 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
 
         const matches = uniqueSignals.filter(token => normalizedEvidence.includes(token)).length;
         return matches >= Math.min(2, uniqueSignals.length);
+    }
+
+    private isBimplusStorageQuery(normalizedQuery: string): boolean {
+        const hasBimplusSignal = /(?:bimplus|bim plus|allplan share|share|cloud)/.test(normalizedQuery);
+        const hasStorageSignal = /(?:depolama|storage|speicher|alan|space|quota|limit|gb|yetersiz|insufficient|full)/.test(normalizedQuery);
+        return hasBimplusSignal && hasStorageSignal;
+    }
+
+    private hasBimplusStorageEvidence(normalizedEvidence: string): boolean {
+        const hasBimplusSignal = /(?:bimplus|bim plus|allplan share|share)/.test(normalizedEvidence);
+        const hasStorageSignal = /(?:depolama|storage|speicher|space|quota|limit|gb|capacity|trial|student|education|subscription|abonelik)/.test(normalizedEvidence);
+        return hasBimplusSignal && hasStorageSignal;
     }
 
     private resolveResponseLanguage(language: string | undefined, _query: string): 'tr' | 'en' | 'de' {

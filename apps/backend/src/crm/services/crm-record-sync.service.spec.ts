@@ -17,6 +17,7 @@ describe('CrmRecordSyncService', () => {
             updateMany: jest.fn(),
         },
         user: {
+            findFirst: jest.fn(),
             update: jest.fn(),
         },
         crmChangeLog: {
@@ -257,7 +258,7 @@ describe('CrmRecordSyncService', () => {
                 findUnique: jest.fn().mockResolvedValue({ id: 'role-customer', name: 'CUSTOMER' }),
             },
             user: {
-                findUnique: jest.fn().mockResolvedValue(null),
+                findFirst: jest.fn().mockResolvedValue(null),
                 update: jest.fn().mockImplementation(({ data }) =>
                     Promise.resolve({
                         id: 'user-existing',

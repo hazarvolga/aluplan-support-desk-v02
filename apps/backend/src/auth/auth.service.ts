@@ -10,6 +10,7 @@ import { SettingsService } from '../settings/settings.service';
 import { RedisService } from '../redis/redis.service';
 import { CrmEmailValidatorService } from '../crm/crm-email-validator.service';
 import * as crypto from 'crypto';
+import { normalizeEmailAddress } from '../common/utils/email-normalization.util';
 
 @Injectable()
 export class AuthService {
@@ -26,11 +27,10 @@ export class AuthService {
     ) { }
 
     async login(dto: LoginDto): Promise<any> {
+        const email = normalizeEmailAddress(dto.email);
         this.logger.debug(`Attempting login for user ID resolution (email masked)`);
         try {
-            const user = await this.prisma.user.findUnique({
-                where: { email: dto.email },
-            });
+            const user = await this.findUserByEmail(email);
 
             if (!user) {
                 this.logger.warn(`Login failed: User NOT found in DB`);
@@ -144,9 +144,8 @@ export class AuthService {
     }
 
     async lookupEmail(email: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { email },
-        });
+        const normalizedEmail = normalizeEmailAddress(email);
+        const user = await this.findUserByEmail(normalizedEmail);
 
         if (user) {
             // Check if user was soft-deleted
@@ -166,10 +165,10 @@ export class AuthService {
         // Determine the intended action (NEW or NEW_MATCHED_COMPANY) first,
         // then gate it behind CRM validation (unless admin bypass applies).
 
-        const domain = email.split('@')[1];
+        const domain = normalizedEmail.split('@')[1];
         if (!domain) {
             // Malformed email — run CRM check before allowing registration
-            return await this.validateNewUserWithCrm(email, 'NEW', null);
+            return await this.validateNewUserWithCrm(normalizedEmail, 'NEW', null);
         }
 
         const publicDomains = [
@@ -178,7 +177,7 @@ export class AuthService {
         ];
 
         if (publicDomains.includes(domain.toLowerCase())) {
-            return await this.validateNewUserWithCrm(email, 'NEW', null);
+            return await this.validateNewUserWithCrm(normalizedEmail, 'NEW', null);
         }
 
         const matchedProfile = await this.prisma.customerProfile.findFirst({
@@ -196,10 +195,10 @@ export class AuthService {
         });
 
         if (matchedProfile?.companyName) {
-            return await this.validateNewUserWithCrm(email, 'NEW_MATCHED_COMPANY', matchedProfile.companyName);
+            return await this.validateNewUserWithCrm(normalizedEmail, 'NEW_MATCHED_COMPANY', matchedProfile.companyName);
         }
 
-        return await this.validateNewUserWithCrm(email, 'NEW', null);
+        return await this.validateNewUserWithCrm(normalizedEmail, 'NEW', null);
     }
 
     /**
@@ -233,9 +232,7 @@ export class AuthService {
     }
 
     async forgotPassword(email: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { email },
-        });
+        const user = await this.findUserByEmail(email);
 
         if (!user) {
             // Return generic success to prevent email enumeration
@@ -388,6 +385,24 @@ export class AuthService {
         ]);
 
         return { access_token: accessToken, refresh_token: refreshToken };
+    }
+
+    private async findUserByEmail(email: string) {
+        const normalizedEmail = normalizeEmailAddress(email);
+        const exact = await this.prisma.user.findUnique({
+            where: { email: normalizedEmail },
+        });
+
+        if (exact) return exact;
+
+        return this.prisma.user.findFirst({
+            where: {
+                email: {
+                    equals: normalizedEmail,
+                    mode: 'insensitive',
+                },
+            },
+        });
     }
 
     private getPermissionsForRole(role: string): string[] {

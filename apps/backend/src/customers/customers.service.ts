@@ -15,6 +15,7 @@ import { ErrorLoggerService } from '../common/services/error-logger.service';
 import { UpdateCustomerProfileDto } from './dto/update-customer-profile.dto';
 import { CrmEmailValidatorService } from '../crm/crm-email-validator.service';
 import { isInternalPlaceholderEmail } from '../email/email-recipient-guard.util';
+import { normalizeEmailAddress } from '../common/utils/email-normalization.util';
 
 @Injectable()
 export class CustomersService {
@@ -35,9 +36,10 @@ export class CustomersService {
 
         for (const record of data) {
             try {
+                const email = normalizeEmailAddress(record.email);
                 await this.prisma.$transaction(async (prisma) => {
-                    let existingUser = await prisma.user.findUnique({
-                        where: { email: record.email },
+                    let existingUser = await prisma.user.findFirst({
+                        where: { email: { equals: email, mode: 'insensitive' } },
                         include: { customerProfile: true },
                     });
 
@@ -52,7 +54,7 @@ export class CustomersService {
 
                         existingUser = await prisma.user.create({
                             data: {
-                                email: record.email,
+                                email,
                                 fullName: record.fullName || `${record.firstName} ${record.lastName}`,
                                 passwordHash,
                                 roleId: customerRole?.id,
@@ -101,7 +103,7 @@ export class CustomersService {
                 successCount++;
             } catch (err) {
                 errorCount++;
-                errors.push({ email: record.email, error: err.message });
+                errors.push({ email: normalizeEmailAddress(record.email), error: err.message });
             }
         }
 
@@ -109,9 +111,10 @@ export class CustomersService {
     }
 
     async registerCustomer(dto: RegisterCustomerDto) {
+        const email = normalizeEmailAddress(dto.email);
         // 1. Check if email already exists
-        const existingEmail = await this.prisma.user.findUnique({
-            where: { email: dto.email },
+        const existingEmail = await this.prisma.user.findFirst({
+            where: { email: { equals: email, mode: 'insensitive' } },
         });
 
         if (existingEmail && !existingEmail.deletedAt && existingEmail.status === 'ACTIVE') {
@@ -119,8 +122,8 @@ export class CustomersService {
         }
 
         // 2. CRM validation — only for non-admin users
-        if (!this.crmEmailValidator.isAdminBypass(dto.email)) {
-            const crmResult = await this.crmEmailValidator.validateEmailInCrm(dto.email);
+        if (!this.crmEmailValidator.isAdminBypass(email)) {
+            const crmResult = await this.crmEmailValidator.validateEmailInCrm(email);
             if (!crmResult.isValid) {
                 // CRM_ERROR = sistem hatası → fail-open (kayıt devam eder)
                 // NOT_FOUND = email CRM'de yok → reddedilir
@@ -134,7 +137,7 @@ export class CustomersService {
                     action: 'crm_validation_fail_open',
                     message: `CRM validation failed with ${crmResult.errorCode}, allowing registration to proceed`,
                     error: new Error(crmResult.errorMessage || crmResult.errorCode || 'CRM_ERROR'),
-                    metadata: { email: dto.email, errorCode: crmResult.errorCode },
+                    metadata: { email, errorCode: crmResult.errorCode },
                 });
             }
         }
@@ -177,8 +180,8 @@ export class CustomersService {
             };
 
             // Check if user exists (for reactivation)
-            const existingUser = await prisma.user.findUnique({
-                where: { email: dto.email },
+            const existingUser = await prisma.user.findFirst({
+                where: { email: { equals: email, mode: 'insensitive' } },
                 include: { customerProfile: true }
             });
 
@@ -222,7 +225,7 @@ export class CustomersService {
             // Create new User with nested CustomerProfile
             return prisma.user.create({
                 data: {
-                    email: dto.email,
+                    email,
                     fullName,
                     passwordHash,
                     status: 'INACTIVE',
@@ -259,12 +262,12 @@ export class CustomersService {
 
             await this.emailService.enqueueEmail({
                 template: 'welcome-customer',
-                to: dto.email,
+                to: email,
                 subject: 'Aluplan Destek Ekosistemine Hoş Geldiniz - E-postanızı Doğrulayın',
                 priority: 1,
                 data: {
                     customerName: `${dto.firstName} ${dto.lastName}`,
-                    email: dto.email,
+                    email,
                     password: dto.password,
                     loginUrl: `${this.config.get('FRONTEND_URL', 'http://localhost:3000')}/login`,
                     verifyUrl: verifyUrl,
@@ -275,7 +278,7 @@ export class CustomersService {
                 action: 'welcome_email_failed',
                 message: 'Failed to send welcome email during registration',
                 error,
-                metadata: { email: dto.email }
+                metadata: { email }
             });
         }
 
@@ -310,6 +313,8 @@ export class CustomersService {
                 { email: { contains: search, mode: 'insensitive' } },
                 { customerProfile: { companyName: { contains: search, mode: 'insensitive' } } },
                 { customerProfile: { customerNo: { contains: search, mode: 'insensitive' } } },
+                { customerProfile: { account: { is: { name: { contains: search, mode: 'insensitive' } } } } },
+                { customerProfile: { account: { is: { account_number: { contains: search, mode: 'insensitive' } } } } },
             ];
         }
 

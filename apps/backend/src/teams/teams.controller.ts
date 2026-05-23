@@ -57,6 +57,32 @@ export class TeamsController {
     }
 
     @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'AGENT')
+    @Get('agents/:id')
+    @ApiOperation({ summary: 'Get agent profile' })
+    getAgentProfile(@Param('id') id: string) {
+        return this.teamsService.getAgentProfile(id);
+    }
+
+    @Patch('agents/me/status')
+    @ApiOperation({ summary: 'Update my agent status' })
+    updateMyStatus(@Req() req: any, @Body() dto: { status: AgentStatus }) {
+        return this.teamsService.updateAgentStatus(req.user.id, dto.status);
+    }
+
+    @Patch('agents/me/profile')
+    @ApiOperation({ summary: 'Update my agent profile' })
+    updateMyProfile(@Req() req: any, @Body() dto: { title?: string; bio?: string; timezone?: string; language?: string }) {
+        return this.teamsService.updateAgentProfile(req.user.id, dto);
+    }
+
+    // SKILLS
+    @Get('skills')
+    @ApiOperation({ summary: 'List all skills' })
+    getSkills() {
+        return this.teamsService.getSkills();
+    }
+
+    @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'AGENT')
     @Get(':id')
     @ApiOperation({ summary: 'Get team details' })
     getTeam(@Param('id') id: string) {
@@ -82,7 +108,7 @@ export class TeamsController {
         return this.teamsService.getTeamStats(id);
     }
 
-    // MEMBERS & AGENTS
+    // MEMBERS
     @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD')
     @Post(':id/members')
     @ApiOperation({ summary: 'Add or update team member role' })
@@ -95,31 +121,5 @@ export class TeamsController {
     @ApiOperation({ summary: 'Remove team member' })
     removeMember(@Param('id') id: string, @Param('userId') userId: string) {
         return this.teamsService.removeMember(id, userId);
-    }
-
-    @Roles('ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'AGENT')
-    @Get('agents/:id')
-    @ApiOperation({ summary: 'Get agent profile' })
-    getAgentProfile(@Param('id') id: string) {
-        return this.teamsService.getAgentProfile(id);
-    }
-
-    @Patch('agents/me/status')
-    @ApiOperation({ summary: 'Update my agent status' })
-    updateMyStatus(@Req() req: any, @Body() dto: { status: AgentStatus }) {
-        return this.teamsService.updateAgentStatus(req.user.id, dto.status);
-    }
-
-    @Patch('agents/me/profile')
-    @ApiOperation({ summary: 'Update my agent profile' })
-    updateMyProfile(@Req() req: any, @Body() dto: { title?: string; bio?: string; timezone?: string; language?: string }) {
-        return this.teamsService.updateAgentProfile(req.user.id, dto);
-    }
-
-    // SKILLS
-    @Get('skills')
-    @ApiOperation({ summary: 'List all skills' })
-    getSkills() {
-        return this.teamsService.getSkills();
     }
 }

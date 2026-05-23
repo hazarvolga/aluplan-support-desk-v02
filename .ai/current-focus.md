@@ -2,6 +2,12 @@
 
 ## Active Work
 
+- Live bug closure pass in progress:
+  - static backend routes are guarded against dynamic `:id` shadowing for team skills/agents and ticket by-number/bulk endpoints.
+  - user/customer/CRM email writes now normalize to lowercase and legacy mixed-case matches are resolved case-insensitively.
+  - customer list search no longer hides backend CRM account-name matches with a second client-side global filter.
+  - SLA stats now return priority buckets for the dashboard distribution cards.
+  - deterministic AI fallback refuses BIMPLUS storage answers from unrelated license/home-office evidence.
 - Rich Message Composer MVP completed:
   - ticket detail now uses a TipTap rich reply composer for admin/customer replies.
   - message history and ticket descriptions render through a safe rich/plain renderer.

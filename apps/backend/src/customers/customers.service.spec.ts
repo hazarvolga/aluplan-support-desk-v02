@@ -9,6 +9,7 @@ function buildService(overrides: Partial<{
   const mockPrisma = {
     user: {
       findUnique: jest.fn().mockResolvedValue(null),
+      findFirst: jest.fn().mockResolvedValue(null),
       create: jest.fn(),
       update: jest.fn(),
       findMany: jest.fn(),
@@ -30,6 +31,7 @@ function buildService(overrides: Partial<{
       const txPrisma = {
         user: {
           findUnique: jest.fn().mockResolvedValue(null),
+          findFirst: jest.fn().mockResolvedValue(null),
           create: jest.fn().mockResolvedValue({
             id: 'user-id',
             email: 'test@example.com',
@@ -225,6 +227,27 @@ describe('CustomersService', () => {
 
       await expect(service.resetPassword('user-1')).rejects.toThrow('gerçek e-posta adresi yok');
       expect(mockEmailService.enqueueEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getAllCustomers', () => {
+    it('searches linked CRM account names as well as contact fields', async () => {
+      const { service, mockPrisma } = buildService();
+
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      mockPrisma.user.count.mockResolvedValue(0);
+
+      await service.getAllCustomers(1, 20, 'LGN Proje');
+
+      expect(mockPrisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          roleId: 'role-id',
+          deletedAt: null,
+          OR: expect.arrayContaining([
+            { customerProfile: { account: { is: { name: { contains: 'LGN Proje', mode: 'insensitive' } } } } },
+          ]),
+        }),
+      }));
     });
   });
 });

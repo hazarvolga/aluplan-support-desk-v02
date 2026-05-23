@@ -129,6 +129,38 @@ describe('AuthService', () => {
                 data: { refreshTokenHash: 'newHash' }
             });
         });
+
+        it('resolves login emails case-insensitively when legacy casing exists', async () => {
+            const mockUser = {
+                id: 'user-legacy',
+                email: 'Murat.sahin@enka.com',
+                fullName: 'Murat Şahin',
+                status: 'ACTIVE',
+                deletedAt: null,
+                passwordHash: 'hash',
+                roleId: null,
+            };
+            prisma.user.findUnique.mockResolvedValueOnce(null);
+            prisma.user.findFirst.mockResolvedValueOnce(mockUser);
+            prisma.user.update.mockResolvedValue(mockUser);
+            (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+            (bcrypt.hash as jest.Mock).mockResolvedValue('newHash');
+            jwt.signAsync.mockResolvedValue('token');
+
+            await service.login({ email: ' murat.sahin@ENKA.com ', password: 'password123' });
+
+            expect(prisma.user.findUnique).toHaveBeenCalledWith({
+                where: { email: 'murat.sahin@enka.com' },
+            });
+            expect(prisma.user.findFirst).toHaveBeenCalledWith({
+                where: {
+                    email: {
+                        equals: 'murat.sahin@enka.com',
+                        mode: 'insensitive',
+                    },
+                },
+            });
+        });
     });
 
     describe('refreshTokens', () => {

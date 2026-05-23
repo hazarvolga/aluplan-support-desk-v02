@@ -74,6 +74,17 @@ export class TicketsController {
         return this.ticketsService.getSlaStats(req.user);
     }
 
+    // ─── GET BY NUMBER ──────────────────────────
+    @Get('by-number/:number')
+    @RequirePermissions('ticket:read')
+    @ApiOperation({ summary: 'Get ticket by number (e.g. SUP-00001)' })
+    @ApiParam({ name: 'number', required: true, description: 'Unique ticket number identifier' })
+    @ApiResponse({ status: 200, description: 'The requested ticket object.' })
+    @ApiResponse({ status: 404, description: 'Ticket not found.' })
+    findByNumber(@Param('number') number: string, @Request() req: any) {
+        return this.ticketsService.findByNumber(number, { id: req.user.sub, role: req.user.role });
+    }
+
     // ─── AI TRACE ───────────────────────────────
     @Get(':id/ai-trace')
     @RequirePermissions('ticket:read')
@@ -103,18 +114,17 @@ export class TicketsController {
         return this.ticketsService.findOne(id, { id: req.user.sub, role: req.user.role });
     }
 
-    // ─── GET BY NUMBER ──────────────────────────
-    @Get('by-number/:number')
-    @RequirePermissions('ticket:read')
-    @ApiOperation({ summary: 'Get ticket by number (e.g. SUP-00001)' })
-    @ApiParam({ name: 'number', required: true, description: 'Unique ticket number identifier' })
-    @ApiResponse({ status: 200, description: 'The requested ticket object.' })
-    @ApiResponse({ status: 404, description: 'Ticket not found.' })
-    findByNumber(@Param('number') number: string, @Request() req: any) {
-        return this.ticketsService.findByNumber(number, { id: req.user.sub, role: req.user.role });
+    // ─── UPDATE ─────────────────────────────────
+    @Patch('bulk')
+    @RequirePermissions('ticket:update')
+    @ApiOperation({ summary: 'Bulk update multiple tickets' })
+    @ApiResponse({ status: 200, description: 'The tickets were successfully updated.' })
+    async bulkUpdate(@Body() dto: BulkUpdateTicketDto, @Request() req: any) {
+        const result = await this.ticketsService.bulkUpdate(dto, req.user);
+        this.notificationsGateway.emitBulkUpdate(dto.ticketIds);
+        return result;
     }
 
-    // ─── UPDATE ─────────────────────────────────
     @Patch(':id')
     @RequirePermissions('ticket:update')
     @ApiOperation({ summary: 'Update ticket fields' })
@@ -124,16 +134,6 @@ export class TicketsController {
         const updated = await this.ticketsService.update(id, dto, req.user);
         this.notificationsGateway.emitTicketUpdated(updated);
         return updated;
-    }
-
-    @Patch('bulk')
-    @RequirePermissions('ticket:update')
-    @ApiOperation({ summary: 'Bulk update multiple tickets' })
-    @ApiResponse({ status: 200, description: 'The tickets were successfully updated.' })
-    async bulkUpdate(@Body() dto: BulkUpdateTicketDto, @Request() req: any) {
-        const result = await this.ticketsService.bulkUpdate(dto, req.user);
-        this.notificationsGateway.emitBulkUpdate(dto.ticketIds);
-        return result;
     }
 
     // ─── TRANSITION ─────────────────────────────

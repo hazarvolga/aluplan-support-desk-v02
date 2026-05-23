@@ -1,5 +1,43 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-23 Live Bug Closure Pass
+
+### What changed
+
+- Protected static backend routes from dynamic route shadowing:
+  - `GET /teams/skills`
+  - `GET /teams/agents/:id`
+  - `PATCH /teams/agents/me/status`
+  - `PATCH /teams/agents/me/profile`
+  - `GET /tickets/by-number/:number`
+  - `PATCH /tickets/bulk`
+- Added route-order regression tests so these routes cannot silently regress behind `:id` handlers.
+- Normalized email creation and lookup paths for auth, user creation, customer registration/import, and CRM contact sync.
+- Extended customer search to include linked CRM account name/account number and removed the frontend's duplicate global customer filter that could hide valid backend matches.
+- Hardened deterministic AI fallback so BIMPLUS/Share storage questions require direct BIMPLUS/Share storage evidence; unrelated license/home-office snippets now produce the safe no-match response.
+- Restored dashboard SLA priority distribution by returning `byPriority` buckets from `/tickets/sla/stats`.
+
+### Verification
+
+- Backend focused Jest:
+  - `controller-route-order.spec.ts`
+  - `tickets.controller.spec.ts`
+  - `tickets.service.spec.ts`
+  - `users.service.spec.ts`
+  - `auth.service.spec.ts`
+  - `customers.service.spec.ts`
+  - `crm-record-sync.service.spec.ts`
+  - `ai-query.service.spec.ts`
+  - `ai-copilot.service.spec.ts`
+  - Result: 10 suites passed, 144 tests passed, 1 skipped.
+- Backend typecheck: passed.
+- Frontend typecheck: passed.
+
+### Notes
+
+- No production DB mutation was performed in this pass.
+- Existing live mixed-case duplicate email rows, if any, still need a separate dry-run cleanup/migration decision.
+
 ## Goal
 
 Stabilize the backend startup path, harden a few real code risks, reduce repo-root noise, and clean up frontend AI settings debt without trusting stale root markdown reports.

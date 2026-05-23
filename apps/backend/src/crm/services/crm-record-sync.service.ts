@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { normalizeEmailAddress } from '../../common/utils/email-normalization.util';
 
 type EntityType = 'account' | 'contact';
 type SyncSource = 'FULL_IMPORT' | 'DELTA_SYNC' | 'WEBHOOK';
@@ -109,6 +110,7 @@ export class CrmRecordSyncService {
             email = `no-email-${contactId}@internal.aluplan`;
             isPlaceholderEmail = true;
         }
+        email = normalizeEmailAddress(email);
 
         const adminEmails = (process.env.ADMIN_BYPASS_EMAILS || '')
             .split(',')
@@ -142,7 +144,9 @@ export class CrmRecordSyncService {
                 include: { user: true },
             });
 
-            let user = existingProfileByContactId?.user ?? (await tx.user.findUnique({ where: { email } }));
+            let user = existingProfileByContactId?.user ?? (await tx.user.findFirst({
+                where: { email: { equals: email, mode: 'insensitive' } },
+            }));
             if (!user) {
                 user = await tx.user.create({
                     data: {
@@ -172,7 +176,9 @@ export class CrmRecordSyncService {
                 }
 
                 if (!isPlaceholderEmail && user.email !== email) {
-                    const emailOwner = await tx.user.findUnique({ where: { email } });
+                    const emailOwner = await tx.user.findFirst({
+                        where: { email: { equals: email, mode: 'insensitive' } },
+                    });
                     if (!emailOwner || emailOwner.id === user.id) {
                         user = await tx.user.update({
                             where: { id: user.id },

@@ -734,7 +734,7 @@ export class TicketsService {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const [total, breached, nearing, resolvedToday, resolvedTotal] = await Promise.all([
+        const [total, breached, nearing, resolvedToday, resolvedTotal, priorityBuckets] = await Promise.all([
             this.prisma.ticket.count({ where: { ...baseWhere, status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] } } }),
             this.prisma.ticket.count({ where: { ...baseWhere, isSlaBreached: true, status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] } } }),
             this.prisma.ticket.count({
@@ -751,9 +751,19 @@ export class TicketsService {
             this.prisma.ticket.count({
                 where: { ...baseWhere, status: TicketStatus.RESOLVED }
             }),
+            this.prisma.ticket.groupBy({
+                by: ['priority'],
+                where: { ...baseWhere, status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] } },
+                _count: { _all: true },
+            }),
         ]);
 
-        const result = { total, breached, nearing, resolvedToday, resolvedTotal };
+        const byPriority = priorityBuckets.map((bucket: { priority: TicketPriority; _count: number | { _all?: number } }) => ({
+            priority: bucket.priority,
+            _count: typeof bucket._count === 'number' ? bucket._count : bucket._count?._all ?? 0,
+        }));
+
+        const result = { total, breached, nearing, resolvedToday, resolvedTotal, byPriority };
         await this.redis.set(cacheKey, JSON.stringify(result), 60); // 60 seconds TTL
         return result;
     }

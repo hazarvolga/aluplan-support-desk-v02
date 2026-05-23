@@ -24,6 +24,7 @@ export const mockPrismaService: any = {
         update: jest.fn(),
         delete: jest.fn(),
         count: jest.fn(),
+        groupBy: jest.fn(),
     },
     ticketMessage: {
         findMany: jest.fn(),

@@ -3,13 +3,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import { BCRYPT_ROUNDS } from '../auth/security.constants';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { normalizeEmailAddress } from '../common/utils/email-normalization.util';
 
 @Injectable()
 export class UsersService {
     constructor(private prisma: PrismaService) { }
 
     async create(dto: { email: string; password: string; fullName: string; roles?: string[] }) {
-        const existing = await this.prisma.user.findUnique({ where: { email: dto.email }, include: { role: true } });
+        const email = normalizeEmailAddress(dto.email);
+        const existing = await this.prisma.user.findFirst({
+            where: { email: { equals: email, mode: 'insensitive' } },
+            include: { role: true },
+        });
         const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
 
         if (existing) {
@@ -55,7 +60,7 @@ export class UsersService {
 
         const user = await this.prisma.user.create({
             data: {
-                email: dto.email,
+                email,
                 fullName: dto.fullName,
                 passwordHash,
                 status: 'ACTIVE',

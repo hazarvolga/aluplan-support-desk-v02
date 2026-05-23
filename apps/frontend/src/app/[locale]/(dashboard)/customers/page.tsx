@@ -448,18 +448,9 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
     const filteredAndSortedCustomers = useMemo(() => {
         let result = [...customers];
 
-        // Global search
-        if (searchTerm) {
-            const lowerTerm = searchTerm.toLowerCase();
-            result = result.filter(c =>
-                includesSearch(c.fullName, lowerTerm) ||
-                includesSearch(c.email, lowerTerm) ||
-                includesSearch(c.customerProfile?.companyName, lowerTerm) ||
-                includesSearch(getDisplayCustomerNo(c), lowerTerm) ||
-                includesSearch(c.customerProfile?.contractStatus, lowerTerm) ||
-                includesSearch(c.customerProfile?.subscriptionModel, lowerTerm)
-            );
-        }
+        // Global customer search is handled by the paginated backend endpoint.
+        // Re-filtering the returned page here can hide CRM contacts that matched
+        // linked account fields such as the account name or account number.
 
         // Per-column filtering
         Object.entries(columnFilters).forEach(([key, value]) => {

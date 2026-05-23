@@ -29,7 +29,7 @@ describe('UsersService', () => {
     describe('create', () => {
         it('should throw ConflictException if email exists', async () => {
             // Arrange
-            prisma.user.findUnique.mockResolvedValue({ id: '1' });
+            prisma.user.findFirst.mockResolvedValue({ id: '1' });
 
             // Act & Assert
             await expect(service.create({ email: 'test@t.com', password: 'pw', fullName: 'Test' }))
@@ -38,7 +38,7 @@ describe('UsersService', () => {
 
         it('should hash password and create user', async () => {
             // Arrange
-            prisma.user.findUnique.mockResolvedValue(null);
+            prisma.user.findFirst.mockResolvedValue(null);
             (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_pw');
             const createdUser = { id: '1', email: 'test@t.com', passwordHash: 'hashed_pw', fullName: 'Test' };
             prisma.user.create.mockResolvedValue(createdUser);
@@ -51,6 +51,26 @@ describe('UsersService', () => {
             expect(prisma.user.create).toHaveBeenCalled();
             expect(result).not.toHaveProperty('passwordHash');
             expect(result).toEqual({ id: '1', email: 'test@t.com', fullName: 'Test' });
+        });
+
+        it('normalizes email before creating users', async () => {
+            prisma.user.findFirst.mockResolvedValue(null);
+            (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_pw');
+            prisma.user.create.mockResolvedValue({
+                id: '1',
+                email: 'mixed@example.com',
+                passwordHash: 'hashed_pw',
+                fullName: 'Mixed Case',
+            });
+
+            await service.create({ email: ' Mixed@Example.COM ', password: 'pw', fullName: 'Mixed Case' });
+
+            expect(prisma.user.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+                where: { email: { equals: 'mixed@example.com', mode: 'insensitive' } },
+            }));
+            expect(prisma.user.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({ email: 'mixed@example.com' }),
+            }));
         });
     });
 
