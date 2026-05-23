@@ -15,6 +15,7 @@
   - wait-mode customer diagnosis allows up to 120s and two no-knowledge recovery attempts.
   - ticket-opening UI tells the user a grounded answer is being synthesized and uses screenshots/files as first-class evidence.
   - desktop ticket-opening wait UX now shows a subtle sanitized semantic data-rain page background and fades out only after the AI response resolves; mobile skips this effect.
+  - URL-only/navigation-only ticket-opening input is now stopped before RAG retrieval and returns a localized clarification instead of a random high-confidence match.
 - Rich Message Composer MVP completed:
   - ticket detail now uses a TipTap rich reply composer for admin/customer replies.
   - message history and ticket descriptions render through a safe rich/plain renderer.

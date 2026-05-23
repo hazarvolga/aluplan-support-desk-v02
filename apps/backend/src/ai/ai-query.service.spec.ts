@@ -206,6 +206,55 @@ describe('AiQueryService', () => {
     });
 
     describe('query — HIGH confidence', () => {
+        it('does not run RAG for URL-only ticket-opening text', async () => {
+            const result = await service.query({
+                userQuery: 'https://allplan.net.tr/en/tickets/new',
+                userId: null,
+                language: 'en',
+                strictLanguage: true,
+                wait: true,
+            });
+
+            expect(result.confidence).toBe('NO_MATCH');
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.answer).toContain('could not identify a support question');
+            expect(result.suggestTicket).toBe(true);
+            expect(mockEmbeddingService.search).not.toHaveBeenCalled();
+            expect(diagnosisService.analyze).not.toHaveBeenCalled();
+            expect(mockAiService.generate).not.toHaveBeenCalled();
+            expect(mockPrismaService.aiInteraction.create).toHaveBeenCalledWith({
+                data: expect.objectContaining({
+                    responseGenerated: expect.stringContaining('could not identify a support question'),
+                    confidenceBand: null,
+                    autoAnswered: false,
+                    similarityScore: 0,
+                    userContext: expect.objectContaining({
+                        generationState: 'INPUT_GUARD',
+                        inputGuard: 'URL_ONLY_OR_NAVIGATION_TEXT',
+                    }),
+                }),
+            });
+        });
+
+        it('still allows support questions that include a URL as context', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue(null);
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [],
+                diagnostics: { topScore: 0.5, passedThreshold: 0, queryEmbeddingModel: 'nomic', thresholdUsed: 0.78 },
+            });
+
+            await service.query({
+                userQuery: 'Allplan freezes after opening https://allplan.net.tr/en/tickets/new',
+                userId: null,
+                language: 'en',
+                strictLanguage: true,
+                wait: true,
+            });
+
+            expect(mockEmbeddingService.search).toHaveBeenCalled();
+            expect(diagnosisService.analyze).toHaveBeenCalled();
+        });
+
         it('blocks ticket-opening AI when query language does not match the selected UI language', async () => {
             const result = await service.query({
                 userQuery: 'What should I check if license server installation failed?',

@@ -202,6 +202,10 @@ export class AiQueryService {
         if (languageMismatch) {
             return this.buildLanguageMismatchResult(userQuery, lang, languageMismatch);
         }
+        if (this.isUrlOnlySupportInput(userQuery, attachments, hotinfoContext)) {
+            const profileLanguage = await this.getUserProfileLanguage(userId);
+            return this.buildInsufficientQuestionResult(options, lang, profileLanguage);
+        }
 
         // --- GAP-05: AI Quota & Budget Check ---
         const today = new Date().toISOString().split('T')[0];
@@ -266,6 +270,9 @@ export class AiQueryService {
         const languageMismatch = this.getStrictLanguageMismatch(userQuery, lang, options.strictLanguage);
         if (languageMismatch) {
             return this.buildLanguageMismatchResult(userQuery, lang, languageMismatch);
+        }
+        if (this.isUrlOnlySupportInput(userQuery, attachments, hotinfoContext)) {
+            return this.buildInsufficientQuestionResult(options, lang, profileLanguage);
         }
 
         // Setup cache key for later saving
@@ -1337,6 +1344,94 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             'Bu konu için bilgi kaynağında yeterince güvenilir ve doğrudan eşleşen içerik bulunamadı.',
             'Lütfen destek talebi oluşturun; ürün sürümü, ortam bilgisi, ekran görüntüsü ve varsa tam hata metnini ekleyin.',
         ].join('\n');
+    }
+
+    private isUrlOnlySupportInput(query: string, attachments?: any[], hotinfoContext?: any): boolean {
+        if ((attachments?.length ?? 0) > 0 || hotinfoContext) return false;
+
+        const trimmed = query.trim();
+        if (!trimmed) return true;
+
+        const hasUrlLikeText = /\bhttps?:\/\/[^\s]+|\bwww\.[^\s]+|\b[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i.test(trimmed);
+        if (!hasUrlLikeText) return false;
+
+        const meaningfulText = trimmed
+            .replace(/\bhttps?:\/\/[^\s]+/gi, ' ')
+            .replace(/\bwww\.[^\s]+/gi, ' ')
+            .replace(/\b[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/gi, ' ')
+            .replace(/\b(?:http|https|www|allplan|net|tr|en|de|tickets|ticket|new|dashboard)\b/gi, ' ')
+            .replace(/[^\p{L}\p{N}]+/gu, ' ')
+            .trim();
+
+        return meaningfulText.length < 4;
+    }
+
+    private buildInsufficientQuestionMessage(language: SupportedAnswerLanguage): string {
+        if (language === 'en') {
+            return [
+                'I could not identify a support question from the text you entered.',
+                'Please describe the Allplan issue in one or two sentences: what you were trying to do, the exact error or behavior, the affected module, and your Allplan version. You can still create a ticket and attach screenshots.',
+            ].join('\n');
+        }
+
+        if (language === 'de') {
+            return [
+                'Aus dem eingegebenen Text konnte ich keine Support-Frage erkennen.',
+                'Bitte beschreiben Sie das Allplan-Problem in ein bis zwei Sätzen: was Sie tun wollten, die genaue Fehlermeldung oder das Verhalten, das betroffene Modul und Ihre Allplan-Version. Sie können weiterhin ein Ticket erstellen und Screenshots anhängen.',
+            ].join('\n');
+        }
+
+        return [
+            'Yazdığınız metinden bir destek sorusu tespit edemedim.',
+            'Lütfen Allplan’da yaşadığınız problemi bir iki cümleyle anlatın: ne yapmak istediniz, tam hata veya davranış neydi, hangi modül etkileniyor ve Allplan sürümünüz nedir? Yine de ticket oluşturabilir ve ekran görüntüsü ekleyebilirsiniz.',
+        ].join('\n');
+    }
+
+    private async buildInsufficientQuestionResult(
+        options: AiQueryOptions,
+        lang: SupportedAnswerLanguage,
+        profileLanguage?: string | null,
+    ): Promise<AiQueryResult> {
+        const providerName = await this.ai.getActiveProviderName();
+        const modelName = await this.ai.getActiveModelName();
+        const answer = this.buildInsufficientQuestionMessage(lang);
+
+        const interaction = await this.prisma.aiInteraction.create({
+            data: {
+                userId: options.userId || undefined,
+                channel: options.channel || 'WEB',
+                userQuery: options.userQuery,
+                responseGenerated: answer,
+                confidenceBand: null,
+                autoAnswered: false,
+                similarityScore: 0,
+                provider: providerName,
+                model: modelName,
+                inputTokens: 0,
+                outputTokens: 0,
+                totalTokens: 0,
+                estimatedCost: 0,
+                userContext: {
+                    ...this.buildInteractionLanguageContext(lang, options.language, 'INPUT_GUARD', {
+                        routeLocale: options.routeLocale,
+                        profileLanguage,
+                        strictLanguage: options.strictLanguage,
+                    }),
+                    inputGuard: 'URL_ONLY_OR_NAVIGATION_TEXT',
+                } as Prisma.InputJsonValue,
+            },
+        });
+
+        return {
+            query: options.userQuery,
+            answer,
+            answerMode: 'FALLBACK',
+            confidence: 'NO_MATCH',
+            sources: [],
+            interactionId: interaction.id,
+            suggestTicket: true,
+            responseLanguage: lang,
+        };
     }
 
     private buildTicketOpeningAnswerContext(options: {

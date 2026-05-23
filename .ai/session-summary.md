@@ -15,6 +15,20 @@
 - i18n integrity check: passed.
 - `git diff --check`: passed.
 
+## Follow-up - 2026-05-23 URL-only AI Input Guard
+
+### What changed
+
+- Added a backend AI input guard for URL-only/navigation-only ticket-opening text.
+- Inputs such as `https://allplan.net.tr/en/tickets/new` no longer enter RAG retrieval, HyDE generation, semantic cache lookup, or LLM answer generation.
+- The customer receives a localized clarification asking for the actual Allplan issue, while ticket creation remains available.
+- Real support questions that include a URL as extra context still continue through the normal RAG path.
+
+### Verification
+
+- Backend focused Jest: `ai-query.service.spec.ts` passed.
+- Backend typecheck: passed.
+
 ## Follow-up - 2026-05-23 Live Bug Closure Pass
 
 ### What changed
