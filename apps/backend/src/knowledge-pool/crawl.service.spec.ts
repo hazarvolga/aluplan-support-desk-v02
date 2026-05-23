@@ -63,7 +63,7 @@ describe('CrawlService', () => {
             CRAWL4AI_ENABLED: 'true',
             CRAWL4AI_BASE_URL: 'http://crawl4ai:11235',
         });
-        const markdown = '# Visual Help\n\n![Dialog showing option](/pluginfile.php/123/dialog.png)\n\nThis markdown content is long enough to be accepted by the crawler adapter.';
+        const markdown = '# Visual Help\n\n![Dialog showing option](https://learnnow.allplan.com/pluginfile.php/123/dialog.png)\n\nThis markdown content is long enough to be accepted by the crawler adapter.';
         global.fetch = jest.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
@@ -76,12 +76,92 @@ describe('CrawlService', () => {
             }),
         }) as any;
 
-        const result = await service.fetch('https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=8572');
+        const result = await service.fetch('https://example.com/totara/engage/resources/howto/index.php?id=8572');
 
         expect(result.images).toEqual([
             {
                 url: 'https://learnnow.allplan.com/pluginfile.php/123/dialog.png',
                 alt: 'Dialog showing option',
+            },
+        ]);
+    });
+
+    it('extracts Learn Now howto detail content and images through the public Totara API', async () => {
+        const service = makeService({});
+        mockedAxios.get
+            .mockResolvedValueOnce({
+                data: '<html><title>LEARNNOW Allplan</title></html>',
+                headers: { 'set-cookie': ['TotaraSession=session-one; path=/; secure'] },
+            } as any)
+            .mockResolvedValueOnce({
+                data: '<html lang="en"><script>M.cfg = {"sesskey":"abc123","currentlanguage":"en"};</script></html>',
+                headers: { 'set-cookie': ['TotaraSession=session-two; path=/; secure'] },
+            } as any);
+        mockedAxios.post.mockResolvedValue({
+            data: {
+                data: {
+                    howto: {
+                        id: '9089',
+                        type: 'knowledge_article',
+                        language: 'en',
+                        versions: ['ALLPLAN 2025', 'ALLPLAN 2024'],
+                        categories: ['allplan::technic'],
+                        human_readable_categories: ['ALLPLAN', 'Technic'],
+                        country_settings: ['int'],
+                        salesforce_number: '000008140-en',
+                        video_url: null,
+                        pdf_url: null,
+                        content: '',
+                        description: '',
+                        short_description: '',
+                        resource: {
+                            id: '9093',
+                            name: 'Operate Allplan with a QHD/UHD/4K monitor from Allplan 2023',
+                        },
+                        salesforce_content: [
+                            '<u><b>Question:</b></u><br>The icons are too small.',
+                            '<p><u><b>Answer:</b></u><br>Define the QHD/UHD/4K screen as the main display.',
+                            '<img alt="Windows display settings" src="https://learnnow.allplan.com/pluginfile.php/5/engage_howto/salesforce_content/9093/dialog.png" style="width: 599px;height: 296px;"></p>',
+                        ].join(''),
+                    },
+                },
+            },
+        } as any);
+
+        const result = await service.fetch('https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=9093&source=howto');
+
+        expect(mockedAxios.post).toHaveBeenCalledWith(
+            'https://learnnow.allplan.com/totara/webapi/ajax.php?operation=engage_howto_get_howto&lang=en',
+            expect.objectContaining({
+                operationName: 'engage_howto_get_howto',
+                variables: { id: 9093 },
+            }),
+            expect.objectContaining({
+                headers: expect.objectContaining({
+                    'X-Totara-Sesskey': 'abc123',
+                    Cookie: 'TotaraSession=session-two',
+                }),
+            }),
+        );
+        expect(result).toMatchObject({
+            provider: 'learnnow-api',
+            isDynamic: true,
+            title: 'Operate Allplan with a QHD/UHD/4K monitor from Allplan 2023',
+            metadata: {
+                learnNow: expect.objectContaining({
+                    resourceId: 9093,
+                    type: 'knowledge_article',
+                    salesforceNumber: '000008140-en',
+                    imageCount: 1,
+                }),
+            },
+        });
+        expect(result.content).toContain('Question:');
+        expect(result.content).toContain('Define the QHD/UHD/4K screen as the main display.');
+        expect(result.images).toEqual([
+            {
+                url: 'https://learnnow.allplan.com/pluginfile.php/5/engage_howto/salesforce_content/9093/dialog.png',
+                alt: 'Windows display settings',
             },
         ]);
     });

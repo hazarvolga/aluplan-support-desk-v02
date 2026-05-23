@@ -1,5 +1,29 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-23 LearnNow Detail Extraction Phase 1
+
+### What changed
+
+- Learn Now howto detail URLs now use the public Totara `engage_howto_get_howto` API before generic Crawl4AI/basic crawling.
+- The crawler first establishes a public `/int` session, extracts the Totara sesskey from the detail page, then fetches the real howto JSON.
+- Knowledge Article imports now receive the actual Salesforce article body instead of the Totara shell text.
+- `salesforce_content` images such as `pluginfile.php/.../engage_howto/salesforce_content/...` are extracted as URL images so existing visual enrichment can summarize them during knowledge sync.
+- Learn Now metadata now records resource id, howto type, language, country settings, versions, categories, Salesforce number, and image count.
+- Explaining video resources currently import metadata/description only when no transcript or video URL is exposed by the public API; transcript extraction remains the next phase.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- crawl.service.spec.ts learnnow-crawler.service.spec.ts knowledge-pool.processor.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/backend build` passed.
+- Live read-only smoke for LearnNow article `id=9093` returned `provider=learnnow-api`, `contentLength=2632`, `imageCount=1`, and both `Question:`/`Answer:` markers.
+- Live read-only smoke for LearnNow video `id=2740` returned `provider=learnnow-api`, `type=explainer_video`, German metadata, and description-only content; no DB writes were performed.
+
+### Next
+
+- Phase 2 should add explicit video transcript/Vimeo extraction and mark transcript-missing video candidates as review-only/metadata-only before broad imports.
+- Phase 3 should expose LearnNow Sync Center quality signals: content length, image count, transcript availability, language, source type, and import readiness.
+
 ## Follow-up - 2026-05-23 Customer Synthesis Wait UX
 
 ### What changed

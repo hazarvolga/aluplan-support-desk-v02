@@ -10,7 +10,7 @@ export interface CrawlResult {
     title: string;
     hash: string;
     isDynamic: boolean;
-    provider?: 'basic' | 'crawl4ai';
+    provider?: 'basic' | 'crawl4ai' | 'learnnow-api';
     metadata?: Record<string, unknown>;
     links?: string[];
     images?: CrawledImage[];
@@ -34,6 +34,14 @@ export class CrawlService {
 
     async fetch(url: string): Promise<CrawlResult> {
         this.logger.log(`🌐 Crawling URL: ${url}`);
+
+        if (this.isLearnNowHowtoUrl(url)) {
+            try {
+                return await this.fetchLearnNowHowto(url);
+            } catch (error: any) {
+                this.logger.warn(`⚠️ Learn Now API extraction failed (${error.message}), falling back to crawler stack: ${url}`);
+            }
+        }
 
         if (this.isCrawl4AiEnabled()) {
             try {
@@ -94,6 +102,109 @@ export class CrawlService {
     private getCrawl4AiBaseUrl(): string | null {
         const value = this.config.get<string>('CRAWL4AI_BASE_URL');
         return value ? value.replace(/\/+$/, '') : null;
+    }
+
+    private async fetchLearnNowHowto(url: string): Promise<CrawlResult> {
+        const resourceId = this.extractLearnNowResourceId(url);
+        if (!resourceId) {
+            throw new Error('Learn Now resource id is missing');
+        }
+
+        const cookies = new Map<string, string>();
+        const headers = { 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0' };
+
+        const sessionResponse = await axios.get<string>('https://learnnow.allplan.com/int', {
+            timeout: 15000,
+            maxRedirects: 5,
+            headers,
+        });
+        this.collectSetCookies(sessionResponse.headers?.['set-cookie'], cookies);
+
+        const detailResponse = await axios.get<string>(url, {
+            timeout: 15000,
+            maxRedirects: 5,
+            headers: {
+                ...headers,
+                Cookie: this.serializeCookies(cookies),
+            },
+        });
+        this.collectSetCookies(detailResponse.headers?.['set-cookie'], cookies);
+
+        const sesskey = this.extractTotaraSesskey(detailResponse.data);
+        if (!sesskey) {
+            throw new Error('Learn Now sesskey not found');
+        }
+
+        const language = this.extractLearnNowLanguage(detailResponse.data) || this.inferLanguageFromUrl(url);
+        const apiResponse = await axios.post(
+            `https://learnnow.allplan.com/totara/webapi/ajax.php?operation=engage_howto_get_howto&lang=${encodeURIComponent(language)}`,
+            {
+                operationName: 'engage_howto_get_howto',
+                variables: { id: resourceId },
+                extensions: {},
+            },
+            {
+                timeout: 20000,
+                headers: {
+                    ...headers,
+                    Accept: '*/*',
+                    'Content-Type': 'application/json',
+                    'X-Totara-Sesskey': sesskey,
+                    Cookie: this.serializeCookies(cookies),
+                    Referer: url,
+                },
+            },
+        );
+
+        const howto = apiResponse.data?.data?.howto;
+        if (!howto?.resource?.name) {
+            throw new Error('Learn Now API returned no howto resource');
+        }
+
+        const title = String(howto.resource.name).trim();
+        const htmlContent = [
+            howto.salesforce_content,
+            howto.content,
+            howto.description,
+            howto.short_description,
+        ].filter((value): value is string => typeof value === 'string' && value.trim().length > 0).join('\n\n');
+
+        const bodyText = this.htmlToCleanText(htmlContent);
+        const content = this.buildLearnNowContent(title, howto, bodyText);
+        if (content.length < 80) {
+            throw new Error('Learn Now API returned too-short content');
+        }
+
+        const images = this.extractHtmlImages(htmlContent, url);
+        const links = this.extractHtmlLinks(htmlContent, url);
+        const hash = crypto.createHash('sha256').update(content).digest('hex');
+
+        return {
+            content,
+            title,
+            hash,
+            isDynamic: true,
+            provider: 'learnnow-api',
+            links,
+            images,
+            metadata: {
+                learnNow: {
+                    resourceId,
+                    howtoId: howto.id,
+                    type: howto.type,
+                    language: howto.language,
+                    countrySettings: howto.country_settings ?? [],
+                    versions: howto.versions ?? [],
+                    categories: howto.categories ?? [],
+                    humanReadableCategories: howto.human_readable_categories ?? [],
+                    salesforceNumber: howto.salesforce_number ?? null,
+                    hasSalesforceContent: Boolean(howto.salesforce_content),
+                    hasVideoUrl: Boolean(howto.video_url),
+                    hasPdfUrl: Boolean(howto.pdf_url),
+                    imageCount: images.length,
+                },
+            },
+        };
     }
 
     private async fetchWithCrawl4Ai(url: string): Promise<CrawlResult> {
@@ -245,6 +356,96 @@ export class CrawlService {
         });
 
         return Array.from(images.values());
+    }
+
+    private isLearnNowHowtoUrl(value: string): boolean {
+        try {
+            const url = new URL(value);
+            return url.hostname === 'learnnow.allplan.com'
+                && url.pathname.includes('/totara/engage/resources/howto/index.php')
+                && Boolean(url.searchParams.get('id'));
+        } catch {
+            return false;
+        }
+    }
+
+    private extractLearnNowResourceId(value: string): number | null {
+        try {
+            const id = Number.parseInt(new URL(value).searchParams.get('id') ?? '', 10);
+            return Number.isFinite(id) && id > 0 ? id : null;
+        } catch {
+            return null;
+        }
+    }
+
+    private collectSetCookies(rawSetCookie: string[] | string | undefined, jar: Map<string, string>): void {
+        const values = Array.isArray(rawSetCookie) ? rawSetCookie : rawSetCookie ? [rawSetCookie] : [];
+        for (const cookie of values) {
+            const firstPart = cookie.split(';')[0];
+            const separator = firstPart.indexOf('=');
+            if (separator <= 0) continue;
+            jar.set(firstPart.slice(0, separator).trim(), firstPart.slice(separator + 1).trim());
+        }
+    }
+
+    private serializeCookies(jar: Map<string, string>): string {
+        return Array.from(jar.entries()).map(([key, value]) => `${key}=${value}`).join('; ');
+    }
+
+    private extractTotaraSesskey(html: string): string | null {
+        return html.match(/"sesskey":"([^"]+)"/)?.[1] ?? null;
+    }
+
+    private extractLearnNowLanguage(html: string): string | null {
+        return html.match(/"currentlanguage":"([a-z]{2})"/i)?.[1]?.toLowerCase()
+            ?? html.match(/<html[^>]+lang="([a-z]{2})"/i)?.[1]?.toLowerCase()
+            ?? null;
+    }
+
+    private inferLanguageFromUrl(value: string): string {
+        const match = value.match(/learnnow\.allplan\.com\/([a-z]{2})(?:\/|$)/i);
+        return match?.[1]?.toLowerCase() ?? 'en';
+    }
+
+    private buildLearnNowContent(title: string, howto: any, bodyText: string): string {
+        const lines = [
+            title,
+            '',
+            `Learn Now Type: ${howto.type ?? 'unknown'}`,
+            howto.language ? `Language: ${howto.language}` : null,
+            Array.isArray(howto.versions) && howto.versions.length > 0 ? `Versions: ${howto.versions.join(', ')}` : null,
+            Array.isArray(howto.human_readable_categories) && howto.human_readable_categories.length > 0
+                ? `Categories: ${howto.human_readable_categories.join(' > ')}`
+                : null,
+            howto.salesforce_number ? `Salesforce Number: ${howto.salesforce_number}` : null,
+            '',
+            bodyText,
+        ].filter((line): line is string => typeof line === 'string');
+
+        return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    private htmlToCleanText(html: string): string {
+        if (!html.trim()) return '';
+        const $ = cheerio.load(`<main>${html}</main>`);
+        $('script, style, noscript').remove();
+        $('br').replaceWith('\n');
+        $('p, div, section, article, h1, h2, h3, h4, h5, h6, li, tr').each((_, el) => {
+            $(el).prepend('\n');
+            $(el).append('\n');
+        });
+        $('img').each((_, el) => {
+            const alt = String($(el).attr('alt') || '').trim();
+            $(el).replaceWith(alt ? `\n[Image: ${alt}]\n` : '\n[Image]\n');
+        });
+
+        return $('main').text()
+            .replace(/\u00a0/g, ' ')
+            .replace(/[ \t]+\n/g, '\n')
+            .replace(/\n[ \t]+/g, '\n')
+            .replace(/[ \t]{2,}/g, ' ')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
     }
 
     private extractMarkdownImages(markdown: string, baseUrl: string): CrawledImage[] {

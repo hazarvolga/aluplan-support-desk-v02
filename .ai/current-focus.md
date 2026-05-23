@@ -78,7 +78,9 @@
 - LearnNow crawler format discovery completed:
   - public `knowledge_article`, `pdf`, `technical_manual`, `explaining_video`, and `recorded_online_session` filters are available in the crawler UI.
   - non-PDF formats are staged as review candidates through the existing URL sync path while preserving original LearnNow source type metadata.
-  - next LearnNow phase should focus on detail-page image extraction quality and video transcript availability before broader pilot imports.
+  - LearnNow howto detail extraction now uses the public Totara API to fetch real `salesforce_content` and image references instead of indexing the portal shell.
+  - live read-only smoke confirmed `id=9093` returns article text plus one source image; `id=2740` returns explainer-video metadata/description but no public transcript yet.
+  - next LearnNow phase should focus on video transcript/Vimeo extraction and Sync Center quality signals before broader pilot imports.
 - Ticket routing hardening started:
   - new ticket creation now collects support category/department before product selection.
   - ticket create payload includes `departmentId` so SLA and auto-assignment can route by department.
