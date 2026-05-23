@@ -25,6 +25,15 @@ export interface CrawledImage {
     height?: number;
 }
 
+type LearnNowVideoTranscript = {
+    videoId: string;
+    title?: string;
+    language?: string;
+    label?: string;
+    sourceUrl?: string;
+    text: string;
+};
+
 @Injectable()
 export class CrawlService {
     private readonly logger = new Logger(CrawlService.name);
@@ -169,8 +178,13 @@ export class CrawlService {
             howto.short_description,
         ].filter((value): value is string => typeof value === 'string' && value.trim().length > 0).join('\n\n');
 
+        const videoId = this.extractLearnNowVideoId(howto, detailResponse.data);
+        const videoTranscript = videoId ? await this.fetchVimeoTranscript(videoId).catch((error: any) => {
+            this.logger.warn(`⚠️ Vimeo transcript extraction failed for ${videoId}: ${error.message}`);
+            return null;
+        }) : null;
         const bodyText = this.htmlToCleanText(htmlContent);
-        const content = this.buildLearnNowContent(title, howto, bodyText);
+        const content = this.buildLearnNowContent(title, howto, bodyText, videoTranscript);
         if (content.length < 80) {
             throw new Error('Learn Now API returned too-short content');
         }
@@ -199,7 +213,13 @@ export class CrawlService {
                     humanReadableCategories: howto.human_readable_categories ?? [],
                     salesforceNumber: howto.salesforce_number ?? null,
                     hasSalesforceContent: Boolean(howto.salesforce_content),
-                    hasVideoUrl: Boolean(howto.video_url),
+                    hasVideoUrl: Boolean(howto.video_url || videoId),
+                    vimeoVideoId: videoId,
+                    transcriptStatus: videoId ? (videoTranscript ? 'AVAILABLE' : 'MISSING') : 'NOT_APPLICABLE',
+                    transcriptLanguage: videoTranscript?.language ?? null,
+                    transcriptLabel: videoTranscript?.label ?? null,
+                    transcriptLength: videoTranscript?.text.length ?? 0,
+                    vimeoTitle: videoTranscript?.title ?? null,
                     hasPdfUrl: Boolean(howto.pdf_url),
                     imageCount: images.length,
                 },
@@ -407,7 +427,12 @@ export class CrawlService {
         return match?.[1]?.toLowerCase() ?? 'en';
     }
 
-    private buildLearnNowContent(title: string, howto: any, bodyText: string): string {
+    private buildLearnNowContent(
+        title: string,
+        howto: any,
+        bodyText: string,
+        videoTranscript?: LearnNowVideoTranscript | null,
+    ): string {
         const lines = [
             title,
             '',
@@ -420,7 +445,90 @@ export class CrawlService {
             howto.salesforce_number ? `Salesforce Number: ${howto.salesforce_number}` : null,
             '',
             bodyText,
+            videoTranscript ? '' : null,
+            videoTranscript ? `Video Transcript (${videoTranscript.label || videoTranscript.language || 'unknown'}):` : null,
+            videoTranscript?.text ?? null,
         ].filter((line): line is string => typeof line === 'string');
+
+        return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    private extractLearnNowVideoId(howto: any, html: string): string | null {
+        const candidates = [
+            howto?.vimeo_url,
+            howto?.video_url,
+            html.match(/player\.vimeo\.com\/video\/(\d+)/i)?.[1],
+        ];
+
+        for (const candidate of candidates) {
+            if (candidate === null || candidate === undefined) continue;
+            const value = String(candidate).trim();
+            const match = value.match(/(?:vimeo\.com\/(?:video\/)?|player\.vimeo\.com\/video\/)?(\d{6,})/i);
+            if (match) return match[1];
+        }
+
+        return null;
+    }
+
+    private async fetchVimeoTranscript(videoId: string): Promise<LearnNowVideoTranscript | null> {
+        const configUrl = `https://player.vimeo.com/video/${videoId}/config`;
+        const response = await axios.get<any>(configUrl, {
+            timeout: 15000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0',
+                Referer: 'https://learnnow.allplan.com/',
+            },
+        });
+
+        const tracks = Array.isArray(response.data?.request?.text_tracks)
+            ? response.data.request.text_tracks
+            : [];
+        if (tracks.length === 0) return null;
+
+        const track = tracks.find((item: any) => item?.default)
+            ?? tracks.find((item: any) => item?.kind === 'subtitles')
+            ?? tracks[0];
+        if (!track?.url) return null;
+
+        const transcriptResponse = await axios.get<string>(track.url, {
+            timeout: 15000,
+            headers: { 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0' },
+        });
+        const text = this.vttToCleanText(transcriptResponse.data);
+        if (text.length < 40) return null;
+
+        return {
+            videoId,
+            title: typeof response.data?.video?.title === 'string' ? response.data.video.title : undefined,
+            language: typeof track.lang === 'string' ? track.lang : undefined,
+            label: typeof track.label === 'string' ? track.label : undefined,
+            sourceUrl: track.url,
+            text,
+        };
+    }
+
+    private vttToCleanText(vtt: string): string {
+        const seen = new Set<string>();
+        const lines = vtt
+            .replace(/\r/g, '')
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => {
+                if (!line) return false;
+                if (/^WEBVTT/i.test(line)) return false;
+                if (/^(Kind|Language):/i.test(line)) return false;
+                if (/^\d+$/.test(line)) return false;
+                if (/-->/i.test(line)) return false;
+                if (/^NOTE\b/i.test(line)) return false;
+                return true;
+            })
+            .map(line => line.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim())
+            .filter(Boolean)
+            .filter(line => {
+                if (seen.has(line)) return false;
+                seen.add(line);
+                return true;
+            });
 
         return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
     }

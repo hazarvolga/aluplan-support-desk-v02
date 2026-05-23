@@ -1,5 +1,28 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-23 LearnNow Video Transcript Phase 2
+
+### What changed
+
+- Learn Now howto video resources now extract `vimeo_url` from the Totara API or Vimeo iframe references from the detail HTML.
+- When a Vimeo ID is available, the crawler reads the public Vimeo player config and imports the default subtitle/caption VTT as clean transcript text.
+- Explaining video content now includes a `Video Transcript (...)` section when captions are available, so video sources can participate in RAG with real spoken content instead of metadata-only shell text.
+- Learn Now metadata now records Vimeo ID, Vimeo title, transcript status, transcript language, transcript label, and transcript length.
+- `hasVideoUrl` now treats a Vimeo ID as a valid video URL signal.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- crawl.service.spec.ts learnnow-crawler.service.spec.ts knowledge-pool.processor.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/backend build` passed.
+- `git diff --check` passed.
+- Live read-only smoke for LearnNow video `id=2740` returned `provider=learnnow-api`, `vimeoVideoId=880602266`, `transcriptStatus=AVAILABLE`, `transcriptLanguage=de`, and transcript text in the crawl content; no DB writes were performed.
+
+### Next
+
+- Phase 3 should add Sync Center/admin quality signals for candidate readiness: source type, image count, transcript availability, content length, language, and review-only warnings.
+- Phase 4 should cover Technical Manuals / Recorded Online Sessions with the same evidence-first import behavior.
+
 ## Follow-up - 2026-05-23 LearnNow Detail Extraction Phase 1
 
 ### What changed

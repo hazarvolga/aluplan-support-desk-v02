@@ -166,6 +166,96 @@ describe('CrawlService', () => {
         ]);
     });
 
+    it('extracts Vimeo transcripts for Learn Now explaining videos', async () => {
+        const service = makeService({});
+        mockedAxios.get
+            .mockResolvedValueOnce({
+                data: '<html><title>LEARNNOW Allplan</title></html>',
+                headers: { 'set-cookie': ['TotaraSession=session-one; path=/; secure'] },
+            } as any)
+            .mockResolvedValueOnce({
+                data: '<html lang="en"><script>M.cfg = {"sesskey":"abc123","currentlanguage":"en"};</script></html>',
+                headers: { 'set-cookie': ['TotaraSession=session-two; path=/; secure'] },
+            } as any)
+            .mockResolvedValueOnce({
+                data: {
+                    video: { title: 'IFC Improvements Infrastructure' },
+                    request: {
+                        text_tracks: [{
+                            default: true,
+                            kind: 'subtitles',
+                            lang: 'de',
+                            label: 'Deutsch',
+                            url: 'https://captions.vimeo.com/captions/115946356.vtt',
+                        }],
+                    },
+                },
+            } as any)
+            .mockResolvedValueOnce({
+                data: [
+                    'WEBVTT',
+                    '',
+                    '00:00:01.000 --> 00:00:03.000',
+                    'Verbesserter IFC-Import von Infrastrukturprojekten',
+                    '',
+                    '00:00:03.000 --> 00:00:06.000',
+                    'Prüfen Sie die Achsen und Attribute vor dem Import.',
+                ].join('\n'),
+            } as any);
+        mockedAxios.post.mockResolvedValue({
+            data: {
+                data: {
+                    howto: {
+                        id: '2740',
+                        type: 'explainer_video',
+                        language: 'de',
+                        versions: [],
+                        categories: ['allplan::general::interface'],
+                        human_readable_categories: ['ALLPLAN', 'General', 'Interface'],
+                        country_settings: ['de'],
+                        salesforce_number: '',
+                        video_url: null,
+                        vimeo_url: '880602266',
+                        pdf_url: null,
+                        content: '',
+                        salesforce_content: null,
+                        description: '<div><p>Verbesserter IFC-Import von Infrastrukturprojekten</p></div>',
+                        short_description: '',
+                        resource: {
+                            id: '2740',
+                            name: 'NEUERUNG 2024 - IFC Verbesserungen Infrastruktur',
+                        },
+                    },
+                },
+            },
+        } as any);
+
+        const result = await service.fetch('https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=2740&source=howto');
+
+        expect(mockedAxios.get).toHaveBeenCalledWith(
+            'https://player.vimeo.com/video/880602266/config',
+            expect.objectContaining({
+                headers: expect.objectContaining({ Referer: 'https://learnnow.allplan.com/' }),
+            }),
+        );
+        expect(mockedAxios.get).toHaveBeenCalledWith(
+            'https://captions.vimeo.com/captions/115946356.vtt',
+            expect.objectContaining({ headers: expect.objectContaining({ 'User-Agent': expect.any(String) }) }),
+        );
+        expect(result.content).toContain('Video Transcript (Deutsch):');
+        expect(result.content).toContain('Prüfen Sie die Achsen und Attribute vor dem Import.');
+        expect(result.metadata).toEqual({
+            learnNow: expect.objectContaining({
+                type: 'explainer_video',
+                vimeoVideoId: '880602266',
+                transcriptStatus: 'AVAILABLE',
+                transcriptLanguage: 'de',
+                transcriptLength: expect.any(Number),
+                vimeoTitle: 'IFC Improvements Infrastructure',
+            }),
+        });
+    });
+
     it('falls back to the basic crawler when Crawl4AI fails', async () => {
         const service = makeService({
             CRAWL4AI_ENABLED: 'true',
