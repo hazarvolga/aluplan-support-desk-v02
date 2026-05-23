@@ -22,9 +22,8 @@ type CandidateFormat = 'KNOWLEDGE_ARTICLE' | 'PDF';
 type LearnNowFilterValue =
     | 'knowledge_article'
     | 'pdf'
-    | 'technical_manual'
-    | 'explaining_video'
-    | 'recorded_online_session';
+    | 'explainer_video'
+    | 'recording';
 
 type CrawlCandidateRecord = {
     id: string;
@@ -57,9 +56,9 @@ const LEARNNOW_SOURCE = 'allplan_learnnow';
 const LEARNNOW_FORMAT_FILTERS: Record<LearnNowCrawlFormat, LearnNowFilterValue> = {
     knowledge_article: 'knowledge_article',
     pdf: 'pdf',
-    technical_manual: 'technical_manual',
-    explaining_video: 'explaining_video',
-    recorded_online_session: 'recorded_online_session',
+    technical_manual: 'pdf',
+    explaining_video: 'explainer_video',
+    recorded_online_session: 'recording',
 };
 
 @Injectable()
@@ -587,7 +586,7 @@ export class LearnNowCrawlerService {
     }
 
     private toCandidateFormat(format: LearnNowCrawlFormat): CandidateFormat {
-        return format === 'pdf' ? 'PDF' : 'KNOWLEDGE_ARTICLE';
+        return format === 'pdf' || format === 'technical_manual' ? 'PDF' : 'KNOWLEDGE_ARTICLE';
     }
 
     private isTotaraHowtoResource(url: URL): boolean {

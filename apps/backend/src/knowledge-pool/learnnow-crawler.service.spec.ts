@@ -141,6 +141,8 @@ describe('LearnNowCrawlerService', () => {
             dryRun: true,
         });
 
+        expect(String(mockedAxios.get.mock.calls[0][0])).toContain('filter%5Bformat%5D%5B%5D=knowledge_article');
+        expect(String(mockedAxios.get.mock.calls[1][0])).toContain('filter%5Bformat%5D%5B%5D=explainer_video');
         expect(result).toMatchObject({ dryRun: true, discovered: 2 });
         expect(result.candidates).toEqual(expect.arrayContaining([
             expect.objectContaining({
@@ -162,6 +164,29 @@ describe('LearnNowCrawlerService', () => {
                 }),
             }),
         ]));
+    });
+
+    it('maps Learn Now UI formats to the public search filter values', async () => {
+        const { service, crawl } = makeService();
+        mockedAxios.get.mockResolvedValue({ data: '<html><body>No results</body></html>' } as any);
+        crawl.fetch.mockResolvedValue({
+            content: 'No crawler-discoverable results',
+            title: 'Learn Now Search',
+            hash: 'hash',
+            isDynamic: true,
+            provider: 'crawl4ai',
+            metadata: {},
+        });
+
+        await service.discover({
+            formats: ['technical_manual', 'recorded_online_session'],
+            maxPages: 1,
+            maxCandidates: 10,
+            dryRun: true,
+        });
+
+        expect(String(mockedAxios.get.mock.calls[0][0])).toContain('filter%5Bformat%5D%5B%5D=pdf');
+        expect(String(mockedAxios.get.mock.calls[1][0])).toContain('filter%5Bformat%5D%5B%5D=recording');
     });
 
     it('enriches saved Learn Now howto candidates with review quality metadata', async () => {

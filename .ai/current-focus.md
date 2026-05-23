@@ -84,7 +84,9 @@
   - live read-only smoke confirmed `id=2740` returns `vimeoVideoId=880602266`, `transcriptStatus=AVAILABLE`, and German transcript text in the crawl content.
   - saved howto candidates now carry review-quality metadata: content length, image count, transcript status/language/length, source type, and ready-for-import flag.
   - Knowledge Pool crawler UI now shows these quality signals as compact badges before import.
-  - next LearnNow phase should focus on Technical Manuals and Recorded Online Sessions before broader pilot imports.
+  - public LearnNow format filters now match the real Totara UI values: Knowledge Article `knowledge_article`, Technical Manuals/PDF `pdf`, Explaining video `explainer_video`, and Recorded online session `recording`.
+  - Technical Manuals are staged as PDF candidates; videos and recordings remain review-first Knowledge Article candidates until transcript/content quality is confirmed.
+  - next LearnNow phase should add manual/recording-specific quality rules and then run a small end-to-end pilot import smoke before broader imports.
 - Ticket routing hardening started:
   - new ticket creation now collects support category/department before product selection.
   - ticket create payload includes `departmentId` so SLA and auto-assignment can route by department.

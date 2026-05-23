@@ -1,5 +1,31 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-23 LearnNow Public Format Filters Phase 4
+
+### What changed
+
+- Learn Now discovery now uses the real public Totara format filter values observed from the live LearnNow UI.
+- `Technical Manuals` discovery maps to the public `pdf` filter and stages resulting candidates as `PDF`.
+- `Explaining video` discovery maps to `explainer_video`.
+- `Recorded online session` discovery maps to `recording`.
+- Added regression coverage so future crawler changes do not silently revert to stale internal labels such as `technical_manual`, `explaining_video`, or `recorded_online_session`.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- learnnow-crawler.service.spec.ts crawl.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/backend build` passed.
+- `git diff --check` passed.
+
+### Notes
+
+- No production DB writes were performed.
+- `npx gitnexus impact` / `detect_changes` were attempted, but the GitNexus CLI failed before analysis with its known local package/index error; this did not change source files.
+
+### Next
+
+- Next LearnNow phase should add recorded-session/manual-specific import review rules and then run one end-to-end pilot import smoke before pushing the full LearnNow batch.
+
 ## Follow-up - 2026-05-23 LearnNow Candidate Quality Phase 3
 
 ### What changed
