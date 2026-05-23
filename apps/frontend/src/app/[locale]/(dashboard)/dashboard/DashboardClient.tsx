@@ -31,8 +31,14 @@ import { useAuth } from '@/components/auth/role-guard';
 import { WireframeBorder } from '@/components/ui/wireframe-border';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 type DrawerMode = 'cost' | 'system' | null;
+type PulseId = 'tickets' | 'ai' | 'crm' | 'knowledge';
+type PulseMetric = { label: string; value: string | number; detail: string };
+type PulseRecord = { id: string; title: string; description: string; href: string };
+type PulseAction = { label: string; href: string };
 
 const emptyOpsData = (): OpsDashboardData => ({
     generatedAt: new Date().toISOString(),
@@ -280,13 +286,13 @@ function OpsStatGrid({ data }: { data: OpsDashboardData }) {
     );
 }
 
-function PulseBand({ data }: { data: OpsDashboardData }) {
+function PulseBand({ data, onSelect }: { data: OpsDashboardData; onSelect: (id: PulseId) => void }) {
     const t = useTranslations('dashboard.ops.pulse');
     const cards = [
-        { id: 'tickets', icon: Ticket, value: data.activeDesk.trend.reduce((sum, point) => sum + Number(point.created ?? 0), 0), series: data.activeDesk.trend.map((point) => Number(point.created ?? 0)) },
-        { id: 'ai', icon: Bot, value: `${data.pulse.aiQuality.summary.confidenceRate ?? 0}%`, series: data.pulse.aiQuality.trend.map((point) => Number(point.confidence ?? 0)) },
-        { id: 'crm', icon: Database, value: data.pulse.crm.updatedToday ?? 0, series: (data.pulse.crm.trend ?? []).map((point: any) => Number(point.count ?? 0)) },
-        { id: 'knowledge', icon: BookOpen, value: data.pulse.knowledge.activeSources ?? 0, series: (data.pulse.knowledge.trend ?? []).map((point: any) => Number(point.count ?? 0)) },
+        { id: 'tickets' as const, icon: Ticket, value: data.activeDesk.trend.reduce((sum, point) => sum + Number(point.created ?? 0), 0), series: data.activeDesk.trend.map((point) => Number(point.created ?? 0)) },
+        { id: 'ai' as const, icon: Bot, value: `${data.pulse.aiQuality.summary.confidenceRate ?? 0}%`, series: data.pulse.aiQuality.trend.map((point) => Number(point.confidence ?? 0)) },
+        { id: 'crm' as const, icon: Database, value: data.pulse.crm.updatedToday ?? 0, series: (data.pulse.crm.trend ?? []).map((point: any) => Number(point.count ?? 0)) },
+        { id: 'knowledge' as const, icon: BookOpen, value: data.pulse.knowledge.activeSources ?? 0, series: (data.pulse.knowledge.trend ?? []).map((point: any) => Number(point.count ?? 0)) },
     ];
 
     return (
@@ -297,7 +303,12 @@ function PulseBand({ data }: { data: OpsDashboardData }) {
             </div>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 {cards.map(({ id, icon: Icon, value, series }) => (
-                    <button key={id} type="button" className="rounded-md border border-white/10 bg-slate-950/30 p-3 text-left transition hover:border-primary/40 hover:bg-primary/5">
+                    <button
+                        key={id}
+                        type="button"
+                        onClick={() => onSelect(id)}
+                        className="rounded-md border border-white/10 bg-slate-950/30 p-3 text-left transition hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus:ring-1 focus:ring-primary/60"
+                    >
                         <div className="flex items-start justify-between gap-2">
                             <div>
                                 <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{t(`${id}.title`)}</p>
@@ -306,11 +317,228 @@ function PulseBand({ data }: { data: OpsDashboardData }) {
                             <Icon className="h-4 w-4 text-primary" />
                         </div>
                         <MiniBars values={series} />
-                        <p className="mt-2 text-[10px] text-muted-foreground">{t(`${id}.description`)}</p>
+                        <div className="mt-2 flex items-end justify-between gap-2">
+                            <p className="text-[10px] text-muted-foreground">{t(`${id}.description`)}</p>
+                            <span className="shrink-0 text-[9px] font-bold uppercase tracking-widest text-primary">{t('open')}</span>
+                        </div>
                     </button>
                 ))}
             </div>
         </section>
+    );
+}
+
+function PulseDetailModal({ data, selected, onOpenChange }: {
+    data: OpsDashboardData;
+    selected: PulseId | null;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const t = useTranslations('dashboard.ops.pulse');
+    if (!selected) return null;
+
+    const detail = buildPulseDetail(data, selected, t);
+
+    return (
+        <Dialog open={Boolean(selected)} onOpenChange={onOpenChange}>
+            <DialogContent className="max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-5xl overflow-hidden border-white/10 bg-slate-950 p-0 sm:w-[calc(100vw-3rem)]">
+                <DialogHeader className="m-0 border-white/10 bg-white/[0.03] p-4 sm:p-5">
+                    <DialogTitle className="flex items-center gap-2 text-white">
+                        <BarChart3 className="h-4 w-4 text-primary" />
+                        {t(`${selected}.modal_title`)}
+                    </DialogTitle>
+                    <DialogDescription>{t(`${selected}.modal_description`)}</DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[calc(92vh-88px)]">
+                    <div className="space-y-4 p-4 sm:p-5">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            {detail.metrics.map((metric) => (
+                                <MetricStrip key={metric.label} label={metric.label} value={metric.value} detail={metric.detail} />
+                            ))}
+                        </div>
+
+                        <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
+                            <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                                <div>
+                                    <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-white">{t('modal.chart_title')}</h3>
+                                    <p className="mt-1 text-[10px] text-muted-foreground">{t('modal.chart_desc')}</p>
+                                </div>
+                                <span className="rounded border border-primary/20 bg-primary/10 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-primary">
+                                    {detail.series.length} {t('modal.points')}
+                                </span>
+                            </div>
+                            <LargeTrend values={detail.series} />
+                        </div>
+
+                        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+                            <div className="rounded-lg border border-white/10 bg-white/[0.025]">
+                                <div className="border-b border-white/10 px-4 py-3">
+                                    <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{t('modal.records')}</h3>
+                                </div>
+                                <div className="space-y-2 p-3">
+                                    {detail.records.length === 0 ? (
+                                        <EmptyState title={t('modal.empty_title')} description={t('modal.empty_desc')} />
+                                    ) : detail.records.map((record) => (
+                                        <Link key={record.id} href={record.href} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-xs font-bold text-white">{record.title}</p>
+                                                    <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{record.description}</p>
+                                                </div>
+                                                <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg border border-white/10 bg-white/[0.025]">
+                                <div className="border-b border-white/10 px-4 py-3">
+                                    <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{t('modal.actions')}</h3>
+                                </div>
+                                <div className="space-y-2 p-3">
+                                    {detail.actions.map((action) => (
+                                        <Button key={action.href} asChild variant="outline" className="w-full justify-between">
+                                            <Link href={action.href}>
+                                                {action.label}
+                                                <ArrowRight className="h-3.5 w-3.5" />
+                                            </Link>
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ScrollArea>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: string) => string): {
+    metrics: PulseMetric[];
+    records: PulseRecord[];
+    actions: PulseAction[];
+    series: number[];
+} {
+    const recordMap: Record<PulseId, PulseRecord[]> = {
+        tickets: data.activeDesk.tickets.slice(0, 8).map((ticket) => ({
+            id: ticket.id,
+            title: ticket.ticketNumber || ticket.subject,
+            description: ticket.subject || ticket.creator?.fullName || '',
+            href: `/tickets/${ticket.id}`,
+        })),
+        ai: data.liveFeed.filter((item) => item.type === 'ai').slice(0, 8).map((item) => ({
+            id: item.id,
+            title: item.title,
+            description: item.description || item.status || '',
+            href: item.href,
+        })),
+        crm: (data.pulse.crm.recentChanges ?? []).slice(0, 8).map((item: any, index: number) => ({
+            id: item.id || `crm-${index}`,
+            title: item.entityType || item.type || item.action || t('modal.unknown_record'),
+            description: item.message || item.summary || item.status || t('modal.no_description'),
+            href: item.href || '/crm',
+        })),
+        knowledge: (data.learnNow.recent ?? []).slice(0, 8).map((item: any, index: number) => ({
+            id: item.id || `learnnow-${index}`,
+            title: item.title || item.sourceUrl || t('modal.unknown_record'),
+            description: item.status || item.format || item.source || t('modal.no_description'),
+            href: '/knowledge-pool',
+        })),
+    };
+    const records = recordMap[selected];
+
+    const metricMap: Record<PulseId, PulseMetric[]> = {
+        tickets: [
+            { label: t('modal.metrics.active'), value: data.kpis.activeTickets, detail: t('modal.details.open_queue') },
+            { label: t('modal.metrics.unassigned'), value: data.kpis.unassignedTickets, detail: t('modal.details.needs_routing') },
+            { label: t('modal.metrics.sla'), value: data.kpis.slaBreaches, detail: t('modal.details.breaches') },
+            { label: t('modal.metrics.resolved'), value: data.kpis.resolvedToday, detail: t('modal.details.today') },
+        ],
+        ai: [
+            { label: t('modal.metrics.confidence'), value: `${data.pulse.aiQuality.summary.confidenceRate ?? 0}%`, detail: t('modal.details.rolling_signal') },
+            { label: t('modal.metrics.fallback'), value: `${data.pulse.aiQuality.summary.fallbackRate ?? 0}%`, detail: t('modal.details.today') },
+            { label: t('modal.metrics.language'), value: data.pulse.aiQuality.summary.languageRisks ?? 0, detail: t('modal.details.risks') },
+            { label: t('modal.metrics.leaks'), value: data.pulse.aiQuality.summary.sourceLeaks ?? 0, detail: t('modal.details.source_signals') },
+        ],
+        crm: [
+            { label: t('modal.metrics.updated'), value: data.pulse.crm.updatedToday ?? 0, detail: t('modal.details.today') },
+            { label: t('modal.metrics.failures'), value: data.pulse.crm.failuresToday ?? 0, detail: t('modal.details.today') },
+            { label: t('modal.metrics.recent'), value: data.pulse.crm.recentChanges?.length ?? 0, detail: t('modal.details.changes') },
+            { label: t('modal.metrics.queue'), value: data.queues.crm.waiting + data.queues.crm.active, detail: t('modal.details.pending_jobs') },
+        ],
+        knowledge: [
+            { label: t('modal.metrics.sources'), value: data.pulse.knowledge.activeSources ?? 0, detail: t('modal.details.active') },
+            { label: t('modal.metrics.embeddings'), value: formatNumber(data.pulse.knowledge.embeddings ?? 0), detail: t('modal.details.vectors') },
+            { label: t('modal.metrics.candidates'), value: data.pulse.knowledge.genericCandidatesPending ?? 0, detail: t('modal.details.pending') },
+            { label: t('modal.metrics.failures'), value: data.pulse.knowledge.syncFailuresToday ?? 0, detail: t('modal.details.today') },
+        ],
+    };
+    const metrics = metricMap[selected];
+
+    const actionMap: Record<PulseId, PulseAction[]> = {
+        tickets: [
+            { label: t('modal.actions_map.open_tickets'), href: '/tickets' },
+            { label: t('modal.actions_map.open_teams'), href: '/teams' },
+        ],
+        ai: [
+            { label: t('modal.actions_map.ai_health'), href: '/ai-health' },
+            { label: t('modal.actions_map.ai_intelligence'), href: '/ai-intelligence' },
+        ],
+        crm: [
+            { label: t('modal.actions_map.crm_management'), href: '/crm' },
+            { label: t('modal.actions_map.customer_records'), href: '/customers' },
+        ],
+        knowledge: [
+            { label: t('modal.actions_map.knowledge_pool'), href: '/knowledge-pool' },
+            { label: t('modal.actions_map.data_sources'), href: '/data-sources' },
+        ],
+    };
+    const actions = actionMap[selected];
+
+    const seriesMap: Record<PulseId, number[]> = {
+        tickets: data.activeDesk.trend.map((point) => Number(point.created ?? 0)),
+        ai: data.pulse.aiQuality.trend.map((point) => Number(point.confidence ?? 0)),
+        crm: (data.pulse.crm.trend ?? []).map((point: any) => Number(point.count ?? 0)),
+        knowledge: (data.pulse.knowledge.trend ?? []).map((point: any) => Number(point.count ?? 0)),
+    };
+    const series = seriesMap[selected];
+
+    return { metrics, records, actions, series };
+}
+
+function LargeTrend({ values }: { values: number[] }) {
+    const points = values.length ? values : [0, 0, 0, 0, 0, 0, 0];
+    const max = Math.max(1, ...points);
+    const width = 720;
+    const height = 180;
+    const xStep = points.length > 1 ? width / (points.length - 1) : width;
+    const coordinates = points.map((value, index) => {
+        const x = index * xStep;
+        const y = height - (value / max) * (height - 16) - 8;
+        return `${x},${y}`;
+    }).join(' ');
+
+    return (
+        <div className="overflow-hidden rounded-md border border-white/10 bg-slate-950/50 p-2">
+            <svg viewBox={`0 0 ${width} ${height}`} className="h-52 w-full" role="img" aria-hidden="true">
+                <defs>
+                    <linearGradient id="opsTrend" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="rgb(20 184 166)" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="rgb(20 184 166)" stopOpacity="0" />
+                    </linearGradient>
+                </defs>
+                {[0, 1, 2, 3].map((line) => (
+                    <line key={line} x1="0" x2={width} y1={(height / 4) * line + 8} y2={(height / 4) * line + 8} stroke="rgba(255,255,255,0.08)" />
+                ))}
+                <polyline points={`0,${height} ${coordinates} ${width},${height}`} fill="url(#opsTrend)" stroke="none" />
+                <polyline points={coordinates} fill="none" stroke="rgb(20 184 166)" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+                {points.map((value, index) => {
+                    const [x, y] = coordinates.split(' ')[index].split(',').map(Number);
+                    return <circle key={`${value}-${index}`} cx={x} cy={y} r="4" fill="rgb(20 184 166)" />;
+                })}
+            </svg>
+        </div>
     );
 }
 
@@ -528,6 +756,7 @@ export default function DashboardClient() {
     const [customerStats, setCustomerStats] = useState<any>(null);
     const [opsData, setOpsData] = useState<OpsDashboardData | null>(null);
     const [drawer, setDrawer] = useState<DrawerMode>(null);
+    const [selectedPulse, setSelectedPulse] = useState<PulseId | null>(null);
     const [loading, setLoading] = useState(true);
 
     const userRoles = useMemo(() => roleList(user), [user]);
@@ -596,7 +825,8 @@ export default function DashboardClient() {
 
             <TopDrawer mode={drawer} data={effectiveSystem} onClose={() => setDrawer(null)} />
             <OpsStatGrid data={data} />
-            <PulseBand data={data} />
+            <PulseBand data={data} onSelect={setSelectedPulse} />
+            <PulseDetailModal data={data} selected={selectedPulse} onOpenChange={(open) => !open && setSelectedPulse(null)} />
 
             <div className="grid gap-4 xl:grid-cols-[minmax(320px,390px)_1fr]">
                 <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">

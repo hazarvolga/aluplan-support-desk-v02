@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import DashboardClient from './DashboardClient';
 import { useAuth } from '@/components/auth/role-guard';
@@ -80,5 +80,23 @@ describe('DashboardClient', () => {
             // Should still render but maybe with zero stats
             expect(screen.getByText(/active_tickets/i)).toBeDefined();
         });
+    });
+
+    it('opens a real-data pulse detail modal from a pulse card', async () => {
+        (useAuth as any).mockReturnValue({
+            user: { fullName: 'Admin User', roles: ['admin'] }
+        });
+
+        render(<DashboardClient />);
+
+        await waitFor(() => {
+            expect(screen.getByText(/tickets.title/i)).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText(/tickets.title/i).closest('button')!);
+
+        expect(screen.getByText(/tickets.modal_title/i)).toBeInTheDocument();
+        expect(screen.getByText(/chart_title/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/SUP-00001/i).length).toBeGreaterThan(0);
     });
 });

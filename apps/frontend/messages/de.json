@@ -346,21 +346,82 @@
       },
       "pulse": {
         "title": "Operations-Puls",
+        "open": "Prüfen",
         "tickets": {
           "title": "Ticket-Trend",
-          "description": "Aktueller Eingang neuer Tickets"
+          "description": "Aktueller Eingang neuer Tickets",
+          "modal_title": "Ticket-Operations-Detail",
+          "modal_description": "Offene Ticketlast, Zuweisungsdruck, SLA-Signal und direkte Routing-Aktionen."
         },
         "ai": {
           "title": "KI-Qualität",
-          "description": "Vertrauen und Low-Match-Signal"
+          "description": "Vertrauen und Low-Match-Signal",
+          "modal_title": "KI-Qualitätsdetail",
+          "modal_description": "Vertrauen, Fallback, Quellen-Leaks und Sprachrisiken aus echten KI-Interaktionen."
         },
         "crm": {
           "title": "CRM-Sync",
-          "description": "CRM-Änderungen von heute"
+          "description": "CRM-Änderungen von heute",
+          "modal_title": "CRM-Sync-Detail",
+          "modal_description": "Dynamics-Update-Geschwindigkeit, Sync-Fehler und Frische der Kundendaten."
         },
         "knowledge": {
           "title": "Wissensfluss",
-          "description": "Quellen- und Indexierungsvolumen"
+          "description": "Quellen- und Indexierungsvolumen",
+          "modal_title": "Wissensfluss-Detail",
+          "modal_description": "Signale zu Knowledge Pool, Dataset, LearnNow, Crawler-Kandidaten und Embedding-Zustand."
+        },
+        "modal": {
+          "chart_title": "Trenddetail",
+          "chart_desc": "Wird aus demselben Aggregate-Endpunkt gerendert; leere Daten bleiben sichtbar leer.",
+          "points": "Punkte",
+          "records": "Aktuelle Einträge",
+          "actions": "Aktionen",
+          "empty_title": "Keine Einträge in diesem Zeitraum",
+          "empty_desc": "Für dieses Signal gibt es noch keinen verknüpften Eintrag.",
+          "unknown_record": "Unbekannter Eintrag",
+          "no_description": "Keine Beschreibung verfügbar",
+          "metrics": {
+            "active": "Aktiv",
+            "unassigned": "Nicht zugewiesen",
+            "sla": "SLA",
+            "resolved": "Gelöst",
+            "confidence": "Vertrauen",
+            "fallback": "Fallback",
+            "language": "Sprache",
+            "leaks": "Leaks",
+            "updated": "Aktualisiert",
+            "failures": "Fehler",
+            "recent": "Aktuell",
+            "queue": "Queue",
+            "sources": "Quellen",
+            "embeddings": "Embeddings",
+            "candidates": "Kandidaten"
+          },
+          "details": {
+            "open_queue": "offene Queue",
+            "needs_routing": "Routing nötig",
+            "breaches": "Verletzungen",
+            "today": "heute",
+            "rolling_signal": "Zeitraum-Signal",
+            "risks": "Risiken",
+            "source_signals": "Quellensignale",
+            "changes": "Änderungen",
+            "pending_jobs": "wartende Jobs",
+            "active": "aktiv",
+            "vectors": "Vektoren",
+            "pending": "wartend"
+          },
+          "actions_map": {
+            "open_tickets": "Tickets öffnen",
+            "open_teams": "Teams öffnen",
+            "ai_health": "KI-Zustand",
+            "ai_intelligence": "KI-Analyse",
+            "crm_management": "CRM-Verwaltung",
+            "customer_records": "Kundendaten",
+            "knowledge_pool": "Knowledge Pool",
+            "data_sources": "Datenquellen"
+          }
         }
       },
       "active_desk": {

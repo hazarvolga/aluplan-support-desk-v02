@@ -346,21 +346,82 @@
       },
       "pulse": {
         "title": "Operasyon Nabzı",
+        "open": "İncele",
         "tickets": {
           "title": "Ticket Trendi",
-          "description": "Son günlerde açılan bilet akışı"
+          "description": "Son günlerde açılan bilet akışı",
+          "modal_title": "Ticket Operasyon Detayı",
+          "modal_description": "Açık bilet yükü, atama baskısı, SLA sinyali ve hızlı yönlendirme aksiyonları."
         },
         "ai": {
           "title": "AI Kalitesi",
-          "description": "Güven ve düşük eşleşme sinyali"
+          "description": "Güven ve düşük eşleşme sinyali",
+          "modal_title": "AI Kalite Detayı",
+          "modal_description": "Gerçek AI etkileşimlerinden güven, fallback, kaynak sızıntısı ve dil riski sinyalleri."
         },
         "crm": {
           "title": "CRM Senkron",
-          "description": "Bugünkü CRM değişim hızı"
+          "description": "Bugünkü CRM değişim hızı",
+          "modal_title": "CRM Senkron Detayı",
+          "modal_description": "Dynamics güncelleme hızı, senkron hataları ve müşteri verisi tazelik sinyalleri."
         },
         "knowledge": {
           "title": "Bilgi Akışı",
-          "description": "Kaynak ve indeksleme hacmi"
+          "description": "Kaynak ve indeksleme hacmi",
+          "modal_title": "Bilgi Akışı Detayı",
+          "modal_description": "Knowledge Pool, dataset, LearnNow, crawler adayı ve embedding sağlığı sinyalleri."
+        },
+        "modal": {
+          "chart_title": "Trend Detayı",
+          "chart_desc": "Aynı aggregate endpoint verisinden çizilir; boş veri açıkça boş kalır.",
+          "points": "nokta",
+          "records": "Son Kayıtlar",
+          "actions": "Aksiyonlar",
+          "empty_title": "Bu aralıkta kayıt yok",
+          "empty_desc": "Bu sinyal için henüz incelenecek bağlı kayıt yok.",
+          "unknown_record": "Bilinmeyen kayıt",
+          "no_description": "Açıklama yok",
+          "metrics": {
+            "active": "Aktif",
+            "unassigned": "Atanmamış",
+            "sla": "SLA",
+            "resolved": "Çözülen",
+            "confidence": "Güven",
+            "fallback": "Fallback",
+            "language": "Dil",
+            "leaks": "Sızıntı",
+            "updated": "Güncellenen",
+            "failures": "Hata",
+            "recent": "Son",
+            "queue": "Kuyruk",
+            "sources": "Kaynak",
+            "embeddings": "Embedding",
+            "candidates": "Aday"
+          },
+          "details": {
+            "open_queue": "açık kuyruk",
+            "needs_routing": "atama gerekli",
+            "breaches": "ihlaller",
+            "today": "bugün",
+            "rolling_signal": "dönem sinyali",
+            "risks": "riskler",
+            "source_signals": "kaynak sinyali",
+            "changes": "değişimler",
+            "pending_jobs": "bekleyen job",
+            "active": "aktif",
+            "vectors": "vektör",
+            "pending": "bekleyen"
+          },
+          "actions_map": {
+            "open_tickets": "Biletleri aç",
+            "open_teams": "Ekipleri aç",
+            "ai_health": "AI sağlığı",
+            "ai_intelligence": "AI analitiği",
+            "crm_management": "CRM yönetimi",
+            "customer_records": "Müşteri kayıtları",
+            "knowledge_pool": "Bilgi Havuzu",
+            "data_sources": "Veri kaynakları"
+          }
         }
       },
       "active_desk": {

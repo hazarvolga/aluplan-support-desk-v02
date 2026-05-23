@@ -346,21 +346,82 @@
       },
       "pulse": {
         "title": "Operations Pulse",
+        "open": "Inspect",
         "tickets": {
           "title": "Ticket Trend",
-          "description": "Recent ticket intake flow"
+          "description": "Recent ticket intake flow",
+          "modal_title": "Ticket Operations Detail",
+          "modal_description": "Open ticket load, assignment pressure, SLA signal, and immediate routing actions."
         },
         "ai": {
           "title": "AI Quality",
-          "description": "Confidence and low-match signal"
+          "description": "Confidence and low-match signal",
+          "modal_title": "AI Quality Detail",
+          "modal_description": "Confidence, fallback, source-leak, and language-risk signals from real AI interactions."
         },
         "crm": {
           "title": "CRM Sync",
-          "description": "Today's CRM change velocity"
+          "description": "Today's CRM change velocity",
+          "modal_title": "CRM Sync Detail",
+          "modal_description": "Dynamics update velocity, sync failures, and customer data freshness signals."
         },
         "knowledge": {
           "title": "Knowledge Flow",
-          "description": "Source and indexing volume"
+          "description": "Source and indexing volume",
+          "modal_title": "Knowledge Flow Detail",
+          "modal_description": "Knowledge Pool, dataset, LearnNow, crawler candidate, and embedding health signals."
+        },
+        "modal": {
+          "chart_title": "Trend Detail",
+          "chart_desc": "Rendered from the same aggregate endpoint; empty data stays visibly empty.",
+          "points": "points",
+          "records": "Recent Records",
+          "actions": "Actions",
+          "empty_title": "No records in this window",
+          "empty_desc": "There is no linked record to inspect for this signal yet.",
+          "unknown_record": "Unknown record",
+          "no_description": "No description available",
+          "metrics": {
+            "active": "Active",
+            "unassigned": "Unassigned",
+            "sla": "SLA",
+            "resolved": "Resolved",
+            "confidence": "Confidence",
+            "fallback": "Fallback",
+            "language": "Language",
+            "leaks": "Leaks",
+            "updated": "Updated",
+            "failures": "Failures",
+            "recent": "Recent",
+            "queue": "Queue",
+            "sources": "Sources",
+            "embeddings": "Embeddings",
+            "candidates": "Candidates"
+          },
+          "details": {
+            "open_queue": "open queue",
+            "needs_routing": "needs routing",
+            "breaches": "breaches",
+            "today": "today",
+            "rolling_signal": "rolling signal",
+            "risks": "risks",
+            "source_signals": "source signals",
+            "changes": "changes",
+            "pending_jobs": "pending jobs",
+            "active": "active",
+            "vectors": "vectors",
+            "pending": "pending"
+          },
+          "actions_map": {
+            "open_tickets": "Open tickets",
+            "open_teams": "Open teams",
+            "ai_health": "AI health",
+            "ai_intelligence": "AI intelligence",
+            "crm_management": "CRM management",
+            "customer_records": "Customer records",
+            "knowledge_pool": "Knowledge Pool",
+            "data_sources": "Data sources"
+          }
         }
       },
       "active_desk": {

@@ -1,5 +1,34 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-23 Operations Dashboard Phase 3
+
+### What changed
+
+- Operations pulse cards are now actionable instead of decorative.
+- Clicking Ticket, AI, CRM, or Knowledge pulse opens a responsive detail modal.
+- Each modal is fed from the same `GET /dashboard/ops` payload and shows:
+  - localized metric strips
+  - a larger trend chart
+  - linked recent records when available
+  - action buttons to the relevant operational area
+- Empty modal record lists render an explicit empty state rather than placeholder data.
+- Added regression coverage for opening a pulse modal and seeing real ticket data inside it.
+
+### Verification
+
+- `pnpm i18n:check` passed for `tr`, `en`, and `de`.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm --filter @aluplan/frontend exec vitest run 'src/app/[locale]/(dashboard)/dashboard/DashboardClient.spec.tsx'` passed with 5 tests.
+- `git diff --check` passed.
+
+### Notes
+
+- The modal uses responsive `calc(100vw - ...)` widths and max-height internal scrolling so it remains usable on mobile and narrow laptop windows.
+
+### Next
+
+- Phase 4 should add controlled live refresh/manual refresh behavior and then run browser smoke checks at desktop and mobile widths.
+
 ## Follow-up - 2026-05-23 Operations Dashboard Phase 2
 
 ### What changed
