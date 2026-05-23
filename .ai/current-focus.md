@@ -3,6 +3,7 @@
 ## Active Work
 
 - Live bug closure pass in progress:
+  - AI answer quality hotfix now treats localized no-knowledge text as `NO_MATCH`, repairs mixed-language LLM answers, and gives crash/freeze queries a safe LOW-confidence triage instead of an unrelated source-backed no-answer.
   - static backend routes are guarded against dynamic `:id` shadowing for team skills/agents and ticket by-number/bulk endpoints.
   - user/customer/CRM email writes now normalize to lowercase and legacy mixed-case matches are resolved case-insensitively.
   - customer list search no longer hides backend CRM account-name matches with a second client-side global filter.

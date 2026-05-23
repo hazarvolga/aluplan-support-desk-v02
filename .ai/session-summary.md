@@ -2956,3 +2956,22 @@ Maintenance rule:
 
 - Production has two `Melih Dinekli` identities: `melih@aluplan.com.tr` is the staff/admin account, while `melihdinekli@gmail.com` is a CUSTOMER account currently present in the `Teknik Destek` team. The team should be corrected from UI by removing the customer identity and adding the staff e-mail.
 - Live API smoke found `/users?type=agent` was returning overly broad user records, including fields that are not needed by the UI. `UsersService.findAll()` was narrowed to safe summary fields only and now maps role data into a frontend-compatible `userRoles` shape without exposing hashes, raw CRM payloads, or Hotinfo raw data.
+
+## Follow-up - 2026-05-23 AI Answer Quality Guardrail Hotfix
+
+### What changed
+
+- Expanded no-knowledge detection so Turkish/English/German "not enough reliable content" answers are routed as runtime `NO_MATCH` instead of being persisted as successful MEDIUM/HIGH auto-answers.
+- Removed the overly broad `destek talebi oluştur` no-knowledge trigger because it incorrectly marked otherwise useful answers as unusable.
+- Added answer-language leak detection and a repair pass: if the UI language is English/German/Turkish but the LLM body leaks another language, the backend asks the model to rewrite the same answer in the selected UI language without adding facts.
+- Added safe crash/freeze triage for queries like `Allplan kilitleniyor`; it avoids unrelated source attribution, returns LOW confidence, keeps `suggestTicket=true`, and asks for Hotinfo/screenshots/exact steps.
+- No-knowledge and safe operational triage responses no longer attach unrelated source metadata to customer-facing answer results.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- ai-answer-quality.spec.ts ai-query.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+
+### Deployment note
+
+- Backend deploy is required for the AI quality fix. Frontend deploy is not required for this backend-only guardrail change.

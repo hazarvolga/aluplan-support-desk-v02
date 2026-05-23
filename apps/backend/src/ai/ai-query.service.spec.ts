@@ -543,6 +543,61 @@ describe('AiQueryService', () => {
             expect(result.answer).not.toContain('copy /b');
             expect(result.answer).not.toContain('LPT1');
             expect(result.answer).not.toContain('en güçlü eşleşme');
+            expect(result.confidence).toBe('NO_MATCH');
+            expect(result.suggestTicket).toBe(true);
+            expect(mockPrismaService.aiInteraction.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    confidenceBand: null,
+                    autoAnswered: false,
+                    userContext: expect.objectContaining({
+                        noKnowledgeAnswer: true,
+                        source: null,
+                    }),
+                }),
+            }));
+        });
+
+        it('returns safe crash/freeze triage instead of treating an unrelated high-scoring source as an answer', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'home-office-license',
+                        sourceType: 'DOCUMENT',
+                        title: 'FAQ_EN_Allplan_in_the_home-office',
+                        content: 'Allplan in the home office. Workgroup Manager can be used over VPN. If licensing is unavailable, check CodeMeter and the local license file before starting Allplan.',
+                        similarity: 0.96,
+                        confidence: 'HIGH',
+                    },
+                ],
+                diagnostics: { topScore: 0.96, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            const result = await service.query({
+                userQuery: 'Allplan kilitleniyor',
+                wait: true,
+                language: 'tr',
+            });
+
+            expect(result.answerMode).toBe('FALLBACK');
+            expect(result.confidence).toBe('LOW');
+            expect(result.suggestTicket).toBe(true);
+            expect(result.answer).toContain('Allplan’ın kilitlenmesi');
+            expect(result.answer).toContain('Hotinfo');
+            expect(result.answer).toContain('ekran kartı sürücüsü');
+            expect(result.answer).not.toContain('CodeMeter');
+            expect(result.answer).not.toContain('home-office');
+            expect(mockPrismaService.aiInteraction.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    confidenceBand: 'LOW',
+                    autoAnswered: false,
+                    matchedArticleId: undefined,
+                    userContext: expect.objectContaining({
+                        safeOperationalTriage: true,
+                        source: null,
+                    }),
+                }),
+            }));
         });
 
         it('does not infer BIMPLUS storage limits from unrelated license telemetry evidence', async () => {
@@ -1197,6 +1252,82 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             expect(result.answer).toContain('CodeMeter');
             expect(result.answer).not.toContain('Bu konu mevcut bilgi kaynağında yer almıyor');
             expect(result.answerMode).toBe('FALLBACK');
+        });
+
+        it('repairs LLM answers that leak Turkish prose into an English UI answer', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue(null);
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'license-upgrade',
+                        sourceType: 'DOCUMENT',
+                        title: 'FAQ_EN_First_steps_-_activating_the_license_using_the_Product_Key',
+                        category: 'License & Activation',
+                        content: 'When upgrading Allplan, activate the license using the Product Key and verify the license status in License Settings.',
+                        similarity: 0.96,
+                        confidence: 'HIGH',
+                        language: 'en',
+                    },
+                ],
+                diagnostics: { topScore: 0.96, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue({
+                response: [
+                    '## 📌 Issue Summary',
+                    'Kullanıcı, Allplan 2024 yükseltmesinde lisansların nasıl yönetileceğini soruyor.',
+                    '',
+                    '## 🎯 Most Probable Cause',
+                    'Bu prosedürel bir lisans aktivasyonu sorusudur.',
+                    '',
+                    '## ⚠️ Critical Checks',
+                    '- Ürün anahtarını kontrol edin.',
+                    '',
+                    '## 🛠️ Solution Steps',
+                    '1. Lisans ayarlarını açın ve ürün anahtarını doğrulayın.',
+                    '',
+                    '## ✅ Verification',
+                    '- Lisansın etkin olduğunu doğrulayın.',
+                ].join('\n'),
+            });
+            mockAiService.generate
+                .mockResolvedValueOnce('{"rankings":[]}')
+                .mockResolvedValueOnce([
+                    '## 📌 Issue Summary',
+                    'The user asks how to manage licenses during an Allplan 2024 upgrade.',
+                    '',
+                    '## 🎯 Most Probable Cause',
+                    'This is a procedural license activation question.',
+                    '',
+                    '## ⚠️ Critical Checks',
+                    '- Check the Product Key and license activation status.',
+                    '',
+                    '## 🛠️ Solution Steps',
+                    '1. Open License Settings and verify the Product Key activation.',
+                    '',
+                    '## ✅ Verification',
+                    '- Confirm that the license is active.',
+                ].join('\n'));
+
+            const result = await service.query({
+                userQuery: 'How should licenses be handled when upgrading to Allplan 2024?',
+                wait: true,
+                language: 'en',
+                strictLanguage: true,
+            });
+
+            expect(result.answerMode).toBe('LLM');
+            expect(result.languageMismatch).toBe(true);
+            expect(result.answer).toContain('The user asks how to manage licenses');
+            expect(result.answer).not.toContain('Kullanıcı');
+            expect(mockAiService.generate).toHaveBeenCalledWith(expect.stringContaining('Rewrite the support answer below entirely in English.'), 12000);
+            expect(mockPrismaService.aiInteraction.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    userContext: expect.objectContaining({
+                        answerLanguageRepaired: true,
+                        answerLanguageMismatch: true,
+                    }),
+                }),
+            }));
         });
     });
 

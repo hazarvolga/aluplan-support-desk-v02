@@ -24,7 +24,7 @@ import { AiDiagnosisService, DiagnosisResult } from './ai-diagnosis.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
 import { createHash } from 'crypto';
 import { buildSupportAnswerContractPrompt } from './ai-answer-contract';
-import { isNoKnowledgeAnswer } from './ai-answer-quality';
+import { hasAnswerLanguageLeak, isNoKnowledgeAnswer } from './ai-answer-quality';
 
 // local type with NO_MATCH
 export type LocalConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -541,6 +541,11 @@ RESPONSE DRAFT:`;
         let answerMode: 'LLM' | 'FALLBACK' | undefined;
         let translations: Record<string, string> | undefined;
         let diagnosis: DiagnosisResult | undefined;
+        let languageCheck: { answer: string | null; repaired: boolean; mismatch: boolean } = {
+            answer: null,
+            repaired: false,
+            mismatch: false,
+        };
 
         if (topResult) {
             confidence = topResult.confidence as LocalConfidenceBand;
@@ -612,6 +617,8 @@ RESPONSE DRAFT:`;
             const splitResponse = this.parseMultiLangResponse(rawAnswer, lang);
             answer = splitResponse.main; // The active language content
             answer = await this.applyPersonalizedGreeting(answer, userId, this.resolveResponseLanguage(lang, userQuery));
+            languageCheck = await this.enforceAnswerLanguage(answer, userQuery, lang);
+            answer = languageCheck.answer;
             translations = splitResponse.translations;
 
             options.hotinfoContext = options.hotinfoContext || {}; // ensure for consistency below
@@ -634,8 +641,15 @@ RESPONSE DRAFT:`;
         // 4. Log interaction
         // R-R1: If top trust_score < 0.4, suggest ticket (Confidence LOW or NO_MATCH usually implies this)
         // We also check the actual similarity * trust_score if possible, but status-based confidence is the current implementation.
+        const answerIsNoKnowledge = isNoKnowledgeAnswer(answer);
+        const answerIsSafeOperationalTriage = this.isSafeOperationalTriageAnswer(answer);
+        const effectiveConfidence: LocalConfidenceBand = answerIsNoKnowledge
+            ? 'NO_MATCH'
+            : answerIsSafeOperationalTriage
+                ? 'LOW'
+                : confidence;
         const topTrustScore = results[0]?.similarity || 0; // Simplified trust score check
-        const suggestTicket = (confidence as LocalConfidenceBand) === 'NO_MATCH' || confidence === 'LOW' || topTrustScore < 0.4;
+        const suggestTicket = effectiveConfidence === 'NO_MATCH' || effectiveConfidence === 'LOW' || topTrustScore < 0.4;
 
         const providerName = await this.ai.getActiveProviderName();
         const modelName = await this.ai.getActiveModelName();
@@ -651,10 +665,10 @@ RESPONSE DRAFT:`;
                 channel,
                 userQuery,
                 responseGenerated: answer,
-                confidenceBand: confidence === 'NO_MATCH' ? null : (confidence as 'HIGH' | 'MEDIUM' | 'LOW'),
+                confidenceBand: effectiveConfidence === 'NO_MATCH' ? null : (effectiveConfidence as 'HIGH' | 'MEDIUM' | 'LOW'),
                 autoAnswered: !suggestTicket,
                 similarityScore: topResult?.similarity,
-                matchedArticleId: topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
+                matchedArticleId: effectiveConfidence !== 'NO_MATCH' && !answerIsSafeOperationalTriage && topResult?.sourceType === 'ARTICLE' ? topResult.articleId : undefined,
                 provider: providerName,
                 model: modelName,
                 inputTokens,
@@ -669,9 +683,13 @@ RESPONSE DRAFT:`;
                     }),
                     answerMode,
                     fallbackStrategy: answerMode === 'FALLBACK' ? 'DETERMINISTIC_STRUCTURED' : null,
+                    answerLanguageRepaired: languageCheck?.repaired ?? false,
+                    answerLanguageMismatch: languageCheck?.mismatch ?? false,
+                    noKnowledgeAnswer: answerIsNoKnowledge,
+                    safeOperationalTriage: answerIsSafeOperationalTriage,
                     translations,
                     diagnosis,
-                    source: topResult ? {
+                    source: effectiveConfidence !== 'NO_MATCH' && !answerIsSafeOperationalTriage && topResult ? {
                         id: topResult.articleId,
                         type: topResult.sourceType,
                         title: topResult.title,
@@ -705,7 +723,7 @@ RESPONSE DRAFT:`;
         // --- END INCREMENT ---
 
         this.logger.log(
-            `🤖 AI Query: "${userQuery.slice(0, 60)}" → ${confidence} (${topResult?.similarity?.toFixed(3) ?? 'n/a'})[Src: ${topResult?.sourceType}]`,
+            `🤖 AI Query: "${userQuery.slice(0, 60)}" → ${effectiveConfidence} (${topResult?.similarity?.toFixed(3) ?? 'n/a'})[Src: ${topResult?.sourceType}]`,
         );
 
         // Self-check: Validate generated answer confidence
@@ -722,22 +740,23 @@ RESPONSE DRAFT:`;
                 query: userQuery,
                 answer,
                 answerMode,
-                confidence: selfCheck.shouldEscalate ? 'LOW' : confidence,
-            sources: isStaff ? results.slice(0, 3).map((r) => ({
+                confidence: effectiveConfidence === 'NO_MATCH' ? 'NO_MATCH' : (selfCheck.shouldEscalate ? 'LOW' : effectiveConfidence),
+            sources: !answerIsSafeOperationalTriage && isStaff ? results.slice(0, 3).map((r) => ({
                 articleId: r.articleId,
                 title: r.title,
                 similarity: r.similarity,
             })) : [],
-            visuals: this.collectVisualReferences(results),
+            visuals: effectiveConfidence !== 'NO_MATCH' && !answerIsSafeOperationalTriage ? this.collectVisualReferences(results) : undefined,
             interactionId: interaction.id,
             suggestTicket,
             translations,
             diagnosis,
+            languageMismatch: languageCheck?.mismatch || undefined,
             responseLanguage: lang,
         };
 
         // Cache with centralized TTL
-        if (answerMode === 'LLM') {
+        if (answerMode === 'LLM' && finalResult.confidence !== 'NO_MATCH') {
             await this.redis.set(cacheKey, JSON.stringify(finalResult), RAG_CONFIG.CACHE.DEFAULT_TTL);
 
             // R-P1: Store in semantic cache for similarity-based future hits.
@@ -898,6 +917,11 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         const responseLanguage = this.resolveFallbackLanguage(language, query);
         const snippets = this.extractRelevantFallbackSnippets(query, results, options.diagnosis);
         if (snippets.length === 0 || !this.hasDirectFallbackCoverage(query, snippets[0], options.diagnosis)) {
+            const safeTriageAnswer = this.buildSafeOperationalTriageAnswer(query, responseLanguage);
+            if (safeTriageAnswer) {
+                return safeTriageAnswer;
+            }
+
             return this.buildNoUsableFallbackContentMessage(responseLanguage);
         }
 
@@ -1368,6 +1392,152 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         };
 
         return messages[language];
+    }
+
+    private async enforceAnswerLanguage(
+        answer: string | null,
+        userQuery: string,
+        language: SupportedAnswerLanguage,
+    ): Promise<{ answer: string | null; repaired: boolean; mismatch: boolean }> {
+        if (!answer || !hasAnswerLanguageLeak(answer, language)) {
+            return { answer, repaired: false, mismatch: false };
+        }
+
+        const targetLanguage = language === 'tr' ? 'Turkish' : language === 'de' ? 'German' : 'English';
+        const repairPrompt = [
+            `Rewrite the support answer below entirely in ${targetLanguage}.`,
+            'Preserve the exact technical meaning, markdown structure, bullets, numbering, product names, file names, URLs, and error codes.',
+            'Translate explanatory prose and section names. Do not add new facts. Do not remove useful checks.',
+            'Return only the rewritten support answer.',
+            '',
+            '[USER QUERY]',
+            userQuery,
+            '',
+            '[ANSWER TO REWRITE]',
+            answer,
+        ].join('\n');
+
+        try {
+            const repaired = (await this.ai.generate(repairPrompt, 12000))?.trim();
+            if (repaired && !hasAnswerLanguageLeak(repaired, language)) {
+                return { answer: repaired, repaired: true, mismatch: true };
+            }
+        } catch (error: any) {
+            this.logger.warn(`⚠️ Answer language repair failed: ${error?.message ?? error}`);
+        }
+
+        this.logger.warn(`⚠️ Answer language mismatch could not be repaired for target language ${language}.`);
+        return {
+            answer: this.buildNoUsableFallbackContentMessage(language),
+            repaired: false,
+            mismatch: true,
+        };
+    }
+
+    private buildSafeOperationalTriageAnswer(query: string, language: SupportedAnswerLanguage): string | null {
+        if (!this.isCrashOrFreezeQuery(this.normalizeSearchText(query))) return null;
+
+        if (language === 'en') {
+            return [
+                '## 📌 Issue Summary',
+                'Allplan freezing, hanging, or becoming unresponsive is usually caused by one of a few environment or project-specific factors. Start with safe checks that do not change project data.',
+                '',
+                '## 🎯 Most Probable Cause',
+                'The first areas to verify are the installed Allplan build/hotfix, graphics driver, whether the issue happens in one project or all projects, security software interference, and current Windows system status.',
+                '',
+                '## ⚠️ Critical Checks',
+                '- Confirm the exact Allplan version and build ID.',
+                '- Check whether the freeze happens only in one project, one drawing file, or every project.',
+                '- Verify the graphics card driver and Windows updates.',
+                '- Check whether antivirus, cloud sync, or backup tools are scanning Allplan project folders.',
+                '- Attach the Hotinfo file, screenshots, and the exact action that triggers the freeze.',
+                '',
+                '## 🛠️ Solution Steps',
+                '1. Close Allplan completely and restart Windows before retesting.',
+                '2. Test the same action in a new empty project to separate project-data issues from system issues.',
+                '3. Update Allplan to the latest available hotfix for the installed version.',
+                '4. Update the certified/stable NVIDIA or AMD graphics driver and restart Windows.',
+                '5. Temporarily exclude Allplan project folders from antivirus or sync tools for testing.',
+                '6. If the issue repeats, create a support request with Hotinfo, screenshots, the affected project name, and the exact steps before the freeze.',
+                '',
+                '## ✅ Verification',
+                '- The same operation should complete without Allplan becoming unresponsive.',
+                '- If only one project freezes, include that project context in the support request.',
+            ].join('\n');
+        }
+
+        if (language === 'de') {
+            return [
+                '## 📌 Problemzusammenfassung',
+                'Wenn Allplan einfriert, hängt oder nicht mehr reagiert, liegt die Ursache häufig in der Umgebung oder in einem bestimmten Projekt. Beginnen Sie mit sicheren Prüfungen, die keine Projektdaten verändern.',
+                '',
+                '## 🎯 Wahrscheinlichste Ursache',
+                'Prüfen Sie zuerst Allplan-Version/Hotfix, Grafikkartentreiber, ob das Verhalten nur in einem Projekt oder in allen Projekten auftritt, Sicherheitssoftware und den aktuellen Windows-Zustand.',
+                '',
+                '## ⚠️ Kritische Prüfungen',
+                '- Exakte Allplan-Version und Build-ID prüfen.',
+                '- Prüfen, ob das Einfrieren nur in einem Projekt, einer Zeichnung oder in allen Projekten auftritt.',
+                '- Grafikkartentreiber und Windows-Updates prüfen.',
+                '- Prüfen, ob Virenschutz, Cloud-Sync oder Backup-Tools Allplan-Projektordner scannen.',
+                '- Hotinfo-Datei, Screenshots und den genauen Auslöseschritt anhängen.',
+                '',
+                '## 🛠️ Lösungsschritte',
+                '1. Allplan vollständig schließen und Windows neu starten.',
+                '2. Den gleichen Vorgang in einem neuen leeren Projekt testen.',
+                '3. Allplan auf den neuesten verfügbaren Hotfix der installierten Version aktualisieren.',
+                '4. Einen stabilen NVIDIA- oder AMD-Grafiktreiber installieren und Windows neu starten.',
+                '5. Allplan-Projektordner testweise von Virenschutz- oder Sync-Tools ausschließen.',
+                '6. Wenn das Verhalten erneut auftritt, eine Support-Anfrage mit Hotinfo, Screenshots, Projektname und den exakten Schritten vor dem Einfrieren erstellen.',
+                '',
+                '## ✅ Überprüfung',
+                '- Der gleiche Vorgang sollte ohne Einfrieren abgeschlossen werden.',
+                '- Wenn nur ein Projekt betroffen ist, diese Projektinformation in der Support-Anfrage ergänzen.',
+            ].join('\n');
+        }
+
+        return [
+            '## 📌 Sorun Yorumu',
+            'Allplan’ın kilitlenmesi, donması veya yanıt vermemesi genellikle tek bir nedenden değil; ortam, sürüm, ekran kartı sürücüsü veya belirli proje verisi kaynaklı olabilir. Önce proje verisini değiştirmeyen güvenli kontrollerle ilerlemek gerekir.',
+            '',
+            '## 🎯 En Olası Neden',
+            'İlk kontrol edilmesi gereken alanlar Allplan sürümü/hotfix durumu, ekran kartı sürücüsü, sorunun tek projede mi tüm projelerde mi oluştuğu, güvenlik yazılımları ve Windows sistem durumudur.',
+            '',
+            '## ⚠️ Kritik Kontroller',
+            '- Allplan sürümü ve Build ID bilgisini doğrulayın.',
+            '- Donma yalnızca tek projede, tek çizim dosyasında veya tüm projelerde mi oluyor kontrol edin.',
+            '- Ekran kartı sürücüsünün ve Windows güncellemelerinin güncel olduğunu kontrol edin.',
+            '- Antivirüs, bulut senkronizasyonu veya yedekleme araçlarının Allplan proje klasörlerini tarayıp taramadığını kontrol edin.',
+            '- Hotinfo dosyasını, ekran görüntülerini ve donmayı tetikleyen tam işlem adımını ekleyin.',
+            '',
+            '## 🛠️ Çözüm Adımları',
+            '1. Allplan’ı tamamen kapatın ve Windows’u yeniden başlatıp tekrar deneyin.',
+            '2. Aynı işlemi yeni ve boş bir projede deneyerek sorunun proje verisine mi sisteme mi bağlı olduğunu ayırın.',
+            '3. Kurulu Allplan sürümü için mevcut en güncel hotfix’i yükleyin.',
+            '4. NVIDIA veya AMD ekran kartı sürücüsünü kararlı/güncel sürüme yükseltin ve Windows’u yeniden başlatın.',
+            '5. Test amacıyla Allplan proje klasörlerini antivirüs veya senkronizasyon araçlarının gerçek zamanlı taramasından hariç tutun.',
+            '6. Sorun tekrarlanırsa Hotinfo, ekran görüntüsü, etkilenen proje adı ve donmadan önce yapılan tam işlem adımıyla destek talebi oluşturun.',
+            '',
+            '## ✅ Doğrulama',
+            '- Aynı işlem Allplan yanıt vermeyi bırakmadan tamamlanmalıdır.',
+            '- Sorun yalnızca tek projedeyse bu proje bilgisi destek talebine eklenmelidir.',
+        ].join('\n');
+    }
+
+    private isCrashOrFreezeQuery(normalizedQuery: string): boolean {
+        return /(?:kilitlen|donuyor|dondu|donma|yanit vermiyor|yanit vermem|not responding|absturz|friert|eingefroren|\bcrash(?:es|ed|ing)?\b|\bfreez(?:e|es|ing)?\b|\bfrozen\b|\bhang(?:s|ing)?\b)/.test(normalizedQuery);
+    }
+
+    private isSafeOperationalTriageAnswer(answer: string | null): boolean {
+        if (!answer) return false;
+        const normalizedAnswer = this.normalizeSearchText(answer);
+        return (
+            normalizedAnswer.includes('hotinfo') &&
+            (
+                normalizedAnswer.includes('guvenli kontroller') ||
+                normalizedAnswer.includes('safe checks') ||
+                normalizedAnswer.includes('sicheren prufungen')
+            )
+        );
     }
 
     private buildInteractionLanguageContext(
