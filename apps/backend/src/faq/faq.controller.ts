@@ -1,11 +1,38 @@
 import {
     Controller, Get, Post, Patch, Delete,
-    Param, Body, Query, Request, UseGuards,
+    BadRequestException, Param, Body, Query, Request, UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { FaqService } from './faq.service';
+import { FaqStatus } from '@aluplan/database';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { RequirePermissions, Roles } from '../rbac/decorators/rbac.decorators';
+
+const FAQ_STATUSES = new Set<string>(Object.values(FaqStatus));
+
+function parsePositiveIntQuery(value: unknown, fallback: number, field: string): number {
+    if (value === undefined || value === null || value === '') return fallback;
+
+    const normalized = Array.isArray(value) ? value[0] : value;
+    const parsed = Number(normalized);
+
+    if (!Number.isInteger(parsed) || parsed < 1) {
+        throw new BadRequestException(`${field} must be a positive integer`);
+    }
+
+    return parsed;
+}
+
+function parseFaqStatusQuery(value: unknown): FaqStatus | undefined {
+    if (value === undefined || value === null || value === '') return undefined;
+
+    const normalized = String(Array.isArray(value) ? value[0] : value).trim().toUpperCase();
+    if (!FAQ_STATUSES.has(normalized)) {
+        throw new BadRequestException(`status must be one of: ${[...FAQ_STATUSES].join(', ')}`);
+    }
+
+    return normalized as FaqStatus;
+}
 
 @ApiTags('FAQ')
 @ApiBearerAuth()
@@ -32,9 +59,9 @@ export class FaqController {
     @ApiQuery({ name: 'limit', required: false, type: Number })
     findAll(@Query() q: any): Promise<any> {
         return this.faqService.findAll({
-            status: q.status,
-            page: q.page ? parseInt(q.page) : 1,
-            limit: q.limit ? parseInt(q.limit) : 20,
+            status: parseFaqStatusQuery(q.status),
+            page: parsePositiveIntQuery(q.page, 1, 'page'),
+            limit: parsePositiveIntQuery(q.limit, 20, 'limit'),
         });
     }
 

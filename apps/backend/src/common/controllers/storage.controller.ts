@@ -15,12 +15,12 @@ export class StorageController {
     }
 
     @Public()
-    @Get('*')
+    @Get('*path')
     async getFile(
-        @Param() params: any,
+        @Param('path') storagePath: string | string[],
         @Res({ passthrough: true }) res: Response,
     ) {
-        const fullPath = params['0']; // Catch-all value
+        const fullPath = this.normalizeStoragePath(storagePath);
         const basePath = path.resolve(path.join(process.cwd(), this.localPath));
         const filePath = path.resolve(path.join(process.cwd(), this.localPath, fullPath));
 
@@ -42,5 +42,15 @@ export class StorageController {
 
         const file = fs.createReadStream(filePath);
         return new StreamableFile(file);
+    }
+
+    private normalizeStoragePath(storagePath: string | string[] | undefined): string {
+        const fullPath = Array.isArray(storagePath) ? storagePath.join('/') : storagePath;
+
+        if (!fullPath || fullPath.includes('\0')) {
+            throw new NotFoundException('File not found');
+        }
+
+        return fullPath;
     }
 }
