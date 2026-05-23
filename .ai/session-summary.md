@@ -1,5 +1,31 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-23 Operations Dashboard Phase 1
+
+### What changed
+
+- Added a dedicated backend operations dashboard module and `GET /dashboard/ops` endpoint.
+- The endpoint aggregates real operational data for:
+  - active tickets, unassigned tickets, SLA breaches, resolved-today count
+  - ticket trend series
+  - action queue counts
+  - AI quality metrics and trend series
+  - admin/superuser-only AI estimated cost telemetry
+  - CRM update/failure summaries
+  - Knowledge Pool, dataset, generic crawler, and LearnNow candidate summaries
+  - BullMQ queue counts for knowledge sync, CRM sync, and AI query processing
+  - system health and recent live feed events
+- Empty chart data is returned as deterministic zero-value series so the frontend can show honest empty states instead of decorative/fake charts.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- ops-dashboard.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+
+### Next
+
+- Phase 2 should replace the current admin dashboard UI with the mockup shell using this single aggregate endpoint, while preserving the simpler customer dashboard.
+
 ## Follow-up - 2026-05-23 LearnNow Review Decisions Phase 5
 
 ### What changed

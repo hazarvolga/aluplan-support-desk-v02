@@ -2,6 +2,11 @@
 
 ## Active Work
 
+- Operations dashboard implementation is in progress:
+  - Phase 1 backend aggregate endpoint added at `GET /dashboard/ops`.
+  - Endpoint returns real DB/queue-backed operations data for active tickets, SLA pressure, AI quality/cost estimates, CRM changes, knowledge/crawler state, system health, live feed, and trend series.
+  - AI cost data is intentionally visible only to admin/superuser roles; support agents receive `cost: null`.
+  - Empty trend series are deterministic zero-value series, not decorative fake data.
 - Live bug closure pass in progress:
   - AI answer quality hotfix now treats localized no-knowledge text as `NO_MATCH`, repairs mixed-language LLM answers, and gives crash/freeze queries a safe LOW-confidence triage instead of an unrelated source-backed no-answer.
   - static backend routes are guarded against dynamic `:id` shadowing for team skills/agents and ticket by-number/bulk endpoints.
