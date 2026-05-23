@@ -2952,6 +2952,14 @@
           "ready": "BEREIT",
           "needs_review": "PRÜFEN"
         },
+        "quality_reasons": {
+          "article_ready": "ARTIKELINHALT BEREIT",
+          "media_ready": "TRANSKRIPT BEREIT",
+          "transcript_required": "TRANSKRIPT ERFORDERLICH",
+          "content_too_short": "INHALT ZU KURZ",
+          "pdf_validated_on_import": "PDF-PRÜFUNG BEIM IMPORT",
+          "needs_content_review": "INHALTSPRÜFUNG"
+        },
         "buttons": {
           "dry_run": "VORSCHAU",
           "save_candidates": "KANDIDATEN SPEICHERN",

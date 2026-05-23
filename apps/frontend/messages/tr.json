@@ -2952,6 +2952,14 @@
           "ready": "HAZIR",
           "needs_review": "İNCELE"
         },
+        "quality_reasons": {
+          "article_ready": "MAKALE İÇERİĞİ HAZIR",
+          "media_ready": "TRANSKRİPT HAZIR",
+          "transcript_required": "TRANSKRİPT GEREKLİ",
+          "content_too_short": "İÇERİK KISA",
+          "pdf_validated_on_import": "PDF İÇE AKTARIRKEN KONTROL",
+          "needs_content_review": "İÇERİK İNCELEME"
+        },
         "buttons": {
           "dry_run": "ÖNİZLE",
           "save_candidates": "ADAYLARI KAYDET",

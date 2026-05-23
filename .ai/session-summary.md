@@ -1,5 +1,44 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-23 LearnNow Review Decisions Phase 5
+
+### What changed
+
+- Learn Now candidate enrichment now uses a single review-decision helper instead of one-off `explaining_video` checks.
+- Media-like formats now require transcripts consistently across stale/internal and live/public names:
+  - `explaining_video`
+  - `explainer_video`
+  - `recorded_online_session`
+  - `recording`
+- Recorded session candidates without transcript text are staged as review-only with `reasonCode=TRANSCRIPT_REQUIRED`.
+- Technical Manual/PDF candidates are marked importable but carry `reasonCode=PDF_VALIDATED_ON_IMPORT`, because the actual PDF bytes are still validated during import.
+- Candidate review metadata now includes reason codes such as `MEDIA_TRANSCRIPT_READY`, `CONTENT_TOO_SHORT`, and `NEEDS_CONTENT_REVIEW`.
+- Knowledge Pool candidate UI now shows localized reason badges in `tr`, `en`, and `de`.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- learnnow-crawler.service.spec.ts crawl.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/backend build` passed.
+- `pnpm --filter @aluplan/frontend build` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed after the frontend build completed.
+- `pnpm i18n:check` passed for `tr`, `en`, and `de`.
+- `git diff --check` passed.
+- Live read-only LearnNow smoke with a real `TotaraSession` returned candidates for:
+  - `knowledge_article` sample ids: `9461`, `9460`, `9459`.
+  - `pdf` / Technical Manuals sample ids: `2826`, `2828`, `2829`.
+  - `explainer_video` sample ids: `2740`, `2743`, `2741`.
+  - `recording` sample ids: `2950`, `2959`, `7230`.
+
+### Notes
+
+- Running frontend build and frontend typecheck in parallel can race over `.next/types`; the typecheck failure from that race was not a product-code failure and passed when rerun after build.
+- No production DB writes were performed; the live smoke only fetched public LearnNow pages.
+
+### Next
+
+- Run a small end-to-end pilot on one Knowledge Article, one transcript-backed video, one Technical Manual/PDF, and one Recorded Session before pushing/deploying the LearnNow batch.
+
 ## Follow-up - 2026-05-23 LearnNow Public Format Filters Phase 4
 
 ### What changed

@@ -2952,6 +2952,14 @@
           "ready": "READY",
           "needs_review": "REVIEW"
         },
+        "quality_reasons": {
+          "article_ready": "ARTICLE CONTENT READY",
+          "media_ready": "TRANSCRIPT READY",
+          "transcript_required": "TRANSCRIPT REQUIRED",
+          "content_too_short": "CONTENT TOO SHORT",
+          "pdf_validated_on_import": "PDF CHECK ON IMPORT",
+          "needs_content_review": "CONTENT REVIEW"
+        },
         "buttons": {
           "dry_run": "PREVIEW",
           "save_candidates": "SAVE CANDIDATES",

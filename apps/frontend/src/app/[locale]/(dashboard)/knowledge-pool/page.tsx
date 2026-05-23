@@ -458,7 +458,7 @@ export default function KnowledgePoolPage() {
         });
     };
 
-    const getCandidateReviewQuality = (candidate: CrawlCandidate) => {
+    const getCandidateReviewQuality = (candidate: CrawlCandidate): Record<string, unknown> | null => {
         const metadata = candidate.metadata ?? {};
         const reviewQuality = metadata.reviewQuality;
         if (reviewQuality && typeof reviewQuality === 'object') {
@@ -492,6 +492,18 @@ export default function KnowledgePoolPage() {
         const transcriptLength = typeof quality.transcriptLength === 'number' ? quality.transcriptLength : null;
         const sourceType = typeof quality.sourceType === 'string' ? quality.sourceType : candidate.crawlFilter;
         const readyForImport = quality.readyForImport === true;
+        const reasonCode = typeof quality.reasonCode === 'string' ? quality.reasonCode : null;
+        const reasonKeyByCode: Record<string, string> = {
+            ARTICLE_CONTENT_READY: 'article_ready',
+            MEDIA_TRANSCRIPT_READY: 'media_ready',
+            TRANSCRIPT_REQUIRED: 'transcript_required',
+            CONTENT_TOO_SHORT: 'content_too_short',
+            PDF_VALIDATED_ON_IMPORT: 'pdf_validated_on_import',
+            NEEDS_CONTENT_REVIEW: 'needs_content_review',
+        };
+        const reasonLabel = reasonCode && reasonKeyByCode[reasonCode]
+            ? t(`crawler.quality_reasons.${reasonKeyByCode[reasonCode]}` as any)
+            : null;
 
         return (
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
@@ -526,6 +538,14 @@ export default function KnowledgePoolPage() {
                     {readyForImport ? <CheckCircle2 className="h-2.5 w-2.5 mr-1" /> : <Clock className="h-2.5 w-2.5 mr-1" />}
                     {readyForImport ? t('crawler.quality.ready') : t('crawler.quality.needs_review')}
                 </Badge>
+                {reasonLabel && (
+                    <Badge
+                        variant="outline"
+                        className={`text-[8px] font-mono rounded-none px-1 ${readyForImport ? 'border-emerald-500/20 text-emerald-300' : 'border-amber-500/20 text-amber-300'}`}
+                    >
+                        {reasonLabel}
+                    </Badge>
+                )}
             </div>
         );
     };

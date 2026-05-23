@@ -246,6 +246,90 @@ describe('LearnNowCrawlerService', () => {
             transcriptLanguage: 'de',
             transcriptLength: 442,
             readyForImport: true,
+            reasonCode: 'MEDIA_TRANSCRIPT_READY',
+        }));
+    });
+
+    it('keeps recorded session candidates review-only when transcript is missing', async () => {
+        const { service, prisma, crawl } = makeService();
+        mockedAxios.get.mockResolvedValueOnce({
+            data: `
+              <html><body>
+                <a href="/totara/engage/resources/howto/index.php?id=3777&source=howto">
+                  Recorded Session - Model Coordination
+                </a>
+              </body></html>
+            `,
+        } as any);
+        prisma.$queryRawUnsafe.mockResolvedValue([]);
+        crawl.fetch.mockResolvedValue({
+            content: 'Recorded session overview without transcript.'.repeat(12),
+            title: 'Recorded Session - Model Coordination',
+            hash: 'recording-content-hash',
+            isDynamic: true,
+            provider: 'learnnow-api',
+            images: [],
+            metadata: {
+                learnNow: {
+                    type: 'recording',
+                    transcriptStatus: 'MISSING',
+                    transcriptLength: 0,
+                },
+            },
+        });
+
+        await service.discover({
+            formats: ['recorded_online_session'],
+            maxPages: 1,
+            maxCandidates: 10,
+            dryRun: false,
+        });
+
+        const metadata = JSON.parse(prisma.$executeRawUnsafe.mock.calls[0][9]);
+        expect(metadata.reviewQuality).toEqual(expect.objectContaining({
+            sourceType: 'recording',
+            transcriptStatus: 'MISSING',
+            readyForImport: false,
+            reasonCode: 'TRANSCRIPT_REQUIRED',
+        }));
+    });
+
+    it('marks technical manual PDF candidates as importable but validated during import', async () => {
+        const { service, prisma } = makeService();
+        mockedAxios.get.mockResolvedValueOnce({
+            data: `
+              <html><body>
+                <a href="/mod/resource/view.php?id=9021">Allplan Technical Manual</a>
+              </body></html>
+            `,
+        } as any);
+        prisma.$queryRawUnsafe.mockResolvedValue([]);
+
+        await service.discover({
+            formats: ['technical_manual'],
+            maxPages: 1,
+            maxCandidates: 10,
+            dryRun: false,
+        });
+
+        expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(
+            expect.stringContaining('INSERT INTO crawl_candidates'),
+            'allplan_learnnow',
+            'https://learnnow.allplan.com/mod/resource/view.php?id=9021',
+            'Allplan Technical Manual',
+            'PDF',
+            'en',
+            'uncategorized',
+            null,
+            'technical_manual',
+            expect.stringContaining('"reasonCode":"PDF_VALIDATED_ON_IMPORT"'),
+        );
+        const metadata = JSON.parse(prisma.$executeRawUnsafe.mock.calls[0][9]);
+        expect(metadata.reviewQuality).toEqual(expect.objectContaining({
+            sourceType: 'technical_manual',
+            candidateFormat: 'PDF',
+            readyForImport: true,
+            reasonCode: 'PDF_VALIDATED_ON_IMPORT',
         }));
     });
 

@@ -51,6 +51,17 @@ type DiscoveredCandidate = {
     metadata: Prisma.InputJsonObject;
 };
 
+type CandidateReviewDecision = {
+    readyForImport: boolean;
+    reasonCode:
+    | 'ARTICLE_CONTENT_READY'
+    | 'MEDIA_TRANSCRIPT_READY'
+    | 'TRANSCRIPT_REQUIRED'
+    | 'CONTENT_TOO_SHORT'
+    | 'PDF_VALIDATED_ON_IMPORT'
+    | 'NEEDS_CONTENT_REVIEW';
+};
+
 const LEARNNOW_BASE_URL = 'https://learnnow.allplan.com';
 const LEARNNOW_SOURCE = 'allplan_learnnow';
 const LEARNNOW_FORMAT_FILTERS: Record<LearnNowCrawlFormat, LearnNowFilterValue> = {
@@ -441,8 +452,12 @@ export class LearnNowCrawlerService {
                 const transcriptLength = typeof learnNow.transcriptLength === 'number'
                     ? learnNow.transcriptLength
                     : 0;
-                const readyForImport = contentLength >= 250
-                    && (candidate.crawlFilter !== 'explaining_video' || transcriptStatus === 'AVAILABLE');
+                const reviewDecision = this.evaluateReviewQuality({
+                    candidate,
+                    sourceType: String(learnNow.type ?? candidate.crawlFilter),
+                    contentLength,
+                    transcriptStatus,
+                });
 
                 return {
                     ...candidate,
@@ -459,7 +474,8 @@ export class LearnNowCrawlerService {
                             transcriptStatus,
                             transcriptLanguage: learnNow.transcriptLanguage ?? null,
                             transcriptLength,
-                            readyForImport,
+                            readyForImport: reviewDecision.readyForImport,
+                            reasonCode: reviewDecision.reasonCode,
                         },
                     },
                 };
@@ -479,7 +495,89 @@ export class LearnNowCrawlerService {
             }
         }
 
-        return candidate;
+        return this.withDefaultReviewQuality(candidate);
+    }
+
+    private withDefaultReviewQuality(candidate: DiscoveredCandidate): DiscoveredCandidate {
+        const reviewDecision = this.evaluateReviewQuality({
+            candidate,
+            sourceType: candidate.crawlFilter,
+            contentLength: null,
+            transcriptStatus: null,
+        });
+
+        return {
+            ...candidate,
+            metadata: {
+                ...candidate.metadata,
+                reviewQuality: {
+                    sourceType: candidate.crawlFilter,
+                    candidateFormat: candidate.format,
+                    readyForImport: reviewDecision.readyForImport,
+                    reasonCode: reviewDecision.reasonCode,
+                },
+            },
+        };
+    }
+
+    private evaluateReviewQuality(params: {
+        candidate: DiscoveredCandidate;
+        sourceType: string;
+        contentLength: number | null;
+        transcriptStatus: string | null;
+    }): CandidateReviewDecision {
+        if (params.candidate.format === 'PDF') {
+            return {
+                readyForImport: true,
+                reasonCode: 'PDF_VALIDATED_ON_IMPORT',
+            };
+        }
+
+        const contentLength = params.contentLength ?? 0;
+        if (params.contentLength !== null && contentLength < 250) {
+            return {
+                readyForImport: false,
+                reasonCode: 'CONTENT_TOO_SHORT',
+            };
+        }
+
+        if (this.requiresTranscript(params.candidate.crawlFilter, params.sourceType)) {
+            if (params.transcriptStatus === 'AVAILABLE') {
+                return {
+                    readyForImport: true,
+                    reasonCode: 'MEDIA_TRANSCRIPT_READY',
+                };
+            }
+
+            return {
+                readyForImport: false,
+                reasonCode: 'TRANSCRIPT_REQUIRED',
+            };
+        }
+
+        if (params.contentLength !== null) {
+            return {
+                readyForImport: true,
+                reasonCode: 'ARTICLE_CONTENT_READY',
+            };
+        }
+
+        return {
+            readyForImport: false,
+            reasonCode: 'NEEDS_CONTENT_REVIEW',
+        };
+    }
+
+    private requiresTranscript(crawlFilter: string, sourceType: string): boolean {
+        const normalized = new Set([
+            crawlFilter,
+            sourceType,
+        ].map(value => value.toLowerCase().replace(/-/g, '_')));
+
+        return normalized.has('explaining_video')
+            || normalized.has('explainer_video')
+            || normalized.has('recorded_online_session')
+            || normalized.has('recording');
     }
 
     private async findCandidate(id: string): Promise<CrawlCandidateRecord | null> {

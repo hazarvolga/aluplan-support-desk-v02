@@ -86,7 +86,9 @@
   - Knowledge Pool crawler UI now shows these quality signals as compact badges before import.
   - public LearnNow format filters now match the real Totara UI values: Knowledge Article `knowledge_article`, Technical Manuals/PDF `pdf`, Explaining video `explainer_video`, and Recorded online session `recording`.
   - Technical Manuals are staged as PDF candidates; videos and recordings remain review-first Knowledge Article candidates until transcript/content quality is confirmed.
-  - next LearnNow phase should add manual/recording-specific quality rules and then run a small end-to-end pilot import smoke before broader imports.
+  - LearnNow review decisions now use one backend helper: article content must be long enough, media/recording formats require transcript text, and PDF/manual candidates are clearly marked as validated during import.
+  - candidate quality badges now show localized reason codes such as transcript required, transcript ready, content too short, and PDF check on import.
+  - next LearnNow phase should run a small end-to-end pilot import smoke before broader imports.
 - Ticket routing hardening started:
   - new ticket creation now collects support category/department before product selection.
   - ticket create payload includes `departmentId` so SLA and auto-assignment can route by department.
