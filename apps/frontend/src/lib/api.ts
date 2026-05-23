@@ -79,6 +79,50 @@ export type DiscoverGenericWebPayload = {
     dryRun?: boolean;
 };
 
+export type OpsDashboardData = {
+    generatedAt: string;
+    window: { days: number; todayStart: string; trendStart: string };
+    kpis: {
+        activeTickets: number;
+        unassignedTickets: number;
+        crmUpdatesToday: number;
+        crawlCandidates: number;
+        aiConfidence: number;
+        slaBreaches: number;
+        resolvedToday: number;
+    };
+    decision: { level: 'ok' | 'info' | 'warning' | 'critical'; code: string; primaryAction: string };
+    cost: null | {
+        currency: string;
+        source: string;
+        today: { requests: number; inputTokens: number; outputTokens: number; totalTokens: number; estimatedCost: number };
+        rolling30d: { requests: number; inputTokens: number; outputTokens: number; totalTokens: number; estimatedCost: number };
+        providers: Array<{ provider: string; model: string; requests: number; inputTokens: number; outputTokens: number; totalTokens: number; estimatedCost: number }>;
+    };
+    system: {
+        status: 'HEALTHY' | 'DEGRADED' | 'DOWN';
+        aiEvents: Record<string, number>;
+        activeAgents: number;
+        dndAgents: number;
+        recentErrors: Array<Record<string, any>>;
+    };
+    queues: Record<string, { waiting: number; active: number; delayed: number; failed: number; completed: number; paused: number }>;
+    activeDesk: {
+        total: number;
+        tickets: Array<Record<string, any>>;
+        trend: Array<Record<string, number | string>>;
+    };
+    actions: Array<{ id: string; severity: 'ok' | 'info' | 'warning' | 'critical'; count: number; href: string }>;
+    pulse: {
+        ticketTrend: Array<Record<string, number | string>>;
+        aiQuality: { summary: Record<string, number>; trend: Array<Record<string, number | string>> };
+        crm: Record<string, any>;
+        knowledge: Record<string, any>;
+    };
+    learnNow: Record<string, any>;
+    liveFeed: Array<{ id: string; type: string; title: string; description?: string; status?: string; at: string; href: string }>;
+};
+
 const processQueue = (error: Error | null, token: string | null = null) => {
     failedQueue.forEach(prom => {
         if (error) {
@@ -246,6 +290,9 @@ async function downloadRequest(path: string): Promise<{ blob: Blob; filename?: s
 }
 
 export const api = {
+    dashboard: {
+        ops: (days = 7) => request<OpsDashboardData>(`/dashboard/ops?days=${days}`),
+    },
     auth: {
         login: (email: string, password: string) =>
             request<{ access_token: string; refresh_token: string }>('/auth/login', {

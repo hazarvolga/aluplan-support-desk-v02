@@ -74,6 +74,60 @@ export const handlers = [
         return HttpResponse.json({ aiAccuracy: 95, totalQueries: 1000 });
     }),
 
+    http.get(`${API_BASE}/dashboard/ops`, () => {
+        return HttpResponse.json({
+            generatedAt: new Date().toISOString(),
+            window: { days: 7, todayStart: new Date().toISOString(), trendStart: new Date().toISOString() },
+            kpis: {
+                activeTickets: 1,
+                unassignedTickets: 0,
+                crmUpdatesToday: 2,
+                crawlCandidates: 3,
+                aiConfidence: 92,
+                slaBreaches: 0,
+                resolvedToday: 1,
+            },
+            decision: { level: 'ok', code: 'operationally_stable', primaryAction: '/tickets' },
+            cost: {
+                currency: 'USD',
+                source: 'estimated',
+                today: { requests: 2, inputTokens: 100, outputTokens: 50, totalTokens: 150, estimatedCost: 0.01 },
+                rolling30d: { requests: 12, inputTokens: 1000, outputTokens: 500, totalTokens: 1500, estimatedCost: 0.12 },
+                providers: [{ provider: 'gemini', model: 'gemini-2.5-flash', requests: 12, inputTokens: 1000, outputTokens: 500, totalTokens: 1500, estimatedCost: 0.12 }],
+            },
+            system: { status: 'HEALTHY', aiEvents: { success: 3 }, activeAgents: 1, dndAgents: 0, recentErrors: [] },
+            queues: {
+                knowledge: { waiting: 0, active: 0, delayed: 0, failed: 0, completed: 2, paused: 0 },
+                crm: { waiting: 0, active: 0, delayed: 0, failed: 0, completed: 1, paused: 0 },
+                ai: { waiting: 0, active: 0, delayed: 0, failed: 0, completed: 3, paused: 0 },
+            },
+            activeDesk: {
+                total: 1,
+                tickets: [{
+                    id: 'tik-1',
+                    ticketNumber: 'SUP-00001',
+                    subject: 'Test ticket',
+                    priority: 'HIGH',
+                    creator: { fullName: 'John Customer', customerProfile: { companyName: 'Customer Corp' } },
+                    assignee: { fullName: 'Agent One' },
+                }],
+                trend: [{ date: '2026-05-23', created: 1, resolved: 0 }],
+            },
+            actions: [
+                { id: 'unassigned', severity: 'ok', count: 0, href: '/tickets' },
+                { id: 'low_confidence_ai', severity: 'warning', count: 1, href: '/ai-health' },
+            ],
+            pulse: {
+                ticketTrend: [{ date: '2026-05-23', created: 1, resolved: 0 }],
+                aiQuality: { summary: { total: 2, confidenceRate: 92, fallbackRate: 0, sourceLeaks: 0, languageRisks: 0 }, trend: [{ date: '2026-05-23', total: 2, confidence: 92, lowConfidence: 0 }] },
+                crm: { updatedToday: 2, failuresToday: 0, trend: [{ date: '2026-05-23', count: 2 }], recentChanges: [] },
+                knowledge: { activeSources: 10, syncFailuresToday: 0, embeddings: 120, genericCandidatesPending: 3, datasetSources: 5, trend: [{ date: '2026-05-23', count: 10 }] },
+            },
+            learnNow: { pendingReview: 2, byStatus: { IMPORTED: 5, SKIPPED_DUPLICATE: 1 }, byFormat: {}, recent: [] },
+            liveFeed: [{ id: 'feed-1', type: 'ticket', title: 'SUP-00001', description: 'Test ticket', status: 'OPEN', at: new Date().toISOString(), href: '/tickets/tik-1' }],
+        });
+    }),
+
     // ── SLA Stats ─────────────────────────────────────────────────────
     http.get(`${API_BASE}/tickets/sla/stats`, () => {
         return HttpResponse.json({

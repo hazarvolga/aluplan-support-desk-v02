@@ -305,6 +305,163 @@
       "MEDIUM": "Medium",
       "HIGH": "High",
       "URGENT": "Urgent"
+    },
+    "ops": {
+      "live_cost": "Live Cost",
+      "system_active": "System Active",
+      "system_watch": "System Watch",
+      "close": "Close",
+      "kpis": {
+        "active_tickets": "Active Tickets",
+        "unassigned": "Unassigned",
+        "crm_updates": "CRM Updates",
+        "crawl_candidates": "Crawl Candidates",
+        "ai_confidence": "ANN Confidence"
+      },
+      "cost": {
+        "title": "AI Cost Center",
+        "description": "Estimated token and model cost calculated inside the app. Google AI Studio billing can lag or differ slightly.",
+        "restricted": "This cost view is available only to admin and super admin roles.",
+        "today": "Today",
+        "rolling30": "Last 30 Days",
+        "requests": "{count} requests",
+        "tokens": "{count} tokens"
+      },
+      "system": {
+        "title": "System Health",
+        "description": "Live summary of AI, queue, agent, and recent error signals.",
+        "health": "Overall Status",
+        "health_detail": "Recent AI events and queue signals",
+        "online_agents": "Online Agents",
+        "dnd_agents": "{count} do-not-disturb",
+        "knowledge_queue": "Knowledge Queue",
+        "failed_jobs": "{count} failed jobs",
+        "ai_events": "AI Events",
+        "recent_errors": "{count} critical records",
+        "statuses": {
+          "HEALTHY": "Healthy",
+          "DEGRADED": "Degraded",
+          "DOWN": "Down"
+        }
+      },
+      "pulse": {
+        "title": "Operations Pulse",
+        "tickets": {
+          "title": "Ticket Trend",
+          "description": "Recent ticket intake flow"
+        },
+        "ai": {
+          "title": "AI Quality",
+          "description": "Confidence and low-match signal"
+        },
+        "crm": {
+          "title": "CRM Sync",
+          "description": "Today's CRM change velocity"
+        },
+        "knowledge": {
+          "title": "Knowledge Flow",
+          "description": "Source and indexing volume"
+        }
+      },
+      "active_desk": {
+        "title": "Active Support Desk",
+        "description": "Only open tickets that still need operational attention.",
+        "empty_title": "No active tickets",
+        "empty_desc": "The open queue currently looks clean.",
+        "unknown_customer": "Unknown customer",
+        "unassigned": "Unassigned"
+      },
+      "actions": {
+        "title": "Action Queue",
+        "unassigned": {
+          "title": "Tickets waiting for assignment",
+          "description": "Records with a department but no assigned expert"
+        },
+        "sla_risk": {
+          "title": "SLA risk",
+          "description": "Tickets approaching a critical threshold within two hours"
+        },
+        "low_confidence_ai": {
+          "title": "Low AI confidence",
+          "description": "Today's low-confidence or no-match answers"
+        },
+        "crawler_review": {
+          "title": "Crawler review",
+          "description": "Candidates waiting for admin approval before import"
+        },
+        "crm_failures": {
+          "title": "CRM failures",
+          "description": "CRM change records that failed today"
+        }
+      },
+      "live_feed": {
+        "title": "Live Mini Feed",
+        "empty_title": "No new events",
+        "empty_desc": "Ticket, CRM, AI, and crawler events appear here.",
+        "types": {
+          "ticket": "Ticket",
+          "crm": "CRM",
+          "ai": "AI",
+          "crawl": "Crawl"
+        }
+      },
+      "workspace": {
+        "title": "Operations Workspace",
+        "tabs": {
+          "overview": "Overview",
+          "crm": "CRM",
+          "knowledge": "Knowledge Pool",
+          "learnnow": "LearnNow",
+          "ai": "AI Health"
+        },
+        "metrics": {
+          "sla_breaches": "SLA breaches",
+          "resolved_today": "Resolved today",
+          "queue_failed": "Failed jobs",
+          "live_events": "Live events",
+          "crm_updates": "CRM updates",
+          "crm_failures": "CRM failures",
+          "crm_recent": "Recent changes",
+          "active_sources": "Active sources",
+          "embeddings": "Embeddings",
+          "dataset_sources": "Dataset sources",
+          "generic_candidates": "Generic candidates",
+          "pending_review": "Pending review",
+          "imported": "Imported",
+          "duplicates": "Duplicates",
+          "ai_total": "AI requests",
+          "ai_fallback": "Fallback rate",
+          "source_leaks": "Source leaks",
+          "language_risks": "Language risks"
+        }
+      },
+      "decision": {
+        "title": "Today's Decision",
+        "operationally_stable": {
+          "title": "Queue is balanced; normal operations can continue.",
+          "description": "No signal currently requires immediate intervention."
+        },
+        "unassigned_tickets": {
+          "title": "Clear unassigned tickets first.",
+          "description": "The first operational bottleneck is expert assignment."
+        },
+        "sla_breach": {
+          "title": "SLA breach detected; open critical tickets first.",
+          "description": "Some records have exceeded response or resolution time."
+        },
+        "crm_failures": {
+          "title": "Check CRM sync failures.",
+          "description": "Customer data freshness can affect support quality."
+        },
+        "ai_quality_watch": {
+          "title": "AI quality signals need monitoring.",
+          "description": "Fallback or low-confidence rate is higher than expected."
+        },
+        "system_watch": {
+          "title": "Check system signals.",
+          "description": "Queue or AI health events need review."
+        }
+      }
     }
   },
   "sidebar": {

@@ -1,260 +1,610 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
-import { useAuth } from '@/components/auth/role-guard';
+import { useEffect, useMemo, useState } from 'react';
+import type { ElementType } from 'react';
 import {
-    Ticket, BookOpen, Bot, TrendingUp, AlertCircle, CheckCircle2, Clock, PlusCircle, Search, Activity
+    Activity,
+    AlertCircle,
+    ArrowRight,
+    BarChart3,
+    BookOpen,
+    Bot,
+    CheckCircle2,
+    Clock,
+    Database,
+    DollarSign,
+    Info,
+    PlusCircle,
+    Search,
+    Server,
+    ShieldCheck,
+    Ticket,
+    TrendingUp,
+    Users,
+    X,
 } from 'lucide-react';
-import { Link } from '@/i18n/routing';
 import { motion } from 'framer-motion';
-import { WireframeBorder } from '@/components/ui/wireframe-border';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/routing';
+import { api, OpsDashboardData } from '@/lib/api';
+import { useAuth } from '@/components/auth/role-guard';
+import { WireframeBorder } from '@/components/ui/wireframe-border';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+type DrawerMode = 'cost' | 'system' | null;
+
+const emptyOpsData = (): OpsDashboardData => ({
+    generatedAt: new Date().toISOString(),
+    window: { days: 7, todayStart: new Date().toISOString(), trendStart: new Date().toISOString() },
+    kpis: {
+        activeTickets: 0,
+        unassignedTickets: 0,
+        crmUpdatesToday: 0,
+        crawlCandidates: 0,
+        aiConfidence: 0,
+        slaBreaches: 0,
+        resolvedToday: 0,
+    },
+    decision: { level: 'ok', code: 'operationally_stable', primaryAction: '/tickets' },
+    cost: null,
+    system: { status: 'HEALTHY', aiEvents: {}, activeAgents: 0, dndAgents: 0, recentErrors: [] },
+    queues: {
+        knowledge: { waiting: 0, active: 0, delayed: 0, failed: 0, completed: 0, paused: 0 },
+        crm: { waiting: 0, active: 0, delayed: 0, failed: 0, completed: 0, paused: 0 },
+        ai: { waiting: 0, active: 0, delayed: 0, failed: 0, completed: 0, paused: 0 },
+    },
+    activeDesk: { total: 0, tickets: [], trend: [] },
+    actions: [],
+    pulse: {
+        ticketTrend: [],
+        aiQuality: { summary: {}, trend: [] },
+        crm: { updatedToday: 0, failuresToday: 0, trend: [], recentChanges: [] },
+        knowledge: { activeSources: 0, syncFailuresToday: 0, embeddings: 0, genericCandidatesPending: 0, datasetSources: 0, trend: [] },
+    },
+    learnNow: { pendingReview: 0, byStatus: {}, byFormat: {}, recent: [] },
+    liveFeed: [],
+});
+
+function formatNumber(value: unknown) {
+    const numeric = Number(value ?? 0);
+    return Number.isFinite(numeric) ? numeric.toLocaleString() : '0';
+}
+
+function formatCurrency(value: unknown, currency = 'USD') {
+    const numeric = Number(value ?? 0);
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 4 }).format(Number.isFinite(numeric) ? numeric : 0);
+}
+
+function roleList(user: any) {
+    return (user?.roles || [user?.role?.name, user?.role]).filter(Boolean).map((role: string) => role.toLowerCase());
+}
 
 function StatCard({ icon: Icon, label, value, indicatorColor }: {
-    icon: React.ElementType; label: string; value: string | number; indicatorColor: string;
+    icon: ElementType; label: string; value: string | number; indicatorColor: string;
 }) {
     const t = useTranslations('dashboard.stats');
     return (
         <motion.div
             whileHover={{ y: -4 }}
-            className="group relative px-6 py-8 rounded-2xl glass-card transition-all duration-500 overflow-hidden"
+            className="group relative overflow-hidden rounded-lg border border-white/10 bg-white/[0.03] px-4 py-5 transition-all duration-300"
         >
-            <div className={`absolute top-0 left-0 right-0 h-1 ${indicatorColor} opacity-20 group-hover:opacity-100 transition-opacity`} />
-            <div className="flex justify-between items-start mb-6">
-                <div className="p-2 rounded-lg bg-white/5 border border-white/5 text-muted-foreground group-hover:text-primary transition-all duration-300">
-                    <Icon className="h-5 w-5" />
+            <div className={`absolute left-0 right-0 top-0 h-0.5 ${indicatorColor} opacity-70`} />
+            <div className="flex items-start justify-between gap-3">
+                <div className="rounded-md border border-white/10 bg-white/[0.04] p-2 text-muted-foreground transition-colors group-hover:text-primary">
+                    <Icon className="h-4 w-4" />
                 </div>
-                <span className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground uppercase opacity-60">{label}</span>
+                <span className="max-w-[9rem] text-right text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</span>
             </div>
-            <div className="space-y-1">
-                <p className="text-4xl font-bold tracking-tight text-white group-hover:text-primary transition-colors">{value}</p>
-                <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 uppercase tracking-wider">
-                    <TrendingUp className="w-3 h-3" />
-                    <span>{t('status_stable')}</span>
-                </div>
+            <p className="mt-5 text-3xl font-bold tracking-tight text-white">{value}</p>
+            <div className="mt-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-500">
+                <TrendingUp className="h-3 w-3" />
+                {t('status_stable')}
             </div>
-            <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-primary/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
         </motion.div>
+    );
+}
+
+function CustomerDashboard({ stats }: { stats: any }) {
+    const t = useTranslations('dashboard');
+    const tc = useTranslations('common');
+    const { user } = useAuth();
+
+    return (
+        <div className="mx-auto max-w-6xl space-y-6">
+            <div className="flex items-end justify-between border-b border-border/40 pb-4">
+                <div>
+                    <h1 className="flex items-center gap-2 text-[18px] font-bold uppercase tracking-tight">
+                        <Activity className="h-5 w-5 text-primary" />
+                        {t('user_portal')}
+                    </h1>
+                    <p className="mt-1 font-mono text-[10px] uppercase leading-tight tracking-widest text-muted-foreground">
+                        {t('user_identity', { name: user?.fullName || '', level: t('access_level_standard') })}
+                    </p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <StatCard icon={Ticket} label={t('stats.active_tickets')} value={stats?.total || 0} indicatorColor="bg-blue-500" />
+                <StatCard icon={CheckCircle2} label={t('stats.resolved_tickets')} value={stats?.resolvedTotal || 0} indicatorColor="bg-emerald-500" />
+                <StatCard icon={Clock} label={t('stats.avg_response')} value={tc('not_available')} indicatorColor="bg-amber-500" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <QuickCard icon={Search} title={t('knowledge_base.title')} description={t('knowledge_base.description')} cta={t('knowledge_base.cta')} href="/knowledge-base" tone="primary" />
+                <QuickCard icon={Bot} title={t('ai_diagnostic.title')} description={t('ai_diagnostic.description')} cta={t('ai_diagnostic.cta')} href="/ai" tone="violet" />
+            </div>
+
+            <div className="flex justify-end pt-4">
+                <Link href="/tickets/new" className="inline-flex items-center gap-2 bg-primary px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-primary-foreground shadow-sm hover:bg-primary/90">
+                    <PlusCircle className="h-4 w-4" />
+                    {t('actions.create_ticket')}
+                </Link>
+            </div>
+        </div>
+    );
+}
+
+function QuickCard({ icon: Icon, title, description, cta, href, tone }: {
+    icon: ElementType; title: string; description: string; cta: string; href: string; tone: 'primary' | 'violet';
+}) {
+    const toneClass = tone === 'violet' ? 'text-violet-400 border-violet-500/20 bg-violet-500/10 hover:bg-violet-500/20' : 'text-primary border-primary/20 bg-primary/10 hover:bg-primary/20';
+    return (
+        <div className="group relative flex min-h-48 flex-col justify-between overflow-hidden border border-border/40 bg-muted/5 p-6">
+            <div className="relative z-10">
+                <h2 className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+                    <Icon className="h-4 w-4 text-primary" />
+                    {title}
+                </h2>
+                <p className="mb-6 max-w-[80%] font-mono text-xs leading-relaxed text-muted-foreground">{description}</p>
+            </div>
+            <Link href={href} className={`relative z-10 inline-flex w-fit items-center justify-between border px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors ${toneClass}`}>
+                {cta}
+            </Link>
+            <Icon className="absolute -bottom-4 -right-4 h-32 w-32 text-primary/5 transition-colors group-hover:text-primary/10" />
+        </div>
+    );
+}
+
+function HeaderActions({ data, drawer, setDrawer }: { data: OpsDashboardData; drawer: DrawerMode; setDrawer: (mode: DrawerMode) => void }) {
+    const t = useTranslations('dashboard.ops');
+    const isSystemHealthy = data.system.status === 'HEALTHY';
+    return (
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+            <button
+                type="button"
+                onClick={() => setDrawer(drawer === 'cost' ? null : 'cost')}
+                className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-cyan-300 transition hover:bg-cyan-400/15"
+            >
+                <DollarSign className="h-3.5 w-3.5" />
+                {t('live_cost')}
+            </button>
+            <button
+                type="button"
+                onClick={() => setDrawer(drawer === 'system' ? null : 'system')}
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition ${isSystemHealthy ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400' : 'border-amber-500/30 bg-amber-500/10 text-amber-300'}`}
+            >
+                <span className={`h-1.5 w-1.5 rounded-full ${isSystemHealthy ? 'bg-emerald-500' : 'bg-amber-400'} animate-pulse`} />
+                {isSystemHealthy ? t('system_active') : t('system_watch')}
+            </button>
+        </div>
+    );
+}
+
+function TopDrawer({ mode, data, onClose }: { mode: DrawerMode; data: OpsDashboardData; onClose: () => void }) {
+    const t = useTranslations('dashboard.ops');
+    if (!mode) return null;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="rounded-lg border border-white/10 bg-slate-950/80 p-4 shadow-2xl shadow-black/30 backdrop-blur"
+        >
+            <div className="mb-3 flex items-center justify-between gap-4">
+                <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{mode === 'cost' ? t('cost.title') : t('system.title')}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{mode === 'cost' ? t('cost.description') : t('system.description')}</p>
+                </div>
+                <button type="button" onClick={onClose} className="rounded-md border border-white/10 p-2 text-muted-foreground hover:text-white" aria-label={t('close')}>
+                    <X className="h-4 w-4" />
+                </button>
+            </div>
+            {mode === 'cost' ? <CostDrawer data={data} /> : <SystemDrawer data={data} />}
+        </motion.div>
+    );
+}
+
+function CostDrawer({ data }: { data: OpsDashboardData }) {
+    const t = useTranslations('dashboard.ops.cost');
+    if (!data.cost) {
+        return (
+            <div className="rounded-md border border-white/10 bg-white/[0.03] p-4 text-xs text-muted-foreground">
+                {t('restricted')}
+            </div>
+        );
+    }
+
+    return (
+        <div className="grid gap-3 lg:grid-cols-[1fr_1fr_2fr]">
+            <MetricStrip label={t('today')} value={formatCurrency(data.cost.today.estimatedCost, data.cost.currency)} detail={t('requests', { count: data.cost.today.requests })} />
+            <MetricStrip label={t('rolling30')} value={formatCurrency(data.cost.rolling30d.estimatedCost, data.cost.currency)} detail={t('tokens', { count: formatNumber(data.cost.rolling30d.totalTokens) })} />
+            <div className="grid gap-2 sm:grid-cols-2">
+                {data.cost.providers.slice(0, 4).map((provider) => (
+                    <div key={`${provider.provider}-${provider.model}`} className="rounded-md border border-white/10 bg-white/[0.03] p-3">
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="truncate text-xs font-semibold text-white">{provider.provider}</span>
+                            <span className="text-[10px] text-muted-foreground">{formatCurrency(provider.estimatedCost, data.cost?.currency)}</span>
+                        </div>
+                        <p className="mt-1 truncate text-[10px] text-muted-foreground">{provider.model}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function SystemDrawer({ data }: { data: OpsDashboardData }) {
+    const t = useTranslations('dashboard.ops.system');
+    return (
+        <div className="grid gap-3 md:grid-cols-4">
+            <MetricStrip label={t('health')} value={t(`statuses.${data.system.status}`)} detail={t('health_detail')} />
+            <MetricStrip label={t('online_agents')} value={data.system.activeAgents} detail={t('dnd_agents', { count: data.system.dndAgents })} />
+            <MetricStrip label={t('knowledge_queue')} value={data.queues.knowledge.active + data.queues.knowledge.waiting} detail={t('failed_jobs', { count: data.queues.knowledge.failed })} />
+            <MetricStrip label={t('ai_events')} value={Object.values(data.system.aiEvents || {}).reduce((sum, count) => sum + Number(count), 0)} detail={t('recent_errors', { count: data.system.recentErrors.length })} />
+        </div>
+    );
+}
+
+function MetricStrip({ label, value, detail }: { label: string; value: string | number; detail: string }) {
+    return (
+        <div className="rounded-md border border-white/10 bg-white/[0.03] p-3">
+            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+            <p className="mt-2 text-xl font-bold text-white">{value}</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">{detail}</p>
+        </div>
+    );
+}
+
+function OpsStatGrid({ data }: { data: OpsDashboardData }) {
+    const t = useTranslations('dashboard.ops.kpis');
+    return (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <StatCard icon={Ticket} label={t('active_tickets')} value={data.kpis.activeTickets} indicatorColor="bg-blue-500" />
+            <StatCard icon={AlertCircle} label={t('unassigned')} value={data.kpis.unassignedTickets} indicatorColor="bg-amber-500" />
+            <StatCard icon={Database} label={t('crm_updates')} value={data.kpis.crmUpdatesToday} indicatorColor="bg-cyan-500" />
+            <StatCard icon={BookOpen} label={t('crawl_candidates')} value={data.kpis.crawlCandidates} indicatorColor="bg-emerald-500" />
+            <StatCard icon={Bot} label={t('ai_confidence')} value={`${data.kpis.aiConfidence}%`} indicatorColor="bg-violet-500" />
+        </div>
+    );
+}
+
+function PulseBand({ data }: { data: OpsDashboardData }) {
+    const t = useTranslations('dashboard.ops.pulse');
+    const cards = [
+        { id: 'tickets', icon: Ticket, value: data.activeDesk.trend.reduce((sum, point) => sum + Number(point.created ?? 0), 0), series: data.activeDesk.trend.map((point) => Number(point.created ?? 0)) },
+        { id: 'ai', icon: Bot, value: `${data.pulse.aiQuality.summary.confidenceRate ?? 0}%`, series: data.pulse.aiQuality.trend.map((point) => Number(point.confidence ?? 0)) },
+        { id: 'crm', icon: Database, value: data.pulse.crm.updatedToday ?? 0, series: (data.pulse.crm.trend ?? []).map((point: any) => Number(point.count ?? 0)) },
+        { id: 'knowledge', icon: BookOpen, value: data.pulse.knowledge.activeSources ?? 0, series: (data.pulse.knowledge.trend ?? []).map((point: any) => Number(point.count ?? 0)) },
+    ];
+
+    return (
+        <section className="rounded-lg border border-white/10 bg-white/[0.025] p-3">
+            <div className="mb-3 flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-primary" />
+                <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{t('title')}</h2>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {cards.map(({ id, icon: Icon, value, series }) => (
+                    <button key={id} type="button" className="rounded-md border border-white/10 bg-slate-950/30 p-3 text-left transition hover:border-primary/40 hover:bg-primary/5">
+                        <div className="flex items-start justify-between gap-2">
+                            <div>
+                                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{t(`${id}.title`)}</p>
+                                <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+                            </div>
+                            <Icon className="h-4 w-4 text-primary" />
+                        </div>
+                        <MiniBars values={series} />
+                        <p className="mt-2 text-[10px] text-muted-foreground">{t(`${id}.description`)}</p>
+                    </button>
+                ))}
+            </div>
+        </section>
+    );
+}
+
+function MiniBars({ values }: { values: number[] }) {
+    const max = Math.max(1, ...values);
+    const points = values.length ? values : [0, 0, 0, 0, 0, 0, 0];
+    return (
+        <div className="mt-4 flex h-12 items-end gap-1">
+            {points.map((value, index) => (
+                <span
+                    key={`${value}-${index}`}
+                    className="flex-1 rounded-t-sm bg-primary/60"
+                    style={{ height: `${Math.max(8, (value / max) * 100)}%` }}
+                />
+            ))}
+        </div>
+    );
+}
+
+function ActiveDesk({ data }: { data: OpsDashboardData }) {
+    const t = useTranslations('dashboard.ops.active_desk');
+    return (
+        <WireframeBorder className="border-border/40 bg-transparent">
+            <div className="border-b border-border/20 bg-muted/5 px-4 py-3">
+                <h2 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    <Ticket className="h-3.5 w-3.5 text-primary" />
+                    {t('title')}
+                </h2>
+                <p className="mt-1 text-[10px] text-muted-foreground">{t('description')}</p>
+            </div>
+            <ScrollArea className="h-[360px]">
+                <div className="space-y-2 p-3">
+                    {data.activeDesk.tickets.length === 0 ? (
+                        <EmptyState title={t('empty_title')} description={t('empty_desc')} />
+                    ) : data.activeDesk.tickets.map((ticket) => (
+                        <Link key={ticket.id} href={`/tickets/${ticket.id}`} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="truncate text-xs font-bold text-white">{ticket.ticketNumber}</p>
+                                    <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">{ticket.subject}</p>
+                                </div>
+                                <span className="shrink-0 rounded border border-white/10 px-2 py-1 text-[9px] uppercase text-muted-foreground">{ticket.priority}</span>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                                <span className="truncate">{ticket.creator?.customerProfile?.companyName || ticket.creator?.fullName || t('unknown_customer')}</span>
+                                <span>{ticket.assignee?.fullName || t('unassigned')}</span>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </ScrollArea>
+        </WireframeBorder>
+    );
+}
+
+function ActionQueue({ data }: { data: OpsDashboardData }) {
+    const t = useTranslations('dashboard.ops.actions');
+    return (
+        <WireframeBorder className="border-border/40 bg-transparent">
+            <div className="border-b border-border/20 bg-muted/5 px-4 py-3">
+                <h2 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                    {t('title')}
+                </h2>
+            </div>
+            <div className="space-y-2 p-3">
+                {data.actions.map((action) => (
+                    <Link key={action.id} href={action.href} className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
+                        <div>
+                            <p className="text-xs font-bold text-white">{t(`${action.id}.title`)}</p>
+                            <p className="mt-1 text-[10px] text-muted-foreground">{t(`${action.id}.description`)}</p>
+                        </div>
+                        <span className={`rounded px-2 py-1 text-[10px] font-bold ${action.severity === 'critical' ? 'bg-rose-500/15 text-rose-300' : action.severity === 'warning' ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'}`}>{action.count}</span>
+                    </Link>
+                ))}
+            </div>
+        </WireframeBorder>
+    );
+}
+
+function LiveFeed({ data }: { data: OpsDashboardData }) {
+    const t = useTranslations('dashboard.ops.live_feed');
+    return (
+        <WireframeBorder className="border-border/40 bg-transparent">
+            <div className="border-b border-border/20 bg-muted/5 px-4 py-3">
+                <h2 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    <Activity className="h-3.5 w-3.5 text-primary" />
+                    {t('title')}
+                </h2>
+            </div>
+            <ScrollArea className="h-[260px]">
+                <div className="space-y-2 p-3">
+                    {data.liveFeed.length === 0 ? (
+                        <EmptyState title={t('empty_title')} description={t('empty_desc')} />
+                    ) : data.liveFeed.map((item) => (
+                        <Link key={item.id} href={item.href} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
+                            <div className="flex items-center justify-between gap-2">
+                                <p className="truncate text-xs font-semibold text-white">{item.title}</p>
+                                <span className="text-[9px] uppercase text-muted-foreground">{t(`types.${item.type}`)}</span>
+                            </div>
+                            <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{item.description || item.status}</p>
+                        </Link>
+                    ))}
+                </div>
+            </ScrollArea>
+        </WireframeBorder>
+    );
+}
+
+function WorkspaceTabs({ data }: { data: OpsDashboardData }) {
+    const t = useTranslations('dashboard.ops.workspace');
+    return (
+        <WireframeBorder className="border-border/40 bg-transparent">
+            <div className="border-b border-border/20 bg-muted/5 px-4 py-3">
+                <h2 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    <Server className="h-3.5 w-3.5 text-primary" />
+                    {t('title')}
+                </h2>
+            </div>
+            <Tabs defaultValue="overview" className="p-3">
+                <TabsList className="grid h-auto w-full grid-cols-2 gap-1 bg-white/[0.03] p-1 md:grid-cols-5">
+                    {['overview', 'crm', 'knowledge', 'learnnow', 'ai'].map((tab) => (
+                        <TabsTrigger key={tab} value={tab} className="text-[9px] font-bold uppercase tracking-widest data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
+                            {t(`tabs.${tab}`)}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                <TabsContent value="overview" className="mt-4 space-y-3">
+                    <DecisionCard data={data} />
+                    <MetricGrid items={[
+                        [t('metrics.sla_breaches'), data.kpis.slaBreaches],
+                        [t('metrics.resolved_today'), data.kpis.resolvedToday],
+                        [t('metrics.queue_failed'), Object.values(data.queues).reduce((sum, queue) => sum + queue.failed, 0)],
+                        [t('metrics.live_events'), data.liveFeed.length],
+                    ]} />
+                </TabsContent>
+                <TabsContent value="crm" className="mt-4">
+                    <MetricGrid items={[
+                        [t('metrics.crm_updates'), data.pulse.crm.updatedToday ?? 0],
+                        [t('metrics.crm_failures'), data.pulse.crm.failuresToday ?? 0],
+                        [t('metrics.crm_recent'), data.pulse.crm.recentChanges?.length ?? 0],
+                    ]} />
+                </TabsContent>
+                <TabsContent value="knowledge" className="mt-4">
+                    <MetricGrid items={[
+                        [t('metrics.active_sources'), data.pulse.knowledge.activeSources ?? 0],
+                        [t('metrics.embeddings'), data.pulse.knowledge.embeddings ?? 0],
+                        [t('metrics.dataset_sources'), data.pulse.knowledge.datasetSources ?? 0],
+                        [t('metrics.generic_candidates'), data.pulse.knowledge.genericCandidatesPending ?? 0],
+                    ]} />
+                </TabsContent>
+                <TabsContent value="learnnow" className="mt-4">
+                    <MetricGrid items={[
+                        [t('metrics.pending_review'), data.learnNow.pendingReview ?? 0],
+                        [t('metrics.imported'), data.learnNow.byStatus?.IMPORTED ?? 0],
+                        [t('metrics.duplicates'), data.learnNow.byStatus?.SKIPPED_DUPLICATE ?? 0],
+                    ]} />
+                </TabsContent>
+                <TabsContent value="ai" className="mt-4">
+                    <MetricGrid items={[
+                        [t('metrics.ai_total'), data.pulse.aiQuality.summary.total ?? 0],
+                        [t('metrics.ai_fallback'), `${data.pulse.aiQuality.summary.fallbackRate ?? 0}%`],
+                        [t('metrics.source_leaks'), data.pulse.aiQuality.summary.sourceLeaks ?? 0],
+                        [t('metrics.language_risks'), data.pulse.aiQuality.summary.languageRisks ?? 0],
+                    ]} />
+                </TabsContent>
+            </Tabs>
+        </WireframeBorder>
+    );
+}
+
+function DecisionCard({ data }: { data: OpsDashboardData }) {
+    const t = useTranslations('dashboard.ops.decision');
+    return (
+        <Link href={data.decision.primaryAction} className={`block rounded-lg border p-4 transition ${data.decision.level === 'ok' ? 'border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10' : 'border-amber-500/25 bg-amber-500/5 hover:bg-amber-500/10'}`}>
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{t('title')}</p>
+                    <h3 className="mt-2 text-base font-bold text-white">{t(`${data.decision.code}.title`)}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">{t(`${data.decision.code}.description`)}</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-primary" />
+            </div>
+        </Link>
+    );
+}
+
+function MetricGrid({ items }: { items: Array<[string, string | number]> }) {
+    return (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {items.map(([label, value]) => (
+                <div key={label} className="rounded-md border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+                    <p className="mt-3 text-2xl font-bold text-white">{value}</p>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function EmptyState({ title, description }: { title: string; description: string }) {
+    return (
+        <div className="rounded-md border border-dashed border-white/10 bg-white/[0.02] p-5 text-center">
+            <Info className="mx-auto h-4 w-4 text-muted-foreground" />
+            <p className="mt-2 text-xs font-semibold text-white">{title}</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">{description}</p>
+        </div>
     );
 }
 
 export default function DashboardClient() {
     const t = useTranslations('dashboard');
-    const tc = useTranslations('common');
     const { user } = useAuth();
-    const [aiStatus, setAiStatus] = useState<{ available: boolean; model: string } | null>(null);
-    const [stats, setStats] = useState<any>(null);
-    const [aiHealth, setAiHealth] = useState<any>(null);
+    const [aiStatus, setAiStatus] = useState<{ available: boolean; model?: string } | null>(null);
+    const [customerStats, setCustomerStats] = useState<any>(null);
+    const [opsData, setOpsData] = useState<OpsDashboardData | null>(null);
+    const [drawer, setDrawer] = useState<DrawerMode>(null);
     const [loading, setLoading] = useState(true);
-    const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
+
+    const userRoles = useMemo(() => roleList(user), [user]);
     const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer');
-    const canViewAiHealthMetrics = userRoles.includes('admin') || userRoles.includes('superuser');
 
     useEffect(() => {
+        let mounted = true;
         const loadData = async () => {
             try {
-                const [statusRes, statsRes, aiHealthRes] = await Promise.all([
+                if (isCustomer) {
+                    const statsRes = await (api.tickets as unknown as { getSlaStats: () => Promise<unknown> }).getSlaStats().catch(() => null);
+                    if (mounted) setCustomerStats(statsRes);
+                    return;
+                }
+
+                const [statusRes, opsRes] = await Promise.all([
                     api.ai.status().catch(() => null),
-                    (api.tickets as unknown as { getSlaStats: () => Promise<unknown> }).getSlaStats().catch(() => null),
-                    canViewAiHealthMetrics ? api.ai.getHealthMetrics().catch(() => null) : Promise.resolve(null),
+                    api.dashboard.ops(7).catch(() => emptyOpsData()),
                 ]);
-                setAiStatus(statusRes);
-                setStats(statsRes);
-                setAiHealth(aiHealthRes);
+                if (mounted) {
+                    setAiStatus(statusRes);
+                    setOpsData(opsRes);
+                }
             } catch (err) {
                 console.error('Dashboard load failed', err);
+                if (mounted && !isCustomer) setOpsData(emptyOpsData());
             } finally {
-                setLoading(false);
+                if (mounted) setLoading(false);
             }
         };
         loadData();
-    }, [canViewAiHealthMetrics]);
+        return () => {
+            mounted = false;
+        };
+    }, [isCustomer]);
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex min-h-[400px] items-center justify-center">
                 <Activity className="h-6 w-6 animate-pulse text-muted-foreground" />
             </div>
         );
     }
 
     if (isCustomer) {
-        return (
-            <div className="space-y-6 max-w-6xl mx-auto">
-                <div className="flex justify-between items-end border-b border-border/40 pb-4">
-                    <div>
-                        <h1 className="text-[18px] font-bold tracking-tight uppercase flex items-center gap-2">
-                            <Activity className="h-5 w-5 text-primary" />
-                            {t('user_portal')}
-                        </h1>
-                        <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest leading-tight">
-                            {t('user_identity', { name: user?.fullName || '', level: t('access_level_standard') })}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <StatCard icon={Ticket} label={t('stats.active_tickets')} value={stats?.total || 0} indicatorColor="bg-blue-500" />
-                    <StatCard icon={CheckCircle2} label={t('stats.resolved_tickets')} value={stats?.resolvedTotal || 0} indicatorColor="bg-emerald-500" />
-                    <StatCard icon={Clock} label={t('stats.avg_response')} value={tc('not_available')} indicatorColor="bg-amber-500" />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="border border-border/40 bg-muted/5 p-6 relative overflow-hidden group flex flex-col justify-between h-48">
-                        <div className="relative z-10">
-                            <h2 className="text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
-                                <Search className="h-4 w-4 text-primary" />
-                                {t('knowledge_base.title')}
-                            </h2>
-                            <p className="text-muted-foreground text-xs font-mono leading-relaxed mb-6 max-w-[80%]">
-                                {t('knowledge_base.description')}
-                            </p>
-                        </div>
-                        <Link href="/knowledge-base" className="relative z-10 inline-flex items-center justify-between bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors w-fit">
-                            {t('knowledge_base.cta')}
-                        </Link>
-                        <BookOpen className="absolute -bottom-4 -right-4 h-32 w-32 text-primary/5 group-hover:text-primary/10 transition-colors" />
-                    </div>
-
-                    <div className="border border-border/40 bg-muted/5 p-6 relative overflow-hidden group flex flex-col justify-between h-48">
-                        <div className="relative z-10">
-                            <h2 className="text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
-                                <Bot className="h-4 w-4 text-violet-500" />
-                                {t('ai_diagnostic.title')}
-                            </h2>
-                            <p className="text-muted-foreground text-xs font-mono leading-relaxed mb-6 max-w-[80%]">
-                                {t('ai_diagnostic.description')}
-                            </p>
-                        </div>
-                        <Link href="/ai" className="relative z-10 inline-flex items-center justify-between bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors w-fit">
-                            {t('ai_diagnostic.cta')}
-                        </Link>
-                        <Bot className="absolute -bottom-4 -right-4 h-32 w-32 text-violet-500/5 group-hover:text-violet-500/10 transition-colors" />
-                    </div>
-                </div>
-
-                <div className="pt-4 flex justify-end">
-                    <Link
-                        href="/tickets/new"
-                        className="inline-flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 text-[10px] font-bold uppercase tracking-widest shadow-sm"
-                    >
-                        <PlusCircle className="h-4 w-4" />
-                        {t('actions.create_ticket')}
-                    </Link>
-                </div>
-            </div>
-        );
+        return <CustomerDashboard stats={customerStats} />;
     }
 
+    const data = opsData ?? emptyOpsData();
+    const effectiveSystem = aiStatus?.available === false ? { ...data, system: { ...data.system, status: 'DEGRADED' as const } } : data;
+
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6 relative"
-        >
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative space-y-5">
+            <div className="flex flex-col justify-between gap-4 border-b border-white/5 pb-5 lg:flex-row lg:items-center">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                    <h1 className="flex items-center gap-3 text-2xl font-bold tracking-tight text-white">
+                        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                             <TrendingUp className="h-5 w-5 text-emerald-500" />
                         </div>
                         {t('title')}
                     </h1>
-                    <p className="text-xs text-muted-foreground mt-1 ml-11 font-medium uppercase tracking-[0.1em]">
-                        {t('telemetry_version')}
-                    </p>
+                    <p className="ml-11 mt-1 text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground">{t('telemetry_version')}</p>
                 </div>
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <div className="flex items-center gap-2 border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 rounded-full text-xs text-emerald-500 font-medium">
-                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        {t('system_active')}
-                    </div>
-                </div>
+                <HeaderActions data={effectiveSystem} drawer={drawer} setDrawer={setDrawer} />
             </div>
 
-            {/* Core Operational Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard icon={Ticket} label={t('stats.active_tickets')} value={stats?.total || 0} indicatorColor="bg-blue-500" />
-                <StatCard icon={AlertCircle} label={t('stats.sla_violations')} value={stats?.breached || 0} indicatorColor="bg-rose-500" />
-                <StatCard icon={CheckCircle2} label={t('stats.daily_resolved')} value={stats?.resolvedToday || 0} indicatorColor="bg-emerald-500" />
-                <StatCard icon={Bot} label={t('stats.ai_confidence')} value={aiHealth?.aiAccuracy ? `${aiHealth.aiAccuracy}%` : "0%"} indicatorColor="bg-violet-500" />
-            </div>
+            <TopDrawer mode={drawer} data={effectiveSystem} onClose={() => setDrawer(null)} />
+            <OpsStatGrid data={data} />
+            <PulseBand data={data} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Priority Breakdown */}
-                <WireframeBorder className="lg:col-span-2 border-border/40 bg-transparent">
-                    <div className="py-2.5 px-4 bg-muted/5 border-b border-border/20 flex items-center gap-2">
-                        <Activity className="h-3 w-3 text-primary" />
-                        <h2 className="text-[10px] uppercase font-bold tracking-[0.1em] text-muted-foreground font-mono">
-                            {t('sections.priority_distribution')}
-                        </h2>
-                    </div>
-                    <div className="p-4 space-y-5 flex flex-col justify-center min-h-[160px]">
-                        {['URGENT', 'HIGH', 'MEDIUM', 'LOW'].map(p => {
-                            const count = stats?.byPriority?.find((bp: any) => bp.priority === p)?._count || 0;
-                            const total = stats?.total || 1;
-                            const percent = Math.round((count / total) * 100);
-                            const barColor = p === 'URGENT' ? 'bg-rose-500' : p === 'HIGH' ? 'bg-orange-500' : p === 'MEDIUM' ? 'bg-blue-500' : 'bg-slate-500';
-
-                            return (
-                                <div key={p} className="space-y-1.5">
-                                    <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest">
-                                        <span className="text-muted-foreground w-16 font-mono">
-                                            {t(`priorities.${p}`)}
-                                        </span>
-                                        <div className="flex-1 mx-4 h-[2px] bg-muted/10 relative overflow-hidden">
-                                            <div className={`absolute top-0 left-0 h-full ${barColor}`} style={{ width: `${percent}%` }}></div>
-                                        </div>
-                                        <span className="text-foreground w-16 text-right font-mono text-xs">{count} <span className="text-muted-foreground/30 text-[10px] ml-1">[{percent}%]</span></span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </WireframeBorder>
-
-                {/* AI & System Health */}
-                <div className="flex flex-col gap-4">
-                    <WireframeBorder className="border-border/40 bg-transparent flex-1">
-                        <div className="py-2.5 px-4 bg-muted/5 border-b border-border/20">
-                            <h2 className="text-[10px] uppercase font-bold tracking-[0.1em] text-muted-foreground font-mono">
-                                {t('sections.system_telemetry')}
-                            </h2>
-                        </div>
-                        <div className="p-4 flex flex-col justify-center">
-                            <div className={`p-4 border ${aiStatus?.available ? 'bg-emerald-500/5 border-emerald-900/30' : 'bg-rose-500/5 border-rose-900/30'} flex flex-col items-center justify-center gap-2 h-full min-h-[80px]`}>
-                                <div className="flex items-center gap-3">
-                                    <div className={`h-2 w-2 rounded-full animate-pulse ${aiStatus?.available ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]'}`}></div>
-                                    <span className={`text-[11px] font-bold font-mono tracking-widest ${aiStatus?.available ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                        {t('stats.ai_node_prefix')}: {aiStatus?.available ? t('stats.status_online') : t('stats.status_offline')}
-                                    </span>
-                                </div>
-                                {aiStatus?.model && (
-                                    <span className="text-[9px] text-muted-foreground font-mono opacity-50 block uppercase tracking-tighter">M:{aiStatus.model}</span>
-                                )}
-                            </div>
-                        </div>
-                    </WireframeBorder>
-
-                    <WireframeBorder className="border-border/40 bg-transparent">
-                        <div className="py-2.5 px-4 bg-muted/5 border-b border-border/20">
-                            <h2 className="text-[10px] uppercase font-bold tracking-[0.1em] text-muted-foreground font-mono">
-                                {t('sections.quick_access')}
-                            </h2>
-                        </div>
-                        <div className="p-4 grid gap-2">
-                            <Link href="/tickets?status=NEW" className="flex items-center justify-between p-3 border border-border/40 bg-muted/5 hover:bg-primary/5 hover:border-primary/30 transition-colors group">
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-foreground font-mono">{t('actions.manage_queue')}</span>
-                                <PlusCircle className="h-3 w-3 text-primary group-hover:translate-x-1 transition-transform" />
-                            </Link>
-                            <Link href="/ai" className="flex items-center justify-between p-3 border border-border/40 bg-muted/5 hover:bg-cyan-500/5 hover:border-cyan-500/30 transition-colors group">
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-foreground font-mono">{t('actions.neural_analysis')}</span>
-                                <Bot className="h-3 w-3 text-cyan-400 group-hover:translate-x-1 transition-transform" />
-                            </Link>
-                        </div>
-                    </WireframeBorder>
+            <div className="grid gap-4 xl:grid-cols-[minmax(320px,390px)_1fr]">
+                <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
+                    <ActiveDesk data={data} />
+                    <ActionQueue data={data} />
+                    <LiveFeed data={data} />
                 </div>
+                <WorkspaceTabs data={data} />
             </div>
         </motion.div>
     );

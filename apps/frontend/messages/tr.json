@@ -305,6 +305,163 @@
       "MEDIUM": "Orta",
       "HIGH": "Yüksek",
       "URGENT": "Acil"
+    },
+    "ops": {
+      "live_cost": "Canlı Maliyet",
+      "system_active": "Sistem Aktif",
+      "system_watch": "Sistem İzleniyor",
+      "close": "Kapat",
+      "kpis": {
+        "active_tickets": "Aktif Bilet",
+        "unassigned": "Atama Bekleyen",
+        "crm_updates": "CRM Update",
+        "crawl_candidates": "Crawl Adayı",
+        "ai_confidence": "ANN Güveni"
+      },
+      "cost": {
+        "title": "AI Maliyet Merkezi",
+        "description": "Uygulama içinde hesaplanan tahmini token ve model maliyeti. Google AI Studio faturasıyla küçük gecikme/fark olabilir.",
+        "restricted": "Bu maliyet görünümü sadece admin ve süper admin yetkileri için açıktır.",
+        "today": "Bugün",
+        "rolling30": "Son 30 Gün",
+        "requests": "{count} istek",
+        "tokens": "{count} token"
+      },
+      "system": {
+        "title": "Sistem Sağlığı",
+        "description": "AI, kuyruk, ajan ve son hata sinyallerinin canlı özeti.",
+        "health": "Genel Durum",
+        "health_detail": "Son AI olayları ve kuyruk sinyalleri",
+        "online_agents": "Online Ajan",
+        "dnd_agents": "{count} rahatsız etmeyin",
+        "knowledge_queue": "Knowledge Queue",
+        "failed_jobs": "{count} başarısız job",
+        "ai_events": "AI Olayı",
+        "recent_errors": "{count} kritik kayıt",
+        "statuses": {
+          "HEALTHY": "Sağlıklı",
+          "DEGRADED": "Dikkat",
+          "DOWN": "Kapalı"
+        }
+      },
+      "pulse": {
+        "title": "Operasyon Nabzı",
+        "tickets": {
+          "title": "Ticket Trendi",
+          "description": "Son günlerde açılan bilet akışı"
+        },
+        "ai": {
+          "title": "AI Kalitesi",
+          "description": "Güven ve düşük eşleşme sinyali"
+        },
+        "crm": {
+          "title": "CRM Senkron",
+          "description": "Bugünkü CRM değişim hızı"
+        },
+        "knowledge": {
+          "title": "Bilgi Akışı",
+          "description": "Kaynak ve indeksleme hacmi"
+        }
+      },
+      "active_desk": {
+        "title": "Aktif Destek Masası",
+        "description": "Yalnızca açık ve işlem bekleyen biletler.",
+        "empty_title": "Aktif bilet yok",
+        "empty_desc": "Açık kuyruk şu anda temiz görünüyor.",
+        "unknown_customer": "Müşteri bilinmiyor",
+        "unassigned": "Atanmamış"
+      },
+      "actions": {
+        "title": "Aksiyon Kuyruğu",
+        "unassigned": {
+          "title": "Atama bekleyen biletler",
+          "description": "Departman seçilmiş ama uzman atanmamış kayıtlar"
+        },
+        "sla_risk": {
+          "title": "SLA riski",
+          "description": "İki saat içinde kritik eşiğe yaklaşan biletler"
+        },
+        "low_confidence_ai": {
+          "title": "Düşük AI güveni",
+          "description": "Bugünkü düşük güvenli veya eşleşmesiz yanıtlar"
+        },
+        "crawler_review": {
+          "title": "Crawler review",
+          "description": "İçe aktarım için admin onayı bekleyen adaylar"
+        },
+        "crm_failures": {
+          "title": "CRM hataları",
+          "description": "Bugün başarısız olan CRM değişim kayıtları"
+        }
+      },
+      "live_feed": {
+        "title": "Canlı Mini Akış",
+        "empty_title": "Yeni olay yok",
+        "empty_desc": "Ticket, CRM, AI ve crawler olayları burada akar.",
+        "types": {
+          "ticket": "Bilet",
+          "crm": "CRM",
+          "ai": "AI",
+          "crawl": "Crawl"
+        }
+      },
+      "workspace": {
+        "title": "Operasyon Çalışma Alanı",
+        "tabs": {
+          "overview": "Genel Bakış",
+          "crm": "CRM",
+          "knowledge": "Bilgi Havuzu",
+          "learnnow": "LearnNow",
+          "ai": "AI Sağlığı"
+        },
+        "metrics": {
+          "sla_breaches": "SLA ihlali",
+          "resolved_today": "Bugün çözülen",
+          "queue_failed": "Başarısız job",
+          "live_events": "Canlı olay",
+          "crm_updates": "CRM update",
+          "crm_failures": "CRM hata",
+          "crm_recent": "Son değişim",
+          "active_sources": "Aktif kaynak",
+          "embeddings": "Embedding",
+          "dataset_sources": "Dataset kaynağı",
+          "generic_candidates": "Generic aday",
+          "pending_review": "Onay bekleyen",
+          "imported": "İçe aktarılan",
+          "duplicates": "Duplicate",
+          "ai_total": "AI istek",
+          "ai_fallback": "Fallback oranı",
+          "source_leaks": "Kaynak sızıntısı",
+          "language_risks": "Dil riski"
+        }
+      },
+      "decision": {
+        "title": "Bugünün Kararı",
+        "operationally_stable": {
+          "title": "Kuyruk dengeli, olağan operasyon devam edebilir.",
+          "description": "Acil müdahale gerektiren bir sinyal görünmüyor."
+        },
+        "unassigned_tickets": {
+          "title": "Önce atama bekleyen biletleri kapat.",
+          "description": "Operasyonun ilk darboğazı uzman ataması tarafında."
+        },
+        "sla_breach": {
+          "title": "SLA ihlali var, önce kritik biletleri aç.",
+          "description": "Yanıt veya çözüm süresi aşılmış kayıtlar bulunuyor."
+        },
+        "crm_failures": {
+          "title": "CRM senkron hatalarını kontrol et.",
+          "description": "Müşteri verisi güncelliği destek kalitesini etkileyebilir."
+        },
+        "ai_quality_watch": {
+          "title": "AI kalite sinyalleri izleme gerektiriyor.",
+          "description": "Fallback veya düşük güven oranı beklenenden yüksek."
+        },
+        "system_watch": {
+          "title": "Sistem sinyallerini kontrol et.",
+          "description": "Kuyruk veya AI sağlık olaylarında izlenmesi gereken kayıtlar var."
+        }
+      }
     }
   },
   "sidebar": {

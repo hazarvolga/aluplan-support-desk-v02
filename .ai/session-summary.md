@@ -1,5 +1,40 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-23 Operations Dashboard Phase 2
+
+### What changed
+
+- Replaced the admin/staff dashboard surface with the operations control shell from the approved mockup.
+- The new dashboard consumes `GET /dashboard/ops` through `api.dashboard.ops(7)`.
+- Customer/viewer dashboard behavior remains separate and still avoids admin-only observability calls.
+- Added:
+  - header actions for live AI cost and system health drawers
+  - operations KPI cards
+  - operations pulse preview cards
+  - active support desk list
+  - action queue list
+  - live mini feed
+  - tabbed operations workspace for overview, CRM, Knowledge Pool, LearnNow, and AI Health
+- Added complete `dashboard.ops` translations for Turkish, English, and German.
+- Added a frontend MSW fixture for the new operations endpoint and updated the dashboard unit test to assert the new data flow.
+- Mobile behavior is explicitly covered in the component structure: KPI/pulse cards stack, the ops column drops below content on narrow screens, and long lists scroll inside their panels.
+
+### Verification
+
+- `pnpm i18n:check` passed for `tr`, `en`, and `de`.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm --filter @aluplan/frontend exec vitest run 'src/app/[locale]/(dashboard)/dashboard/DashboardClient.spec.tsx'` passed.
+- `git diff --check` passed.
+
+### Notes
+
+- The focused dashboard test still prints the existing framer-motion test-mock warning about `whileHover`; this is test setup noise, not a product-code warning.
+
+### Next
+
+- Phase 3 should make the operations pulse cards open real-data modals with larger charts, filters, and action links.
+- Phase 4 should add refresh/live-update behavior and browser smoke checks across desktop and mobile widths.
+
 ## Follow-up - 2026-05-23 Operations Dashboard Phase 1
 
 ### What changed

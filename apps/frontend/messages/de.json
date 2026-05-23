@@ -305,6 +305,163 @@
       "MEDIUM": "Mittel",
       "HIGH": "Hoch",
       "URGENT": "Dringend"
+    },
+    "ops": {
+      "live_cost": "Live-Kosten",
+      "system_active": "System Aktiv",
+      "system_watch": "System unter Beobachtung",
+      "close": "Schließen",
+      "kpis": {
+        "active_tickets": "Aktive Tickets",
+        "unassigned": "Ohne Zuweisung",
+        "crm_updates": "CRM-Updates",
+        "crawl_candidates": "Crawler-Kandidaten",
+        "ai_confidence": "ANN-Vertrauen"
+      },
+      "cost": {
+        "title": "KI-Kostenzentrum",
+        "description": "Geschätzte Token- und Modellkosten aus der Anwendung. Google AI Studio kann zeitverzögert oder leicht abweichend abrechnen.",
+        "restricted": "Diese Kostenansicht ist nur für Admin- und Super-Admin-Rollen sichtbar.",
+        "today": "Heute",
+        "rolling30": "Letzte 30 Tage",
+        "requests": "{count} Anfragen",
+        "tokens": "{count} Token"
+      },
+      "system": {
+        "title": "Systemzustand",
+        "description": "Live-Zusammenfassung von KI-, Queue-, Agenten- und Fehlersignalen.",
+        "health": "Gesamtstatus",
+        "health_detail": "Aktuelle KI-Ereignisse und Queue-Signale",
+        "online_agents": "Online-Agenten",
+        "dnd_agents": "{count} nicht stören",
+        "knowledge_queue": "Knowledge Queue",
+        "failed_jobs": "{count} fehlgeschlagene Jobs",
+        "ai_events": "KI-Ereignisse",
+        "recent_errors": "{count} kritische Einträge",
+        "statuses": {
+          "HEALTHY": "Gesund",
+          "DEGRADED": "Eingeschränkt",
+          "DOWN": "Ausgefallen"
+        }
+      },
+      "pulse": {
+        "title": "Operations-Puls",
+        "tickets": {
+          "title": "Ticket-Trend",
+          "description": "Aktueller Eingang neuer Tickets"
+        },
+        "ai": {
+          "title": "KI-Qualität",
+          "description": "Vertrauen und Low-Match-Signal"
+        },
+        "crm": {
+          "title": "CRM-Sync",
+          "description": "CRM-Änderungen von heute"
+        },
+        "knowledge": {
+          "title": "Wissensfluss",
+          "description": "Quellen- und Indexierungsvolumen"
+        }
+      },
+      "active_desk": {
+        "title": "Aktiver Support Desk",
+        "description": "Nur offene Tickets, die operative Aufmerksamkeit benötigen.",
+        "empty_title": "Keine aktiven Tickets",
+        "empty_desc": "Die offene Queue wirkt aktuell sauber.",
+        "unknown_customer": "Unbekannter Kunde",
+        "unassigned": "Nicht zugewiesen"
+      },
+      "actions": {
+        "title": "Aktions-Queue",
+        "unassigned": {
+          "title": "Tickets warten auf Zuweisung",
+          "description": "Einträge mit Abteilung, aber ohne zuständigen Experten"
+        },
+        "sla_risk": {
+          "title": "SLA-Risiko",
+          "description": "Tickets nahe an einer kritischen Schwelle innerhalb von zwei Stunden"
+        },
+        "low_confidence_ai": {
+          "title": "Niedriges KI-Vertrauen",
+          "description": "Heutige Antworten mit niedriger Sicherheit oder ohne Treffer"
+        },
+        "crawler_review": {
+          "title": "Crawler-Prüfung",
+          "description": "Kandidaten warten auf Admin-Freigabe vor dem Import"
+        },
+        "crm_failures": {
+          "title": "CRM-Fehler",
+          "description": "Heute fehlgeschlagene CRM-Änderungsdatensätze"
+        }
+      },
+      "live_feed": {
+        "title": "Live-Mini-Feed",
+        "empty_title": "Keine neuen Ereignisse",
+        "empty_desc": "Ticket-, CRM-, KI- und Crawler-Ereignisse erscheinen hier.",
+        "types": {
+          "ticket": "Ticket",
+          "crm": "CRM",
+          "ai": "KI",
+          "crawl": "Crawl"
+        }
+      },
+      "workspace": {
+        "title": "Operations-Arbeitsbereich",
+        "tabs": {
+          "overview": "Übersicht",
+          "crm": "CRM",
+          "knowledge": "Knowledge Pool",
+          "learnnow": "LearnNow",
+          "ai": "KI-Zustand"
+        },
+        "metrics": {
+          "sla_breaches": "SLA-Verletzungen",
+          "resolved_today": "Heute gelöst",
+          "queue_failed": "Fehlgeschlagene Jobs",
+          "live_events": "Live-Ereignisse",
+          "crm_updates": "CRM-Updates",
+          "crm_failures": "CRM-Fehler",
+          "crm_recent": "Letzte Änderungen",
+          "active_sources": "Aktive Quellen",
+          "embeddings": "Embeddings",
+          "dataset_sources": "Dataset-Quellen",
+          "generic_candidates": "Generische Kandidaten",
+          "pending_review": "Warten auf Prüfung",
+          "imported": "Importiert",
+          "duplicates": "Duplikate",
+          "ai_total": "KI-Anfragen",
+          "ai_fallback": "Fallback-Rate",
+          "source_leaks": "Quellen-Leaks",
+          "language_risks": "Sprachrisiken"
+        }
+      },
+      "decision": {
+        "title": "Entscheidung des Tages",
+        "operationally_stable": {
+          "title": "Queue ist ausgeglichen; Normalbetrieb kann weiterlaufen.",
+          "description": "Aktuell erfordert kein Signal einen sofortigen Eingriff."
+        },
+        "unassigned_tickets": {
+          "title": "Zuerst nicht zugewiesene Tickets klären.",
+          "description": "Der erste operative Engpass liegt bei der Expertenzuweisung."
+        },
+        "sla_breach": {
+          "title": "SLA-Verletzung erkannt; zuerst kritische Tickets öffnen.",
+          "description": "Einige Einträge haben Antwort- oder Lösungszeit überschritten."
+        },
+        "crm_failures": {
+          "title": "CRM-Sync-Fehler prüfen.",
+          "description": "Aktuelle Kundendaten beeinflussen die Supportqualität."
+        },
+        "ai_quality_watch": {
+          "title": "KI-Qualitätssignale beobachten.",
+          "description": "Fallback- oder Low-Confidence-Rate ist höher als erwartet."
+        },
+        "system_watch": {
+          "title": "Systemsignale prüfen.",
+          "description": "Queue- oder KI-Zustandsereignisse benötigen Aufmerksamkeit."
+        }
+      }
     }
   },
   "sidebar": {

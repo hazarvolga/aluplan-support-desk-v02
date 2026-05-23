@@ -29,7 +29,7 @@ describe('DashboardClient', () => {
         (useAuth as any).mockReturnValue({
             user: { fullName: 'John Doe', roles: ['customer'] }
         });
-        const getHealthMetricsSpy = vi.spyOn(api.ai, 'getHealthMetrics');
+        const opsSpy = vi.spyOn(api.dashboard, 'ops');
 
         render(<DashboardClient />);
 
@@ -40,26 +40,26 @@ describe('DashboardClient', () => {
         // Check for specific customer sections
         expect(screen.getByText(/knowledge_base.title/i)).toBeDefined();
         expect(screen.getByText(/ai_diagnostic.title/i)).toBeDefined();
-        expect(getHealthMetricsSpy).not.toHaveBeenCalled();
+        expect(opsSpy).not.toHaveBeenCalled();
     });
 
     it('renders admin dashboard for admin role', async () => {
         (useAuth as any).mockReturnValue({
             user: { fullName: 'Admin User', roles: ['admin'] }
         });
-        const getHealthMetricsSpy = vi.spyOn(api.ai, 'getHealthMetrics');
+        const opsSpy = vi.spyOn(api.dashboard, 'ops');
 
         render(<DashboardClient />);
 
         await waitFor(() => {
-            expect(screen.getByText(/title/i)).toBeInTheDocument(); // 'title' is translated as namespace 'dashboard'
             expect(screen.getByText(/system_active/i)).toBeInTheDocument();
+            expect(screen.getByText(/active_tickets/i)).toBeInTheDocument();
         });
 
         // Admin dashboard has specific stats
-        expect(screen.getByText(/stats.sla_violations/i)).toBeDefined();
-        expect(screen.getByText(/stats.daily_resolved/i)).toBeDefined();
-        expect(getHealthMetricsSpy).toHaveBeenCalledTimes(1);
+        expect(screen.getByText(/live_cost/i)).toBeDefined();
+        expect(screen.getAllByText(/SUP-00001/i).length).toBeGreaterThan(0);
+        expect(opsSpy).toHaveBeenCalledTimes(1);
     });
 
     it('handles API errors gracefully', async () => {
@@ -69,7 +69,7 @@ describe('DashboardClient', () => {
 
         // Override MSW for this test to simulate failure
         server.use(
-            http.get(`${API_BASE}/tickets/sla-stats`, () => {
+            http.get(`${API_BASE}/dashboard/ops`, () => {
                 return new HttpResponse(null, { status: 500 });
             })
         );
@@ -78,7 +78,7 @@ describe('DashboardClient', () => {
 
         await waitFor(() => {
             // Should still render but maybe with zero stats
-            expect(screen.getByText(/stats.active_tickets/i)).toBeDefined();
+            expect(screen.getByText(/active_tickets/i)).toBeDefined();
         });
     });
 });
