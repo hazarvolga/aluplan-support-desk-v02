@@ -22,6 +22,17 @@ import { HotinfoGrid } from '@/components/ui/hotinfo-grid';
 import { getDepartmentDisplayName } from '@/lib/department-display';
 
 const MAX_TICKET_SUBJECT_LENGTH = 255;
+const TICKET_ATTACHMENT_ACCEPT = [
+    'image/*',
+    'application/pdf',
+    '.pdf',
+    '.txt',
+    '.log',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx',
+].join(',');
 
 const getTicketSchema = (t: any) => z.object({
     subject: z.string().min(5, t('errors.subject_min')).max(MAX_TICKET_SUBJECT_LENGTH, t('errors.subject_max')),
@@ -123,7 +134,8 @@ export default function NewTicketPage() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const selectedFiles = Array.from(e.target.files);
-            setFiles([...files, ...selectedFiles]);
+            setFiles((currentFiles) => [...currentFiles, ...selectedFiles]);
+            e.currentTarget.value = '';
         }
     };
 
@@ -551,6 +563,42 @@ export default function NewTicketPage() {
                         value={form.watch('description')}
                         onChange={(e) => form.setValue('description', e.target.value)}
                     />
+                    <div className="rounded-xl border border-white/10 bg-slate-950/40 p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <Label className="text-sm font-semibold">{t('ai.attachments_label')}</Label>
+                                <p className="mt-1 text-xs text-muted-foreground">{t('ai.attachments_hint')}</p>
+                            </div>
+                            <Button variant="outline" size="sm" className="shrink-0 border-white/10" asChild>
+                                <label htmlFor="diagnosis-file-upload" className="cursor-pointer">
+                                    <Paperclip className="h-4 w-4 mr-2" />
+                                    {t('ai.attachments_select')}
+                                </label>
+                            </Button>
+                        </div>
+                        <Input
+                            type="file"
+                            multiple
+                            accept={TICKET_ATTACHMENT_ACCEPT}
+                            onChange={handleFileChange}
+                            className="hidden"
+                            id="diagnosis-file-upload"
+                        />
+                        <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-lg border border-white/5 border-dashed bg-black/20 p-3">
+                            {files.length > 0 ? files.map((file, i) => (
+                                <div key={`${file.name}-${i}`} className="flex max-w-full items-center gap-2 rounded-full bg-slate-800 px-3 py-1.5 text-xs">
+                                    <Paperclip className="h-3 w-3 text-brand-400" />
+                                    <span className="truncate max-w-[220px]">{file.name}</span>
+                                    <button type="button" onClick={() => removeFile(i)} className="text-red-400 hover:text-red-300">
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            )) : (
+                                <p className="w-full text-center text-xs text-muted-foreground">{t('ai.attachments_empty')}</p>
+                            )}
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-muted-foreground">{t('ai.attachments_ai_note')}</p>
+                    </div>
                     <Button
                         className="w-full gap-2 h-12 text-lg font-bold"
                         variant="outline"
@@ -673,7 +721,7 @@ export default function NewTicketPage() {
                             ))}
                             {files.length === 0 && <p className="text-sm text-muted-foreground w-full text-center">{t('summary.drag_drop')}</p>}
                         </div>
-                        <Input type="file" multiple onChange={handleFileChange} className="hidden" id="file-upload" />
+                        <Input type="file" multiple accept={TICKET_ATTACHMENT_ACCEPT} onChange={handleFileChange} className="hidden" id="file-upload" />
                         <Button variant="outline" className="w-full border-white/10" asChild>
                             <label htmlFor="file-upload" className="cursor-pointer">
                                 <Paperclip className="h-4 w-4 mr-2" /> {t('summary.select_file')}

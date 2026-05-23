@@ -24,7 +24,8 @@ import { AiDiagnosisService, DiagnosisResult } from './ai-diagnosis.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
 import { createHash } from 'crypto';
 import { buildSupportAnswerContractPrompt } from './ai-answer-contract';
-import { hasAnswerLanguageLeak, isNoKnowledgeAnswer } from './ai-answer-quality';
+import { isNoKnowledgeAnswer } from './ai-answer-quality';
+import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
 
 // local type with NO_MATCH
 export type LocalConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -189,59 +190,8 @@ export class AiQueryService {
         private readonly metrics: MetricsService,
         private readonly storage: StorageService,
         private readonly semanticCache: AiSemanticCache,
+        private readonly supportAnswerOrchestrator: SupportAnswerOrchestrator,
     ) { }
-
-    private async runDiagnosisGenerationWithTimeout(
-        finalPrompt: string,
-        userQuery: string,
-        kbContent: string,
-        aiParts: AiPart[],
-        timeoutMs = this.DIAGNOSIS_GENERATION_TIMEOUT_MS,
-    ) {
-        const synthesisPrompt = this.buildSupportSynthesisPrompt(finalPrompt);
-
-        return Promise.race([
-            this.generateSupportSynthesis(synthesisPrompt, finalPrompt, userQuery, kbContent, aiParts, timeoutMs),
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
-        ]);
-    }
-
-    private buildSupportSynthesisPrompt(finalPrompt: string): string {
-        return `${finalPrompt.trim()}
-
-RESPONSE DRAFT:`;
-    }
-
-    private async generateSupportSynthesis(
-        synthesisPrompt: string,
-        finalPrompt: string,
-        userQuery: string,
-        kbContent: string,
-        aiParts: AiPart[],
-        timeoutMs: number,
-    ) {
-        const generated = await this.ai.generate(synthesisPrompt, timeoutMs, aiParts);
-        const trimmed = generated?.trim();
-        if (trimmed && !this.looksLikeRankingPayload(trimmed)) {
-            return {
-                response: trimmed,
-                model: await this.ai.getActiveModelName(),
-            };
-        }
-
-        return this.ai.reformat(finalPrompt, userQuery, kbContent, aiParts);
-    }
-
-    private looksLikeRankingPayload(value: string): boolean {
-        if (!value.startsWith('{')) return false;
-
-        try {
-            const parsed = JSON.parse(value);
-            return Array.isArray(parsed?.rankings);
-        } catch {
-            return false;
-        }
-    }
 
     async query(options: AiQueryOptions): Promise<any> {
         const { userQuery, userId, channel = 'WEB', hotinfoContext, wait = true, attachments } = options;
@@ -578,15 +528,22 @@ RESPONSE DRAFT:`;
 
             const genStartTime = Date.now();
             const kbContent = results.slice(0, 10).map(r => r.content).join('\n\n');
-            let aiResult: Awaited<ReturnType<typeof this.ai.reformat>> = null;
+            let aiResult: Awaited<ReturnType<typeof this.supportAnswerOrchestrator.generate>> | null = null;
             try {
-                aiResult = await this.runDiagnosisGenerationWithTimeout(
+                aiResult = await this.supportAnswerOrchestrator.generate({
                     finalPrompt,
                     userQuery,
                     kbContent,
-                    aiParts,
-                    options.wait === true ? this.SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS : undefined,
-                );
+                    attachments: aiParts,
+                    timeoutMs: options.wait === true ? this.SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS : this.DIAGNOSIS_GENERATION_TIMEOUT_MS,
+                    audience: isStaff ? 'agent' : 'customer',
+                    fallback: () => this.buildDeterministicFallbackAnswer(userQuery, results, lang, {
+                        showSourceDetails: isStaff,
+                        diagnosis,
+                    }),
+                    fallbackOnNoKnowledge: results.length > 0,
+                    fallbackLabel: 'deterministic-structured',
+                });
             } catch (generationError: any) {
                 this.logger.warn(`⚠️ Diagnosis generation failed: ${generationError?.message ?? generationError}`);
             }
@@ -600,24 +557,19 @@ RESPONSE DRAFT:`;
                 showSourceDetails: isStaff,
                 diagnosis,
             });
-            answerMode = aiResult?.response ? 'LLM' : 'FALLBACK';
-
-            if (aiResult?.response && isNoKnowledgeAnswer(rawAnswer) && results.length > 0) {
-                this.logger.warn(
-                    `⚠️ LLM returned no-knowledge despite retrieved context. Using deterministic fallback for query "${userQuery.slice(0, 80)}".`,
-                );
-                rawAnswer = this.buildDeterministicFallbackAnswer(userQuery, results, lang, {
-                    showSourceDetails: isStaff,
-                    diagnosis,
-                });
-                answerMode = 'FALLBACK';
-            }
+            answerMode = aiResult?.mode ?? 'FALLBACK';
 
             // Split response by languages (TR, EN, DE)
             const splitResponse = this.parseMultiLangResponse(rawAnswer, lang);
             answer = splitResponse.main; // The active language content
             answer = await this.applyPersonalizedGreeting(answer, userId, this.resolveResponseLanguage(lang, userQuery));
-            languageCheck = await this.enforceAnswerLanguage(answer, userQuery, lang);
+            languageCheck = await this.supportAnswerOrchestrator.repairLanguage({
+                answer,
+                userQuery,
+                language: lang,
+                audience: isStaff ? 'agent' : 'customer',
+                fallback: () => this.buildNoUsableFallbackContentMessage(lang),
+            });
             answer = languageCheck.answer;
             translations = splitResponse.translations;
 
@@ -1392,46 +1344,6 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         };
 
         return messages[language];
-    }
-
-    private async enforceAnswerLanguage(
-        answer: string | null,
-        userQuery: string,
-        language: SupportedAnswerLanguage,
-    ): Promise<{ answer: string | null; repaired: boolean; mismatch: boolean }> {
-        if (!answer || !hasAnswerLanguageLeak(answer, language)) {
-            return { answer, repaired: false, mismatch: false };
-        }
-
-        const targetLanguage = language === 'tr' ? 'Turkish' : language === 'de' ? 'German' : 'English';
-        const repairPrompt = [
-            `Rewrite the support answer below entirely in ${targetLanguage}.`,
-            'Preserve the exact technical meaning, markdown structure, bullets, numbering, product names, file names, URLs, and error codes.',
-            'Translate explanatory prose and section names. Do not add new facts. Do not remove useful checks.',
-            'Return only the rewritten support answer.',
-            '',
-            '[USER QUERY]',
-            userQuery,
-            '',
-            '[ANSWER TO REWRITE]',
-            answer,
-        ].join('\n');
-
-        try {
-            const repaired = (await this.ai.generate(repairPrompt, 12000))?.trim();
-            if (repaired && !hasAnswerLanguageLeak(repaired, language)) {
-                return { answer: repaired, repaired: true, mismatch: true };
-            }
-        } catch (error: any) {
-            this.logger.warn(`⚠️ Answer language repair failed: ${error?.message ?? error}`);
-        }
-
-        this.logger.warn(`⚠️ Answer language mismatch could not be repaired for target language ${language}.`);
-        return {
-            answer: this.buildNoUsableFallbackContentMessage(language),
-            repaired: false,
-            mismatch: true,
-        };
     }
 
     private buildSafeOperationalTriageAnswer(query: string, language: SupportedAnswerLanguage): string | null {

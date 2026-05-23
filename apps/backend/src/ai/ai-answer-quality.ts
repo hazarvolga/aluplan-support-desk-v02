@@ -85,6 +85,11 @@ export const hasAnswerLanguageLeak = (
 ): boolean => {
     if (!answer) return false;
     const normalized = normalizeLanguageProbe(answer);
+    const trimmed = answer.trim();
+
+    if (expectedLanguage === 'en' && /^(merhaba|hallo)\b/i.test(trimmed)) return true;
+    if (expectedLanguage === 'tr' && /^(hello|hallo)\b/i.test(trimmed)) return true;
+    if (expectedLanguage === 'de' && /^(hello|merhaba)\b/i.test(trimmed)) return true;
 
     if (
         expectedLanguage !== 'tr' &&

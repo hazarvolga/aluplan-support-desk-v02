@@ -41,6 +41,7 @@ import { EmbeddingMigrationProcessor } from './embedding-migration.processor';
 import { FaqModule } from '../faq/faq.module';
 import { AiHealthEventService } from './ai-health-event.service';
 import { PreReimportInspectService } from './pre-reimport-inspect.service';
+import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
 
 @Module({
     imports: [
@@ -80,6 +81,7 @@ import { PreReimportInspectService } from './pre-reimport-inspect.service';
         OllamaService,
         EmbeddingService,
         AiQueryService,
+        SupportAnswerOrchestrator,
         AiAutoResolverService,
         AiCopilotService,
         AiDiagnosisService,
@@ -112,6 +114,7 @@ import { PreReimportInspectService } from './pre-reimport-inspect.service';
         AiBudgetMonitor,
         EmbeddingService,
         AiQueryService,
+        SupportAnswerOrchestrator,
         AiCopilotService,
         AiDiagnosisService,
         PromptContextBuilderService,

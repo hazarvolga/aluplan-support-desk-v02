@@ -43,4 +43,18 @@ describe('AI answer quality guards', () => {
 
         expect(hasAnswerLanguageLeak(englishAnswer, 'en')).toBe(false);
     });
+
+    it('flags a localized greeting that does not match the selected answer language', () => {
+        const englishBodyWithTurkishGreeting = [
+            'Merhaba hazarvolga,',
+            '',
+            '## 📌 Issue Summary',
+            'The user asks how to manage licenses during an Allplan upgrade.',
+            '',
+            '## 🛠️ Solution Steps',
+            '1. Open CodeMeter Control Center and verify the license container.',
+        ].join('\n');
+
+        expect(hasAnswerLanguageLeak(englishBodyWithTurkishGreeting, 'en')).toBe(true);
+    });
 });

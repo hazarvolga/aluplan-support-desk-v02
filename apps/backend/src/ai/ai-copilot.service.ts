@@ -1,6 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AiService } from './ai.service';
 import { AiPart } from './interfaces/ai-provider.interface';
 import { PromptContextBuilderService } from './prompt-context-builder.service';
 import { EmbeddingService } from './embedding.service';
@@ -10,6 +9,7 @@ import { DocumentParserService } from '../common/services/document-parser.servic
 import { MASTER_DIAGNOSIS_PROMPT } from './ai-query.service';
 import { buildSupportAnswerContractPrompt } from './ai-answer-contract';
 import { isNoKnowledgeAnswer } from './ai-answer-quality';
+import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
 
 @Injectable()
 export class AiCopilotService {
@@ -17,12 +17,12 @@ export class AiCopilotService {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly ai: AiService,
         private readonly promptContextBuilder: PromptContextBuilderService,
         private readonly embeddingService: EmbeddingService,
         private readonly storage: StorageService,
         private readonly diagnosisService: AiDiagnosisService,
         private readonly documentParser: DocumentParserService,
+        private readonly supportAnswerOrchestrator: SupportAnswerOrchestrator,
     ) { }
 
     /**
@@ -184,14 +184,30 @@ ${this.buildTicketResponseTargetContext(requesterName, latestAgentName)}
 RESPONSE DRAFT:`;
 
         try {
-            const response = await this.ai.generate(prompt, 60_000, aiParts);
-            const draft = this.replaceNoKnowledgeDraftIfContextExists(
-                response,
-                activeUserMessage,
-                searchResponse.results,
-                targetLanguage,
-                linkedCustomerAnswer,
-            );
+            const generated = await this.supportAnswerOrchestrator.generate({
+                finalPrompt: prompt,
+                userQuery: activeUserMessage,
+                kbContent,
+                attachments: aiParts,
+                timeoutMs: 60_000,
+                audience: 'agent',
+                fallback: () => this.buildCopilotFallbackDraft(
+                    activeUserMessage,
+                    searchResponse.results,
+                    targetLanguage,
+                    linkedCustomerAnswer,
+                ),
+                fallbackOnNoKnowledge: true,
+                fallbackLabel: 'copilot-grounded-draft',
+            });
+            const languageCheckedDraft = await this.supportAnswerOrchestrator.repairLanguage({
+                answer: generated.response,
+                userQuery: activeUserMessage,
+                language: targetLanguage,
+                audience: 'agent',
+                fallback: () => this.buildLanguageSafeManualReviewDraft(targetLanguage),
+            });
+            const draft = languageCheckedDraft.answer;
             const cleanedDraft = this.removeProblemShiftSectionUnlessDetected(draft, isShift);
             return {
                 draft: cleanedDraft || 'Draft could not be generated.',
@@ -204,6 +220,25 @@ RESPONSE DRAFT:`;
                 model: 'dynamic'
             };
         }
+    }
+
+    private buildCopilotFallbackDraft(
+        query: string,
+        results: Array<{ title?: string; content?: string; similarity?: number }> = [],
+        language = 'tr',
+        linkedCustomerAnswer?: string | null,
+    ): string | null {
+        if (linkedCustomerAnswer) {
+            this.logger.warn(`⚠️ Copilot orchestration reused the ticket-opening AI answer as grounded fallback.`);
+            return this.formatLinkedCustomerAnswerForAgent(linkedCustomerAnswer);
+        }
+
+        if (results.length === 0) {
+            return null;
+        }
+
+        this.logger.warn(`⚠️ Copilot orchestration used retrieved context for a grounded fallback draft.`);
+        return this.buildGroundedFallbackDraft(query, results, language);
     }
 
     private replaceNoKnowledgeDraftIfContextExists(
@@ -325,6 +360,30 @@ RESPONSE DRAFT:`;
         }
 
         return responseFallback();
+    }
+
+    private buildLanguageSafeManualReviewDraft(language: 'tr' | 'en' | 'de'): string {
+        if (language === 'en') {
+            return [
+                'Hello,',
+                '',
+                'The draft could not be generated in a reliable single language. Please review the ticket manually and prepare the customer response in English.',
+            ].join('\n');
+        }
+
+        if (language === 'de') {
+            return [
+                'Hallo,',
+                '',
+                'Der Entwurf konnte nicht zuverlässig in einer einheitlichen Sprache erstellt werden. Bitte prüfen Sie das Ticket manuell und verfassen Sie die Kundenantwort auf Deutsch.',
+            ].join('\n');
+        }
+
+        return [
+            'Merhaba,',
+            '',
+            'Taslak güvenilir biçimde tek dilde üretilemedi. Lütfen bileti manuel inceleyip müşteri yanıtını Türkçe hazırlayın.',
+        ].join('\n');
     }
 
     private cleanExcerpt(value: string): string {

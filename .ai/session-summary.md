@@ -2975,3 +2975,25 @@ Maintenance rule:
 ### Deployment note
 
 - Backend deploy is required for the AI quality fix. Frontend deploy is not required for this backend-only guardrail change.
+
+## Follow-up - 2026-05-23 Support Answer Orchestrator
+
+### What changed
+
+- Added `SupportAnswerOrchestrator` as the shared answer-generation decision layer for customer AI diagnosis and admin ANN/Copilot drafts.
+- Centralized LLM draft generation, ranking-payload reformat fallback, timeout/empty response fallback, no-knowledge-with-context fallback, and language repair policy.
+- Customer `AiQueryService` now delegates final answer generation and language repair to the orchestrator instead of owning a separate generation path.
+- Admin `AiCopilotService` now delegates final draft generation and language repair to the same orchestrator, while preserving linked customer-answer grounding and grounded draft fallbacks.
+- Ticket creation step 2 now exposes screenshot/file selection before AI diagnosis, so screenshots can be sent into the first AI answer instead of only being attached after ticket creation.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- support-answer-orchestrator.service.spec.ts ai-answer-quality.spec.ts ai-copilot.service.spec.ts ai-query.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+- `git diff --check` passed.
+
+### Note
+
+- This closes the prompt-only parity gap: previous work shared the prompt contract, but customer/admin still had separate orchestration behavior. The shared orchestrator is now the production path for final answer/draft generation policy.

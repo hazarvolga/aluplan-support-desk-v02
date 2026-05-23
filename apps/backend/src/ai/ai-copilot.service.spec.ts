@@ -8,6 +8,7 @@ import { StorageService } from '../common/services/storage.service';
 import { AiDiagnosisService } from './ai-diagnosis.service';
 import { DocumentParserService } from '../common/services/document-parser.service';
 import { NotFoundException } from '@nestjs/common';
+import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
 
 describe('AiCopilotService', () => {
     let service: AiCopilotService;
@@ -25,7 +26,11 @@ describe('AiCopilotService', () => {
                 findUnique: jest.fn(),
             },
         };
-        mockAi = { generate: jest.fn() };
+        mockAi = {
+            generate: jest.fn(),
+            reformat: jest.fn(),
+            getActiveModelName: jest.fn().mockResolvedValue('gemini-2.5-flash'),
+        };
         mockPromptBuilder = { buildContext: jest.fn().mockResolvedValue('Mock Context') };
         mockEmbedding = { search: jest.fn().mockResolvedValue({ results: [] }) };
         mockStorage = { getFile: jest.fn() };
@@ -35,6 +40,7 @@ describe('AiCopilotService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 AiCopilotService,
+                SupportAnswerOrchestrator,
                 { provide: PrismaService, useValue: mockPrisma },
                 { provide: AiService, useValue: mockAi },
                 { provide: PromptContextBuilderService, useValue: mockPromptBuilder },
@@ -149,6 +155,47 @@ describe('AiCopilotService', () => {
             expect(prompt).toContain('Output language must be English');
             expect(prompt).toContain('## 📌 Issue Summary');
             expect(prompt).not.toContain('Output language must be Turkish');
+        });
+
+        it('repairs admin drafts that use a Turkish greeting for an English ticket-opening interaction', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue({
+                ...mockTicket,
+                subject: 'How to handle licenses when upgrading to Allplan 2024',
+                description: 'What license issues do I need to consider when upgrading from Allplan 2021/2022/2023 to Allplan 2024?',
+                interaction: {
+                    userContext: {
+                        responseLanguage: 'en',
+                        requestLocale: 'en',
+                    },
+                },
+                creator: { id: 'u1', fullName: 'hazarvolga', language: 'tr', customerProfile: { hotinfoData: {} } },
+            });
+            mockAi.generate
+                .mockResolvedValueOnce([
+                    'Merhaba hazarvolga,',
+                    '',
+                    '## 📌 Issue Summary',
+                    'You are asking about license considerations for upgrading to Allplan 2024.',
+                    '',
+                    '## 🛠️ Solution Steps',
+                    '1. Open CodeMeter Control Center and verify the license container.',
+                ].join('\n'))
+                .mockResolvedValueOnce([
+                    'Hello hazarvolga,',
+                    '',
+                    '## 📌 Issue Summary',
+                    'You are asking about license considerations for upgrading to Allplan 2024.',
+                    '',
+                    '## 🛠️ Solution Steps',
+                    '1. Open CodeMeter Control Center and verify the license container.',
+                ].join('\n'));
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(result.draft).toContain('Hello hazarvolga,');
+            expect(result.draft).not.toContain('Merhaba');
+            expect(mockAi.generate).toHaveBeenCalledTimes(2);
+            expect(mockAi.generate.mock.calls[1][0]).toContain('Rewrite the support agent draft below entirely in English.');
         });
 
         it('grounds the admin draft in the linked ticket-opening AI answer', async () => {

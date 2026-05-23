@@ -19,6 +19,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import { RagObservabilityService } from '../rag-observability.service';
 import { StorageService } from '../../common/services/storage.service';
 import { AiSemanticCache } from '../ai-semantic-cache.service';
+import { SupportAnswerOrchestrator } from '../support-answer-orchestrator.service';
 
 const mockEmbeddingService = {
     search: jest.fn(),
@@ -77,6 +78,7 @@ const mockPromptContextBuilderService = {
 };
 
 const mockAiService = {
+    generate: jest.fn(),
     generateResponse: jest.fn(),
     getActiveProviderName: jest.fn(),
     getActiveModelName: jest.fn(),
@@ -93,6 +95,7 @@ describe('AiQueryService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 AiQueryService,
+                SupportAnswerOrchestrator,
                 PrismaServiceProvider,
                 { provide: AiService, useValue: mockAiService },
                 { provide: EmbeddingService, useValue: mockEmbeddingService },
