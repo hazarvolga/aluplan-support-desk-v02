@@ -4,7 +4,7 @@
 
 ### What changed
 
-- Added a desktop-only semantic data-rain layer behind the customer ticket AI synthesis wait panel.
+- Added a desktop-only semantic data-rain layer to the customer ticket creation page background while the AI synthesis wait panel is active.
 - The animation uses sanitized question/context tokens plus safe system concepts; emails, long numbers, phone-like values, license-like numbers, and raw attachment names are not rendered.
 - Mobile does not render the effect.
 - The synthesis panel now stays visible until the AI request resolves and then fades out smoothly instead of disappearing abruptly.

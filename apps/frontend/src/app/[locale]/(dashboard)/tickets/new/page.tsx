@@ -156,7 +156,7 @@ const getRainColumnTokens = (tokens: string[], columnIndex: number) => {
     });
 };
 
-function KnowledgeRain({ tokens }: { tokens: string[] }) {
+function KnowledgeRain({ tokens, className = '' }: { tokens: string[]; className?: string }) {
     const columns = useMemo(() => Array.from({ length: DATA_RAIN_COLUMNS }, (_, index) => ({
         id: index,
         tokens: getRainColumnTokens(tokens, index),
@@ -165,7 +165,7 @@ function KnowledgeRain({ tokens }: { tokens: string[] }) {
     })), [tokens]);
 
     return (
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden overflow-hidden md:block">
+        <div aria-hidden="true" className={`pointer-events-none absolute inset-0 hidden overflow-hidden md:block ${className}`}>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(0,255,209,0.12),transparent_42%)]" />
             <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-transparent to-slate-950" />
             <div className="absolute inset-0 flex justify-around px-3">
@@ -800,7 +800,6 @@ export default function NewTicketPage() {
                     <div className={`relative overflow-hidden rounded-2xl border border-brand-500/20 bg-slate-950/60 px-5 py-5 shadow-lg shadow-brand-500/10 transition-all duration-500 ${
                         isSynthesisPanelClosing ? 'translate-y-1 opacity-0' : 'translate-y-0 opacity-100'
                     }`}>
-                        <KnowledgeRain tokens={rainTokens} />
                         <div className="absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-brand-400 to-transparent" />
                         <div className="relative z-10 flex items-start gap-4">
                             <div className="relative mt-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-brand-500/10 text-brand-300">
@@ -981,10 +980,20 @@ export default function NewTicketPage() {
     );
 
     return (
-        <div className="min-h-screen">
-            {currentStep === 1 && renderStep1()}
-            {currentStep === 2 && renderStep2()}
-            {currentStep === 3 && renderStep3()}
+        <div className="relative min-h-screen overflow-hidden">
+            {isSynthesisPanelVisible && (
+                <KnowledgeRain
+                    tokens={rainTokens}
+                    className={`transition-opacity duration-500 ${
+                        isSynthesisPanelClosing ? 'opacity-0' : 'opacity-70'
+                    }`}
+                />
+            )}
+            <div className="relative z-10">
+                {currentStep === 1 && renderStep1()}
+                {currentStep === 2 && renderStep2()}
+                {currentStep === 3 && renderStep3()}
+            </div>
         </div>
     );
 }
