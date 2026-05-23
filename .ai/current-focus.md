@@ -2,7 +2,7 @@
 
 ## Active Work
 
-- Operations dashboard implementation is in progress:
+- Operations dashboard implementation is complete and local-only until the user chooses to deploy:
   - Phase 1 backend aggregate endpoint added at `GET /dashboard/ops`.
   - Endpoint returns real DB/queue-backed operations data for active tickets, SLA pressure, AI quality/cost estimates, CRM changes, knowledge/crawler state, system health, live feed, and trend series.
   - AI cost data is intentionally visible only to admin/superuser roles; support agents receive `cost: null`.
@@ -13,6 +13,8 @@
   - Layout is mobile-first: KPI and pulse cards stack on small screens, the live ops column drops below the header, and fixed-height panels use internal scroll instead of page overflow.
   - Phase 3 made pulse cards actionable: each pulse opens a responsive real-data modal with larger trend chart, linked records, and operational action links.
   - Phase 4 added controlled refresh: manual refresh plus 60-second background polling for staff/admin dashboards, with visible last-updated state and no customer-side polling.
+  - Phase 5 final verification passed backend tests/typecheck, frontend typecheck/build, dashboard unit tests, i18n check, and diff hygiene.
+  - Deployment should include both services: backend first for the new endpoint, then frontend for the new UI.
 - Live bug closure pass in progress:
   - AI answer quality hotfix now treats localized no-knowledge text as `NO_MATCH`, repairs mixed-language LLM answers, and gives crash/freeze queries a safe LOW-confidence triage instead of an unrelated source-backed no-answer.
   - static backend routes are guarded against dynamic `:id` shadowing for team skills/agents and ticket by-number/bulk endpoints.
