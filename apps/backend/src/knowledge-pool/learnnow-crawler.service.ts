@@ -48,6 +48,7 @@ type DiscoveredCandidate = {
     language: string;
     categorySlug: string;
     crawlFilter: string;
+    contentHash?: string;
     metadata: Prisma.InputJsonObject;
 };
 
@@ -105,7 +106,8 @@ export class LearnNowCrawlerService {
         let inserted = 0;
         let skipped = 0;
         for (const candidate of unique) {
-            const result = await this.upsertCandidate(candidate);
+            const enrichedCandidate = await this.enrichCandidateForReview(candidate);
+            const result = await this.upsertCandidate(enrichedCandidate);
             if (result.inserted) inserted += 1;
             else skipped += 1;
         }
@@ -395,21 +397,90 @@ export class LearnNowCrawlerService {
             `SELECT id FROM crawl_candidates WHERE source_url = $1 LIMIT 1`,
             candidate.sourceUrl,
         );
-        if (existing.length > 0) return { inserted: false };
+        if (existing.length > 0) {
+            await this.prisma.$executeRawUnsafe(
+                `UPDATE crawl_candidates
+                 SET title = $2,
+                     content_hash = COALESCE($3, content_hash),
+                     metadata = COALESCE(metadata, '{}'::jsonb) || $4::jsonb,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $1::uuid`,
+                existing[0].id,
+                candidate.title,
+                candidate.contentHash ?? null,
+                JSON.stringify(candidate.metadata),
+            );
+            return { inserted: false };
+        }
 
         await this.prisma.$executeRawUnsafe(
-            `INSERT INTO crawl_candidates (source, source_url, title, format, language, category_slug, crawl_filter, metadata)
-             VALUES ($1, $2, $3, $4::"CrawlCandidateFormat", $5, $6, $7, $8::jsonb)`,
+            `INSERT INTO crawl_candidates (source, source_url, title, format, language, category_slug, content_hash, crawl_filter, metadata)
+             VALUES ($1, $2, $3, $4::"CrawlCandidateFormat", $5, $6, $7, $8, $9::jsonb)`,
             LEARNNOW_SOURCE,
             candidate.sourceUrl,
             candidate.title,
             candidate.format,
             candidate.language,
             candidate.categorySlug,
+            candidate.contentHash ?? null,
             candidate.crawlFilter,
             JSON.stringify(candidate.metadata),
         );
         return { inserted: true };
+    }
+
+    private async enrichCandidateForReview(candidate: DiscoveredCandidate): Promise<DiscoveredCandidate> {
+        if (candidate.sourceUrl.includes('/totara/engage/resources/howto/index.php')) {
+            try {
+                const result = await this.crawlService.fetch(candidate.sourceUrl);
+                const learnNow = (result.metadata?.learnNow ?? {}) as Record<string, unknown>;
+                const transcriptStatus = typeof learnNow.transcriptStatus === 'string'
+                    ? learnNow.transcriptStatus
+                    : 'NOT_APPLICABLE';
+                const contentLength = result.content.length;
+                const imageCount = result.images?.length ?? 0;
+                const transcriptLength = typeof learnNow.transcriptLength === 'number'
+                    ? learnNow.transcriptLength
+                    : 0;
+                const readyForImport = contentLength >= 250
+                    && (candidate.crawlFilter !== 'explaining_video' || transcriptStatus === 'AVAILABLE');
+
+                return {
+                    ...candidate,
+                    title: result.title || candidate.title,
+                    contentHash: result.hash,
+                    metadata: {
+                        ...candidate.metadata,
+                        crawlerProvider: result.provider ?? 'basic',
+                        crawler: (result.metadata ?? {}) as Prisma.InputJsonObject,
+                        reviewQuality: {
+                            sourceType: learnNow.type ?? candidate.crawlFilter,
+                            contentLength,
+                            imageCount,
+                            transcriptStatus,
+                            transcriptLanguage: learnNow.transcriptLanguage ?? null,
+                            transcriptLength,
+                            readyForImport,
+                        },
+                    },
+                };
+            } catch (error: any) {
+                this.logger.warn(`⚠️ Learn Now candidate enrichment failed (${error.message}): ${candidate.sourceUrl}`);
+                return {
+                    ...candidate,
+                    metadata: {
+                        ...candidate.metadata,
+                        reviewQuality: {
+                            sourceType: candidate.crawlFilter,
+                            readyForImport: false,
+                            enrichmentError: error.message,
+                        },
+                    },
+                };
+            }
+        }
+
+        return candidate;
     }
 
     private async findCandidate(id: string): Promise<CrawlCandidateRecord | null> {
@@ -483,6 +554,7 @@ export class LearnNowCrawlerService {
             status: row.status,
             language: row.language,
             categorySlug: row.category_slug,
+            contentHash: row.content_hash,
             crawlFilter: row.crawl_filter,
             rejectionReason: row.rejection_reason,
             metadata: row.metadata,

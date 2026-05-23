@@ -458,6 +458,78 @@ export default function KnowledgePoolPage() {
         });
     };
 
+    const getCandidateReviewQuality = (candidate: CrawlCandidate) => {
+        const metadata = candidate.metadata ?? {};
+        const reviewQuality = metadata.reviewQuality;
+        if (reviewQuality && typeof reviewQuality === 'object') {
+            return reviewQuality as Record<string, unknown>;
+        }
+
+        const crawler = metadata.crawler;
+        if (crawler && typeof crawler === 'object' && 'learnNow' in crawler) {
+            const learnNow = (crawler as Record<string, any>).learnNow ?? {};
+            return {
+                sourceType: learnNow.type ?? candidate.crawlFilter,
+                contentLength: undefined,
+                imageCount: learnNow.imageCount,
+                transcriptStatus: learnNow.transcriptStatus,
+                transcriptLanguage: learnNow.transcriptLanguage,
+                transcriptLength: learnNow.transcriptLength,
+                readyForImport: learnNow.transcriptStatus === 'AVAILABLE' || candidate.crawlFilter !== 'explaining_video',
+            };
+        }
+
+        return null;
+    };
+
+    const renderCandidateQuality = (candidate: CrawlCandidate) => {
+        const quality = getCandidateReviewQuality(candidate);
+        if (!quality) return null;
+
+        const contentLength = typeof quality.contentLength === 'number' ? quality.contentLength : null;
+        const imageCount = typeof quality.imageCount === 'number' ? quality.imageCount : null;
+        const transcriptStatus = typeof quality.transcriptStatus === 'string' ? quality.transcriptStatus : null;
+        const transcriptLength = typeof quality.transcriptLength === 'number' ? quality.transcriptLength : null;
+        const sourceType = typeof quality.sourceType === 'string' ? quality.sourceType : candidate.crawlFilter;
+        const readyForImport = quality.readyForImport === true;
+
+        return (
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                {sourceType && (
+                    <Badge variant="outline" className="text-[8px] font-mono rounded-none px-1 border-border/40 text-muted-foreground">
+                        {sourceType}
+                    </Badge>
+                )}
+                {contentLength !== null && (
+                    <Badge variant="outline" className="text-[8px] font-mono rounded-none px-1 border-border/40 text-muted-foreground">
+                        {t('crawler.quality.content')}: {contentLength}
+                    </Badge>
+                )}
+                {imageCount !== null && imageCount > 0 && (
+                    <Badge variant="outline" className="text-[8px] font-mono rounded-none px-1 border-cyan-500/25 text-cyan-400">
+                        {t('crawler.quality.images')}: {imageCount}
+                    </Badge>
+                )}
+                {transcriptStatus && transcriptStatus !== 'NOT_APPLICABLE' && (
+                    <Badge
+                        variant="outline"
+                        className={`text-[8px] font-mono rounded-none px-1 ${transcriptStatus === 'AVAILABLE' ? 'border-emerald-500/25 text-emerald-400' : 'border-amber-500/25 text-amber-400'}`}
+                    >
+                        {t('crawler.quality.transcript')}: {transcriptStatus}
+                        {transcriptLength ? ` (${transcriptLength})` : ''}
+                    </Badge>
+                )}
+                <Badge
+                    variant="outline"
+                    className={`text-[8px] font-mono rounded-none px-1 ${readyForImport ? 'border-emerald-500/25 text-emerald-400' : 'border-amber-500/25 text-amber-400'}`}
+                >
+                    {readyForImport ? <CheckCircle2 className="h-2.5 w-2.5 mr-1" /> : <Clock className="h-2.5 w-2.5 mr-1" />}
+                    {readyForImport ? t('crawler.quality.ready') : t('crawler.quality.needs_review')}
+                </Badge>
+            </div>
+        );
+    };
+
     const statusBadge = (status: string) => {
         const map: Record<string, string> = {
             ACTIVE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -1074,6 +1146,7 @@ export default function KnowledgePoolPage() {
                                                         {t('crawler.table.discovered_from')}: {String(candidate.metadata.discoveredFrom)}
                                                     </p>
                                                 )}
+                                                {renderCandidateQuality(candidate)}
                                             </TableCell>
                                             <TableCell>
                                                 <div className="space-y-0.5">

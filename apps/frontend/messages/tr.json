@@ -2945,6 +2945,13 @@
           "explaining_video": "AÇIKLAYICI VİDEO",
           "recorded_online_session": "KAYITLI OTURUM"
         },
+        "quality": {
+          "content": "İÇERİK",
+          "images": "GÖRSEL",
+          "transcript": "TRANSKRİPT",
+          "ready": "HAZIR",
+          "needs_review": "İNCELE"
+        },
         "buttons": {
           "dry_run": "ÖNİZLE",
           "save_candidates": "ADAYLARI KAYDET",

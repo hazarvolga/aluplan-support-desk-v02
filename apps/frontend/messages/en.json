@@ -2945,6 +2945,13 @@
           "explaining_video": "EXPLAINING VIDEO",
           "recorded_online_session": "RECORDED SESSION"
         },
+        "quality": {
+          "content": "CONTENT",
+          "images": "IMAGES",
+          "transcript": "TRANSCRIPT",
+          "ready": "READY",
+          "needs_review": "REVIEW"
+        },
         "buttons": {
           "dry_run": "PREVIEW",
           "save_candidates": "SAVE CANDIDATES",

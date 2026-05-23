@@ -164,6 +164,66 @@ describe('LearnNowCrawlerService', () => {
         ]));
     });
 
+    it('enriches saved Learn Now howto candidates with review quality metadata', async () => {
+        const { service, prisma, crawl } = makeService();
+        mockedAxios.get.mockResolvedValueOnce({
+            data: `
+              <html><body>
+                <a href="/totara/engage/resources/howto/index.php?id=2740&source=howto">
+                  NEUERUNG 2024 - IFC VERBESSERUNGEN INFRASTRUKTUR
+                </a>
+              </body></html>
+            `,
+        } as any);
+        prisma.$queryRawUnsafe.mockResolvedValue([]);
+        crawl.fetch.mockResolvedValue({
+            content: 'Transcript-backed explaining video content for the Learn Now source.'.repeat(8),
+            title: 'NEUERUNG 2024 - IFC Verbesserungen Infrastruktur',
+            hash: 'video-content-hash',
+            isDynamic: true,
+            provider: 'learnnow-api',
+            images: [],
+            metadata: {
+                learnNow: {
+                    type: 'explainer_video',
+                    transcriptStatus: 'AVAILABLE',
+                    transcriptLanguage: 'de',
+                    transcriptLength: 442,
+                },
+            },
+        });
+
+        const result = await service.discover({
+            formats: ['explaining_video'],
+            maxPages: 1,
+            maxCandidates: 10,
+            dryRun: false,
+        });
+
+        expect(result).toMatchObject({ dryRun: false, discovered: 1, inserted: 1, skipped: 0 });
+        expect(crawl.fetch).toHaveBeenCalledWith('https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=2740&source=howto');
+        expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(
+            expect.stringContaining('INSERT INTO crawl_candidates'),
+            'allplan_learnnow',
+            'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=2740&source=howto',
+            'NEUERUNG 2024 - IFC Verbesserungen Infrastruktur',
+            'KNOWLEDGE_ARTICLE',
+            'en',
+            'export-import-ifc-dwg',
+            'video-content-hash',
+            'explaining_video',
+            expect.stringContaining('"transcriptStatus":"AVAILABLE"'),
+        );
+        const metadata = JSON.parse(prisma.$executeRawUnsafe.mock.calls[0][9]);
+        expect(metadata.reviewQuality).toEqual(expect.objectContaining({
+            sourceType: 'explainer_video',
+            transcriptStatus: 'AVAILABLE',
+            transcriptLanguage: 'de',
+            transcriptLength: 442,
+            readyForImport: true,
+        }));
+    });
+
     it('imports an article candidate into the existing knowledge sync queue', async () => {
         const { service, prisma, pool } = makeService();
         prisma.$queryRawUnsafe.mockResolvedValueOnce([{

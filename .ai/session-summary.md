@@ -1,5 +1,31 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-23 LearnNow Candidate Quality Phase 3
+
+### What changed
+
+- Learn Now discovery now enriches saved howto candidates before they enter the review queue.
+- Candidate metadata now records review quality signals: source type, content length, image count, transcript status/language/length, and ready-for-import flag.
+- Existing candidates discovered again receive refreshed title/content hash/metadata instead of staying stale.
+- Crawler candidate API now exposes `contentHash`.
+- Knowledge Pool crawler UI now shows compact quality badges for content length, images, transcript status, and ready/review state in all supported UI languages.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- learnnow-crawler.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend test -- crawl.service.spec.ts knowledge-pool.processor.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed for `tr`, `en`, and `de`.
+- `pnpm --filter @aluplan/backend build` passed.
+- `pnpm --filter @aluplan/frontend build` passed.
+- `git diff --check` passed.
+
+### Next
+
+- Phase 4 should add Technical Manual / Recorded Online Session extraction rules and keep low-confidence media candidates review-only.
+- After all LearnNow phases, run a small end-to-end production-like import smoke with one article and one transcript-backed video before pushing/deploying.
+
 ## Follow-up - 2026-05-23 LearnNow Video Transcript Phase 2
 
 ### What changed

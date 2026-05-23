@@ -2945,6 +2945,13 @@
           "explaining_video": "ERKLÄRVIDEO",
           "recorded_online_session": "AUFGEZEICHNETE SITZUNG"
         },
+        "quality": {
+          "content": "INHALT",
+          "images": "BILDER",
+          "transcript": "TRANSKRIPT",
+          "ready": "BEREIT",
+          "needs_review": "PRÜFEN"
+        },
         "buttons": {
           "dry_run": "VORSCHAU",
           "save_candidates": "KANDIDATEN SPEICHERN",

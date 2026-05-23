@@ -56,6 +56,7 @@ export type CrawlCandidate = {
     status: string;
     language?: string | null;
     categorySlug?: string | null;
+    contentHash?: string | null;
     crawlFilter?: string | null;
     rejectionReason?: string | null;
     metadata?: Record<string, unknown> | null;

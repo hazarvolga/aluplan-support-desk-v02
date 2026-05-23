@@ -82,7 +82,9 @@
   - live read-only smoke confirmed `id=9093` returns article text plus one source image.
   - LearnNow explainer videos now extract Vimeo IDs, public Vimeo text tracks, and clean VTT transcript text when captions are available.
   - live read-only smoke confirmed `id=2740` returns `vimeoVideoId=880602266`, `transcriptStatus=AVAILABLE`, and German transcript text in the crawl content.
-  - next LearnNow phase should focus on Sync Center quality signals before broader pilot imports.
+  - saved howto candidates now carry review-quality metadata: content length, image count, transcript status/language/length, source type, and ready-for-import flag.
+  - Knowledge Pool crawler UI now shows these quality signals as compact badges before import.
+  - next LearnNow phase should focus on Technical Manuals and Recorded Online Sessions before broader pilot imports.
 - Ticket routing hardening started:
   - new ticket creation now collects support category/department before product selection.
   - ticket create payload includes `departmentId` so SLA and auto-assignment can route by department.
