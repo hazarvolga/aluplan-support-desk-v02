@@ -196,7 +196,7 @@ export class OpsDashboardService {
             { id: 'sla_risk', severity: slaRisk > 0 ? 'critical' : 'ok', count: slaRisk, href: '/tickets?isSlaBreached=false' },
             { id: 'low_confidence_ai', severity: lowConfidence > 0 ? 'warning' : 'ok', count: lowConfidence, href: '/admin/ai-health' },
             { id: 'crawler_review', severity: crawlerReview > 0 ? 'info' : 'ok', count: crawlerReview, href: '/knowledge-pool?tab=candidates' },
-            { id: 'crm_failures', severity: crmFailures > 0 ? 'critical' : 'ok', count: crmFailures, href: '/crm' },
+            { id: 'crm_failures', severity: crmFailures > 0 ? 'critical' : 'ok', count: crmFailures, href: '/customers/crm' },
         ];
     }
 
@@ -458,7 +458,7 @@ export class OpsDashboardService {
                 description: change.status,
                 status: change.status,
                 at: change.changedAt.toISOString(),
-                href: '/crm',
+                href: '/customers/crm',
             })),
             ...ai.map((event) => ({
                 id: `ai-${event.id}`,

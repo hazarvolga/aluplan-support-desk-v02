@@ -503,16 +503,16 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
             { label: t('modal.actions_map.open_teams'), href: '/teams' },
         ],
         ai: [
-            { label: t('modal.actions_map.ai_health'), href: '/ai-health' },
-            { label: t('modal.actions_map.ai_intelligence'), href: '/ai-intelligence' },
+            { label: t('modal.actions_map.ai_health'), href: '/admin/ai-health' },
+            { label: t('modal.actions_map.ai_intelligence'), href: '/admin/ai-intelligence' },
         ],
         crm: [
-            { label: t('modal.actions_map.crm_management'), href: '/crm' },
+            { label: t('modal.actions_map.crm_management'), href: '/customers/crm' },
             { label: t('modal.actions_map.customer_records'), href: '/customers' },
         ],
         knowledge: [
             { label: t('modal.actions_map.knowledge_pool'), href: '/knowledge-pool' },
-            { label: t('modal.actions_map.data_sources'), href: '/data-sources' },
+            { label: t('modal.actions_map.data_sources'), href: '/knowledge-pool/upload' },
         ],
     };
     const actions = actionMap[selected];

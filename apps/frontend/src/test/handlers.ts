@@ -115,7 +115,7 @@ export const handlers = [
             },
             actions: [
                 { id: 'unassigned', severity: 'ok', count: 0, href: '/tickets' },
-                { id: 'low_confidence_ai', severity: 'warning', count: 1, href: '/ai-health' },
+                { id: 'low_confidence_ai', severity: 'warning', count: 1, href: '/admin/ai-health' },
             ],
             pulse: {
                 ticketTrend: [{ date: '2026-05-23', created: 1, resolved: 0 }],
