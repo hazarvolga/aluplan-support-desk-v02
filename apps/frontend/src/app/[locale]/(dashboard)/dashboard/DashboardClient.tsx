@@ -28,6 +28,7 @@ type PulseTool = {
     key: string;
     label: string;
     intent: 'period' | 'breakdown' | 'filter';
+    count?: number;
 };
 type PulseSegment = {
     key: string;
@@ -35,6 +36,11 @@ type PulseSegment = {
     series: Array<Record<string, string | number>>;
     metrics: Record<string, number>;
     records: PulseRecord[];
+    decision?: {
+        level?: 'ok' | 'info' | 'warning' | 'critical';
+        title?: string;
+        description?: string;
+    };
 };
 type PulseDetail = {
     metrics: PulseMetric[];
@@ -493,9 +499,12 @@ function PulseDetailModal({
                                         type="button"
                                         aria-pressed={tool.key === detail.activeTool}
                                         onClick={() => onSegmentChange(tool.key)}
-                                        className={`rounded border px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] transition focus:outline-none focus:ring-1 focus:ring-primary/60 ${tool.key === detail.activeTool ? 'border-primary/35 bg-primary/10 text-primary' : 'border-white/10 bg-white/[0.025] text-muted-foreground hover:border-primary/25 hover:text-white'}`}
+                                        className={`inline-flex items-center gap-2 rounded border px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] transition focus:outline-none focus:ring-1 focus:ring-primary/60 ${tool.key === detail.activeTool ? 'border-primary/35 bg-primary/10 text-primary' : 'border-white/10 bg-white/[0.025] text-muted-foreground hover:border-primary/25 hover:text-white'}`}
                                     >
-                                        {tool.label}
+                                        <span>{tool.label}</span>
+                                        {typeof tool.count === 'number' ? (
+                                            <span className={`rounded px-1.5 py-0.5 text-[8px] tracking-normal ${tool.key === detail.activeTool ? 'bg-primary/15 text-primary' : 'bg-white/[0.06] text-muted-foreground'}`}>{tool.count}</span>
+                                        ) : null}
                                     </button>
                                 ))}
                             </div>
@@ -853,6 +862,7 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
               key: segment.key,
               intent: segment.intent,
               label: t(`modal.tools.${segmentToolLabelKeys[segment.key] ?? segment.key}`),
+              count: segment.records?.length ?? 0,
           }))
         : fallbackToolsMap[selected];
     const tags = metrics.map((metric) => `${metric.label}: ${metric.value}`);
@@ -897,8 +907,8 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
         },
     };
     const summary = {
-        title: summaryMap[selected].title,
-        description: buildPulseSummaryDescription(selected, metrics, t),
+        title: activeSegment?.decision?.title || summaryMap[selected].title,
+        description: activeSegment?.decision?.description || buildPulseSummaryDescription(selected, metrics, t),
     };
 
     return {

@@ -118,6 +118,26 @@ describe('DashboardClient', () => {
         expect(screen.getByText(/4 active \/ 2 unassigned \/ 1 SLA/i)).toBeInTheDocument();
     });
 
+    it('shows selected pulse segment counts and empty-state for empty knowledge slices', async () => {
+        (useAuth as any).mockReturnValue({
+            user: { fullName: 'Admin User', roles: ['admin'] }
+        });
+
+        render(<DashboardClient />);
+
+        await waitFor(() => {
+            expect(screen.getByText(/knowledge.title/i)).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText(/knowledge.title/i).closest('button')!);
+        expect(screen.getByText(/System Requirements/i)).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: /failed_imports/i }));
+
+        expect(screen.getByText(/No failed imports in this slice/i)).toBeInTheDocument();
+        expect(screen.getByText(/empty_title/i)).toBeInTheDocument();
+    });
+
     it('allows manual refresh of the operations payload', async () => {
         (useAuth as any).mockReturnValue({
             user: { fullName: 'Admin User', roles: ['admin'] }

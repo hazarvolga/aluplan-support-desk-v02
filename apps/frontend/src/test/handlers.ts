@@ -144,6 +144,27 @@ export const handlers = [
                             },
                         ],
                     },
+                    knowledge: {
+                        defaultKey: '7d',
+                        segments: [
+                            {
+                                key: '7d',
+                                intent: 'period',
+                                series: [{ date: '2026-05-23', count: 2 }],
+                                metrics: { sources: 10, embeddings: 120, candidates: 3, failed: 0, review: 1 },
+                                records: [{ id: 'crawl-1', title: 'System Requirements', description: 'generic_web / KNOWLEDGE_ARTICLE / en', href: '/knowledge-pool?tab=candidates', status: 'PENDING_REVIEW' }],
+                                decision: { level: 'info', title: 'Knowledge window has candidate activity.', description: '1 record is waiting for review in this slice.' },
+                            },
+                            {
+                                key: 'failed_imports',
+                                intent: 'filter',
+                                series: [{ date: '2026-05-23', count: 0 }],
+                                metrics: { sources: 10, embeddings: 120, candidates: 3, failed: 0, review: 0 },
+                                records: [],
+                                decision: { level: 'ok', title: 'No failed imports in this slice.', description: '0 records, 0 waiting for review, 0 failed imports.' },
+                            },
+                        ],
+                    },
                 },
             },
             learnNow: { pendingReview: 2, byStatus: { IMPORTED: 5, SKIPPED_DUPLICATE: 1 }, byFormat: {}, recent: [] },

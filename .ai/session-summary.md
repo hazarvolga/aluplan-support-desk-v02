@@ -3389,3 +3389,21 @@ Maintenance rule:
 
 - Deploy backend first for the corrected CRM modal link/grouping contract.
 - Deploy frontend after backend for the fixed modal filter behavior and updated workspace layout.
+
+## Follow-up - 2026-05-24 Operations Dashboard Segment Clarity
+
+### What changed
+
+- Pulse modal segment controls now display their record counts directly on each segment button.
+- Active modal segments now use the backend-provided decision title/description, so slices like LearnNow review or failed imports explain the selected filter instead of showing a generic dashboard summary.
+- Added a frontend regression that opens the Knowledge Flow modal, switches to an empty failed-import slice, and verifies the selected slice stays explicit with an empty state.
+
+### Verification
+
+- `pnpm --filter @aluplan/frontend exec vitest run 'src/app/[locale]/(dashboard)/dashboard/DashboardClient.spec.tsx'` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+
+### Deployment note
+
+- Frontend deploy is sufficient for this segment clarity fix.
