@@ -4757,8 +4757,12 @@
     },
     "crawler": {
       "title": "CRAWLER CANDIDATES",
-      "subtitle": "Stage public web and Learn Now content before Knowledge Pool import.",
+      "subtitle": "Stage public Learn Now and web content before Knowledge Pool import.",
       "search_placeholder": "Search term or leave empty",
+      "public_notice_title": "Public Learn Now discovery",
+      "public_notice_desc": "The automatic crawler only stages public How To articles, PDFs, and transcript-backed content that does not require login or enrollment.",
+      "enrollment_notice_title": "E-learning courses are manual import",
+      "enrollment_notice_desc": "Enrollment-only lessons are not crawled. Add these sources as approved PDFs, transcripts, or documents through File Upload/Dataset. Duplicate URL and content-hash checks run before import.",
       "dry_run_title": "DRY-RUN PREVIEW",
       "discovered": "{count} CANDIDATES",
       "no_candidates": "No crawler candidates found",
@@ -4790,7 +4794,8 @@
         "format": "FORMAT",
         "category": "CATEGORY",
         "status": "STATUS",
-        "discovered_from": "FROM"
+        "discovered_from": "FROM",
+        "rejection_reason": "SKIP REASON"
       },
       "toasts": {
         "fetch_error": "Could not load crawler candidates",

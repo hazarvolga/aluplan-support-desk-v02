@@ -109,6 +109,9 @@
   - Technical Manuals are staged as PDF candidates; videos and recordings remain review-first Knowledge Article candidates until transcript/content quality is confirmed.
   - LearnNow review decisions now use one backend helper: article content must be long enough, media/recording formats require transcript text, and PDF/manual candidates are clearly marked as validated during import.
   - candidate quality badges now show localized reason codes such as transcript required, transcript ready, content too short, and PDF check on import.
+  - LearnNow automatic crawl is now public-only: enrollment/course-layer pages are rejected from discovery and must be imported manually as approved files/transcripts.
+  - LearnNow candidate discovery now checks existing Knowledge Pool URL/content hash before import and marks duplicates as `SKIPPED_DUPLICATE`.
+  - Knowledge Pool crawler UI now explains the public-only crawl boundary and e-learning manual-import rule in Turkish, English, and German.
   - next LearnNow phase should run a small end-to-end pilot import smoke before broader imports.
 - Ticket routing hardening started:
   - new ticket creation now collects support category/department before product selection.

@@ -3407,3 +3407,26 @@ Maintenance rule:
 ### Deployment note
 
 - Frontend deploy is sufficient for this segment clarity fix.
+
+## Follow-up - 2026-05-24 LearnNow Public Crawl Boundary
+
+### What changed
+
+- LearnNow crawler discovery now rejects enrollment/course-layer pages such as `course/view`, `course/preview`, and generic `mod/page` links from automatic staging.
+- Public automatic discovery is limited to safe LearnNow How To resources and PDF/manual resource links.
+- Discovery now checks existing Knowledge Pool sources by URL and content hash and stages matches as `SKIPPED_DUPLICATE` instead of re-importable candidates.
+- Article imports now persist the candidate content hash on the Knowledge Source, so future duplicate hash checks can catch equivalent content.
+- Knowledge Pool crawler UI now explains the public-only LearnNow boundary, the e-learning manual-import path, and duplicate controls in TR/EN/DE.
+- Duplicate candidates show their rejection reason and cannot be imported again from the candidate table.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- learnnow-crawler.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+
+### Deployment note
+
+- Backend deploy is required for the public-only LearnNow crawl boundary and discovery-time duplicate checks.
+- Frontend deploy is required for the crawler UI guidance and duplicate-reason display.

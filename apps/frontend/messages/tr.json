@@ -4757,8 +4757,12 @@
     },
     "crawler": {
       "title": "CRAWLER ADAYLARI",
-      "subtitle": "Web ve Learn Now içeriklerini Knowledge Pool'a almadan önce onay kuyruğunda yönetin.",
+      "subtitle": "Public Learn Now ve web içeriklerini Knowledge Pool'a almadan önce onay kuyruğunda yönetin.",
       "search_placeholder": "Arama terimi veya boş bırakın",
+      "public_notice_title": "Public Learn Now taraması",
+      "public_notice_desc": "Otomatik crawler yalnızca login/enrollment istemeyen public How To, makale, PDF ve transcript içeriğini aday kuyruğuna alır.",
+      "enrollment_notice_title": "E-learning kursları manuel import",
+      "enrollment_notice_desc": "Enrollment gerektiren dersler crawl edilmez. Bu içerikler PDF, transcript veya izinli doküman olarak Dosya Yükle/Dataset akışından eklenmelidir. Duplicate URL ve içerik hash kontrolü import öncesi çalışır.",
       "dry_run_title": "ÖN İZLEME",
       "discovered": "{count} ADAY",
       "no_candidates": "Crawler adayı bulunamadı",
@@ -4790,7 +4794,8 @@
         "format": "FORMAT",
         "category": "KATEGORİ",
         "status": "DURUM",
-        "discovered_from": "KAYNAK URL"
+        "discovered_from": "KAYNAK URL",
+        "rejection_reason": "ATLANMA NEDENİ"
       },
       "toasts": {
         "fetch_error": "Crawler adayları yüklenemedi",

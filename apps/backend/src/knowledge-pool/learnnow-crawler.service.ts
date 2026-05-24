@@ -62,6 +62,11 @@ type CandidateReviewDecision = {
     | 'NEEDS_CONTENT_REVIEW';
 };
 
+type DuplicateKnowledgeSource = {
+    id: string;
+    reason: 'Knowledge source URL already exists' | 'Knowledge source content hash already exists';
+};
+
 const LEARNNOW_BASE_URL = 'https://learnnow.allplan.com';
 const LEARNNOW_SOURCE = 'allplan_learnnow';
 const LEARNNOW_FORMAT_FILTERS: Record<LearnNowCrawlFormat, LearnNowFilterValue> = {
@@ -189,12 +194,14 @@ export class LearnNowCrawlerService {
     }
 
     private async importArticleCandidate(candidate: CrawlCandidateRecord) {
-        const existing = await this.prisma.knowledgeSource.findFirst({
-            where: { url: candidate.source_url },
-        });
+        const existing = await this.findDuplicateKnowledgeSource(candidate.source_url, candidate.content_hash);
         if (existing) {
-            await this.markCandidate(candidate.id, 'SKIPPED_DUPLICATE', existing.id, 'Knowledge source URL already exists');
-            return { skipped: true, reason: 'DUPLICATE_URL', sourceId: existing.id };
+            await this.markCandidate(candidate.id, 'SKIPPED_DUPLICATE', existing.id, existing.reason);
+            return {
+                skipped: true,
+                reason: existing.reason.includes('hash') ? 'DUPLICATE_HASH' : 'DUPLICATE_URL',
+                sourceId: existing.id,
+            };
         }
 
         const source = await this.prisma.knowledgeSource.create({
@@ -204,6 +211,7 @@ export class LearnNowCrawlerService {
                 url: candidate.source_url,
                 status: KnowledgeSourceStatus.ACTIVE,
                 language: candidate.language ?? 'en',
+                lastHash: candidate.content_hash ?? undefined,
                 metadata: this.buildImportMetadata(candidate, 'knowledge_article'),
             },
         });
@@ -396,13 +404,11 @@ export class LearnNowCrawlerService {
             return parsed.pathname.endsWith('.pdf') || parsed.pathname.includes('/mod/resource/view.php');
         }
 
-        return parsed.pathname.includes('/course/view.php')
-            || parsed.pathname.includes('/course/preview')
-            || parsed.pathname.includes('/mod/page/view.php')
-            || this.isTotaraHowtoResource(parsed);
+        return this.isTotaraHowtoResource(parsed);
     }
 
     private async upsertCandidate(candidate: DiscoveredCandidate): Promise<{ inserted: boolean }> {
+        const duplicate = await this.findDuplicateKnowledgeSource(candidate.sourceUrl, candidate.contentHash ?? null);
         const existing = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
             `SELECT id FROM crawl_candidates WHERE source_url = $1 LIMIT 1`,
             candidate.sourceUrl,
@@ -413,11 +419,42 @@ export class LearnNowCrawlerService {
                  SET title = $2,
                      content_hash = COALESCE($3, content_hash),
                      metadata = COALESCE(metadata, '{}'::jsonb) || $4::jsonb,
+                     status = CASE
+                         WHEN $5::uuid IS NOT NULL THEN 'SKIPPED_DUPLICATE'::"CrawlCandidateStatus"
+                         ELSE status
+                     END,
+                     imported_source_id = COALESCE($5::uuid, imported_source_id),
+                     rejection_reason = CASE
+                         WHEN $5::uuid IS NOT NULL THEN $6
+                         ELSE rejection_reason
+                     END,
                      updated_at = CURRENT_TIMESTAMP
                  WHERE id = $1::uuid`,
                 existing[0].id,
                 candidate.title,
                 candidate.contentHash ?? null,
+                JSON.stringify(candidate.metadata),
+                duplicate?.id ?? null,
+                duplicate?.reason ?? null,
+            );
+            return { inserted: false };
+        }
+
+        if (duplicate) {
+            await this.prisma.$executeRawUnsafe(
+                `INSERT INTO crawl_candidates
+                    (source, source_url, title, format, status, language, category_slug, content_hash, crawl_filter, rejection_reason, imported_source_id, metadata)
+                 VALUES ($1, $2, $3, $4::"CrawlCandidateFormat", 'SKIPPED_DUPLICATE'::"CrawlCandidateStatus", $5, $6, $7, $8, $9, $10::uuid, $11::jsonb)`,
+                LEARNNOW_SOURCE,
+                candidate.sourceUrl,
+                candidate.title,
+                candidate.format,
+                candidate.language,
+                candidate.categorySlug,
+                candidate.contentHash ?? null,
+                candidate.crawlFilter,
+                duplicate.reason,
+                duplicate.id,
                 JSON.stringify(candidate.metadata),
             );
             return { inserted: false };
@@ -437,6 +474,28 @@ export class LearnNowCrawlerService {
             JSON.stringify(candidate.metadata),
         );
         return { inserted: true };
+    }
+
+    private async findDuplicateKnowledgeSource(sourceUrl: string, contentHash?: string | null): Promise<DuplicateKnowledgeSource | null> {
+        const byUrl = await this.prisma.knowledgeSource.findFirst({
+            where: { url: sourceUrl },
+            select: { id: true },
+        });
+        if (byUrl) {
+            return { id: byUrl.id, reason: 'Knowledge source URL already exists' };
+        }
+
+        if (!contentHash) return null;
+
+        const byHash = await this.prisma.knowledgeSource.findFirst({
+            where: { lastHash: contentHash },
+            select: { id: true },
+        });
+        if (byHash) {
+            return { id: byHash.id, reason: 'Knowledge source content hash already exists' };
+        }
+
+        return null;
     }
 
     private async enrichCandidateForReview(candidate: DiscoveredCandidate): Promise<DiscoveredCandidate> {

@@ -4757,8 +4757,12 @@
     },
     "crawler": {
       "title": "CRAWLER-KANDIDATEN",
-      "subtitle": "Web- und Learn-Now-Inhalte vor dem Import in den Knowledge Pool prüfen.",
+      "subtitle": "Öffentliche Learn-Now- und Web-Inhalte vor dem Import in den Knowledge Pool prüfen.",
       "search_placeholder": "Suchbegriff oder leer lassen",
+      "public_notice_title": "Public-Learn-Now-Suche",
+      "public_notice_desc": "Der automatische Crawler übernimmt nur öffentliche How-To-Artikel, PDFs und Inhalte mit Transcript, die keinen Login und keine Einschreibung benötigen.",
+      "enrollment_notice_title": "E-Learning-Kurse manuell importieren",
+      "enrollment_notice_desc": "Kurse mit Einschreibung werden nicht gecrawlt. Diese Quellen müssen als freigegebene PDFs, Transcripts oder Dokumente über Datei-Upload/Dataset hinzugefügt werden. Duplicate-Prüfung per URL und Content-Hash läuft vor dem Import.",
       "dry_run_title": "VORSCHAU",
       "discovered": "{count} KANDIDATEN",
       "no_candidates": "Keine Crawler-Kandidaten gefunden",
@@ -4790,7 +4794,8 @@
         "format": "FORMAT",
         "category": "KATEGORIE",
         "status": "STATUS",
-        "discovered_from": "AUS"
+        "discovered_from": "AUS",
+        "rejection_reason": "SKIP-GRUND"
       },
       "toasts": {
         "fetch_error": "Crawler-Kandidaten konnten nicht geladen werden",

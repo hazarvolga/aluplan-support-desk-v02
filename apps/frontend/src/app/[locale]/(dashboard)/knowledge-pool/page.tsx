@@ -8,7 +8,7 @@ import {
     Database, Globe, FileText, RefreshCw,
     History, CheckCircle2, XCircle, Clock, Search,
     FileIcon, ArrowUpCircle, MousePointer2,
-    ChevronDown, ChevronUp, ChevronsUpDown, PlayCircle, Trash2
+    ChevronDown, ChevronUp, ChevronsUpDown, PlayCircle, Trash2, AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
 import { api, CrawlCandidate, LearnNowCrawlFormat } from '@/lib/api';
@@ -1022,6 +1022,23 @@ export default function KnowledgePoolPage() {
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                            <div className="border border-primary/20 bg-primary/5 rounded-md p-3 flex gap-3">
+                                <Globe className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-primary">{t('crawler.public_notice_title')}</p>
+                                    <p className="text-[10px] leading-relaxed text-muted-foreground">{t('crawler.public_notice_desc')}</p>
+                                </div>
+                            </div>
+                            <div className="border border-amber-500/20 bg-amber-500/5 rounded-md p-3 flex gap-3">
+                                <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500">{t('crawler.enrollment_notice_title')}</p>
+                                    <p className="text-[10px] leading-relaxed text-muted-foreground">{t('crawler.enrollment_notice_desc')}</p>
+                                </div>
+                            </div>
+                        </div>
+
                         {crawlDryRun?.dryRun && (
                             <div className="border border-primary/20 bg-primary/5 rounded-md p-3 space-y-2">
                                 <div className="flex items-center justify-between">
@@ -1166,6 +1183,11 @@ export default function KnowledgePoolPage() {
                                                         {t('crawler.table.discovered_from')}: {String(candidate.metadata.discoveredFrom)}
                                                     </p>
                                                 )}
+                                                {candidate.rejectionReason && (
+                                                    <p className="text-[8px] font-mono text-amber-500/80 truncate max-w-[420px] mt-0.5">
+                                                        {t('crawler.table.rejection_reason')}: {candidate.rejectionReason}
+                                                    </p>
+                                                )}
                                                 {renderCandidateQuality(candidate)}
                                             </TableCell>
                                             <TableCell>
@@ -1197,7 +1219,7 @@ export default function KnowledgePoolPage() {
                                                 <div className="flex items-center justify-end gap-1">
                                                     <Button
                                                         onClick={() => handleImportCandidate(candidate.id)}
-                                                        disabled={candidate.status === 'IMPORTED' || importingCandidateIds.has(candidate.id) || deletingCandidateIds.has(candidate.id)}
+                                                        disabled={['IMPORTED', 'SKIPPED_DUPLICATE'].includes(candidate.status) || importingCandidateIds.has(candidate.id) || deletingCandidateIds.has(candidate.id)}
                                                         size="sm"
                                                         className="h-7 text-[10px] uppercase font-bold tracking-widest gap-1.5"
                                                     >

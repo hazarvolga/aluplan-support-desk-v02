@@ -43,7 +43,7 @@ describe('LearnNowCrawlerService', () => {
         mockedAxios.get.mockResolvedValue({
             data: `
               <html><body>
-                <a href="/course/view.php?id=101">License Server Access Rights</a>
+                <a href="/totara/engage/resources/howto/index.php?id=101&source=howto">License Server Access Rights</a>
                 <a href="/mod/resource/view.php?id=202">Workgroup Home Office PDF</a>
               </body></html>
             `,
@@ -59,7 +59,7 @@ describe('LearnNowCrawlerService', () => {
         expect(result).toMatchObject({ dryRun: true, discovered: 2 });
         expect(result.candidates).toEqual(expect.arrayContaining([
             expect.objectContaining({
-                sourceUrl: 'https://learnnow.allplan.com/course/view.php?id=101',
+                sourceUrl: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=101&source=howto',
                 format: 'KNOWLEDGE_ARTICLE',
                 categorySlug: 'license-server-codemeter',
             }),
@@ -79,7 +79,7 @@ describe('LearnNowCrawlerService', () => {
         } as any);
         crawl.fetch.mockResolvedValue({
             content: [
-                '[License Server Access Rights](https://learnnow.allplan.com/course/view.php?id=301)',
+                '[License Server Access Rights](https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=301&source=howto)',
                 '[Workgroup Checkout PDF](https://learnnow.allplan.com/mod/resource/view.php?id=302)',
             ].join('\n'),
             title: 'Learn Now Search',
@@ -100,7 +100,7 @@ describe('LearnNowCrawlerService', () => {
         expect(result).toMatchObject({ dryRun: true, discovered: 2 });
         expect(result.candidates).toEqual(expect.arrayContaining([
             expect.objectContaining({
-                sourceUrl: 'https://learnnow.allplan.com/course/view.php?id=301',
+                sourceUrl: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=301&source=howto',
                 format: 'KNOWLEDGE_ARTICLE',
                 metadata: expect.objectContaining({ discoveredVia: 'crawler_markdown', crawlerProvider: 'crawl4ai' }),
             }),
@@ -110,6 +110,35 @@ describe('LearnNowCrawlerService', () => {
                 metadata: expect.objectContaining({ discoveredVia: 'crawler_markdown', crawlerProvider: 'crawl4ai' }),
             }),
         ]));
+    });
+
+    it('does not stage enrollment/course-layer Learn Now pages for automatic crawl', async () => {
+        const { service } = makeService();
+        mockedAxios.get.mockResolvedValue({
+            data: `
+              <html><body>
+                <a href="/course/view.php?id=101">Enrollment Course Detail</a>
+                <a href="/course/preview.php?id=102">Course Preview</a>
+                <a href="/mod/page/view.php?id=103">E-learning Page</a>
+                <a href="/totara/engage/resources/howto/index.php?id=8572&source=howto">Public Knowledge Article</a>
+              </body></html>
+            `,
+        } as any);
+
+        const result = await service.discover({
+            formats: ['knowledge_article'],
+            maxPages: 1,
+            maxCandidates: 10,
+            dryRun: true,
+        });
+
+        expect(result).toMatchObject({ dryRun: true, discovered: 1 });
+        expect(result.candidates).toEqual([
+            expect.objectContaining({
+                sourceUrl: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=8572&source=howto',
+                title: 'Public Knowledge Article',
+            }),
+        ]);
     });
 
     it('discovers public Totara howto resources for article and video filters without changing import format', async () => {
@@ -333,12 +362,48 @@ describe('LearnNowCrawlerService', () => {
         }));
     });
 
+    it('marks discovered candidates as skipped duplicates when their URL already exists in Knowledge Pool', async () => {
+        const { service, prisma } = makeService();
+        mockedAxios.get.mockResolvedValueOnce({
+            data: `
+              <html><body>
+                <a href="/mod/resource/view.php?id=9021">Allplan Technical Manual</a>
+              </body></html>
+            `,
+        } as any);
+        prisma.knowledgeSource.findFirst.mockResolvedValueOnce({ id: 'existing-source' });
+        prisma.$queryRawUnsafe.mockResolvedValue([]);
+
+        const result = await service.discover({
+            formats: ['technical_manual'],
+            maxPages: 1,
+            maxCandidates: 10,
+            dryRun: false,
+        });
+
+        expect(result).toMatchObject({ dryRun: false, discovered: 1, inserted: 0, skipped: 1 });
+        expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(
+            expect.stringContaining('SKIPPED_DUPLICATE'),
+            'allplan_learnnow',
+            'https://learnnow.allplan.com/mod/resource/view.php?id=9021',
+            'Allplan Technical Manual',
+            'PDF',
+            'en',
+            'uncategorized',
+            null,
+            'technical_manual',
+            'Knowledge source URL already exists',
+            'existing-source',
+            expect.stringContaining('"reasonCode":"PDF_VALIDATED_ON_IMPORT"'),
+        );
+    });
+
     it('imports an article candidate into the existing knowledge sync queue', async () => {
         const { service, prisma, pool } = makeService();
         prisma.$queryRawUnsafe.mockResolvedValueOnce([{
             id: '7c0ee310-32d5-47d0-bf19-286b8839b4db',
             source: 'allplan_learnnow',
-            source_url: 'https://learnnow.allplan.com/course/view.php?id=101',
+            source_url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=101&source=howto',
             title: 'License Server Access Rights',
             format: 'KNOWLEDGE_ARTICLE',
             status: 'PENDING_REVIEW',
@@ -357,7 +422,7 @@ describe('LearnNowCrawlerService', () => {
         expect(prisma.knowledgeSource.create).toHaveBeenCalledWith({
             data: expect.objectContaining({
                 type: 'URL',
-                url: 'https://learnnow.allplan.com/course/view.php?id=101',
+                url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=101&source=howto',
                 metadata: expect.objectContaining({
                     source: 'allplan_learnnow',
                     sourceType: 'knowledge_article',
@@ -374,7 +439,7 @@ describe('LearnNowCrawlerService', () => {
         prisma.$queryRawUnsafe.mockResolvedValueOnce([{
             id: '7c0ee310-32d5-47d0-bf19-286b8839b4db',
             source: 'allplan_learnnow',
-            source_url: 'https://learnnow.allplan.com/course/view.php?id=101',
+            source_url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=101&source=howto',
             title: 'License Server Access Rights',
             format: 'KNOWLEDGE_ARTICLE',
             status: 'PENDING_REVIEW',
