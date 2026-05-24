@@ -122,6 +122,29 @@ export const handlers = [
                 aiQuality: { summary: { total: 2, confidenceRate: 92, fallbackRate: 0, sourceLeaks: 0, languageRisks: 0 }, trend: [{ date: '2026-05-23', total: 2, confidence: 92, lowConfidence: 0 }] },
                 crm: { updatedToday: 2, failuresToday: 0, trend: [{ date: '2026-05-23', count: 2 }], recentChanges: [] },
                 knowledge: { activeSources: 10, syncFailuresToday: 0, embeddings: 120, genericCandidatesPending: 3, datasetSources: 5, trend: [{ date: '2026-05-23', count: 10 }] },
+                details: {
+                    tickets: {
+                        defaultKey: '7d',
+                        segments: [
+                            {
+                                key: '7d',
+                                intent: 'period',
+                                series: [{ date: '2026-05-23', created: 1, resolved: 0 }],
+                                metrics: { active: 1, unassigned: 0, sla: 0, resolved: 0 },
+                                records: [{ id: 'tik-1', title: 'SUP-00001 · Test ticket', description: 'Customer Corp / Technical Support / HIGH', href: '/tickets/tik-1', status: 'OPEN' }],
+                                decision: { level: 'ok', title: 'OK', description: 'OK' },
+                            },
+                            {
+                                key: 'department',
+                                intent: 'breakdown',
+                                series: [{ date: 'technical', count: 4 }],
+                                metrics: { active: 4, unassigned: 2, sla: 1, resolved: 0 },
+                                records: [{ id: 'dep-1', title: 'Technical Support', description: '4 active / 2 unassigned / 1 SLA', href: '/teams/departments/dep-1', status: 'SLA_RISK' }],
+                                decision: { level: 'warning', title: 'Risk', description: 'Risk' },
+                            },
+                        ],
+                    },
+                },
             },
             learnNow: { pendingReview: 2, byStatus: { IMPORTED: 5, SKIPPED_DUPLICATE: 1 }, byFormat: {}, recent: [] },
             liveFeed: [{ id: 'feed-1', type: 'ticket', title: 'SUP-00001', description: 'Test ticket', status: 'OPEN', at: new Date().toISOString(), href: '/tickets/tik-1' }],

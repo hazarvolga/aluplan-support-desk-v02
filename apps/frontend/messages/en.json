@@ -433,7 +433,14 @@
             "queue": "Queue",
             "sources": "Sources",
             "embeddings": "Embeddings",
-            "candidates": "Candidates"
+            "candidates": "Candidates",
+            "language_risks": "Language risks",
+            "source_leaks": "Source leaks",
+            "problem_count": "Problem traces",
+            "missing_email": "Missing email",
+            "unmatched": "Unmatched",
+            "failed": "Failed",
+            "review": "Review"
           },
           "details": {
             "open_queue": "open queue",
@@ -447,7 +454,8 @@
             "pending_jobs": "pending jobs",
             "active": "active",
             "vectors": "vectors",
-            "pending": "pending"
+            "pending": "pending",
+            "current_slice": "selected view"
           },
           "actions_map": {
             "open_tickets": "Open tickets",

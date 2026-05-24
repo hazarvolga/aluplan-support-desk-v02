@@ -40,14 +40,60 @@ type PulseId = 'tickets' | 'ai' | 'crm' | 'knowledge';
 type PulseMetric = { label: string; value: string | number; detail: string };
 type PulseRecord = { id: string; title: string; description: string; href: string };
 type PulseAction = { label: string; href: string };
+type PulseTool = { key: string; label: string; intent: 'period' | 'breakdown' | 'filter' };
+type PulseSegment = {
+    key: string;
+    intent: 'period' | 'breakdown' | 'filter';
+    series: Array<Record<string, string | number>>;
+    metrics: Record<string, number>;
+    records: PulseRecord[];
+};
 type PulseDetail = {
     metrics: PulseMetric[];
     records: PulseRecord[];
     actions: PulseAction[];
     series: number[];
-    tools: string[];
+    tools: PulseTool[];
+    activeTool: string;
     tags: string[];
     summary: { title: string; description: string };
+};
+
+const segmentToolLabelKeys: Record<string, string> = {
+    '24h': 'last_24_hours',
+    '7d': 'last_7_days',
+    '30d': 'last_30_days',
+    department: 'department_breakdown',
+    provider: 'provider',
+    language: 'language',
+    problem_traces: 'problem_traces',
+    failed: 'failed_only',
+    missing_email: 'missing_email',
+    account_matching: 'account_matching',
+    learnnow: 'learnnow',
+    review_required: 'review_required',
+    failed_imports: 'failed_imports',
+};
+
+const metricLabelKeys: Record<string, string> = {
+    active: 'active',
+    unassigned: 'unassigned',
+    sla: 'sla',
+    resolved: 'resolved',
+    confidence: 'confidence',
+    fallback: 'fallback',
+    languageRisks: 'language_risks',
+    sourceLeaks: 'source_leaks',
+    problemCount: 'problem_count',
+    updates: 'updated',
+    failures: 'failures',
+    missingEmail: 'missing_email',
+    unmatched: 'unmatched',
+    sources: 'sources',
+    embeddings: 'embeddings',
+    candidates: 'candidates',
+    failed: 'failed',
+    review: 'review',
 };
 
 const emptyOpsData = (): OpsDashboardData => ({
@@ -347,15 +393,17 @@ function PulseBand({ data, onSelect }: { data: OpsDashboardData; onSelect: (id: 
     );
 }
 
-function PulseDetailModal({ data, selected, onOpenChange }: {
+function PulseDetailModal({ data, selected, activeSegmentKey, onSegmentChange, onOpenChange }: {
     data: OpsDashboardData;
     selected: PulseId | null;
+    activeSegmentKey?: string;
+    onSegmentChange: (key: string) => void;
     onOpenChange: (open: boolean) => void;
 }) {
     const t = useTranslations('dashboard.ops.pulse');
     if (!selected) return null;
 
-    const detail = buildPulseDetail(data, selected, t);
+    const detail = buildPulseDetail(data, selected, t, activeSegmentKey);
 
     return (
         <Dialog open={Boolean(selected)} onOpenChange={onOpenChange}>
@@ -370,10 +418,16 @@ function PulseDetailModal({ data, selected, onOpenChange }: {
                 <ScrollArea className="max-h-[calc(92vh-88px)]">
                     <div className="space-y-4 p-4 sm:p-5">
                         <div className="flex flex-wrap gap-2">
-                            {detail.tools.map((tool, index) => (
-                                <span key={tool} className={`rounded border px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] ${index === 0 ? 'border-primary/35 bg-primary/10 text-primary' : 'border-white/10 bg-white/[0.025] text-muted-foreground'}`}>
-                                    {tool}
-                                </span>
+                            {detail.tools.map((tool) => (
+                                <button
+                                    key={tool.key}
+                                    type="button"
+                                    aria-pressed={tool.key === detail.activeTool}
+                                    onClick={() => onSegmentChange(tool.key)}
+                                    className={`rounded border px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] transition focus:outline-none focus:ring-1 focus:ring-primary/60 ${tool.key === detail.activeTool ? 'border-primary/35 bg-primary/10 text-primary' : 'border-white/10 bg-white/[0.025] text-muted-foreground hover:border-primary/25 hover:text-white'}`}
+                                >
+                                    {tool.label}
+                                </button>
                             ))}
                         </div>
                         <div className="grid gap-4 lg:grid-cols-[1.25fr_0.85fr]">
@@ -449,7 +503,7 @@ function PulseDetailModal({ data, selected, onOpenChange }: {
     );
 }
 
-function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: string, values?: Record<string, string | number>) => string): PulseDetail {
+function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: string, values?: Record<string, string | number>) => string, activeSegmentKey?: string): PulseDetail {
     const recordMap: Record<PulseId, PulseRecord[]> = {
         tickets: data.activeDesk.tickets.slice(0, 8).map((ticket) => ({
             id: ticket.id,
@@ -476,7 +530,14 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
             href: '/knowledge-pool',
         })),
     };
-    const records = recordMap[selected];
+    const detailGroup = data.pulse.details?.[selected];
+    const backendSegments = (detailGroup?.segments ?? []) as PulseSegment[];
+    const fallbackActiveKey: Record<PulseId, string> = { tickets: '7d', ai: '7d', crm: '24h', knowledge: '7d' };
+    const activeKey = backendSegments.some((segment) => segment.key === activeSegmentKey)
+        ? activeSegmentKey!
+        : detailGroup?.defaultKey ?? fallbackActiveKey[selected];
+    const activeSegment = backendSegments.find((segment) => segment.key === activeKey);
+    const records = activeSegment?.records?.length ? activeSegment.records : recordMap[selected];
 
     const metricMap: Record<PulseId, PulseMetric[]> = {
         tickets: [
@@ -504,7 +565,13 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
             { label: t('modal.metrics.failures'), value: data.pulse.knowledge.syncFailuresToday ?? 0, detail: t('modal.details.today') },
         ],
     };
-    const metrics = metricMap[selected];
+    const metrics = activeSegment
+        ? Object.entries(activeSegment.metrics).map(([key, value]) => ({
+            label: t(`modal.metrics.${metricLabelKeys[key] ?? key}`),
+            value: key === 'confidence' || key === 'fallback' ? `${value}%` : key === 'embeddings' ? formatNumber(value) : value,
+            detail: t('modal.details.current_slice'),
+        }))
+        : metricMap[selected];
 
     const actionMap: Record<PulseId, PulseAction[]> = {
         tickets: [
@@ -525,13 +592,39 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
         ],
     };
     const actions = actionMap[selected];
-    const toolsMap: Record<PulseId, string[]> = {
-        tickets: [t('modal.tools.last_7_days'), t('modal.tools.last_24_hours'), t('modal.tools.last_30_days'), t('modal.tools.department_breakdown')],
-        ai: [t('modal.tools.last_7_days'), t('modal.tools.provider'), t('modal.tools.language'), t('modal.tools.problem_traces')],
-        crm: [t('modal.tools.last_24_hours'), t('modal.tools.failed_only'), t('modal.tools.missing_email'), t('modal.tools.account_matching')],
-        knowledge: [t('modal.tools.last_7_days'), t('modal.tools.learnnow'), t('modal.tools.review_required'), t('modal.tools.failed_imports')],
+    const fallbackToolsMap: Record<PulseId, PulseTool[]> = {
+        tickets: [
+            { key: '7d', intent: 'period', label: t('modal.tools.last_7_days') },
+            { key: '24h', intent: 'period', label: t('modal.tools.last_24_hours') },
+            { key: '30d', intent: 'period', label: t('modal.tools.last_30_days') },
+            { key: 'department', intent: 'breakdown', label: t('modal.tools.department_breakdown') },
+        ],
+        ai: [
+            { key: '7d', intent: 'period', label: t('modal.tools.last_7_days') },
+            { key: 'provider', intent: 'breakdown', label: t('modal.tools.provider') },
+            { key: 'language', intent: 'breakdown', label: t('modal.tools.language') },
+            { key: 'problem_traces', intent: 'filter', label: t('modal.tools.problem_traces') },
+        ],
+        crm: [
+            { key: '24h', intent: 'period', label: t('modal.tools.last_24_hours') },
+            { key: 'failed', intent: 'filter', label: t('modal.tools.failed_only') },
+            { key: 'missing_email', intent: 'filter', label: t('modal.tools.missing_email') },
+            { key: 'account_matching', intent: 'filter', label: t('modal.tools.account_matching') },
+        ],
+        knowledge: [
+            { key: '7d', intent: 'period', label: t('modal.tools.last_7_days') },
+            { key: 'learnnow', intent: 'filter', label: t('modal.tools.learnnow') },
+            { key: 'review_required', intent: 'filter', label: t('modal.tools.review_required') },
+            { key: 'failed_imports', intent: 'filter', label: t('modal.tools.failed_imports') },
+        ],
     };
-    const tools = toolsMap[selected];
+    const tools = backendSegments.length
+        ? backendSegments.map((segment) => ({
+            key: segment.key,
+            intent: segment.intent,
+            label: t(`modal.tools.${segmentToolLabelKeys[segment.key] ?? segment.key}`),
+        }))
+        : fallbackToolsMap[selected];
     const tags = metrics.map((metric) => `${metric.label}: ${metric.value}`);
 
     const seriesMap: Record<PulseId, number[]> = {
@@ -540,7 +633,7 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
         crm: (data.pulse.crm.trend ?? []).map((point: any) => Number(point.count ?? 0)),
         knowledge: (data.pulse.knowledge.trend ?? []).map((point: any) => Number(point.count ?? 0)),
     };
-    const series = seriesMap[selected];
+    const series = activeSegment ? seriesValuesFromPoints(activeSegment.series) : seriesMap[selected];
     const summaryMap: Record<PulseId, { title: string; description: string }> = {
         tickets: {
             title: t('modal.summaries.tickets.title'),
@@ -559,9 +652,50 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
             description: t('modal.summaries.knowledge.description', { sources: data.pulse.knowledge.activeSources ?? 0, candidates: data.pulse.knowledge.genericCandidatesPending ?? 0 }),
         },
     };
-    const summary = summaryMap[selected];
+    const summary = {
+        title: summaryMap[selected].title,
+        description: buildPulseSummaryDescription(selected, metrics, t),
+    };
 
-    return { metrics, records, actions, series, tools, tags, summary };
+    return { metrics, records, actions, series, tools, activeTool: activeKey, tags, summary };
+}
+
+function seriesValuesFromPoints(points: Array<Record<string, string | number>>) {
+    const numericKeys = ['created', 'active', 'resolved', 'confidence', 'high', 'low', 'count', 'total'];
+    return points.map((point) => {
+        const key = numericKeys.find((candidate) => Number.isFinite(Number(point[candidate])));
+        return key ? Number(point[key]) : 0;
+    });
+}
+
+function metricValue(metrics: PulseMetric[], label: string) {
+    return metrics.find((metric) => metric.label === label)?.value ?? 0;
+}
+
+function buildPulseSummaryDescription(selected: PulseId, metrics: PulseMetric[], t: (key: string, values?: Record<string, string | number>) => string) {
+    if (selected === 'tickets') {
+        return t('modal.summaries.tickets.description', {
+            active: metricValue(metrics, t('modal.metrics.active')),
+            unassigned: metricValue(metrics, t('modal.metrics.unassigned')),
+            sla: metricValue(metrics, t('modal.metrics.sla')),
+        });
+    }
+    if (selected === 'ai') {
+        return t('modal.summaries.ai.description', {
+            confidence: String(metricValue(metrics, t('modal.metrics.confidence'))).replace('%', ''),
+            fallback: String(metricValue(metrics, t('modal.metrics.fallback'))).replace('%', ''),
+        });
+    }
+    if (selected === 'crm') {
+        return t('modal.summaries.crm.description', {
+            updates: metricValue(metrics, t('modal.metrics.updated')),
+            failures: metricValue(metrics, t('modal.metrics.failures')),
+        });
+    }
+    return t('modal.summaries.knowledge.description', {
+        sources: metricValue(metrics, t('modal.metrics.sources')),
+        candidates: metricValue(metrics, t('modal.metrics.candidates')),
+    });
 }
 
 function LargeTrend({ values }: { values: number[] }) {
@@ -908,6 +1042,12 @@ export default function DashboardClient() {
     const [opsData, setOpsData] = useState<OpsDashboardData | null>(null);
     const [drawer, setDrawer] = useState<DrawerMode>(null);
     const [selectedPulse, setSelectedPulse] = useState<PulseId | null>(null);
+    const [selectedPulseSegment, setSelectedPulseSegment] = useState<Record<PulseId, string>>({
+        tickets: '7d',
+        ai: '7d',
+        crm: '24h',
+        knowledge: '7d',
+    });
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -1002,7 +1142,16 @@ export default function DashboardClient() {
             <TopDrawer mode={drawer} data={effectiveSystem} onClose={() => setDrawer(null)} />
             <OpsStatGrid data={data} />
             <PulseBand data={data} onSelect={setSelectedPulse} />
-            <PulseDetailModal data={data} selected={selectedPulse} onOpenChange={(open) => !open && setSelectedPulse(null)} />
+            <PulseDetailModal
+                data={data}
+                selected={selectedPulse}
+                activeSegmentKey={selectedPulse ? selectedPulseSegment[selectedPulse] : undefined}
+                onSegmentChange={(key) => {
+                    if (!selectedPulse) return;
+                    setSelectedPulseSegment((current) => ({ ...current, [selectedPulse]: key }));
+                }}
+                onOpenChange={(open) => !open && setSelectedPulse(null)}
+            />
 
             <div className="grid items-start gap-4 xl:grid-cols-[minmax(360px,430px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(390px,430px)_minmax(0,1fr)]">
                 <div className="space-y-4 xl:self-start">

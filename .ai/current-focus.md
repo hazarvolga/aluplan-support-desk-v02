@@ -12,6 +12,10 @@
   - Dashboard i18n coverage is complete for Turkish, English, and German.
   - Layout is mobile-first: KPI and pulse cards stack on small screens, the live ops column drops below the header, and fixed-height panels use internal scroll instead of page overflow.
   - Phase 3 made pulse cards actionable: each pulse opens a responsive real-data modal with larger trend chart, linked records, and operational action links.
+  - Live modal follow-up is in progress:
+    - modal segment controls are no longer decorative; ticket, AI, CRM, and Knowledge pulse modals read real `pulse.details` segments from the backend.
+    - CRM modal records suppress raw CRM payload snippets and use readable person/company/change summaries.
+    - frontend tests now cover that selecting a modal segment changes the displayed records.
   - Phase 4 added controlled refresh: manual refresh plus 60-second background polling for staff/admin dashboards, with visible last-updated state and no customer-side polling.
   - Phase 5 final verification passed backend tests/typecheck, frontend typecheck/build, dashboard unit tests, i18n check, and diff hygiene.
   - Deployment should include both services: backend first for the new endpoint, then frontend for the new UI.

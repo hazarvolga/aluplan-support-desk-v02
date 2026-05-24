@@ -118,6 +118,17 @@ export type OpsDashboardData = {
         aiQuality: { summary: Record<string, number>; trend: Array<Record<string, number | string>> };
         crm: Record<string, any>;
         knowledge: Record<string, any>;
+        details?: Record<string, {
+            defaultKey: string;
+            segments: Array<{
+                key: string;
+                intent: 'period' | 'breakdown' | 'filter';
+                series: Array<Record<string, number | string>>;
+                metrics: Record<string, number>;
+                records: Array<{ id: string; title: string; description: string; href: string; status?: string | null; meta?: Record<string, any> }>;
+                decision: { level: 'ok' | 'info' | 'warning' | 'critical'; title: string; description: string };
+            }>;
+        }>;
     };
     learnNow: Record<string, any>;
     liveFeed: Array<{ id: string; type: string; title: string; description?: string; status?: string; at: string; href: string }>;

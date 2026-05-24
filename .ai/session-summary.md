@@ -3340,3 +3340,26 @@ Maintenance rule:
 
 - Backend deploy is required for the ANN-quality synthesis behavior.
 - Frontend deploy is required for the new synthesis wait UX and translations.
+
+## Follow-up - 2026-05-24 Operations Dashboard Modal Filters
+
+### What changed
+
+- Dashboard pulse modals now consume real backend `pulse.details` segment data instead of rendering decorative filter labels.
+- Ticket, AI, CRM, and Knowledge modal controls are clickable segment buttons with active state and selected-slice metrics, trend points, records, and summaries.
+- Backend ops dashboard now returns segment payloads for ticket 7d/24h/30d/department views, AI provider/language/problem-trace views, CRM failed/missing-email/account-matching views, and Knowledge LearnNow/review/failed-import views.
+- CRM dashboard records now avoid exposing raw `rawCrmPayload` snippets in modal summaries; CRM payload changes are shown as a readable update label.
+- Frontend regression coverage now verifies that a pulse modal segment click changes the rendered records instead of staying decorative.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- ops-dashboard.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend exec vitest run 'src/app/[locale]/(dashboard)/dashboard/DashboardClient.spec.tsx'` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+
+### Deployment note
+
+- Backend deploy is required for the new `pulse.details` data contract.
+- Frontend deploy is required for clickable modal segment controls and localized metric labels.

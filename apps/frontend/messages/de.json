@@ -433,7 +433,14 @@
             "queue": "Queue",
             "sources": "Quellen",
             "embeddings": "Embeddings",
-            "candidates": "Kandidaten"
+            "candidates": "Kandidaten",
+            "language_risks": "Sprachrisiken",
+            "source_leaks": "Quellen-Leaks",
+            "problem_count": "Problem-Traces",
+            "missing_email": "Fehlende E-Mail",
+            "unmatched": "Nicht zugeordnet",
+            "failed": "Failed",
+            "review": "Review"
           },
           "details": {
             "open_queue": "offene Queue",
@@ -447,7 +454,8 @@
             "pending_jobs": "wartende Jobs",
             "active": "aktiv",
             "vectors": "Vektoren",
-            "pending": "wartend"
+            "pending": "wartend",
+            "current_slice": "ausgewählte Ansicht"
           },
           "actions_map": {
             "open_tickets": "Tickets öffnen",

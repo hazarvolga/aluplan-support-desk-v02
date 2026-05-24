@@ -433,7 +433,14 @@
             "queue": "Kuyruk",
             "sources": "Kaynak",
             "embeddings": "Embedding",
-            "candidates": "Aday"
+            "candidates": "Aday",
+            "language_risks": "Dil riski",
+            "source_leaks": "Kaynak sızıntısı",
+            "problem_count": "Problemli trace",
+            "missing_email": "Eksik e-posta",
+            "unmatched": "Eşleşmeyen",
+            "failed": "Failed",
+            "review": "Review"
           },
           "details": {
             "open_queue": "açık kuyruk",
@@ -447,7 +454,8 @@
             "pending_jobs": "bekleyen job",
             "active": "aktif",
             "vectors": "vektör",
-            "pending": "bekleyen"
+            "pending": "bekleyen",
+            "current_slice": "seçili görünüm"
           },
           "actions_map": {
             "open_tickets": "Biletleri aç",

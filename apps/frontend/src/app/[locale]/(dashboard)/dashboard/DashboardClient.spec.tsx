@@ -100,6 +100,24 @@ describe('DashboardClient', () => {
         expect(screen.getAllByText(/SUP-00001/i).length).toBeGreaterThan(0);
     });
 
+    it('switches pulse modal segments instead of rendering decorative filters', async () => {
+        (useAuth as any).mockReturnValue({
+            user: { fullName: 'Admin User', roles: ['admin'] }
+        });
+
+        render(<DashboardClient />);
+
+        await waitFor(() => {
+            expect(screen.getByText(/tickets.title/i)).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText(/tickets.title/i).closest('button')!);
+        fireEvent.click(screen.getByRole('button', { name: /department_breakdown/i }));
+
+        expect(screen.getByText(/Technical Support/i)).toBeInTheDocument();
+        expect(screen.getByText(/4 active \/ 2 unassigned \/ 1 SLA/i)).toBeInTheDocument();
+    });
+
     it('allows manual refresh of the operations payload', async () => {
         (useAuth as any).mockReturnValue({
             user: { fullName: 'Admin User', roles: ['admin'] }

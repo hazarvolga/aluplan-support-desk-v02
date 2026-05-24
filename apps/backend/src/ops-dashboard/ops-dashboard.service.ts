@@ -17,6 +17,24 @@ type TrendPoint = {
     [key: string]: string | number;
 };
 
+type OpsModalRecord = {
+    id: string;
+    title: string;
+    description: string;
+    href: string;
+    status?: string | null;
+    meta?: Record<string, string | number | null>;
+};
+
+type OpsModalSegment = {
+    key: string;
+    intent: 'period' | 'breakdown' | 'filter';
+    series: TrendPoint[];
+    metrics: Record<string, number>;
+    records: OpsModalRecord[];
+    decision: { level: 'ok' | 'info' | 'warning' | 'critical'; title: string; description: string };
+};
+
 type OpsDashboardRequest = {
     requesterRole?: RoleLike;
     days?: number;
@@ -74,6 +92,7 @@ export class OpsDashboardService {
             queueSummary,
             systemSummary,
             liveFeed,
+            modalDetails,
         ] = await Promise.all([
             this.getTicketKpis(todayStart),
             this.getTicketTrend(trendStart, todayStart, days),
@@ -88,6 +107,7 @@ export class OpsDashboardService {
             this.getQueueSummary(),
             this.getSystemSummary(thirtyDaysAgo),
             this.getLiveFeed(),
+            this.getPulseModalDetails(todayStart, trendStart, days),
         ]);
 
         const decision = this.buildDecision(ticketKpis, aiQuality, crmSummary, queueSummary, systemSummary);
@@ -122,10 +142,26 @@ export class OpsDashboardService {
                 },
                 crm: crmSummary,
                 knowledge: knowledgeSummary,
+                details: modalDetails,
             },
             learnNow: learnNowSummary,
             liveFeed,
         };
+    }
+
+    private async getPulseModalDetails(todayStart: Date, trendStart: Date, days: number) {
+        const now = new Date();
+        const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const thirtyDayStart = this.addDays(todayStart, -29);
+
+        const [tickets, ai, crm, knowledge] = await Promise.all([
+            this.getTicketModalSegments(todayStart, trendStart, thirtyDayStart, last24h, days),
+            this.getAiModalSegments(trendStart, thirtyDayStart, days),
+            this.getCrmModalSegments(todayStart, trendStart, last24h, days),
+            this.getKnowledgeModalSegments(todayStart, trendStart, days),
+        ]);
+
+        return { tickets, ai, crm, knowledge };
     }
 
     private async getTicketKpis(todayStart: Date) {
@@ -609,6 +645,441 @@ export class OpsDashboardService {
         });
     }
 
+    private async getTicketModalSegments(todayStart: Date, trendStart: Date, thirtyDayStart: Date, last24h: Date, days: number) {
+        const [last7Trend, last24Trend, last30Trend, departmentTrend, last7Records, last24Records, last30Records, departmentRows] = await Promise.all([
+            this.getTicketTrend(trendStart, todayStart, days),
+            this.getHourlyTicketTrend(last24h),
+            this.getTicketTrend(thirtyDayStart, todayStart, 30),
+            this.getTicketDepartmentTrend(),
+            this.getTicketRecords({ createdAt: { gte: trendStart } }, 8),
+            this.getTicketRecords({ createdAt: { gte: last24h } }, 8),
+            this.getTicketRecords({ createdAt: { gte: thirtyDayStart } }, 8),
+            this.getTicketDepartmentRows(),
+        ]);
+
+        return {
+            defaultKey: '7d',
+            segments: [
+                this.buildTicketSegment('7d', 'period', last7Trend, last7Records),
+                this.buildTicketSegment('24h', 'period', last24Trend, last24Records),
+                this.buildTicketSegment('30d', 'period', last30Trend, last30Records),
+                this.buildTicketSegment('department', 'breakdown', departmentTrend, departmentRows),
+            ],
+        };
+    }
+
+    private async getAiModalSegments(trendStart: Date, thirtyDayStart: Date, days: number) {
+        const [last7Trend, providerRows, languageRows, problemRows, summary] = await Promise.all([
+            this.getAiTrend(trendStart, this.startOfDay(new Date()), days),
+            this.getAiProviderRows(thirtyDayStart),
+            this.getAiLanguageRows(thirtyDayStart),
+            this.getProblemAiTraceRows(thirtyDayStart),
+            this.getAiQuality(thirtyDayStart),
+        ]);
+
+        return {
+            defaultKey: '7d',
+            segments: [
+                this.buildAiSegment('7d', 'period', last7Trend, this.aiRowsToRecords(problemRows.slice(0, 5)), summary),
+                this.buildAiSegment('provider', 'breakdown', this.rowsToTrend(providerRows), providerRows, summary),
+                this.buildAiSegment('language', 'breakdown', this.rowsToTrend(languageRows), languageRows, summary),
+                this.buildAiSegment('problem_traces', 'filter', this.rowsToTrend(problemRows), this.aiRowsToRecords(problemRows), summary),
+            ],
+        };
+    }
+
+    private async getCrmModalSegments(todayStart: Date, trendStart: Date, last24h: Date, days: number) {
+        const [trend, allRecent, failedRecent, missingEmailRecent, accountMismatchRecent] = await Promise.all([
+            this.getDailyCountTrend('crm_change_logs', 'changed_at', trendStart, days),
+            this.getCrmChangeRecords({ changedAt: { gte: last24h } }, 12),
+            this.getCrmChangeRecords({ changedAt: { gte: trendStart }, status: { not: 'SUCCESS' } }, 12),
+            this.getCrmChangeRecords({ changedAt: { gte: trendStart }, entityType: 'contact', fieldName: { in: ['email', 'emailaddress1', 'rawCrmPayload'] } }, 12),
+            this.getCrmChangeRecords({ changedAt: { gte: trendStart }, entityType: 'contact', localRecordId: null }, 12),
+        ]);
+
+        return {
+            defaultKey: '24h',
+            segments: [
+                this.buildCrmSegment('24h', 'period', trend, allRecent, todayStart),
+                this.buildCrmSegment('failed', 'filter', trend, failedRecent, todayStart),
+                this.buildCrmSegment('missing_email', 'filter', trend, missingEmailRecent.filter((item) => !item.meta?.email || String(item.meta?.fieldName ?? '').toLowerCase().includes('email')), todayStart),
+                this.buildCrmSegment('account_matching', 'filter', trend, accountMismatchRecent, todayStart),
+            ],
+        };
+    }
+
+    private async getKnowledgeModalSegments(todayStart: Date, trendStart: Date, days: number) {
+        const [trend, learnNow, reviewRequired, failedImports, summary] = await Promise.all([
+            this.getDailyCountTrend('knowledge_sources', 'created_at', trendStart, days),
+            this.getCrawlerRecords({ source: 'learnnow' }, 10),
+            this.getCrawlerRecords({ status: CrawlCandidateStatus.PENDING_REVIEW }, 10),
+            this.getCrawlerRecords({ status: CrawlCandidateStatus.FAILED }, 10),
+            this.getKnowledgeSummary(todayStart, trendStart, days),
+        ]);
+
+        return {
+            defaultKey: '7d',
+            segments: [
+                this.buildKnowledgeSegment('7d', 'period', trend, learnNow.slice(0, 5), summary),
+                this.buildKnowledgeSegment('learnnow', 'filter', this.rowsToTrend(learnNow), learnNow, summary),
+                this.buildKnowledgeSegment('review_required', 'filter', this.rowsToTrend(reviewRequired), reviewRequired, summary),
+                this.buildKnowledgeSegment('failed_imports', 'filter', this.rowsToTrend(failedImports), failedImports, summary),
+            ],
+        };
+    }
+
+    private buildTicketSegment(key: string, intent: OpsModalSegment['intent'], series: TrendPoint[], records: OpsModalRecord[]): OpsModalSegment {
+        const activeStatusSet = new Set<string>(ACTIVE_TICKET_STATUSES);
+        const active = records.filter((record) => record.status && activeStatusSet.has(String(record.status))).length;
+        const unassigned = records.filter((record) => String(record.meta?.assignee ?? '') === 'unassigned').length;
+        const sla = records.filter((record) => Number(record.meta?.slaBreached ?? 0) > 0).length;
+        const resolved = records.filter((record) => record.status === TicketStatus.RESOLVED).length;
+
+        return {
+            key,
+            intent,
+            series,
+            metrics: { active, unassigned, sla, resolved },
+            records,
+            decision: {
+                level: sla > 0 ? 'critical' : unassigned > 0 ? 'warning' : 'ok',
+                title: sla > 0 ? 'SLA risk is visible in this slice.' : unassigned > 0 ? 'Assignment pressure exists in this slice.' : 'Ticket slice is operationally clean.',
+                description: `${active} active, ${unassigned} unassigned, ${sla} SLA risk, ${resolved} resolved.`,
+            },
+        };
+    }
+
+    private buildAiSegment(key: string, intent: OpsModalSegment['intent'], series: TrendPoint[], records: OpsModalRecord[], summary: any): OpsModalSegment {
+        const problemCount = records.filter((record) => record.status === 'LOW' || record.status === 'NO_MATCH' || record.meta?.languageRisk || record.meta?.sourceLeak).length;
+
+        return {
+            key,
+            intent,
+            series,
+            metrics: {
+                confidence: summary.confidenceRate ?? 0,
+                fallback: summary.fallbackRate ?? 0,
+                languageRisks: summary.languageRisks ?? 0,
+                sourceLeaks: summary.sourceLeaks ?? 0,
+                problemCount,
+            },
+            records,
+            decision: {
+                level: problemCount > 0 || (summary.fallbackRate ?? 0) > 30 ? 'warning' : 'ok',
+                title: problemCount > 0 ? 'Problem traces need admin review.' : 'AI quality signal is stable.',
+                description: `Confidence ${summary.confidenceRate ?? 0}%, fallback ${summary.fallbackRate ?? 0}%, ${problemCount} problematic traces in this view.`,
+            },
+        };
+    }
+
+    private buildCrmSegment(key: string, intent: OpsModalSegment['intent'], series: TrendPoint[], records: OpsModalRecord[], todayStart: Date): OpsModalSegment {
+        const failures = records.filter((record) => record.status !== 'SUCCESS').length;
+        const updates = records.filter((record) => new Date(String(record.meta?.changedAt ?? 0)).getTime() >= todayStart.getTime()).length;
+        const missingEmail = records.filter((record) => !record.meta?.email).length;
+        const unmatched = records.filter((record) => record.href === '/customers/crm').length;
+
+        return {
+            key,
+            intent,
+            series,
+            metrics: { updates, failures, missingEmail, unmatched },
+            records,
+            decision: {
+                level: failures > 0 || unmatched > 0 ? 'warning' : 'ok',
+                title: failures > 0 ? 'CRM failures need attention.' : unmatched > 0 ? 'Some CRM records are not linked to portal profiles.' : 'CRM sync looks clean in this slice.',
+                description: `${records.length} records, ${failures} failures, ${missingEmail} missing emails, ${unmatched} unmatched portal links.`,
+            },
+        };
+    }
+
+    private buildKnowledgeSegment(key: string, intent: OpsModalSegment['intent'], series: TrendPoint[], records: OpsModalRecord[], summary: any): OpsModalSegment {
+        const failed = records.filter((record) => record.status === CrawlCandidateStatus.FAILED).length;
+        const review = records.filter((record) => record.status === CrawlCandidateStatus.PENDING_REVIEW).length;
+
+        return {
+            key,
+            intent,
+            series,
+            metrics: {
+                sources: summary.activeSources ?? 0,
+                embeddings: summary.embeddings ?? 0,
+                candidates: summary.genericCandidatesPending ?? 0,
+                failed,
+                review,
+            },
+            records,
+            decision: {
+                level: failed > 0 ? 'warning' : review > 0 ? 'info' : 'ok',
+                title: failed > 0 ? 'Failed imports are blocking the knowledge flow.' : review > 0 ? 'Review queue is waiting for operator decision.' : 'Knowledge flow is stable.',
+                description: `${records.length} records, ${review} waiting for review, ${failed} failed imports.`,
+            },
+        };
+    }
+
+    private async getTicketRecords(where: Record<string, any>, take: number): Promise<OpsModalRecord[]> {
+        const rows = await this.prisma.ticket.findMany({
+            where: { deletedAt: null, ...where },
+            orderBy: { createdAt: 'desc' },
+            take,
+            select: {
+                id: true,
+                ticketNumber: true,
+                subject: true,
+                status: true,
+                priority: true,
+                createdAt: true,
+                isSlaBreached: true,
+                creator: { select: { fullName: true, customerProfile: { select: { companyName: true } } } },
+                assignee: { select: { fullName: true } },
+                department: { select: { name: true } },
+            },
+        });
+
+        return rows.map((ticket) => ({
+            id: ticket.id,
+            title: `${ticket.ticketNumber} · ${ticket.subject}`,
+            description: [ticket.creator?.customerProfile?.companyName || ticket.creator?.fullName, ticket.department?.name, ticket.priority].filter(Boolean).join(' / '),
+            href: `/tickets/${ticket.id}`,
+            status: ticket.status,
+            meta: {
+                assignee: ticket.assignee?.fullName ?? 'unassigned',
+                slaBreached: ticket.isSlaBreached ? 1 : 0,
+                createdAt: ticket.createdAt.toISOString(),
+            },
+        }));
+    }
+
+    private async getTicketDepartmentRows(): Promise<OpsModalRecord[]> {
+        const rows = await this.prisma.$queryRaw<Array<{ department_id: string | null; department_name: string | null; active: number; unassigned: number; sla: number }>>`
+            SELECT
+                t.department_id,
+                COALESCE(d.name, 'Unassigned') AS department_name,
+                COUNT(*)::int AS active,
+                SUM(CASE WHEN t.assigned_to IS NULL THEN 1 ELSE 0 END)::int AS unassigned,
+                SUM(CASE WHEN t.is_sla_breached THEN 1 ELSE 0 END)::int AS sla
+            FROM tickets t
+            LEFT JOIN departments d ON d.id = t.department_id
+            WHERE t.deleted_at IS NULL
+              AND t.status IN ('NEW', 'OPEN', 'IN_PROGRESS', 'PENDING_CUSTOMER', 'PENDING_CUSTOMER_REVIEW')
+            GROUP BY t.department_id, d.name
+            ORDER BY active DESC
+            LIMIT 10
+        `;
+
+        return rows.map((row, index) => ({
+            id: row.department_id ?? `department-${index}`,
+            title: row.department_name ?? 'Unassigned',
+            description: `${this.toNumber(row.active)} active / ${this.toNumber(row.unassigned)} unassigned / ${this.toNumber(row.sla)} SLA`,
+            href: row.department_id ? `/teams/departments/${row.department_id}` : '/tickets?assignedTo=unassigned',
+            status: this.toNumber(row.sla) > 0 ? 'SLA_RISK' : this.toNumber(row.unassigned) > 0 ? 'ASSIGNMENT_RISK' : 'OK',
+            meta: { assignee: this.toNumber(row.unassigned) > 0 ? 'unassigned' : 'assigned', slaBreached: this.toNumber(row.sla) },
+        }));
+    }
+
+    private async getAiProviderRows(start: Date): Promise<OpsModalRecord[]> {
+        const rows = await this.prisma.aiInteraction.groupBy({
+            by: ['provider', 'model'],
+            where: { createdAt: { gte: start } },
+            _count: { id: true },
+            orderBy: { _count: { id: 'desc' } },
+            take: 8,
+        });
+
+        return rows.map((row, index) => ({
+            id: `provider-${row.provider ?? 'unknown'}-${row.model ?? index}`,
+            title: row.provider ?? 'unknown',
+            description: `${row.model ?? 'unknown'} / ${row._count.id} request`,
+            href: '/admin/ai-health',
+            status: 'PROVIDER',
+            meta: { count: row._count.id },
+        }));
+    }
+
+    private async getAiLanguageRows(start: Date): Promise<OpsModalRecord[]> {
+        const rows = await this.prisma.aiInteraction.findMany({
+            where: { createdAt: { gte: start } },
+            orderBy: { createdAt: 'desc' },
+            take: 200,
+            select: { id: true, userContext: true },
+        });
+        const counts = new Map<string, number>();
+        rows.forEach((row) => {
+            const context = (row.userContext ?? {}) as Record<string, any>;
+            const language = String(context.routeLocale || context.profileLanguage || context.language || 'unknown').toLowerCase();
+            counts.set(language, (counts.get(language) ?? 0) + 1);
+        });
+
+        return Array.from(counts.entries()).map(([language, count]) => ({
+            id: `language-${language}`,
+            title: language.toUpperCase(),
+            description: `${count} AI interaction`,
+            href: `/admin/ai-health?language=${encodeURIComponent(language)}`,
+            status: 'LANGUAGE',
+            meta: { count },
+        }));
+    }
+
+    private async getProblemAiTraceRows(start: Date): Promise<any[]> {
+        const rows = await this.prisma.aiInteraction.findMany({
+            where: {
+                createdAt: { gte: start },
+                OR: [
+                    { confidenceBand: 'LOW' },
+                    { confidenceBand: null },
+                    { responseGenerated: { contains: 'Source:', mode: 'insensitive' } },
+                    { userContext: { path: ['languageRisk'], equals: true } },
+                ],
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 12,
+            select: {
+                id: true,
+                userQuery: true,
+                confidenceBand: true,
+                provider: true,
+                model: true,
+                responseGenerated: true,
+                userContext: true,
+                createdAt: true,
+            },
+        });
+
+        return rows.map((row) => {
+            const context = (row.userContext ?? {}) as Record<string, any>;
+            const sourceLeak = Boolean(row.responseGenerated?.toLowerCase().includes('source:'));
+            return {
+                id: row.id,
+                title: this.shortenText(row.userQuery) || 'AI trace',
+                description: [row.provider, row.model, context.routeLocale || context.profileLanguage].filter(Boolean).join(' / '),
+                href: '/admin/ai-health',
+                status: row.confidenceBand ?? 'NO_MATCH',
+                meta: {
+                    languageRisk: context.languageRisk ? 1 : 0,
+                    sourceLeak: sourceLeak ? 1 : 0,
+                    count: 1,
+                    createdAt: row.createdAt.toISOString(),
+                },
+            };
+        });
+    }
+
+    private aiRowsToRecords(rows: any[]): OpsModalRecord[] {
+        return rows.map((row) => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            href: row.href,
+            status: row.status,
+            meta: row.meta,
+        }));
+    }
+
+    private async getCrmChangeRecords(where: Record<string, any>, take: number): Promise<OpsModalRecord[]> {
+        const rows = await this.prisma.crmChangeLog.findMany({
+            where,
+            orderBy: { changedAt: 'desc' },
+            take,
+            select: {
+                id: true,
+                entityType: true,
+                entityId: true,
+                localRecordId: true,
+                fieldName: true,
+                status: true,
+                changedAt: true,
+                oldValue: true,
+                newValue: true,
+                source: true,
+            },
+        });
+        const enriched = await this.enrichCrmChanges(rows);
+
+        return enriched.map((change: any) => ({
+            id: change.id,
+            title: change.displayName,
+            description: [change.companyName, change.email, change.changeSummary, change.status].filter(Boolean).join(' / '),
+            href: change.href,
+            status: change.status,
+            meta: {
+                entityType: change.entityType,
+                entityId: change.entityId,
+                fieldName: change.fieldLabel,
+                changedAt: change.changedAt,
+                email: change.email ?? null,
+            },
+        }));
+    }
+
+    private async getCrawlerRecords(where: Record<string, any>, take: number): Promise<OpsModalRecord[]> {
+        const rows = await this.prisma.crawlCandidate.findMany({
+            where,
+            orderBy: { updatedAt: 'desc' },
+            take,
+            select: { id: true, title: true, source: true, status: true, format: true, language: true, sourceUrl: true, updatedAt: true },
+        });
+
+        return rows.map((candidate) => ({
+            id: candidate.id,
+            title: candidate.title,
+            description: [candidate.source, candidate.format, candidate.language, candidate.sourceUrl].filter(Boolean).join(' / '),
+            href: '/knowledge-pool?tab=candidates',
+            status: candidate.status,
+            meta: { count: 1, updatedAt: candidate.updatedAt.toISOString() },
+        }));
+    }
+
+    private rowsToTrend(rows: Array<OpsModalRecord | any>): TrendPoint[] {
+        if (rows.length === 0) return this.normalizeTrend([], 7, { count: 0 });
+        return rows.slice(0, 12).map((row, index) => ({
+            date: String(row.meta?.createdAt ?? row.meta?.updatedAt ?? row.id ?? index).slice(0, 10),
+            label: row.title ?? String(index + 1),
+            count: this.toNumber(row.meta?.count ?? 1),
+        }));
+    }
+
+    private async getHourlyTicketTrend(start: Date): Promise<TrendPoint[]> {
+        const rows = await this.prisma.$queryRaw<Array<{ date: string; created: number; resolved: number }>>`
+            SELECT
+                to_char(hour, 'YYYY-MM-DD HH24:00') AS date,
+                (
+                    SELECT COUNT(*)::int FROM tickets
+                    WHERE deleted_at IS NULL AND created_at >= hour AND created_at < hour + interval '1 hour'
+                ) AS created,
+                (
+                    SELECT COUNT(*)::int FROM tickets
+                    WHERE deleted_at IS NULL AND resolved_at >= hour AND resolved_at < hour + interval '1 hour'
+                ) AS resolved
+            FROM generate_series(date_trunc('hour', ${start}::timestamptz), date_trunc('hour', now()), interval '1 hour') hour
+            ORDER BY hour ASC
+        `;
+
+        return rows.map((row) => ({
+            date: row.date,
+            label: row.date.slice(11),
+            created: this.toNumber(row.created),
+            resolved: this.toNumber(row.resolved),
+        }));
+    }
+
+    private async getTicketDepartmentTrend(): Promise<TrendPoint[]> {
+        const rows = await this.prisma.$queryRaw<Array<{ label: string; count: number }>>`
+            SELECT COALESCE(d.name, 'Unassigned') AS label, COUNT(*)::int AS count
+            FROM tickets t
+            LEFT JOIN departments d ON d.id = t.department_id
+            WHERE t.deleted_at IS NULL
+              AND t.status IN ('NEW', 'OPEN', 'IN_PROGRESS', 'PENDING_CUSTOMER', 'PENDING_CUSTOMER_REVIEW')
+            GROUP BY d.name
+            ORDER BY count DESC
+            LIMIT 12
+        `;
+
+        return rows.map((row, index) => ({
+            date: `department-${index}`,
+            label: row.label,
+            count: this.toNumber(row.count),
+        }));
+    }
+
     private async getTicketTrend(start: Date, todayStart: Date, days: number): Promise<TrendPoint[]> {
         const rows = await this.prisma.$queryRaw<Array<{ date: string; created: number; resolved: number }>>`
             SELECT
@@ -748,6 +1219,7 @@ export class OpsDashboardService {
     }
 
     private buildCrmChangeSummary(change: Pick<CrmChangeRow, 'fieldName' | 'oldValue' | 'newValue'>) {
+        if (change.fieldName === 'rawCrmPayload') return 'CRM payload updated';
         const oldValue = this.shortenText(change.oldValue);
         const newValue = this.shortenText(change.newValue);
         if (!oldValue && !newValue) return change.fieldName;
