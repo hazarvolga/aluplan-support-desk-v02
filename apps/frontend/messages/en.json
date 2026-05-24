@@ -378,12 +378,46 @@
           "chart_title": "Trend Detail",
           "chart_desc": "Rendered from the same aggregate endpoint; empty data stays visibly empty.",
           "points": "points",
+          "decision": "Decision",
           "records": "Recent Records",
           "actions": "Actions",
           "empty_title": "No records in this window",
           "empty_desc": "There is no linked record to inspect for this signal yet.",
           "unknown_record": "Unknown record",
           "no_description": "No description available",
+          "tools": {
+            "last_24_hours": "24 hours",
+            "last_7_days": "7 days",
+            "last_30_days": "30 days",
+            "department_breakdown": "Department breakdown",
+            "provider": "Provider",
+            "language": "Language",
+            "problem_traces": "Problem traces",
+            "failed_only": "Failed only",
+            "missing_email": "Missing email",
+            "account_matching": "Account matching",
+            "learnnow": "LearnNow",
+            "review_required": "Review required",
+            "failed_imports": "Failed imports"
+          },
+          "summaries": {
+            "tickets": {
+              "title": "The ticket queue is the first operational signal.",
+              "description": "{active} active tickets, {unassigned} unassigned records, and {sla} SLA breaches are visible."
+            },
+            "ai": {
+              "title": "AI quality directly affects support load.",
+              "description": "Confidence is {confidence}%; fallback is {fallback}%. Low-confidence answers should stay in admin review."
+            },
+            "crm": {
+              "title": "CRM changes must be readable by person and company.",
+              "description": "{updates} changes and {failures} failures today. Clicking a record opens the linked customer or account."
+            },
+            "knowledge": {
+              "title": "Knowledge flow is the fuel for RAG quality.",
+              "description": "{sources} active sources and {candidates} candidates waiting for approval. If review grows, answer quality drops."
+            }
+          },
           "metrics": {
             "active": "Active",
             "unassigned": "Unassigned",
@@ -430,6 +464,8 @@
       "active_desk": {
         "title": "Active Support Desk",
         "description": "Only open tickets that still need operational attention.",
+        "tooltip": "Live support operations: open tickets, new messages, assignment, and SLA signals. CRM and crawler details stay out of this card.",
+        "badge": "Live",
         "empty_title": "No active tickets",
         "empty_desc": "The open queue currently looks clean.",
         "unknown_customer": "Unknown customer",
@@ -437,6 +473,8 @@
       },
       "actions": {
         "title": "Action Queue",
+        "tooltip": "Only items that need an admin decision now. This is a prioritized work list, not raw logs.",
+        "badge": "Priority",
         "unassigned": {
           "title": "Tickets waiting for assignment",
           "description": "Records with a department but no assigned expert"
@@ -460,6 +498,8 @@
       },
       "live_feed": {
         "title": "Live Mini Feed",
+        "tooltip": "Recent events that affect the support desk. Longer system logs stay in the system workspace.",
+        "badge": "Last 10 min",
         "empty_title": "No new events",
         "empty_desc": "Ticket, CRM, AI, and crawler events appear here.",
         "types": {
@@ -471,6 +511,8 @@
       },
       "workspace": {
         "title": "Operations Workspace",
+        "tooltip": "The left side is live intervention; the right side keeps detail, analysis, and management inside tabs so the dashboard stays readable.",
+        "badge": "Tabs",
         "tabs": {
           "overview": "Overview",
           "crm": "CRM",
@@ -483,6 +525,7 @@
           "resolved_today": "Resolved today",
           "queue_failed": "Failed jobs",
           "live_events": "Live events",
+          "ai_confidence": "ANN confidence",
           "crm_updates": "CRM updates",
           "crm_failures": "CRM failures",
           "crm_recent": "Recent changes",
@@ -497,7 +540,12 @@
           "ai_fallback": "Fallback rate",
           "source_leaks": "Source leaks",
           "language_risks": "Language risks"
-        }
+        },
+        "badges": {
+          "daily_close": "Daily Close"
+        },
+        "empty_title": "No records here",
+        "unknown_record": "Unknown record"
       },
       "decision": {
         "title": "Today's Decision",

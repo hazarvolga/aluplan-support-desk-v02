@@ -378,12 +378,46 @@
           "chart_title": "Trenddetail",
           "chart_desc": "Wird aus demselben Aggregate-Endpunkt gerendert; leere Daten bleiben sichtbar leer.",
           "points": "Punkte",
+          "decision": "Entscheidung",
           "records": "Aktuelle Einträge",
           "actions": "Aktionen",
           "empty_title": "Keine Einträge in diesem Zeitraum",
           "empty_desc": "Für dieses Signal gibt es noch keinen verknüpften Eintrag.",
           "unknown_record": "Unbekannter Eintrag",
           "no_description": "Keine Beschreibung verfügbar",
+          "tools": {
+            "last_24_hours": "24 Stunden",
+            "last_7_days": "7 Tage",
+            "last_30_days": "30 Tage",
+            "department_breakdown": "Abteilungsaufschlüsselung",
+            "provider": "Provider",
+            "language": "Sprache",
+            "problem_traces": "Problem-Traces",
+            "failed_only": "Nur Fehler",
+            "missing_email": "Fehlende E-Mail",
+            "account_matching": "Account-Zuordnung",
+            "learnnow": "LearnNow",
+            "review_required": "Review required",
+            "failed_imports": "Failed imports"
+          },
+          "summaries": {
+            "tickets": {
+              "title": "Die Ticket-Queue ist das erste operative Signal.",
+              "description": "{active} aktive Tickets, {unassigned} nicht zugewiesene Einträge und {sla} SLA-Verletzungen sind sichtbar."
+            },
+            "ai": {
+              "title": "KI-Qualität beeinflusst die Supportlast direkt.",
+              "description": "Vertrauen {confidence}%; Fallback {fallback}%. Antworten mit niedrigem Vertrauen bleiben in der Admin-Prüfung."
+            },
+            "crm": {
+              "title": "CRM-Änderungen müssen nach Person und Firma lesbar sein.",
+              "description": "Heute {updates} Änderungen und {failures} Fehler. Ein Klick öffnet den verknüpften Kunden oder Account."
+            },
+            "knowledge": {
+              "title": "Der Wissensfluss ist der Treibstoff für RAG-Qualität.",
+              "description": "{sources} aktive Quellen und {candidates} Kandidaten warten auf Freigabe. Wenn die Prüfung wächst, sinkt die Antwortqualität."
+            }
+          },
           "metrics": {
             "active": "Aktiv",
             "unassigned": "Nicht zugewiesen",
@@ -430,6 +464,8 @@
       "active_desk": {
         "title": "Aktiver Support Desk",
         "description": "Nur offene Tickets, die operative Aufmerksamkeit benötigen.",
+        "tooltip": "Live-Supportbetrieb: offene Tickets, neue Nachrichten, Zuweisung und SLA-Signale. CRM- und Crawler-Details bleiben aus dieser Karte heraus.",
+        "badge": "Live",
         "empty_title": "Keine aktiven Tickets",
         "empty_desc": "Die offene Queue wirkt aktuell sauber.",
         "unknown_customer": "Unbekannter Kunde",
@@ -437,6 +473,8 @@
       },
       "actions": {
         "title": "Aktions-Queue",
+        "tooltip": "Nur Elemente, bei denen jetzt eine Admin-Entscheidung nötig ist. Das ist eine priorisierte Arbeitsliste, kein Rohlog.",
+        "badge": "Priorität",
         "unassigned": {
           "title": "Tickets warten auf Zuweisung",
           "description": "Einträge mit Abteilung, aber ohne zuständigen Experten"
@@ -460,6 +498,8 @@
       },
       "live_feed": {
         "title": "Live-Mini-Feed",
+        "tooltip": "Aktuelle Ereignisse, die den Support Desk beeinflussen. Längere Systemlogs bleiben im System-Arbeitsbereich.",
+        "badge": "Letzte 10 Min.",
         "empty_title": "Keine neuen Ereignisse",
         "empty_desc": "Ticket-, CRM-, KI- und Crawler-Ereignisse erscheinen hier.",
         "types": {
@@ -471,6 +511,8 @@
       },
       "workspace": {
         "title": "Operations-Arbeitsbereich",
+        "tooltip": "Links ist die Live-Intervention; rechts bleiben Detail, Analyse und Verwaltung in Tabs, damit das Dashboard lesbar bleibt.",
+        "badge": "Tabs",
         "tabs": {
           "overview": "Übersicht",
           "crm": "CRM",
@@ -483,6 +525,7 @@
           "resolved_today": "Heute gelöst",
           "queue_failed": "Fehlgeschlagene Jobs",
           "live_events": "Live-Ereignisse",
+          "ai_confidence": "ANN-Vertrauen",
           "crm_updates": "CRM-Updates",
           "crm_failures": "CRM-Fehler",
           "crm_recent": "Letzte Änderungen",
@@ -497,7 +540,12 @@
           "ai_fallback": "Fallback-Rate",
           "source_leaks": "Quellen-Leaks",
           "language_risks": "Sprachrisiken"
-        }
+        },
+        "badges": {
+          "daily_close": "Daily Close"
+        },
+        "empty_title": "Keine Einträge hier",
+        "unknown_record": "Unbekannter Eintrag"
       },
       "decision": {
         "title": "Entscheidung des Tages",

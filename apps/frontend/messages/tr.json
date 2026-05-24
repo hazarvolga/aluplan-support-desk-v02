@@ -378,12 +378,46 @@
           "chart_title": "Trend Detayı",
           "chart_desc": "Aynı aggregate endpoint verisinden çizilir; boş veri açıkça boş kalır.",
           "points": "nokta",
+          "decision": "Karar",
           "records": "Son Kayıtlar",
           "actions": "Aksiyonlar",
           "empty_title": "Bu aralıkta kayıt yok",
           "empty_desc": "Bu sinyal için henüz incelenecek bağlı kayıt yok.",
           "unknown_record": "Bilinmeyen kayıt",
           "no_description": "Açıklama yok",
+          "tools": {
+            "last_24_hours": "24 saat",
+            "last_7_days": "7 gün",
+            "last_30_days": "30 gün",
+            "department_breakdown": "Departman kırılımı",
+            "provider": "Provider",
+            "language": "Dil",
+            "problem_traces": "Problemli trace",
+            "failed_only": "Failed only",
+            "missing_email": "Eksik e-posta",
+            "account_matching": "Account eşleşme",
+            "learnnow": "LearnNow",
+            "review_required": "Review required",
+            "failed_imports": "Failed imports"
+          },
+          "summaries": {
+            "tickets": {
+              "title": "Bilet kuyruğu operasyonun ilk sinyalidir.",
+              "description": "{active} aktif bilet, {unassigned} atama bekleyen kayıt ve {sla} SLA ihlali görünüyor."
+            },
+            "ai": {
+              "title": "AI kalitesi destek yükünü doğrudan etkiler.",
+              "description": "Güven %{confidence}; fallback %{fallback}. Düşük güvenli yanıtlar admin kontrolüne alınmalı."
+            },
+            "crm": {
+              "title": "CRM değişimleri isim ve firma bazında izlenmeli.",
+              "description": "Bugün {updates} değişim ve {failures} hata var. Kayıtlara tıklayınca ilgili müşteri veya firma açılır."
+            },
+            "knowledge": {
+              "title": "Bilgi akışı RAG kalitesinin yakıtıdır.",
+              "description": "{sources} aktif kaynak ve {candidates} onay bekleyen aday var. Review kuyruğu büyürse yanıt kalitesi düşer."
+            }
+          },
           "metrics": {
             "active": "Aktif",
             "unassigned": "Atanmamış",
@@ -430,6 +464,8 @@
       "active_desk": {
         "title": "Aktif Destek Masası",
         "description": "Yalnızca açık ve işlem bekleyen biletler.",
+        "tooltip": "Canlı destek operasyonu: açık biletler, yeni mesajlar, atama ve SLA sinyalleri. CRM ve crawler ayrıntısı burada gösterilmez.",
+        "badge": "Canlı",
         "empty_title": "Aktif bilet yok",
         "empty_desc": "Açık kuyruk şu anda temiz görünüyor.",
         "unknown_customer": "Müşteri bilinmiyor",
@@ -437,6 +473,8 @@
       },
       "actions": {
         "title": "Aksiyon Kuyruğu",
+        "tooltip": "Sadece adminin hemen karar vermesi gereken olayları gösterir. Ham log değil, önceliklendirilmiş iş listesi.",
+        "badge": "Öncelik",
         "unassigned": {
           "title": "Atama bekleyen biletler",
           "description": "Departman seçilmiş ama uzman atanmamış kayıtlar"
@@ -460,6 +498,8 @@
       },
       "live_feed": {
         "title": "Canlı Mini Akış",
+        "tooltip": "Sadece destek masasını etkileyen son olaylar. Uzun sistem logları sağdaki Sistem tabında kalır.",
+        "badge": "Son 10 dk",
         "empty_title": "Yeni olay yok",
         "empty_desc": "Ticket, CRM, AI ve crawler olayları burada akar.",
         "types": {
@@ -471,6 +511,8 @@
       },
       "workspace": {
         "title": "Operasyon Çalışma Alanı",
+        "tooltip": "Sol taraf canlı müdahale alanı; sağ taraf tabs altında detay, analiz ve yönetim katmanı. Böylece ana dashboard kalabalıklaşmaz.",
+        "badge": "Tabs",
         "tabs": {
           "overview": "Genel Bakış",
           "crm": "CRM",
@@ -483,6 +525,7 @@
           "resolved_today": "Bugün çözülen",
           "queue_failed": "Başarısız job",
           "live_events": "Canlı olay",
+          "ai_confidence": "ANN güveni",
           "crm_updates": "CRM update",
           "crm_failures": "CRM hata",
           "crm_recent": "Son değişim",
@@ -497,7 +540,12 @@
           "ai_fallback": "Fallback oranı",
           "source_leaks": "Kaynak sızıntısı",
           "language_risks": "Dil riski"
-        }
+        },
+        "badges": {
+          "daily_close": "Daily Close"
+        },
+        "empty_title": "Bu alanda kayıt yok",
+        "unknown_record": "Bilinmeyen kayıt"
       },
       "decision": {
         "title": "Bugünün Kararı",

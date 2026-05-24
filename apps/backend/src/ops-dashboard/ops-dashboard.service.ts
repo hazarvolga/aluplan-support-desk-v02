@@ -22,6 +22,19 @@ type OpsDashboardRequest = {
     days?: number;
 };
 
+type CrmChangeRow = {
+    id: string;
+    entityType: string;
+    entityId: string;
+    localRecordId: string | null;
+    fieldName: string;
+    oldValue: string | null;
+    newValue: string | null;
+    source: string;
+    status: string;
+    changedAt: Date;
+};
+
 const ACTIVE_TICKET_STATUSES = [
     TicketStatus.NEW,
     TicketStatus.OPEN,
@@ -285,19 +298,28 @@ export class OpsDashboardService {
             this.prisma.crmChangeLog.findMany({
                 orderBy: { changedAt: 'desc' },
                 take: 8,
-                select: { id: true, entityType: true, fieldName: true, status: true, changedAt: true, oldValue: true, newValue: true },
+                select: {
+                    id: true,
+                    entityType: true,
+                    entityId: true,
+                    localRecordId: true,
+                    fieldName: true,
+                    status: true,
+                    changedAt: true,
+                    oldValue: true,
+                    newValue: true,
+                    source: true,
+                },
             }),
             this.getDailyCountTrend('crm_change_logs', 'changed_at', trendStart, days),
         ]);
+        const enrichedChanges = await this.enrichCrmChanges(recentChanges);
 
         return {
             updatedToday,
             failuresToday,
             trend,
-            recentChanges: recentChanges.map((change) => ({
-                ...change,
-                changedAt: change.changedAt.toISOString(),
-            })),
+            recentChanges: enrichedChanges,
         };
     }
 
@@ -427,7 +449,18 @@ export class OpsDashboardService {
             this.prisma.crmChangeLog.findMany({
                 orderBy: { changedAt: 'desc' },
                 take: 5,
-                select: { id: true, entityType: true, fieldName: true, status: true, changedAt: true },
+                select: {
+                    id: true,
+                    entityType: true,
+                    entityId: true,
+                    localRecordId: true,
+                    fieldName: true,
+                    status: true,
+                    changedAt: true,
+                    oldValue: true,
+                    newValue: true,
+                    source: true,
+                },
             }),
             this.prisma.aiHealthEvent.findMany({
                 orderBy: { createdAt: 'desc' },
@@ -440,6 +473,7 @@ export class OpsDashboardService {
                 select: { id: true, title: true, source: true, status: true, updatedAt: true },
             }),
         ]);
+        const enrichedCrm = await this.enrichCrmChanges(crm);
 
         return [
             ...tickets.map((ticket) => ({
@@ -451,14 +485,14 @@ export class OpsDashboardService {
                 at: ticket.createdAt.toISOString(),
                 href: `/tickets/${ticket.id}`,
             })),
-            ...crm.map((change) => ({
+            ...enrichedCrm.map((change) => ({
                 id: `crm-${change.id}`,
                 type: 'crm',
-                title: `${change.entityType}.${change.fieldName}`,
-                description: change.status,
+                title: change.displayName,
+                description: [change.companyName, change.changeSummary, change.status].filter(Boolean).join(' / '),
                 status: change.status,
-                at: change.changedAt.toISOString(),
-                href: '/customers/crm',
+                at: change.changedAt,
+                href: change.href,
             })),
             ...ai.map((event) => ({
                 id: `ai-${event.id}`,
@@ -479,6 +513,100 @@ export class OpsDashboardService {
                 href: '/knowledge-pool?tab=candidates',
             })),
         ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 14);
+    }
+
+    private async enrichCrmChanges(changes: CrmChangeRow[]) {
+        if (changes.length === 0) return [];
+
+        const contactChanges = changes.filter((change) => change.entityType.toLowerCase() === 'contact');
+        const accountChanges = changes.filter((change) => change.entityType.toLowerCase() === 'account');
+        const contactLocalIds = this.uniqueValues(contactChanges.map((change) => change.localRecordId));
+        const accountLocalIds = this.uniqueValues(accountChanges.map((change) => change.localRecordId));
+        const contactExternalIds = this.uniqueValues(contactChanges.map((change) => change.entityId));
+        const accountExternalIds = this.uniqueValues(accountChanges.map((change) => change.entityId));
+
+        const contactWhere = [
+            contactLocalIds.length ? { id: { in: contactLocalIds } } : null,
+            contactExternalIds.length ? { externalContactId: { in: contactExternalIds } } : null,
+        ].filter(Boolean) as Array<Record<string, any>>;
+        const accountWhere = [
+            accountLocalIds.length ? { id: { in: accountLocalIds } } : null,
+            accountExternalIds.length ? { externalAccountId: { in: accountExternalIds } } : null,
+        ].filter(Boolean) as Array<Record<string, any>>;
+
+        const [contacts, accounts]: [
+            Array<{ id: string; firstName: string; lastName: string; companyName: string; externalContactId: string | null; user: { email: string; fullName: string | null } }>,
+            Array<{ id: string; name: string; externalAccountId: string | null; phone: string | null }>,
+        ] = await Promise.all([
+            contactWhere.length
+                ? this.prisma.customerProfile.findMany({
+                    where: { OR: contactWhere },
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        companyName: true,
+                        externalContactId: true,
+                        user: { select: { email: true, fullName: true } },
+                    },
+                })
+                : Promise.resolve([]),
+            accountWhere.length
+                ? this.prisma.crmAccount.findMany({
+                    where: { OR: accountWhere },
+                    select: {
+                        id: true,
+                        name: true,
+                        externalAccountId: true,
+                        phone: true,
+                    },
+                })
+                : Promise.resolve([]),
+        ]);
+
+        const contactsByKey = new Map<string, (typeof contacts)[number]>();
+        contacts.forEach((contact) => {
+            contactsByKey.set(contact.id, contact);
+            if (contact.externalContactId) contactsByKey.set(contact.externalContactId, contact);
+        });
+
+        const accountsByKey = new Map<string, (typeof accounts)[number]>();
+        accounts.forEach((account) => {
+            accountsByKey.set(account.id, account);
+            if (account.externalAccountId) accountsByKey.set(account.externalAccountId, account);
+        });
+
+        return changes.map((change) => {
+            const entityType = change.entityType.toLowerCase();
+            const lookupKeys = [change.localRecordId, change.entityId].filter(Boolean) as string[];
+            const contact = entityType === 'contact'
+                ? lookupKeys.map((key) => contactsByKey.get(key)).find(Boolean)
+                : null;
+            const account = entityType === 'account'
+                ? lookupKeys.map((key) => accountsByKey.get(key)).find(Boolean)
+                : null;
+            const contactName = contact
+                ? [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim() || contact.user?.fullName || null
+                : null;
+            const displayName = contactName || account?.name || `${change.entityType} ${change.entityId}`;
+            const href = contact
+                ? `/customers/${contact.id}`
+                : account
+                    ? `/customers/accounts/${account.id}`
+                    : '/customers/crm';
+
+            return {
+                ...change,
+                changedAt: change.changedAt.toISOString(),
+                displayName,
+                companyName: contact?.companyName ?? account?.name ?? null,
+                email: contact?.user?.email ?? null,
+                action: this.describeCrmAction(change),
+                fieldLabel: change.fieldName,
+                changeSummary: this.buildCrmChangeSummary(change),
+                href,
+            };
+        });
     }
 
     private async getTicketTrend(start: Date, todayStart: Date, days: number): Promise<TrendPoint[]> {
@@ -578,7 +706,7 @@ export class OpsDashboardService {
         const queueFailed = queueSummary.knowledge.failed + queueSummary.crm.failed + queueSummary.ai.failed;
         if (ticketKpis.slaBreaches > 0) return { level: 'critical', code: 'sla_breach', primaryAction: '/tickets?isSlaBreached=true' };
         if (ticketKpis.unassigned > 0) return { level: 'warning', code: 'unassigned_tickets', primaryAction: '/tickets?assignedTo=unassigned' };
-        if (crmSummary.failuresToday > 0) return { level: 'warning', code: 'crm_failures', primaryAction: '/crm' };
+        if (crmSummary.failuresToday > 0) return { level: 'warning', code: 'crm_failures', primaryAction: '/customers/crm' };
         if (aiQuality.fallbackRate > 30) return { level: 'warning', code: 'ai_quality_watch', primaryAction: '/admin/ai-health' };
         if (queueFailed > 0 || systemSummary.status !== 'HEALTHY') return { level: 'warning', code: 'system_watch', primaryAction: '/dashboard' };
         return { level: 'ok', code: 'operationally_stable', primaryAction: '/tickets' };
@@ -611,6 +739,32 @@ export class OpsDashboardService {
             acc[String(row[key] ?? 'UNKNOWN')] = row._count.id;
             return acc;
         }, {});
+    }
+
+    private describeCrmAction(change: Pick<CrmChangeRow, 'fieldName' | 'oldValue' | 'newValue'>) {
+        if (change.fieldName === 'deletedAt') return 'deleted';
+        if (!change.oldValue && change.newValue) return 'updated';
+        return 'updated';
+    }
+
+    private buildCrmChangeSummary(change: Pick<CrmChangeRow, 'fieldName' | 'oldValue' | 'newValue'>) {
+        const oldValue = this.shortenText(change.oldValue);
+        const newValue = this.shortenText(change.newValue);
+        if (!oldValue && !newValue) return change.fieldName;
+        if (!oldValue) return `${change.fieldName}: ${newValue}`;
+        if (!newValue) return `${change.fieldName}: ${oldValue} -> -`;
+        if (oldValue === newValue) return change.fieldName;
+        return `${change.fieldName}: ${oldValue} -> ${newValue}`;
+    }
+
+    private shortenText(value: string | null | undefined) {
+        const text = String(value ?? '').trim();
+        if (!text) return '';
+        return text.length > 72 ? `${text.slice(0, 69)}...` : text;
+    }
+
+    private uniqueValues(values: Array<string | null | undefined>) {
+        return Array.from(new Set(values.filter((value): value is string => Boolean(value))));
     }
 
     private canViewCost(role: RoleLike) {

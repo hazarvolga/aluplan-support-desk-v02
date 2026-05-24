@@ -40,6 +40,15 @@ type PulseId = 'tickets' | 'ai' | 'crm' | 'knowledge';
 type PulseMetric = { label: string; value: string | number; detail: string };
 type PulseRecord = { id: string; title: string; description: string; href: string };
 type PulseAction = { label: string; href: string };
+type PulseDetail = {
+    metrics: PulseMetric[];
+    records: PulseRecord[];
+    actions: PulseAction[];
+    series: number[];
+    tools: string[];
+    tags: string[];
+    summary: { title: string; description: string };
+};
 
 const emptyOpsData = (): OpsDashboardData => ({
     generatedAt: new Date().toISOString(),
@@ -310,41 +319,30 @@ function OpsStatGrid({ data }: { data: OpsDashboardData }) {
 function PulseBand({ data, onSelect }: { data: OpsDashboardData; onSelect: (id: PulseId) => void }) {
     const t = useTranslations('dashboard.ops.pulse');
     const cards = [
-        { id: 'tickets' as const, icon: Ticket, value: data.activeDesk.trend.reduce((sum, point) => sum + Number(point.created ?? 0), 0), series: data.activeDesk.trend.map((point) => Number(point.created ?? 0)) },
-        { id: 'ai' as const, icon: Bot, value: `${data.pulse.aiQuality.summary.confidenceRate ?? 0}%`, series: data.pulse.aiQuality.trend.map((point) => Number(point.confidence ?? 0)) },
-        { id: 'crm' as const, icon: Database, value: data.pulse.crm.updatedToday ?? 0, series: (data.pulse.crm.trend ?? []).map((point: any) => Number(point.count ?? 0)) },
-        { id: 'knowledge' as const, icon: BookOpen, value: data.pulse.knowledge.activeSources ?? 0, series: (data.pulse.knowledge.trend ?? []).map((point: any) => Number(point.count ?? 0)) },
+        { id: 'tickets' as const, source: 'tickets.created / tickets.closed', series: data.activeDesk.trend.map((point) => Number(point.created ?? 0)), tone: 'text-blue-300' },
+        { id: 'ai' as const, source: 'ai_traces.confidence', series: data.pulse.aiQuality.trend.map((point) => Number(point.confidence ?? 0)), tone: 'text-cyan-300' },
+        { id: 'crm' as const, source: 'crm_sync_logs.updated', series: (data.pulse.crm.trend ?? []).map((point: any) => Number(point.count ?? 0)), tone: 'text-emerald-300' },
+        { id: 'knowledge' as const, source: 'crawl_candidates / chunks', series: (data.pulse.knowledge.trend ?? []).map((point: any) => Number(point.count ?? 0)), tone: 'text-violet-300' },
     ];
 
     return (
-        <section className="rounded-lg border border-white/10 bg-white/[0.025] p-3">
-            <div className="mb-3 flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" />
-                <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{t('title')}</h2>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {cards.map(({ id, icon: Icon, value, series }) => (
+        <section className="grid gap-3 rounded-lg border border-white/10 bg-white/[0.025] p-3 md:grid-cols-2 xl:grid-cols-4">
+            {cards.map(({ id, source, series, tone }) => (
+                <div key={id} className="min-w-0">
                     <button
-                        key={id}
                         type="button"
                         onClick={() => onSelect(id)}
-                        className="rounded-md border border-white/10 bg-slate-950/30 p-3 text-left transition hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus:ring-1 focus:ring-primary/60"
+                        className="grid min-h-[72px] w-full grid-cols-[minmax(0,1fr)_116px] items-center gap-3 rounded-md border border-white/10 bg-slate-950/30 p-3 text-left transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus:ring-1 focus:ring-primary/60 max-sm:grid-cols-1"
                     >
-                        <div className="flex items-start justify-between gap-2">
-                            <div>
-                                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{t(`${id}.title`)}</p>
-                                <p className="mt-2 text-2xl font-bold text-white">{value}</p>
-                            </div>
-                            <Icon className="h-4 w-4 text-primary" />
+                        <div className="min-w-0">
+                            <strong className="block text-[10px] font-bold uppercase tracking-[0.16em] text-white">{t(`${id}.title`)}</strong>
+                            <span className="mt-1 block text-[10px] leading-relaxed text-muted-foreground">{t(`${id}.description`)}</span>
+                            <em className={`mt-1 block truncate text-[8px] not-italic uppercase tracking-[0.14em] ${tone}`}>{source}</em>
                         </div>
-                        <MiniBars values={series} />
-                        <div className="mt-2 flex items-end justify-between gap-2">
-                            <p className="text-[10px] text-muted-foreground">{t(`${id}.description`)}</p>
-                            <span className="shrink-0 text-[9px] font-bold uppercase tracking-widest text-primary">{t('open')}</span>
-                        </div>
+                        <SparkPreview values={series} mode={id} />
                     </button>
-                ))}
-            </div>
+                </div>
+            ))}
         </section>
     );
 }
@@ -371,61 +369,77 @@ function PulseDetailModal({ data, selected, onOpenChange }: {
                 </DialogHeader>
                 <ScrollArea className="max-h-[calc(92vh-88px)]">
                     <div className="space-y-4 p-4 sm:p-5">
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            {detail.metrics.map((metric) => (
-                                <MetricStrip key={metric.label} label={metric.label} value={metric.value} detail={metric.detail} />
+                        <div className="flex flex-wrap gap-2">
+                            {detail.tools.map((tool, index) => (
+                                <span key={tool} className={`rounded border px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] ${index === 0 ? 'border-primary/35 bg-primary/10 text-primary' : 'border-white/10 bg-white/[0.025] text-muted-foreground'}`}>
+                                    {tool}
+                                </span>
                             ))}
                         </div>
-
-                        <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
-                            <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                                <div>
-                                    <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-white">{t('modal.chart_title')}</h3>
-                                    <p className="mt-1 text-[10px] text-muted-foreground">{t('modal.chart_desc')}</p>
+                        <div className="grid gap-4 lg:grid-cols-[1.25fr_0.85fr]">
+                            <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
+                                <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                                    <div>
+                                        <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-white">{t('modal.chart_title')}</h3>
+                                        <p className="mt-1 text-[10px] text-muted-foreground">{t('modal.chart_desc')}</p>
+                                    </div>
+                                    <span className="rounded border border-primary/20 bg-primary/10 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-primary">
+                                        {detail.series.length} {t('modal.points')}
+                                    </span>
                                 </div>
-                                <span className="rounded border border-primary/20 bg-primary/10 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-primary">
-                                    {detail.series.length} {t('modal.points')}
-                                </span>
+                                <LargeTrend values={detail.series} />
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {detail.tags.map((tag) => (
+                                        <span key={tag} className="rounded border border-white/10 bg-white/[0.03] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
-                            <LargeTrend values={detail.series} />
+
+                            <div className="space-y-3">
+                                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{t('modal.decision')}</p>
+                                    <h3 className="mt-2 text-sm font-bold text-white">{detail.summary.title}</h3>
+                                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{detail.summary.description}</p>
+                                </div>
+
+                                <div className="rounded-lg border border-white/10 bg-white/[0.025]">
+                                    <div className="border-b border-white/10 px-4 py-3">
+                                        <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{t('modal.records')}</h3>
+                                    </div>
+                                    <div className="space-y-2 p-3">
+                                        {detail.records.length === 0 ? (
+                                            <EmptyState title={t('modal.empty_title')} description={t('modal.empty_desc')} />
+                                        ) : detail.records.map((record) => (
+                                            <Link key={record.id} href={record.href} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-xs font-bold text-white">{record.title}</p>
+                                                        <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{record.description}</p>
+                                                    </div>
+                                                    <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-                            <div className="rounded-lg border border-white/10 bg-white/[0.025]">
-                                <div className="border-b border-white/10 px-4 py-3">
-                                    <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{t('modal.records')}</h3>
-                                </div>
-                                <div className="space-y-2 p-3">
-                                    {detail.records.length === 0 ? (
-                                        <EmptyState title={t('modal.empty_title')} description={t('modal.empty_desc')} />
-                                    ) : detail.records.map((record) => (
-                                        <Link key={record.id} href={record.href} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="min-w-0">
-                                                    <p className="truncate text-xs font-bold text-white">{record.title}</p>
-                                                    <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{record.description}</p>
-                                                </div>
-                                                <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
+                        <div className="rounded-lg border border-white/10 bg-white/[0.025] p-3">
+                            <div className="mb-3">
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{t('modal.actions')}</h3>
                             </div>
-
-                            <div className="rounded-lg border border-white/10 bg-white/[0.025]">
-                                <div className="border-b border-white/10 px-4 py-3">
-                                    <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{t('modal.actions')}</h3>
-                                </div>
-                                <div className="space-y-2 p-3">
-                                    {detail.actions.map((action) => (
-                                        <Button key={action.href} asChild variant="outline" className="w-full justify-between">
-                                            <Link href={action.href}>
-                                                {action.label}
-                                                <ArrowRight className="h-3.5 w-3.5" />
-                                            </Link>
-                                        </Button>
-                                    ))}
-                                </div>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                {detail.actions.map((action) => (
+                                    <Button key={action.href} asChild variant="outline" className="justify-between">
+                                        <Link href={action.href}>
+                                            {action.label}
+                                            <ArrowRight className="h-3.5 w-3.5" />
+                                        </Link>
+                                    </Button>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -435,17 +449,12 @@ function PulseDetailModal({ data, selected, onOpenChange }: {
     );
 }
 
-function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: string) => string): {
-    metrics: PulseMetric[];
-    records: PulseRecord[];
-    actions: PulseAction[];
-    series: number[];
-} {
+function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: string, values?: Record<string, string | number>) => string): PulseDetail {
     const recordMap: Record<PulseId, PulseRecord[]> = {
         tickets: data.activeDesk.tickets.slice(0, 8).map((ticket) => ({
             id: ticket.id,
             title: ticket.ticketNumber || ticket.subject,
-            description: ticket.subject || ticket.creator?.fullName || '',
+            description: [ticket.subject, ticket.creator?.customerProfile?.companyName || ticket.creator?.fullName, ticket.assignee?.fullName || ticket.status].filter(Boolean).join(' / '),
             href: `/tickets/${ticket.id}`,
         })),
         ai: data.liveFeed.filter((item) => item.type === 'ai').slice(0, 8).map((item) => ({
@@ -456,9 +465,9 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
         })),
         crm: (data.pulse.crm.recentChanges ?? []).slice(0, 8).map((item: any, index: number) => ({
             id: item.id || `crm-${index}`,
-            title: item.entityType || item.type || item.action || t('modal.unknown_record'),
-            description: item.message || item.summary || item.status || t('modal.no_description'),
-            href: item.href || '/crm',
+            title: item.displayName || item.companyName || item.entityId || item.entityType || t('modal.unknown_record'),
+            description: [item.companyName, item.email, item.changeSummary || item.fieldLabel, item.status].filter(Boolean).join(' / ') || t('modal.no_description'),
+            href: item.href || '/customers/crm',
         })),
         knowledge: (data.learnNow.recent ?? []).slice(0, 8).map((item: any, index: number) => ({
             id: item.id || `learnnow-${index}`,
@@ -516,6 +525,14 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
         ],
     };
     const actions = actionMap[selected];
+    const toolsMap: Record<PulseId, string[]> = {
+        tickets: [t('modal.tools.last_7_days'), t('modal.tools.last_24_hours'), t('modal.tools.last_30_days'), t('modal.tools.department_breakdown')],
+        ai: [t('modal.tools.last_7_days'), t('modal.tools.provider'), t('modal.tools.language'), t('modal.tools.problem_traces')],
+        crm: [t('modal.tools.last_24_hours'), t('modal.tools.failed_only'), t('modal.tools.missing_email'), t('modal.tools.account_matching')],
+        knowledge: [t('modal.tools.last_7_days'), t('modal.tools.learnnow'), t('modal.tools.review_required'), t('modal.tools.failed_imports')],
+    };
+    const tools = toolsMap[selected];
+    const tags = metrics.map((metric) => `${metric.label}: ${metric.value}`);
 
     const seriesMap: Record<PulseId, number[]> = {
         tickets: data.activeDesk.trend.map((point) => Number(point.created ?? 0)),
@@ -524,8 +541,27 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
         knowledge: (data.pulse.knowledge.trend ?? []).map((point: any) => Number(point.count ?? 0)),
     };
     const series = seriesMap[selected];
+    const summaryMap: Record<PulseId, { title: string; description: string }> = {
+        tickets: {
+            title: t('modal.summaries.tickets.title'),
+            description: t('modal.summaries.tickets.description', { active: data.kpis.activeTickets, unassigned: data.kpis.unassignedTickets, sla: data.kpis.slaBreaches }),
+        },
+        ai: {
+            title: t('modal.summaries.ai.title'),
+            description: t('modal.summaries.ai.description', { confidence: data.pulse.aiQuality.summary.confidenceRate ?? 0, fallback: data.pulse.aiQuality.summary.fallbackRate ?? 0 }),
+        },
+        crm: {
+            title: t('modal.summaries.crm.title'),
+            description: t('modal.summaries.crm.description', { updates: data.pulse.crm.updatedToday ?? 0, failures: data.pulse.crm.failuresToday ?? 0 }),
+        },
+        knowledge: {
+            title: t('modal.summaries.knowledge.title'),
+            description: t('modal.summaries.knowledge.description', { sources: data.pulse.knowledge.activeSources ?? 0, candidates: data.pulse.knowledge.genericCandidatesPending ?? 0 }),
+        },
+    };
+    const summary = summaryMap[selected];
 
-    return { metrics, records, actions, series };
+    return { metrics, records, actions, series, tools, tags, summary };
 }
 
 function LargeTrend({ values }: { values: number[] }) {
@@ -563,34 +599,51 @@ function LargeTrend({ values }: { values: number[] }) {
     );
 }
 
-function MiniBars({ values }: { values: number[] }) {
-    const max = Math.max(1, ...values);
+function SparkPreview({ values, mode }: { values: number[]; mode: PulseId }) {
     const points = values.length ? values : [0, 0, 0, 0, 0, 0, 0];
+    const max = Math.max(1, ...points);
+    const width = 116;
+    const height = 42;
+    const coordinates = points.map((value, index) => {
+        const x = points.length > 1 ? (index / (points.length - 1)) * (width - 8) + 4 : width / 2;
+        const y = height - (value / max) * 28 - 6;
+        return [x, y] as const;
+    });
+    const line = coordinates.map(([x, y]) => `${x},${y}`).join(' ');
+    const area = `${coordinates[0][0]},38 ${line} ${coordinates[coordinates.length - 1][0]},38`;
+    const isBars = mode === 'crm';
+    const isSteps = mode === 'knowledge';
+    const stroke = mode === 'tickets' ? '#5aa7ff' : mode === 'ai' ? '#44c7ff' : mode === 'crm' ? '#00f0c8' : '#9d7bff';
+
     return (
-        <div className="mt-4 flex h-12 items-end gap-1">
-            {points.map((value, index) => (
-                <span
-                    key={`${value}-${index}`}
-                    className="flex-1 rounded-t-sm bg-primary/60"
-                    style={{ height: `${Math.max(8, (value / max) * 100)}%` }}
-                />
-            ))}
-        </div>
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-[42px] w-[116px] overflow-visible max-sm:w-full" aria-hidden="true">
+            <path d="M4 12 H112 M4 24 H112 M4 36 H112" stroke="rgba(148,163,184,.14)" strokeWidth="1" />
+            {isBars ? points.map((value, index) => {
+                const barWidth = Math.max(6, (width - 20) / points.length - 4);
+                const x = 8 + index * ((width - 20) / points.length);
+                const barHeight = Math.max(5, (value / max) * 30);
+                return <rect key={`${value}-${index}`} x={x} y={38 - barHeight} width={barWidth} height={barHeight} fill={stroke} opacity={index % 3 === 0 ? 0.78 : 0.48} />;
+            }) : (
+                <>
+                    <polyline points={area} fill={stroke} opacity="0.13" />
+                    <polyline points={line} fill="none" stroke={stroke} strokeWidth="2.25" strokeLinecap="round" strokeLinejoin={isSteps ? 'miter' : 'round'} />
+                    <circle cx={coordinates[coordinates.length - 1][0]} cy={coordinates[coordinates.length - 1][1]} r="3" fill="#0d1118" stroke={stroke} strokeWidth="2" />
+                </>
+            )}
+            <path d="M4 38 H112" stroke="rgba(148,163,184,.18)" strokeWidth="1" />
+        </svg>
     );
 }
 
 function ActiveDesk({ data }: { data: OpsDashboardData }) {
     const t = useTranslations('dashboard.ops.active_desk');
     return (
-        <WireframeBorder className="border-border/40 bg-transparent">
+        <WireframeBorder className="border-border/40 bg-transparent xl:self-start">
             <div className="border-b border-border/20 bg-muted/5 px-4 py-3">
-                <h2 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                    <Ticket className="h-3.5 w-3.5 text-primary" />
-                    {t('title')}
-                </h2>
+                <SectionHeader icon={Ticket} title={t('title')} tooltip={t('tooltip')} badge={t('badge')} />
                 <p className="mt-1 text-[10px] text-muted-foreground">{t('description')}</p>
             </div>
-            <ScrollArea className="h-[360px]">
+            <ScrollArea className={data.activeDesk.tickets.length > 3 ? 'h-[300px]' : 'max-h-[300px]'}>
                 <div className="space-y-2 p-3">
                     {data.activeDesk.tickets.length === 0 ? (
                         <EmptyState title={t('empty_title')} description={t('empty_desc')} />
@@ -620,22 +673,21 @@ function ActionQueue({ data }: { data: OpsDashboardData }) {
     return (
         <WireframeBorder className="border-border/40 bg-transparent">
             <div className="border-b border-border/20 bg-muted/5 px-4 py-3">
-                <h2 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                    <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                    {t('title')}
-                </h2>
+                <SectionHeader icon={ShieldCheck} title={t('title')} tooltip={t('tooltip')} badge={t('badge')} />
             </div>
-            <div className="space-y-2 p-3">
-                {data.actions.map((action) => (
-                    <Link key={action.id} href={action.href} className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
-                        <div>
-                            <p className="text-xs font-bold text-white">{t(`${action.id}.title`)}</p>
-                            <p className="mt-1 text-[10px] text-muted-foreground">{t(`${action.id}.description`)}</p>
-                        </div>
-                        <span className={`rounded px-2 py-1 text-[10px] font-bold ${action.severity === 'critical' ? 'bg-rose-500/15 text-rose-300' : action.severity === 'warning' ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'}`}>{action.count}</span>
-                    </Link>
-                ))}
-            </div>
+            <ScrollArea className={data.actions.length > 4 ? 'h-[280px]' : 'max-h-[280px]'}>
+                <div className="space-y-2 p-3">
+                    {data.actions.map((action) => (
+                        <Link key={action.id} href={action.href} className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
+                            <div>
+                                <p className="text-xs font-bold text-white">{t(`${action.id}.title`)}</p>
+                                <p className="mt-1 text-[10px] text-muted-foreground">{t(`${action.id}.description`)}</p>
+                            </div>
+                            <span className={`rounded px-2 py-1 text-[10px] font-bold ${action.severity === 'critical' ? 'bg-rose-500/15 text-rose-300' : action.severity === 'warning' ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'}`}>{action.count}</span>
+                        </Link>
+                    ))}
+                </div>
+            </ScrollArea>
         </WireframeBorder>
     );
 }
@@ -645,12 +697,9 @@ function LiveFeed({ data }: { data: OpsDashboardData }) {
     return (
         <WireframeBorder className="border-border/40 bg-transparent">
             <div className="border-b border-border/20 bg-muted/5 px-4 py-3">
-                <h2 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                    <Activity className="h-3.5 w-3.5 text-primary" />
-                    {t('title')}
-                </h2>
+                <SectionHeader icon={Activity} title={t('title')} tooltip={t('tooltip')} badge={t('badge')} />
             </div>
-            <ScrollArea className="h-[260px]">
+            <ScrollArea className={data.liveFeed.length > 4 ? 'h-[260px]' : 'max-h-[260px]'}>
                 <div className="space-y-2 p-3">
                     {data.liveFeed.length === 0 ? (
                         <EmptyState title={t('empty_title')} description={t('empty_desc')} />
@@ -671,13 +720,11 @@ function LiveFeed({ data }: { data: OpsDashboardData }) {
 
 function WorkspaceTabs({ data }: { data: OpsDashboardData }) {
     const t = useTranslations('dashboard.ops.workspace');
+    const tSystem = useTranslations('dashboard.ops.system');
     return (
-        <WireframeBorder className="border-border/40 bg-transparent">
+        <WireframeBorder className="min-h-[680px] border-border/40 bg-transparent xl:self-start">
             <div className="border-b border-border/20 bg-muted/5 px-4 py-3">
-                <h2 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                    <Server className="h-3.5 w-3.5 text-primary" />
-                    {t('title')}
-                </h2>
+                <SectionHeader icon={Server} title={t('title')} tooltip={t('tooltip')} badge={t('badge')} />
             </div>
             <Tabs defaultValue="overview" className="p-3">
                 <TabsList className="grid h-auto w-full grid-cols-2 gap-1 bg-white/[0.03] p-1 md:grid-cols-5">
@@ -688,20 +735,40 @@ function WorkspaceTabs({ data }: { data: OpsDashboardData }) {
                     ))}
                 </TabsList>
                 <TabsContent value="overview" className="mt-4 space-y-3">
-                    <DecisionCard data={data} />
                     <MetricGrid items={[
                         [t('metrics.sla_breaches'), data.kpis.slaBreaches],
                         [t('metrics.resolved_today'), data.kpis.resolvedToday],
-                        [t('metrics.queue_failed'), Object.values(data.queues).reduce((sum, queue) => sum + queue.failed, 0)],
-                        [t('metrics.live_events'), data.liveFeed.length],
+                        [t('metrics.ai_confidence'), `${data.kpis.aiConfidence}%`],
                     ]} />
+                    <DecisionCard data={data} />
+                    <div className="grid gap-3 lg:grid-cols-2">
+                        <WorkspaceInfoPanel title={t('metrics.resolved_today')} badge={t('badges.daily_close')} rows={[
+                            [t('metrics.resolved_today'), `${data.kpis.resolvedToday}`],
+                            [t('metrics.live_events'), `${data.liveFeed.length}`],
+                            [t('metrics.queue_failed'), `${Object.values(data.queues).reduce((sum, queue) => sum + queue.failed, 0)}`],
+                        ]} />
+                        <WorkspaceInfoPanel title={tSystem('title')} badge={data.system.status} rows={[
+                            [tSystem('online_agents'), `${data.system.activeAgents}`],
+                            [tSystem('knowledge_queue'), `${data.queues.knowledge.active + data.queues.knowledge.waiting}`],
+                            [t('metrics.crm_failures'), `${data.pulse.crm.failuresToday ?? 0}`],
+                        ]} />
+                    </div>
                 </TabsContent>
-                <TabsContent value="crm" className="mt-4">
+                <TabsContent value="crm" className="mt-4 space-y-3">
                     <MetricGrid items={[
                         [t('metrics.crm_updates'), data.pulse.crm.updatedToday ?? 0],
                         [t('metrics.crm_failures'), data.pulse.crm.failuresToday ?? 0],
                         [t('metrics.crm_recent'), data.pulse.crm.recentChanges?.length ?? 0],
                     ]} />
+                    <WorkspaceRecordList
+                        emptyTitle={t('empty_title')}
+                        records={(data.pulse.crm.recentChanges ?? []).slice(0, 4).map((item: any, index: number) => ({
+                            id: item.id || `workspace-crm-${index}`,
+                            title: item.displayName || item.companyName || item.entityId || t('unknown_record'),
+                            description: [item.companyName, item.changeSummary || item.fieldLabel, item.status].filter(Boolean).join(' / '),
+                            href: item.href || '/customers/crm',
+                        }))}
+                    />
                 </TabsContent>
                 <TabsContent value="knowledge" className="mt-4">
                     <MetricGrid items={[
@@ -731,6 +798,26 @@ function WorkspaceTabs({ data }: { data: OpsDashboardData }) {
     );
 }
 
+function SectionHeader({ icon: Icon, title, tooltip, badge }: { icon: ElementType; title: string; tooltip: string; badge: string }) {
+    return (
+        <div className="flex items-center justify-between gap-3">
+            <h2 className="flex min-w-0 items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                <Icon className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="truncate">{title}</span>
+                <span className="group relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-white/10 text-[9px] text-muted-foreground">
+                    i
+                    <span className="pointer-events-none absolute left-1/2 top-6 z-50 hidden w-64 -translate-x-1/2 rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-left text-[10px] font-medium normal-case leading-relaxed tracking-normal text-muted-foreground shadow-2xl shadow-black/50 group-hover:block">
+                        {tooltip}
+                    </span>
+                </span>
+            </h2>
+            <span className="shrink-0 rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                {badge}
+            </span>
+        </div>
+    );
+}
+
 function DecisionCard({ data }: { data: OpsDashboardData }) {
     const t = useTranslations('dashboard.ops.decision');
     return (
@@ -744,6 +831,47 @@ function DecisionCard({ data }: { data: OpsDashboardData }) {
                 <ArrowRight className="h-4 w-4 text-primary" />
             </div>
         </Link>
+    );
+}
+
+function WorkspaceInfoPanel({ title, badge, rows }: { title: string; badge: string; rows: Array<[string, string]> }) {
+    return (
+        <div className="rounded-lg border border-white/10 bg-white/[0.025]">
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{title}</h3>
+                <span className="rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{badge}</span>
+            </div>
+            <div className="divide-y divide-white/10 px-4 py-2">
+                {rows.map(([label, value]) => (
+                    <div key={label} className="flex items-center justify-between gap-4 py-2 text-xs">
+                        <span className="text-muted-foreground">{label}</span>
+                        <span className="font-semibold text-white">{value}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function WorkspaceRecordList({ records, emptyTitle }: { records: PulseRecord[]; emptyTitle: string }) {
+    return (
+        <div className="rounded-lg border border-white/10 bg-white/[0.025]">
+            <div className="space-y-2 p-3">
+                {records.length === 0 ? (
+                    <EmptyState title={emptyTitle} description="" />
+                ) : records.map((record) => (
+                    <Link key={record.id} href={record.href} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="truncate text-xs font-bold text-white">{record.title}</p>
+                                <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{record.description}</p>
+                            </div>
+                            <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
+                        </div>
+                    </Link>
+                ))}
+            </div>
+        </div>
     );
 }
 
@@ -852,7 +980,7 @@ export default function DashboardClient() {
     const effectiveSystem = aiStatus?.available === false ? { ...data, system: { ...data.system, status: 'DEGRADED' as const } } : data;
 
     return (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative space-y-5">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative mx-auto w-full max-w-[1720px] space-y-5">
             <div className="flex flex-col justify-between gap-4 border-b border-white/5 pb-5 lg:flex-row lg:items-center">
                 <div>
                     <h1 className="flex items-center gap-3 text-2xl font-bold tracking-tight text-white">
@@ -876,8 +1004,8 @@ export default function DashboardClient() {
             <PulseBand data={data} onSelect={setSelectedPulse} />
             <PulseDetailModal data={data} selected={selectedPulse} onOpenChange={(open) => !open && setSelectedPulse(null)} />
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(320px,390px)_1fr]">
-                <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
+            <div className="grid items-start gap-4 xl:grid-cols-[minmax(360px,430px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(390px,430px)_minmax(0,1fr)]">
+                <div className="space-y-4 xl:self-start">
                     <ActiveDesk data={data} />
                     <ActionQueue data={data} />
                     <LiveFeed data={data} />

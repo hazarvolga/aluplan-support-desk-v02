@@ -41,6 +41,8 @@ describe('OpsDashboardService', () => {
             knowledgePoolEmbedding: makeModel(),
             aiHealthEvent: makeModel(),
             user: makeModel(),
+            customerProfile: makeModel(),
+            crmAccount: makeModel(),
             $queryRaw: jest.fn().mockResolvedValue([]),
             $queryRawUnsafe: jest.fn().mockResolvedValue([]),
         };
@@ -97,6 +99,42 @@ describe('OpsDashboardService', () => {
             level: 'warning',
             code: 'unassigned_tickets',
             primaryAction: '/tickets?assignedTo=unassigned',
+        });
+    });
+
+    it('enriches CRM change records with readable customer details and safe links', async () => {
+        prisma.customerProfile.findMany.mockResolvedValue([
+            {
+                id: '31bf573c-6282-499c-8f85-217c5ed4911e',
+                firstName: 'Deniz',
+                lastName: 'Dogan',
+                companyName: 'LGN Proje',
+                externalContactId: 'crm-contact-1',
+                user: { email: 'deniz@example.com', fullName: 'Deniz Dogan' },
+            },
+        ]);
+
+        const enriched = await (service as any).enrichCrmChanges([
+            {
+                id: 'change-1',
+                entityType: 'contact',
+                entityId: 'crm-contact-1',
+                localRecordId: null,
+                fieldName: 'email',
+                oldValue: 'old@example.com',
+                newValue: 'deniz@example.com',
+                source: 'DELTA_SYNC',
+                status: 'SUCCESS',
+                changedAt: new Date('2026-05-24T00:00:00.000Z'),
+            },
+        ]);
+
+        expect(enriched[0]).toMatchObject({
+            displayName: 'Deniz Dogan',
+            companyName: 'LGN Proje',
+            email: 'deniz@example.com',
+            changeSummary: 'email: old@example.com -> deniz@example.com',
+            href: '/customers/31bf573c-6282-499c-8f85-217c5ed4911e',
         });
     });
 });
