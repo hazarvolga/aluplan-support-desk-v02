@@ -1213,6 +1213,43 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             expect(searchArg).not.toContain('Lisans');
         });
 
+        it('adds Hotinfo version and low-trust license signals for license retrieval without leaking sensitive fields', async () => {
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [{
+                    articleId: 'license-transfer',
+                    sourceType: 'DOCUMENT',
+                    title: 'License transfer with CodeMeter',
+                    content: 'Return the Product Key license and activate it on the new computer.',
+                    similarity: 0.91,
+                    confidence: 'HIGH',
+                }],
+                diagnostics: { topScore: 0.91, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+            });
+            mockAiService.reformat.mockResolvedValue(null);
+
+            await service.query({
+                userQuery: 'Bilgisayarıma format attım, lisansımı yeni bilgisayarıma nasıl aktarabilirim?',
+                wait: true,
+                language: 'tr',
+                hotinfoContext: {
+                    allplanVersion: 'Allplan 2026-1-3 Unicode 64-bit',
+                    allplanBuildId: '39.1613.8530.664',
+                    licenseType: '⚠ Lisans dosyası okunamadı',
+                    hotinfoLicense: '1014361a',
+                    errorTrace: 'SEC Hata: C:\\ProgramData\\Nemetschek\\Allplan\\2026\\License\\_SEC.NSE',
+                },
+            });
+
+            const searchArg = mockEmbeddingService.search.mock.calls[0][0] as string;
+            expect(searchArg).toContain('HOTINFO SAFE SEARCH SIGNALS');
+            expect(searchArg).toContain('Allplan 2026-1-3');
+            expect(searchArg).toContain('Allplan build id: 39.1613.8530.664');
+            expect(searchArg).toContain('dusuk guvenli legacy sinyal');
+            expect(searchArg).not.toContain('1014361a');
+            expect(searchArg).not.toContain('_SEC.NSE');
+            expect(searchArg).not.toContain('C:\\ProgramData');
+        });
+
         it('demotes license sources for network startup questions when the query is not about licensing', async () => {
             mockPrismaService.user.findUnique.mockResolvedValue({ role: { name: 'ADMIN' } });
             mockEmbeddingService.search.mockResolvedValue({

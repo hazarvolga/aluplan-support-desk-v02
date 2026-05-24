@@ -68,6 +68,12 @@ export class PromptContextBuilderService {
 - ${licenseContext}
 - Allplan Hotfix/Patch: ${h.allplanHotfix || 'Bilinmiyor'}
 `;
+                        if (h.graphicsCards && Array.isArray(h.graphicsCards) && h.graphicsCards.length > 0) {
+                            hotinfoContent += `- Ekran Kartları Detayı:\n`;
+                            h.graphicsCards.slice(0, 4).forEach((card: any, index: number) => {
+                                hotinfoContent += `  ${index + 1}. ${card.name || 'Bilinmiyor'} | VRAM: ${card.vram || 'Bilinmiyor'} | RAM: ${card.ram || 'Bilinmiyor'} | Sürücü Tarihi: ${card.driverDate || 'Bilinmiyor'} | Sürücü Versiyonu: ${card.driverVersion || 'Bilinmiyor'} | Çözünürlük: ${card.resolution || h.screenResolution || 'Bilinmiyor'}\n`;
+                            });
+                        }
                         if (h.installedModules && h.installedModules.length > 0) {
                             hotinfoContent += `- Modüller/Worksets: ${h.installedModules.join(', ')}\n`;
                         }

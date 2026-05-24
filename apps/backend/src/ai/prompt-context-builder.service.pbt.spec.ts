@@ -74,6 +74,24 @@ describe('PromptContextBuilderService — Property-Based Tests', () => {
                 openglVersion: '4.6',
                 ram: '32 GB',
                 vram: '12 GB',
+                graphicsCards: [
+                    {
+                        name: 'NVIDIA RTX 4070',
+                        vram: '12 GB',
+                        ram: '',
+                        driverDate: '2026-01-20',
+                        driverVersion: '551.86',
+                        resolution: '3840x2160',
+                    },
+                    {
+                        name: 'AMD Radeon(TM) 880M Graphics',
+                        vram: 'Bilinmiyor (Paylaşımlı Bellek)',
+                        ram: '512 MB',
+                        driverDate: 'Bilinmiyor',
+                        driverVersion: 'Bilinmiyor',
+                        resolution: '3840x2160',
+                    },
+                ],
                 screenResolution: '3840x2160',
                 licenseType: 'CodeMeter',
                 installedModules: ['Architecture'],
@@ -88,6 +106,11 @@ describe('PromptContextBuilderService — Property-Based Tests', () => {
         expect(result).toContain('Allplan Sürümü: 2026');
         expect(result).toContain('Allplan Hotfix/Patch: HF3');
         expect(result).toContain('OpenGL: 4.6');
+        expect(result).toContain('Ekran Kartları Detayı');
+        expect(result).toContain('NVIDIA RTX 4070');
+        expect(result).toContain('AMD Radeon(TM) 880M Graphics');
+        expect(result).toContain('Sürücü Tarihi: 2026-01-20');
+        expect(result).toContain('RAM: 512 MB');
         expect(result).toContain('Lisans Tipi: CodeMeter');
         expect(result).toContain('Güvenlik/Antivirüs Servisleri: Windows Defender');
         expect(result).toContain('Olası Çakışmalar: onedrive.exe');

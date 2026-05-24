@@ -1989,15 +1989,23 @@ If context contains usable procedural evidence, synthesize the answer instead of
             normalizedQuery.includes('system info') ||
             normalizedQuery.includes('system analysis');
 
-        if (!explicitlyAsksHotinfo && !this.isHardwareOrSystemQuery(query)) {
+        const isHardwareOrSystemQuery = this.isHardwareOrSystemQuery(query);
+        const isLicenseQuery = this.isLicenseQuery(query);
+
+        if (!explicitlyAsksHotinfo && !isHardwareOrSystemQuery && !isLicenseQuery) {
             return '';
         }
 
         const h = hotinfoContext;
-        const lines = [
+        const versionLines = [
             `Allplan surumu: ${h.allplanVersion || 'bilinmiyor'} ${h.allplanHotfix ? `hotfix ${h.allplanHotfix}` : ''}`.trim(),
+            h.allplanBuildId ? `Allplan build id: ${h.allplanBuildId}` : '',
+        ];
+
+        const systemLines = isHardwareOrSystemQuery || explicitlyAsksHotinfo ? [
             `Isletim sistemi: ${h.osVersion || 'bilinmiyor'}`,
             `GPU: ${h.gpu || 'bilinmiyor'} ${h.gpuDriverVersion ? `driver ${h.gpuDriverVersion}` : ''} ${h.openglVersion ? `OpenGL ${h.openglVersion}` : ''}`.trim(),
+            this.formatGraphicsCardsForRetrieval(h),
             `RAM: ${h.ram || 'bilinmiyor'} ${h.vram ? `VRAM ${h.vram}` : ''}`.trim(),
             h.screenResolution ? `Ekran cozunurlugu: ${h.screenResolution}` : '',
             Array.isArray(h.conflictingProcesses) && h.conflictingProcesses.length > 0
@@ -2007,9 +2015,55 @@ If context contains usable procedural evidence, synthesize the answer instead of
                 ? `Guvenlik/antivirus servisleri: ${h.securityServices.join(', ')}`
                 : '',
             h.errorTrace ? 'Hotinfo hata kaydi mevcut; ham trace arama sorgusundan cikartildi.' : '',
-        ];
+        ] : [];
+
+        const licenseLines = isLicenseQuery ? [
+            this.buildSafeLicenseRetrievalSignal(h),
+        ] : [];
+
+        const lines = [...versionLines, ...systemLines, ...licenseLines];
 
         return lines.filter(Boolean).join('\n');
+    }
+
+    private formatGraphicsCardsForRetrieval(hotinfo: any): string {
+        const cards = Array.isArray(hotinfo?.graphicsCards) ? hotinfo.graphicsCards : [];
+        if (cards.length === 0) return '';
+
+        const summary = cards
+            .slice(0, 4)
+            .map((card: any, index: number) => {
+                const parts = [
+                    `${index + 1}. ${card?.name || 'bilinmeyen ekran karti'}`,
+                    card?.vram ? `VRAM ${card.vram}` : '',
+                    card?.ram ? `RAM ${card.ram}` : '',
+                    card?.driverDate ? `surucu tarihi ${card.driverDate}` : '',
+                    card?.driverVersion ? `surucu ${card.driverVersion}` : '',
+                    card?.resolution ? `cozunurluk ${card.resolution}` : '',
+                ].filter(Boolean);
+                return parts.join(' / ');
+            })
+            .join('; ');
+
+        return summary ? `Ekran kartlari: ${summary}` : '';
+    }
+
+    private buildSafeLicenseRetrievalSignal(hotinfo: any): string {
+        const rawLicenseTelemetry = this.normalizeSearchText(
+            `${hotinfo?.licenseType ?? ''} ${hotinfo?.hotinfoLicense ?? ''}`,
+        );
+
+        if (!rawLicenseTelemetry) return '';
+
+        if (
+            rawLicenseTelemetry.includes('okunamadi') ||
+            rawLicenseTelemetry.includes('sec nse') ||
+            rawLicenseTelemetry.includes('license file could not')
+        ) {
+            return 'Lisans telemetrisi: eski yerel lisans dosyasi okunamadi; dusuk guvenli legacy sinyal, modern Cloud/Wibu lisans kaniti degil.';
+        }
+
+        return 'Lisans telemetrisi: Hotinfo lisans alani mevcut; birincil dogrulama License Manager veya BIMPLUS portalinda yapilmali.';
     }
 
     private normalizeSearchText(value: string): string {
@@ -2029,6 +2083,11 @@ If context contains usable procedural evidence, synthesize the answer instead of
     private isHardwareOrSystemQuery(value: string): boolean {
         const normalized = this.normalizeSearchText(value);
         return /(?:cokme|crash|donma|freeze|yavas|slow|performans|hata|error|gpu|driver|surucu|ram|bellek|ekran karti|ekran kartlari|grafik karti|grafik kartlari|graphics card|display adapter|nvidia|amd|hotinfo|sistem gereksinimi|system requirement|sistem testi|guncelleme|surum)/.test(normalized);
+    }
+
+    private isLicenseQuery(value: string): boolean {
+        const normalized = this.normalizeSearchText(value);
+        return /(?:lisans|license|lizenz|codemeter|wibu|product key|urun anahtari|aktivasyon|activation|iade|aktar|transfer|tasima|tasin|license server|lisans sunucusu|softlock)/.test(normalized);
     }
 
     /**
@@ -2151,10 +2210,9 @@ If context contains usable procedural evidence, synthesize the answer instead of
 
         let expandedQuery = userQuery;
         // Conditional Hotinfo expansion (same logic as query())
-        const isHardwareQuery = this.isHardwareOrSystemQuery(userQuery);
-        if (hotinfoContext && isHardwareQuery) {
-            const h = hotinfoContext;
-            expandedQuery += `\n[Hotinfo Sistem Özeti]: İşletim Sistemi: ${h.osVersion || ''}, Ekran Kartı: ${h.gpu || ''}, Hata: ${h.errorTrace || ''}, Çakışan İşlemler: ${h.conflictingProcesses?.join(', ') || ''}`;
+        const hotinfoRetrievalContext = this.buildHotinfoRetrievalContext(hotinfoContext, userQuery);
+        if (hotinfoRetrievalContext) {
+            expandedQuery += `\n\n[HOTINFO SAFE SEARCH SIGNALS]\n${hotinfoRetrievalContext}`;
         }
 
         // 0. Conversation-aware query rewrite (add context from history)
@@ -2707,19 +2765,41 @@ If context contains usable procedural evidence, synthesize the answer instead of
             screenResolution?: string;
             errorTrace?: string;
             conflictingProcesses?: string[];
+            graphicsCards?: Array<{
+                name?: string;
+                vram?: string;
+                ram?: string;
+                driverDate?: string;
+                driverVersion?: string;
+                resolution?: string;
+            }>;
         };
         let hotinfoContext = '';
         let hotinfoAllplanVersion = '...';
         if (h && typeof h === 'object') {
             const data = h as HotinfoSnapshot;
             hotinfoAllplanVersion = data.allplanVersion || '...';
+            const graphicsCardSummary = Array.isArray(data.graphicsCards) && data.graphicsCards.length > 0
+                ? data.graphicsCards.slice(0, 4).map((card, index) => {
+                    const parts = [
+                        `${index + 1}. ${card.name || 'Bilinmiyor'}`,
+                        card.vram ? `VRAM: ${card.vram}` : '',
+                        card.ram ? `RAM: ${card.ram}` : '',
+                        card.driverDate ? `Sürücü Tarihi: ${card.driverDate}` : '',
+                        card.driverVersion ? `Sürücü: ${card.driverVersion}` : '',
+                        card.resolution ? `Çözünürlük: ${card.resolution}` : '',
+                    ].filter(Boolean);
+                    return parts.join(' | ');
+                }).join('; ')
+                : '';
             hotinfoContext = `\n[MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)]:
 - Allplan: ${data.allplanVersion || 'Bilinmiyor'} (Build: ${data.allplanBuildId || 'N/A'})
 - OS: ${data.osVersion || 'Bilinmiyor'}
 - GPU: ${data.gpu || 'Bilinmiyor'} (VRAM: ${data.vram || 'N/A'})
+- GPU Detayı: ${graphicsCardSummary || 'Bilinmiyor'}
 - RAM: ${data.ram || 'Bilinmiyor'}
 - Çözünürlük: ${data.screenResolution || 'Bilinmiyor'}
-- Hata Kaydı: ${data.errorTrace || 'Yok'}
+- Hata Kaydı: ${this.summarizeHotinfoTraceForPrompt(data.errorTrace)}
 - Çakışan İşlemler: ${data.conflictingProcesses?.join(', ') || 'Yok'}\n`;
         }
 
@@ -3096,6 +3176,22 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
         return ConfidenceBand.LOW;
     }
 
+    private summarizeHotinfoTraceForPrompt(trace: unknown): string {
+        const value = String(trace || '').trim();
+        if (!value) return 'Yok';
+
+        const normalized = this.normalizeSearchText(value);
+        if (
+            normalized.includes('sec nse') ||
+            normalized.includes('lisans dosyasi okunamadi') ||
+            normalized.includes('license file could not')
+        ) {
+            return 'Legacy yerel lisans trace sinyali mevcut; modern lisans gecersizligi veya BIMPLUS limiti kaniti degil.';
+        }
+
+        return value.length > 500 ? `${value.slice(0, 500)}... [trace truncated]` : value;
+    }
+
     private async prepareQueryContext(options: AiQueryOptions) {
         const { userQuery, userId, hotinfoContext, attachments, history, productId } = options;
         const isStaff = await this.isStaff(userId);
@@ -3124,10 +3220,9 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
 
         if (parsedDocs) expandedQuery += `\n\n[KULLANICI EKLERİ İÇERİĞİ]:\n${parsedDocs}`;
 
-        const isHardware = this.isHardwareOrSystemQuery(expandedQuery);
-        if (hotinfoContext && isHardware) {
-            const h = hotinfoContext;
-            expandedQuery += `\n[Hotinfo]: OS: ${h.osVersion || ''}, GPU: ${h.gpu || ''}, Error: ${h.errorTrace || ''}`;
+        const hotinfoRetrievalContext = this.buildHotinfoRetrievalContext(hotinfoContext, expandedQuery);
+        if (hotinfoRetrievalContext) {
+            expandedQuery += `\n\n[HOTINFO SAFE SEARCH SIGNALS]\n${hotinfoRetrievalContext}`;
         }
 
         const historyEnriched = rewriteQueryWithHistory(expandedQuery, history);

@@ -1,5 +1,26 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-24 Hotinfo Retrieval Applicability
+
+### What changed
+
+- Hotinfo is now evaluated more deeply for AI/RAG source applicability instead of only being shown in ticket UI.
+- Customer AI query and admin Copilot both append safe Hotinfo search signals for license/activation/transfer questions.
+- Allplan version and build id from Hotinfo can now steer retrieval away from legacy Softlock sources for modern Allplan installs.
+- Legacy unreadable license-file traces are explicitly treated as low-trust telemetry, not as proof that a modern Cloud/Wibu/BIMPLUS license is invalid.
+- Raw license numbers, `_SEC.NSE` paths, and raw Hotinfo traces are not leaked into retrieval/search prompts.
+- Prompt context now includes structured multi-GPU card details, including secondary GPU VRAM/RAM, driver date/version, and resolution.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts embedding.service.spec.ts prompt-context-builder.service.pbt.spec.ts hotinfo-parser.service.spec.ts ai-copilot.service.spec.ts` passed with 112 tests and 1 skipped.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+
+### Notes
+
+- Modern license questions with Hotinfo showing Allplan 2026 should no longer accept old 2006-2013 Softlock documents as HIGH-confidence primary evidence.
+- Explicit legacy contexts such as Allplan 2012 can still use Softlock sources when Hotinfo or the user question actually indicates a legacy version.
+
 ## Follow-up - 2026-05-24 LearnNow Course URL Guardrail
 
 ### What changed

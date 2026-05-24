@@ -102,11 +102,10 @@ export class AiCopilotService {
 
         // 2. Expand Search Query with Parser results
         const searchQuery = ticket.subject + '\n' + (ticket.description || '') + '\n' + activeUserMessage + '\n' + parsedDocumentTexts;
-        const isHardwareQuery = /çökme|crash|donma|freeze|yavaş|slow|performans|hata|error|gpu|driver|sürücü|ram|bellek/i.test(searchQuery);
-
         let expandedSearchQuery = searchQuery;
-        if (hotinfoSnapshot && isHardwareQuery && typeof hotinfoSnapshot === 'object') {
-            expandedSearchQuery += `\n[Hotinfo]: ${hotinfoSnapshot.osVersion || ''} ${hotinfoSnapshot.gpu || ''} ${hotinfoSnapshot.errorTrace || ''}`;
+        const hotinfoSearchSignals = this.buildSafeHotinfoSearchSignals(hotinfoSnapshot, searchQuery);
+        if (hotinfoSearchSignals) {
+            expandedSearchQuery += `\n\n[HOTINFO SAFE SEARCH SIGNALS]\n${hotinfoSearchSignals}`;
         }
 
         // 3. Technical Diagnosis (Aggregating context for shift detection)
@@ -442,8 +441,8 @@ Opening greeting must address the ticket requester/customer once when a requeste
             .trim();
     }
 
-    private normalizeSearchText(value: string): string {
-        return value
+    private normalizeSearchText(value: unknown): string {
+        return String(value || '')
             .toLowerCase()
             .replace(/[ıİ]/g, 'i')
             .replace(/[şŞ]/g, 's')
@@ -454,6 +453,79 @@ Opening greeting must address the ticket requester/customer once when a requeste
             .replace(/[^a-z0-9]+/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
+    }
+
+    private buildSafeHotinfoSearchSignals(hotinfo: Record<string, unknown> | null, query: string): string {
+        if (!hotinfo || typeof hotinfo !== 'object') return '';
+
+        const normalizedQuery = this.normalizeSearchText(query);
+        const isHardwareOrSystemQuery = /(?:cokme|crash|donma|freeze|yavas|slow|performans|hata|error|gpu|driver|surucu|ram|bellek|ekran karti|grafik karti|graphics card|display adapter|nvidia|amd|hotinfo|sistem gereksinimi|system requirement|sistem testi|guncelleme|surum)/.test(normalizedQuery);
+        const isLicenseQuery = /(?:lisans|license|lizenz|codemeter|wibu|product key|urun anahtari|aktivasyon|activation|iade|aktar|transfer|tasima|tasin|license server|lisans sunucusu|softlock)/.test(normalizedQuery);
+
+        if (!isHardwareOrSystemQuery && !isLicenseQuery) return '';
+
+        const lines = [
+            `Allplan surumu: ${hotinfo.allplanVersion || 'bilinmiyor'} ${hotinfo.allplanHotfix ? `hotfix ${hotinfo.allplanHotfix}` : ''}`.trim(),
+            hotinfo.allplanBuildId ? `Allplan build id: ${hotinfo.allplanBuildId}` : '',
+        ];
+
+        if (isHardwareOrSystemQuery) {
+            lines.push(
+                `Isletim sistemi: ${hotinfo.osVersion || 'bilinmiyor'}`,
+                `GPU: ${hotinfo.gpu || 'bilinmiyor'} ${hotinfo.gpuDriverVersion ? `driver ${hotinfo.gpuDriverVersion}` : ''} ${hotinfo.openglVersion ? `OpenGL ${hotinfo.openglVersion}` : ''}`.trim(),
+                this.formatGraphicsCardsForSearch(hotinfo),
+                `RAM: ${hotinfo.ram || 'bilinmiyor'} ${hotinfo.vram ? `VRAM ${hotinfo.vram}` : ''}`.trim(),
+                hotinfo.screenResolution ? `Ekran cozunurlugu: ${hotinfo.screenResolution}` : '',
+                Array.isArray(hotinfo.conflictingProcesses) && hotinfo.conflictingProcesses.length > 0
+                    ? `Cakisan surecler: ${hotinfo.conflictingProcesses.join(', ')}`
+                    : '',
+                Array.isArray(hotinfo.securityServices) && hotinfo.securityServices.length > 0
+                    ? `Guvenlik/antivirus servisleri: ${hotinfo.securityServices.join(', ')}`
+                    : '',
+                hotinfo.errorTrace ? 'Hotinfo hata kaydi mevcut; ham trace arama sorgusundan cikartildi.' : '',
+            );
+        }
+
+        if (isLicenseQuery) {
+            lines.push(this.buildSafeLicenseSignal(hotinfo));
+        }
+
+        return lines.filter(Boolean).join('\n');
+    }
+
+    private formatGraphicsCardsForSearch(hotinfo: Record<string, unknown>): string {
+        const cards = Array.isArray(hotinfo.graphicsCards) ? hotinfo.graphicsCards : [];
+        if (cards.length === 0) return '';
+
+        const summary = cards
+            .slice(0, 4)
+            .map((card: any, index: number) => {
+                const parts = [
+                    `${index + 1}. ${card?.name || 'bilinmeyen ekran karti'}`,
+                    card?.vram ? `VRAM ${card.vram}` : '',
+                    card?.ram ? `RAM ${card.ram}` : '',
+                    card?.driverDate ? `surucu tarihi ${card.driverDate}` : '',
+                    card?.driverVersion ? `surucu ${card.driverVersion}` : '',
+                    card?.resolution ? `cozunurluk ${card.resolution}` : '',
+                ].filter(Boolean);
+                return parts.join(' / ');
+            })
+            .join('; ');
+
+        return summary ? `Ekran kartlari: ${summary}` : '';
+    }
+
+    private buildSafeLicenseSignal(hotinfo: Record<string, unknown>): string {
+        const rawLicenseTelemetry = this.normalizeSearchText(`${hotinfo.licenseType ?? ''} ${hotinfo.hotinfoLicense ?? ''}`);
+        if (!rawLicenseTelemetry) return '';
+        if (
+            rawLicenseTelemetry.includes('okunamadi') ||
+            rawLicenseTelemetry.includes('sec nse') ||
+            rawLicenseTelemetry.includes('license file could not')
+        ) {
+            return 'Lisans telemetrisi: eski yerel lisans dosyasi okunamadi; dusuk guvenli legacy sinyal, modern Cloud/Wibu lisans kaniti degil.';
+        }
+        return 'Lisans telemetrisi: Hotinfo lisans alani mevcut; birincil dogrulama License Manager veya BIMPLUS portalinda yapilmali.';
     }
 
     private isCustomerMessage(message: { senderId?: string | null }, ticketUserId?: string | null): boolean {

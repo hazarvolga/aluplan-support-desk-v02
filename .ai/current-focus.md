@@ -61,6 +61,11 @@
   - raw Hotinfo traces stay out of retrieval query to avoid source pollution.
   - safe Hotinfo system signals can enrich retrieval when the user explicitly asks for Hotinfo/system analysis.
   - prompt context includes richer Hotinfo fields for final diagnosis.
+  - license/transfer/activation queries now also receive safe Hotinfo retrieval signals, because Allplan version/build materially affects source applicability.
+  - unreadable legacy license-file traces are treated as low-trust legacy telemetry, not as proof of an invalid modern Cloud/Wibu license.
+  - raw license numbers, `_SEC.NSE` paths, and raw Hotinfo traces stay out of retrieval/search prompts.
+  - admin Copilot and customer AI query now use the same safe Hotinfo search-signal policy for version, build, license, and hardware context.
+  - structured GPU card details, including secondary GPU VRAM/RAM/driver fields, are injected into prompt context for final diagnosis.
 - Product-flow Phase 1 API acceptance completed:
   - `.ai/product-flow/run-product-flow-acceptance.mjs`
   - 9/9 pass.
