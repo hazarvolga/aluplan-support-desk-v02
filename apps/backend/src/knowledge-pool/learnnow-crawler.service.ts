@@ -391,6 +391,7 @@ export class LearnNowCrawlerService {
         try {
             const url = new URL(href, LEARNNOW_BASE_URL);
             if (url.hostname !== 'learnnow.allplan.com') return null;
+            if (this.isEnrollmentCourseUrl(url)) return null;
             url.hash = '';
             return url.toString();
         } catch {
@@ -400,11 +401,16 @@ export class LearnNowCrawlerService {
 
     private isAllowedResultUrl(url: string, format: CandidateFormat): boolean {
         const parsed = new URL(url);
+        if (this.isEnrollmentCourseUrl(parsed)) return false;
         if (format === 'PDF') {
             return parsed.pathname.endsWith('.pdf') || parsed.pathname.includes('/mod/resource/view.php');
         }
 
         return this.isTotaraHowtoResource(parsed);
+    }
+
+    private isEnrollmentCourseUrl(url: URL): boolean {
+        return url.hostname === 'learnnow.allplan.com' && /^\/course(?:\/|$)/i.test(url.pathname);
     }
 
     private async upsertCandidate(candidate: DiscoveredCandidate): Promise<{ inserted: boolean }> {

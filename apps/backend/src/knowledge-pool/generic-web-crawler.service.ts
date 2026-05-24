@@ -38,6 +38,9 @@ export class GenericWebCrawlerService {
         if (!startUrl) throw new BadRequestException('Invalid start URL');
 
         const start = new URL(startUrl);
+        if (this.isLearnNowCourseUrl(start)) {
+            throw new BadRequestException('LEARNNOW_COURSE_URLS_REQUIRE_ENROLLMENT');
+        }
         const maxDepth = dto.maxDepth ?? DEFAULT_MAX_DEPTH;
         const maxCandidates = dto.maxCandidates ?? DEFAULT_MAX_CANDIDATES;
         const sameDomainOnly = dto.sameDomainOnly !== false;
@@ -199,9 +202,14 @@ export class GenericWebCrawlerService {
         }
         if (!['http:', 'https:'].includes(parsed.protocol)) return false;
         if (sameDomainOnly && parsed.hostname !== start.hostname) return false;
+        if (this.isLearnNowCourseUrl(parsed)) return false;
         if (DISALLOWED_PATH_PATTERN.test(parsed.pathname)) return false;
         if (SKIPPED_EXTENSIONS.test(parsed.pathname) && !this.isPdfUrl(url)) return false;
         return true;
+    }
+
+    private isLearnNowCourseUrl(url: URL): boolean {
+        return url.hostname === 'learnnow.allplan.com' && /^\/course(?:\/|$)/i.test(url.pathname);
     }
 
     private normalizeUrl(value: string): string | null {

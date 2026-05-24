@@ -1,5 +1,27 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-24 LearnNow Course URL Guardrail
+
+### What changed
+
+- Hardened LearnNow enrollment/course handling from warning-only to enforcement.
+- `learnnow.allplan.com/course/*` URLs are now rejected when admins try to add them as normal URL sources.
+- Generic web crawl discovery now rejects a `/course/` start URL and skips `/course/` child links.
+- LearnNow-specific candidate extraction now rejects `/course/*` URLs before article/PDF format checks, including course-layer PDF-looking links.
+- Knowledge Pool URL modal now refuses `/course/` URLs before submission and shows a localized error.
+- Removed the extra warning card from the crawler screen; the public crawl boundary is now explained in the primary notice.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- generic-web-crawler.service.spec.ts learnnow-crawler.service.spec.ts knowledge-pool-job.spec.ts` passed with 26 tests.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed for `tr`, `en`, and `de`.
+
+### Notes
+
+- Production was previously observed running commit `44d21f86`, while the public-only LearnNow boundary commit was local at `8e5b1168`; deploy must use the latest pushed head for this guardrail to appear live.
+
 ## Follow-up - 2026-05-23 Operations Dashboard Phase 5
 
 ### What changed

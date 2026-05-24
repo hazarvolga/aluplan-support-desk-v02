@@ -89,6 +89,55 @@ describe('GenericWebCrawlerService', () => {
         ]));
     });
 
+    it('rejects LearnNow course start URLs because they require enrollment', async () => {
+        const { service, crawl } = makeService();
+
+        await expect(service.discover({
+            startUrl: 'https://learnnow.allplan.com/course/view.php?id=123',
+            dryRun: true,
+        })).rejects.toThrow('LEARNNOW_COURSE_URLS_REQUIRE_ENROLLMENT');
+
+        expect(crawl.fetch).not.toHaveBeenCalled();
+    });
+
+    it('does not discover LearnNow course child links from generic web crawl', async () => {
+        const { service, crawl } = makeService();
+        crawl.fetch
+            .mockResolvedValueOnce({
+                content: '# LearnNow',
+                title: 'LearnNow Search',
+                hash: 'root-hash',
+                isDynamic: true,
+                provider: 'crawl4ai',
+                links: [
+                    'https://learnnow.allplan.com/course/view.php?id=123',
+                    'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=8572&source=howto',
+                ],
+            })
+            .mockResolvedValueOnce({
+                content: '# Public HowTo',
+                title: 'Public HowTo',
+                hash: 'howto-hash',
+                isDynamic: true,
+                provider: 'crawl4ai',
+                links: [],
+            });
+
+        const result = await service.discover({
+            startUrl: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=9000&source=howto',
+            maxDepth: 1,
+            maxCandidates: 10,
+            dryRun: true,
+        });
+
+        expect(result.candidates.map((candidate: any) => candidate.sourceUrl)).not.toContain(
+            'https://learnnow.allplan.com/course/view.php?id=123',
+        );
+        expect(result.candidates.map((candidate: any) => candidate.sourceUrl)).toContain(
+            'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=8572&source=howto',
+        );
+    });
+
     it('skips duplicate candidate URLs when saving discovery results', async () => {
         const { service, crawl, prisma } = makeService();
         crawl.fetch.mockResolvedValueOnce({

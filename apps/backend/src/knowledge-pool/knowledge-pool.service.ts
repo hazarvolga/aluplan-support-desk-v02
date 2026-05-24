@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
@@ -39,6 +39,10 @@ export class KnowledgePoolService {
     ) { }
 
     async createSource(dto: CreateKnowledgeSourceDto): Promise<any> {
+        if (dto.type === KnowledgeSourceType.URL && dto.url && this.isLearnNowCourseUrl(dto.url)) {
+            throw new BadRequestException('LEARNNOW_COURSE_URLS_REQUIRE_ENROLLMENT');
+        }
+
         const source = await this.prisma.knowledgeSource.create({
             data: {
                 name: dto.name,
@@ -60,6 +64,15 @@ export class KnowledgePoolService {
         // Trigger initial sync
         await this.triggerSync(source.id);
         return source;
+    }
+
+    private isLearnNowCourseUrl(value: string): boolean {
+        try {
+            const url = new URL(value);
+            return url.hostname === 'learnnow.allplan.com' && /^\/course(?:\/|$)/i.test(url.pathname);
+        } catch {
+            return false;
+        }
     }
 
     async createFileSource(name: string, type: KnowledgeSourceType, file: Express.Multer.File): Promise<any> {

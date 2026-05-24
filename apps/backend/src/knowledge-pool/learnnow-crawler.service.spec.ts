@@ -141,6 +141,34 @@ describe('LearnNowCrawlerService', () => {
         ]);
     });
 
+    it('rejects course-layer URLs before PDF candidate acceptance', async () => {
+        const { service } = makeService();
+        mockedAxios.get.mockResolvedValue({
+            data: `
+              <html><body>
+                <a href="/course/files/enrolled-only-manual.pdf">Enrollment PDF</a>
+                <a href="/mod/resource/view.php?id=202">Public Technical Manual</a>
+              </body></html>
+            `,
+        } as any);
+
+        const result = await service.discover({
+            formats: ['pdf'],
+            maxPages: 1,
+            maxCandidates: 10,
+            dryRun: true,
+        });
+
+        expect(result).toMatchObject({ dryRun: true, discovered: 1 });
+        expect(result.candidates).toEqual([
+            expect.objectContaining({
+                sourceUrl: 'https://learnnow.allplan.com/mod/resource/view.php?id=202',
+                title: 'Public Technical Manual',
+                format: 'PDF',
+            }),
+        ]);
+    });
+
     it('discovers public Totara howto resources for article and video filters without changing import format', async () => {
         const { service } = makeService();
         mockedAxios.get

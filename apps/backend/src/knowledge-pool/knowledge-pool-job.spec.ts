@@ -5,7 +5,7 @@ import { StorageService } from '../common/services/storage.service';
 import { Queue } from 'bullmq';
 import { getQueueToken } from '@nestjs/bullmq';
 import { mockPrismaService } from '../test/mock.utils';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
 
 describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
@@ -107,7 +107,7 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
                 id: 'source-url',
                 name: 'License server manual add article',
                 type: KnowledgeSourceType.URL,
-                url: 'https://learnnow.allplan.com/mod/page/view.php?id=42',
+                url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=42&source=howto',
                 metadata: { ingestionMode: 'bulk-safe' },
             };
             localMockPrismaService.knowledgeSource.create.mockResolvedValue(source);
@@ -120,7 +120,7 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
             await service.createSource({
                 name: 'License server manual add article',
                 type: KnowledgeSourceType.URL,
-                url: 'https://learnnow.allplan.com/mod/page/view.php?id=42',
+                url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=42&source=howto',
             });
 
             expect(localMockPrismaService.knowledgeSource.create).toHaveBeenCalledWith({
@@ -135,6 +135,17 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
                     }),
                 }),
             });
+        });
+
+        it('rejects LearnNow course URLs because they require enrollment', async () => {
+            await expect(service.createSource({
+                name: 'Enrollment course',
+                type: KnowledgeSourceType.URL,
+                url: 'https://learnnow.allplan.com/course/view.php?id=123',
+            })).rejects.toThrow(BadRequestException);
+
+            expect(localMockPrismaService.knowledgeSource.create).not.toHaveBeenCalled();
+            expect(mockQueue.add).not.toHaveBeenCalled();
         });
     });
 
