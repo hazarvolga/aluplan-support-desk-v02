@@ -26,6 +26,7 @@ describe('ai-answer-contract', () => {
         expect(prompt).toContain('Output language must be Turkish');
         expect(prompt).toContain('Do not mix German or English source-language labels into a Turkish answer');
         expect(prompt).toContain('Do not show raw excerpts');
+        expect(prompt).toContain('never tell the user or admin to create a new support request/ticket');
         expect(prompt).toContain('Use these sections and keep them in this order');
         expect(prompt).toContain('Do not omit "Kritik Kontroller"');
         expect(prompt).toContain('## ⚠️ Kritik Kontroller');

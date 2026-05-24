@@ -86,6 +86,11 @@ export const RAG_CONFIG = {
         },
         /** Decay constant for recency boost (days) */
         RECENCY_DECAY_DAYS: 30,
+        /** Source applicability multipliers guard old docs from winning modern intents */
+        APPLICABILITY: {
+            LEGACY_SOFTLOCK_LICENSE: 0.30,
+            LEGACY_VERSION_LICENSE: 0.45,
+        },
     },
 
     /** Search defaults */

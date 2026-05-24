@@ -3452,3 +3452,22 @@ Maintenance rule:
 
 - Backend deploy is required for the public-only LearnNow crawl boundary and discovery-time duplicate checks.
 - Frontend deploy is required for the crawler UI guidance and duplicate-reason display.
+
+## Follow-up - 2026-05-24 RAG Source Applicability Guard
+
+### What changed
+
+- Added a retrieval applicability multiplier so legacy Softlock / old Allplan 2006-2014 license documents cannot win HIGH confidence for modern license transfer or upgrade questions only because the title is lexically similar.
+- Modern license transfer sources such as Product Key / CodeMeter transfer guidance now outrank old Softlock documents for queries like "Bilgisayarıma format attım. Allplan lisansımı yeni bilgisayarıma nasıl aktarabilirim?"
+- Explicit legacy queries such as "Allplan 2012 Softlock..." still keep Softlock sources eligible, so the guard does not delete valid old-version support.
+- Added an answer-contract rule preventing AI answers generated inside an existing ticket or agent draft from telling the user/admin to create another support request.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- embedding.service.spec.ts ai-answer-contract.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `git diff --check` passed.
+
+### Deployment note
+
+- Backend deploy is required for the applicability guard and answer contract rule.

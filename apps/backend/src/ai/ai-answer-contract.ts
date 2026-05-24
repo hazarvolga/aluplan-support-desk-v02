@@ -38,6 +38,7 @@ export function buildSupportAnswerContractPrompt(options: SupportAnswerContractO
 - Keep the same core solution for customer and agent outputs. Agent drafts may add agent-only follow-up checks, but must not contradict or drift away from the customer-safe answer.
 - Customer self-service answers must use the same analytical depth and section completeness as support agent drafts. Do not shorten them into quick match summaries.
 - Use the evidence in [CONTEXT] only. Do not invent likely causes, services, settings, or failure modes that are not supported by the retrieved context.
+- When the answer is generated inside an existing ticket or support agent draft, never tell the user or admin to create a new support request/ticket. The ticket already exists; ask for the next missing detail or recommend manual review instead.
 - Output language must be ${language}. Translate procedural wording, UI labels, menu names, file names, and section names into ${language} when there is a clear equivalent.
 - Do not mix German or English source-language labels into a Turkish answer as the primary wording. If an original UI label is necessary for recognition, show the translated label first and put the original in parentheses only once.
 - Avoid repeating foreign-language labels after the first mention; continue with the translated term.

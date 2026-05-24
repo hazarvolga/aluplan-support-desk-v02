@@ -162,6 +162,7 @@
 - Generated MD files from old PDF conversion flows can duplicate or distort canonical PDF sources.
 - Legacy sources with `General` category can still appear after correctly categorized sources until old metadata is cleaned or reclassified.
 - Similar multilingual FAQ topics can still tie at capped similarity `1.000`; inspect rank order and source metadata, not only displayed similarity.
+- Legacy Softlock / old-version license sources are now demoted for modern license transfer or upgrade intents; keep this applicability guard in retrieval scoring rather than adding one-off answer templates.
 - Mixing embedding providers in the same `embedding_version` can corrupt retrieval even when vector dimensions match; model-space compatibility matters as much as dimension.
 - A source can have an unchanged content hash while still having zero embeddings from an earlier failed run; sync must verify embeddings before treating unchanged content as healthy.
 - `graphify` CLI was previously unavailable in PATH, so graph updates may need environment repair.

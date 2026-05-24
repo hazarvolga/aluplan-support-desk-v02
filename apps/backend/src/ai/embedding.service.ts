@@ -159,6 +159,68 @@ const calculateSourceQualityMultiplier = (title: string | null | undefined): num
     return 1;
 };
 
+const OLD_ALLPLAN_VERSION_PATTERN = /\ballplan\s*(2006|2008|2009|2010|2011|2012|2013|2014)\b/;
+const MODERN_ALLPLAN_VERSION_PATTERN = /\ballplan\s*(2020|2021|2022|2023|2024|2025|2026|2027|2028|2029)\b/;
+
+const hasLicenseIntent = (normalizedQuery: string): boolean =>
+    !hasNegatedLicenseIntent(normalizedQuery) &&
+    hasSignal(normalizedQuery, ['license', 'lisans', 'lizenz', 'codemeter', 'product key', 'aktivasyon', 'activation', 'softlock']);
+
+const hasTransferOrUpgradeIntent = (normalizedQuery: string): boolean =>
+    hasSignal(normalizedQuery, [
+        'yeni bilgisayar',
+        'baska bilgisayar',
+        'aktar',
+        'tasima',
+        'tasin',
+        'iade',
+        'return',
+        'transfer',
+        'move',
+        'new computer',
+        'another computer',
+        'upgrade',
+        'upgrading',
+        'yukselt',
+        'guncelle',
+    ]);
+
+const isExplicitLegacyLicenseQuery = (normalizedQuery: string): boolean =>
+    normalizedQuery.includes('softlock') || OLD_ALLPLAN_VERSION_PATTERN.test(normalizedQuery);
+
+const calculateApplicabilityMultiplier = (
+    query: string,
+    title: string | null | undefined,
+    content: string | null | undefined,
+    category: string | null | undefined,
+): number => {
+    const normalizedQuery = normalizeSearchText(query);
+    const normalizedSource = normalizeSearchText(`${title ?? ''} ${category ?? ''} ${content ?? ''}`);
+
+    if (!hasLicenseIntent(normalizedQuery)) return 1;
+    if (isExplicitLegacyLicenseQuery(normalizedQuery)) return 1;
+
+    const asksModernLicense =
+        hasTransferOrUpgradeIntent(normalizedQuery) ||
+        MODERN_ALLPLAN_VERSION_PATTERN.test(normalizedQuery);
+    if (!asksModernLicense) return 1;
+
+    if (normalizedSource.includes('softlock')) {
+        return RAG_CONFIG.RERANK.APPLICABILITY.LEGACY_SOFTLOCK_LICENSE;
+    }
+
+    const sourceHasOnlyLegacyVersion =
+        OLD_ALLPLAN_VERSION_PATTERN.test(normalizedSource) &&
+        !MODERN_ALLPLAN_VERSION_PATTERN.test(normalizedSource) &&
+        !hasSignal(normalizedSource, ['codemeter', 'product key', 'license server', 'lisans sunucusu']);
+
+    if (sourceHasOnlyLegacyVersion) {
+        return RAG_CONFIG.RERANK.APPLICABILITY.LEGACY_VERSION_LICENSE;
+    }
+
+    return 1;
+};
+
 const calculateContentSignalBoost = (query: string, title: string | null | undefined, content: string | null | undefined): number => {
     const normalizedQuery = normalizeSearchText(query);
     const normalizedSource = normalizeSearchText(`${title ?? ''} ${content ?? ''}`);
@@ -504,7 +566,8 @@ export class EmbeddingService {
                 const titleBoost = calculateTitleTokenBoost(queryTokens, row.title);
                 const contentSignalBoost = calculateContentSignalBoost(query, row.title, row.content);
                 const sourceQualityMultiplier = calculateSourceQualityMultiplier(row.title);
-                const rankScore = rawSimilarity * languageMultiplier * categoryMultiplier * intentCategoryMultiplier * intentSourceMultiplier * titleBoost * contentSignalBoost * sourceQualityMultiplier;
+                const applicabilityMultiplier = calculateApplicabilityMultiplier(query, row.title, row.content, row.category);
+                const rankScore = rawSimilarity * languageMultiplier * categoryMultiplier * intentCategoryMultiplier * intentSourceMultiplier * titleBoost * contentSignalBoost * sourceQualityMultiplier * applicabilityMultiplier;
                 const adjustedSimilarity = Math.min(rankScore, 1);
 
                 return {

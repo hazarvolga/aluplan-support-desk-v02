@@ -227,6 +227,73 @@ describe('EmbeddingService', () => {
             expect(results.map((result) => result.articleId)).toEqual(['src-format', 'src-transfer']);
         });
 
+        it('should demote legacy Softlock sources for modern license transfer questions', async () => {
+            mockAiService.embed.mockResolvedValue(mockEmbedResult);
+            mockPrismaService.$queryRaw.mockResolvedValue([
+                {
+                    article_id: 'legacy-softlock',
+                    source_type: 'DOCUMENT',
+                    title: 'faq-softlock-SSS-Lisansimi-artik-baska-bir-bilgisayarda-kullanmak-istiyorum.pdf',
+                    content: 'Allplan 2006 Allplan 2008 Allplan 2009 Allplan 2011 Allplan 2012 Allplan 2013 Softlock lisans aktarımı 05.06.2013.',
+                    similarity: 1.0,
+                    trust_score: 0.85,
+                    language: 'tr',
+                    category: 'License & Activation',
+                },
+                {
+                    article_id: 'modern-codemeter',
+                    source_type: 'DOCUMENT',
+                    title: 'FAQ_TR_Lisansi_yeni_bir_bilgisayara_veya_baska_bir_bilgisayara_aktarma.pdf',
+                    content: 'Product Key ile etkinleştirilen CodeMeter lisansı iade edilerek yeni bilgisayarda tekrar etkinleştirilir.',
+                    similarity: 0.76,
+                    trust_score: 0.85,
+                    language: 'tr',
+                    category: 'License & Activation',
+                },
+            ]);
+
+            const { results, diagnostics } = await service.search(
+                'Bilgisayarıma format attım. Allplan lisansımı yeni bilgisayarıma nasıl aktarabilirim?',
+                2,
+            );
+
+            expect(results.map((result) => result.articleId)).toEqual(['modern-codemeter', 'legacy-softlock']);
+            expect(results[1].confidence).toBe('LOW');
+            expect(results[1].similarity).toBeLessThan(0.62);
+            expect(diagnostics.topScore).toBe(results[0].similarity);
+        });
+
+        it('should keep Softlock sources eligible when the query explicitly targets legacy Softlock', async () => {
+            mockAiService.embed.mockResolvedValue(mockEmbedResult);
+            mockPrismaService.$queryRaw.mockResolvedValue([
+                {
+                    article_id: 'legacy-softlock',
+                    source_type: 'DOCUMENT',
+                    title: 'faq-softlock-SSS-Lisansimi-artik-baska-bir-bilgisayarda-kullanmak-istiyorum.pdf',
+                    content: 'Allplan 2012 Softlock lisans aktarımı.',
+                    similarity: 0.82,
+                    trust_score: 0.85,
+                    language: 'tr',
+                    category: 'License & Activation',
+                },
+                {
+                    article_id: 'modern-codemeter',
+                    source_type: 'DOCUMENT',
+                    title: 'FAQ_TR_Lisansi_yeni_bir_bilgisayara_veya_baska_bir_bilgisayara_aktarma.pdf',
+                    content: 'Product Key ile etkinleştirilen CodeMeter lisansı iade edilir.',
+                    similarity: 0.78,
+                    trust_score: 0.85,
+                    language: 'tr',
+                    category: 'License & Activation',
+                },
+            ]);
+
+            const { results } = await service.search('Allplan 2012 Softlock lisansımı başka bilgisayara nasıl aktarırım?', 2);
+
+            expect(results[0].articleId).toBe('legacy-softlock');
+            expect(results[0].similarity).toBeGreaterThan(0.80);
+        });
+
         it('should demote license sources when the query explicitly says it is not a license issue', async () => {
             mockAiService.embed.mockResolvedValue(mockEmbedResult);
             mockPrismaService.$queryRaw.mockResolvedValue([
