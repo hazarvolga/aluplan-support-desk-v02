@@ -3363,3 +3363,29 @@ Maintenance rule:
 
 - Backend deploy is required for the new `pulse.details` data contract.
 - Frontend deploy is required for clickable modal segment controls and localized metric labels.
+
+## Follow-up - 2026-05-24 Operations Dashboard CRM/Workspace Closure
+
+### What changed
+
+- Fixed CRM modal customer links by routing contact change records to the owning `User.id` instead of the `CustomerProfile.id`; this resolves the Deniz Doğan "account not found" path.
+- CRM modal records are grouped by local customer/account identity so field-level Dynamics changes no longer appear as repeated raw payload rows.
+- Pulse modal segment controls now show the actual selected slice result. Empty slices stay empty instead of falling back to generic records, so filters like failed-only, missing-email, and review-required are no longer misleading.
+- Operations Workspace removed the redundant AI Health tab and now focuses on Overview, CRM, Knowledge Pool, and LearnNow.
+- CRM, Knowledge Pool, and LearnNow workspace tabs now follow the mockup intent more closely with decision-oriented metric panels, progress signals, and linked record lists.
+- LearnNow workspace uses current real schema fields (`KNOWLEDGE_ARTICLE`, `PDF`, status counts) instead of placeholder media format labels.
+
+### Verification
+
+- `pnpm i18n:check` passed.
+- `pnpm --filter @aluplan/backend test -- ops-dashboard.service.spec.ts` passed.
+- `pnpm --filter @aluplan/frontend exec vitest run 'src/app/[locale]/(dashboard)/dashboard/DashboardClient.spec.tsx'` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm --filter @aluplan/backend build` passed.
+- `pnpm --filter @aluplan/frontend build` passed.
+
+### Deployment note
+
+- Deploy backend first for the corrected CRM modal link/grouping contract.
+- Deploy frontend after backend for the fixed modal filter behavior and updated workspace layout.

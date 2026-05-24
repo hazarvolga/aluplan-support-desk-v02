@@ -1,7 +1,12 @@
 import { OpsDashboardService } from './ops-dashboard.service';
 
 const makeAggregate = () => ({
-    _sum: { inputTokens: 0, outputTokens: 0, totalTokens: 0, estimatedCost: null },
+    _sum: {
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        estimatedCost: null,
+    },
     _count: { id: 0 },
 });
 
@@ -53,7 +58,10 @@ describe('OpsDashboardService', () => {
     });
 
     it('returns deterministic empty trend data instead of fake operational values', async () => {
-        const result = await service.getOverview({ requesterRole: 'SUPERUSER', days: 7 });
+        const result = await service.getOverview({
+            requesterRole: 'SUPERUSER',
+            days: 7,
+        });
 
         expect(result.activeDesk.trend).toHaveLength(7);
         expect(result.activeDesk.trend.every((point: any) => point.created === 0 && point.resolved === 0)).toBe(true);
@@ -64,23 +72,37 @@ describe('OpsDashboardService', () => {
 
     it('includes AI cost only for admin-like roles', async () => {
         prisma.aiInteraction.aggregate.mockResolvedValue({
-            _sum: { inputTokens: 10, outputTokens: 20, totalTokens: 30, estimatedCost: { toNumber: () => 0.42 } },
+            _sum: {
+                inputTokens: 10,
+                outputTokens: 20,
+                totalTokens: 30,
+                estimatedCost: { toNumber: () => 0.42 },
+            },
             _count: { id: 2 },
         });
         prisma.aiInteraction.groupBy.mockResolvedValue([
             {
                 provider: 'gemini',
                 model: 'gemini-2.5-flash',
-                _sum: { inputTokens: 10, outputTokens: 20, totalTokens: 30, estimatedCost: { toNumber: () => 0.42 } },
+                _sum: {
+                    inputTokens: 10,
+                    outputTokens: 20,
+                    totalTokens: 30,
+                    estimatedCost: { toNumber: () => 0.42 },
+                },
                 _count: { id: 2 },
             },
         ]);
 
-        const superUserResult = await service.getOverview({ requesterRole: 'SUPERUSER' });
+        const superUserResult = await service.getOverview({
+            requesterRole: 'SUPERUSER',
+        });
         expect(superUserResult.cost?.rolling30d.estimatedCost).toBe(0.42);
 
         jest.clearAllMocks();
-        const agentResult = await service.getOverview({ requesterRole: 'AGENT' });
+        const agentResult = await service.getOverview({
+            requesterRole: 'AGENT',
+        });
         expect(agentResult.cost).toBeNull();
         expect(prisma.aiInteraction.aggregate).not.toHaveBeenCalled();
     });
@@ -92,7 +114,9 @@ describe('OpsDashboardService', () => {
             .mockResolvedValueOnce(0) // sla breaches
             .mockResolvedValueOnce(0); // resolved today
 
-        const result = await service.getOverview({ requesterRole: 'SUPERUSER' });
+        const result = await service.getOverview({
+            requesterRole: 'SUPERUSER',
+        });
 
         expect(result.kpis.unassignedTickets).toBe(2);
         expect(result.decision).toEqual({
@@ -106,6 +130,7 @@ describe('OpsDashboardService', () => {
         prisma.customerProfile.findMany.mockResolvedValue([
             {
                 id: '31bf573c-6282-499c-8f85-217c5ed4911e',
+                userId: 'user-deniz-1',
                 firstName: 'Deniz',
                 lastName: 'Dogan',
                 companyName: 'LGN Proje',
@@ -134,7 +159,57 @@ describe('OpsDashboardService', () => {
             companyName: 'LGN Proje',
             email: 'deniz@example.com',
             changeSummary: 'email: old@example.com -> deniz@example.com',
-            href: '/customers/31bf573c-6282-499c-8f85-217c5ed4911e',
+            href: '/customers/user-deniz-1',
         });
+    });
+
+    it('groups CRM modal records by customer instead of leaking field-level duplicates', async () => {
+        prisma.crmChangeLog.findMany.mockResolvedValue([
+            {
+                id: 'change-1',
+                entityType: 'contact',
+                entityId: 'crm-contact-1',
+                localRecordId: 'profile-deniz-1',
+                fieldName: 'rawCrmPayload',
+                oldValue: null,
+                newValue: '{}',
+                source: 'DELTA_SYNC',
+                status: 'SUCCESS',
+                changedAt: new Date('2026-05-24T00:00:00.000Z'),
+            },
+            {
+                id: 'change-2',
+                entityType: 'contact',
+                entityId: 'crm-contact-1',
+                localRecordId: 'profile-deniz-1',
+                fieldName: 'jobTitle',
+                oldValue: 'Old',
+                newValue: 'Engineer',
+                source: 'DELTA_SYNC',
+                status: 'SUCCESS',
+                changedAt: new Date('2026-05-24T00:00:01.000Z'),
+            },
+        ]);
+        prisma.customerProfile.findMany.mockResolvedValue([
+            {
+                id: 'profile-deniz-1',
+                userId: 'user-deniz-1',
+                firstName: 'Deniz',
+                lastName: 'Dogan',
+                companyName: 'LGN Proje',
+                externalContactId: 'crm-contact-1',
+                user: { email: 'deniz@example.com', fullName: 'Deniz Dogan' },
+            },
+        ]);
+
+        const records = await (service as any).getCrmChangeRecords({}, 12);
+
+        expect(records).toHaveLength(1);
+        expect(records[0]).toMatchObject({
+            title: 'Deniz Dogan',
+            href: '/customers/user-deniz-1',
+        });
+        expect(records[0].description).toContain('2 alan güncellendi');
+        expect(records[0].description).not.toContain('rawCrmPayload');
     });
 });

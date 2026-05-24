@@ -14,8 +14,11 @@
   - Phase 3 made pulse cards actionable: each pulse opens a responsive real-data modal with larger trend chart, linked records, and operational action links.
   - Live modal follow-up is in progress:
     - modal segment controls are no longer decorative; ticket, AI, CRM, and Knowledge pulse modals read real `pulse.details` segments from the backend.
-    - CRM modal records suppress raw CRM payload snippets and use readable person/company/change summaries.
+    - empty modal filter slices now stay empty instead of falling back to unrelated generic records.
+    - CRM modal records suppress raw CRM payload snippets, group field-level Dynamics changes by local customer/account, and link contacts through `User.id` so customer detail routes resolve.
     - frontend tests now cover that selecting a modal segment changes the displayed records.
+    - Operations Workspace now keeps Overview, CRM, Knowledge Pool, and LearnNow only; the redundant AI Health tab was removed from that panel.
+    - CRM, Knowledge Pool, and LearnNow workspace tabs use mockup-style decision panels plus linked record lists backed by real ops data.
   - Phase 4 added controlled refresh: manual refresh plus 60-second background polling for staff/admin dashboards, with visible last-updated state and no customer-side polling.
   - Phase 5 final verification passed backend tests/typecheck, frontend typecheck/build, dashboard unit tests, i18n check, and diff hygiene.
   - Deployment should include both services: backend first for the new endpoint, then frontend for the new UI.

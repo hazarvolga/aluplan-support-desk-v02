@@ -381,6 +381,7 @@
           "decision": "Decision",
           "records": "Recent Records",
           "actions": "Actions",
+          "selected_slice": "Selected view: {slice} · {count} records",
           "empty_title": "No records in this window",
           "empty_desc": "There is no linked record to inspect for this signal yet.",
           "unknown_record": "Unknown record",
@@ -550,7 +551,29 @@
           "language_risks": "Language risks"
         },
         "badges": {
-          "daily_close": "Daily Close"
+          "daily_close": "Daily Close",
+          "dynamics": "Dynamics",
+          "quality": "Quality",
+          "controlled_import": "Controlled Import",
+          "database": "Database",
+          "review_queue": "Review Queue",
+          "quality_gate": "Quality Gate"
+        },
+        "cards": {
+          "crm_live": "CRM Live Notifications",
+          "crm_quality": "CRM Data Health",
+          "missing_email": "Missing email",
+          "portal_match": "Portal match",
+          "dataset_summary": "Dataset Corpus Summary",
+          "knowledge_changes": "Knowledge Pool Changes",
+          "new_chunks": "Total embeddings",
+          "learnnow_summary": "LearnNow / Crawler Summary",
+          "review_decisions": "Review Decisions",
+          "knowledge_article": "Knowledge Article",
+          "pdf": "PDF",
+          "explaining_video": "Explaining Video",
+          "recorded_session": "Recorded Session",
+          "technical_manual": "Technical Manual"
         },
         "empty_title": "No records here",
         "unknown_record": "Unknown record"

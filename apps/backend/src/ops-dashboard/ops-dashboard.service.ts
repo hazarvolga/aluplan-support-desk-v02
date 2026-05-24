@@ -1,12 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import {
-    AgentStatus,
-    CrawlCandidateStatus,
-    KnowledgeSourceStatus,
-    TicketStatus,
-} from '@aluplan/database';
+import { AgentStatus, CrawlCandidateStatus, KnowledgeSourceStatus, TicketStatus } from '@aluplan/database';
 import { PrismaService } from '../prisma/prisma.service';
 
 type RoleLike = string | { name?: string | null } | null | undefined;
@@ -23,7 +18,7 @@ type OpsModalRecord = {
     description: string;
     href: string;
     status?: string | null;
-    meta?: Record<string, string | number | null>;
+    meta?: Record<string, any>;
 };
 
 type OpsModalSegment = {
@@ -32,7 +27,11 @@ type OpsModalSegment = {
     series: TrendPoint[];
     metrics: Record<string, number>;
     records: OpsModalRecord[];
-    decision: { level: 'ok' | 'info' | 'warning' | 'critical'; title: string; description: string };
+    decision: {
+        level: 'ok' | 'info' | 'warning' | 'critical';
+        title: string;
+        description: string;
+    };
 };
 
 type OpsDashboardRequest = {
@@ -53,13 +52,7 @@ type CrmChangeRow = {
     changedAt: Date;
 };
 
-const ACTIVE_TICKET_STATUSES = [
-    TicketStatus.NEW,
-    TicketStatus.OPEN,
-    TicketStatus.IN_PROGRESS,
-    TicketStatus.PENDING_CUSTOMER,
-    TicketStatus.PENDING_CUSTOMER_REVIEW,
-];
+const ACTIVE_TICKET_STATUSES = [TicketStatus.NEW, TicketStatus.OPEN, TicketStatus.IN_PROGRESS, TicketStatus.PENDING_CUSTOMER, TicketStatus.PENDING_CUSTOMER_REVIEW];
 
 @Injectable()
 export class OpsDashboardService {
@@ -68,7 +61,7 @@ export class OpsDashboardService {
         @InjectQueue('knowledge-sync') private readonly knowledgeQueue: Queue,
         @InjectQueue('crm-sync') private readonly crmQueue: Queue,
         @InjectQueue('ai-query-processing') private readonly aiQueue: Queue,
-    ) { }
+    ) {}
 
     async getOverview(options: OpsDashboardRequest = {}) {
         const days = this.normalizeDays(options.days);
@@ -78,22 +71,7 @@ export class OpsDashboardService {
         const thirtyDaysAgo = this.addDays(now, -30);
         const canViewCost = this.canViewCost(options.requesterRole);
 
-        const [
-            ticketKpis,
-            ticketTrend,
-            activeTickets,
-            actionQueue,
-            aiCost,
-            aiQuality,
-            aiTrend,
-            crmSummary,
-            knowledgeSummary,
-            learnNowSummary,
-            queueSummary,
-            systemSummary,
-            liveFeed,
-            modalDetails,
-        ] = await Promise.all([
+        const [ticketKpis, ticketTrend, activeTickets, actionQueue, aiCost, aiQuality, aiTrend, crmSummary, knowledgeSummary, learnNowSummary, queueSummary, systemSummary, liveFeed, modalDetails] = await Promise.all([
             this.getTicketKpis(todayStart),
             this.getTicketTrend(trendStart, todayStart, days),
             this.getActiveTickets(),
@@ -114,7 +92,11 @@ export class OpsDashboardService {
 
         return {
             generatedAt: now.toISOString(),
-            window: { days, todayStart: todayStart.toISOString(), trendStart: trendStart.toISOString() },
+            window: {
+                days,
+                todayStart: todayStart.toISOString(),
+                trendStart: trendStart.toISOString(),
+            },
             kpis: {
                 activeTickets: ticketKpis.active,
                 unassignedTickets: ticketKpis.unassigned,
@@ -165,12 +147,25 @@ export class OpsDashboardService {
     }
 
     private async getTicketKpis(todayStart: Date) {
-        const activeWhere = { deletedAt: null, status: { in: ACTIVE_TICKET_STATUSES } };
+        const activeWhere = {
+            deletedAt: null,
+            status: { in: ACTIVE_TICKET_STATUSES },
+        };
         const [active, unassigned, slaBreaches, resolvedToday] = await Promise.all([
             this.prisma.ticket.count({ where: activeWhere }),
-            this.prisma.ticket.count({ where: { ...activeWhere, assignedTo: null } }),
-            this.prisma.ticket.count({ where: { ...activeWhere, isSlaBreached: true } }),
-            this.prisma.ticket.count({ where: { deletedAt: null, status: TicketStatus.RESOLVED, resolvedAt: { gte: todayStart } } }),
+            this.prisma.ticket.count({
+                where: { ...activeWhere, assignedTo: null },
+            }),
+            this.prisma.ticket.count({
+                where: { ...activeWhere, isSlaBreached: true },
+            }),
+            this.prisma.ticket.count({
+                where: {
+                    deletedAt: null,
+                    status: TicketStatus.RESOLVED,
+                    resolvedAt: { gte: todayStart },
+                },
+            }),
         ]);
 
         return { active, unassigned, slaBreaches, resolvedToday };
@@ -196,7 +191,9 @@ export class OpsDashboardService {
                     select: {
                         fullName: true,
                         email: true,
-                        customerProfile: { select: { companyName: true, isVip: true } },
+                        customerProfile: {
+                            select: { companyName: true, isVip: true },
+                        },
                     },
                 },
                 assignee: { select: { fullName: true, email: true } },
@@ -216,16 +213,24 @@ export class OpsDashboardService {
     private async getActionQueue(todayStart: Date) {
         const now = new Date();
         const soon = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-        const activeWhere = { deletedAt: null, status: { in: ACTIVE_TICKET_STATUSES } };
+        const activeWhere = {
+            deletedAt: null,
+            status: { in: ACTIVE_TICKET_STATUSES },
+        };
 
         const [unassigned, slaRisk, lowConfidence, crawlerReview, crmFailures] = await Promise.all([
-            this.prisma.ticket.count({ where: { ...activeWhere, assignedTo: null } }),
+            this.prisma.ticket.count({
+                where: { ...activeWhere, assignedTo: null },
+            }),
             this.prisma.ticket.count({
                 where: {
                     ...activeWhere,
                     isSlaBreached: false,
                     OR: [
-                        { slaResponseDue: { gte: now, lte: soon }, slaRespondedAt: null },
+                        {
+                            slaResponseDue: { gte: now, lte: soon },
+                            slaRespondedAt: null,
+                        },
                         { slaResolveDue: { gte: now, lte: soon } },
                     ],
                 },
@@ -236,16 +241,48 @@ export class OpsDashboardService {
                     OR: [{ confidenceBand: 'LOW' }, { confidenceBand: null }],
                 },
             }),
-            this.prisma.crawlCandidate.count({ where: { status: CrawlCandidateStatus.PENDING_REVIEW } }),
-            this.prisma.crmChangeLog.count({ where: { status: { not: 'SUCCESS' }, changedAt: { gte: todayStart } } }),
+            this.prisma.crawlCandidate.count({
+                where: { status: CrawlCandidateStatus.PENDING_REVIEW },
+            }),
+            this.prisma.crmChangeLog.count({
+                where: {
+                    status: { not: 'SUCCESS' },
+                    changedAt: { gte: todayStart },
+                },
+            }),
         ]);
 
         return [
-            { id: 'unassigned', severity: unassigned > 0 ? 'warning' : 'ok', count: unassigned, href: '/tickets?assignedTo=unassigned' },
-            { id: 'sla_risk', severity: slaRisk > 0 ? 'critical' : 'ok', count: slaRisk, href: '/tickets?isSlaBreached=false' },
-            { id: 'low_confidence_ai', severity: lowConfidence > 0 ? 'warning' : 'ok', count: lowConfidence, href: '/admin/ai-health' },
-            { id: 'crawler_review', severity: crawlerReview > 0 ? 'info' : 'ok', count: crawlerReview, href: '/knowledge-pool?tab=candidates' },
-            { id: 'crm_failures', severity: crmFailures > 0 ? 'critical' : 'ok', count: crmFailures, href: '/customers/crm' },
+            {
+                id: 'unassigned',
+                severity: unassigned > 0 ? 'warning' : 'ok',
+                count: unassigned,
+                href: '/tickets?assignedTo=unassigned',
+            },
+            {
+                id: 'sla_risk',
+                severity: slaRisk > 0 ? 'critical' : 'ok',
+                count: slaRisk,
+                href: '/tickets?isSlaBreached=false',
+            },
+            {
+                id: 'low_confidence_ai',
+                severity: lowConfidence > 0 ? 'warning' : 'ok',
+                count: lowConfidence,
+                href: '/admin/ai-health',
+            },
+            {
+                id: 'crawler_review',
+                severity: crawlerReview > 0 ? 'info' : 'ok',
+                count: crawlerReview,
+                href: '/knowledge-pool?tab=candidates',
+            },
+            {
+                id: 'crm_failures',
+                severity: crmFailures > 0 ? 'critical' : 'ok',
+                count: crmFailures,
+                href: '/customers/crm',
+            },
         ];
     }
 
@@ -253,18 +290,33 @@ export class OpsDashboardService {
         const [today, month, providers] = await Promise.all([
             this.prisma.aiInteraction.aggregate({
                 where: { createdAt: { gte: todayStart } },
-                _sum: { inputTokens: true, outputTokens: true, totalTokens: true, estimatedCost: true },
+                _sum: {
+                    inputTokens: true,
+                    outputTokens: true,
+                    totalTokens: true,
+                    estimatedCost: true,
+                },
                 _count: { id: true },
             }),
             this.prisma.aiInteraction.aggregate({
                 where: { createdAt: { gte: thirtyDaysAgo } },
-                _sum: { inputTokens: true, outputTokens: true, totalTokens: true, estimatedCost: true },
+                _sum: {
+                    inputTokens: true,
+                    outputTokens: true,
+                    totalTokens: true,
+                    estimatedCost: true,
+                },
                 _count: { id: true },
             }),
             this.prisma.aiInteraction.groupBy({
                 by: ['provider', 'model'],
                 where: { createdAt: { gte: thirtyDaysAgo } },
-                _sum: { inputTokens: true, outputTokens: true, totalTokens: true, estimatedCost: true },
+                _sum: {
+                    inputTokens: true,
+                    outputTokens: true,
+                    totalTokens: true,
+                    estimatedCost: true,
+                },
                 _count: { id: true },
                 orderBy: { _count: { id: 'desc' } },
                 take: 6,
@@ -290,17 +342,49 @@ export class OpsDashboardService {
 
     private async getAiQuality(thirtyDaysAgo: Date) {
         const [total, high, medium, low, noMatch, ticketCreated, accepted, sourceLeaks, languageRisks] = await Promise.all([
-            this.prisma.aiInteraction.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
-            this.prisma.aiInteraction.count({ where: { createdAt: { gte: thirtyDaysAgo }, confidenceBand: 'HIGH' } }),
-            this.prisma.aiInteraction.count({ where: { createdAt: { gte: thirtyDaysAgo }, confidenceBand: 'MEDIUM' } }),
-            this.prisma.aiInteraction.count({ where: { createdAt: { gte: thirtyDaysAgo }, confidenceBand: 'LOW' } }),
-            this.prisma.aiInteraction.count({ where: { createdAt: { gte: thirtyDaysAgo }, confidenceBand: null } }),
-            this.prisma.aiInteraction.count({ where: { createdAt: { gte: thirtyDaysAgo }, ticketCreated: true } }),
-            this.prisma.aiInteraction.count({ where: { createdAt: { gte: thirtyDaysAgo }, isAccepted: true } }),
+            this.prisma.aiInteraction.count({
+                where: { createdAt: { gte: thirtyDaysAgo } },
+            }),
             this.prisma.aiInteraction.count({
                 where: {
                     createdAt: { gte: thirtyDaysAgo },
-                    responseGenerated: { contains: 'Source:', mode: 'insensitive' },
+                    confidenceBand: 'HIGH',
+                },
+            }),
+            this.prisma.aiInteraction.count({
+                where: {
+                    createdAt: { gte: thirtyDaysAgo },
+                    confidenceBand: 'MEDIUM',
+                },
+            }),
+            this.prisma.aiInteraction.count({
+                where: {
+                    createdAt: { gte: thirtyDaysAgo },
+                    confidenceBand: 'LOW',
+                },
+            }),
+            this.prisma.aiInteraction.count({
+                where: {
+                    createdAt: { gte: thirtyDaysAgo },
+                    confidenceBand: null,
+                },
+            }),
+            this.prisma.aiInteraction.count({
+                where: {
+                    createdAt: { gte: thirtyDaysAgo },
+                    ticketCreated: true,
+                },
+            }),
+            this.prisma.aiInteraction.count({
+                where: { createdAt: { gte: thirtyDaysAgo }, isAccepted: true },
+            }),
+            this.prisma.aiInteraction.count({
+                where: {
+                    createdAt: { gte: thirtyDaysAgo },
+                    responseGenerated: {
+                        contains: 'Source:',
+                        mode: 'insensitive',
+                    },
                 },
             }),
             this.prisma.aiInteraction.count({
@@ -329,8 +413,15 @@ export class OpsDashboardService {
 
     private async getCrmSummary(todayStart: Date, trendStart: Date, days: number) {
         const [updatedToday, failuresToday, recentChanges, trend] = await Promise.all([
-            this.prisma.crmChangeLog.count({ where: { changedAt: { gte: todayStart } } }),
-            this.prisma.crmChangeLog.count({ where: { changedAt: { gte: todayStart }, status: { not: 'SUCCESS' } } }),
+            this.prisma.crmChangeLog.count({
+                where: { changedAt: { gte: todayStart } },
+            }),
+            this.prisma.crmChangeLog.count({
+                where: {
+                    changedAt: { gte: todayStart },
+                    status: { not: 'SUCCESS' },
+                },
+            }),
             this.prisma.crmChangeLog.findMany({
                 orderBy: { changedAt: 'desc' },
                 take: 8,
@@ -361,16 +452,26 @@ export class OpsDashboardService {
 
     private async getKnowledgeSummary(todayStart: Date, trendStart: Date, days: number) {
         const [sourcesByStatus, syncFailuresToday, embeddings, genericCandidatesPending, datasetSources, trend] = await Promise.all([
-            this.prisma.knowledgeSource.groupBy({ by: ['status'], _count: { id: true } }),
-            this.prisma.knowledgeSourceSyncLog.count({ where: { syncStartedAt: { gte: todayStart }, status: { in: ['FAILED', 'PAUSED_BUDGET'] } } }),
+            this.prisma.knowledgeSource.groupBy({
+                by: ['status'],
+                _count: { id: true },
+            }),
+            this.prisma.knowledgeSourceSyncLog.count({
+                where: {
+                    syncStartedAt: { gte: todayStart },
+                    status: { in: ['FAILED', 'PAUSED_BUDGET'] },
+                },
+            }),
             this.prisma.knowledgePoolEmbedding.count(),
-            this.prisma.crawlCandidate.count({ where: { source: 'generic_web', status: CrawlCandidateStatus.PENDING_REVIEW } }),
+            this.prisma.crawlCandidate.count({
+                where: {
+                    source: 'generic_web',
+                    status: CrawlCandidateStatus.PENDING_REVIEW,
+                },
+            }),
             this.prisma.knowledgeSource.count({
                 where: {
-                    OR: [
-                        { metadata: { path: ['source'], equals: 'dataset' } },
-                        { metadata: { path: ['origin'], equals: 'dataset' } },
-                    ],
+                    OR: [{ metadata: { path: ['source'], equals: 'dataset' } }, { metadata: { path: ['origin'], equals: 'dataset' } }],
                 },
             }),
             this.getDailyCountTrend('knowledge_sources', 'created_at', trendStart, days),
@@ -403,7 +504,15 @@ export class OpsDashboardService {
                 where: { source: 'learnnow' },
                 orderBy: { updatedAt: 'desc' },
                 take: 8,
-                select: { id: true, title: true, status: true, format: true, language: true, sourceUrl: true, updatedAt: true },
+                select: {
+                    id: true,
+                    title: true,
+                    status: true,
+                    format: true,
+                    language: true,
+                    sourceUrl: true,
+                    updatedAt: true,
+                },
             }),
         ]);
 
@@ -431,7 +540,9 @@ export class OpsDashboardService {
                     status: 'ACTIVE',
                     deletedAt: null,
                     agentStatus: AgentStatus.ONLINE,
-                    role: { name: { not: 'CUSTOMER', mode: 'insensitive' } },
+                    role: {
+                        name: { not: 'CUSTOMER', mode: 'insensitive' },
+                    },
                 },
             }),
             this.prisma.user.count({
@@ -439,14 +550,27 @@ export class OpsDashboardService {
                     status: 'ACTIVE',
                     deletedAt: null,
                     agentStatus: AgentStatus.DND,
-                    role: { name: { not: 'CUSTOMER', mode: 'insensitive' } },
+                    role: {
+                        name: { not: 'CUSTOMER', mode: 'insensitive' },
+                    },
                 },
             }),
             this.prisma.aiHealthEvent.findMany({
-                where: { createdAt: { gte: thirtyDaysAgo }, eventType: { in: ['ERROR', 'TIMEOUT', 'FALLBACK'] } },
+                where: {
+                    createdAt: { gte: thirtyDaysAgo },
+                    eventType: { in: ['ERROR', 'TIMEOUT', 'FALLBACK'] },
+                },
                 orderBy: { createdAt: 'desc' },
                 take: 6,
-                select: { id: true, eventType: true, provider: true, model: true, task: true, errorMessage: true, createdAt: true },
+                select: {
+                    id: true,
+                    eventType: true,
+                    provider: true,
+                    model: true,
+                    task: true,
+                    errorMessage: true,
+                    createdAt: true,
+                },
             }),
         ]);
 
@@ -465,11 +589,7 @@ export class OpsDashboardService {
     }
 
     private async getQueueSummary() {
-        const [knowledge, crm, ai] = await Promise.all([
-            this.queueCounts(this.knowledgeQueue),
-            this.queueCounts(this.crmQueue),
-            this.queueCounts(this.aiQueue),
-        ]);
+        const [knowledge, crm, ai] = await Promise.all([this.queueCounts(this.knowledgeQueue), this.queueCounts(this.crmQueue), this.queueCounts(this.aiQueue)]);
 
         return { knowledge, crm, ai };
     }
@@ -480,7 +600,13 @@ export class OpsDashboardService {
                 where: { deletedAt: null },
                 orderBy: { createdAt: 'desc' },
                 take: 5,
-                select: { id: true, ticketNumber: true, subject: true, status: true, createdAt: true },
+                select: {
+                    id: true,
+                    ticketNumber: true,
+                    subject: true,
+                    status: true,
+                    createdAt: true,
+                },
             }),
             this.prisma.crmChangeLog.findMany({
                 orderBy: { changedAt: 'desc' },
@@ -501,12 +627,24 @@ export class OpsDashboardService {
             this.prisma.aiHealthEvent.findMany({
                 orderBy: { createdAt: 'desc' },
                 take: 5,
-                select: { id: true, eventType: true, provider: true, task: true, createdAt: true },
+                select: {
+                    id: true,
+                    eventType: true,
+                    provider: true,
+                    task: true,
+                    createdAt: true,
+                },
             }),
             this.prisma.crawlCandidate.findMany({
                 orderBy: { updatedAt: 'desc' },
                 take: 5,
-                select: { id: true, title: true, source: true, status: true, updatedAt: true },
+                select: {
+                    id: true,
+                    title: true,
+                    source: true,
+                    status: true,
+                    updatedAt: true,
+                },
             }),
         ]);
         const enrichedCrm = await this.enrichCrmChanges(crm);
@@ -548,7 +686,9 @@ export class OpsDashboardService {
                 at: candidate.updatedAt.toISOString(),
                 href: '/knowledge-pool?tab=candidates',
             })),
-        ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 14);
+        ]
+            .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+            .slice(0, 14);
     }
 
     private async enrichCrmChanges(changes: CrmChangeRow[]) {
@@ -561,42 +701,50 @@ export class OpsDashboardService {
         const contactExternalIds = this.uniqueValues(contactChanges.map((change) => change.entityId));
         const accountExternalIds = this.uniqueValues(accountChanges.map((change) => change.entityId));
 
-        const contactWhere = [
-            contactLocalIds.length ? { id: { in: contactLocalIds } } : null,
-            contactExternalIds.length ? { externalContactId: { in: contactExternalIds } } : null,
-        ].filter(Boolean) as Array<Record<string, any>>;
-        const accountWhere = [
-            accountLocalIds.length ? { id: { in: accountLocalIds } } : null,
-            accountExternalIds.length ? { externalAccountId: { in: accountExternalIds } } : null,
-        ].filter(Boolean) as Array<Record<string, any>>;
+        const contactWhere = [contactLocalIds.length ? { id: { in: contactLocalIds } } : null, contactExternalIds.length ? { externalContactId: { in: contactExternalIds } } : null].filter(Boolean) as Array<Record<string, any>>;
+        const accountWhere = [accountLocalIds.length ? { id: { in: accountLocalIds } } : null, accountExternalIds.length ? { externalAccountId: { in: accountExternalIds } } : null].filter(Boolean) as Array<Record<string, any>>;
 
         const [contacts, accounts]: [
-            Array<{ id: string; firstName: string; lastName: string; companyName: string; externalContactId: string | null; user: { email: string; fullName: string | null } }>,
-            Array<{ id: string; name: string; externalAccountId: string | null; phone: string | null }>,
+            Array<{
+                id: string;
+                userId: string;
+                firstName: string;
+                lastName: string;
+                companyName: string;
+                externalContactId: string | null;
+                user: { email: string; fullName: string | null };
+            }>,
+            Array<{
+                id: string;
+                name: string;
+                externalAccountId: string | null;
+                phone: string | null;
+            }>,
         ] = await Promise.all([
             contactWhere.length
                 ? this.prisma.customerProfile.findMany({
-                    where: { OR: contactWhere },
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        companyName: true,
-                        externalContactId: true,
-                        user: { select: { email: true, fullName: true } },
-                    },
-                })
+                      where: { OR: contactWhere },
+                      select: {
+                          id: true,
+                          userId: true,
+                          firstName: true,
+                          lastName: true,
+                          companyName: true,
+                          externalContactId: true,
+                          user: { select: { email: true, fullName: true } },
+                      },
+                  })
                 : Promise.resolve([]),
             accountWhere.length
                 ? this.prisma.crmAccount.findMany({
-                    where: { OR: accountWhere },
-                    select: {
-                        id: true,
-                        name: true,
-                        externalAccountId: true,
-                        phone: true,
-                    },
-                })
+                      where: { OR: accountWhere },
+                      select: {
+                          id: true,
+                          name: true,
+                          externalAccountId: true,
+                          phone: true,
+                      },
+                  })
                 : Promise.resolve([]),
         ]);
 
@@ -615,21 +763,11 @@ export class OpsDashboardService {
         return changes.map((change) => {
             const entityType = change.entityType.toLowerCase();
             const lookupKeys = [change.localRecordId, change.entityId].filter(Boolean) as string[];
-            const contact = entityType === 'contact'
-                ? lookupKeys.map((key) => contactsByKey.get(key)).find(Boolean)
-                : null;
-            const account = entityType === 'account'
-                ? lookupKeys.map((key) => accountsByKey.get(key)).find(Boolean)
-                : null;
-            const contactName = contact
-                ? [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim() || contact.user?.fullName || null
-                : null;
+            const contact = entityType === 'contact' ? lookupKeys.map((key) => contactsByKey.get(key)).find(Boolean) : null;
+            const account = entityType === 'account' ? lookupKeys.map((key) => accountsByKey.get(key)).find(Boolean) : null;
+            const contactName = contact ? [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim() || contact.user?.fullName || null : null;
             const displayName = contactName || account?.name || `${change.entityType} ${change.entityId}`;
-            const href = contact
-                ? `/customers/${contact.id}`
-                : account
-                    ? `/customers/accounts/${account.id}`
-                    : '/customers/crm';
+            const href = contact ? `/customers/${contact.userId}` : account ? `/customers/accounts/${account.id}` : '/customers/crm';
 
             return {
                 ...change,
@@ -693,8 +831,24 @@ export class OpsDashboardService {
             this.getDailyCountTrend('crm_change_logs', 'changed_at', trendStart, days),
             this.getCrmChangeRecords({ changedAt: { gte: last24h } }, 12),
             this.getCrmChangeRecords({ changedAt: { gte: trendStart }, status: { not: 'SUCCESS' } }, 12),
-            this.getCrmChangeRecords({ changedAt: { gte: trendStart }, entityType: 'contact', fieldName: { in: ['email', 'emailaddress1', 'rawCrmPayload'] } }, 12),
-            this.getCrmChangeRecords({ changedAt: { gte: trendStart }, entityType: 'contact', localRecordId: null }, 12),
+            this.getCrmChangeRecords(
+                {
+                    changedAt: { gte: trendStart },
+                    entityType: 'contact',
+                    fieldName: {
+                        in: ['email', 'emailaddress1', 'rawCrmPayload'],
+                    },
+                },
+                12,
+            ),
+            this.getCrmChangeRecords(
+                {
+                    changedAt: { gte: trendStart },
+                    entityType: 'contact',
+                    localRecordId: null,
+                },
+                12,
+            ),
         ]);
 
         return {
@@ -702,7 +856,19 @@ export class OpsDashboardService {
             segments: [
                 this.buildCrmSegment('24h', 'period', trend, allRecent, todayStart),
                 this.buildCrmSegment('failed', 'filter', trend, failedRecent, todayStart),
-                this.buildCrmSegment('missing_email', 'filter', trend, missingEmailRecent.filter((item) => !item.meta?.email || String(item.meta?.fieldName ?? '').toLowerCase().includes('email')), todayStart),
+                this.buildCrmSegment(
+                    'missing_email',
+                    'filter',
+                    trend,
+                    missingEmailRecent.filter(
+                        (item) =>
+                            !item.meta?.email ||
+                            String(item.meta?.fieldName ?? '')
+                                .toLowerCase()
+                                .includes('email'),
+                    ),
+                    todayStart,
+                ),
                 this.buildCrmSegment('account_matching', 'filter', trend, accountMismatchRecent, todayStart),
             ],
         };
@@ -829,7 +995,12 @@ export class OpsDashboardService {
                 priority: true,
                 createdAt: true,
                 isSlaBreached: true,
-                creator: { select: { fullName: true, customerProfile: { select: { companyName: true } } } },
+                creator: {
+                    select: {
+                        fullName: true,
+                        customerProfile: { select: { companyName: true } },
+                    },
+                },
                 assignee: { select: { fullName: true } },
                 department: { select: { name: true } },
             },
@@ -850,7 +1021,15 @@ export class OpsDashboardService {
     }
 
     private async getTicketDepartmentRows(): Promise<OpsModalRecord[]> {
-        const rows = await this.prisma.$queryRaw<Array<{ department_id: string | null; department_name: string | null; active: number; unassigned: number; sla: number }>>`
+        const rows = await this.prisma.$queryRaw<
+            Array<{
+                department_id: string | null;
+                department_name: string | null;
+                active: number;
+                unassigned: number;
+                sla: number;
+            }>
+        >`
             SELECT
                 t.department_id,
                 COALESCE(d.name, 'Unassigned') AS department_name,
@@ -872,7 +1051,10 @@ export class OpsDashboardService {
             description: `${this.toNumber(row.active)} active / ${this.toNumber(row.unassigned)} unassigned / ${this.toNumber(row.sla)} SLA`,
             href: row.department_id ? `/teams/departments/${row.department_id}` : '/tickets?assignedTo=unassigned',
             status: this.toNumber(row.sla) > 0 ? 'SLA_RISK' : this.toNumber(row.unassigned) > 0 ? 'ASSIGNMENT_RISK' : 'OK',
-            meta: { assignee: this.toNumber(row.unassigned) > 0 ? 'unassigned' : 'assigned', slaBreached: this.toNumber(row.sla) },
+            meta: {
+                assignee: this.toNumber(row.unassigned) > 0 ? 'unassigned' : 'assigned',
+                slaBreached: this.toNumber(row.sla),
+            },
         }));
     }
 
@@ -926,7 +1108,12 @@ export class OpsDashboardService {
                 OR: [
                     { confidenceBand: 'LOW' },
                     { confidenceBand: null },
-                    { responseGenerated: { contains: 'Source:', mode: 'insensitive' } },
+                    {
+                        responseGenerated: {
+                            contains: 'Source:',
+                            mode: 'insensitive',
+                        },
+                    },
                     { userContext: { path: ['languageRisk'], equals: true } },
                 ],
             },
@@ -978,7 +1165,7 @@ export class OpsDashboardService {
         const rows = await this.prisma.crmChangeLog.findMany({
             where,
             orderBy: { changedAt: 'desc' },
-            take,
+            take: Math.max(take * 4, take),
             select: {
                 id: true,
                 entityType: true,
@@ -994,20 +1181,88 @@ export class OpsDashboardService {
         });
         const enriched = await this.enrichCrmChanges(rows);
 
-        return enriched.map((change: any) => ({
+        const records = enriched.map((change: any) => ({
             id: change.id,
             title: change.displayName,
-            description: [change.companyName, change.email, change.changeSummary, change.status].filter(Boolean).join(' / '),
+            description: [change.companyName, change.email, this.describeCrmModalField(change.fieldLabel, change.changeSummary), change.status].filter(Boolean).join(' / '),
             href: change.href,
             status: change.status,
             meta: {
                 entityType: change.entityType,
                 entityId: change.entityId,
+                localRecordId: change.localRecordId,
                 fieldName: change.fieldLabel,
                 changedAt: change.changedAt,
                 email: change.email ?? null,
+                companyName: change.companyName ?? null,
             },
         }));
+
+        return this.groupCrmModalRecords(records).slice(0, take);
+    }
+
+    private groupCrmModalRecords(records: OpsModalRecord[]): OpsModalRecord[] {
+        const grouped = new Map<string, OpsModalRecord & { meta: Record<string, any> }>();
+
+        records.forEach((record) => {
+            const meta = (record.meta ?? {}) as Record<string, any>;
+            const key = [meta.entityType ?? 'crm', meta.localRecordId ?? meta.entityId ?? record.id].join(':');
+            const existing = grouped.get(key);
+            const fieldName = String(meta.fieldName ?? '').trim();
+
+            if (!existing) {
+                grouped.set(key, {
+                    ...record,
+                    meta: {
+                        ...meta,
+                        fields: fieldName ? [fieldName] : [],
+                        changeCount: 1,
+                    },
+                });
+                return;
+            }
+
+            const fields = new Set<string>([...(existing.meta.fields ?? []), ...(fieldName ? [fieldName] : [])]);
+            const preferredHref = existing.href !== '/customers/crm' ? existing.href : record.href;
+            const preferredDescription = existing.description.length >= record.description.length ? existing.description : record.description;
+
+            grouped.set(key, {
+                ...existing,
+                href: preferredHref,
+                description: preferredDescription,
+                status: existing.status === 'SUCCESS' ? record.status : existing.status,
+                meta: {
+                    ...existing.meta,
+                    fields: Array.from(fields),
+                    changeCount: Number(existing.meta.changeCount ?? 1) + 1,
+                },
+            });
+        });
+
+        return Array.from(grouped.values()).map((record) => {
+            const fields = (record.meta.fields ?? []) as string[];
+            const fieldSummary = fields.length > 1 ? `${fields.length} alan güncellendi: ${fields.map((field) => this.describeCrmFieldName(field)).join(', ')}` : fields.length === 1 ? this.describeCrmFieldName(fields[0]) : null;
+            return {
+                ...record,
+                description: [record.meta.companyName, record.meta.email, fieldSummary, record.status].filter(Boolean).join(' / '),
+            };
+        });
+    }
+
+    private describeCrmModalField(fieldName?: string | null, fallback?: string | null) {
+        if (!fieldName) return fallback ?? null;
+        return this.describeCrmFieldName(fieldName);
+    }
+
+    private describeCrmFieldName(fieldName: string) {
+        const normalized = fieldName.toLowerCase();
+        if (normalized === 'rawcrmpayload') return 'CRM profil verisi güncellendi';
+        if (normalized.includes('email')) return 'E-posta güncellendi';
+        if (normalized.includes('jobtitle')) return 'Ünvan güncellendi';
+        if (normalized.includes('industry')) return 'Sektör güncellendi';
+        if (normalized.includes('customer')) return 'Müşteri bilgisi güncellendi';
+        if (normalized.includes('account')) return 'Firma eşleşmesi güncellendi';
+        return fieldName;
     }
 
     private async getCrawlerRecords(where: Record<string, any>, take: number): Promise<OpsModalRecord[]> {
@@ -1015,7 +1270,16 @@ export class OpsDashboardService {
             where,
             orderBy: { updatedAt: 'desc' },
             take,
-            select: { id: true, title: true, source: true, status: true, format: true, language: true, sourceUrl: true, updatedAt: true },
+            select: {
+                id: true,
+                title: true,
+                source: true,
+                status: true,
+                format: true,
+                language: true,
+                sourceUrl: true,
+                updatedAt: true,
+            },
         });
 
         return rows.map((candidate) => ({
@@ -1120,7 +1384,11 @@ export class OpsDashboardService {
             ORDER BY day ASC
         `;
 
-        return this.normalizeTrend(rows, days, { total: 0, high: 0, low: 0 }).map((point) => ({
+        return this.normalizeTrend(rows, days, {
+            total: 0,
+            high: 0,
+            low: 0,
+        }).map((point) => ({
             ...point,
             confidence: point.total ? Math.round((Number(point.high) / Number(point.total)) * 100) : 0,
         }));
@@ -1175,12 +1443,41 @@ export class OpsDashboardService {
 
     private buildDecision(ticketKpis: any, aiQuality: any, crmSummary: any, queueSummary: any, systemSummary: any) {
         const queueFailed = queueSummary.knowledge.failed + queueSummary.crm.failed + queueSummary.ai.failed;
-        if (ticketKpis.slaBreaches > 0) return { level: 'critical', code: 'sla_breach', primaryAction: '/tickets?isSlaBreached=true' };
-        if (ticketKpis.unassigned > 0) return { level: 'warning', code: 'unassigned_tickets', primaryAction: '/tickets?assignedTo=unassigned' };
-        if (crmSummary.failuresToday > 0) return { level: 'warning', code: 'crm_failures', primaryAction: '/customers/crm' };
-        if (aiQuality.fallbackRate > 30) return { level: 'warning', code: 'ai_quality_watch', primaryAction: '/admin/ai-health' };
-        if (queueFailed > 0 || systemSummary.status !== 'HEALTHY') return { level: 'warning', code: 'system_watch', primaryAction: '/dashboard' };
-        return { level: 'ok', code: 'operationally_stable', primaryAction: '/tickets' };
+        if (ticketKpis.slaBreaches > 0)
+            return {
+                level: 'critical',
+                code: 'sla_breach',
+                primaryAction: '/tickets?isSlaBreached=true',
+            };
+        if (ticketKpis.unassigned > 0)
+            return {
+                level: 'warning',
+                code: 'unassigned_tickets',
+                primaryAction: '/tickets?assignedTo=unassigned',
+            };
+        if (crmSummary.failuresToday > 0)
+            return {
+                level: 'warning',
+                code: 'crm_failures',
+                primaryAction: '/customers/crm',
+            };
+        if (aiQuality.fallbackRate > 30)
+            return {
+                level: 'warning',
+                code: 'ai_quality_watch',
+                primaryAction: '/admin/ai-health',
+            };
+        if (queueFailed > 0 || systemSummary.status !== 'HEALTHY')
+            return {
+                level: 'warning',
+                code: 'system_watch',
+                primaryAction: '/dashboard',
+            };
+        return {
+            level: 'ok',
+            code: 'operationally_stable',
+            primaryAction: '/tickets',
+        };
     }
 
     private formatAiAggregate(aggregate: any) {

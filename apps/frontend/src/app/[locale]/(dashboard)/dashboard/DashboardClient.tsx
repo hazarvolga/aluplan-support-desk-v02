@@ -1,29 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ElementType } from 'react';
-import {
-    Activity,
-    AlertCircle,
-    ArrowRight,
-    BarChart3,
-    BookOpen,
-    Bot,
-    CheckCircle2,
-    Clock,
-    Database,
-    DollarSign,
-    Info,
-    PlusCircle,
-    RefreshCw,
-    Search,
-    Server,
-    ShieldCheck,
-    Ticket,
-    TrendingUp,
-    Users,
-    X,
-} from 'lucide-react';
+import type { ElementType, ReactNode } from 'react';
+import { Activity, AlertCircle, ArrowRight, BarChart3, BookOpen, Bot, CheckCircle2, Clock, Database, DollarSign, Info, PlusCircle, RefreshCw, Search, Server, ShieldCheck, Ticket, TrendingUp, Users, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
@@ -38,9 +17,18 @@ import { Button } from '@/components/ui/button';
 type DrawerMode = 'cost' | 'system' | null;
 type PulseId = 'tickets' | 'ai' | 'crm' | 'knowledge';
 type PulseMetric = { label: string; value: string | number; detail: string };
-type PulseRecord = { id: string; title: string; description: string; href: string };
+type PulseRecord = {
+    id: string;
+    title: string;
+    description: string;
+    href: string;
+};
 type PulseAction = { label: string; href: string };
-type PulseTool = { key: string; label: string; intent: 'period' | 'breakdown' | 'filter' };
+type PulseTool = {
+    key: string;
+    label: string;
+    intent: 'period' | 'breakdown' | 'filter';
+};
 type PulseSegment = {
     key: string;
     intent: 'period' | 'breakdown' | 'filter';
@@ -55,6 +43,7 @@ type PulseDetail = {
     series: number[];
     tools: PulseTool[];
     activeTool: string;
+    activeToolLabel: string;
     tags: string[];
     summary: { title: string; description: string };
 };
@@ -98,7 +87,11 @@ const metricLabelKeys: Record<string, string> = {
 
 const emptyOpsData = (): OpsDashboardData => ({
     generatedAt: new Date().toISOString(),
-    window: { days: 7, todayStart: new Date().toISOString(), trendStart: new Date().toISOString() },
+    window: {
+        days: 7,
+        todayStart: new Date().toISOString(),
+        trendStart: new Date().toISOString(),
+    },
     kpis: {
         activeTickets: 0,
         unassignedTickets: 0,
@@ -108,21 +101,64 @@ const emptyOpsData = (): OpsDashboardData => ({
         slaBreaches: 0,
         resolvedToday: 0,
     },
-    decision: { level: 'ok', code: 'operationally_stable', primaryAction: '/tickets' },
+    decision: {
+        level: 'ok',
+        code: 'operationally_stable',
+        primaryAction: '/tickets',
+    },
     cost: null,
-    system: { status: 'HEALTHY', aiEvents: {}, activeAgents: 0, dndAgents: 0, recentErrors: [] },
+    system: {
+        status: 'HEALTHY',
+        aiEvents: {},
+        activeAgents: 0,
+        dndAgents: 0,
+        recentErrors: [],
+    },
     queues: {
-        knowledge: { waiting: 0, active: 0, delayed: 0, failed: 0, completed: 0, paused: 0 },
-        crm: { waiting: 0, active: 0, delayed: 0, failed: 0, completed: 0, paused: 0 },
-        ai: { waiting: 0, active: 0, delayed: 0, failed: 0, completed: 0, paused: 0 },
+        knowledge: {
+            waiting: 0,
+            active: 0,
+            delayed: 0,
+            failed: 0,
+            completed: 0,
+            paused: 0,
+        },
+        crm: {
+            waiting: 0,
+            active: 0,
+            delayed: 0,
+            failed: 0,
+            completed: 0,
+            paused: 0,
+        },
+        ai: {
+            waiting: 0,
+            active: 0,
+            delayed: 0,
+            failed: 0,
+            completed: 0,
+            paused: 0,
+        },
     },
     activeDesk: { total: 0, tickets: [], trend: [] },
     actions: [],
     pulse: {
         ticketTrend: [],
         aiQuality: { summary: {}, trend: [] },
-        crm: { updatedToday: 0, failuresToday: 0, trend: [], recentChanges: [] },
-        knowledge: { activeSources: 0, syncFailuresToday: 0, embeddings: 0, genericCandidatesPending: 0, datasetSources: 0, trend: [] },
+        crm: {
+            updatedToday: 0,
+            failuresToday: 0,
+            trend: [],
+            recentChanges: [],
+        },
+        knowledge: {
+            activeSources: 0,
+            syncFailuresToday: 0,
+            embeddings: 0,
+            genericCandidatesPending: 0,
+            datasetSources: 0,
+            trend: [],
+        },
     },
     learnNow: { pendingReview: 0, byStatus: {}, byFormat: {}, recent: [] },
     liveFeed: [],
@@ -135,27 +171,29 @@ function formatNumber(value: unknown) {
 
 function formatCurrency(value: unknown, currency = 'USD') {
     const numeric = Number(value ?? 0);
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 4 }).format(Number.isFinite(numeric) ? numeric : 0);
+    return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: 4,
+    }).format(Number.isFinite(numeric) ? numeric : 0);
 }
 
 function formatRefreshTime(value: Date | null) {
     if (!value) return '';
-    return new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(value);
+    return new Intl.DateTimeFormat(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(value);
 }
 
 function roleList(user: any) {
     return (user?.roles || [user?.role?.name, user?.role]).filter(Boolean).map((role: string) => role.toLowerCase());
 }
 
-function StatCard({ icon: Icon, label, value, indicatorColor }: {
-    icon: ElementType; label: string; value: string | number; indicatorColor: string;
-}) {
+function StatCard({ icon: Icon, label, value, indicatorColor }: { icon: ElementType; label: string; value: string | number; indicatorColor: string }) {
     const t = useTranslations('dashboard.stats');
     return (
-        <motion.div
-            whileHover={{ y: -4 }}
-            className="group relative overflow-hidden rounded-lg border border-white/10 bg-white/[0.03] px-4 py-5 transition-all duration-300"
-        >
+        <motion.div whileHover={{ y: -4 }} className="group relative overflow-hidden rounded-lg border border-white/10 bg-white/[0.03] px-4 py-5 transition-all duration-300">
             <div className={`absolute left-0 right-0 top-0 h-0.5 ${indicatorColor} opacity-70`} />
             <div className="flex items-start justify-between gap-3">
                 <div className="rounded-md border border-white/10 bg-white/[0.04] p-2 text-muted-foreground transition-colors group-hover:text-primary">
@@ -186,7 +224,10 @@ function CustomerDashboard({ stats }: { stats: any }) {
                         {t('user_portal')}
                     </h1>
                     <p className="mt-1 font-mono text-[10px] uppercase leading-tight tracking-widest text-muted-foreground">
-                        {t('user_identity', { name: user?.fullName || '', level: t('access_level_standard') })}
+                        {t('user_identity', {
+                            name: user?.fullName || '',
+                            level: t('access_level_standard'),
+                        })}
                     </p>
                 </div>
             </div>
@@ -212,9 +253,7 @@ function CustomerDashboard({ stats }: { stats: any }) {
     );
 }
 
-function QuickCard({ icon: Icon, title, description, cta, href, tone }: {
-    icon: ElementType; title: string; description: string; cta: string; href: string; tone: 'primary' | 'violet';
-}) {
+function QuickCard({ icon: Icon, title, description, cta, href, tone }: { icon: ElementType; title: string; description: string; cta: string; href: string; tone: 'primary' | 'violet' }) {
     const toneClass = tone === 'violet' ? 'text-violet-400 border-violet-500/20 bg-violet-500/10 hover:bg-violet-500/20' : 'text-primary border-primary/20 bg-primary/10 hover:bg-primary/20';
     return (
         <div className="group relative flex min-h-48 flex-col justify-between overflow-hidden border border-border/40 bg-muted/5 p-6">
@@ -233,13 +272,7 @@ function QuickCard({ icon: Icon, title, description, cta, href, tone }: {
     );
 }
 
-function HeaderActions({ data, drawer, refreshing, setDrawer, onRefresh }: {
-    data: OpsDashboardData;
-    drawer: DrawerMode;
-    refreshing: boolean;
-    setDrawer: (mode: DrawerMode) => void;
-    onRefresh: () => void;
-}) {
+function HeaderActions({ data, drawer, refreshing, setDrawer, onRefresh }: { data: OpsDashboardData; drawer: DrawerMode; refreshing: boolean; setDrawer: (mode: DrawerMode) => void; onRefresh: () => void }) {
     const t = useTranslations('dashboard.ops');
     const isSystemHealthy = data.system.status === 'HEALTHY';
     return (
@@ -278,12 +311,7 @@ function TopDrawer({ mode, data, onClose }: { mode: DrawerMode; data: OpsDashboa
     if (!mode) return null;
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            className="rounded-lg border border-white/10 bg-slate-950/80 p-4 shadow-2xl shadow-black/30 backdrop-blur"
-        >
+        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="rounded-lg border border-white/10 bg-slate-950/80 p-4 shadow-2xl shadow-black/30 backdrop-blur">
             <div className="mb-3 flex items-center justify-between gap-4">
                 <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{mode === 'cost' ? t('cost.title') : t('system.title')}</p>
@@ -301,17 +329,19 @@ function TopDrawer({ mode, data, onClose }: { mode: DrawerMode; data: OpsDashboa
 function CostDrawer({ data }: { data: OpsDashboardData }) {
     const t = useTranslations('dashboard.ops.cost');
     if (!data.cost) {
-        return (
-            <div className="rounded-md border border-white/10 bg-white/[0.03] p-4 text-xs text-muted-foreground">
-                {t('restricted')}
-            </div>
-        );
+        return <div className="rounded-md border border-white/10 bg-white/[0.03] p-4 text-xs text-muted-foreground">{t('restricted')}</div>;
     }
 
     return (
         <div className="grid gap-3 lg:grid-cols-[1fr_1fr_2fr]">
             <MetricStrip label={t('today')} value={formatCurrency(data.cost.today.estimatedCost, data.cost.currency)} detail={t('requests', { count: data.cost.today.requests })} />
-            <MetricStrip label={t('rolling30')} value={formatCurrency(data.cost.rolling30d.estimatedCost, data.cost.currency)} detail={t('tokens', { count: formatNumber(data.cost.rolling30d.totalTokens) })} />
+            <MetricStrip
+                label={t('rolling30')}
+                value={formatCurrency(data.cost.rolling30d.estimatedCost, data.cost.currency)}
+                detail={t('tokens', {
+                    count: formatNumber(data.cost.rolling30d.totalTokens),
+                })}
+            />
             <div className="grid gap-2 sm:grid-cols-2">
                 {data.cost.providers.slice(0, 4).map((provider) => (
                     <div key={`${provider.provider}-${provider.model}`} className="rounded-md border border-white/10 bg-white/[0.03] p-3">
@@ -333,8 +363,20 @@ function SystemDrawer({ data }: { data: OpsDashboardData }) {
         <div className="grid gap-3 md:grid-cols-4">
             <MetricStrip label={t('health')} value={t(`statuses.${data.system.status}`)} detail={t('health_detail')} />
             <MetricStrip label={t('online_agents')} value={data.system.activeAgents} detail={t('dnd_agents', { count: data.system.dndAgents })} />
-            <MetricStrip label={t('knowledge_queue')} value={data.queues.knowledge.active + data.queues.knowledge.waiting} detail={t('failed_jobs', { count: data.queues.knowledge.failed })} />
-            <MetricStrip label={t('ai_events')} value={Object.values(data.system.aiEvents || {}).reduce((sum, count) => sum + Number(count), 0)} detail={t('recent_errors', { count: data.system.recentErrors.length })} />
+            <MetricStrip
+                label={t('knowledge_queue')}
+                value={data.queues.knowledge.active + data.queues.knowledge.waiting}
+                detail={t('failed_jobs', {
+                    count: data.queues.knowledge.failed,
+                })}
+            />
+            <MetricStrip
+                label={t('ai_events')}
+                value={Object.values(data.system.aiEvents || {}).reduce((sum, count) => sum + Number(count), 0)}
+                detail={t('recent_errors', {
+                    count: data.system.recentErrors.length,
+                })}
+            />
         </div>
     );
 }
@@ -365,10 +407,30 @@ function OpsStatGrid({ data }: { data: OpsDashboardData }) {
 function PulseBand({ data, onSelect }: { data: OpsDashboardData; onSelect: (id: PulseId) => void }) {
     const t = useTranslations('dashboard.ops.pulse');
     const cards = [
-        { id: 'tickets' as const, source: 'tickets.created / tickets.closed', series: data.activeDesk.trend.map((point) => Number(point.created ?? 0)), tone: 'text-blue-300' },
-        { id: 'ai' as const, source: 'ai_traces.confidence', series: data.pulse.aiQuality.trend.map((point) => Number(point.confidence ?? 0)), tone: 'text-cyan-300' },
-        { id: 'crm' as const, source: 'crm_sync_logs.updated', series: (data.pulse.crm.trend ?? []).map((point: any) => Number(point.count ?? 0)), tone: 'text-emerald-300' },
-        { id: 'knowledge' as const, source: 'crawl_candidates / chunks', series: (data.pulse.knowledge.trend ?? []).map((point: any) => Number(point.count ?? 0)), tone: 'text-violet-300' },
+        {
+            id: 'tickets' as const,
+            source: 'tickets.created / tickets.closed',
+            series: data.activeDesk.trend.map((point) => Number(point.created ?? 0)),
+            tone: 'text-blue-300',
+        },
+        {
+            id: 'ai' as const,
+            source: 'ai_traces.confidence',
+            series: data.pulse.aiQuality.trend.map((point) => Number(point.confidence ?? 0)),
+            tone: 'text-cyan-300',
+        },
+        {
+            id: 'crm' as const,
+            source: 'crm_sync_logs.updated',
+            series: (data.pulse.crm.trend ?? []).map((point: any) => Number(point.count ?? 0)),
+            tone: 'text-emerald-300',
+        },
+        {
+            id: 'knowledge' as const,
+            source: 'crawl_candidates / chunks',
+            series: (data.pulse.knowledge.trend ?? []).map((point: any) => Number(point.count ?? 0)),
+            tone: 'text-violet-300',
+        },
     ];
 
     return (
@@ -393,7 +455,13 @@ function PulseBand({ data, onSelect }: { data: OpsDashboardData; onSelect: (id: 
     );
 }
 
-function PulseDetailModal({ data, selected, activeSegmentKey, onSegmentChange, onOpenChange }: {
+function PulseDetailModal({
+    data,
+    selected,
+    activeSegmentKey,
+    onSegmentChange,
+    onOpenChange,
+}: {
     data: OpsDashboardData;
     selected: PulseId | null;
     activeSegmentKey?: string;
@@ -417,18 +485,26 @@ function PulseDetailModal({ data, selected, activeSegmentKey, onSegmentChange, o
                 </DialogHeader>
                 <ScrollArea className="max-h-[calc(92vh-88px)]">
                     <div className="space-y-4 p-4 sm:p-5">
-                        <div className="flex flex-wrap gap-2">
-                            {detail.tools.map((tool) => (
-                                <button
-                                    key={tool.key}
-                                    type="button"
-                                    aria-pressed={tool.key === detail.activeTool}
-                                    onClick={() => onSegmentChange(tool.key)}
-                                    className={`rounded border px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] transition focus:outline-none focus:ring-1 focus:ring-primary/60 ${tool.key === detail.activeTool ? 'border-primary/35 bg-primary/10 text-primary' : 'border-white/10 bg-white/[0.025] text-muted-foreground hover:border-primary/25 hover:text-white'}`}
-                                >
-                                    {tool.label}
-                                </button>
-                            ))}
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-wrap gap-2">
+                                {detail.tools.map((tool) => (
+                                    <button
+                                        key={tool.key}
+                                        type="button"
+                                        aria-pressed={tool.key === detail.activeTool}
+                                        onClick={() => onSegmentChange(tool.key)}
+                                        className={`rounded border px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] transition focus:outline-none focus:ring-1 focus:ring-primary/60 ${tool.key === detail.activeTool ? 'border-primary/35 bg-primary/10 text-primary' : 'border-white/10 bg-white/[0.025] text-muted-foreground hover:border-primary/25 hover:text-white'}`}
+                                    >
+                                        {tool.label}
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                                {t('modal.selected_slice', {
+                                    slice: detail.activeToolLabel,
+                                    count: detail.records.length,
+                                })}
+                            </p>
                         </div>
                         <div className="grid gap-4 lg:grid-cols-[1.25fr_0.85fr]">
                             <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
@@ -465,17 +541,19 @@ function PulseDetailModal({ data, selected, activeSegmentKey, onSegmentChange, o
                                     <div className="space-y-2 p-3">
                                         {detail.records.length === 0 ? (
                                             <EmptyState title={t('modal.empty_title')} description={t('modal.empty_desc')} />
-                                        ) : detail.records.map((record) => (
-                                            <Link key={record.id} href={record.href} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <div className="min-w-0">
-                                                        <p className="truncate text-xs font-bold text-white">{record.title}</p>
-                                                        <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{record.description}</p>
+                                        ) : (
+                                            detail.records.map((record) => (
+                                                <Link key={record.id} href={record.href} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="min-w-0">
+                                                            <p className="truncate text-xs font-bold text-white">{record.title}</p>
+                                                            <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{record.description}</p>
+                                                        </div>
+                                                        <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
                                                     </div>
-                                                    <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
-                                                </div>
-                                            </Link>
-                                        ))}
+                                                </Link>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -511,12 +589,15 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
             description: [ticket.subject, ticket.creator?.customerProfile?.companyName || ticket.creator?.fullName, ticket.assignee?.fullName || ticket.status].filter(Boolean).join(' / '),
             href: `/tickets/${ticket.id}`,
         })),
-        ai: data.liveFeed.filter((item) => item.type === 'ai').slice(0, 8).map((item) => ({
-            id: item.id,
-            title: item.title,
-            description: item.description || item.status || '',
-            href: item.href,
-        })),
+        ai: data.liveFeed
+            .filter((item) => item.type === 'ai')
+            .slice(0, 8)
+            .map((item) => ({
+                id: item.id,
+                title: item.title,
+                description: item.description || item.status || '',
+                href: item.href,
+            })),
         crm: (data.pulse.crm.recentChanges ?? []).slice(0, 8).map((item: any, index: number) => ({
             id: item.id || `crm-${index}`,
             title: item.displayName || item.companyName || item.entityId || item.entityType || t('modal.unknown_record'),
@@ -532,45 +613,112 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
     };
     const detailGroup = data.pulse.details?.[selected];
     const backendSegments = (detailGroup?.segments ?? []) as PulseSegment[];
-    const fallbackActiveKey: Record<PulseId, string> = { tickets: '7d', ai: '7d', crm: '24h', knowledge: '7d' };
-    const activeKey = backendSegments.some((segment) => segment.key === activeSegmentKey)
-        ? activeSegmentKey!
-        : detailGroup?.defaultKey ?? fallbackActiveKey[selected];
+    const fallbackActiveKey: Record<PulseId, string> = {
+        tickets: '7d',
+        ai: '7d',
+        crm: '24h',
+        knowledge: '7d',
+    };
+    const activeKey = backendSegments.some((segment) => segment.key === activeSegmentKey) ? activeSegmentKey! : (detailGroup?.defaultKey ?? fallbackActiveKey[selected]);
     const activeSegment = backendSegments.find((segment) => segment.key === activeKey);
-    const records = activeSegment?.records?.length ? activeSegment.records : recordMap[selected];
+    const records = activeSegment ? activeSegment.records : recordMap[selected];
 
     const metricMap: Record<PulseId, PulseMetric[]> = {
         tickets: [
-            { label: t('modal.metrics.active'), value: data.kpis.activeTickets, detail: t('modal.details.open_queue') },
-            { label: t('modal.metrics.unassigned'), value: data.kpis.unassignedTickets, detail: t('modal.details.needs_routing') },
-            { label: t('modal.metrics.sla'), value: data.kpis.slaBreaches, detail: t('modal.details.breaches') },
-            { label: t('modal.metrics.resolved'), value: data.kpis.resolvedToday, detail: t('modal.details.today') },
+            {
+                label: t('modal.metrics.active'),
+                value: data.kpis.activeTickets,
+                detail: t('modal.details.open_queue'),
+            },
+            {
+                label: t('modal.metrics.unassigned'),
+                value: data.kpis.unassignedTickets,
+                detail: t('modal.details.needs_routing'),
+            },
+            {
+                label: t('modal.metrics.sla'),
+                value: data.kpis.slaBreaches,
+                detail: t('modal.details.breaches'),
+            },
+            {
+                label: t('modal.metrics.resolved'),
+                value: data.kpis.resolvedToday,
+                detail: t('modal.details.today'),
+            },
         ],
         ai: [
-            { label: t('modal.metrics.confidence'), value: `${data.pulse.aiQuality.summary.confidenceRate ?? 0}%`, detail: t('modal.details.rolling_signal') },
-            { label: t('modal.metrics.fallback'), value: `${data.pulse.aiQuality.summary.fallbackRate ?? 0}%`, detail: t('modal.details.today') },
-            { label: t('modal.metrics.language'), value: data.pulse.aiQuality.summary.languageRisks ?? 0, detail: t('modal.details.risks') },
-            { label: t('modal.metrics.leaks'), value: data.pulse.aiQuality.summary.sourceLeaks ?? 0, detail: t('modal.details.source_signals') },
+            {
+                label: t('modal.metrics.confidence'),
+                value: `${data.pulse.aiQuality.summary.confidenceRate ?? 0}%`,
+                detail: t('modal.details.rolling_signal'),
+            },
+            {
+                label: t('modal.metrics.fallback'),
+                value: `${data.pulse.aiQuality.summary.fallbackRate ?? 0}%`,
+                detail: t('modal.details.today'),
+            },
+            {
+                label: t('modal.metrics.language'),
+                value: data.pulse.aiQuality.summary.languageRisks ?? 0,
+                detail: t('modal.details.risks'),
+            },
+            {
+                label: t('modal.metrics.leaks'),
+                value: data.pulse.aiQuality.summary.sourceLeaks ?? 0,
+                detail: t('modal.details.source_signals'),
+            },
         ],
         crm: [
-            { label: t('modal.metrics.updated'), value: data.pulse.crm.updatedToday ?? 0, detail: t('modal.details.today') },
-            { label: t('modal.metrics.failures'), value: data.pulse.crm.failuresToday ?? 0, detail: t('modal.details.today') },
-            { label: t('modal.metrics.recent'), value: data.pulse.crm.recentChanges?.length ?? 0, detail: t('modal.details.changes') },
-            { label: t('modal.metrics.queue'), value: data.queues.crm.waiting + data.queues.crm.active, detail: t('modal.details.pending_jobs') },
+            {
+                label: t('modal.metrics.updated'),
+                value: data.pulse.crm.updatedToday ?? 0,
+                detail: t('modal.details.today'),
+            },
+            {
+                label: t('modal.metrics.failures'),
+                value: data.pulse.crm.failuresToday ?? 0,
+                detail: t('modal.details.today'),
+            },
+            {
+                label: t('modal.metrics.recent'),
+                value: data.pulse.crm.recentChanges?.length ?? 0,
+                detail: t('modal.details.changes'),
+            },
+            {
+                label: t('modal.metrics.queue'),
+                value: data.queues.crm.waiting + data.queues.crm.active,
+                detail: t('modal.details.pending_jobs'),
+            },
         ],
         knowledge: [
-            { label: t('modal.metrics.sources'), value: data.pulse.knowledge.activeSources ?? 0, detail: t('modal.details.active') },
-            { label: t('modal.metrics.embeddings'), value: formatNumber(data.pulse.knowledge.embeddings ?? 0), detail: t('modal.details.vectors') },
-            { label: t('modal.metrics.candidates'), value: data.pulse.knowledge.genericCandidatesPending ?? 0, detail: t('modal.details.pending') },
-            { label: t('modal.metrics.failures'), value: data.pulse.knowledge.syncFailuresToday ?? 0, detail: t('modal.details.today') },
+            {
+                label: t('modal.metrics.sources'),
+                value: data.pulse.knowledge.activeSources ?? 0,
+                detail: t('modal.details.active'),
+            },
+            {
+                label: t('modal.metrics.embeddings'),
+                value: formatNumber(data.pulse.knowledge.embeddings ?? 0),
+                detail: t('modal.details.vectors'),
+            },
+            {
+                label: t('modal.metrics.candidates'),
+                value: data.pulse.knowledge.genericCandidatesPending ?? 0,
+                detail: t('modal.details.pending'),
+            },
+            {
+                label: t('modal.metrics.failures'),
+                value: data.pulse.knowledge.syncFailuresToday ?? 0,
+                detail: t('modal.details.today'),
+            },
         ],
     };
     const metrics = activeSegment
         ? Object.entries(activeSegment.metrics).map(([key, value]) => ({
-            label: t(`modal.metrics.${metricLabelKeys[key] ?? key}`),
-            value: key === 'confidence' || key === 'fallback' ? `${value}%` : key === 'embeddings' ? formatNumber(value) : value,
-            detail: t('modal.details.current_slice'),
-        }))
+              label: t(`modal.metrics.${metricLabelKeys[key] ?? key}`),
+              value: key === 'confidence' || key === 'fallback' ? `${value}%` : key === 'embeddings' ? formatNumber(value) : value,
+              detail: t('modal.details.current_slice'),
+          }))
         : metricMap[selected];
 
     const actionMap: Record<PulseId, PulseAction[]> = {
@@ -579,53 +727,136 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
             { label: t('modal.actions_map.open_teams'), href: '/teams' },
         ],
         ai: [
-            { label: t('modal.actions_map.ai_health'), href: '/admin/ai-health' },
-            { label: t('modal.actions_map.ai_intelligence'), href: '/admin/ai-intelligence' },
+            {
+                label: t('modal.actions_map.ai_health'),
+                href: '/admin/ai-health',
+            },
+            {
+                label: t('modal.actions_map.ai_intelligence'),
+                href: '/admin/ai-intelligence',
+            },
         ],
         crm: [
-            { label: t('modal.actions_map.crm_management'), href: '/customers/crm' },
-            { label: t('modal.actions_map.customer_records'), href: '/customers' },
+            {
+                label: t('modal.actions_map.crm_management'),
+                href: '/customers/crm',
+            },
+            {
+                label: t('modal.actions_map.customer_records'),
+                href: '/customers',
+            },
         ],
         knowledge: [
-            { label: t('modal.actions_map.knowledge_pool'), href: '/knowledge-pool' },
-            { label: t('modal.actions_map.data_sources'), href: '/knowledge-pool/upload' },
+            {
+                label: t('modal.actions_map.knowledge_pool'),
+                href: '/knowledge-pool',
+            },
+            {
+                label: t('modal.actions_map.data_sources'),
+                href: '/knowledge-pool/upload',
+            },
         ],
     };
     const actions = actionMap[selected];
     const fallbackToolsMap: Record<PulseId, PulseTool[]> = {
         tickets: [
-            { key: '7d', intent: 'period', label: t('modal.tools.last_7_days') },
-            { key: '24h', intent: 'period', label: t('modal.tools.last_24_hours') },
-            { key: '30d', intent: 'period', label: t('modal.tools.last_30_days') },
-            { key: 'department', intent: 'breakdown', label: t('modal.tools.department_breakdown') },
+            {
+                key: '7d',
+                intent: 'period',
+                label: t('modal.tools.last_7_days'),
+            },
+            {
+                key: '24h',
+                intent: 'period',
+                label: t('modal.tools.last_24_hours'),
+            },
+            {
+                key: '30d',
+                intent: 'period',
+                label: t('modal.tools.last_30_days'),
+            },
+            {
+                key: 'department',
+                intent: 'breakdown',
+                label: t('modal.tools.department_breakdown'),
+            },
         ],
         ai: [
-            { key: '7d', intent: 'period', label: t('modal.tools.last_7_days') },
-            { key: 'provider', intent: 'breakdown', label: t('modal.tools.provider') },
-            { key: 'language', intent: 'breakdown', label: t('modal.tools.language') },
-            { key: 'problem_traces', intent: 'filter', label: t('modal.tools.problem_traces') },
+            {
+                key: '7d',
+                intent: 'period',
+                label: t('modal.tools.last_7_days'),
+            },
+            {
+                key: 'provider',
+                intent: 'breakdown',
+                label: t('modal.tools.provider'),
+            },
+            {
+                key: 'language',
+                intent: 'breakdown',
+                label: t('modal.tools.language'),
+            },
+            {
+                key: 'problem_traces',
+                intent: 'filter',
+                label: t('modal.tools.problem_traces'),
+            },
         ],
         crm: [
-            { key: '24h', intent: 'period', label: t('modal.tools.last_24_hours') },
-            { key: 'failed', intent: 'filter', label: t('modal.tools.failed_only') },
-            { key: 'missing_email', intent: 'filter', label: t('modal.tools.missing_email') },
-            { key: 'account_matching', intent: 'filter', label: t('modal.tools.account_matching') },
+            {
+                key: '24h',
+                intent: 'period',
+                label: t('modal.tools.last_24_hours'),
+            },
+            {
+                key: 'failed',
+                intent: 'filter',
+                label: t('modal.tools.failed_only'),
+            },
+            {
+                key: 'missing_email',
+                intent: 'filter',
+                label: t('modal.tools.missing_email'),
+            },
+            {
+                key: 'account_matching',
+                intent: 'filter',
+                label: t('modal.tools.account_matching'),
+            },
         ],
         knowledge: [
-            { key: '7d', intent: 'period', label: t('modal.tools.last_7_days') },
-            { key: 'learnnow', intent: 'filter', label: t('modal.tools.learnnow') },
-            { key: 'review_required', intent: 'filter', label: t('modal.tools.review_required') },
-            { key: 'failed_imports', intent: 'filter', label: t('modal.tools.failed_imports') },
+            {
+                key: '7d',
+                intent: 'period',
+                label: t('modal.tools.last_7_days'),
+            },
+            {
+                key: 'learnnow',
+                intent: 'filter',
+                label: t('modal.tools.learnnow'),
+            },
+            {
+                key: 'review_required',
+                intent: 'filter',
+                label: t('modal.tools.review_required'),
+            },
+            {
+                key: 'failed_imports',
+                intent: 'filter',
+                label: t('modal.tools.failed_imports'),
+            },
         ],
     };
     const tools = backendSegments.length
         ? backendSegments.map((segment) => ({
-            key: segment.key,
-            intent: segment.intent,
-            label: t(`modal.tools.${segmentToolLabelKeys[segment.key] ?? segment.key}`),
-        }))
+              key: segment.key,
+              intent: segment.intent,
+              label: t(`modal.tools.${segmentToolLabelKeys[segment.key] ?? segment.key}`),
+          }))
         : fallbackToolsMap[selected];
     const tags = metrics.map((metric) => `${metric.label}: ${metric.value}`);
+    const activeToolLabel = tools.find((tool) => tool.key === activeKey)?.label ?? activeKey;
 
     const seriesMap: Record<PulseId, number[]> = {
         tickets: data.activeDesk.trend.map((point) => Number(point.created ?? 0)),
@@ -637,19 +868,32 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
     const summaryMap: Record<PulseId, { title: string; description: string }> = {
         tickets: {
             title: t('modal.summaries.tickets.title'),
-            description: t('modal.summaries.tickets.description', { active: data.kpis.activeTickets, unassigned: data.kpis.unassignedTickets, sla: data.kpis.slaBreaches }),
+            description: t('modal.summaries.tickets.description', {
+                active: data.kpis.activeTickets,
+                unassigned: data.kpis.unassignedTickets,
+                sla: data.kpis.slaBreaches,
+            }),
         },
         ai: {
             title: t('modal.summaries.ai.title'),
-            description: t('modal.summaries.ai.description', { confidence: data.pulse.aiQuality.summary.confidenceRate ?? 0, fallback: data.pulse.aiQuality.summary.fallbackRate ?? 0 }),
+            description: t('modal.summaries.ai.description', {
+                confidence: data.pulse.aiQuality.summary.confidenceRate ?? 0,
+                fallback: data.pulse.aiQuality.summary.fallbackRate ?? 0,
+            }),
         },
         crm: {
             title: t('modal.summaries.crm.title'),
-            description: t('modal.summaries.crm.description', { updates: data.pulse.crm.updatedToday ?? 0, failures: data.pulse.crm.failuresToday ?? 0 }),
+            description: t('modal.summaries.crm.description', {
+                updates: data.pulse.crm.updatedToday ?? 0,
+                failures: data.pulse.crm.failuresToday ?? 0,
+            }),
         },
         knowledge: {
             title: t('modal.summaries.knowledge.title'),
-            description: t('modal.summaries.knowledge.description', { sources: data.pulse.knowledge.activeSources ?? 0, candidates: data.pulse.knowledge.genericCandidatesPending ?? 0 }),
+            description: t('modal.summaries.knowledge.description', {
+                sources: data.pulse.knowledge.activeSources ?? 0,
+                candidates: data.pulse.knowledge.genericCandidatesPending ?? 0,
+            }),
         },
     };
     const summary = {
@@ -657,7 +901,17 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
         description: buildPulseSummaryDescription(selected, metrics, t),
     };
 
-    return { metrics, records, actions, series, tools, activeTool: activeKey, tags, summary };
+    return {
+        metrics,
+        records,
+        actions,
+        series,
+        tools,
+        activeTool: activeKey,
+        activeToolLabel,
+        tags,
+        summary,
+    };
 }
 
 function seriesValuesFromPoints(points: Array<Record<string, string | number>>) {
@@ -704,11 +958,13 @@ function LargeTrend({ values }: { values: number[] }) {
     const width = 720;
     const height = 180;
     const xStep = points.length > 1 ? width / (points.length - 1) : width;
-    const coordinates = points.map((value, index) => {
-        const x = index * xStep;
-        const y = height - (value / max) * (height - 16) - 8;
-        return `${x},${y}`;
-    }).join(' ');
+    const coordinates = points
+        .map((value, index) => {
+            const x = index * xStep;
+            const y = height - (value / max) * (height - 16) - 8;
+            return `${x},${y}`;
+        })
+        .join(' ');
 
     return (
         <div className="overflow-hidden rounded-md border border-white/10 bg-slate-950/50 p-2">
@@ -752,12 +1008,14 @@ function SparkPreview({ values, mode }: { values: number[]; mode: PulseId }) {
     return (
         <svg viewBox={`0 0 ${width} ${height}`} className="h-[42px] w-[116px] overflow-visible max-sm:w-full" aria-hidden="true">
             <path d="M4 12 H112 M4 24 H112 M4 36 H112" stroke="rgba(148,163,184,.14)" strokeWidth="1" />
-            {isBars ? points.map((value, index) => {
-                const barWidth = Math.max(6, (width - 20) / points.length - 4);
-                const x = 8 + index * ((width - 20) / points.length);
-                const barHeight = Math.max(5, (value / max) * 30);
-                return <rect key={`${value}-${index}`} x={x} y={38 - barHeight} width={barWidth} height={barHeight} fill={stroke} opacity={index % 3 === 0 ? 0.78 : 0.48} />;
-            }) : (
+            {isBars ? (
+                points.map((value, index) => {
+                    const barWidth = Math.max(6, (width - 20) / points.length - 4);
+                    const x = 8 + index * ((width - 20) / points.length);
+                    const barHeight = Math.max(5, (value / max) * 30);
+                    return <rect key={`${value}-${index}`} x={x} y={38 - barHeight} width={barWidth} height={barHeight} fill={stroke} opacity={index % 3 === 0 ? 0.78 : 0.48} />;
+                })
+            ) : (
                 <>
                     <polyline points={area} fill={stroke} opacity="0.13" />
                     <polyline points={line} fill="none" stroke={stroke} strokeWidth="2.25" strokeLinecap="round" strokeLinejoin={isSteps ? 'miter' : 'round'} />
@@ -781,21 +1039,23 @@ function ActiveDesk({ data }: { data: OpsDashboardData }) {
                 <div className="space-y-2 p-3">
                     {data.activeDesk.tickets.length === 0 ? (
                         <EmptyState title={t('empty_title')} description={t('empty_desc')} />
-                    ) : data.activeDesk.tickets.map((ticket) => (
-                        <Link key={ticket.id} href={`/tickets/${ticket.id}`} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                    <p className="truncate text-xs font-bold text-white">{ticket.ticketNumber}</p>
-                                    <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">{ticket.subject}</p>
+                    ) : (
+                        data.activeDesk.tickets.map((ticket) => (
+                            <Link key={ticket.id} href={`/tickets/${ticket.id}`} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="truncate text-xs font-bold text-white">{ticket.ticketNumber}</p>
+                                        <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">{ticket.subject}</p>
+                                    </div>
+                                    <span className="shrink-0 rounded border border-white/10 px-2 py-1 text-[9px] uppercase text-muted-foreground">{ticket.priority}</span>
                                 </div>
-                                <span className="shrink-0 rounded border border-white/10 px-2 py-1 text-[9px] uppercase text-muted-foreground">{ticket.priority}</span>
-                            </div>
-                            <div className="mt-3 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
-                                <span className="truncate">{ticket.creator?.customerProfile?.companyName || ticket.creator?.fullName || t('unknown_customer')}</span>
-                                <span>{ticket.assignee?.fullName || t('unassigned')}</span>
-                            </div>
-                        </Link>
-                    ))}
+                                <div className="mt-3 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                                    <span className="truncate">{ticket.creator?.customerProfile?.companyName || ticket.creator?.fullName || t('unknown_customer')}</span>
+                                    <span>{ticket.assignee?.fullName || t('unassigned')}</span>
+                                </div>
+                            </Link>
+                        ))
+                    )}
                 </div>
             </ScrollArea>
         </WireframeBorder>
@@ -817,7 +1077,11 @@ function ActionQueue({ data }: { data: OpsDashboardData }) {
                                 <p className="text-xs font-bold text-white">{t(`${action.id}.title`)}</p>
                                 <p className="mt-1 text-[10px] text-muted-foreground">{t(`${action.id}.description`)}</p>
                             </div>
-                            <span className={`rounded px-2 py-1 text-[10px] font-bold ${action.severity === 'critical' ? 'bg-rose-500/15 text-rose-300' : action.severity === 'warning' ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'}`}>{action.count}</span>
+                            <span
+                                className={`rounded px-2 py-1 text-[10px] font-bold ${action.severity === 'critical' ? 'bg-rose-500/15 text-rose-300' : action.severity === 'warning' ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'}`}
+                            >
+                                {action.count}
+                            </span>
                         </Link>
                     ))}
                 </div>
@@ -837,15 +1101,17 @@ function LiveFeed({ data }: { data: OpsDashboardData }) {
                 <div className="space-y-2 p-3">
                     {data.liveFeed.length === 0 ? (
                         <EmptyState title={t('empty_title')} description={t('empty_desc')} />
-                    ) : data.liveFeed.map((item) => (
-                        <Link key={item.id} href={item.href} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
-                            <div className="flex items-center justify-between gap-2">
-                                <p className="truncate text-xs font-semibold text-white">{item.title}</p>
-                                <span className="text-[9px] uppercase text-muted-foreground">{t(`types.${item.type}`)}</span>
-                            </div>
-                            <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{item.description || item.status}</p>
-                        </Link>
-                    ))}
+                    ) : (
+                        data.liveFeed.map((item) => (
+                            <Link key={item.id} href={item.href} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="truncate text-xs font-semibold text-white">{item.title}</p>
+                                    <span className="text-[9px] uppercase text-muted-foreground">{t(`types.${item.type}`)}</span>
+                                </div>
+                                <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{item.description || item.status}</p>
+                            </Link>
+                        ))
+                    )}
                 </div>
             </ScrollArea>
         </WireframeBorder>
@@ -855,77 +1121,145 @@ function LiveFeed({ data }: { data: OpsDashboardData }) {
 function WorkspaceTabs({ data }: { data: OpsDashboardData }) {
     const t = useTranslations('dashboard.ops.workspace');
     const tSystem = useTranslations('dashboard.ops.system');
+    const crmRecords = (data.pulse.crm.recentChanges ?? []).slice(0, 4).map((item: any, index: number) => ({
+        id: item.id || `workspace-crm-${index}`,
+        title: item.displayName || item.companyName || item.entityId || t('unknown_record'),
+        description: [item.companyName, item.email, item.changeSummary || item.fieldLabel, item.status].filter(Boolean).join(' / '),
+        href: item.href || '/customers/crm',
+    }));
+    const learnNowReady = Number(data.learnNow.byStatus?.IMPORTED ?? data.learnNow.byStatus?.APPROVED ?? 0);
+    const learnNowReview = Number(data.learnNow.pendingReview ?? data.pulse.knowledge.genericCandidatesPending ?? 0);
+    const totalKnowledgeSources = Number(data.pulse.knowledge.activeSources ?? 0);
+    const embeddings = Number(data.pulse.knowledge.embeddings ?? 0);
+    const crmTotal = Number(data.pulse.crm.updatedToday ?? 0) + Number(data.pulse.crm.failuresToday ?? 0);
+    const crmHealth = crmTotal > 0 ? Math.max(0, Math.round(((crmTotal - Number(data.pulse.crm.failuresToday ?? 0)) / crmTotal) * 100)) : 100;
+    const knowledgeRecords = (data.pulse.details?.knowledge?.segments ?? []).flatMap((segment: PulseSegment) => segment.records ?? []).slice(0, 5) as PulseRecord[];
+    const learnNowRecords = (data.learnNow.recent ?? []).slice(0, 5).map((item: any, index: number) => ({
+        id: item.id || `workspace-learnnow-${index}`,
+        title: item.title || item.sourceUrl || t('unknown_record'),
+        description: [item.status, item.format, item.language].filter(Boolean).join(' / '),
+        href: item.sourceUrl || '/knowledge-pool?tab=candidates',
+    })) as PulseRecord[];
+
     return (
         <WireframeBorder className="min-h-[680px] border-border/40 bg-transparent xl:self-start">
             <div className="border-b border-border/20 bg-muted/5 px-4 py-3">
                 <SectionHeader icon={Server} title={t('title')} tooltip={t('tooltip')} badge={t('badge')} />
             </div>
             <Tabs defaultValue="overview" className="p-3">
-                <TabsList className="grid h-auto w-full grid-cols-2 gap-1 bg-white/[0.03] p-1 md:grid-cols-5">
-                    {['overview', 'crm', 'knowledge', 'learnnow', 'ai'].map((tab) => (
+                <TabsList className="grid h-auto w-full grid-cols-2 gap-1 bg-white/[0.03] p-1 md:grid-cols-4">
+                    {['overview', 'crm', 'knowledge', 'learnnow'].map((tab) => (
                         <TabsTrigger key={tab} value={tab} className="text-[9px] font-bold uppercase tracking-widest data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
                             {t(`tabs.${tab}`)}
                         </TabsTrigger>
                     ))}
                 </TabsList>
                 <TabsContent value="overview" className="mt-4 space-y-3">
-                    <MetricGrid items={[
-                        [t('metrics.sla_breaches'), data.kpis.slaBreaches],
-                        [t('metrics.resolved_today'), data.kpis.resolvedToday],
-                        [t('metrics.ai_confidence'), `${data.kpis.aiConfidence}%`],
-                    ]} />
+                    <MetricGrid
+                        columns={3}
+                        items={[
+                            [t('metrics.sla_breaches'), data.kpis.slaBreaches],
+                            [t('metrics.resolved_today'), data.kpis.resolvedToday],
+                            [t('metrics.ai_confidence'), `${data.kpis.aiConfidence}%`],
+                        ]}
+                    />
                     <DecisionCard data={data} />
                     <div className="grid gap-3 lg:grid-cols-2">
-                        <WorkspaceInfoPanel title={t('metrics.resolved_today')} badge={t('badges.daily_close')} rows={[
-                            [t('metrics.resolved_today'), `${data.kpis.resolvedToday}`],
-                            [t('metrics.live_events'), `${data.liveFeed.length}`],
-                            [t('metrics.queue_failed'), `${Object.values(data.queues).reduce((sum, queue) => sum + queue.failed, 0)}`],
-                        ]} />
-                        <WorkspaceInfoPanel title={tSystem('title')} badge={data.system.status} rows={[
-                            [tSystem('online_agents'), `${data.system.activeAgents}`],
-                            [tSystem('knowledge_queue'), `${data.queues.knowledge.active + data.queues.knowledge.waiting}`],
-                            [t('metrics.crm_failures'), `${data.pulse.crm.failuresToday ?? 0}`],
-                        ]} />
+                        <WorkspaceInfoPanel
+                            title={t('metrics.resolved_today')}
+                            badge={t('badges.daily_close')}
+                            rows={[
+                                [t('metrics.resolved_today'), `${data.kpis.resolvedToday}`],
+                                [t('metrics.live_events'), `${data.liveFeed.length}`],
+                                [t('metrics.queue_failed'), `${Object.values(data.queues).reduce((sum, queue) => sum + queue.failed, 0)}`],
+                            ]}
+                        />
+                        <WorkspaceInfoPanel
+                            title={tSystem('title')}
+                            badge={data.system.status}
+                            rows={[
+                                [tSystem('online_agents'), `${data.system.activeAgents}`],
+                                [tSystem('knowledge_queue'), `${data.queues.knowledge.active + data.queues.knowledge.waiting}`],
+                                [t('metrics.crm_failures'), `${data.pulse.crm.failuresToday ?? 0}`],
+                            ]}
+                        />
                     </div>
                 </TabsContent>
                 <TabsContent value="crm" className="mt-4 space-y-3">
-                    <MetricGrid items={[
-                        [t('metrics.crm_updates'), data.pulse.crm.updatedToday ?? 0],
-                        [t('metrics.crm_failures'), data.pulse.crm.failuresToday ?? 0],
-                        [t('metrics.crm_recent'), data.pulse.crm.recentChanges?.length ?? 0],
-                    ]} />
-                    <WorkspaceRecordList
-                        emptyTitle={t('empty_title')}
-                        records={(data.pulse.crm.recentChanges ?? []).slice(0, 4).map((item: any, index: number) => ({
-                            id: item.id || `workspace-crm-${index}`,
-                            title: item.displayName || item.companyName || item.entityId || t('unknown_record'),
-                            description: [item.companyName, item.changeSummary || item.fieldLabel, item.status].filter(Boolean).join(' / '),
-                            href: item.href || '/customers/crm',
-                        }))}
-                    />
+                    <div className="grid gap-3 lg:grid-cols-2">
+                        <WorkspaceInfoPanel
+                            title={t('cards.crm_live')}
+                            badge={t('badges.dynamics')}
+                            rows={[
+                                [t('metrics.crm_updates'), `${data.pulse.crm.updatedToday ?? 0}`],
+                                [t('metrics.crm_recent'), `${data.pulse.crm.recentChanges?.length ?? 0}`],
+                                [t('metrics.crm_failures'), `${data.pulse.crm.failuresToday ?? 0}`],
+                            ]}
+                        />
+                        <WorkspaceInfoPanel
+                            title={t('cards.crm_quality')}
+                            badge={t('badges.quality')}
+                            rows={[
+                                [t('metrics.crm_updates'), `${data.pulse.crm.updatedToday ?? 0}`],
+                                [t('cards.missing_email'), `${data.pulse.details?.crm?.segments?.find((segment) => segment.key === 'missing_email')?.records?.length ?? 0}`],
+                                [t('cards.portal_match'), `%${crmHealth}`],
+                            ]}
+                        >
+                            <WorkspaceProgress value={crmHealth} />
+                        </WorkspaceInfoPanel>
+                    </div>
+                    <WorkspaceRecordList emptyTitle={t('empty_title')} records={crmRecords} />
                 </TabsContent>
-                <TabsContent value="knowledge" className="mt-4">
-                    <MetricGrid items={[
-                        [t('metrics.active_sources'), data.pulse.knowledge.activeSources ?? 0],
-                        [t('metrics.embeddings'), data.pulse.knowledge.embeddings ?? 0],
-                        [t('metrics.dataset_sources'), data.pulse.knowledge.datasetSources ?? 0],
-                        [t('metrics.generic_candidates'), data.pulse.knowledge.genericCandidatesPending ?? 0],
-                    ]} />
+                <TabsContent value="knowledge" className="mt-4 space-y-3">
+                    <div className="grid gap-3 lg:grid-cols-2">
+                        <WorkspaceInfoPanel
+                            title={t('cards.dataset_summary')}
+                            badge={t('badges.controlled_import')}
+                            rows={[
+                                [t('metrics.active_sources'), `${totalKnowledgeSources}`],
+                                [t('metrics.dataset_sources'), `${data.pulse.knowledge.datasetSources ?? 0}`],
+                                [t('metrics.embeddings'), formatNumber(embeddings)],
+                            ]}
+                        >
+                            <WorkspaceProgress value={Math.min(100, Math.round((totalKnowledgeSources / Math.max(1, totalKnowledgeSources + data.pulse.knowledge.syncFailuresToday)) * 100))} />
+                        </WorkspaceInfoPanel>
+                        <WorkspaceInfoPanel
+                            title={t('cards.knowledge_changes')}
+                            badge={t('badges.database')}
+                            rows={[
+                                [t('cards.new_chunks'), formatNumber(embeddings)],
+                                [t('metrics.queue_failed'), `${data.queues.knowledge.failed}`],
+                                [tSystem('knowledge_queue'), `${data.queues.knowledge.active + data.queues.knowledge.waiting}`],
+                            ]}
+                        />
+                    </div>
+                    <WorkspaceRecordList emptyTitle={t('empty_title')} records={knowledgeRecords} />
                 </TabsContent>
-                <TabsContent value="learnnow" className="mt-4">
-                    <MetricGrid items={[
-                        [t('metrics.pending_review'), data.learnNow.pendingReview ?? 0],
-                        [t('metrics.imported'), data.learnNow.byStatus?.IMPORTED ?? 0],
-                        [t('metrics.duplicates'), data.learnNow.byStatus?.SKIPPED_DUPLICATE ?? 0],
-                    ]} />
-                </TabsContent>
-                <TabsContent value="ai" className="mt-4">
-                    <MetricGrid items={[
-                        [t('metrics.ai_total'), data.pulse.aiQuality.summary.total ?? 0],
-                        [t('metrics.ai_fallback'), `${data.pulse.aiQuality.summary.fallbackRate ?? 0}%`],
-                        [t('metrics.source_leaks'), data.pulse.aiQuality.summary.sourceLeaks ?? 0],
-                        [t('metrics.language_risks'), data.pulse.aiQuality.summary.languageRisks ?? 0],
-                    ]} />
+                <TabsContent value="learnnow" className="mt-4 space-y-3">
+                    <div className="grid gap-3 lg:grid-cols-2">
+                        <WorkspaceInfoPanel
+                            title={t('cards.learnnow_summary')}
+                            badge={t('badges.review_queue')}
+                            rows={[
+                                [t('cards.knowledge_article'), `${data.learnNow.byFormat?.KNOWLEDGE_ARTICLE ?? 0}`],
+                                [t('cards.pdf'), `${data.learnNow.byFormat?.PDF ?? 0}`],
+                                [t('metrics.pending_review'), `${learnNowReview}`],
+                                [t('metrics.imported'), `${data.learnNow.byStatus?.IMPORTED ?? 0}`],
+                            ]}
+                        >
+                            <WorkspaceProgress value={Math.min(100, Math.round((learnNowReady / Math.max(1, learnNowReady + learnNowReview)) * 100))} />
+                        </WorkspaceInfoPanel>
+                        <WorkspaceInfoPanel
+                            title={t('cards.review_decisions')}
+                            badge={t('badges.quality_gate')}
+                            rows={[
+                                [t('metrics.pending_review'), `${learnNowReview}`],
+                                [t('metrics.imported'), `${data.learnNow.byStatus?.IMPORTED ?? 0}`],
+                                [t('metrics.duplicates'), `${data.learnNow.byStatus?.SKIPPED_DUPLICATE ?? 0}`],
+                            ]}
+                        />
+                    </div>
+                    <WorkspaceRecordList emptyTitle={t('empty_title')} records={learnNowRecords} />
                 </TabsContent>
             </Tabs>
         </WireframeBorder>
@@ -945,9 +1279,7 @@ function SectionHeader({ icon: Icon, title, tooltip, badge }: { icon: ElementTyp
                     </span>
                 </span>
             </h2>
-            <span className="shrink-0 rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                {badge}
-            </span>
+            <span className="shrink-0 rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{badge}</span>
         </div>
     );
 }
@@ -955,7 +1287,10 @@ function SectionHeader({ icon: Icon, title, tooltip, badge }: { icon: ElementTyp
 function DecisionCard({ data }: { data: OpsDashboardData }) {
     const t = useTranslations('dashboard.ops.decision');
     return (
-        <Link href={data.decision.primaryAction} className={`block rounded-lg border p-4 transition ${data.decision.level === 'ok' ? 'border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10' : 'border-amber-500/25 bg-amber-500/5 hover:bg-amber-500/10'}`}>
+        <Link
+            href={data.decision.primaryAction}
+            className={`block rounded-lg border p-4 transition ${data.decision.level === 'ok' ? 'border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10' : 'border-amber-500/25 bg-amber-500/5 hover:bg-amber-500/10'}`}
+        >
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{t('title')}</p>
@@ -968,7 +1303,7 @@ function DecisionCard({ data }: { data: OpsDashboardData }) {
     );
 }
 
-function WorkspaceInfoPanel({ title, badge, rows }: { title: string; badge: string; rows: Array<[string, string]> }) {
+function WorkspaceInfoPanel({ title, badge, rows, children }: { title: string; badge: string; rows: Array<[string, string]>; children?: ReactNode }) {
     return (
         <div className="rounded-lg border border-white/10 bg-white/[0.025]">
             <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
@@ -983,6 +1318,16 @@ function WorkspaceInfoPanel({ title, badge, rows }: { title: string; badge: stri
                     </div>
                 ))}
             </div>
+            {children ? <div className="px-4 pb-4">{children}</div> : null}
+        </div>
+    );
+}
+
+function WorkspaceProgress({ value }: { value: number }) {
+    const safeValue = Math.max(0, Math.min(100, value));
+    return (
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${safeValue}%` }} />
         </div>
     );
 }
@@ -993,25 +1338,27 @@ function WorkspaceRecordList({ records, emptyTitle }: { records: PulseRecord[]; 
             <div className="space-y-2 p-3">
                 {records.length === 0 ? (
                     <EmptyState title={emptyTitle} description="" />
-                ) : records.map((record) => (
-                    <Link key={record.id} href={record.href} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                                <p className="truncate text-xs font-bold text-white">{record.title}</p>
-                                <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{record.description}</p>
+                ) : (
+                    records.map((record) => (
+                        <Link key={record.id} href={record.href} className="block rounded-md border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40 hover:bg-primary/5">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="truncate text-xs font-bold text-white">{record.title}</p>
+                                    <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{record.description}</p>
+                                </div>
+                                <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
                             </div>
-                            <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
-                        </div>
-                    </Link>
-                ))}
+                        </Link>
+                    ))
+                )}
             </div>
         </div>
     );
 }
 
-function MetricGrid({ items }: { items: Array<[string, string | number]> }) {
+function MetricGrid({ items, columns = 4 }: { items: Array<[string, string | number]>; columns?: 3 | 4 }) {
     return (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className={`grid gap-3 sm:grid-cols-2 ${columns === 3 ? 'xl:grid-cols-3' : 'xl:grid-cols-4'}`}>
             {items.map(([label, value]) => (
                 <div key={label} className="rounded-md border border-white/10 bg-white/[0.03] p-4">
                     <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
@@ -1037,7 +1384,10 @@ export default function DashboardClient() {
     const tOps = useTranslations('dashboard.ops');
     const { user } = useAuth();
     const mountedRef = useRef(true);
-    const [aiStatus, setAiStatus] = useState<{ available: boolean; model?: string } | null>(null);
+    const [aiStatus, setAiStatus] = useState<{
+        available: boolean;
+        model?: string;
+    } | null>(null);
     const [customerStats, setCustomerStats] = useState<any>(null);
     const [opsData, setOpsData] = useState<OpsDashboardData | null>(null);
     const [drawer, setDrawer] = useState<DrawerMode>(null);
@@ -1055,34 +1405,40 @@ export default function DashboardClient() {
     const userRoles = useMemo(() => roleList(user), [user]);
     const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer');
 
-    const loadData = useCallback(async (background = false) => {
-        if (background) setRefreshing(true);
-        try {
-            if (isCustomer) {
-                const statsRes = await (api.tickets as unknown as { getSlaStats: () => Promise<unknown> }).getSlaStats().catch(() => null);
-                if (mountedRef.current) setCustomerStats(statsRes);
-                return;
-            }
+    const loadData = useCallback(
+        async (background = false) => {
+            if (background) setRefreshing(true);
+            try {
+                if (isCustomer) {
+                    const statsRes = await (
+                        api.tickets as unknown as {
+                            getSlaStats: () => Promise<unknown>;
+                        }
+                    )
+                        .getSlaStats()
+                        .catch(() => null);
+                    if (mountedRef.current) setCustomerStats(statsRes);
+                    return;
+                }
 
-            const [statusRes, opsRes] = await Promise.all([
-                api.ai.status().catch(() => null),
-                api.dashboard.ops(7).catch(() => emptyOpsData()),
-            ]);
-            if (mountedRef.current) {
-                setAiStatus(statusRes);
-                setOpsData(opsRes);
-                setLastUpdated(new Date());
+                const [statusRes, opsRes] = await Promise.all([api.ai.status().catch(() => null), api.dashboard.ops(7).catch(() => emptyOpsData())]);
+                if (mountedRef.current) {
+                    setAiStatus(statusRes);
+                    setOpsData(opsRes);
+                    setLastUpdated(new Date());
+                }
+            } catch (err) {
+                console.error('Dashboard load failed', err);
+                if (mountedRef.current && !isCustomer) setOpsData(emptyOpsData());
+            } finally {
+                if (mountedRef.current) {
+                    setLoading(false);
+                    setRefreshing(false);
+                }
             }
-        } catch (err) {
-            console.error('Dashboard load failed', err);
-            if (mountedRef.current && !isCustomer) setOpsData(emptyOpsData());
-        } finally {
-            if (mountedRef.current) {
-                setLoading(false);
-                setRefreshing(false);
-            }
-        }
-    }, [isCustomer]);
+        },
+        [isCustomer],
+    );
 
     useEffect(() => {
         return () => {
@@ -1117,7 +1473,13 @@ export default function DashboardClient() {
     }
 
     const data = opsData ?? emptyOpsData();
-    const effectiveSystem = aiStatus?.available === false ? { ...data, system: { ...data.system, status: 'DEGRADED' as const } } : data;
+    const effectiveSystem =
+        aiStatus?.available === false
+            ? {
+                  ...data,
+                  system: { ...data.system, status: 'DEGRADED' as const },
+              }
+            : data;
 
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative mx-auto w-full max-w-[1720px] space-y-5">
@@ -1132,7 +1494,9 @@ export default function DashboardClient() {
                     <p className="ml-11 mt-1 text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground">{t('telemetry_version')}</p>
                     {lastUpdated ? (
                         <p className="ml-11 mt-1 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
-                            {tOps('last_updated', { time: formatRefreshTime(lastUpdated) })}
+                            {tOps('last_updated', {
+                                time: formatRefreshTime(lastUpdated),
+                            })}
                         </p>
                     ) : null}
                 </div>
@@ -1148,7 +1512,10 @@ export default function DashboardClient() {
                 activeSegmentKey={selectedPulse ? selectedPulseSegment[selectedPulse] : undefined}
                 onSegmentChange={(key) => {
                     if (!selectedPulse) return;
-                    setSelectedPulseSegment((current) => ({ ...current, [selectedPulse]: key }));
+                    setSelectedPulseSegment((current) => ({
+                        ...current,
+                        [selectedPulse]: key,
+                    }));
                 }}
                 onOpenChange={(open) => !open && setSelectedPulse(null)}
             />

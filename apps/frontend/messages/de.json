@@ -381,6 +381,7 @@
           "decision": "Entscheidung",
           "records": "Aktuelle Einträge",
           "actions": "Aktionen",
+          "selected_slice": "Ausgewählte Ansicht: {slice} · {count} Einträge",
           "empty_title": "Keine Einträge in diesem Zeitraum",
           "empty_desc": "Für dieses Signal gibt es noch keinen verknüpften Eintrag.",
           "unknown_record": "Unbekannter Eintrag",
@@ -550,7 +551,29 @@
           "language_risks": "Sprachrisiken"
         },
         "badges": {
-          "daily_close": "Daily Close"
+          "daily_close": "Daily Close",
+          "dynamics": "Dynamics",
+          "quality": "Qualität",
+          "controlled_import": "Kontrollierter Import",
+          "database": "Datenbank",
+          "review_queue": "Review Queue",
+          "quality_gate": "Quality Gate"
+        },
+        "cards": {
+          "crm_live": "CRM Live-Benachrichtigungen",
+          "crm_quality": "CRM-Datenqualität",
+          "missing_email": "Fehlende E-Mail",
+          "portal_match": "Portal-Zuordnung",
+          "dataset_summary": "Dataset Corpus Übersicht",
+          "knowledge_changes": "Knowledge-Pool Änderungen",
+          "new_chunks": "Embeddings gesamt",
+          "learnnow_summary": "LearnNow / Crawler Übersicht",
+          "review_decisions": "Review-Entscheidungen",
+          "knowledge_article": "Knowledge Article",
+          "pdf": "PDF",
+          "explaining_video": "Explaining Video",
+          "recorded_session": "Recorded Session",
+          "technical_manual": "Technical Manual"
         },
         "empty_title": "Keine Einträge hier",
         "unknown_record": "Unbekannter Eintrag"

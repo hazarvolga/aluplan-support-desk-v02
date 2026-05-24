@@ -381,6 +381,7 @@
           "decision": "Karar",
           "records": "Son Kayıtlar",
           "actions": "Aksiyonlar",
+          "selected_slice": "Seçili görünüm: {slice} · {count} kayıt",
           "empty_title": "Bu aralıkta kayıt yok",
           "empty_desc": "Bu sinyal için henüz incelenecek bağlı kayıt yok.",
           "unknown_record": "Bilinmeyen kayıt",
@@ -550,7 +551,29 @@
           "language_risks": "Dil riski"
         },
         "badges": {
-          "daily_close": "Daily Close"
+          "daily_close": "Daily Close",
+          "dynamics": "Dynamics",
+          "quality": "Quality",
+          "controlled_import": "Controlled Import",
+          "database": "Database",
+          "review_queue": "Review Queue",
+          "quality_gate": "Quality Gate"
+        },
+        "cards": {
+          "crm_live": "CRM Canlı Bildirimleri",
+          "crm_quality": "CRM Veri Sağlığı",
+          "missing_email": "Eksik e-posta",
+          "portal_match": "Portal eşleşmesi",
+          "dataset_summary": "Dataset Corpus Özeti",
+          "knowledge_changes": "Bilgi Havuzu Değişimleri",
+          "new_chunks": "Toplam embedding",
+          "learnnow_summary": "LearnNow / Crawler Özeti",
+          "review_decisions": "Review Kararları",
+          "knowledge_article": "Knowledge Article",
+          "pdf": "PDF",
+          "explaining_video": "Explaining Video",
+          "recorded_session": "Recorded Session",
+          "technical_manual": "Technical Manual"
         },
         "empty_title": "Bu alanda kayıt yok",
         "unknown_record": "Bilinmeyen kayıt"
