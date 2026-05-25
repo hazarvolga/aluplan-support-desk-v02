@@ -517,6 +517,8 @@ export class AiQueryService {
             confidence = topResult.confidence as LocalConfidenceBand;
         }
 
+        const visualEvidence = this.collectVisualReferences(results);
+
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
             // Re-use already completed diagnosis
             diagnosis = diagnosisForThreshold;
@@ -531,7 +533,6 @@ export class AiQueryService {
                 audience: isStaff ? 'agent' : 'customer',
             });
 
-            const visualEvidence = this.collectVisualReferences(results);
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
                 userQuery,
@@ -666,6 +667,7 @@ export class AiQueryService {
                     answerLanguageMismatch: languageCheck?.mismatch ?? false,
                     noKnowledgeAnswer: answerIsNoKnowledge,
                     safeOperationalTriage: answerIsSafeOperationalTriage,
+                    visuals: visualEvidence ?? [],
                     translations,
                     diagnosis,
                     source: effectiveConfidence !== 'NO_MATCH' && !answerIsSafeOperationalTriage && topResult ? {
@@ -725,7 +727,7 @@ export class AiQueryService {
                 title: r.title,
                 similarity: r.similarity,
             })) : [],
-            visuals: effectiveConfidence !== 'NO_MATCH' && !answerIsSafeOperationalTriage ? this.collectVisualReferences(results) : undefined,
+            visuals: effectiveConfidence !== 'NO_MATCH' && !answerIsSafeOperationalTriage ? visualEvidence : undefined,
             interactionId: interaction.id,
             suggestTicket,
             translations,

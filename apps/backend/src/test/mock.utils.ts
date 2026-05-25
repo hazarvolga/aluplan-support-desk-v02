@@ -97,6 +97,15 @@ export const mockPrismaService: any = {
         update: jest.fn(),
         delete: jest.fn(),
     },
+    knowledgeSource: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+        count: jest.fn(),
+    },
     interaction: {
         findUnique: jest.fn(),
         findFirst: jest.fn(),

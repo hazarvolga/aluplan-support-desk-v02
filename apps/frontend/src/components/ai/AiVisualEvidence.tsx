@@ -22,9 +22,10 @@ type AiVisualEvidenceProps = {
     visuals?: AiVisualEvidenceItem[];
     labels: AiVisualEvidenceLabels;
     accent?: 'brand' | 'orange';
+    layout?: 'grid' | 'stack';
 };
 
-export function AiVisualEvidence({ visuals, labels, accent = 'brand' }: AiVisualEvidenceProps) {
+export function AiVisualEvidence({ visuals, labels, accent = 'brand', layout = 'grid' }: AiVisualEvidenceProps) {
     const uniqueVisuals = Array.from(
         new Map((visuals ?? []).filter(visual => visual.url).map(visual => [visual.url, visual])).values(),
     );
@@ -47,7 +48,7 @@ export function AiVisualEvidence({ visuals, labels, accent = 'brand' }: AiVisual
                 </div>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className={layout === 'stack' ? 'grid gap-3' : 'grid gap-3 md:grid-cols-2'}>
                 {uniqueVisuals.map((visual, index) => {
                     const caption = visual.caption || visual.alt || visual.summary;
                     return (

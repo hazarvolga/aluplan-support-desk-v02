@@ -504,6 +504,7 @@ export class TicketsService {
         const interaction = ticket.interaction;
         const response = interaction?.responseGenerated ?? '';
         const userContext = (interaction?.userContext ?? {}) as Record<string, any>;
+        const traceVisuals = await this.resolveAiTraceVisuals(userContext);
         const contractSections = this.evaluateAnswerContract(response);
 
         return {
@@ -532,7 +533,10 @@ export class TicketsService {
                 estimatedCost: interaction.estimatedCost ? Number(interaction.estimatedCost) : null,
                 channel: interaction.channel,
                 createdAt: interaction.createdAt,
-                userContext,
+                userContext: {
+                    ...userContext,
+                    visuals: traceVisuals,
+                },
                 matchedArticle: interaction.matchedArticle,
                 matchedVersion: interaction.matchedVersion,
                 feedbacks: interaction.feedbacks,
@@ -569,6 +573,85 @@ export class TicketsService {
                 preview: this.previewText(message.message),
             })),
         };
+    }
+
+    private async resolveAiTraceVisuals(userContext: Record<string, any>): Promise<Array<{
+        url: string;
+        alt?: string;
+        caption?: string;
+        summary: string;
+        sourceTitle: string;
+        sourceId: string;
+    }>> {
+        const existing = this.normalizeAiTraceVisuals(userContext.visuals, {
+            sourceId: userContext.source?.id,
+            sourceTitle: userContext.source?.title,
+        });
+        if (existing.length > 0) return existing;
+
+        const sourceId = typeof userContext.source?.id === 'string' ? userContext.source.id : null;
+        if (!sourceId) return [];
+
+        const source = await this.prisma.knowledgeSource.findUnique({
+            where: { id: sourceId },
+            select: { id: true, name: true, metadata: true },
+        }).catch(() => null);
+
+        if (!source) return [];
+
+        const metadata = (source.metadata ?? {}) as Record<string, any>;
+        return this.normalizeAiTraceVisuals(metadata.visualSummaries ?? metadata.images, {
+            sourceId: source.id,
+            sourceTitle: source.name,
+        });
+    }
+
+    private normalizeAiTraceVisuals(raw: any, source: { sourceId?: string | null; sourceTitle?: string | null }): Array<{
+        url: string;
+        alt?: string;
+        caption?: string;
+        summary: string;
+        sourceTitle: string;
+        sourceId: string;
+    }> {
+        if (!Array.isArray(raw)) return [];
+
+        const sourceTitle = source.sourceTitle || 'Knowledge source';
+        const sourceId = source.sourceId || 'unknown-source';
+        const unique = new Map<string, {
+            url: string;
+            alt?: string;
+            caption?: string;
+            summary: string;
+            sourceTitle: string;
+            sourceId: string;
+        }>();
+
+        for (const item of raw) {
+            const url = typeof item?.url === 'string'
+                ? item.url
+                : typeof item?.src === 'string'
+                    ? item.src
+                    : null;
+            if (!url || unique.has(url)) continue;
+
+            const caption = typeof item?.caption === 'string' ? item.caption : undefined;
+            const alt = typeof item?.alt === 'string' ? item.alt : undefined;
+            const summary = typeof item?.summary === 'string'
+                ? item.summary
+                : caption || alt || sourceTitle;
+
+            unique.set(url, {
+                url,
+                alt,
+                caption,
+                summary,
+                sourceTitle: typeof item?.sourceTitle === 'string' ? item.sourceTitle : sourceTitle,
+                sourceId: typeof item?.sourceId === 'string' ? item.sourceId : sourceId,
+            });
+        }
+
+        return Array.from(unique.values()).slice(0, 4);
     }
 
     private evaluateAnswerContract(answer: string) {

@@ -39,6 +39,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { tr as trLocale, enUS as enLocale, de as deLocale } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { MacroPicker } from '@/components/macros/macro-picker';
+import { AiVisualEvidence, type AiVisualEvidenceItem } from '@/components/ai/AiVisualEvidence';
 import { useTranslations, useLocale } from 'next-intl';
 import { ContentSanitizer } from '@/lib/content-sanitizer';
 import { markdownToHtml } from '@/lib/markdown-to-html';
@@ -284,6 +285,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const isReplyEffectivelyEmpty = ContentSanitizer.isEffectivelyEmpty(reply);
     const isComposerDisabled = ['CLOSED', 'RESOLVED', 'PENDING_CUSTOMER_REVIEW'].includes(ticket?.status);
     const isLiveChatEligible = !isCustomer || Boolean(ticket?.creator?.customerProfile?.isVip);
+    const aiTraceVisuals = (aiTrace?.interaction?.userContext?.visuals ?? []) as AiVisualEvidenceItem[];
 
     const handleRequestLiveChat = async () => {
         try {
@@ -1007,6 +1009,18 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     <p className="mt-1 text-[11px] leading-relaxed text-foreground/85 line-clamp-3">{aiTrace.interaction.userQuery}</p>
                                 </div>
                             )}
+
+                            <AiVisualEvidence
+                                visuals={aiTraceVisuals}
+                                labels={{
+                                    title: t('ai_trace_visuals_title'),
+                                    description: t('ai_trace_visuals_desc'),
+                                    open: t('ai_trace_visuals_open'),
+                                    source: t('ai_trace_visuals_source'),
+                                }}
+                                accent="brand"
+                                layout="stack"
+                            />
                         </CardContent>
                     </Card>
                 )}

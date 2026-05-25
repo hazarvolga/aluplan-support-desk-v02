@@ -553,6 +553,18 @@ describe('AiQueryService', () => {
                     summary: expect.stringContaining('FRILO TRIAL'),
                 }),
             ]);
+            expect(mockPrismaService.aiInteraction.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    userContext: expect.objectContaining({
+                        visuals: expect.arrayContaining([
+                            expect.objectContaining({
+                                url: 'https://learnnow.allplan.com/pluginfile.php/frilo-trial.png',
+                                sourceTitle: 'Activating a FRILO trial version',
+                            }),
+                        ]),
+                    }),
+                }),
+            }));
             expect(mockPromptContextBuilder.buildContext).toHaveBeenCalledWith(expect.objectContaining({
                 visualEvidence: expect.arrayContaining([
                     expect.objectContaining({

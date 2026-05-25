@@ -218,8 +218,8 @@ RESPONSE DRAFT:`;
 
 [SECOND_PASS_SYNTHESIS]
 The previous draft claimed that the knowledge base did not contain enough information, but retrieved context is available.
-Before refusing, re-check the approved context, ticket details, and any image attachments for concrete procedural evidence.
-If the context contains usable steps, checks, UI labels, module names, or screenshots related to the user's exact question, synthesize a complete support answer from that evidence.
+Before refusing, re-check the approved context, ticket details, approved source visual evidence, and any image attachments for concrete procedural evidence.
+If the context contains usable steps, checks, UI labels, module names, source image summaries, or screenshots related to the user's exact question, synthesize a complete support answer from that evidence.
 Do not mention "best match", source names, internal confidence, or fallback behavior.
 If the context truly lacks evidence for the exact question, return the no-knowledge message required by the main contract.
 [/SECOND_PASS_SYNTHESIS]

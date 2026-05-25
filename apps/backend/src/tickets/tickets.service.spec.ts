@@ -464,6 +464,78 @@ describe('TicketsService', () => {
             });
         });
 
+        describe('getAiTrace', () => {
+            it('reconstructs visual evidence from a matched URL source for older interactions', async () => {
+                prisma.ticket.findFirst.mockResolvedValue({
+                    id: 'tik1',
+                    ticketNumber: 'SUP-00130',
+                    subject: 'FRILO trial activation',
+                    status: TicketStatus.OPEN,
+                    chatStatus: ChatStatus.NORMAL,
+                    createdAt: new Date('2026-05-25T08:00:00.000Z'),
+                    creator: {
+                        id: 'user1',
+                        fullName: 'Test Customer',
+                        email: 'customer@example.com',
+                        language: 'tr',
+                        customerProfile: null,
+                    },
+                    interaction: {
+                        id: 'int1',
+                        userQuery: 'How can I activate a FRILO trial version?',
+                        responseGenerated: '## 📌 Issue Summary\nFRILO trial activation steps.',
+                        confidenceBand: 'HIGH',
+                        similarityScore: 0.91,
+                        autoAnswered: true,
+                        ticketCreated: true,
+                        provider: 'gemini',
+                        model: 'gemini-2.5-flash',
+                        inputTokens: 10,
+                        outputTokens: 20,
+                        totalTokens: 30,
+                        estimatedCost: 0,
+                        channel: 'WEB',
+                        createdAt: new Date('2026-05-25T08:01:00.000Z'),
+                        userContext: {
+                            source: {
+                                id: 'source-1',
+                                type: 'URL',
+                                title: 'Activating a FRILO trial version',
+                            },
+                        },
+                        matchedArticle: null,
+                        matchedVersion: null,
+                        feedbacks: [],
+                        shiftDetections: [],
+                    },
+                    messages: [],
+                });
+                prisma.knowledgeSource.findUnique.mockResolvedValue({
+                    id: 'source-1',
+                    name: 'Activating a FRILO trial version',
+                    metadata: {
+                        visualSummaries: [
+                            {
+                                url: 'https://learnnow.allplan.com/pluginfile.php/frilo.png',
+                                caption: 'FRILO trial page',
+                                summary: 'The FRILO trial button is highlighted.',
+                            },
+                        ],
+                    },
+                });
+
+                const result = await service.getAiTrace('tik1', { id: 'admin1', role: 'SUPER_ADMIN' });
+
+                expect(result.interaction?.userContext.visuals).toEqual([
+                    expect.objectContaining({
+                        url: 'https://learnnow.allplan.com/pluginfile.php/frilo.png',
+                        sourceTitle: 'Activating a FRILO trial version',
+                        sourceId: 'source-1',
+                    }),
+                ]);
+            });
+        });
+
         describe('transition', () => {
             it('should set closedAt when transitioning to CLOSED', async () => {
                 // Arrange
