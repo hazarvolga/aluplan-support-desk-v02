@@ -838,7 +838,9 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                     }
                 }
 
-                const coverageBoost = (matchedGroups / activeGroups.length) * 0.18;
+                const coverageBoost = activeGroups.length > 0
+                    ? (matchedGroups / activeGroups.length) * 0.18
+                    : 0;
                 const asksNetworkStartup =
                     activeGroups.some(group => group.name === 'startup') &&
                     activeGroups.some(group => group.name === 'network');
@@ -863,9 +865,15 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                     normalizedTitle,
                     normalizedContent,
                 );
+                const visualEvidenceBoost = this.calculateVisualEvidenceSourceBoost(
+                    distinctiveQueryTokens,
+                    result,
+                    normalizedTitle,
+                    normalizedContent,
+                );
                 const intentPenalty = asksNetworkStartup && !asksLicense && isLicenseSource ? 0.9 : 0;
                 const positionPenalty = index * 0.0001;
-                const rankingScore = result.similarity + signalBoost + coverageBoost + preciseNameResolutionBoost + specificityBoost - intentPenalty - positionPenalty;
+                const rankingScore = result.similarity + signalBoost + coverageBoost + preciseNameResolutionBoost + specificityBoost + visualEvidenceBoost - intentPenalty - positionPenalty;
 
                 return {
                     ...result,
@@ -928,6 +936,7 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             'allplan', 'about', 'after', 'before', 'check', 'could', 'from', 'have', 'how', 'into', 'need', 'please',
             'should', 'that', 'this', 'what', 'when', 'where', 'which', 'with', 'your', 'license', 'licence', 'lisans',
             'nasil', 'nedir', 'hangi', 'icin', 'olan', 'olarak', 'sorun', 'kullanim', 'kullanici', 'kullanma',
+            'learnnow', 'smoke', 'test',
         ]);
 
         return Array.from(new Set(
@@ -949,6 +958,30 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         if (titleCoverage >= 0.5) return 0.22;
         if (titleMatches >= 1 && contentCoverage >= 0.5) return 0.16;
         if (contentCoverage >= 0.75) return 0.12;
+        return 0;
+    }
+
+    private calculateVisualEvidenceSourceBoost(
+        queryTokens: string[],
+        result: SearchResult,
+        normalizedTitle: string,
+        normalizedContent: string,
+    ): number {
+        if (!result.visualSummaries?.length || queryTokens.length === 0) return 0;
+
+        const normalizedVisualEvidence = this.normalizeSearchText(
+            result.visualSummaries
+                .map(visual => `${visual.title ?? ''} ${visual.caption ?? ''} ${visual.alt ?? ''} ${visual.summary ?? ''}`)
+                .join(' '),
+        );
+        const combinedEvidence = `${normalizedTitle} ${normalizedContent} ${normalizedVisualEvidence}`;
+        const matchedTokens = queryTokens.filter(token => combinedEvidence.includes(token));
+        const coverage = matchedTokens.length / queryTokens.length;
+        const titleMatches = queryTokens.filter(token => normalizedTitle.includes(token)).length;
+
+        if (titleMatches >= 2 && coverage >= 0.5) return 0.26;
+        if (titleMatches >= 1 && coverage >= 0.75) return 0.2;
+        if (coverage >= 0.75) return 0.14;
         return 0;
     }
 

@@ -575,6 +575,85 @@ describe('AiQueryService', () => {
             }));
         });
 
+        it('keeps visual LearnNow sources above generic HyDE hits when no query signal group matches', async () => {
+            const genericDocumentResult = {
+                articleId: 'generic-license-doc',
+                sourceType: 'DOCUMENT' as const,
+                title: 'FAQ_EN_Controlling_license_selection',
+                content: 'Use CodeMeter Control Center to inspect local license containers and license selection.',
+                similarity: 0.927,
+                confidence: 'HIGH' as const,
+            };
+            const friloVisualResult = {
+                articleId: 'frilo-trial-learnnow',
+                sourceType: 'URL' as const,
+                title: 'Activating a FRILO trial version',
+                content: 'Answer: Select FRILO on the trial version page, then choose FRILO TRIAL in the license selection dialog and confirm with OK.',
+                similarity: 0.706,
+                confidence: 'MEDIUM' as const,
+                visualSummaries: [
+                    {
+                        url: 'https://learnnow.allplan.com/pluginfile.php/5/engage_howto/salesforce_content/11851/0EMRD00000R9tgt.png',
+                        alt: 'FRILO trial page',
+                        caption: 'FRILO trial activation page',
+                        summary: 'The trial version page shows the FRILO option and the Get FRILO Trial button.',
+                    },
+                    {
+                        url: 'https://learnnow.allplan.com/pluginfile.php/5/engage_howto/salesforce_content/11851/0EMRD00000RAHBJ.png',
+                        alt: 'FRILO TRIAL license selection',
+                        caption: 'License selection dialog',
+                        summary: 'The license selection dialog shows FRILO TRIAL selected and the OK button.',
+                    },
+                ],
+            };
+            mockEmbeddingService.search
+                .mockResolvedValueOnce({
+                    results: [genericDocumentResult],
+                    diagnostics: { topScore: 0.927, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+                })
+                .mockResolvedValueOnce({
+                    results: [friloVisualResult],
+                    diagnostics: { topScore: 0.706, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+                });
+            mockAiService.generate.mockResolvedValue([
+                '## 📌 Sorun Özeti',
+                'FRILO deneme sürümünü etkinleştirmek için LearnNow kaynağındaki deneme sayfası ve lisans seçim görselleri izlenmelidir.',
+                '',
+                '## 🛠️ Çözüm Adımları',
+                '1. FRILO seçeneğinin yanındaki Get FRILO Trial düğmesini kullanın.',
+                '2. License selection ekranında FRILO TRIAL lisansını seçip OK ile onaylayın.',
+            ].join('\n'));
+
+            const result = await service.query({
+                userQuery: 'FRILO TRIAL ACTIVATION LEARNNOW VISUAL SMOKE TEST',
+                wait: true,
+                language: 'tr',
+                routeLocale: 'tr',
+                strictLanguage: true,
+            });
+
+            expect(result.answerMode).toBe('LLM');
+            expect(result.confidence).not.toBe('NO_MATCH');
+            expect(result.visuals).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    url: 'https://learnnow.allplan.com/pluginfile.php/5/engage_howto/salesforce_content/11851/0EMRD00000R9tgt.png',
+                    sourceTitle: 'Activating a FRILO trial version',
+                }),
+                expect.objectContaining({
+                    url: 'https://learnnow.allplan.com/pluginfile.php/5/engage_howto/salesforce_content/11851/0EMRD00000RAHBJ.png',
+                    sourceTitle: 'Activating a FRILO trial version',
+                }),
+            ]));
+
+            const interactionCreateArg = mockPrismaService.aiInteraction.create.mock.calls.at(-1)?.[0];
+            expect(interactionCreateArg.data.userContext.source).toEqual(expect.objectContaining({
+                id: 'frilo-trial-learnnow',
+                type: 'URL',
+                title: 'Activating a FRILO trial version',
+            }));
+            expect(Number.isNaN(interactionCreateArg.data.userContext.source.similarity)).toBe(false);
+        });
+
         it('skips LLM re-ranking for synchronous wait queries', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [
