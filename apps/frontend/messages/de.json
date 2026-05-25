@@ -876,6 +876,12 @@
           }
         },
         "result_title": "KI-Diagnoseergebnis",
+        "visuals": {
+          "title": "Quellbilder",
+          "description": "Bilder aus der freigegebenen Wissensquelle, auf der diese Antwort basiert. Öffnen Sie ein Bild, um den referenzierten Schritt zu prüfen.",
+          "open": "Öffnen",
+          "source": "Quelle"
+        },
         "feedback_question": "\"Hat diese von unserem KI-Assistenten angebotene Lösung geholfen, Ihr Problem zu lösen?\"",
         "yes_resolved": "Ja, gelöst",
         "no_create_ticket": "Nein, Anfrage erstellen",
@@ -970,7 +976,13 @@
       "header": "Antwort der Künstlichen Intelligenz",
       "confidence_score": "KONFIDENZ-WERT: {confidence}",
       "data_gap_title": "DATENLÜCKE",
-      "data_gap_desc": "Im aktuellen Wissenspool wurde kein zu dieser Abfrage passender Datensatz gefunden."
+      "data_gap_desc": "Im aktuellen Wissenspool wurde kein zu dieser Abfrage passender Datensatz gefunden.",
+      "visuals": {
+        "title": "Quellbilder",
+        "description": "Freigegebene Quellbilder, die diese Antwort stützen.",
+        "open": "Öffnen",
+        "source": "Quelle"
+      }
     },
     "suggest_ticket": {
       "text": "Nicht zufrieden mit dieser Antwort? Kontaktieren Sie einen Experten.",

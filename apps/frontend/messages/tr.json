@@ -876,6 +876,12 @@
           }
         },
         "result_title": "Yapay Zeka Teşhis Sonucu",
+        "visuals": {
+          "title": "Kaynak görseller",
+          "description": "Yanıtın dayandığı onaylı bilgi kaynağındaki görseller. Adımları kontrol etmek için görseli büyütebilirsiniz.",
+          "open": "Aç",
+          "source": "Kaynak"
+        },
         "feedback_question": "\"Yapay zeka asistanımızın sunduğu bu çözüm sorununuzu gidermeye yardımcı oldu mu?\"",
         "yes_resolved": "Evet, Çözüldü",
         "no_create_ticket": "Hayır, Talebi Oluştur",
@@ -970,7 +976,13 @@
       "header": "Yapay Zeka Yanıtı",
       "confidence_score": "GÜVEN-DEĞERİ: {confidence}",
       "data_gap_title": "VERİ BOŞLUĞU",
-      "data_gap_desc": "Mevcut bilgi havuzunda bu sorgu için eşleşen kayıt bulunamadı."
+      "data_gap_desc": "Mevcut bilgi havuzunda bu sorgu için eşleşen kayıt bulunamadı.",
+      "visuals": {
+        "title": "Kaynak görseller",
+        "description": "Yanıtı destekleyen onaylı kaynak görselleri.",
+        "open": "Aç",
+        "source": "Kaynak"
+      }
     },
     "suggest_ticket": {
       "text": "Cevaptan memnun kalmadınız mı? Bir uzmana danışın.",

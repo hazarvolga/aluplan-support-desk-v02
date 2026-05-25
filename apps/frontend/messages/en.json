@@ -876,6 +876,12 @@
           }
         },
         "result_title": "AI Diagnosis Result",
+        "visuals": {
+          "title": "Source visuals",
+          "description": "Images from the approved knowledge source used for this answer. Open a visual to inspect the referenced step.",
+          "open": "Open",
+          "source": "Source"
+        },
         "feedback_question": "\"Did this solution provided by our AI assistant help resolve your issue?\"",
         "yes_resolved": "Yes, Resolved",
         "no_create_ticket": "No, Create Request",
@@ -970,7 +976,13 @@
       "header": "Artificial Intelligence Response",
       "confidence_score": "CONFIDENCE-VALUE: {confidence}",
       "data_gap_title": "DATA GAP",
-      "data_gap_desc": "No matching record for this query was found in the current knowledge pool."
+      "data_gap_desc": "No matching record for this query was found in the current knowledge pool.",
+      "visuals": {
+        "title": "Source visuals",
+        "description": "Approved source images supporting this answer.",
+        "open": "Open",
+        "source": "Source"
+      }
     },
     "suggest_ticket": {
       "text": "Not satisfied with this answer? Contact an expert.",

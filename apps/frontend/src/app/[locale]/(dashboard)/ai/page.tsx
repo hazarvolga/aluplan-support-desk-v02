@@ -23,13 +23,14 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { AiVisualEvidence, type AiVisualEvidenceItem } from '@/components/ai/AiVisualEvidence';
 
 interface QueryResult {
     query: string;
     answer: string | null;
     confidence: string;
     sources: Array<{ articleId: string; title: string; similarity: number }>;
-    visuals?: Array<{ url: string; alt?: string; caption?: string; summary: string; sourceTitle: string; sourceId: string }>;
+    visuals?: AiVisualEvidenceItem[];
     interactionId: string;
     suggestTicket: boolean;
 }
@@ -223,6 +224,19 @@ function AiPageContent() {
 
                                     <div className="text-white/90 leading-relaxed text-base font-medium italic border-l-2 border-orange-500/30 pl-4 py-1 bg-orange-500/[0.02]">
                                         {msg.content}
+                                    </div>
+
+                                    <div className="mt-6">
+                                        <AiVisualEvidence
+                                            visuals={msg.result?.visuals}
+                                            accent="orange"
+                                            labels={{
+                                                title: t('response.visuals.title'),
+                                                description: t('response.visuals.description'),
+                                                open: t('response.visuals.open'),
+                                                source: t('response.visuals.source'),
+                                            }}
+                                        />
                                     </div>
 
                                     {msg.result?.suggestTicket && (

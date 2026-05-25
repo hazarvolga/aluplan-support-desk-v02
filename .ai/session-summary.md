@@ -3492,3 +3492,20 @@ Maintenance rule:
 ### Deployment note
 
 - Backend deploy is required for the applicability guard and answer contract rule.
+
+## Follow-up - 2026-05-25 AI Visual Evidence Rendering
+
+### What changed
+
+- Customer ticket-opening AI answers now preserve the backend `visuals` payload and render approved source images below the synthesized answer.
+- Admin AI Support Navigator now uses the same visual evidence card, so LearnNow and future visual-capable sources can show images consistently.
+- Added localized visual-evidence labels for TR/EN/DE.
+
+### Verification
+
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+
+### Deployment note
+
+- Frontend deploy is required for actual image cards to appear in the AI answer UI. The backend visual payload fix was already pushed separately.

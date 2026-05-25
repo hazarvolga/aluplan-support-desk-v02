@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { useTranslations, useLocale } from 'next-intl';
 import { HotinfoGrid } from '@/components/ui/hotinfo-grid';
 import { getDepartmentDisplayName } from '@/lib/department-display';
+import { AiVisualEvidence, type AiVisualEvidenceItem } from '@/components/ai/AiVisualEvidence';
 
 const MAX_TICKET_SUBJECT_LENGTH = 255;
 const TICKET_ATTACHMENT_ACCEPT = [
@@ -218,6 +219,7 @@ export default function NewTicketPage() {
     // AI RAG States
     const [isDiagnosing, setIsDiagnosing] = useState(false);
     const [aiAnswer, setAiAnswer] = useState<string | null>(null);
+    const [aiVisuals, setAiVisuals] = useState<AiVisualEvidenceItem[]>([]);
     const [interactionId, setInteractionId] = useState<string | null>(null);
     const [diagnosisState, setDiagnosisState] = useState<'idle' | 'running' | 'ready' | 'fallback' | 'backend_unavailable' | 'failed'>('idle');
     const [isSynthesisPanelVisible, setIsSynthesisPanelVisible] = useState(false);
@@ -346,6 +348,7 @@ export default function NewTicketPage() {
         setIsDiagnosing(true);
         setCurrentStep(2);
         setAiAnswer(null);
+        setAiVisuals([]);
         setDiagnosisState('running');
         openSynthesisPanel();
 
@@ -369,7 +372,7 @@ export default function NewTicketPage() {
             // Passing product context to focus search on relevant knowledge base
             const pId = selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId;
             const resolvedResponse = await api.ai.query(buildDiagnosisQuery(subject, description), context, pId, locale, [], attachments, true, true) as
-                { answer?: string; interactionId?: string; answerMode?: 'LLM' | 'FALLBACK'; languageMismatch?: boolean } | null;
+                { answer?: string; visuals?: AiVisualEvidenceItem[]; interactionId?: string; answerMode?: 'LLM' | 'FALLBACK'; languageMismatch?: boolean } | null;
 
             if (!resolvedResponse || !resolvedResponse.answer) {
                 setDiagnosisState('failed');
@@ -379,6 +382,7 @@ export default function NewTicketPage() {
             }
 
             setAiAnswer(resolvedResponse.answer);
+            setAiVisuals(resolvedResponse.visuals ?? []);
             setInteractionId(resolvedResponse.interactionId ?? null);
             setDiagnosisState(resolvedResponse.languageMismatch ? 'failed' : resolvedResponse.answerMode === 'FALLBACK' ? 'fallback' : 'ready');
             closeSynthesisPanel();
@@ -885,6 +889,15 @@ export default function NewTicketPage() {
                                 <p className="text-white/90 leading-relaxed whitespace-pre-wrap">{aiAnswer}</p>
                             </CardContent>
                         </Card>
+                        <AiVisualEvidence
+                            visuals={aiVisuals}
+                            labels={{
+                                title: t('ai.visuals.title'),
+                                description: t('ai.visuals.description'),
+                                open: t('ai.visuals.open'),
+                                source: t('ai.visuals.source'),
+                            }}
+                        />
                     </div>
                 )}
 
