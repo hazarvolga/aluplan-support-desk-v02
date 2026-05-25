@@ -399,9 +399,18 @@ export class AiQueryService {
             ? `${hypotheticalDoc}\n\n[HOTINFO SAFE SEARCH SIGNALS]\n${hotinfoRetrievalContext}`
             : hypotheticalDoc;
 
-        // 3. Semantic search (use HyDE document for embedding, but original query for logging)
+        // 3. Semantic search (HyDE for recall + direct query for exact title/source specificity)
         const searchStartTime = Date.now();
-        const searchResponse: SearchResponse = await this.embeddingService.search(retrievalDocument, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, options.productId, isStaff);
+        const hydeSearchResponse: SearchResponse = await this.embeddingService.search(retrievalDocument, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, options.productId, isStaff);
+        let searchResponse: SearchResponse = hydeSearchResponse;
+        if (this.shouldRunDirectRetrieval(expandedQuery, retrievalDocument)) {
+            try {
+                const directSearchResponse = await this.embeddingService.search(expandedQuery, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT, options.productId, isStaff);
+                searchResponse = this.mergeSearchResponses(expandedQuery, [hydeSearchResponse, directSearchResponse]);
+            } catch (directSearchError: any) {
+                this.logger.warn(`⚠️ Direct retrieval merge skipped: ${directSearchError?.message ?? directSearchError}`);
+            }
+        }
         this.logger.log(`🔍 [Phase: Search] Found ${searchResponse.results.length} results in ${Date.now() - searchStartTime}ms. TopScore: ${searchResponse.diagnostics.topScore.toFixed(3)}`);
         let results = searchResponse.results;
 
@@ -522,10 +531,12 @@ export class AiQueryService {
                 audience: isStaff ? 'agent' : 'customer',
             });
 
+            const visualEvidence = this.collectVisualReferences(results);
             const contextPrompt = await this.promptContextBuilder.buildContext({
                 userId: userId ?? undefined,
                 userQuery,
                 kbContent: results.slice(0, 10).map(r => r.content).join('\n\n---\n\n'),
+                visualEvidence,
                 hotinfoSnapshot: hotinfoContext,
                 messages: options.history,
                 diagnosis,
@@ -802,11 +813,10 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
         if (results.length <= 1) return results;
 
         const normalizedQuery = this.normalizeSearchText(query);
+        const distinctiveQueryTokens = this.getDistinctiveQueryTokens(normalizedQuery);
         const activeGroups = this.getQuerySignalGroups().filter(group =>
             group.terms.some(term => normalizedQuery.includes(term)),
         );
-
-        if (activeGroups.length === 0) return results;
 
         return results
             .map((result, index) => {
@@ -846,9 +856,14 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
                     )
                         ? 0.42
                         : 0;
+                const specificityBoost = this.calculateQuerySpecificityBoost(
+                    distinctiveQueryTokens,
+                    normalizedTitle,
+                    normalizedContent,
+                );
                 const intentPenalty = asksNetworkStartup && !asksLicense && isLicenseSource ? 0.9 : 0;
                 const positionPenalty = index * 0.0001;
-                const rankingScore = result.similarity + signalBoost + coverageBoost + preciseNameResolutionBoost - intentPenalty - positionPenalty;
+                const rankingScore = result.similarity + signalBoost + coverageBoost + preciseNameResolutionBoost + specificityBoost - intentPenalty - positionPenalty;
 
                 return {
                     ...result,
@@ -858,6 +873,81 @@ Format your response strictly as JSON: {"rankings": [{"id": 0, "score": 95}, {"i
             })
             .sort((a, b) => b.__rankingScore - a.__rankingScore)
             .map(({ __rankingScore, ...result }) => result);
+    }
+
+    private shouldRunDirectRetrieval(expandedQuery: string, retrievalDocument: string): boolean {
+        return this.normalizeSearchText(expandedQuery) !== this.normalizeSearchText(retrievalDocument);
+    }
+
+    private mergeSearchResponses(query: string, responses: SearchResponse[]): SearchResponse {
+        const merged = new Map<string, SearchResult>();
+
+        for (const response of responses) {
+            for (const result of response.results) {
+                const key = `${result.sourceType}:${result.articleId}`;
+                const adjusted = {
+                    ...result,
+                    similarity: Math.min(1, result.similarity + this.calculateQuerySpecificityBoost(
+                        this.getDistinctiveQueryTokens(query),
+                        this.normalizeSearchText(result.title ?? ''),
+                        this.normalizeSearchText(result.content ?? ''),
+                    )),
+                };
+                const existing = merged.get(key);
+                if (!existing || adjusted.similarity > existing.similarity) {
+                    merged.set(key, adjusted);
+                }
+            }
+        }
+
+        const results = Array.from(merged.values())
+            .sort((a, b) => b.similarity - a.similarity)
+            .slice(0, RAG_CONFIG.SEARCH.PRE_RERANK_LIMIT);
+
+        const topScore = Math.max(
+            ...responses.map(response => response.diagnostics.topScore),
+            results[0]?.similarity ?? 0,
+            0,
+        );
+
+        return {
+            results,
+            diagnostics: {
+                topScore,
+                passedThreshold: results.length,
+                queryEmbeddingModel: responses.find(response => response.diagnostics.queryEmbeddingModel)?.diagnostics.queryEmbeddingModel ?? 'unknown',
+                thresholdUsed: responses.find(response => response.diagnostics.thresholdUsed !== undefined)?.diagnostics.thresholdUsed ?? 0,
+            },
+        };
+    }
+
+    private getDistinctiveQueryTokens(value: string): string[] {
+        const stopWords = new Set([
+            'allplan', 'about', 'after', 'before', 'check', 'could', 'from', 'have', 'how', 'into', 'need', 'please',
+            'should', 'that', 'this', 'what', 'when', 'where', 'which', 'with', 'your', 'license', 'licence', 'lisans',
+            'nasil', 'nedir', 'hangi', 'icin', 'olan', 'olarak', 'sorun', 'kullanim', 'kullanici', 'kullanma',
+        ]);
+
+        return Array.from(new Set(
+            this.normalizeSearchText(value)
+                .split(/\s+/)
+                .filter(token => token.length >= 4 && !stopWords.has(token)),
+        ));
+    }
+
+    private calculateQuerySpecificityBoost(queryTokens: string[], normalizedTitle: string, normalizedContent: string): number {
+        if (queryTokens.length === 0) return 0;
+
+        const titleMatches = queryTokens.filter(token => normalizedTitle.includes(token)).length;
+        const contentMatches = queryTokens.filter(token => normalizedContent.includes(token)).length;
+        const titleCoverage = titleMatches / queryTokens.length;
+        const contentCoverage = contentMatches / queryTokens.length;
+
+        if (titleCoverage >= 0.75) return 0.34;
+        if (titleCoverage >= 0.5) return 0.22;
+        if (titleMatches >= 1 && contentCoverage >= 0.5) return 0.16;
+        if (contentCoverage >= 0.75) return 0.12;
+        return 0;
     }
 
     private collectVisualReferences(results: SearchResult[]): AiQueryResult['visuals'] {
@@ -2138,7 +2228,7 @@ If context contains usable procedural evidence, synthesize the answer instead of
                 };
             })
             .filter(res => {
-                if (res.sourceType === 'URL' && res.similarity < RERANK_URL_HARD_FLOOR) {
+                if (res.sourceType === 'URL' && res.similarity < RERANK_URL_HARD_FLOOR && !res.visualSummaries?.length) {
                     return false;
                 }
                 return true;

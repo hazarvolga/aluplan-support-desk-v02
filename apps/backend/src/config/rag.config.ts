@@ -65,7 +65,7 @@ export const RAG_CONFIG = {
         /** Default TTL for AI query cache in seconds */
         DEFAULT_TTL: parseInt(process.env.AI_CACHE_TTL || '3600', 10), // Increased to 1 hour
         /** Cache key version — bump to invalidate all caches */
-        VERSION: 'v10',
+        VERSION: 'v11',
     },
 
     /** Re-ranking boost factors and weights */

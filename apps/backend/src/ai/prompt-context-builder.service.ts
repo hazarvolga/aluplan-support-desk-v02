@@ -7,6 +7,14 @@ export interface ContextOptions {
     userId?: string;
     userQuery: string;
     kbContent: string;
+    visualEvidence?: Array<{
+        url: string;
+        alt?: string;
+        caption?: string;
+        summary: string;
+        sourceTitle: string;
+        sourceId: string;
+    }>;
     hotinfoSnapshot?: any;
     skipHotinfoProfile?: boolean;
     messages?: Array<{ role: string; content: string }>;
@@ -26,7 +34,7 @@ export class PromptContextBuilderService {
     constructor(private readonly prisma: PrismaService) { }
 
     async buildContext(options: ContextOptions): Promise<string> {
-        const { userId, userQuery, kbContent, hotinfoSnapshot, messages, diagnosis } = options;
+        const { userId, userQuery, kbContent, visualEvidence, hotinfoSnapshot, messages, diagnosis } = options;
         const sections: ContextSection[] = [];
         const P = RAG_CONFIG.CONTEXT.PRIORITIES;
 
@@ -36,6 +44,29 @@ export class PromptContextBuilderService {
                 name: 'APPROVED_KNOWLEDGE_SOURCE',
                 priority: P.APPROVED_KNOWLEDGE_SOURCE,
                 content: `[APPROVED KNOWLEDGE SOURCE]\n${kbContent}\n`,
+            });
+        }
+
+        if (visualEvidence && visualEvidence.length > 0) {
+            const visualContent = visualEvidence
+                .slice(0, 4)
+                .map((visual, index) => [
+                    `${index + 1}. Source: ${visual.sourceTitle}`,
+                    `   Image URL: ${visual.url}`,
+                    visual.caption ? `   Caption: ${visual.caption}` : null,
+                    visual.alt ? `   Alt: ${visual.alt}` : null,
+                    `   Visual Summary: ${visual.summary}`,
+                ].filter(Boolean).join('\n'))
+                .join('\n\n');
+
+            sections.push({
+                name: 'VISUAL_EVIDENCE',
+                priority: P.APPROVED_KNOWLEDGE_SOURCE - 0.5,
+                content: [
+                    '[VISUAL EVIDENCE FROM APPROVED SOURCES]',
+                    'Use these source image summaries when they directly support the answer. Do not invent UI details that are not described here.',
+                    visualContent,
+                ].join('\n'),
             });
         }
 

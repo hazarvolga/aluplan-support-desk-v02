@@ -9,6 +9,9 @@ describe('AI answer quality guards', () => {
             'The knowledge base does not contain enough reliable information for this exact question yet.',
         )).toBe(true);
         expect(isNoKnowledgeAnswer(
+            'This topic is not covered in the current knowledge base. Please create a support request.',
+        )).toBe(true);
+        expect(isNoKnowledgeAnswer(
             'Die Wissensbasis enthält für diese konkrete Frage noch keine ausreichend verlässlichen Informationen.',
         )).toBe(true);
     });

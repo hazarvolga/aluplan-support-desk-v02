@@ -495,6 +495,74 @@ describe('AiQueryService', () => {
             }));
         });
 
+        it('merges direct retrieval with HyDE so exact visual sources reach customer answers', async () => {
+            const genericLicenseResult = {
+                articleId: 'generic-license',
+                sourceType: 'DOCUMENT' as const,
+                title: 'FAQ_EN_Controlling_license_selection',
+                content: 'Use CodeMeter Control Center to inspect local license containers.',
+                similarity: 0.96,
+                confidence: 'HIGH' as const,
+            };
+            const friloVisualResult = {
+                articleId: 'frilo-trial',
+                sourceType: 'URL' as const,
+                title: 'Activating a FRILO trial version',
+                content: 'Answer: Select FRILO in the trial version page, then choose FRILO TRIAL in the license selection dialog and confirm with OK.',
+                similarity: 0.88,
+                confidence: 'HIGH' as const,
+                visualSummaries: [
+                    {
+                        url: 'https://learnnow.allplan.com/pluginfile.php/frilo-trial.png',
+                        alt: 'FRILO trial license selection',
+                        caption: 'License selection dialog',
+                        summary: 'The license selection dialog shows FRILO TRIAL and the OK button.',
+                    },
+                ],
+            };
+            mockEmbeddingService.search
+                .mockResolvedValueOnce({
+                    results: [genericLicenseResult],
+                    diagnostics: { topScore: 0.96, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+                })
+                .mockResolvedValueOnce({
+                    results: [friloVisualResult],
+                    diagnostics: { topScore: 0.88, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.72 },
+                });
+            mockAiService.generate.mockResolvedValue([
+                '## 📌 Issue Summary',
+                'To activate a FRILO trial version, use the FRILO trial page and the FRILO TRIAL license selection shown in the source images.',
+                '',
+                '## 🛠️ Solution Steps',
+                '1. Select FRILO on the trial page.',
+                '2. Select FRILO TRIAL in the license selection dialog and confirm with OK.',
+            ].join('\n'));
+
+            const result = await service.query({
+                userQuery: 'How can I activate a FRILO trial version?',
+                wait: true,
+                language: 'en',
+            });
+
+            expect(mockEmbeddingService.search).toHaveBeenCalledTimes(2);
+            expect(result.answerMode).toBe('LLM');
+            expect(result.visuals).toEqual([
+                expect.objectContaining({
+                    url: 'https://learnnow.allplan.com/pluginfile.php/frilo-trial.png',
+                    sourceTitle: 'Activating a FRILO trial version',
+                    summary: expect.stringContaining('FRILO TRIAL'),
+                }),
+            ]);
+            expect(mockPromptContextBuilder.buildContext).toHaveBeenCalledWith(expect.objectContaining({
+                visualEvidence: expect.arrayContaining([
+                    expect.objectContaining({
+                        sourceTitle: 'Activating a FRILO trial version',
+                        summary: expect.stringContaining('FRILO TRIAL'),
+                    }),
+                ]),
+            }));
+        });
+
         it('skips LLM re-ranking for synchronous wait queries', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [

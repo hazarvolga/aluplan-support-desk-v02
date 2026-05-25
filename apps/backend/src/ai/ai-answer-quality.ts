@@ -10,6 +10,7 @@ const NO_KNOWLEDGE_PATTERNS = [
     /knowledge base does not contain enough reliable information/i,
     /does not contain enough reliable information for this exact question/i,
     /not enough reliable and directly matching content/i,
+    /this topic is not covered in the current knowledge base/i,
     /keine ausreichend verl[aä]sslichen informationen/i,
     /nicht gen[uü]gend zuverl[aä]ssige informationen/i,
     /keine ausreichend zuverl[aä]ssigen informationen/i,
