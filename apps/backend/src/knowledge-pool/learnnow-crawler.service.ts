@@ -67,6 +67,10 @@ type DuplicateKnowledgeSource = {
     reason: 'Knowledge source URL already exists' | 'Knowledge source content hash already exists';
 };
 
+type LearnNowSession = {
+    cookies: Map<string, string>;
+};
+
 const LEARNNOW_BASE_URL = 'https://learnnow.allplan.com';
 const LEARNNOW_SOURCE = 'allplan_learnnow';
 const LEARNNOW_FORMAT_FILTERS: Record<LearnNowCrawlFormat, LearnNowFilterValue> = {
@@ -94,12 +98,13 @@ export class LearnNowCrawlerService {
         const maxCandidates = dto.maxCandidates ?? 50;
         const dryRun = dto.dryRun !== false;
         const search = dto.search?.trim() ?? '';
+        const session = await this.createLearnNowSession();
 
         const discovered: DiscoveredCandidate[] = [];
         for (const format of formats) {
             for (let page = 0; page < maxPages && discovered.length < maxCandidates; page += 1) {
                 const url = this.buildSearchUrl(format, search, page);
-                const html = await this.fetchSearchHtml(url);
+                const html = await this.fetchSearchHtml(url, session);
                 const htmlCandidates = this.extractCandidates(html, format, url);
                 discovered.push(...htmlCandidates);
 
@@ -283,7 +288,18 @@ export class LearnNowCrawlerService {
         return url.toString();
     }
 
-    private async fetchSearchHtml(url: string): Promise<string> {
+    private async createLearnNowSession(): Promise<LearnNowSession> {
+        const cookies = new Map<string, string>();
+        const response = await axios.get<string>(`${LEARNNOW_BASE_URL}/int`, {
+            timeout: 15000,
+            maxRedirects: 5,
+            headers: { 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0' },
+        });
+        this.collectSetCookies(response.headers?.['set-cookie'], cookies);
+        return { cookies };
+    }
+
+    private async fetchSearchHtml(url: string, session: LearnNowSession): Promise<string> {
         const parsed = new URL(url);
         if (parsed.hostname !== 'learnnow.allplan.com') {
             throw new BadRequestException('Only learnnow.allplan.com crawl discovery is allowed');
@@ -292,7 +308,10 @@ export class LearnNowCrawlerService {
         const response = await axios.get<string>(url, {
             timeout: 15000,
             maxRedirects: 5,
-            headers: { 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0' },
+            headers: {
+                'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0',
+                Cookie: this.serializeCookies(session.cookies),
+            },
         });
         return response.data;
     }
@@ -392,6 +411,12 @@ export class LearnNowCrawlerService {
             const url = new URL(href, LEARNNOW_BASE_URL);
             if (url.hostname !== 'learnnow.allplan.com') return null;
             if (this.isEnrollmentCourseUrl(url)) return null;
+            if (this.isTotaraHowtoResource(url)) {
+                const id = url.searchParams.get('id');
+                url.search = '';
+                if (id) url.searchParams.set('id', id);
+                url.searchParams.set('source', 'howto');
+            }
             url.hash = '';
             return url.toString();
         } catch {
@@ -411,6 +436,27 @@ export class LearnNowCrawlerService {
 
     private isEnrollmentCourseUrl(url: URL): boolean {
         return url.hostname === 'learnnow.allplan.com' && /^\/course(?:\/|$)/i.test(url.pathname);
+    }
+
+    private collectSetCookies(setCookieHeader: string[] | string | undefined, cookies: Map<string, string>): void {
+        const entries = Array.isArray(setCookieHeader)
+            ? setCookieHeader
+            : setCookieHeader
+                ? [setCookieHeader]
+                : [];
+
+        for (const entry of entries) {
+            const [nameValue] = entry.split(';');
+            const separatorIndex = nameValue.indexOf('=');
+            if (separatorIndex <= 0) continue;
+            cookies.set(nameValue.slice(0, separatorIndex).trim(), nameValue.slice(separatorIndex + 1).trim());
+        }
+    }
+
+    private serializeCookies(cookies: Map<string, string>): string {
+        return Array.from(cookies.entries())
+            .map(([name, value]) => `${name}=${value}`)
+            .join('; ');
     }
 
     private async upsertCandidate(candidate: DiscoveredCandidate): Promise<{ inserted: boolean }> {

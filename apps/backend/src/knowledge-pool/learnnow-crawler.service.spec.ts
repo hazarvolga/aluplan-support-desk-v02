@@ -141,6 +141,32 @@ describe('LearnNowCrawlerService', () => {
         ]);
     });
 
+    it('normalizes Learn Now howto tracking URLs to canonical source=howto URLs', async () => {
+        const { service } = makeService();
+        mockedAxios.get.mockResolvedValue({
+            data: `
+              <html><body>
+                <a href="/totara/engage/resources/howto/index.php?id=9018&source=ct.orderbykey%3Dfeatured%26itemstyle%3Dnarrow">Featured Copy</a>
+                <a href="/totara/engage/resources/howto/index.php?id=9018&source=howto">Canonical Copy</a>
+              </body></html>
+            `,
+        } as any);
+
+        const result = await service.discover({
+            formats: ['knowledge_article'],
+            maxPages: 1,
+            maxCandidates: 10,
+            dryRun: true,
+        });
+
+        expect(result).toMatchObject({ dryRun: true, discovered: 1 });
+        expect(result.candidates).toEqual([
+            expect.objectContaining({
+                sourceUrl: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=9018&source=howto',
+            }),
+        ]);
+    });
+
     it('rejects course-layer URLs before PDF candidate acceptance', async () => {
         const { service } = makeService();
         mockedAxios.get.mockResolvedValue({
@@ -173,6 +199,10 @@ describe('LearnNowCrawlerService', () => {
         const { service } = makeService();
         mockedAxios.get
             .mockResolvedValueOnce({
+                headers: { 'set-cookie': ['TotaraSession=test-session; Path=/'] },
+                data: '<html><body>session</body></html>',
+            } as any)
+            .mockResolvedValueOnce({
                 data: `
                   <html><body>
                     <a href="/totara/engage/resources/howto/index.php?id=8572&source=howto">
@@ -198,8 +228,12 @@ describe('LearnNowCrawlerService', () => {
             dryRun: true,
         });
 
-        expect(String(mockedAxios.get.mock.calls[0][0])).toContain('filter%5Bformat%5D%5B%5D=knowledge_article');
-        expect(String(mockedAxios.get.mock.calls[1][0])).toContain('filter%5Bformat%5D%5B%5D=explainer_video');
+        const searchCalls = mockedAxios.get.mock.calls.map(call => String(call[0])).filter(url => url.includes('/course/search.php'));
+        expect(searchCalls[0]).toContain('filter%5Bformat%5D%5B%5D=knowledge_article');
+        expect(searchCalls[1]).toContain('filter%5Bformat%5D%5B%5D=explainer_video');
+        expect(mockedAxios.get.mock.calls[1][1]).toEqual(expect.objectContaining({
+            headers: expect.objectContaining({ Cookie: expect.stringContaining('TotaraSession=test-session') }),
+        }));
         expect(result).toMatchObject({ dryRun: true, discovered: 2 });
         expect(result.candidates).toEqual(expect.arrayContaining([
             expect.objectContaining({
@@ -242,21 +276,27 @@ describe('LearnNowCrawlerService', () => {
             dryRun: true,
         });
 
-        expect(String(mockedAxios.get.mock.calls[0][0])).toContain('filter%5Bformat%5D%5B%5D=pdf');
-        expect(String(mockedAxios.get.mock.calls[1][0])).toContain('filter%5Bformat%5D%5B%5D=recording');
+        const searchCalls = mockedAxios.get.mock.calls.map(call => String(call[0])).filter(url => url.includes('/course/search.php'));
+        expect(searchCalls[0]).toContain('filter%5Bformat%5D%5B%5D=pdf');
+        expect(searchCalls[1]).toContain('filter%5Bformat%5D%5B%5D=recording');
     });
 
     it('enriches saved Learn Now howto candidates with review quality metadata', async () => {
         const { service, prisma, crawl } = makeService();
-        mockedAxios.get.mockResolvedValueOnce({
-            data: `
+        mockedAxios.get
+            .mockResolvedValueOnce({
+                headers: { 'set-cookie': ['TotaraSession=test-session; Path=/'] },
+                data: '<html><body>session</body></html>',
+            } as any)
+            .mockResolvedValueOnce({
+                data: `
               <html><body>
                 <a href="/totara/engage/resources/howto/index.php?id=2740&source=howto">
                   NEUERUNG 2024 - IFC VERBESSERUNGEN INFRASTRUKTUR
                 </a>
               </body></html>
             `,
-        } as any);
+            } as any);
         prisma.$queryRawUnsafe.mockResolvedValue([]);
         crawl.fetch.mockResolvedValue({
             content: 'Transcript-backed explaining video content for the Learn Now source.'.repeat(8),
@@ -309,15 +349,20 @@ describe('LearnNowCrawlerService', () => {
 
     it('keeps recorded session candidates review-only when transcript is missing', async () => {
         const { service, prisma, crawl } = makeService();
-        mockedAxios.get.mockResolvedValueOnce({
-            data: `
+        mockedAxios.get
+            .mockResolvedValueOnce({
+                headers: { 'set-cookie': ['TotaraSession=test-session; Path=/'] },
+                data: '<html><body>session</body></html>',
+            } as any)
+            .mockResolvedValueOnce({
+                data: `
               <html><body>
                 <a href="/totara/engage/resources/howto/index.php?id=3777&source=howto">
                   Recorded Session - Model Coordination
                 </a>
               </body></html>
             `,
-        } as any);
+            } as any);
         prisma.$queryRawUnsafe.mockResolvedValue([]);
         crawl.fetch.mockResolvedValue({
             content: 'Recorded session overview without transcript.'.repeat(12),
@@ -353,13 +398,18 @@ describe('LearnNowCrawlerService', () => {
 
     it('marks technical manual PDF candidates as importable but validated during import', async () => {
         const { service, prisma } = makeService();
-        mockedAxios.get.mockResolvedValueOnce({
-            data: `
+        mockedAxios.get
+            .mockResolvedValueOnce({
+                headers: { 'set-cookie': ['TotaraSession=test-session; Path=/'] },
+                data: '<html><body>session</body></html>',
+            } as any)
+            .mockResolvedValueOnce({
+                data: `
               <html><body>
                 <a href="/mod/resource/view.php?id=9021">Allplan Technical Manual</a>
               </body></html>
             `,
-        } as any);
+            } as any);
         prisma.$queryRawUnsafe.mockResolvedValue([]);
 
         await service.discover({
@@ -392,13 +442,18 @@ describe('LearnNowCrawlerService', () => {
 
     it('marks discovered candidates as skipped duplicates when their URL already exists in Knowledge Pool', async () => {
         const { service, prisma } = makeService();
-        mockedAxios.get.mockResolvedValueOnce({
-            data: `
+        mockedAxios.get
+            .mockResolvedValueOnce({
+                headers: { 'set-cookie': ['TotaraSession=test-session; Path=/'] },
+                data: '<html><body>session</body></html>',
+            } as any)
+            .mockResolvedValueOnce({
+                data: `
               <html><body>
                 <a href="/mod/resource/view.php?id=9021">Allplan Technical Manual</a>
               </body></html>
             `,
-        } as any);
+            } as any);
         prisma.knowledgeSource.findFirst.mockResolvedValueOnce({ id: 'existing-source' });
         prisma.$queryRawUnsafe.mockResolvedValue([]);
 
