@@ -79,6 +79,15 @@ export type DiscoverGenericWebPayload = {
     dryRun?: boolean;
 };
 
+export type DiscoverAllplanHelpPayload = {
+    startUrl: string;
+    name?: string;
+    mode?: 'topic' | 'subtree' | 'fullBook';
+    maxCandidates?: number;
+    includeHidden?: boolean;
+    dryRun?: boolean;
+};
+
 export type OpsDashboardData = {
     generatedAt: string;
     window: { days: number; todayStart: string; trendStart: string };
@@ -418,6 +427,11 @@ export const api = {
             }),
         discoverGenericWeb: (body: DiscoverGenericWebPayload) =>
             request<any>('/knowledge-pool/crawl/discover', {
+                method: 'POST',
+                body: JSON.stringify(body),
+            }),
+        discoverAllplanHelp: (body: DiscoverAllplanHelpPayload) =>
+            request<any>('/knowledge-pool/crawl/allplan-help/discover', {
                 method: 'POST',
                 body: JSON.stringify(body),
             }),

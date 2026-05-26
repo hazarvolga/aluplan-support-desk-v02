@@ -17,6 +17,8 @@ import { LearnNowCrawlerService } from './learnnow-crawler.service';
 import { DiscoverLearnNowDto } from './dto/learnnow-crawl.dto';
 import { GenericWebCrawlerService } from './generic-web-crawler.service';
 import { DiscoverGenericWebDto } from './dto/generic-crawl.dto';
+import { AllplanHelpCrawlerService } from './allplan-help-crawler.service';
+import { DiscoverAllplanHelpDto } from './dto/allplan-help-crawl.dto';
 
 // Production Knowledge Base Stabilization Sync v1.0.3 - Final RAG Fixes (Multi-chunk + High-precision 1536 aligned)
 @ApiTags('Knowledge Pool')
@@ -31,6 +33,7 @@ export class KnowledgePoolController {
         private readonly prisma: PrismaService,
         private readonly learnNowCrawlerService: LearnNowCrawlerService,
         private readonly genericWebCrawlerService: GenericWebCrawlerService,
+        private readonly allplanHelpCrawlerService: AllplanHelpCrawlerService,
     ) { }
 
     @Post('sources')
@@ -162,6 +165,13 @@ export class KnowledgePoolController {
     @ApiOperation({ summary: 'Discover public same-domain web crawler candidates from a start URL' })
     async discoverGenericWeb(@Body() dto: DiscoverGenericWebDto): Promise<any> {
         return this.genericWebCrawlerService.discover(dto);
+    }
+
+    @Post('crawl/allplan-help/discover')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Discover public Allplan Help documentation candidates from toc.json' })
+    async discoverAllplanHelp(@Body() dto: DiscoverAllplanHelpDto): Promise<any> {
+        return this.allplanHelpCrawlerService.discover(dto);
     }
 
     @Get('crawl/candidates')

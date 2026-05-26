@@ -39,6 +39,14 @@ const isLearnNowCourseUrl = (value: string): boolean => {
     }
 };
 
+const isAllplanHelpUrl = (value: string): boolean => {
+    try {
+        return new URL(value).hostname === 'help.allplan.com';
+    } catch {
+        return false;
+    }
+};
+
 export default function KnowledgePoolPage() {
     const t = useTranslations('admin.knowledge_pool');
     const [activeTab, setActiveTab] = useState('sources');
@@ -290,20 +298,30 @@ export default function KnowledgePoolPage() {
         setIsUrlSubmitting(true);
         try {
             if (urlIngestionMode === 'crawl') {
-                const result = await api.pool.discoverGenericWeb({
-                    name: urlName,
-                    startUrl: urlAddress,
-                    maxDepth: 2,
-                    maxCandidates: 50,
-                    sameDomainOnly: true,
-                    dryRun: false,
-                });
+                const isHelpSource = isAllplanHelpUrl(urlAddress);
+                const result = isHelpSource
+                    ? await api.pool.discoverAllplanHelp({
+                        name: urlName,
+                        startUrl: urlAddress,
+                        mode: 'subtree',
+                        maxCandidates: 50,
+                        includeHidden: false,
+                        dryRun: false,
+                    })
+                    : await api.pool.discoverGenericWeb({
+                        name: urlName,
+                        startUrl: urlAddress,
+                        maxDepth: 2,
+                        maxCandidates: 50,
+                        sameDomainOnly: true,
+                        dryRun: false,
+                    });
                 toast({
                     title: t('crawler.toasts.discover_done'),
                     description: t('crawler.toasts.discover_desc', { count: result.inserted ?? 0 }),
                 });
                 setActiveTab('crawler');
-                setCrawlSourceFilter('generic_web');
+                setCrawlSourceFilter(isHelpSource ? 'allplan_help' : 'generic_web');
                 setCrawlStatusFilter('PENDING_REVIEW');
             } else {
                 await api.pool.addUrl(urlName, urlAddress);
@@ -1076,6 +1094,7 @@ export default function KnowledgePoolPage() {
                                     {[
                                         { value: '', label: t('crawler.sources.all') },
                                         { value: 'allplan_learnnow', label: t('crawler.sources.learnnow') },
+                                        { value: 'allplan_help', label: t('crawler.sources.allplan_help') },
                                         { value: 'generic_web', label: t('crawler.sources.generic_web') },
                                     ].map(source => (
                                         <button
@@ -1203,7 +1222,11 @@ export default function KnowledgePoolPage() {
                                             <TableCell>
                                                 <div className="space-y-0.5">
                                                     <Badge variant="outline" className="text-[8px] font-mono rounded-none px-1.5">
-                                                        {candidate.source === 'generic_web' ? t('crawler.sources.generic_web') : t('crawler.sources.learnnow')}
+                                                        {candidate.source === 'generic_web'
+                                                            ? t('crawler.sources.generic_web')
+                                                            : candidate.source === 'allplan_help'
+                                                                ? t('crawler.sources.allplan_help')
+                                                                : t('crawler.sources.learnnow')}
                                                     </Badge>
                                                     <p className="text-[8px] font-mono text-muted-foreground/50 truncate max-w-[120px]">
                                                         {(() => {
