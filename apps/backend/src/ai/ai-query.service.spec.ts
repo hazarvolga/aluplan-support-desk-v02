@@ -732,6 +732,50 @@ describe('AiQueryService', () => {
             jest.useRealTimers();
         });
 
+        it('does not cut off customer synthesis when retrieved context is usable at the threshold', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue(null);
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [
+                    {
+                        articleId: 'axis-grid-3d',
+                        sourceType: 'DOCUMENT',
+                        title: 'Axis grid',
+                        content: 'Use the Grid task area to create an axis grid. Axis lines and planes can be created in the z-direction for a 3D grid.',
+                        similarity: 0.72,
+                        confidence: 'MEDIUM',
+                    },
+                ],
+                diagnostics: { topScore: 0.8034, passedThreshold: 1, queryEmbeddingModel: 'test', thresholdUsed: 0.8 },
+            });
+            mockAiService.generate.mockResolvedValue([
+                '## 📌 Sorun Yorumu',
+                'Allplan içinde 3B grid için Axis Grid aracını kullanarak z yönündeki eksen çizgileri ve düzlemleri oluşturabilirsiniz.',
+                '',
+                '## 🛠️ Çözüm Adımları',
+                '1. Grid görev alanını açın.',
+                '2. Axis Grid aracını seçin ve z yönü ayarlarını kontrol edin.',
+            ].join('\n'));
+
+            const result = await service.query({
+                userQuery: "Allplan'da 3B grid yapmak istiyorum",
+                wait: true,
+                language: 'tr',
+                routeLocale: 'tr',
+            });
+
+            expect(result.confidence).not.toBe('NO_MATCH');
+            expect(result.answerMode).toBe('LLM');
+            expect(result.answer).toContain('Axis Grid');
+            expect(mockAiService.generate).toHaveBeenCalled();
+            expect(mockPrismaService.aiInteraction.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    confidenceBand: 'MEDIUM',
+                    autoAnswered: true,
+                    similarityScore: expect.any(Number),
+                }),
+            }));
+        });
+
         it('uses query-aware fallback excerpts when synchronous generation is unavailable', async () => {
             mockEmbeddingService.search.mockResolvedValue({
                 results: [

@@ -66,3 +66,11 @@ and consequence. Use session summaries for implementation history.
 - Context: Dynamics full sync, delta sync, and webhook sync had drifted into separate persistence paths, so the same CRM record could produce different local fields depending on how it arrived.
 - Decision: Dynamics full import should fetch raw account/contact payloads from the adapter, then persist through `CrmRecordSyncService`, the same shared path used by delta and webhook sync.
 - Consequence: New CRM field mapping, raw payload snapshots, placeholder-email repair, account linking, and change logs must be implemented once in `CrmRecordSyncService` instead of duplicated in the adapter.
+
+## ADR-009 - Customer/Admin AI Parity Requires Shared Retrieval Acceptance
+
+- Date: 2026-05-26
+- Status: Accepted
+- Context: Customer ticket-opening AI and admin ANN drafts shared prompt/answer contract logic, but customer query flow could still return `NO_MATCH` before reaching the shared synthesis path. Live ticket SUP-00136 exposed this: customer AI rejected usable context while admin ANN produced a useful draft.
+- Decision: Retrieval-context acceptance for support answers belongs in `SupportAnswerOrchestrator`, not as separate threshold logic in customer query flows.
+- Consequence: Future customer/admin AI quality fixes must update the shared orchestrator decision and its regressions before adding route-specific prompt patches.

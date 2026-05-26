@@ -14,6 +14,31 @@ describe('SupportAnswerOrchestrator', () => {
         service = new SupportAnswerOrchestrator(ai as any);
     });
 
+    it('keeps customer synthesis open for usable context at the adaptive threshold', () => {
+        const decision = service.shouldGenerateFromRetrievedContext({
+            topScore: 0.8034,
+            adaptiveThreshold: 0.8,
+            resultCount: 1,
+            audience: 'customer',
+        });
+
+        expect(decision.shouldGenerate).toBe(true);
+        expect(decision.reason).toBeUndefined();
+        expect(decision.effectiveThreshold).toBe(0.8);
+    });
+
+    it('rejects empty retrieval context before synthesis', () => {
+        const decision = service.shouldGenerateFromRetrievedContext({
+            topScore: 0.95,
+            adaptiveThreshold: 0.45,
+            resultCount: 0,
+            audience: 'customer',
+        });
+
+        expect(decision.shouldGenerate).toBe(false);
+        expect(decision.reason).toBe('NO_RESULTS');
+    });
+
     it('returns generated support answer when the model produces a usable draft', async () => {
         ai.generate.mockResolvedValue('## 📌 Issue Summary\nUse this answer.');
 

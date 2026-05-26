@@ -456,12 +456,21 @@ export class AiQueryService {
             this.logger.log(`🔍 [Phase: Re-ranking] Completed in ${Date.now() - rankStartTime}ms.`);
         }
 
-        // Lowered floor for response generation
-        // Ensure threshold alignment: topScore must be >= search floor to be valid
-        const FALLBACK_THRESHOLD = adaptiveThreshold;
+        const visualEvidence = this.collectVisualReferences(results);
+        const retrievedTopScore = Math.max(
+            Number(searchResponse.diagnostics.topScore ?? 0),
+            Number(results[0]?.similarity ?? 0),
+        );
+        const contextDecision = this.supportAnswerOrchestrator.shouldGenerateFromRetrievedContext({
+            topScore: retrievedTopScore,
+            adaptiveThreshold,
+            resultCount: results.length,
+            audience: isStaff ? 'agent' : 'customer',
+            hasVisualEvidence: (visualEvidence?.length ?? 0) > 0,
+        });
 
-        if (searchResponse.diagnostics.topScore < FALLBACK_THRESHOLD || results.length === 0) {
-            this.logger.warn(`🚫 No reliable context found (topScore = ${searchResponse.diagnostics.topScore.toFixed(3)}, threshold = ${FALLBACK_THRESHOLD}). Routing to human agent.`);
+        if (!contextDecision.shouldGenerate) {
+            this.logger.warn(`🚫 No reliable context found (topScore = ${contextDecision.topScore.toFixed(3)}, threshold = ${contextDecision.effectiveThreshold.toFixed(3)}, reason = ${contextDecision.reason}). Routing to human agent.`);
 
             const providerName = await this.ai.getActiveProviderName();
             const modelName = await this.ai.getActiveModelName();
@@ -474,18 +483,21 @@ export class AiQueryService {
                     responseGenerated: this.buildNoMatchMessage(lang, false),
                     confidenceBand: null,
                     autoAnswered: false,
-                    similarityScore: searchResponse.diagnostics.topScore || undefined,
+                    similarityScore: contextDecision.topScore || undefined,
                     provider: providerName,
                     model: modelName,
                     inputTokens: 0,
                     outputTokens: 0,
                     totalTokens: 0,
                     estimatedCost: 0,
-                    userContext: this.buildInteractionLanguageContext(lang, options.language, 'NO_MATCH', {
-                        routeLocale: options.routeLocale,
-                        profileLanguage,
-                        strictLanguage: options.strictLanguage,
-                    }) as Prisma.InputJsonValue,
+                    userContext: {
+                        ...this.buildInteractionLanguageContext(lang, options.language, 'NO_MATCH', {
+                            routeLocale: options.routeLocale,
+                            profileLanguage,
+                            strictLanguage: options.strictLanguage,
+                        }),
+                        contextDecision,
+                    } as unknown as Prisma.InputJsonValue,
                 }
             });
 
@@ -516,8 +528,6 @@ export class AiQueryService {
         if (topResult) {
             confidence = topResult.confidence as LocalConfidenceBand;
         }
-
-        const visualEvidence = this.collectVisualReferences(results);
 
         if (topResult && (confidence === 'HIGH' || confidence === 'MEDIUM' || confidence === 'LOW')) {
             // Re-use already completed diagnosis
@@ -2378,10 +2388,21 @@ If context contains usable procedural evidence, synthesize the answer instead of
         let confidence: LocalConfidenceBand = 'NO_MATCH';
         let fullAnswer = '';
 
-        const FALLBACK_THRESHOLD = adaptiveThreshold;
+        const streamVisualEvidence = this.collectVisualReferences(results);
+        const streamTopScore = Math.max(
+            Number(searchResponse.diagnostics.topScore ?? 0),
+            Number(results[0]?.similarity ?? 0),
+        );
+        const streamContextDecision = this.supportAnswerOrchestrator.shouldGenerateFromRetrievedContext({
+            topScore: streamTopScore,
+            adaptiveThreshold,
+            resultCount: results.length,
+            audience: isStaff ? 'agent' : 'customer',
+            hasVisualEvidence: (streamVisualEvidence?.length ?? 0) > 0,
+        });
 
         // If no results pass the floor, yield no matches early
-        if (searchResponse.diagnostics.topScore < FALLBACK_THRESHOLD || results.length === 0) {
+        if (!streamContextDecision.shouldGenerate) {
             fullAnswer = 'Bu konu mevcut bilgi kaynağında yer almıyor. Sistem analizi için lütfen destek talebi oluşturun ve \'_hotinf_.hxl\' dosyanızı ekleyiniz.';
             yield { chunk: fullAnswer };
 
@@ -2395,7 +2416,7 @@ If context contains usable procedural evidence, synthesize the answer instead of
                     responseGenerated: fullAnswer,
                     confidenceBand: null,
                     autoAnswered: false,
-                    similarityScore: searchResponse.diagnostics.topScore,
+                    similarityScore: streamContextDecision.topScore,
                     provider: providerName,
                     model: modelName,
                     inputTokens: 0, outputTokens: 0, totalTokens: 0, estimatedCost: 0
@@ -2431,6 +2452,7 @@ If context contains usable procedural evidence, synthesize the answer instead of
                 userId: userId ?? undefined,
                 userQuery,
                 kbContent: results.slice(0, 10).map(r => r.content).join('\n\n---\n\n'),
+                visualEvidence: streamVisualEvidence,
                 hotinfoSnapshot: hotinfoContext,
                 messages: options.history?.map(h => ({ role: h.role, content: h.content })),
                 diagnosis

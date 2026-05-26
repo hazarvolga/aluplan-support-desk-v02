@@ -7,6 +7,22 @@ export type SupportAnswerLanguage = 'tr' | 'en' | 'de';
 export type SupportAnswerAudience = 'customer' | 'agent';
 export type SupportAnswerMode = 'LLM' | 'FALLBACK';
 export type SupportFallbackReason = 'TIMEOUT_OR_EMPTY' | 'NO_KNOWLEDGE_WITH_CONTEXT';
+export type SupportContextRejectionReason = 'NO_RESULTS' | 'BELOW_THRESHOLD';
+
+export interface SupportAnswerContextDecisionOptions {
+    topScore?: number | null;
+    adaptiveThreshold: number;
+    resultCount: number;
+    audience: SupportAnswerAudience;
+    hasVisualEvidence?: boolean;
+}
+
+export interface SupportAnswerContextDecision {
+    shouldGenerate: boolean;
+    reason?: SupportContextRejectionReason;
+    topScore: number;
+    effectiveThreshold: number;
+}
 
 export interface SupportAnswerGenerationOptions {
     finalPrompt: string;
@@ -47,6 +63,42 @@ export class SupportAnswerOrchestrator {
     private readonly logger = new Logger(SupportAnswerOrchestrator.name);
 
     constructor(private readonly ai: AiService) { }
+
+    shouldGenerateFromRetrievedContext(options: SupportAnswerContextDecisionOptions): SupportAnswerContextDecision {
+        const rawTopScore = Number(options.topScore ?? 0);
+        const topScore = Number.isFinite(rawTopScore) ? rawTopScore : 0;
+        const rawThreshold = Number(options.adaptiveThreshold);
+        const adaptiveThreshold = Number.isFinite(rawThreshold) ? rawThreshold : 0.45;
+        const resultCount = Math.max(0, Math.floor(options.resultCount));
+
+        if (resultCount === 0) {
+            return {
+                shouldGenerate: false,
+                reason: 'NO_RESULTS',
+                topScore,
+                effectiveThreshold: adaptiveThreshold,
+            };
+        }
+
+        const audienceAllowance = options.audience === 'agent' ? 0.05 : 0;
+        const visualAllowance = options.hasVisualEvidence ? 0.05 : 0;
+        const effectiveThreshold = Math.max(0.35, adaptiveThreshold - audienceAllowance - visualAllowance);
+
+        if (topScore < effectiveThreshold) {
+            return {
+                shouldGenerate: false,
+                reason: 'BELOW_THRESHOLD',
+                topScore,
+                effectiveThreshold,
+            };
+        }
+
+        return {
+            shouldGenerate: true,
+            topScore,
+            effectiveThreshold,
+        };
+    }
 
     async generate(options: SupportAnswerGenerationOptions): Promise<SupportAnswerGenerationResult> {
         const synthesisPrompt = this.buildResponseDraftPrompt(options.finalPrompt);

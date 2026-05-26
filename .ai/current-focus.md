@@ -2,6 +2,12 @@
 
 ## Active Work
 
+- SupportAnswerOrchestrator parity fix completed locally:
+  - live SUP-00136 showed customer ticket-opening AI returning `NO_MATCH` before synthesis while admin ANN could draft a useful answer from the same intent.
+  - the retrieval-context acceptance decision now lives in `SupportAnswerOrchestrator.shouldGenerateFromRetrievedContext(...)` instead of being a raw threshold `if` inside customer `AiQueryService`.
+  - customer query and stream query both use the orchestrator decision, including effective threshold, result count, audience, and visual-evidence allowance.
+  - regression coverage protects threshold-edge synthesis for the 3B grid/Axis Grid style case with `topScore=0.8034`.
+  - `allplan-help/` is ignored locally so the raw official help mirror cannot be committed accidentally.
 - Operations dashboard implementation is complete and local-only until the user chooses to deploy:
   - Phase 1 backend aggregate endpoint added at `GET /dashboard/ops`.
   - Endpoint returns real DB/queue-backed operations data for active tickets, SLA pressure, AI quality/cost estimates, CRM changes, knowledge/crawler state, system health, live feed, and trend series.

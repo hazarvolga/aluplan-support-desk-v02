@@ -1,5 +1,26 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-05-26 SupportAnswerOrchestrator Customer/Admin Parity
+
+### What changed
+
+- Moved customer-side retrieval-context acceptance into `SupportAnswerOrchestrator.shouldGenerateFromRetrievedContext(...)`.
+- `AiQueryService.query()` and `AiQueryService.streamQuery()` now use the orchestrator decision before returning `NO_MATCH`.
+- The decision records result count, effective threshold, audience, visual-evidence allowance, and top score for later traceability.
+- Customer ticket-opening synthesis now uses the stronger score between initial retrieval diagnostics and post-rerank top result, preventing usable threshold-edge matches from being cut off before ANN-style synthesis.
+- Added a regression for the live failure class: a 3B grid/Axis Grid support question with `topScore=0.8034` reaches LLM synthesis instead of returning `NO_MATCH`.
+- Added `allplan-help/` to `.gitignore` so the local official help mirror stays out of GitHub until a deliberate import plan exists.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- support-answer-orchestrator.service.spec.ts ai-query.service.spec.ts` passed with 67 tests and 1 skipped.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+
+### Notes
+
+- This fixes the architectural half-gap where customer/admin shared answer prompts but not the retrieval acceptance decision.
+- `allplan-help/` content was not processed or staged in this pass.
+
 ## Follow-up - 2026-05-24 Hotinfo Retrieval Applicability
 
 ### What changed
