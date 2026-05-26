@@ -40,6 +40,30 @@ const DEPARTMENT_ALIASES: Record<string, string> = {
     'license support': 'licensing',
     'lisanslama': 'licensing',
     'lizenzierung': 'licensing',
+
+    'customer-success': 'customer_success',
+    'customer_success': 'customer_success',
+    'customer success': 'customer_success',
+    'musteri basarisi': 'customer_success',
+    'müşteri başarısı': 'customer_success',
+    'kundenerfolg': 'customer_success',
+
+    'general-inquiries': 'general_inquiries',
+    'general_inquiries': 'general_inquiries',
+    'general inquiries': 'general_inquiries',
+    'general inquiry': 'general_inquiries',
+    'genel basvurular': 'general_inquiries',
+    'genel başvurular': 'general_inquiries',
+    'genel sorular': 'general_inquiries',
+    'allgemeine anfragen': 'general_inquiries',
+
+    'security-compliance': 'security_compliance',
+    'security_compliance': 'security_compliance',
+    'security and compliance': 'security_compliance',
+    'security compliance': 'security_compliance',
+    'guvenlik ve uyumluluk': 'security_compliance',
+    'güvenlik ve uyumluluk': 'security_compliance',
+    'sicherheit und compliance': 'security_compliance',
 };
 
 const normalizeDepartmentKey = (value?: string | null) => {

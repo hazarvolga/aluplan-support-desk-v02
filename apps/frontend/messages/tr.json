@@ -839,7 +839,10 @@
         "billing_payments": "Fatura ve Ödemeler",
         "sales_pre_sales": "Satış ve Ön Satış",
         "general_support": "Genel Destek",
-        "licensing": "Lisanslama"
+        "licensing": "Lisanslama",
+        "customer_success": "Müşteri Başarısı",
+        "general_inquiries": "Genel Başvurular",
+        "security_compliance": "Güvenlik ve Uyumluluk"
       },
       "fields": {
         "department": "Destek Kategorisi",

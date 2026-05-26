@@ -839,7 +839,10 @@
         "billing_payments": "Billing & Payments",
         "sales_pre_sales": "Sales & Pre-Sales",
         "general_support": "General Support",
-        "licensing": "Licensing"
+        "licensing": "Licensing",
+        "customer_success": "Customer Success",
+        "general_inquiries": "General Inquiries",
+        "security_compliance": "Security & Compliance"
       },
       "fields": {
         "department": "Support Category",
