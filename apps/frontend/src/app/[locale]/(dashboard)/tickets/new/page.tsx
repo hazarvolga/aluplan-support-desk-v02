@@ -658,18 +658,22 @@ export default function NewTicketPage() {
                                     )}
 
                                     <Dialog open={isHotinfoHelpOpen} onOpenChange={setIsHotinfoHelpOpen}>
-                                        <DialogContent className="max-w-2xl border-white/10 bg-slate-950 text-slate-100 shadow-2xl">
-                                            <DialogHeader className="space-y-3">
-                                                <div className="flex h-10 w-10 items-center justify-center border border-brand-500/30 bg-brand-500/10 text-brand-300">
-                                                    <FileQuestion className="h-5 w-5" />
+                                        <DialogContent className="max-h-[88vh] w-[calc(100vw-2rem)] max-w-3xl overflow-y-auto border-white/10 bg-slate-950 p-0 text-slate-100 shadow-2xl">
+                                            <DialogHeader className="border-b border-white/10 px-5 py-5 sm:px-6">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center border border-brand-500/30 bg-brand-500/10 text-brand-300">
+                                                        <FileQuestion className="h-5 w-5" />
+                                                    </div>
+                                                    <div className="min-w-0 space-y-2">
+                                                        <DialogTitle className="text-lg leading-tight sm:text-xl">{t('hotinfo_help.title')}</DialogTitle>
+                                                        <DialogDescription className="max-w-2xl text-sm leading-6 text-slate-400">
+                                                            {t('hotinfo_help.description')}
+                                                        </DialogDescription>
+                                                    </div>
                                                 </div>
-                                                <DialogTitle className="text-xl">{t('hotinfo_help.title')}</DialogTitle>
-                                                <DialogDescription className="text-sm leading-6 text-slate-400">
-                                                    {t('hotinfo_help.description')}
-                                                </DialogDescription>
                                             </DialogHeader>
 
-                                            <div className="space-y-4">
+                                            <div className="space-y-4 px-5 py-5 sm:px-6">
                                                 <div className="rounded-lg border border-brand-500/20 bg-brand-500/5 p-4">
                                                     <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-brand-300">
                                                         <ListChecks className="h-4 w-4" />
@@ -705,24 +709,24 @@ export default function NewTicketPage() {
                                                 </div>
                                             </div>
 
-                                            <DialogFooter className="gap-2 sm:justify-between">
-                                                <div className="flex flex-col gap-2 sm:flex-row">
-                                                    <Button type="button" variant="outline" size="sm" asChild className="border-white/10 bg-slate-900 text-xs">
+                                            <DialogFooter className="grid gap-3 border-t border-white/10 bg-white/[0.02] px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-center sm:px-6">
+                                                <div className="grid gap-2 sm:grid-cols-2">
+                                                    <Button type="button" variant="outline" size="sm" asChild className="h-auto min-h-9 justify-center border-white/10 bg-slate-900 px-3 py-2 text-center text-[11px] leading-4 hover:bg-slate-800">
                                                         <a href={HOTINFO_CREATE_HELP_URL} target="_blank" rel="noreferrer">
                                                             {t('hotinfo_help.official_create')}
                                                             <ExternalLink className="ml-2 h-3 w-3" />
                                                         </a>
                                                     </Button>
-                                                    <Button type="button" variant="outline" size="sm" asChild className="border-white/10 bg-slate-900 text-xs">
+                                                    <Button type="button" variant="outline" size="sm" asChild className="h-auto min-h-9 justify-center border-white/10 bg-slate-900 px-3 py-2 text-center text-[11px] leading-4 hover:bg-slate-800">
                                                         <a href={HOTINFO_SERVICE_HELP_URL} target="_blank" rel="noreferrer">
                                                             {t('hotinfo_help.official_service')}
                                                             <ExternalLink className="ml-2 h-3 w-3" />
                                                         </a>
                                                     </Button>
                                                 </div>
-                                                <div className="relative">
+                                                <div className="relative sm:min-w-44">
                                                     <input type="file" accept=".hxl" onChange={handleHotinfoUpload} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
-                                                    <Button type="button" className="w-full bg-brand-500 text-slate-950 hover:bg-brand-400 sm:w-auto">
+                                                    <Button type="button" className="w-full bg-brand-500 px-4 text-xs font-bold text-slate-950 hover:bg-brand-400">
                                                         {t('buttons.hotinfo_upload')}
                                                     </Button>
                                                 </div>
