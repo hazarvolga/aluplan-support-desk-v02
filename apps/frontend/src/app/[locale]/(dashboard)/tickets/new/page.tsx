@@ -14,7 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Paperclip, X, Loader2, ArrowLeft, CheckCircle2, AlertTriangle, Monitor, Sparkles, Box, ServerCrash, ShieldAlert } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Paperclip, X, Loader2, ArrowLeft, CheckCircle2, AlertTriangle, Monitor, Sparkles, Box, ServerCrash, ShieldAlert, HelpCircle, ExternalLink, FileQuestion, ListChecks, ShieldCheck } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useTranslations, useLocale } from 'next-intl';
@@ -34,6 +35,9 @@ const TICKET_ATTACHMENT_ACCEPT = [
     '.xls',
     '.xlsx',
 ].join(',');
+
+const HOTINFO_CREATE_HELP_URL = 'https://help.allplan.com/Allplan/2024-1/1034/Allmenu/index.htm#45160.htm';
+const HOTINFO_SERVICE_HELP_URL = 'https://help.allplan.com/Allplan/2024-1/1034/Allmenu/index.htm#31182.htm';
 
 const getTicketSchema = (t: any) => z.object({
     subject: z.string().min(5, t('errors.subject_min')).max(MAX_TICKET_SUBJECT_LENGTH, t('errors.subject_max')),
@@ -215,6 +219,7 @@ export default function NewTicketPage() {
     const [selectedProductId, setSelectedProductId] = useState<string>('');
     const [hotinfoData, setHotinfoData] = useState<any | null>(null);
     const [isHotinfoConfirmed, setIsHotinfoConfirmed] = useState(false);
+    const [isHotinfoHelpOpen, setIsHotinfoHelpOpen] = useState(false);
 
     // AI RAG States
     const [isDiagnosing, setIsDiagnosing] = useState(false);
@@ -331,6 +336,7 @@ export default function NewTicketPage() {
 
             setHotinfoData(response.hotinfo);
             setIsHotinfoConfirmed(true);
+            setIsHotinfoHelpOpen(false);
             toast.success(t('toasts.hotinfo_success'));
         } catch (error: any) {
             toast.error(t('toasts.upload_error'));
@@ -554,14 +560,33 @@ export default function NewTicketPage() {
                             {/* Allplan Hotinfo Section */}
                             {isAllplanSelected && (
                                 <div className="space-y-4 pt-2">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Monitor className="h-5 w-5 text-brand-400" />
-                                        <h3 className="font-semibold text-lg">{t('sections.system_info')}</h3>
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Monitor className="h-5 w-5 text-brand-400" />
+                                            <h3 className="font-semibold text-lg">{t('sections.system_info')}</h3>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full border-brand-500/30 bg-brand-500/5 text-xs text-brand-200 hover:bg-brand-500/10 sm:w-auto"
+                                            onClick={() => setIsHotinfoHelpOpen(true)}
+                                        >
+                                            <HelpCircle className="mr-2 h-3.5 w-3.5" />
+                                            {t('hotinfo_help.button')}
+                                        </Button>
                                     </div>
                                     {!hotinfoData ? (
                                         <div className="flex flex-col items-center justify-center p-8 rounded-xl bg-orange-500/5 border border-orange-500/20 space-y-4 text-center">
                                             <AlertTriangle className="h-8 w-8 text-orange-400" />
                                             <p className="text-sm text-muted-foreground">{t('sections.hotinfo_needed')}</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsHotinfoHelpOpen(true)}
+                                                className="text-xs font-medium text-orange-300 underline-offset-4 hover:text-orange-200 hover:underline"
+                                            >
+                                                {t('hotinfo_help.inline_prompt')}
+                                            </button>
                                             <div className="relative">
                                                 <input type="file" accept=".hxl" onChange={handleHotinfoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                                                 <Button type="button" className="bg-orange-600">{t('buttons.hotinfo_upload')}</Button>
@@ -631,6 +656,79 @@ export default function NewTicketPage() {
                                             )}
                                         </>
                                     )}
+
+                                    <Dialog open={isHotinfoHelpOpen} onOpenChange={setIsHotinfoHelpOpen}>
+                                        <DialogContent className="max-w-2xl border-white/10 bg-slate-950 text-slate-100 shadow-2xl">
+                                            <DialogHeader className="space-y-3">
+                                                <div className="flex h-10 w-10 items-center justify-center border border-brand-500/30 bg-brand-500/10 text-brand-300">
+                                                    <FileQuestion className="h-5 w-5" />
+                                                </div>
+                                                <DialogTitle className="text-xl">{t('hotinfo_help.title')}</DialogTitle>
+                                                <DialogDescription className="text-sm leading-6 text-slate-400">
+                                                    {t('hotinfo_help.description')}
+                                                </DialogDescription>
+                                            </DialogHeader>
+
+                                            <div className="space-y-4">
+                                                <div className="rounded-lg border border-brand-500/20 bg-brand-500/5 p-4">
+                                                    <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-brand-300">
+                                                        <ListChecks className="h-4 w-4" />
+                                                        {t('hotinfo_help.steps_title')}
+                                                    </div>
+                                                    <ol className="space-y-3">
+                                                        {(t.raw('hotinfo_help.steps') as string[]).map((step, index) => (
+                                                            <li key={step} className="flex gap-3 text-sm leading-6 text-slate-300">
+                                                                <span className="flex h-6 w-6 shrink-0 items-center justify-center border border-brand-500/30 bg-slate-900 text-[11px] font-bold text-brand-200">
+                                                                    {index + 1}
+                                                                </span>
+                                                                <span>{step}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ol>
+                                                </div>
+
+                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                                                        <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-200">
+                                                            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                                                            {t('hotinfo_help.privacy_title')}
+                                                        </div>
+                                                        <p className="text-xs leading-5 text-slate-400">{t('hotinfo_help.privacy_desc')}</p>
+                                                    </div>
+                                                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+                                                        <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-200">
+                                                            <AlertTriangle className="h-4 w-4" />
+                                                            {t('hotinfo_help.crash_title')}
+                                                        </div>
+                                                        <p className="text-xs leading-5 text-amber-100/70">{t('hotinfo_help.crash_desc')}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <DialogFooter className="gap-2 sm:justify-between">
+                                                <div className="flex flex-col gap-2 sm:flex-row">
+                                                    <Button type="button" variant="outline" size="sm" asChild className="border-white/10 bg-slate-900 text-xs">
+                                                        <a href={HOTINFO_CREATE_HELP_URL} target="_blank" rel="noreferrer">
+                                                            {t('hotinfo_help.official_create')}
+                                                            <ExternalLink className="ml-2 h-3 w-3" />
+                                                        </a>
+                                                    </Button>
+                                                    <Button type="button" variant="outline" size="sm" asChild className="border-white/10 bg-slate-900 text-xs">
+                                                        <a href={HOTINFO_SERVICE_HELP_URL} target="_blank" rel="noreferrer">
+                                                            {t('hotinfo_help.official_service')}
+                                                            <ExternalLink className="ml-2 h-3 w-3" />
+                                                        </a>
+                                                    </Button>
+                                                </div>
+                                                <div className="relative">
+                                                    <input type="file" accept=".hxl" onChange={handleHotinfoUpload} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                                                    <Button type="button" className="w-full bg-brand-500 text-slate-950 hover:bg-brand-400 sm:w-auto">
+                                                        {t('buttons.hotinfo_upload')}
+                                                    </Button>
+                                                </div>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
                                 </div>
                             )}
 

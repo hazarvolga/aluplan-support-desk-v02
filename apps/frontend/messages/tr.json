@@ -813,6 +813,27 @@
         "hotinfo_added_desc": "Bu bilgiler teknik ekibe otomatik olarak iletilecek.",
         "hotinfo_upload_name": "Hotinfo Yükleme"
       },
+      "hotinfo_help": {
+        "button": "Hotinfo nasıl oluşturulur?",
+        "inline_prompt": "Hotinfo dosyanız yok mu? Oluşturma adımlarını görün.",
+        "title": "Hotinfo dosyası nasıl oluşturulur?",
+        "description": "Hotinfo dosyası, Allplan destek ekibinin sürüm, build, lisans durumu, donanım ve sistem ortamını hızlıca görmesini sağlar. Bu dosya teknik teşhisi hızlandırır.",
+        "steps_title": "Allmenu üzerinden oluşturma adımları",
+        "steps": [
+          "Windows Başlat menüsünden Allmenu uygulamasını açın.",
+          "Allmenu içinde Service menüsüne girin.",
+          "Create support request (Hotinfo) aracını çalıştırın.",
+          "Açılan Hotinfo penceresinde iletişim bilgilerinizi ve kısa problem açıklamasını doldurun.",
+          "Oluşturulan Hotinfo dosyasını .hxl formatında kaydedin.",
+          "Bu ekrana dönüp kaydettiğiniz .hxl dosyasını yükleyin."
+        ],
+        "privacy_title": "Güvenlik notu",
+        "privacy_desc": "Hotinfo teknik sistem bilgileri içerir. Şifre, özel proje dosyası veya hassas çizim içeriği istemiyoruz.",
+        "crash_title": "Çökme veya hata ekranı varsa",
+        "crash_desc": "Mümkünse ekran görüntüsü, görünen hata metni ve varsa çökme dökümü dosyalarını da talebe ekleyin.",
+        "official_create": "Hotinfo resmi yardımını aç",
+        "official_service": "Service menüsü yardımını aç"
+      },
       "departments": {
         "technical_support": "Teknik Destek",
         "billing_payments": "Fatura ve Ödemeler",

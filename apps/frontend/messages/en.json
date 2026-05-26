@@ -813,6 +813,27 @@
         "hotinfo_added_desc": "This information will be automatically sent to the technical team.",
         "hotinfo_upload_name": "Hotinfo Upload"
       },
+      "hotinfo_help": {
+        "button": "How do I create Hotinfo?",
+        "inline_prompt": "No Hotinfo file yet? View the creation steps.",
+        "title": "How to create a Hotinfo file",
+        "description": "A Hotinfo file helps the Allplan support team quickly see your version, build, license status, hardware, and system environment. It speeds up technical diagnosis.",
+        "steps_title": "Create it from Allmenu",
+        "steps": [
+          "Open the Allmenu application from the Windows Start menu.",
+          "In Allmenu, open the Service menu.",
+          "Run the Create support request (Hotinfo) tool.",
+          "In the Hotinfo window, enter your contact details and a short problem description.",
+          "Save the generated Hotinfo file in .hxl format.",
+          "Return to this page and upload the saved .hxl file."
+        ],
+        "privacy_title": "Security note",
+        "privacy_desc": "Hotinfo contains technical system information. We do not ask for passwords, private project files, or sensitive drawing content.",
+        "crash_title": "If there is a crash or error screen",
+        "crash_desc": "If possible, also attach a screenshot, the visible error text, and any available crash dump files to the request.",
+        "official_create": "Open official Hotinfo help",
+        "official_service": "Open Service menu help"
+      },
       "departments": {
         "technical_support": "Technical Support",
         "billing_payments": "Billing & Payments",
