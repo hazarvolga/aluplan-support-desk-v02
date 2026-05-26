@@ -2116,8 +2116,9 @@ If context contains usable procedural evidence, synthesize the answer instead of
 
         const isHardwareOrSystemQuery = this.isHardwareOrSystemQuery(query);
         const isLicenseQuery = this.isLicenseQuery(query);
+        const shouldUseLicenseTelemetry = isLicenseQuery && !this.isProceduralKnowledgeQuery(normalizedQuery);
 
-        if (!explicitlyAsksHotinfo && !isHardwareOrSystemQuery && !isLicenseQuery) {
+        if (!explicitlyAsksHotinfo && !isHardwareOrSystemQuery && !shouldUseLicenseTelemetry) {
             return '';
         }
 
@@ -2142,7 +2143,7 @@ If context contains usable procedural evidence, synthesize the answer instead of
             h.errorTrace ? 'Hotinfo hata kaydi mevcut; ham trace arama sorgusundan cikartildi.' : '',
         ] : [];
 
-        const licenseLines = isLicenseQuery ? [
+        const licenseLines = shouldUseLicenseTelemetry ? [
             this.buildSafeLicenseRetrievalSignal(h),
         ] : [];
 
@@ -2213,6 +2214,14 @@ If context contains usable procedural evidence, synthesize the answer instead of
     private isLicenseQuery(value: string): boolean {
         const normalized = this.normalizeSearchText(value);
         return /(?:lisans|license|lizenz|codemeter|wibu|product key|urun anahtari|aktivasyon|activation|iade|aktar|transfer|tasima|tasin|license server|lisans sunucusu|softlock)/.test(normalized);
+    }
+
+    private isProceduralKnowledgeQuery(normalizedQuery: string): boolean {
+        const asksPublishedProcedure =
+            /(?:learnnow|frilo|trial|deneme|how to|nasil|aktivasyon|activation|activate|etkinlestir|iade|transfer|aktar|tasima|kurulum|setup|guide|kilavuz)/.test(normalizedQuery);
+        if (!asksPublishedProcedure) return false;
+
+        return !/(?:benim|bende|bilgisayarim|bilgisayarima|makineme|format|hata|error|okunmuyor|okunamadi|bulunmuyor|goremiyorum|calismiyor|acilmiyor|hotinfo|sistemim|license server|lisans sunucusu|codemeter|wibu|sec nse|client|istemci)/.test(normalizedQuery);
     }
 
     /**

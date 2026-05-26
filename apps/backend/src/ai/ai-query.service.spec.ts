@@ -630,8 +630,20 @@ describe('AiQueryService', () => {
                 language: 'tr',
                 routeLocale: 'tr',
                 strictLanguage: true,
+                hotinfoContext: {
+                    allplanVersion: 'Allplan 2026-0-3 Unicode 64-bit',
+                    allplanBuildId: '39.1605.8421.537',
+                    licenseType: '⚠ Lisans dosyası okunamadı',
+                    errorTrace: 'SEC Hata: C:\\ProgramData\\Nemetschek\\Allplan\\2026\\License\\_SEC.NSE',
+                },
             });
 
+            for (const call of mockEmbeddingService.search.mock.calls) {
+                const searchArg = call[0] as string;
+                expect(searchArg).not.toContain('HOTINFO SAFE SEARCH SIGNALS');
+                expect(searchArg).not.toContain('Lisans telemetrisi');
+                expect(searchArg).not.toContain('_SEC.NSE');
+            }
             expect(result.answerMode).toBe('LLM');
             expect(result.confidence).not.toBe('NO_MATCH');
             expect(result.visuals).toEqual(expect.arrayContaining([
