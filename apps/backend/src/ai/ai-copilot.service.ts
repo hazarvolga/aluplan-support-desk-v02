@@ -11,6 +11,15 @@ import { buildSupportAnswerContractPrompt } from './ai-answer-contract';
 import { isNoKnowledgeAnswer } from './ai-answer-quality';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
 
+type CopilotVisualEvidence = {
+    url: string;
+    alt?: string;
+    caption?: string;
+    summary: string;
+    sourceTitle: string;
+    sourceId: string;
+};
+
 @Injectable()
 export class AiCopilotService {
     private readonly logger = new Logger(AiCopilotService.name);
@@ -147,6 +156,7 @@ export class AiCopilotService {
         // 6. Build final context
         const targetLanguage = this.resolveTicketAnswerLanguage(ticket);
         const linkedCustomerAnswer = this.extractUsableInteractionAnswer(ticket.interaction);
+        const visualEvidence = await this.resolveCopilotVisualEvidence(ticket.interaction);
         const requesterName = this.resolveTicketRequesterName(ticket);
         const latestAgentName = this.resolveLatestAgentName(ticket);
         const context = await this.promptContextBuilder.buildContext({
@@ -210,15 +220,88 @@ RESPONSE DRAFT:`;
             const cleanedDraft = this.removeProblemShiftSectionUnlessDetected(draft, isShift);
             return {
                 draft: cleanedDraft || 'Draft could not be generated.',
-                model: 'dynamic'
+                model: 'dynamic',
+                visuals: visualEvidence,
             };
         } catch (error) {
             this.logger.error(`Failed to generate AI Copilot draft: ${error.message}`);
             return {
                 draft: `AI_ERROR: Taslak oluşturulamadı. (Hata: ${error.message || 'Bilinmeyen Hata'})`,
-                model: 'dynamic'
+                model: 'dynamic',
+                visuals: visualEvidence,
             };
         }
+    }
+
+    private async resolveCopilotVisualEvidence(interaction?: { userContext?: unknown } | null): Promise<CopilotVisualEvidence[]> {
+        const userContext = this.asRecord(interaction?.userContext);
+        const source = this.asRecord(userContext.source);
+        const fromInteraction = this.normalizeCopilotVisualEvidence(userContext.visuals, {
+            sourceId: typeof source.id === 'string' ? source.id : null,
+            sourceTitle: typeof source.title === 'string' ? source.title : null,
+        });
+
+        if (fromInteraction.length > 0) return fromInteraction;
+
+        const sourceId = typeof source.id === 'string' ? source.id : null;
+        if (!sourceId) return [];
+
+        const knowledgeSource = await this.prisma.knowledgeSource.findUnique({
+            where: { id: sourceId },
+            select: { id: true, name: true, metadata: true },
+        }).catch(() => null);
+
+        if (!knowledgeSource) return [];
+
+        const metadata = this.asRecord(knowledgeSource.metadata);
+        return this.normalizeCopilotVisualEvidence(metadata.visualSummaries ?? metadata.images, {
+            sourceId: knowledgeSource.id,
+            sourceTitle: knowledgeSource.name,
+        });
+    }
+
+    private normalizeCopilotVisualEvidence(
+        raw: unknown,
+        source: { sourceId?: string | null; sourceTitle?: string | null },
+    ): CopilotVisualEvidence[] {
+        if (!Array.isArray(raw)) return [];
+
+        const sourceTitle = source.sourceTitle || 'Knowledge source';
+        const sourceId = source.sourceId || 'unknown-source';
+        const unique = new Map<string, CopilotVisualEvidence>();
+
+        for (const item of raw) {
+            const record = this.asRecord(item);
+            const url = typeof record.url === 'string'
+                ? record.url
+                : typeof record.src === 'string'
+                    ? record.src
+                    : null;
+            if (!url || unique.has(url)) continue;
+
+            const caption = typeof record.caption === 'string' ? record.caption : undefined;
+            const alt = typeof record.alt === 'string' ? record.alt : undefined;
+            const summary = typeof record.summary === 'string'
+                ? record.summary
+                : caption || alt || sourceTitle;
+
+            unique.set(url, {
+                url,
+                alt,
+                caption,
+                summary,
+                sourceTitle: typeof record.sourceTitle === 'string' ? record.sourceTitle : sourceTitle,
+                sourceId: typeof record.sourceId === 'string' ? record.sourceId : sourceId,
+            });
+        }
+
+        return Array.from(unique.values()).slice(0, 4);
+    }
+
+    private asRecord(value: unknown): Record<string, any> {
+        return value && typeof value === 'object' && !Array.isArray(value)
+            ? value as Record<string, any>
+            : {};
     }
 
     private buildCopilotFallbackDraft(

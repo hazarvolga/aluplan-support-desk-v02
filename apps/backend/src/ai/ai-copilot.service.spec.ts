@@ -25,6 +25,9 @@ describe('AiCopilotService', () => {
             ticket: {
                 findUnique: jest.fn(),
             },
+            knowledgeSource: {
+                findUnique: jest.fn(),
+            },
         };
         mockAi = {
             generate: jest.fn(),
@@ -227,6 +230,38 @@ describe('AiCopilotService', () => {
             expect(prompt).toContain('[LINKED_CUSTOMER_AI_ANSWER]');
             expect(prompt).toContain('Use it as the primary grounding signal');
             expect(prompt).toContain('sunucu manuel olarak eklenmelidir');
+        });
+
+        it('returns ticket-opening visual evidence with the admin draft', async () => {
+            const visuals = [
+                {
+                    url: 'https://learnnow.allplan.com/pluginfile.php/example/trial.png',
+                    summary: 'FRILO trial button is highlighted.',
+                    sourceTitle: 'Activating a FRILO trial version',
+                    sourceId: 'learnnow-11851',
+                },
+            ];
+            mockPrisma.ticket.findUnique.mockResolvedValue({
+                ...mockTicket,
+                interaction: {
+                    responseGenerated: 'Hello, this FRILO trial answer has enough detail for reuse.',
+                    userContext: {
+                        responseLanguage: 'en',
+                        requestLocale: 'en',
+                        source: {
+                            id: 'learnnow-11851',
+                            title: 'Activating a FRILO trial version',
+                        },
+                        visuals,
+                    },
+                },
+            });
+            mockAi.generate.mockResolvedValue('Generated admin draft');
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(result.draft).toBe('Generated admin draft');
+            expect(result.visuals).toEqual(visuals);
         });
 
         it('reuses the linked ticket-opening AI answer when the admin model returns no-knowledge', async () => {

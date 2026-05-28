@@ -93,6 +93,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const [summarizing, setSummarizing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [drafting, setDrafting] = useState(false);
+    const [draftVisuals, setDraftVisuals] = useState<AiVisualEvidenceItem[]>([]);
     const [downloadingHotinfo, setDownloadingHotinfo] = useState(false);
     const [aiTrace, setAiTrace] = useState<any>(null);
     const [agents, setAgents] = useState<any[]>([]);
@@ -330,7 +331,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
         const messageText = sanitizedReply;
         const previousReply = reply;
+        const previousDraftVisuals = draftVisuals;
         setReply(''); // Clear immediately for UX
+        setDraftVisuals([]);
         setSending(true);
 
         // Optimistic UI: Add message locally first
@@ -383,6 +386,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 messages: prev.messages.filter((m: any) => m.id !== tempId)
             }));
             setReply(previousReply); // Restore input
+            setDraftVisuals(previousDraftVisuals);
         } finally {
             setSending(false);
         }
@@ -406,6 +410,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         try {
             const res = await api.ai.getCopilotDraft(id);
             setReply(markdownToHtml(res.draft));
+            setDraftVisuals((res.visuals ?? []) as AiVisualEvidenceItem[]);
             toast.success(t('draft_success'));
         } catch (err: any) {
             toast.error(t('draft_error', { error: err.message }));
@@ -797,6 +802,20 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     </CardContent>
 
                     <CardFooter className="p-3 border-t border-border/50 bg-background/50 backdrop-blur-sm flex flex-col gap-3 z-10">
+                        {!isCustomer && draftVisuals.length > 0 && (
+                            <AiVisualEvidence
+                                visuals={draftVisuals}
+                                labels={{
+                                    title: t('draft_visuals_title'),
+                                    description: t('draft_visuals_desc'),
+                                    open: t('draft_visuals_open'),
+                                    source: t('draft_visuals_source'),
+                                }}
+                                accent="orange"
+                                layout="grid"
+                            />
+                        )}
+
                         {/* Selected Files Preview */}
                         {files.length > 0 && (
                             <div className="flex flex-wrap gap-2 w-full">

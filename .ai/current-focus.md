@@ -135,6 +135,8 @@
   - admin ANN/Copilot drafts now receive the linked ticket-opening AI answer as primary grounding context when one exists.
   - if the admin model returns a no-knowledge response despite a usable ticket-opening answer, Copilot reuses the linked answer instead of contradicting it.
   - manual license server discovery questions have a structured fallback so the admin side does not regress to a generic no-knowledge draft.
+  - admin ANN/Copilot draft API now returns visual evidence from the linked ticket-opening interaction or Knowledge Source metadata.
+  - ticket detail renders those draft visuals as separate evidence cards above the composer, keeping image evidence out of the generated text body.
 - Customer Dashboard 403 Cleanup completed:
   - customer/viewer dashboard no longer calls admin-only `/ai/health-metrics`.
   - admin/superuser dashboard still loads AI health metrics.

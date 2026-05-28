@@ -3530,3 +3530,24 @@ Maintenance rule:
 ### Deployment note
 
 - Frontend deploy is required for actual image cards to appear in the AI answer UI. The backend visual payload fix was already pushed separately.
+
+## Follow-up - 2026-05-28 Admin Copilot Visual Evidence Parity
+
+### What changed
+
+- Admin ANN/Copilot draft responses now return visual evidence from the linked ticket-opening AI interaction.
+- If the interaction does not already contain visuals, Copilot can fall back to the matched Knowledge Source metadata images/visual summaries.
+- Ticket detail now renders draft visual evidence as separate cards above the reply composer, instead of embedding image URLs into the draft text.
+- Visual evidence labels were added for Turkish, English, and German.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- ai-copilot.service.spec.ts` passed.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed.
+
+### Deployment note
+
+- Deploy backend first so `/ai/copilot/draft/:ticketId` returns the `visuals` payload.
+- Deploy frontend after backend so admin ticket detail renders the draft visual evidence cards.

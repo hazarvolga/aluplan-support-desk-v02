@@ -530,7 +530,18 @@ export const api = {
             chatModels: Array<{ id: string; displayName: string; recommended: boolean }>;
             embedModels: Array<{ id: string; displayName: string; recommended: boolean }>;
         }>('/ai/list-models', { method: 'POST', body: JSON.stringify({ provider, apiKey, baseUrl }) }),
-        getCopilotDraft: (ticketId: string) => request<{ draft: string; model: string }>(`/ai/copilot/draft/${ticketId}`),
+        getCopilotDraft: (ticketId: string) => request<{
+            draft: string;
+            model: string;
+            visuals?: Array<{
+                url: string;
+                alt?: string;
+                caption?: string;
+                summary: string;
+                sourceTitle: string;
+                sourceId: string;
+            }>;
+        }>(`/ai/copilot/draft/${ticketId}`),
         getMetrics: (channel?: string) => request<{
             global: {
                 _sum: {
