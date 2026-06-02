@@ -377,7 +377,7 @@ export default function NewTicketPage() {
             // Switch to specialized query endpoint for conversational RAG
             // Passing product context to focus search on relevant knowledge base
             const pId = selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId;
-            const resolvedResponse = await api.ai.query(buildDiagnosisQuery(subject, description), context, pId, locale, [], attachments, true, true) as
+            const resolvedResponse = await api.ai.query(buildDiagnosisQuery(subject, description), context, pId, locale, [], attachments, true, false) as
                 { answer?: string; visuals?: AiVisualEvidenceItem[]; interactionId?: string; answerMode?: 'LLM' | 'FALLBACK'; languageMismatch?: boolean } | null;
 
             if (!resolvedResponse || !resolvedResponse.answer) {
