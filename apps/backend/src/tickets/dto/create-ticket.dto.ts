@@ -27,7 +27,12 @@ export class CreateTicketDto {
     @ApiPropertyOptional({ description: 'If created from an AI interaction' })
     @IsUUID()
     @IsOptional()
-    @Transform(({ value }) => value === null ? undefined : value)
+    @Transform(({ value }) => {
+        if (!value) return undefined;
+        // Simple regex to check if it looks like a UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(value) ? value : undefined;
+    })
     interactionId?: string;
 
     @ApiPropertyOptional({ description: 'ID of the related product for smart AI triage' })

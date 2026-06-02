@@ -389,7 +389,10 @@ export default function NewTicketPage() {
 
             setAiAnswer(resolvedResponse.answer);
             setAiVisuals(resolvedResponse.visuals ?? []);
-            setInteractionId(resolvedResponse.interactionId ?? null);
+            
+            const returnedInteractionId = resolvedResponse.interactionId ?? null;
+            setInteractionId(returnedInteractionId === 'language-mismatch' ? null : returnedInteractionId);
+            
             setDiagnosisState(resolvedResponse.languageMismatch ? 'failed' : resolvedResponse.answerMode === 'FALLBACK' ? 'fallback' : 'ready');
             closeSynthesisPanel();
 
