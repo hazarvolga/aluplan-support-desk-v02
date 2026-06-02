@@ -1,4 +1,5 @@
 import { IsString, IsEnum, IsOptional, IsUUID, MinLength, MaxLength, IsObject } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TicketPriority, CommunicationChannel } from '@aluplan/database';
 
@@ -26,6 +27,7 @@ export class CreateTicketDto {
     @ApiPropertyOptional({ description: 'If created from an AI interaction' })
     @IsUUID()
     @IsOptional()
+    @Transform(({ value }) => value === null ? undefined : value)
     interactionId?: string;
 
     @ApiPropertyOptional({ description: 'ID of the related product for smart AI triage' })
