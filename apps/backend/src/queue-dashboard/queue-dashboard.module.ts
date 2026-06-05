@@ -57,7 +57,11 @@ export class QueueDashboardModule implements OnModuleInit {
             serverAdapter,
         });
 
-        const httpAdapter = this.adapterHost.httpAdapter;
+        const httpAdapter = this.adapterHost?.httpAdapter;
+        if (!httpAdapter) {
+            this.logger.log('⏭️  Bull Board skipped — no HTTP adapter available');
+            return;
+        }
         const app = httpAdapter.getInstance();
 
         // Production: protect with basic auth (same as Swagger)

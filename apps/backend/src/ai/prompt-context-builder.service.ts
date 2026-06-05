@@ -230,14 +230,26 @@ export class PromptContextBuilderService {
 
     private buildLicenseContext(hotinfo: any, userQuery: string): string {
         const licenseType = hotinfo?.licenseType || hotinfo?.hotinfoLicense || hotinfo?.licenseNumber;
+        const allplanVersion = hotinfo?.allplanVersion ? String(hotinfo.allplanVersion).trim() : '';
+        const parsedVersion = parseInt(allplanVersion);
+        const isModern = allplanVersion && (allplanVersion.includes('2024') || allplanVersion.includes('2025') || allplanVersion.includes('2026') || (!isNaN(parsedVersion) && parsedVersion >= 2024));
+
         if (!this.isLegacyUnreadableLicenseSignal(licenseType)) {
             return `Lisans Tipi: ${licenseType || 'Bilinmiyor'}`;
         }
 
         const asksLicense = this.isLicenseIntent(userQuery);
-        return asksLicense
-            ? 'Lisans Telemetrisi: Kullanıcının Hotinfo dosyasında geçerli bir lisans numarası bulunamadı. Bu durum, Allplan 2026 gibi Cloud/Wibu lisanslarında normaldir. Kullanıcı yeni bilgisayarına geçtiğini veya lisans aktif edemediğini söylüyorsa, Hotinfo\'daki donanım veya işletim sistemi bilgilerini (Örn: "Windows 11 bilgisayarınız için...") de belirterek, eski bilgisayardaki Allplan\'dan lisansı serbest bırakması gerektiğini söyleyin.'
-            : 'Lisans Telemetrisi: Yerel lisans dosyası Hotinfo tarafından okunamadı; modern Cloud/Wibu lisanslarında bu tek başına lisans/abonelik veya BIMPLUS depolama limiti kanıtı değildir. Bu talepte kök neden olarak kullanma.';
+        if (asksLicense) {
+            if (isModern) {
+                return 'Lisans Telemetrisi: Modern Allplan sürümü (2024 ve sonrası) tespit edilmiştir. Modern Allplan sürümlerinde lisanslama bulut tabanlıdır (Bimplus veya Allplan Connect hesabı üzerinden). Kullanıcı yeni bir bilgisayara geçişte lisans sorunu yaşıyorsa, eski bilgisayardaki lisansı iade etmeye gerek yoktur. Bunun yerine, yeni bilgisayarda Allplan Connect veya Bimplus kullanıcı bilgileriyle oturum açmalı, eğer lisans başka bir bilgisayarda aktif görünüyor veya limit uyarısı veriyorsa, Allplan Connect Licensing Dashboard (http://connect.allplan.com/license) üzerinden aktif oturumlarını deaktive etmeli ya da oradaki yönetici paneli üzerinden lisansını yönetmelidir. Kullanıcıya bu modern bulut lisans yönetim adımlarını anlatın.';
+            } else if (allplanVersion && !isModern) {
+                return 'Lisans Telemetrisi: Eski Allplan sürümü (2023 ve öncesi) veya klasik lisans anahtarı (Softlock/Wibu Product Key) tespit edilmiştir. Kullanıcı yeni bilgisayarına geçtiğini veya lisans aktif edemediğini söylüyorsa, eski bilgisayardaki Allplan\'dan lisansı serbest bırakması (Allmenu -> Lisans Ayarları (Wibu) -> Lisansı İade Et) gerektiğini söyleyin.';
+            } else {
+                return 'Lisans Telemetrisi: Allplan sürümü net belirlenememiştir. Kullanıcıya hem eski sürümler için lisans iade adımlarını (Allmenu -> Lisans Ayarları -> Lisansı İade Et) hem de modern sürümler (2024+) için bulut lisans yönetim adımlarını (Allplan Connect portalı http://connect.allplan.com/license üzerinden giriş yapıp oturumları yönetmek) açıklayarak rehberlik edin.';
+            }
+        } else {
+            return 'Lisans Telemetrisi: Yerel lisans dosyası okunamadı; modern Cloud/Wibu lisanslarında bu tek başına lisans/abonelik veya BIMPLUS depolama limiti kanıtı değildir. Bu talepte kök neden olarak kullanma.';
+        }
     }
 
     private sanitizeHotinfoTrace(trace: unknown, userQuery: string): string {

@@ -211,6 +211,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     }
 
     private async updatePresence(ticketId: string) {
+        if (!this.server) return;
         const redis = this.redisService.getClient();
         const userIds = await redis.smembers(`presence:ticket:${ticketId}`);
         this.server.to(`ticket:${ticketId}`).emit('ticket:presence', {
@@ -350,7 +351,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         };
 
         // Broadcast to relevant roles (Admin, Managers, Team Leads, Agents)
-        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').to('role:team-lead').to('role:agent').emit('ticket:created', payload);
+        if (this.server) {
+            this.server.to('role:admin').to('role:super-admin').to('role:department-manager').to('role:team-lead').to('role:agent').emit('ticket:created', payload);
+        }
         this.logger.log(`✔️ Broadcast completed for ${ticket.ticketNumber}. Payload: ${JSON.stringify(payload)}`);
         // Background: Create persistent notifications (optimized via granular Redis role sets)
         try {
@@ -392,15 +395,18 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             });
         }
 
-        this.server.to(`ticket:${ticket.id}`).emit('ticket:updated', ticket);
-        this.server.to('role:admin').to('role:department-manager').emit('ticket:status_changed', {
-            id: ticket.id,
-            ticketNumber: ticket.ticketNumber,
-            status: ticket.status,
-        });
+        if (this.server) {
+            this.server.to(`ticket:${ticket.id}`).emit('ticket:updated', ticket);
+            this.server.to('role:admin').to('role:department-manager').emit('ticket:status_changed', {
+                id: ticket.id,
+                ticketNumber: ticket.ticketNumber,
+                status: ticket.status,
+            });
+        }
     }
 
     emitTicketEscalated(ticket: any) {
+        if (!this.server) return;
         // High-priority broadcast to managers
         this.server
             .to('role:admin')
@@ -437,19 +443,22 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             });
         }
 
-        this.server
-            .to('role:admin')
-            .to('role:department-manager')
-            .to(`user:${ticket.assignedTo}`)
-            .emit('ticket:sla_breach', {
-                id: ticket.id,
-                ticketNumber: ticket.ticketNumber,
-                priority: ticket.priority,
-                slaResolveDue: ticket.slaResolveDue,
-            });
+        if (this.server) {
+            this.server
+                .to('role:admin')
+                .to('role:department-manager')
+                .to(`user:${ticket.assignedTo}`)
+                .emit('ticket:sla_breach', {
+                    id: ticket.id,
+                    ticketNumber: ticket.ticketNumber,
+                    priority: ticket.priority,
+                    slaResolveDue: ticket.slaResolveDue,
+                });
+        }
     }
 
     emitNewMessage(ticketId: string, message: any) {
+        if (!this.server) return;
         this.server.to(`ticket:${ticketId}`).emit('ticket:new_message', {
             ticketId,
             message,
@@ -458,10 +467,12 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     @OnEvent('attachment.created', { async: true })
     emitAttachmentAdded(payload: { ticketId: string, messageId: string, attachment: any }) {
+        if (!this.server) return;
         this.server.to(`ticket:${payload.ticketId}`).emit('ticket:attachment_added', payload);
     }
 
     emitBulkUpdate(ticketIds: string[]) {
+        if (!this.server) return;
         this.server
             .to('role:admin')
             .to('role:department-manager')
@@ -506,10 +517,12 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         }
 
         // 3. Broadcast to connected admins/agents via WebSocket
-        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').emit('system:ai_fallback', {
-            ...payload,
-            timestamp: Date.now()
-        });
+        if (this.server) {
+            this.server.to('role:admin').to('role:super-admin').to('role:department-manager').emit('system:ai_fallback', {
+                ...payload,
+                timestamp: Date.now()
+            });
+        }
     }
 
     async emitCrmChanges(payload: { connectionId: string; entityType: 'account' | 'contact'; changeCount: number }) {
@@ -540,12 +553,14 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             });
         }
 
-        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').emit('crm:changes', {
-            ...payload,
-            title,
-            message,
-            timestamp: Date.now(),
-        });
+        if (this.server) {
+            this.server.to('role:admin').to('role:super-admin').to('role:department-manager').emit('crm:changes', {
+                ...payload,
+                title,
+                message,
+                timestamp: Date.now(),
+            });
+        }
     }
 
     async emitCrmSyncError(payload: { connectionId: string; message: string }) {
@@ -573,15 +588,18 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             });
         }
 
-        this.server.to('role:admin').to('role:super-admin').to('role:department-manager').emit('crm:sync_error', {
-            ...payload,
-            title,
-            message,
-            timestamp: Date.now(),
-        });
+        if (this.server) {
+            this.server.to('role:admin').to('role:super-admin').to('role:department-manager').emit('crm:sync_error', {
+                ...payload,
+                title,
+                message,
+                timestamp: Date.now(),
+            });
+        }
     }
 
     sendToUser(userId: string, event: string, payload: any) {
+        if (!this.server) return;
         this.server.to(`user:${userId}`).emit(event, payload);
     }
 
@@ -608,10 +626,12 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
                 const hasPresence = await redis.exists(presenceKey);
 
                 if (!hasPresence) {
-                    const localSockets = await this.server.in(`user:${userId}`).fetchSockets();
-                    if (localSockets.length === 0) {
-                        await redis.srem(roleKey, userId);
-                        this.logger.log(`Cleaned up ghost user ${userId} from active set for role ${role}`);
+                    if (this.server) {
+                        const localSockets = await this.server.in(`user:${userId}`).fetchSockets();
+                        if (localSockets.length === 0) {
+                            await redis.srem(roleKey, userId);
+                            this.logger.log(`Cleaned up ghost user ${userId} from active set for role ${role}`);
+                        }
                     }
                 }
             }
