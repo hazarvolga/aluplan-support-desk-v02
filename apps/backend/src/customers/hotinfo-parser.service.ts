@@ -68,17 +68,12 @@ export class HotinfoParserService {
             let allplanEdition = '';
             let allplanHotfix = '';
             let allplanBuildId = '';
-            if (cadinfo?.allplanversion?.item) {
-                const items = Array.isArray(cadinfo.allplanversion.item) ? cadinfo.allplanversion.item : [cadinfo.allplanversion.item];
-                const versionItem = items.find((i: any) => i['@_name'] === 'Version');
-                const editionItem = items.find((i: any) => i['@_name'] === 'Edition');
-                const hotfixItem = items.find((i: any) => i['@_name'] === 'Hotfix' || i['@_name'] === 'Patch');
-                const buildIdItem = items.find((i: any) => i['@_name'] === 'Build-ID');
-
-                if (versionItem) allplanVersion = this.extractValue(versionItem);
-                if (editionItem) allplanEdition = this.extractValue(editionItem);
-                if (hotfixItem) allplanHotfix = this.extractValue(hotfixItem);
-                if (buildIdItem) allplanBuildId = this.extractValue(buildIdItem);
+            if (cadinfo?.allplanversion) {
+                const v = this.pickItemString(cadinfo.allplanversion, ['version', 'allplanversion']);
+                if (v) allplanVersion = v;
+                allplanEdition = this.pickItemString(cadinfo.allplanversion, ['edition']);
+                allplanHotfix = this.pickItemString(cadinfo.allplanversion, ['hotfix', 'patch']);
+                allplanBuildId = this.pickItemString(cadinfo.allplanversion, ['buildid', 'build-id']);
             }
 
             // ── License Info ──
