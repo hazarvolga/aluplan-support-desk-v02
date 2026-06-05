@@ -204,7 +204,7 @@ export class PromptContextBuilderService {
             'Kurum kimligini (Aluplan Destek) koru.',
             'Bilgi kaynağında menu yolları veya buton adları varsa, bunları EKSİKSİZ ve KAYNAKTAKI DILDE ver.',
             'Çince, Japonca veya tanınmayan karakter kalıntılarını (Örn: 了解) yanıta EKLEME.',
-            'KULLANICI SISTEM BILGILERI (Hotinfo) mevcutsa, yanıtı bu verilere göre özelleştir (Örn: Versiyon 2026 ise 2026 prosedürlerini ver, GPU eskiyse sürücü güncellemesi öner).',
+            'KULLANICI SISTEM BILGILERI (Hotinfo) mevcutsa, yanıtı mutlaka bu verilere göre özelleştir (Örn: "Allplan 2026 sürümü ve Windows 11 işletim sisteminiz için..." şeklinde donanım/yazılım özelliklerini belirterek spesifik bir giriş yap).',
             'Eğer bir ekran kartının VRAM değeri "Bilinmiyor (Kart Uyku Modunda)" ise donanım yetersizliği teşhisi koyma. Kullanıcıya, "Ekran kartınız uyku modunda olduğu için tam tarayamadım, Allplan açıkken Hotinfo dosyasını yeniden oluşturup gönderir misiniz?" şeklinde kibarca yönlendirme yap.',
             'Hotinfo içinde "Lisans dosyası okunamadı" veya _SEC.NSE gibi eski yerel lisans dosyası sinyalleri varsa bunu TEK BAŞINA lisans geçersizliği, deneme/öğrenci lisansı veya BIMPLUS/Share depolama limiti nedeni olarak kullanma. Modern Allplan Cloud/Wibu lisanslarında bu düşük güvenli legacy telemetridir; lisans kök nedeni ancak kullanıcı lisans soruyorsa ve bilgi kaynağı bunu destekliyorsa önerilebilir.',
             'Hata kodları yakalandığında "ERROR_LOG_PATTERNS" veri kümesine öncelik ver.',
@@ -236,7 +236,7 @@ export class PromptContextBuilderService {
 
         const asksLicense = this.isLicenseIntent(userQuery);
         return asksLicense
-            ? 'Lisans Telemetrisi: Hotinfo eski yerel lisans dosyasını okuyamamış. Bu düşük güvenli bir sinyaldir; modern Cloud/Wibu lisanslarında lisans geçersizliği kanıtı değildir. Lisans yorumu yapmadan önce License Manager/BIMPLUS portalı gibi birincil lisans kaynağını doğrulat.'
+            ? 'Lisans Telemetrisi: Kullanıcının Hotinfo dosyasında geçerli bir lisans numarası bulunamadı. Bu durum, Allplan 2026 gibi Cloud/Wibu lisanslarında normaldir. Kullanıcı yeni bilgisayarına geçtiğini veya lisans aktif edemediğini söylüyorsa, Hotinfo\'daki donanım veya işletim sistemi bilgilerini (Örn: "Windows 11 bilgisayarınız için...") de belirterek, eski bilgisayardaki Allplan\'dan lisansı serbest bırakması gerektiğini söyleyin.'
             : 'Lisans Telemetrisi: Yerel lisans dosyası Hotinfo tarafından okunamadı; modern Cloud/Wibu lisanslarında bu tek başına lisans/abonelik veya BIMPLUS depolama limiti kanıtı değildir. Bu talepte kök neden olarak kullanma.';
     }
 

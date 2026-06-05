@@ -216,7 +216,7 @@ export class AiQueryService {
         const globalCost = parseFloat(await client.get(globalCostKey) || '0');
         const userQueries = parseInt(await client.get(userQueryKey) || '0', 10);
         const globalCap = parseFloat(this.config.get('AI_GLOBAL_DAILY_CAP', '50.0'));
-        const userQuota = parseInt(this.config.get('AI_USER_DAILY_QUOTA', '50'), 10);
+        const userQuota = parseInt(this.config.get('AI_USER_DAILY_QUOTA', '500'), 10);
 
         if (globalCost >= globalCap) {
             this.logger.error(`🚨 Global AI Budget Cap Exceeded ($${globalCost})`);
