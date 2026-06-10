@@ -19,7 +19,7 @@ export class AutomationService {
     ) { }
 
     @OnEvent('ticket.status_changed')
-    async handleStatusChange(payload: { ticketId: string; oldStatus: TicketStatus; newStatus: TicketStatus; actorId?: string }) {
+    async handleStatusChange(payload: { ticketId: string; oldStatus: TicketStatus; newStatus: TicketStatus; actorId?: string; resolution?: string }) {
         this.logger.log(`🤖 Automation: Processing status change for ticket ${payload.ticketId} (${payload.oldStatus} -> ${payload.newStatus})`);
 
         const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
@@ -56,9 +56,15 @@ export class AutomationService {
                 if (payload.newStatus === TicketStatus.RESOLVED) {
                     this.emailService.sendTicketResolved({
                         customerEmail: ticket.creator.email,
-                        customerName: ticket.creator.fullName,
+                        customerName: ticket.creator.fullName || 'Değerli Müşterimiz',
                         ticketNumber: ticket.ticketNumber,
                         ticketId: ticket.id,
+                        ticketSubject: ticket.subject,
+                        ticketPriority: ticket.priority,
+                        ticketPriorityLow: ticket.priority?.toLowerCase() || 'low',
+                        closedAt: new Date().toLocaleString(),
+                        resolution: payload.resolution || 'Bilet çözümlendi',
+                        ticketUrl: `${frontendUrl}/tickets/${ticket.id}`,
                         surveyUrl: `${frontendUrl}/tickets/${ticket.id}/feedback`
                     });
                 }
@@ -126,8 +132,13 @@ export class AutomationService {
                 customerEmail: ticket.creator.email,
                 customerName: ticket.creator.fullName || 'Değerli Müşterimiz',
                 ticketNumber: ticket.ticketNumber,
-                subject: ticket.subject,
-                priority: ticket.priority,
+                ticketId: ticket.id,
+                ticketSubject: ticket.subject,
+                ticketPriority: ticket.priority,
+                ticketPriorityLow: ticket.priority?.toLowerCase() || 'low',
+                ticketStatus: ticket.status,
+                ticketCategory: ticket.category?.name || '-',
+                ticketType: ticket.ticketType || '-',
                 createdAt: new Date(ticket.createdAt).toLocaleString(),
                 ticketUrl: `${frontendUrl}/tickets/${ticket.id}`
             }).catch(err => {
@@ -150,11 +161,11 @@ export class AutomationService {
 
             if (staffEmails) {
                 this.emailService.sendNewTicketToStaff(staffEmails, {
+                    ticketId: ticket.id,
                     ticketNumber: ticket.ticketNumber,
-                    subject: ticket.subject,
-                    priority: ticket.priority,
+                    ticketSubject: ticket.subject,
                     ticketPriority: ticket.priority,
-                    ticketPriorityLow: ticket.priority.toLowerCase(),
+                    ticketPriorityLow: ticket.priority?.toLowerCase() || 'low',
                     ticketStatus: ticket.status,
                     customerName: ticket.creator?.fullName || 'Müşteri',
                     customerEmail: ticket.creator?.email || '-',
@@ -178,9 +189,10 @@ export class AutomationService {
         if (user?.email) {
             const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
             this.emailService.sendWelcomeCustomer({
-                customerEmail: user.email,
-                fullName: user.fullName || 'Değerli Müşterimiz',
-                loginUrl: `${frontendUrl}/login`
+                email: user.email,
+                customerName: user.fullName || 'Değerli Müşterimiz',
+                verifyUrl: `${frontendUrl}/login`,
+                password: 'CRM üzerinden yetkilendirildiniz. Şifrenizi sıfırlayarak giriş yapabilirsiniz.'
             }).catch(err => {
                 this.logger.error(`Failed to send welcome email for ${user.email}: ${err.message}`);
             });
@@ -191,12 +203,14 @@ export class AutomationService {
     async handleSecurityAlert(payload: { email: string; fullName?: string; location: string; ipValue: string }) {
         this.logger.log(`🚨 Automation: Security alert triggered for ${payload.email} at IP ${payload.ipValue}`);
 
+        const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
         this.emailService.sendSecurityAlert({
             recipientEmail: payload.email,
             fullName: payload.fullName || 'Değerli Müşterimiz',
-            location: payload.location,
-            ipValue: payload.ipValue,
-            time: new Date().toLocaleString()
+            locationInfo: payload.location,
+            deviceInfo: payload.ipValue,
+            loginDate: new Date().toLocaleString(),
+            securityUrl: `${frontendUrl}/`
         }).catch(err => {
             this.logger.error(`Failed to send security alert email for ${payload.email}: ${err.message}`);
         });
@@ -207,23 +221,28 @@ export class AutomationService {
         this.emailService.sendTwoFactorAuth({
             recipientEmail: payload.email,
             fullName: payload.fullName || 'Kullanıcı',
-            code: payload.code
+            token: payload.code
         }).catch(err => {
             this.logger.error(`Failed to send 2FA email for ${payload.email}: ${err.message}`);
         });
     }
 
     @OnEvent('sla.warning')
-    async handleSlaWarning(payload: { agentEmail: string; ticketNumber: string; subject: string; timeLeft: string; breachType: 'response' | 'resolution' }) {
+    async handleSlaWarning(payload: { agentEmail: string; agentName?: string; ticketId?: string; ticketStatus?: string; ticketNumber: string; subject: string; timeLeft: string; breachType: 'response' | 'resolution' }) {
         this.logger.warn(`🚨 Automation: Sending SLA Warning to ${payload.agentEmail} for ticket ${payload.ticketNumber}`);
+
+        const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
         this.emailService.sendSlaBreachWarning({
             recipientEmail: payload.agentEmail,
+            agentName: payload.agentName || 'Temsilci',
+            ticketId: payload.ticketId,
             ticketNumber: payload.ticketNumber,
-            subject: payload.subject,
+            ticketSubject: payload.subject,
+            ticketStatus: payload.ticketStatus || 'OPEN',
+            ticketUrl: `${frontendUrl}/tickets/${payload.ticketId}`,
+            minutesLeft: payload.timeLeft,
             breachType: payload.breachType,
-            // Actually reusing `sendSlaBreachWarning` but we'll override the HTML payload subject dynamically inside email.service if needed.
-            // The template sla-breached vs sla-warning uses the same metadata. 
         }).catch(err => {
             this.logger.error(`Failed to send SLA warning email for ${payload.ticketNumber}: ${err.message}`);
         });

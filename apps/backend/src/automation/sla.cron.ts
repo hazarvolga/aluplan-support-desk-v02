@@ -84,10 +84,13 @@ export class SlaCronService implements OnApplicationBootstrap {
                 if (ticket.assignee?.email) {
                     this.eventEmitter.emit('sla.warning', {
                         agentEmail: ticket.assignee.email,
+                        agentName: ticket.assignee.fullName || 'Temsilci',
+                        ticketId: ticket.id,
                         ticketNumber: ticket.ticketNumber,
                         subject: ticket.subject,
                         timeLeft: '30 dakikadan az',
-                        breachType: 'response'
+                        breachType: 'response',
+                        ticketStatus: ticket.status
                     });
                 }
 
@@ -121,10 +124,13 @@ export class SlaCronService implements OnApplicationBootstrap {
                 if (ticket.assignee?.email) {
                     this.eventEmitter.emit('sla.warning', {
                         agentEmail: ticket.assignee.email,
+                        agentName: ticket.assignee.fullName || 'Temsilci',
+                        ticketId: ticket.id,
                         ticketNumber: ticket.ticketNumber,
                         subject: ticket.subject,
                         timeLeft: '30 dakikadan az',
-                        breachType: 'resolution'
+                        breachType: 'resolution',
+                        ticketStatus: ticket.status
                     });
                 }
 

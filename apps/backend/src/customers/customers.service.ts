@@ -460,7 +460,7 @@ export class CustomersService {
         try {
             await this.emailService.sendPasswordReset({
                 recipientEmail: user.email,
-                recipientName: user.fullName || `${user.customerProfile?.firstName} ${user.customerProfile?.lastName}`.trim() || 'Değerli Müşterimiz',
+                customerName: user.fullName || `${user.customerProfile?.firstName} ${user.customerProfile?.lastName}`.trim() || 'Değerli Müşterimiz',
                 newPassword: tempPassword, // The template handles either resetUrl or newPassword
             });
         } catch (error) {
