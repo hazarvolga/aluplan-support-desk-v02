@@ -104,7 +104,7 @@ export class AutomationService {
             this.emailService.sendNewMessage({
                 recipientEmail: payload.recipientEmail,
                 userName: payload.userName || 'Kullanıcı',
-                ticketId: payload.ticket.id,
+                ticketId: payload.ticket.ticketNumber, // Fixed: template expects ticketNumber here
                 ticketNumber: payload.ticket.ticketNumber,
                 latestMessage: payload.message.message,
                 ticketUrl: `${frontendUrl}/tickets/${payload.ticket.id}`

@@ -409,8 +409,19 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         setDrafting(true);
         try {
             const res = await api.ai.getCopilotDraft(id);
-            setReply(markdownToHtml(res.draft));
-            setDraftVisuals((res.visuals ?? []) as AiVisualEvidenceItem[]);
+            let htmlDraft = markdownToHtml(res.draft);
+
+            if (res.visuals && res.visuals.length > 0) {
+                const visualsHtml = res.visuals.map((v: any) => {
+                    const altText = v.alt || v.caption || v.sourceTitle || 'Visual';
+                    const caption = v.sourceTitle || 'Source Visual';
+                    return `<br/><br/><p><a href="${v.url}" target="_blank"><img src="${v.url}" alt="${altText}" style="max-width:100%; border-radius:8px; border:1px solid #ffffff20;" /></a><br/><small style="color:#ffffff70;"><em>${caption}</em></small></p>`;
+                }).join('');
+                htmlDraft += visualsHtml;
+            }
+
+            setReply(htmlDraft);
+            setDraftVisuals([]);
             toast.success(t('draft_success'));
         } catch (err: any) {
             toast.error(t('draft_error', { error: err.message }));
@@ -802,19 +813,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     </CardContent>
 
                     <CardFooter className="p-3 border-t border-border/50 bg-background/50 backdrop-blur-sm flex flex-col gap-3 z-10">
-                        {!isCustomer && draftVisuals.length > 0 && (
-                            <AiVisualEvidence
-                                visuals={draftVisuals}
-                                labels={{
-                                    title: t('draft_visuals_title'),
-                                    description: t('draft_visuals_desc'),
-                                    open: t('draft_visuals_open'),
-                                    source: t('draft_visuals_source'),
-                                }}
-                                accent="orange"
-                                layout="grid"
-                            />
-                        )}
+
 
                         {/* Selected Files Preview */}
                         {files.length > 0 && (

@@ -279,7 +279,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     async markAsRead(@ConnectedSocket() client: Socket, @MessageBody() data: { ticketId: string, messageId: string }) {
 
         // Smart Buffer: If message is read via chat, cancel the pending email notification
-        const jobId = `msg-ntf-${data.messageId}`;
+        const jobId = `email-ntf-msg-${data.messageId}`;
         await this.emailService.cancelEmail(jobId);
 
         // Broadcast that a message was read
