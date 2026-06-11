@@ -27,7 +27,7 @@ jobs:
 
       - name: Upload DR Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dr-drill-report
           path: /tmp/dr-report.txt

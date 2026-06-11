@@ -30,7 +30,7 @@ jobs:
 
       - name: Upload Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ai-eval-results
           path: scripts/ai-eval/results.json
