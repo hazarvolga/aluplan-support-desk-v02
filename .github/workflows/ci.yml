@@ -15,7 +15,7 @@ jobs:
     name: Spec ↔ Code Consistency
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -28,7 +28,7 @@ jobs:
     name: Security & Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -65,7 +65,7 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aluplan_ci
       SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aluplan_shadow
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -117,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-and-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -140,7 +140,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-and-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -165,7 +165,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-and-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build Backend Container
         run: docker build -t aluplan-backend -f apps/backend/Dockerfile .
       - name: Trivy Vulnerability Scanner
