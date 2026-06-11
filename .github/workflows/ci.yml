@@ -107,7 +107,7 @@ jobs:
       - name: Analyze Frontend Bundle
         run: cd apps/frontend && pnpm run analyze
       - name: Upload Bundle Analysis
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bundle-analysis
           path: apps/frontend/.next/analyze/
@@ -155,7 +155,7 @@ jobs:
         run: cd apps/frontend && npx playwright test
       - name: Upload E2E Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: apps/frontend/playwright-report/
