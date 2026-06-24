@@ -4,7 +4,8 @@ import { useEffect } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Bold, Heading2, Heading3, Italic, List, ListOrdered } from 'lucide-react';
+import TipTapLink from '@tiptap/extension-link';
+import { Bold, Heading2, Heading3, Italic, List, ListOrdered, Link as LinkIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,14 @@ export function RichTextEditor({
             Placeholder.configure({
                 placeholder,
             }),
+            TipTapLink.configure({
+                openOnClick: false,
+                autolink: true,
+                HTMLAttributes: {
+                    target: '_blank',
+                    rel: 'noopener noreferrer',
+                },
+            }),
         ],
         content: value || '',
         editorProps: {
@@ -50,7 +59,7 @@ export function RichTextEditor({
                 role: 'textbox',
                 'aria-multiline': 'true',
                 'aria-label': ariaLabel || placeholder || '',
-                class: 'min-h-24 px-3 py-3 text-[13px] leading-relaxed outline-none prose prose-invert max-w-none [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-base [&_h3]:font-semibold',
+                class: 'min-h-24 px-3 py-3 text-[13px] leading-relaxed outline-none prose prose-invert max-w-none [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-base [&_h3]:font-semibold [&_a]:text-cyan-400 [&_a]:underline hover:[&_a]:text-cyan-300',
             },
             handleKeyDown: (_view, event) => {
                 if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && !disabled) {
@@ -103,6 +112,26 @@ export function RichTextEditor({
             icon: Italic,
             active: editor?.isActive('italic') ?? false,
             onClick: () => runCommand(() => editor?.chain().focus().toggleItalic().run()),
+        },
+        {
+            label: 'Link',
+            icon: LinkIcon,
+            active: editor?.isActive('link') ?? false,
+            onClick: () => {
+                if (!editor || disabled) return;
+                const previousUrl = editor.getAttributes('link').href;
+                const url = window.prompt('URL Girin (http:// veya https:// ile başlamalı):', previousUrl || '');
+                if (url === null) return; // cancelled
+                if (url === '') {
+                    editor.chain().focus().extendMarkRange('link').unsetLink().run();
+                    return;
+                }
+                if (!/^https?:\/\//i.test(url)) {
+                    window.alert('URL http:// veya https:// ile başlamalıdır!');
+                    return;
+                }
+                editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+            },
         },
         {
             label: t('bulletList'),

@@ -760,7 +760,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                                 <div className={`p-3 text-[13px] leading-relaxed tracking-tight font-medium ${isSystem
                                                     ? 'bg-transparent text-muted-foreground italic text-center text-[11px]'
                                                     : isMe
-                                                        ? 'bg-primary text-primary-foreground border border-primary rounded-tl-lg rounded-bl-lg rounded-br-none shadow-sm'
+                                                        ? 'bg-primary text-primary-foreground border border-primary rounded-tl-lg rounded-bl-lg rounded-br-none shadow-sm [&_.rich-text-content_a]:!text-primary-foreground hover:[&_.rich-text-content_a]:!text-primary-foreground/80'
                                                         : 'bg-card border border-border/60 rounded-tr-lg rounded-br-lg rounded-bl-none shadow-sm'
                                                     } ${msg.isOptimistic ? 'opacity-70 italic' : ''}`}>
                                                     <RichTextRenderer content={msg.message} />
