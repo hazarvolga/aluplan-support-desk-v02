@@ -47,12 +47,15 @@ export class TicketsController {
     @ApiQuery({ name: 'assignedTo', required: false })
     @ApiQuery({ name: 'teamId', required: false })
     @ApiQuery({ name: 'isSlaBreached', required: false, type: Boolean })
+    @ApiQuery({ name: 'search', required: false })
+    @ApiQuery({ name: 'includeStatusCounts', required: false, type: Boolean })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
     findAll(@Query() query: any, @Request() req: any) {
         // If user is a customer, force filter by their own userId
         const userId = (req.user?.role?.toUpperCase() === 'CUSTOMER' || req.user?.role?.toUpperCase() === 'VIEWER') ? req.user.sub : query.userId;
         const isSlaBreached = query.isSlaBreached === undefined ? undefined : query.isSlaBreached === 'true';
+        const includeStatusCounts = query.includeStatusCounts === 'true';
 
         return this.ticketsService.findAll({
             status: query.status,
@@ -61,6 +64,8 @@ export class TicketsController {
             teamId: query.teamId,
             userId,
             isSlaBreached,
+            search: query.search,
+            includeStatusCounts,
             page: query.page ? parseInt(query.page) : 1,
             limit: query.limit ? parseInt(query.limit) : 20,
         });

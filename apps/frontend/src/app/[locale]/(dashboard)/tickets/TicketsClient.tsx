@@ -7,8 +7,7 @@ import {
     Clock,
     AlertCircle,
     CheckCircle2,
-    Filter,
-    ChevronDown,
+    Search,
     Check,
     Square,
     CheckSquare,
@@ -19,7 +18,6 @@ import {
     Globe,
     Cpu,
     User,
-    TrendingUp,
     Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,6 +30,7 @@ import { useAuth } from '@/components/auth/role-guard';
 
 const STATUS_COLORS: Record<string, string> = {
     NEW: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    DRAFT: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
     OPEN: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
     IN_PROGRESS: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
     PENDING_CUSTOMER: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
@@ -67,6 +66,9 @@ interface TicketsClientProps {
 }
 
 type TicketScope = 'mine' | 'all';
+type StatusCounts = Record<string, number>;
+
+const STATUS_ORDER = Object.keys(STATUS_COLORS);
 
 export default function TicketsClient({ initialTickets, initialTotal }: TicketsClientProps) {
     const t = useTranslations('tickets');
@@ -77,6 +79,8 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const [total, setTotal] = useState(initialTotal);
     const [loading, setLoading] = useState(initialTickets.length === 0);
     const [filter, setFilter] = useState('');
+    const [search, setSearch] = useState('');
+    const [statusCounts, setStatusCounts] = useState<StatusCounts | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [bulkLoading, setBulkLoading] = useState(false);
     const { user } = useAuth();
@@ -90,20 +94,26 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const isAdmin = roleStr === 'ADMIN' || roleStr === 'DEPARTMENT_MANAGER' || roleStr === 'TEAM_LEAD' || roleStr === 'SENIOR_AGENT';
     const canScopeTickets = Boolean(user && !isCustomer);
 
-    const load = useCallback(async (statusFilter: string = filter, scopeFilter: TicketScope = scope) => {
+    const load = useCallback(async (
+        statusFilter: string = filter,
+        scopeFilter: TicketScope = scope,
+        searchFilter: string = search,
+    ) => {
         setLoading(true);
         try {
-            const params: Record<string, string> = { limit: '100' };
+            const params: Record<string, string> = { limit: '100', includeStatusCounts: 'true' };
             if (statusFilter) params.status = statusFilter;
+            if (searchFilter.trim()) params.search = searchFilter.trim();
             if (scopeFilter === 'mine' && user?.id && !isCustomer) {
                 params.assignedTo = user.id;
             }
             const res = await api.tickets.list(params);
             setTickets(res.data ?? []);
             setTotal(res.total ?? 0);
+            setStatusCounts(res.statusCounts ?? null);
         } catch { /* handled */ }
         setLoading(false);
-    }, [filter, isCustomer, scope, user?.id]);
+    }, [filter, isCustomer, scope, search, user?.id]);
 
     // Auto-load tickets after the authenticated user is known.
     // Support team members should land directly on their own operational queue.
@@ -113,8 +123,8 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
         const initialScope: TicketScope = user.isSupportTeamMember ? 'mine' : 'all';
         didInitializeQueueRef.current = true;
         setScope(initialScope);
-        load(filter, initialScope);
-    }, [filter, initialTickets.length, load, user]);
+        load(filter, initialScope, search);
+    }, [filter, initialTickets.length, load, search, user]);
 
     const toggleSelect = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
@@ -137,7 +147,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
             await api.tickets.bulkUpdate({ ticketIds: selectedIds, status });
             toast.success(t('bulk.success', { count: selectedIds.length }));
             setSelectedIds([]);
-            load(filter, scope);
+            load(filter, scope, search);
         } catch (err: any) {
             toast.error(t('bulk.error', { message: err.message }));
         } finally {
@@ -152,7 +162,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
             await api.tickets.bulkDelete(selectedIds);
             toast.success(t('bulk.delete_success', { count: selectedIds.length }) || `${selectedIds.length} tickets deleted.`);
             setSelectedIds([]);
-            load(filter, scope);
+            load(filter, scope, search);
         } catch (err: any) {
             toast.error(err.message);
         } finally {
@@ -166,24 +176,40 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
         try {
             await api.tickets.delete(id);
             toast.success(t('delete_success', { number }) || `Ticket #${number} deleted.`);
-            load(filter, scope);
+            load(filter, scope, search);
         } catch (err: any) {
             toast.error(err.message);
         }
     };
 
-    const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const value = e.target.value;
+    const handleStatusChange = (value: string) => {
         setFilter(value);
         setSelectedIds([]);
-        load(value, scope);
+        load(value, scope, search);
     };
 
     const handleScopeChange = (nextScope: TicketScope) => {
         setScope(nextScope);
         setSelectedIds([]);
-        load(filter, nextScope);
+        load(filter, nextScope, search);
     };
+
+    const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setSelectedIds([]);
+        load(filter, scope, search);
+    };
+
+    const clearSearch = () => {
+        setSearch('');
+        setSelectedIds([]);
+        load(filter, scope, '');
+    };
+
+    const allStatusCount = statusCounts ? STATUS_ORDER.reduce((sum, status) => sum + (statusCounts[status] ?? 0), 0) : null;
+    const formatStatusCount = (status: string) => statusCounts ? String(statusCounts[status] ?? 0) : null;
+    const activeScopeLabel = scope === 'mine' ? t('filters.mine') : t('filters.all');
+    const activeStatusLabel = filter ? t(`status.${filter}`) : t('filters.all_statuses');
 
     return (
         <motion.div
@@ -224,6 +250,29 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                         </div>
                     )}
 
+                    <form
+                        onSubmit={handleSearchSubmit}
+                        className="relative group w-full sm:w-[280px]"
+                    >
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                        <input
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pl-9 pr-9 h-9 bg-white/5 border border-white/10 rounded-lg text-[12px] font-medium text-white placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all hover:bg-white/10"
+                            placeholder={t('filters.search_placeholder')}
+                        />
+                        {search && (
+                            <button
+                                type="button"
+                                onClick={clearSearch}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                                aria-label={t('filters.clear_search')}
+                            >
+                                <X className="h-3.5 w-3.5" />
+                            </button>
+                        )}
+                    </form>
+
                     <Button
                         onClick={() => window.location.href = `/${locale}/tickets/new`}
                         data-testid="create-ticket-button"
@@ -232,40 +281,35 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                         <Ticket className="w-3.5 h-3.5 mr-2" />
                         {t('new_ticket')}
                     </Button>
-
-                    <div className="relative group">
-                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                        <select
-                            value={filter}
-                            onChange={handleFilterChange}
-                            className="pl-9 pr-8 h-9 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-widest text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer hover:bg-white/10"
-                        >
-                            <option value="" className="bg-slate-900">{t('filters.all')}</option>
-                            {Object.keys(STATUS_COLORS).map((s) => (
-                                <option key={s} value={s} className="bg-slate-900">{t(`status.${s}`)}</option>
-                            ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                    </div>
                 </div>
             </div>
 
-            {/* Performance/Status Bar */}
-            <div className="flex gap-4 pb-2 overflow-x-auto no-scrollbar">
-                {Object.entries(STATUS_COLORS).slice(0, 5).map(([status, style]) => (
-                    <div key={status} className="flex flex-col min-w-[140px] bg-white/[0.02] border border-white/5 p-3 rounded-xl backdrop-blur-sm group hover:border-emerald-500/20 transition-all">
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">
+            {/* Filter Bar */}
+            <div className="space-y-3">
+                <div className="flex gap-2 pb-1 overflow-x-auto no-scrollbar">
+                    <button
+                        type="button"
+                        onClick={() => handleStatusChange('')}
+                        className={`h-9 shrink-0 rounded-lg border px-3 text-[10px] font-bold uppercase tracking-widest transition-all ${filter === '' ? 'border-primary/50 bg-primary/15 text-primary' : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-white/20 hover:text-white'}`}
+                    >
+                        {t('filters.all_statuses')}
+                        {allStatusCount !== null && <span className="ml-2 font-mono text-white/80">{allStatusCount}</span>}
+                    </button>
+                    {STATUS_ORDER.map((status) => (
+                        <button
+                            key={status}
+                            type="button"
+                            onClick={() => handleStatusChange(status)}
+                            className={`h-9 shrink-0 rounded-lg border px-3 text-[10px] font-bold uppercase tracking-widest transition-all ${filter === status ? 'border-primary/50 bg-primary/15 text-primary' : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-white/20 hover:text-white'}`}
+                        >
                             {t(`status.${status}`)}
-                        </span>
-                        <div className="flex items-baseline gap-2 mt-1">
-                            <span className="text-xl font-bold font-mono text-white">--</span>
-                            <div className="flex items-center text-[10px] text-emerald-500 font-bold">
-                                <TrendingUp className="w-3 h-3 mr-0.5" />
-                                0%
-                            </div>
-                        </div>
-                    </div>
-                ))}
+                            {formatStatusCount(status) !== null && <span className="ml-2 font-mono text-white/80">{formatStatusCount(status)}</span>}
+                        </button>
+                    ))}
+                </div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                    {t('filters.summary', { scope: activeScopeLabel, status: activeStatusLabel })}
+                </div>
             </div>
 
             {/* Bulk Action Bar (Floating) */}
@@ -352,6 +396,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.subject')}</th>
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">{t('table.header.status')}</th>
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">{t('table.header.priority')}</th>
+                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.assignee')}</th>
                                     <th className="px-6 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-right">{t('table.header.timestamp')}</th>
                                     {isAdmin && <th className="px-6 w-12"></th>}
                                 </tr>
@@ -433,6 +478,12 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                                                     <span className={`text-[10px] font-black uppercase italic tracking-tighter ${PRIORITY_COLORS[ticket.priority] ?? ''}`}>
                                                         {t(`priority.${ticket.priority}`)}
                                                     </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4">
+                                                <div className="flex items-center gap-2 text-[12px] text-slate-300">
+                                                    <User className="h-3.5 w-3.5 text-muted-foreground" />
+                                                    <span className="font-medium">{ticket.assignee?.fullName || t('filters.unassigned')}</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 text-right font-mono text-[11px] text-muted-foreground group-hover:text-white transition-colors">

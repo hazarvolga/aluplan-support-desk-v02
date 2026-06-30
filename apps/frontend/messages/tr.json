@@ -664,7 +664,12 @@
     "delete_confirm_desc": "Bu destek talebini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
     "filters": {
       "mine": "Bana Atananlar",
-      "all": "Tüm Talepler"
+      "all": "Tüm Talepler",
+      "all_statuses": "Tüm Durumlar",
+      "search_placeholder": "Talep, müşteri veya şirket ara",
+      "clear_search": "Aramayı temizle",
+      "summary": "Kapsam: {scope} • Durum: {status}",
+      "unassigned": "Atanmamış"
     },
     "new_ticket": "YENİ TALEP",
     "bulk": {
@@ -684,6 +689,7 @@
         "subject": "Olay Tanımı",
         "status": "Durum",
         "priority": "Kritiklik",
+        "assignee": "Atanan",
         "timestamp": "Zaman Damgası"
       },
       "badges": {
@@ -693,6 +699,7 @@
     },
     "status": {
       "NEW": "YENİ",
+      "DRAFT": "TASLAK",
       "OPEN": "AÇIK",
       "IN_PROGRESS": "İŞLEMDE",
       "PENDING_CUSTOMER": "BEKLEMEDE",

@@ -454,7 +454,7 @@ export const api = {
     tickets: {
         list: (params?: Record<string, string>) => {
             const q = params ? '?' + new URLSearchParams(params).toString() : '';
-            return request<{ data: any[]; total: number }>(`/tickets${q}`);
+            return request<{ data: any[]; total: number; statusCounts?: Record<string, number> }>(`/tickets${q}`);
         },
         get: (id: string) => request<any>(`/tickets/${id}`),
         getAiTrace: (id: string) => request<any>(`/tickets/${id}/ai-trace`),

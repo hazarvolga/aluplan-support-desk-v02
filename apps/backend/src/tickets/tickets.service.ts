@@ -208,10 +208,13 @@ export class TicketsService {
         teamId?: string;
         userId?: string; // Filter by creator
         isSlaBreached?: boolean;
+        search?: string;
+        includeStatusCounts?: boolean;
         page?: number;
         limit?: number;
     }) {
-        const { status, priority, assignedTo, teamId, userId, isSlaBreached, page = 1, limit = 20 } = params;
+        const { status, priority, assignedTo, teamId, userId, isSlaBreached, search, includeStatusCounts = false, page = 1, limit = 20 } = params;
+        const normalizedSearch = search?.trim();
 
         // If teamId is provided, get all userIds in that team
         let teamMemberIds: string[] = [];
@@ -228,6 +231,15 @@ export class TicketsService {
             ...(priority && { priority }),
             ...(userId && { userId }),
             ...(isSlaBreached !== undefined && { isSlaBreached }),
+            ...(normalizedSearch && {
+                OR: [
+                    { ticketNumber: { contains: normalizedSearch, mode: 'insensitive' } },
+                    { subject: { contains: normalizedSearch, mode: 'insensitive' } },
+                    { creator: { is: { fullName: { contains: normalizedSearch, mode: 'insensitive' } } } },
+                    { creator: { is: { email: { contains: normalizedSearch, mode: 'insensitive' } } } },
+                    { creator: { is: { customerProfile: { is: { companyName: { contains: normalizedSearch, mode: 'insensitive' } } } } } },
+                ],
+            }),
             deletedAt: null, // Always filter out soft-deleted tickets
         };
 
@@ -246,7 +258,13 @@ export class TicketsService {
             where.assignedTo = { in: teamMemberIds };
         }
 
-        const [data, total] = await Promise.all([
+        let statusCountsWhere: Prisma.TicketWhereInput | undefined;
+        if (includeStatusCounts) {
+            const { status: _ignoredStatus, ...scopeWhere } = where;
+            statusCountsWhere = scopeWhere;
+        }
+
+        const [data, total, statusBuckets] = await Promise.all([
             this.prisma.ticket.findMany({
                 where,
                 include: {
@@ -275,9 +293,32 @@ export class TicketsService {
                 take: limit,
             }),
             this.prisma.ticket.count({ where }),
+            includeStatusCounts
+                ? this.prisma.ticket.groupBy({
+                    by: ['status'],
+                    where: statusCountsWhere,
+                    _count: { _all: true },
+                })
+                : Promise.resolve([]),
         ]);
 
-        return { data, total, page, limit, pages: Math.ceil(total / limit) };
+        const statusCounts = Object.values(TicketStatus).reduce<Record<TicketStatus, number>>((acc, ticketStatus) => {
+            acc[ticketStatus] = 0;
+            return acc;
+        }, {} as Record<TicketStatus, number>);
+
+        for (const bucket of statusBuckets as Array<{ status: TicketStatus; _count: number | { _all?: number } }>) {
+            statusCounts[bucket.status] = typeof bucket._count === 'number' ? bucket._count : bucket._count?._all ?? 0;
+        }
+
+        return {
+            data,
+            total,
+            page,
+            limit,
+            pages: Math.ceil(total / limit),
+            ...(includeStatusCounts && { statusCounts }),
+        };
     }
 
     // =============================================

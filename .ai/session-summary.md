@@ -1,5 +1,31 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-06-30 Ticket Filter Hardening
+
+### What changed
+
+- Replaced the tickets page status dropdown/fake KPI cards with status chips backed by the backend ticket list query.
+- Added submit-based ticket search for ticket number, subject, customer, email, and customer company fields.
+- Added `includeStatusCounts` support to the tickets API so status counters are computed from the same scoped/search-filtered queue while intentionally ignoring the active status filter.
+- Added `DRAFT` as a first-class ticket status in the frontend status model and `tr/en/de` ticket status translations. This closes the live `MISSING_MESSAGE: tickets.status.DRAFT (tr)` failure class observed on production.
+- Hardened frontend/backend deployment order: if an older backend omits `statusCounts`, the frontend hides counters instead of rendering misleading zeroes.
+- Added an assignee column so "Bana Atananlar" and "Tüm Talepler" scope changes are visible in the table, not only in the request URL.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend test -- tickets.service.spec.ts` passed with 23 tests.
+- `pnpm --filter @aluplan/frontend exec vitest run 'src/app/[locale]/(dashboard)/tickets/TicketsPage.spec.tsx'` passed with 10 tests.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `pnpm --filter @aluplan/frontend typecheck` passed.
+- `pnpm i18n:check` passed for `tr`, `en`, and `de`.
+- `git diff --check` passed.
+
+### Notes
+
+- Restore point before the implementation: branch `codex/restore-ticket-filters-20260630-085348` at commit `17331a38`.
+- Deploy backend first, then frontend, so the live UI receives `statusCounts` immediately.
+- Remaining production performance risk should be watched through real API latency/query telemetry after deploy because search uses relation-aware contains filters; the UI only submits search on form submit, so it does not query on every keystroke.
+
 ## Follow-up - 2026-05-26 SupportAnswerOrchestrator Customer/Admin Parity
 
 ### What changed

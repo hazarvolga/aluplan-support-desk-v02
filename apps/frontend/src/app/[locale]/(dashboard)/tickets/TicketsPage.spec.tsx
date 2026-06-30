@@ -90,14 +90,21 @@ describe('TicketsPage', () => {
         const tickets = [
             { id: 't1', ticketNumber: 'SUP-00001', subject: 'Test ticket', status: 'OPEN', priority: 'MEDIUM', channel: 'WEB', createdAt: new Date().toISOString() }
         ];
+        let requestedUrl = '';
+        server.use(
+            http.get(`${API_BASE}/tickets`, ({ request }) => {
+                requestedUrl = request.url;
+                return HttpResponse.json({ data: [], total: 0, statusCounts: { OPEN: 1, DRAFT: 2 } });
+            }),
+        );
+
         render(<TicketsClient initialTickets={tickets} initialTotal={1} />);
 
         await waitFor(() => {
             expect(screen.queryByText(/table.loading/i)).toBeNull();
         });
 
-        const select = screen.getByRole('combobox');
-        fireEvent.change(select, { target: { value: 'OPEN' } });
+        fireEvent.click(screen.getByRole('button', { name: /status\.OPEN/i }));
 
         // Component should show loading again
         expect(screen.getByText(/table.loading/i)).toBeDefined();
@@ -105,6 +112,51 @@ describe('TicketsPage', () => {
         await waitFor(() => {
             expect(screen.queryByText(/table.loading/i)).toBeNull();
         });
+
+        const url = new URL(requestedUrl);
+        expect(url.searchParams.get('status')).toBe('OPEN');
+        expect(url.searchParams.get('includeStatusCounts')).toBe('true');
+    });
+
+    it('renders draft status as a first-class filter option', async () => {
+        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+
+        server.use(
+            http.get(`${API_BASE}/tickets`, () => {
+                return HttpResponse.json({
+                    data: [],
+                    total: 0,
+                    statusCounts: { DRAFT: 1, OPEN: 0 },
+                });
+            }),
+        );
+
+        render(<TicketsClient initialTickets={[]} initialTotal={0} />);
+
+        await waitFor(() => {
+            expect(screen.getByText(/table.empty/i)).toBeDefined();
+        }, { timeout: 10000 });
+
+        expect(screen.getByRole('button', { name: /status\.DRAFT1/i })).toBeDefined();
+    });
+
+    it('does not show misleading zero counts when an older backend omits statusCounts', async () => {
+        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+
+        server.use(
+            http.get(`${API_BASE}/tickets`, () => {
+                return HttpResponse.json({ data: [], total: 3 });
+            }),
+        );
+
+        render(<TicketsClient initialTickets={[]} initialTotal={0} />);
+
+        await waitFor(() => {
+            expect(screen.getByText(/table.empty/i)).toBeDefined();
+        }, { timeout: 10000 });
+
+        expect(screen.getByRole('button', { name: /^status\.OPEN$/i })).toBeDefined();
+        expect(screen.queryByRole('button', { name: /status\.OPEN\s+0/i })).toBeNull();
     });
 
     it('loads the support agent queue scoped to the signed-in user', async () => {
@@ -129,6 +181,35 @@ describe('TicketsPage', () => {
         const url = new URL(requestedUrl);
         expect(url.searchParams.get('assignedTo')).toBe('agent-1');
         expect(url.searchParams.get('limit')).toBe('100');
+        expect(url.searchParams.get('includeStatusCounts')).toBe('true');
+    });
+
+    it('keeps support scope when status chip changes', async () => {
+        (useAuth as any).mockReturnValue({
+            user: { id: 'agent-1', role: 'ADMIN', isSupportTeamMember: true },
+        });
+
+        const requestedUrls: string[] = [];
+        server.use(
+            http.get(`${API_BASE}/tickets`, ({ request }) => {
+                requestedUrls.push(request.url);
+                return HttpResponse.json({ data: [], total: 0, statusCounts: { OPEN: 2 } });
+            }),
+        );
+
+        render(<TicketsClient initialTickets={[]} initialTotal={0} />);
+
+        await waitFor(() => {
+            expect(screen.getByText(/table.empty/i)).toBeDefined();
+        }, { timeout: 10000 });
+
+        fireEvent.click(screen.getByRole('button', { name: /status\.OPEN/i }));
+
+        await waitFor(() => {
+            const lastUrl = new URL(requestedUrls[requestedUrls.length - 1]);
+            expect(lastUrl.searchParams.get('status')).toBe('OPEN');
+            expect(lastUrl.searchParams.get('assignedTo')).toBe('agent-1');
+        });
     });
 
     it('loads the full queue by default for admins outside support teams', async () => {

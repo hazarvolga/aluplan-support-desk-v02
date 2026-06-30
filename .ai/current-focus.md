@@ -2,6 +2,13 @@
 
 ## Active Work
 
+- Ticket filter hardening completed locally:
+  - tickets page filters now use explicit status chips plus scope and submit-based search instead of the previous status dropdown/fake metric cards.
+  - backend list API supports `search` and `includeStatusCounts`; status counters respect scope/search while ignoring only the active status filter.
+  - `DRAFT` is now included in the frontend status model and `tr/en/de` translations, closing the production `tickets.status.DRAFT` missing-message class.
+  - frontend hides status counters when `statusCounts` is absent, avoiding misleading zeroes during backend/frontend deploy skew.
+  - targeted backend/frontend tests, backend/frontend typecheck, i18n check, and `git diff --check` passed on 2026-06-30.
+  - deploy order: backend first, then frontend; monitor ticket list API latency after deploy because relation-aware search is production-data dependent.
 - SupportAnswerOrchestrator parity fix completed locally:
   - live SUP-00136 showed customer ticket-opening AI returning `NO_MATCH` before synthesis while admin ANN could draft a useful answer from the same intent.
   - the retrieval-context acceptance decision now lives in `SupportAnswerOrchestrator.shouldGenerateFromRetrievedContext(...)` instead of being a raw threshold `if` inside customer `AiQueryService`.

@@ -340,6 +340,64 @@ describe('TicketsService', () => {
                 );
             });
 
+            it('should return status counts for the current scope when requested', async () => {
+                // Arrange
+                prisma.ticket.findMany.mockResolvedValue([]);
+                prisma.ticket.count.mockResolvedValue(2);
+                prisma.ticket.groupBy.mockResolvedValue([
+                    { status: TicketStatus.OPEN, _count: { _all: 2 } },
+                    { status: TicketStatus.IN_PROGRESS, _count: { _all: 1 } },
+                ]);
+
+                // Act
+                const result = await service.findAll({
+                    status: TicketStatus.OPEN,
+                    assignedTo: 'agent1',
+                    search: 'Baytec',
+                    includeStatusCounts: true,
+                });
+
+                // Assert
+                expect(result.statusCounts?.OPEN).toBe(2);
+                expect(result.statusCounts?.IN_PROGRESS).toBe(1);
+                expect(result.statusCounts?.CLOSED).toBe(0);
+                const findWhere = prisma.ticket.findMany.mock.calls[0][0].where;
+                const countWhere = prisma.ticket.count.mock.calls[0][0].where;
+                const groupWhere = prisma.ticket.groupBy.mock.calls[0][0].where;
+
+                expect(findWhere.OR).toEqual(expect.arrayContaining([
+                    expect.objectContaining({
+                        ticketNumber: expect.objectContaining({ contains: 'Baytec', mode: 'insensitive' }),
+                    }),
+                    expect.objectContaining({
+                        subject: expect.objectContaining({ contains: 'Baytec', mode: 'insensitive' }),
+                    }),
+                    expect.objectContaining({
+                        creator: expect.objectContaining({
+                            is: expect.objectContaining({
+                                customerProfile: expect.objectContaining({
+                                    is: expect.objectContaining({
+                                        companyName: expect.objectContaining({ contains: 'Baytec', mode: 'insensitive' }),
+                                    }),
+                                }),
+                            }),
+                        }),
+                    }),
+                ]));
+                expect(countWhere.OR).toEqual(findWhere.OR);
+                expect(prisma.ticket.groupBy).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        by: ['status'],
+                        where: expect.objectContaining({
+                            assignedTo: 'agent1',
+                        }),
+                        _count: { _all: true },
+                    })
+                );
+                expect(groupWhere.OR).toEqual(findWhere.OR);
+                expect(groupWhere).not.toHaveProperty('status');
+            });
+
             it('should filter tickets by teamId', async () => {
                 // Arrange
                 const teamId = 'team1';

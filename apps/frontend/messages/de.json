@@ -664,7 +664,12 @@
     "delete_confirm_desc": "Sind Sie sicher, dass Sie dieses Ticket löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
     "filters": {
       "mine": "Mir Zugewiesen",
-      "all": "Alle Anfragen"
+      "all": "Alle Anfragen",
+      "all_statuses": "Alle Status",
+      "search_placeholder": "Anfrage, Kunde oder Unternehmen suchen",
+      "clear_search": "Suche löschen",
+      "summary": "Umfang: {scope} • Status: {status}",
+      "unassigned": "Nicht zugewiesen"
     },
     "new_ticket": "NEUE ANFRAGE",
     "bulk": {
@@ -684,6 +689,7 @@
         "subject": "Ereignisdefinition",
         "status": "Status",
         "priority": "Kritikalität",
+        "assignee": "Zugewiesen",
         "timestamp": "Zeitstempel"
       },
       "badges": {
@@ -693,6 +699,7 @@
     },
     "status": {
       "NEW": "NEU",
+      "DRAFT": "ENTWURF",
       "OPEN": "OFFEN",
       "IN_PROGRESS": "IN_BEARBEITUNG",
       "PENDING_CUSTOMER": "AUSSTEHEND",
