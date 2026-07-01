@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:26-alpine AS base
 RUN npm install -g pnpm
 
 FROM base AS builder
@@ -31,7 +31,7 @@ ENV NODE_ENV=production
 RUN NODE_OPTIONS="--max-old-space-size=2048" NEXT_MEMORY_WORKERS=0 NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL pnpm --filter @aluplan/frontend build
 
 
-FROM node:20-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
