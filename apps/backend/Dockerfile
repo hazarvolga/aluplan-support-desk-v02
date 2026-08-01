@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:25-alpine AS base
 RUN apk add --no-cache openssl fontconfig
 RUN npm install -g pnpm@9.15.4
 
@@ -26,7 +26,7 @@ RUN pnpm install --frozen-lockfile && \
     NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/database db:generate && \
     NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/backend build
 
-FROM node:20-alpine AS runner
+FROM node:25-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 # Playwright/Chromium dependencies for Alpine
