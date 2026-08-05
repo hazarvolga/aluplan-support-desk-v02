@@ -162,8 +162,10 @@ export class AuthController {
         return this.authService.verifyEmail(token);
     }
 
-    @Public()
+    @UseGuards(JwtAuthGuard, RbacGuard)
+    @Roles('ADMIN')
     @Get('test-email-config')
+    @ApiBearerAuth()
     @ApiOperation({ summary: 'Test current email configuration state' })
     async testEmailConfig() {
         return this.authService.testEmailConfig();

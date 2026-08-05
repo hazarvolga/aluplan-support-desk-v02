@@ -428,4 +428,49 @@ describe('AuthService', () => {
             });
         });
     });
+
+    describe('testEmailConfig', () => {
+        it('reports whether a Resend key exists without leaking its prefix', async () => {
+            email.healthCheck.mockResolvedValue({ status: 'ok' });
+            mockConfigService.get.mockImplementation((key: string) => {
+                switch (key) {
+                    case 'RESEND_API_KEY':
+                        return 're_live_secret_value';
+                    case 'MAIL_FROM':
+                        return 'support@example.com';
+                    case 'FRONTEND_URL':
+                        return 'https://allplan.net.tr';
+                    default:
+                        return 'test-value';
+                }
+            });
+            prisma.setting = {
+                findMany: jest.fn().mockResolvedValue([
+                    { key: 'email.active_provider', value: 'resend' },
+                ]),
+            };
+
+            const result = await service.testEmailConfig();
+
+            expect(result.config.env).toEqual({
+                hasResendKey: true,
+                mailFrom: 'support@example.com',
+                frontendUrl: 'https://allplan.net.tr',
+            });
+            expect(result.config.env).not.toHaveProperty('resendKeyPrefix');
+            expect(JSON.stringify(result)).not.toContain('re_live_secret');
+            expect(prisma.setting.findMany).toHaveBeenCalledWith({
+                where: {
+                    key: {
+                        in: [
+                            'email.active_provider',
+                            'general.frontend_url',
+                            'branding.logo_url',
+                            'branding.help_center_url'
+                        ]
+                    }
+                }
+            });
+        });
+    });
 });

@@ -4,6 +4,10 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ConfigService } from '@nestjs/config';
+import { IS_PUBLIC_KEY } from './decorators/public.decorator';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RbacGuard } from '../rbac/rbac.guard';
+import { ROLES_KEY } from '../rbac/decorators/rbac.decorators';
 
 describe('AuthController', () => {
     let controller: AuthController;
@@ -19,6 +23,7 @@ describe('AuthController', () => {
         resetPassword: jest.fn(),
         getProfile: jest.fn(),
         verifyEmail: jest.fn(),
+        testEmailConfig: jest.fn(),
     };
     const mockConfigService = {
         get: jest.fn().mockReturnValue('test'),
@@ -174,6 +179,37 @@ describe('AuthController', () => {
             // Assert
             expect(mockAuthService.forceLogout).toHaveBeenCalledWith(userId);
             expect(result).toEqual({ success: true, message: 'All sessions invalidated', userId });
+        });
+    });
+
+    describe('testEmailConfig', () => {
+        it('is admin-only and not public', () => {
+            const publicMetadata = Reflect.getMetadata(
+                IS_PUBLIC_KEY,
+                AuthController.prototype.testEmailConfig,
+            );
+            const guards = Reflect.getMetadata(
+                '__guards__',
+                AuthController.prototype.testEmailConfig,
+            );
+            const roles = Reflect.getMetadata(
+                ROLES_KEY,
+                AuthController.prototype.testEmailConfig,
+            );
+
+            expect(publicMetadata).toBeUndefined();
+            expect(guards).toEqual([JwtAuthGuard, RbacGuard]);
+            expect(roles).toEqual(['ADMIN']);
+        });
+
+        it('delegates admin email config diagnostics to authService', async () => {
+            const expectedResult = { config: { env: { hasResendKey: true } } };
+            mockAuthService.testEmailConfig.mockResolvedValue(expectedResult);
+
+            const result = await controller.testEmailConfig();
+
+            expect(mockAuthService.testEmailConfig).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(expectedResult);
         });
     });
 });

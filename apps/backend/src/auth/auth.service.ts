@@ -455,7 +455,6 @@ const hash = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
             config: {
                 env: {
                     hasResendKey: !!_envKey,
-                    resendKeyPrefix: _envKey ? `${_envKey.substring(0, 10)}...` : null,
                     mailFrom: _mailFrom,
                     frontendUrl: _frontendUrlEnv,
                 },
