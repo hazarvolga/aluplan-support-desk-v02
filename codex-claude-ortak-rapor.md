@@ -462,3 +462,11 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - `CUSTOMER`/`VIEWER`, kendi ticket'ına erişse bile dahili personele ait `isInternal` mesajlara attachment ekleyemez. Staff rolleri mevcut merkezi `TicketAccessService` kararını kullanır.
 - Odak doğrulaması: Faz 2 backend seti 4 suite / 61 test geçti; `pnpm --filter @aluplan/backend typecheck` geçti. Bu checkpoint canlı iki-hesap attachment smoke testi yerine geçmez.
 - Kapanmamış kapsam: Faz 2.3 alan-seviyesi ticket update allow-list (`assignedTo`, yönetimsel alanlar) sıradaki kod fazıdır.
+
+### 2026-08-05 — Codex — Faz 2.3 müşteri ticket update alan sınırı yerel checkpoint
+
+- `TicketsService.update()` artık DTO'yu körlemesine Prisma update'e yaymıyor; izinli alanlardan kontrollü update payload'u oluşturuyor. DTO dışı `teamId`/`departmentId` gibi alanlar service seviyesinde de update payload'una girmez.
+- `CUSTOMER`/`VIEWER` generic `PATCH /tickets/:id` üzerinden `assignedTo`, `priority`, `teamId` veya `departmentId` değiştirmeye çalışırsa 403 alır. VIP müşterinin mevcut `chatStatus: REQUESTED` canlı chat talep akışı korunur.
+- Staff update davranışı korunmuştur; priority değiştiğinde mevcut SLA recalculation akışı devam eder.
+- TDD kanıtı: yeni negatif testler önce kırmızı görüldü, fix sonrası `tickets.service.spec.ts` 25/25 geçti. Faz 2 backend seti 4 suite / 63 test geçti; `pnpm --filter @aluplan/backend typecheck` geçti.
+- Faz 2 nesne/alan yetkilendirme ana kod kapıları bu checkpoint ile yerelde kapatıldı. Kalan doğrulama: canlıya çıkmadan önce iki-hesap smoke testi ve frontend UI rol matrisi.
