@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, Logger, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { WhatsAppService } from './whatsapp.service';
 import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
+import { Public } from '../auth/decorators/public.decorator';
+import { WhatsAppWebhookSignatureGuard } from './guards/whatsapp-webhook-signature.guard';
 
 @ApiTags('WhatsApp')
 @Controller('whatsapp')
@@ -16,6 +18,7 @@ export class WhatsAppController {
     ) { }
 
     @Get('webhook')
+    @Public()
     @ApiOperation({ summary: 'WhatsApp Webhook Verification' })
     @ApiQuery({ name: 'hub.mode', required: true })
     @ApiQuery({ name: 'hub.verify_token', required: true })
@@ -38,6 +41,8 @@ export class WhatsAppController {
     }
 
     @Post('webhook')
+    @Public()
+    @UseGuards(WhatsAppWebhookSignatureGuard)
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Handle incoming WhatsApp messages' })
     async handleWebhook(@Body() body: any) {
