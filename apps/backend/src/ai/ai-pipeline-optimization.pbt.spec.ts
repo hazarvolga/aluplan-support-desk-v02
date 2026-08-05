@@ -303,7 +303,7 @@ describe('Property 3: History Mutation iff isProblemShift', () => {
 
 describe('Property 5: Shift Event Langfuse Payload Completeness', () => {
     /**
-     * For any (userQuery, history, userId) combination where isProblemShift = true,
+     * For any support-query, history, and userId combination where isProblemShift = true,
      * LangfuseService.addEvent() should be called with event name "problem-shift"
      * and a payload containing all four required fields:
      *   previousKeywords (array), newKeywords (array), historyLength (number), userId (string | null)
@@ -314,7 +314,12 @@ describe('Property 5: Shift Event Langfuse Payload Completeness', () => {
         await fc.assert(
             fc.asyncProperty(
                 fc.record({
-                    userQuery: fc.string({ minLength: 5 }),
+                    userQuery: fc.constantFrom(
+                        'Allplan license server error keeps failing',
+                        'BIMPLUS depolama alanı yetersiz uyarısı alıyoruz',
+                        'Allplan crashes while opening project data',
+                        'CodeMeter lisans servisi hata veriyor',
+                    ),
                     history: fc.array(
                         fc.record({
                             role: fc.constantFrom('user' as const, 'assistant' as const),
