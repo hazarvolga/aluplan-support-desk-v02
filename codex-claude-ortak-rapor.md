@@ -574,3 +574,10 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - Lint'i bloklayan eski mekanik `prefer-const` hataları temizlendi. Dynamic `require` kuralı, mevcut parser fallback davranışını bu fazda refactor etmemek için warning seviyesine indirildi; kalan `any/unused` uyarıları ayrı tip-hijyen borcudur ve bu BULGU'nun güvenlik/logging kapsamını bloke etmez.
 - Odak doğrulaması: `pnpm --filter @aluplan/backend lint` → **0 error / warning-only**; production runtime console taraması → **0 sonuç**.
 - Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti; `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts prompt-context-builder.service.pbt.spec.ts --runInBand` → **3 suite / 68 passed / 1 skipped**; `pnpm --filter @aluplan/backend test -- hotinfo-parser.service.spec.ts --runInBand` → **1 suite / 11 test geçti**.
+
+### 2026-08-05 — Codex — Faz 5.4 BULGU-24 sessiz hata yutma logları yerel checkpoint
+
+- Raporda açıkça işaretlenen iki sessiz hata yutma noktası kapatıldı: `main.ts` içindeki bozuk `REDIS_URL` parse hatası artık fallback'e devam ederken `Logger.warn` üretir; Gemini stream SSE parse hatası artık akışı kesmeden malformed chunk için `logger.warn` üretir.
+- Gemini streaming davranışı bilinçli olarak değiştirilmedi: bozuk tek SSE satırı stream'i abort etmez, sonraki geçerli token'lar akmaya devam eder. Fark yalnızca artık teşhis edilebilir log bırakmasıdır.
+- Odak doğrulaması: `pnpm --filter @aluplan/backend test -- gemini.service.spec.ts --runInBand` → **1 suite / 5 test geçti**; malformed Gemini stream chunk için yeni regression testi eklendi.
+- Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti; `pnpm --filter @aluplan/backend lint` → **0 error / warning-only**. Hedefli `rg` taraması `main.ts` ve `gemini.service.ts` içindeki raporlanmış boş catch kalıplarını temiz gösterdi.
