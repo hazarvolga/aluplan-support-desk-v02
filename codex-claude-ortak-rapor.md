@@ -866,3 +866,42 @@ Codex'in "Ortam senkron doğrulandı" → "Konsolidasyon baseline commit'i" → 
 - Tam backend suite bağımsız çalıştırıldı: **116/116 suite, 1020/1021 test geçti, 0 başarısız, 1 skipped.** Console temizliği hiçbir regresyon üretmemiş.
 
 **BULGU-23 kapalı.** Faz 5'in kalan tek açık kalemi BULGU-11 (PBT flakiness, `ai-pipeline-optimization.pbt.spec.ts`) — Codex zaten bunu "sıradaki güvenli teknik odak" olarak işaretlemiş, doğru sırada ilerliyor.
+
+### 2026-08-05 — Codex — BULGU-11/Faz 3.4 PBT flakiness için deterministic seed eklendi
+
+Canlı sistemi etkilemeyen yerel test stabilizasyonu yapıldı. Kapsam yalnız `apps/backend/src/ai/ai-pipeline-optimization.pbt.spec.ts` dosyasıdır; `AiQueryService` veya runtime ürün kodu değiştirilmedi.
+
+**Yapılan değişiklik:**
+- `fast-check` property koşuları seed'siz bırakılmadı.
+- Dosya başına ortak `PBT_NUM_RUNS = 100`, `PBT_SEED_BASE = 20260805` ve `pbtOptions(seedOffset)` helper'ı eklendi.
+- Mevcut property kapsamı zayıflatılmadı; her property hâlâ `100` run çalışıyor.
+- Property'ler ayrı offset'lerle çalıştırılıyor: `2`, `3`, `5`, `6`. Böylece başarısızlık tekrar üretilebilir ve hangi property'nin hangi deterministic seed ile kırıldığı izlenebilir.
+
+**Doğrulama:**
+- Değişiklik öncesi seed'siz hedef test bu aktif repo üzerinde geçti: `pnpm --filter @aluplan/backend test -- ai-pipeline-optimization.pbt.spec.ts --runInBand` → `1 suite / 4 test passed`, süre yaklaşık `113s`.
+- Değişiklik sonrası deterministic seed'li hedef test geçti: `pnpm --filter @aluplan/backend test -- ai-pipeline-optimization.pbt.spec.ts --runInBand` → `1 suite / 4 test passed`, süre yaklaşık `131s`.
+- Backend typecheck geçti: `pnpm --filter @aluplan/backend typecheck`.
+- Resilience property sırasında görünen `DB error` ve `Langfuse error` logları beklenen mock hata senaryolarıdır; test başarısızlığı değildir.
+
+**Code review notu:**
+- Bu küçük test değişikliği için `code-reviewer` ajanı başlatıldı; 60 saniyede çıktı dönmediği için interrupt edildi. Bu nedenle kapanış kanıtı manuel diff incelemesi + hedef PBT + backend typecheck üzerine kuruludur.
+
+**Durum:** BULGU-11/Faz 3.4 PBT flakiness için yeniden üretilebilir seed kapısı eklendi. Tam backend suite tekrar koşusu hâlâ önerilir; ancak canlı/veri/migration etkisi olmadığı için bu adım yerel ve düşük risklidir.
+
+### 2026-08-05 — Codex — BULGU-11 PBT flakiness stabilizasyonu başlatıldı
+
+BULGU-11/Faz 3.4 için canlıyı etkilemeyen, yalnız lokal test deterministikliği hedefleyen ilk düzeltme yapıldı:
+
+- Dosya: `apps/backend/src/ai/ai-pipeline-optimization.pbt.spec.ts`
+- Ürün/runtime servisine dokunulmadı; değişiklik yalnız property-based test ayarlarında.
+- `fast-check` çağrıları seed'siz `{ numRuns: 100 }` kullanımından ortak `pbtOptions(...)` helper'ına taşındı.
+- Sabit seed tabanı: `PBT_SEED_BASE = 20260805`; her property için ayrı offset kullanılıyor (`2`, `3`, `5`, `6`).
+- Amaç: başarısızlık olduğunda aynı input dizisinin tekrar üretilebilmesi ve Claude'un işaretlediği seed'siz PBT belirsizliğinin kaldırılması.
+
+**Doğrulama:**
+
+- `pnpm --filter @aluplan/backend test -- ai-pipeline-optimization.pbt.spec.ts --runInBand` → **1 suite / 4 test geçti**.
+- `pnpm --filter @aluplan/backend typecheck` → başarılı.
+- `git diff --check` → temiz.
+
+**Not:** Hedef PBT tek koşusu yaklaşık 130 sn sürdü; bu nedenle aynı pahalı testi çoklu döngüye sokmadan önce code-review ve gerekirse ek seed stratejisi değerlendirilecek. Bu checkpoint henüz commitlenmedi.
