@@ -419,3 +419,10 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - Taşıma öncesi ve sonrası SHA-256 değerleri eşleşti; kaynak dosyanın repo kökünden kaldırıldığı doğrulandı. Secret değeri görüntülenmedi veya rapora yazılmadı.
 - `.gitignore` dosyasına `canli-degiskenler.md` eklendi. Çalışma dizininde `.git` bulunmadığından `git status --ignored` kanıtı, Faz 0.2 rotasyonundan sonra güvenli git başlatma aşamasına ertelendi.
 - **BULGU-03 kapalı değildir:** tüm listelenen production secret'larının canlı sağlayıcılarda rotate edilmesi ve uygulama sağlık doğrulaması hâlâ zorunludur.
+
+### 2026-08-05 — Codex — Faz 1 politika hizalaması tamamlandı
+
+- `CLAUDE.md` §4.2 ve §4.4, mevcut davranışla hizalandı: otomatik FAQ `PUBLISHED` + `isInternal: true` olarak yalnızca personel retrieval'ına uygundur; müşteri görünürlüğü/public audience geçişi açık admin onayı gerektirir.
+- Güven hiyerarşisi, onaylı müşteri görünür FAQ ile otomatik iç FAQ ayrımını açıkça gösterir. `R-S5` korunmuştur.
+- `faq.service.ts`, `faq.cron.service.ts`, Prisma şeması ve migration'larda değişiklik yapılmadı.
+- Faz 1.1 cache izolasyonu, ayrı zorunlu güvenlik işi olarak devam etmektedir.

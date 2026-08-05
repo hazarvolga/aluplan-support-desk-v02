@@ -149,11 +149,13 @@ Ticket kapanır
   └─► ticket-clustering.service.ts  (BullMQ, günlük 02:00)
         └─► Eşik: ≥5 ticket/7 gün + CSAT ≥ 4/5 + tutarlılık ≥ %70
               └─► FAQ adayı → TrainingQueue (Prisma model)
-                    └─► Admin onayı → KnowledgeArticle → KnowledgePoolEmbedding
+                    ├─► Otomatik iç FAQ (`PUBLISHED` + `isInternal: true`) → yalnızca personel retrieval'ı
+                    └─► Admin onayı → müşteri görünür KnowledgeArticle/FAQ → KnowledgePoolEmbedding
 ```
 
 **İhlal edilemez kurallar:**
-- `R-T1:` Admin onayı olmadan FAQ yayına alınamaz. Otomatik yayın **YASAK**.
+- `R-T1:` Otomatik FAQ yayını yalnızca iç kullanım için (`isInternal: true`) serbesttir; müşteri görünürlüğü veya public audience'a geçiş açık admin onayı gerektirir.
+- `R-T2:` Otomatik yayımlanan iç FAQ, `isInternal: true` durumunu korumalı ve müşteri retrieval'ına uygun olmamalıdır.
 - `R-T3:` CSAT < 3/5 olan ticket FAQ kaynağı olamaz.
 - `R-T5:` Reddedilen cluster 30 gün yeniden aday üretemez.
 - `R-S5:` Müşteriye yalnızca `audience = "customer"` içerik gösterilir. Bypass yok.
@@ -175,10 +177,10 @@ Ticket kapanır
 |------|--------|---------|
 | 1 | Admin Makalesi | ★★★★★ |
 | 2 | Resmi Doküman | ★★★★☆ |
-| 3 | AI FAQ (Onaylı) | ★★★☆☆ |
+| 3 | AI FAQ (Onaylı / müşteri görünür) | ★★★☆☆ |
 | 4 | URL Whitelist | ★★★☆☆ |
 | 5 | URL Harici | ★★☆☆☆ |
-| 6 | AI FAQ (Otomatik) | ★★☆☆☆ |
+| 6 | AI FAQ (Otomatik / yalnızca iç kullanım) | ★★☆☆☆ |
 | 7 | Benzer Ticketlar | ★☆☆☆☆ |
 
 ### 4.5 Property-Based Testler
