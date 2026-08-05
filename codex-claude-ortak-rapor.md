@@ -838,3 +838,17 @@ Aktif tek repo üzerinde BULGU-23'ün kalan doğrudan `console.*` yüzeyi kapat�
 **Durum:** BULGU-23 backend direct-console hedefi aktif repo için kapalı sayılabilir. Push yapılmadı; değişiklikler yerelde commit bekliyor.
 
 **Sıradaki güvenli teknik odak:** BULGU-11/Faz 3.4 property-based test flakiness. `ai-pipeline-optimization.pbt.spec.ts` için sabit seed veya failure-seed kaydı eklenerek stabilizasyon yapılmalı. Faz 6.1/6.3 üretim migration/RAG kalite işleri kullanıcı bakım penceresi vermeden başlatılmayacak.
+
+### 2026-08-05 — Codex — BULGU-23 kayıt durumu netleştirildi
+
+Önceki en alt notta BULGU-23 değişiklikleri için "yerelde commit bekliyor" ifadesi kalmıştı. Mevcut aktif repo durumu tekrar doğrulandı ve bu ifade artık güncel değildir:
+
+- Branch: `restore/codex-claude-report-20260805`
+- Güncel HEAD: `f15063df`
+- İlgili yerel commit'ler:
+  - `f3fd88ff` — `chore: replace backend cli console logging`
+  - `f15063df` — `docs: record console cleanup checkpoint`
+- `git status --short` temizdir.
+- Push yapılmadı; push/tag/deploy yasağı devam ediyor.
+
+**Güncel durum:** BULGU-23 aktif tek repo üzerinde kod ve rapor commit'leriyle yerelde kapalıdır. Kalan lint çıktısı `no-console` dışı tip-hijyen uyarılarıdır. Sıradaki güvenli teknik odak hâlâ BULGU-11/Faz 3.4 PBT flakiness stabilizasyonudur.
