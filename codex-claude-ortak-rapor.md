@@ -401,3 +401,9 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 | Faz 6.1 — prod `_prisma_migrations` | **Kullanıcı** | Gece/bakım penceresi; okunmadan migration dosyalarına dokunulmayacak |
 | Faz 6.3 — RAG kalite 2. tur | **Kullanıcı** | Prod dump restore sonrası |
 
+### 2026-08-05 — Kullanıcı / Codex — Faz 1.2 ürün kararı ve dokümantasyon kapanışı
+
+- **Karar:** FAQ auto-publish kaldırılmayacak. Mevcut iç kullanım davranışı (`PUBLISHED` + `isInternal: true`) korunacak; bu karar için Prisma şeması, migration, cron/queue veya FAQ yayın kodu değiştirilmeyecek.
+- **Zorunlu dokümantasyon kapanışı:** `CLAUDE.md` §4.2 ve ilgili güven hiyerarşisi gerçek davranışa hizalanacak: otomatik yayın yalnızca personel/iç kullanım içindir ve müşteri retrieval'ına uygun değildir; müşteriye görünür yayın ya da public audience geçişi açık admin onayı gerektirir.
+- **Sınır:** Bu ürün kararı BULGU-01/R-S5 cache izolasyonu düzeltmesini ertelemez veya hafifletmez. Cache anahtarı/audience izolasyonu ve yabancı `interactionId` negatif testi Faz 1.1'de zorunlu kalır.
+- **Kapanış kanıtı:** Doküman değişikliği incelemesi ile birlikte, iç FAQ'nın müşteri retrieval'ına girmediğini ve müşteri görünürlüğü için admin onay geçişinin korunduğunu gösteren hedefli test/denetim kaydı gerekir.
