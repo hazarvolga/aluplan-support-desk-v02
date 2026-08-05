@@ -34,6 +34,7 @@ describe('AiQueryService', () => {
         user: { findUnique: jest.fn() },
         aiInteraction: {
             create: jest.fn().mockResolvedValue(mockInteraction),
+            findUnique: jest.fn(),
             update: jest.fn(),
             aggregate: jest.fn(),
             groupBy: jest.fn(),
@@ -1695,14 +1696,38 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
 
     describe('submitTelemetry', () => {
         it('should update aiInteraction with accepted status', async () => {
+            mockPrismaService.aiInteraction.findUnique.mockResolvedValue({ id: 'int-1', userId: 'user-1' });
             mockPrismaService.aiInteraction.update.mockResolvedValue({ id: 'int-1', isAccepted: true });
 
-            await service.submitTelemetry('int-1', true, 'edited response');
+            await service.submitTelemetry('int-1', 'user-1', true, 'edited response');
+
+            expect(mockPrismaService.aiInteraction.findUnique).toHaveBeenCalledWith({
+                where: { id: 'int-1' },
+                select: { id: true, userId: true },
+            });
 
             expect(mockPrismaService.aiInteraction.update).toHaveBeenCalledWith({
                 where: { id: 'int-1' },
                 data: { isAccepted: true, editedResponse: 'edited response' },
             });
+        });
+
+        it('should reject telemetry updates for another user interaction', async () => {
+            mockPrismaService.aiInteraction.findUnique.mockResolvedValue({ id: 'int-1', userId: 'owner-1' });
+
+            await expect(service.submitTelemetry('int-1', 'attacker-1', true, 'edited response'))
+                .rejects.toThrow('AI_INTERACTION_FORBIDDEN');
+
+            expect(mockPrismaService.aiInteraction.update).not.toHaveBeenCalled();
+        });
+
+        it('should reject telemetry updates when the interaction does not exist', async () => {
+            mockPrismaService.aiInteraction.findUnique.mockResolvedValue(null);
+
+            await expect(service.submitTelemetry('missing', 'user-1', true))
+                .rejects.toThrow('AI_INTERACTION_NOT_FOUND');
+
+            expect(mockPrismaService.aiInteraction.update).not.toHaveBeenCalled();
         });
     });
 

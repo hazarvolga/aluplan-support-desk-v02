@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
@@ -2816,7 +2816,14 @@ If context contains usable procedural evidence, synthesize the answer instead of
         return feedback;
     }
 
-    async submitTelemetry(interactionId: string, accepted: boolean, editedResponse?: string) {
+    async submitTelemetry(interactionId: string, userId: string, accepted: boolean, editedResponse?: string) {
+        const interaction = await this.prisma.aiInteraction.findUnique({
+            where: { id: interactionId },
+            select: { id: true, userId: true },
+        });
+        if (!interaction) throw new NotFoundException('AI_INTERACTION_NOT_FOUND');
+        if (interaction.userId !== userId) throw new ForbiddenException('AI_INTERACTION_FORBIDDEN');
+
         return this.prisma.aiInteraction.update({
             where: { id: interactionId },
             data: {
