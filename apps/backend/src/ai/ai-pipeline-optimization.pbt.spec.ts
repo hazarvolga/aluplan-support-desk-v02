@@ -28,6 +28,14 @@ import { StorageService } from '../common/services/storage.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
 
+const PBT_NUM_RUNS = 100;
+const PBT_SEED_BASE = 20260805;
+
+const pbtOptions = (seedOffset: number) => ({
+    numRuns: PBT_NUM_RUNS,
+    seed: PBT_SEED_BASE + seedOffset,
+});
+
 // ---------------------------------------------------------------------------
 // Shared mock factories
 // ---------------------------------------------------------------------------
@@ -230,7 +238,7 @@ describe('Property 2: Shift Detection DB Persistence', () => {
                     expect(data.historyLength).toBe(history.length);
                 },
             ),
-            { numRuns: 100 },
+            pbtOptions(2),
         );
     });
 });
@@ -291,7 +299,7 @@ describe('Property 3: History Mutation iff isProblemShift', () => {
                     }
                 },
             ),
-            { numRuns: 100 },
+            pbtOptions(3),
         );
     });
 });
@@ -362,7 +370,7 @@ describe('Property 5: Shift Event Langfuse Payload Completeness', () => {
                     ).toBe(true);
                 },
             ),
-            { numRuns: 100 },
+            pbtOptions(5),
         );
     });
 });
@@ -423,7 +431,7 @@ describe('Property 6: Pipeline Resilience', () => {
                     expect(result.interactionId).toBeDefined();
                 },
             ),
-            { numRuns: 100 },
+            pbtOptions(6),
         );
     });
 });
