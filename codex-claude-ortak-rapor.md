@@ -547,3 +547,12 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - TDD kanıtı: `rag-maintenance.service.spec.ts` artık bootstrap sırasında `$queryRaw`, `$queryRawUnsafe`, `$executeRawUnsafe`, settings version check ve `syncLocalDataset()` çağrısı yapılmadığını doğrular; manuel komutta sync'in yalnız explicit istekle çalıştığını kilitler.
 - Odak doğrulaması: `pnpm --filter @aluplan/backend test -- rag-maintenance.service.spec.ts --runInBand` → **1 suite / 6 test geçti**.
 - Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Yayın öncesi bakım penceresinde `pnpm rag:maintenance` ve gerekiyorsa `pnpm rag:maintenance -- --sync` ayrı operatör adımı olarak çalıştırılmalıdır.
+
+### 2026-08-05 — Codex — Faz 4.5 BULGU-17 LLMAPI embedding dimension fail-loud yerel checkpoint
+
+- `EmbeddingVersionRegistry` artık `llmapi:gemini-embedding-2` ve `llmapi:models/gemini-embedding-2` için production Gemini embedding izolasyonunu (`v2_2 / 3072`) döndürür; preview varyantları `v2_2p / 3072` olarak map'lendi.
+- LLMAPI üzerinden OpenAI-compatible embedding modeli kullanılırsa `text-embedding-3-small` → `v3s / 1536`, `text-embedding-3-large` → `v3l / 3072` olarak açık map kullanılır.
+- Bilinmeyen `provider:model` kombinasyonunda artık `1536` tahminiyle devam edilmez; registry `UNKNOWN_EMBEDDING_MODEL_MAPPING` hatasıyla fail-loud davranır. Bu, yanlış dimension/version ile embedding yazımını ve sessiz corpus karışmasını engeller.
+- Provider/model normalize edildi: uppercase provider, `models/` Gemini prefix'i ve admin panelindeki `text-embeding-3-small` yazım hatası güvenli mapping'e çekilir. `ai.embed_provider` yoksa `ai.active_provider`, sonra env provider'ları dikkate alınır; LLMAPI default embed modeli Gemini `gemini-embedding-2` olarak kalır.
+- Odak doğrulaması: `pnpm --filter @aluplan/backend test -- embedding-version.registry.spec.ts embedding.service.spec.ts ai-semantic-cache.service.spec.ts rag-maintenance.service.spec.ts --runInBand` → **4 suite / 48 test geçti**.
+- Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Yayın öncesi admin AI ayarlarında aktif provider/model değerlerinin bu mapping listesinden biri olduğu doğrulanmalıdır.
