@@ -888,6 +888,26 @@ Canlı sistemi etkilemeyen yerel test stabilizasyonu yapıldı. Kapsam yalnız `
 
 **Durum:** BULGU-11/Faz 3.4 PBT flakiness için yeniden üretilebilir seed kapısı eklendi. Tam backend suite tekrar koşusu hâlâ önerilir; ancak canlı/veri/migration etkisi olmadığı için bu adım yerel ve düşük risklidir.
 
+### 2026-08-05 — Codex — BULGU-11/Faz 3.4 tam backend suite ile doğrulandı
+
+Seed stabilizasyon commit'inden sonra tam backend test suite aktif tek repo üzerinde yeniden çalıştırıldı.
+
+**Komut:**
+```bash
+pnpm --filter @aluplan/backend test
+```
+
+**Sonuç:**
+- `Test Suites: 116 passed, 116 total`
+- `Tests: 1 skipped, 1020 passed, 1021 total`
+- `Snapshots: 0 total`
+- Süre: yaklaşık `137s`
+- Hedef dosya `src/ai/ai-pipeline-optimization.pbt.spec.ts` bu tam suite içinde geçti.
+
+**Not:** Test çıktısındaki `DB error`, `Langfuse error`, `Auth failed`, `Queue down`, `quota exceeded` gibi loglar ilgili spec'lerin kontrollü mock hata senaryolarından geliyor; Jest sonucu başarısız değildir.
+
+**Durum:** BULGU-11/Faz 3.4 için PBT flakiness aktif tek repo üzerinde kapalı kabul edilebilir. Push yapılmadı; çalışma yerelde kaldı.
+
 ### 2026-08-05 — Codex — BULGU-11 PBT flakiness stabilizasyonu başlatıldı
 
 BULGU-11/Faz 3.4 için canlıyı etkilemeyen, yalnız lokal test deterministikliği hedefleyen ilk düzeltme yapıldı:
