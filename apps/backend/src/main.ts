@@ -54,7 +54,9 @@ async function bootstrap() {
             const urlObj = new URL(redisUrlString);
             redisHost = urlObj.hostname;
             redisPort = parseInt(urlObj.port) || 6379;
-        } catch { }
+        } catch (error) {
+            logger.warn(`[NetCheck] Invalid REDIS_URL, falling back to REDIS_HOST/REDIS_PORT. Reason: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
     const dbUrl = process.env.DATABASE_URL || '';
     const dbMatch = dbUrl.match(/@([^:/]+):(\d+)/);
