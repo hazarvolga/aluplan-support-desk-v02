@@ -556,3 +556,12 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - Provider/model normalize edildi: uppercase provider, `models/` Gemini prefix'i ve admin panelindeki `text-embeding-3-small` yazım hatası güvenli mapping'e çekilir. `ai.embed_provider` yoksa `ai.active_provider`, sonra env provider'ları dikkate alınır; LLMAPI default embed modeli Gemini `gemini-embedding-2` olarak kalır.
 - Odak doğrulaması: `pnpm --filter @aluplan/backend test -- embedding-version.registry.spec.ts embedding.service.spec.ts ai-semantic-cache.service.spec.ts rag-maintenance.service.spec.ts --runInBand` → **4 suite / 48 test geçti**.
 - Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Yayın öncesi admin AI ayarlarında aktif provider/model değerlerinin bu mapping listesinden biri olduğu doğrulanmalıdır.
+
+### 2026-08-05 — Codex — Faz 5.2 BULGU-21 RAG_CONFIG eşik konsolidasyonu yerel checkpoint
+
+- BULGU-21 kapsamında raporda işaretlenen hardcoded eşikler canlı davranış değiştirilmeden `RAG_CONFIG` altına taşındı: ticket clustering similarity/min cluster size, trust score base/age/feedback faktörleri, semantic cache threshold/TTL ve FAQ auto-publish threshold.
+- FAQ auto-publish ürün kararı korundu: adayların otomatik yayınlanma davranışı kaldırılmadı; varsayılan eşik aynı kaldı (`0.85`). Bu nedenle admin yükü artırılmadı, ancak eşik artık env/config üzerinden yönetilebilir.
+- `env-validation.schema.ts` yeni ayarları opsiyonel olarak doğrular; bu değişiklik yeni zorunlu secret/env gerektirmez ve mevcut canlı env ile boot davranışını değiştirmez.
+- `AiQueryService` adaptive/rerank heuristics bu checkpoint'te bilerek kapsam dışı bırakıldı; ana müşteri/admin cevap akışının yüksek patlama yarıçapı nedeniyle ayrı tuning/acceptance işi olarak ele alınmalıdır.
+- Odak doğrulaması: `pnpm --filter @aluplan/backend test -- trust-score.calculator.spec.ts ticket-clustering.service.spec.ts ai-semantic-cache.service.spec.ts faq.service.spec.ts --runInBand` → **4 suite / 25 test geçti**.
+- Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Eski hardcoded eşik kalıpları için hedefli `rg` taraması temiz çıktı.
