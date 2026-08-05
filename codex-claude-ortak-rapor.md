@@ -980,6 +980,36 @@ Yukarıdaki "BULGU-11 PBT flakiness stabilizasyonu başlatıldı" kaydı, kronol
 
 **Sonuç:** En güncel ve geçerli BULGU-11/Faz 3.4 durumu, üstteki "tam backend suite ile doğrulandı" kaydıdır: aktif tek repo üzerinde kapalı kabul edilebilir. Push yapılmadı.
 
+### 2026-08-05 — Codex — Canlı PostgreSQL dump salt-okunur alındı
+
+Kullanıcının açık yönlendirmesiyle canlı PostgreSQL için prod → local tek yönlü, salt-okunur dump alındı. Bu işlem canlı DB'ye yazma, migration, restore, DDL veya veri değişikliği yapmadı.
+
+**Erişim ve kapsam:**
+- SSH erişimi kullanıcı tarafından geçici public key eklenerek açıldı.
+- Sunucu: `167.86.84.107`
+- Postgres container: `lwk8ok04ocg4w4soog0c888g`
+- Container image: `pgvector/pgvector:pg17`
+- Doğru uygulama DB'si: `aluplan_support`
+- Ön kontrol: `postgres` default DB'si küçük/yanlış hedef olarak tespit edildi; asıl uygulama DB'si boyutu yaklaşık `241 MB`.
+
+**Dump:**
+- Komut tipi: `pg_dump -Fc --no-owner --no-acl`
+- Local hedef: `.private-data/prod-dumps/aluplan-support-prod-20260805-193338-pg17.dump`
+- Boyut: `132 MB` (`138034033` bytes)
+- SHA-256: `d12371d0b316fdab1e811fa658a0ca890968596c53d02d3b845cc709679d56da`
+- Dosya modu: `600`
+- `.private-data/`, `*.dump`, `*.backup` `.gitignore` kapsamındadır; dump git'e girmez.
+
+**Doğrulama:**
+- `pg_restore --list` ile archive TOC listesi üretildi.
+- Archive header doğrulandı: `dbname: aluplan_support`, `TOC Entries: 399`, `Format: CUSTOM`, `Compression: gzip`, `Dumped from database version: 17.9`.
+- `uuid-ossp`, `vector`, `pg_stat_statements` extension kayıtları ve tablo/constraint TOC girdileri listede görünüyor.
+
+**Notlar:**
+- İlk denemede yanlış hedef olan default `postgres` DB için küçük bir dump oluştu (`119 KB`); ana backup bu değildir. Ana backup yukarıdaki `aluplan-support-prod-...pg17.dump` dosyasıdır.
+- Geçici SSH key hâlâ sunucuda olabilir. Güvenlik hijyeni için kullanıcı onayıyla veya kullanıcı tarafından `authorized_keys` içinden `aluplan-codex-dump-20260805` satırı kaldırılmalıdır.
+- Push yapılmadı; canlıya yazma yapılmadı.
+
 ### 2026-08-05 — Kullanıcı — Değiştirilemez "Canlı Veri Güvenliği" kuralı dosyanın en üstüne eklendi
 
 Kullanıcı talebi: "bu anlattıklarını ortak rapora en üste katı bir kural olarak ekleyebilir misin, sabit kalacak biçimde, rapor güncellendiğinde bunlar kaybolmamalı."
