@@ -538,3 +538,12 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - Controller metadata testi endpoint'in public olmadığını, JWT+RBAC guard ve ADMIN rolünü doğrular. Service testi Resend key varlığını raporlayıp prefix/sır parçası sızdırmadığını kilitler.
 - Odak doğrulaması: `pnpm --filter @aluplan/backend test -- auth.controller.spec.ts auth.service.spec.ts --runInBand` → **2 suite / 32 test geçti**.
 - Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Yayın öncesi admin kullanıcıyla email ayarları/teşhis ekranı smoke testi gerekir.
+
+### 2026-08-05 — Codex — Faz 4.4 BULGU-14 boot-time DDL ve auto-sync ayrımı yerel checkpoint
+
+- `RagMaintenanceService.onModuleInit()` artık uygulama boot ederken HNSW index drop/create, vector column `ALTER TABLE` veya knowledge pool auto-sync çalıştırmaz; yalnızca bakım servisinin kayıtlı olduğunu log'lar.
+- RAG altyapı bakımı açık operatör komutuna taşındı: `pnpm rag:maintenance`. Bu komut varsayılan olarak yalnız index/kolon bakımını çalıştırır; knowledge pool sync yalnız açık `--sync` argümanı verilirse tetiklenir.
+- Bu değişiklik migration üretmez ve production `_prisma_migrations` durumuna dokunmaz. Amaç deploy/startup yolunu şema değişikliği ve büyük arka plan sync'ten ayırmaktır.
+- TDD kanıtı: `rag-maintenance.service.spec.ts` artık bootstrap sırasında `$queryRaw`, `$queryRawUnsafe`, `$executeRawUnsafe`, settings version check ve `syncLocalDataset()` çağrısı yapılmadığını doğrular; manuel komutta sync'in yalnız explicit istekle çalıştığını kilitler.
+- Odak doğrulaması: `pnpm --filter @aluplan/backend test -- rag-maintenance.service.spec.ts --runInBand` → **1 suite / 6 test geçti**.
+- Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Yayın öncesi bakım penceresinde `pnpm rag:maintenance` ve gerekiyorsa `pnpm rag:maintenance -- --sync` ayrı operatör adımı olarak çalıştırılmalıdır.
