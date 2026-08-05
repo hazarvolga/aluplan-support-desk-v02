@@ -433,3 +433,24 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - Kimliği olmayan veya attachment içeren istekler cache'i bypass eder. Eski cache kayıtları yeni anahtarla çakışmaz ve güvenli cache miss olur.
 - Odaklı kanıt: `ai-semantic-cache.service.spec.ts` ve `ai-query.service.spec.ts` ile **3 suite / 76 test geçti**; backend `typecheck` geçti. Testler kullanıcı/audience, ürün, dil, route ve context ayrımını; semantik DB namespace ayrımını kapsıyor.
 - Bağımsız güvenlik incelemesinde bu diff için doğrulanmış cross-user/audience cache sızıntısı bulunmadı. Tam backend suite ve canlı iki-hesap smoke testi, yayın öncesi kapanış kanıtı olmaya devam eder.
+
+### 2026-08-05 — Codex — Faz 1.3 migration kapısı nedeniyle beklemede
+
+- BULGU-02 için ayrı verification secret, `purpose`/`audience`, kısa TTL, `SUSPENDED` reddi ve **atomik tek-kullanımlık token tüketimi** gereklidir. Mevcut token üreticisi `customers.service.ts`; doğrulayıcı `auth.service.ts` içinde bu sınırlar yoktur.
+- Atomik tek-kullanımlılık için kalıcı token kaydı ve migration gerekir. BULGU-10 protokolü gereği production `_prisma_migrations` salt-okunur incelenmeden migration dosyalarına dokunulmayacak.
+- Bu nedenle Faz 1.3 yerel kod değişikliği başlatılmadı; yarım bir JWT kontrolü ile kapatılmış sayılmayacak. Gerekli canlı migration envanteri kullanıcı bakım penceresinde alındıktan sonra test-first uygulanacak.
+
+### 2026-08-05 — Codex — UI rol-menüsü koşullu teknik borç notu
+
+- `sidebar.tsx` admin navigasyonunu yalnızca `ADMIN` rolüne bağlıyor; ayrı bir `AGENT`/`TEAM_LEAD` kullanıcısı atanırsa customer menüsü görme riski kaynakta mevcuttur.
+- Canlıda bunun gerçekleştiğine dair kanıt yoktur; production seed/sync admin hesaplarını `ADMIN` olarak atar ve kullanıcı mevcut admin arayüzünün doğru çalıştığını teyit etmiştir.
+- Bu kayıt **GAP bulgusu, yayın blokajı veya mevcut canlı hata değildir**. Faz 2 yetkilendirme kapanışından sonra, ayrı UI rol matrisi/acceptance testi olarak değerlendirilecektir; mevcut Faz 0–6 sıralamasını değiştirmez.
+
+### 2026-08-05 — Codex — Faz 2.1/2.4 ticket erişimi ve WebSocket yayın sınırı yerel checkpoint
+
+- `TicketAccessService` ile HTTP ticket detayları ve Socket `ticket:join`, `ticket:typing`, `ticket:message_read` yollarında hesap/rol/ticket bağlamı merkezi fail-closed erişim kontrolüne alındı. `CUSTOMER`/`VIEWER` yalnızca kendi ticket'ına, tanımlı staff rolleri ilgili ticket'a erişir; bilinmeyen rol reddedilir.
+- `ticket:message_read` ticket-message bağını doğrular; `CUSTOMER`/`VIEWER` dahili mesajın e-posta işini iptal edemez.
+- Dahili ticket mesajı ve ona ait attachment Socket olayları customer ticket odasına yayınlanmaz; yalnızca personel rol odalarına gönderilir. Mevcut tireli/alt-çizgili rol oda isimleri geçiş uyumluluğu için birlikte hedeflenir.
+- Odak doğrulaması: 4 backend suite / 59 test geçti; `pnpm --filter @aluplan/backend typecheck` geçti. Bağımsız kod incelemesi, güncel Faz 2 kapsamında bloklayıcı regresyon bulmadı. Bu yerel checkpoint tam e2e/iki-hesap canlı smoke yerine geçmez.
+- Canlı sistem topolojisi notu: kullanıcı, `Sistem Kaynak Topolojisi` ekranındaki PDF/DOCX/XLS/TXT/MD, admin makale, URL/web ve bilet öğrenimi kaynaklarının birleşik vektör dizinine akışının canlıda iyi çalıştığını teyit etti. Sonraki Faz 2 işleri bu akışı bozmayacak; özellikle `Bilet Öğrenimi` hattında müşteri/personel veri sınırı korunacak.
+- Kapanmamış kapsam: HTTP download/attachment authorization, ticket list/query endpoint düzenlemeleri, permission-temelli özel roller ve frontend UI rol matrisi Faz 2 devam işidir.
