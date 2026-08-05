@@ -529,3 +529,12 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - Bu kapanış Claude'un yeniden sınıflandırmasıyla uyumludur: webhook konusu tek başına "mevcut veri sızıntısı kanıtı" değil, provider callback'in JWT yüzünden kesilmesi halinde fonksiyonel kesinti; düzeltme yapılırken public+imzasız bırakılırsa güvenlik tuzağıdır.
 - Odak doğrulaması: `pnpm --filter @aluplan/backend test -- whatsapp.controller.spec.ts whatsapp-webhook-signature.guard.spec.ts whatsapp.service.spec.ts omni-channel.controller.spec.ts inbound-email-webhook-signature.guard.spec.ts omni-channel.service.spec.ts --runInBand` → **6 suite / 16 test geçti**.
 - Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Kapanış için yayın öncesi gerçek Meta webhook ve inbound email provider smoke testleri, ilgili secret'ların canlı env/admin ayarlarında tanımlı olduğunun doğrulanmasıyla yapılmalıdır.
+
+### 2026-08-05 — Codex — Faz 4.3 BULGU-20 email config teşhis endpoint'i yerel checkpoint
+
+- `GET /auth/test-email-config` artık public endpoint değildir; `JwtAuthGuard + RbacGuard` ve `@Roles('ADMIN')` ile yalnızca admin kullanımı için sınırlandı.
+- Admin teşhis fonksiyonu korunmuştur: endpoint hâlâ email health, env var var/yok bilgisi, mail sender, frontend URL ve ilgili DB ayarlarını döndürür.
+- Secret leakage yüzeyi kapatıldı: response artık `resendKeyPrefix` veya API key'in herhangi bir substring'ini döndürmez; yalnızca `hasResendKey` boolean bilgisi kalır.
+- Controller metadata testi endpoint'in public olmadığını, JWT+RBAC guard ve ADMIN rolünü doğrular. Service testi Resend key varlığını raporlayıp prefix/sır parçası sızdırmadığını kilitler.
+- Odak doğrulaması: `pnpm --filter @aluplan/backend test -- auth.controller.spec.ts auth.service.spec.ts --runInBand` → **2 suite / 32 test geçti**.
+- Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Yayın öncesi admin kullanıcıyla email ayarları/teşhis ekranı smoke testi gerekir.
