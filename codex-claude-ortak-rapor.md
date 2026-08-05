@@ -1010,6 +1010,62 @@ Kullanıcının açık yönlendirmesiyle canlı PostgreSQL için prod → local 
 - Geçici SSH key hâlâ sunucuda olabilir. Güvenlik hijyeni için kullanıcı onayıyla veya kullanıcı tarafından `authorized_keys` içinden `aluplan-codex-dump-20260805` satırı kaldırılmalıdır.
 - Push yapılmadı; canlıya yazma yapılmadı.
 
+### 2026-08-05 — Codex — Local PG17 shadow restore ve sanitization tamamlandı
+
+Canlı PostgreSQL dump'ı, canlı sistemi etkilemeden ayrı bir local shadow Postgres container'ına restore edildi. Mevcut local `aluplan_postgres` container'ı ve canlı sunucu değiştirilmedi.
+
+**Local shadow container:**
+- Container: `aluplan_shadow_postgres_pg17`
+- Image: `pgvector/pgvector:pg17`
+- Port: `localhost:55432`
+- Database: `aluplan_support`
+- Local env dosyası: `.private-data/shadow/shadow-postgres.env`
+- `.private-data/` git ignore kapsamındadır.
+
+**Restore sonucu:**
+- Restore kaynağı: `.private-data/prod-dumps/aluplan-support-prod-20260805-193338-pg17.dump`
+- Public tablo sayısı: `64`
+- Shadow DB boyutu: yaklaşık `233 MB`
+- Örnek veri sayımları:
+  - `users=1282`
+  - `tickets=162`
+  - `ticket_messages=476`
+  - `knowledge_sources=241`
+  - `knowledge_embeddings=77`
+  - `knowledge_pool_embeddings=7745`
+  - `_prisma_migrations=54`
+
+**Sanitization:**
+- `crm_connections.is_active=false`
+- `crm_connections.client_secret/webhook_secret=NULL`
+- `webhooks.is_active=false`, `webhooks.secret=NULL`
+- `users.refresh_token_hash=NULL`
+- `settings` içindeki secret/token/api-key/credentials/password değerleri boş string'e çekildi.
+- Doğrulama sonrası:
+  - `crm_active=0`
+  - `crm_secrets=0`
+  - `webhooks_active=0`
+  - `webhook_secrets=0`
+  - `user_refresh_hashes=0`
+  - `secret_settings_nonempty=0`
+
+**Sanitized snapshot:**
+- Dosya: `.private-data/prod-dumps/aluplan-support-shadow-sanitized-20260805-194053-pg17.dump`
+- SHA-256: `2e5f7e09a7e4ffbf61787f978a4a401527be46eae4895a5d7ba26c39ef5d770b`
+- `pg_restore --list` ile TOC üretildi (`399` TOC entry).
+
+**Prisma doğrulama:**
+```bash
+DATABASE_URL="$SHADOW_DATABASE_URL" pnpm exec prisma migrate status --config packages/database/prisma.config.js
+```
+
+Sonuç: `Database schema is up to date!`
+
+**Notlar:**
+- Redis canlıdan kopyalanmadı; local Redis boş/ephemeral bırakılacak. Bu, BullMQ job'larının veya canlı session/cache state'inin localde yanlışlıkla tekrar işlenmesini önler.
+- Shadow geliştirme için `DATABASE_URL`, `.private-data/shadow/shadow-postgres.env` içindeki `SHADOW_DATABASE_URL` değerinden alınmalıdır; prod public IP'si local env'e yazılmamalıdır.
+- Push yapılmadı; canlıya yazma yapılmadı.
+
 ### 2026-08-05 — Kullanıcı — Değiştirilemez "Canlı Veri Güvenliği" kuralı dosyanın en üstüne eklendi
 
 Kullanıcı talebi: "bu anlattıklarını ortak rapora en üste katı bir kural olarak ekleyebilir misin, sabit kalacak biçimde, rapor güncellendiğinde bunlar kaybolmamalı."
