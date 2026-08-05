@@ -407,3 +407,15 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - **Zorunlu dokümantasyon kapanışı:** `CLAUDE.md` §4.2 ve ilgili güven hiyerarşisi gerçek davranışa hizalanacak: otomatik yayın yalnızca personel/iç kullanım içindir ve müşteri retrieval'ına uygun değildir; müşteriye görünür yayın ya da public audience geçişi açık admin onayı gerektirir.
 - **Sınır:** Bu ürün kararı BULGU-01/R-S5 cache izolasyonu düzeltmesini ertelemez veya hafifletmez. Cache anahtarı/audience izolasyonu ve yabancı `interactionId` negatif testi Faz 1.1'de zorunlu kalır.
 - **Kapanış kanıtı:** Doküman değişikliği incelemesi ile birlikte, iç FAQ'nın müşteri retrieval'ına girmediğini ve müşteri görünürlüğü için admin onay geçişinin korunduğunu gösteren hedefli test/denetim kaydı gerekir.
+
+### 2026-08-05 — Kullanıcı — Yerel çalışma ve push yasağı
+
+- Bu proje için kullanıcı açıkça "push et" demeden hiçbir remote push, tag push, deploy veya yayın işlemi yapılmayacak.
+- Tüm remediation, commit, test ve restore-point çalışmaları yerelde yürütülecek. Remote'a aktarım, ayrı ve açık kullanıcı talimatı gerektirir.
+
+### 2026-08-05 — Codex — Faz 0.1 tamamlandı: secret dosyası repo kapsamından çıkarıldı
+
+- `canli-degiskenler.md` repo kökünden, repo dışındaki kullanıcıya ait korumalı arşive taşındı; hedef dosya izni `0600` olarak doğrulandı.
+- Taşıma öncesi ve sonrası SHA-256 değerleri eşleşti; kaynak dosyanın repo kökünden kaldırıldığı doğrulandı. Secret değeri görüntülenmedi veya rapora yazılmadı.
+- `.gitignore` dosyasına `canli-degiskenler.md` eklendi. Çalışma dizininde `.git` bulunmadığından `git status --ignored` kanıtı, Faz 0.2 rotasyonundan sonra güvenli git başlatma aşamasına ertelendi.
+- **BULGU-03 kapalı değildir:** tüm listelenen production secret'larının canlı sağlayıcılarda rotate edilmesi ve uygulama sağlık doğrulaması hâlâ zorunludur.

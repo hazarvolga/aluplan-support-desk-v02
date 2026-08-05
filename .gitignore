@@ -113,6 +113,7 @@ venv/
 .venv/
 env/
 .env*
+canli-degiskenler.md
 bin/
 obj/
 
