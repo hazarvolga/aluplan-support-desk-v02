@@ -925,3 +925,16 @@ BULGU-11/Faz 3.4 için canlıyı etkilemeyen, yalnız lokal test deterministikli
 - `git diff --check` → temiz.
 
 **Not:** Hedef PBT tek koşusu yaklaşık 130 sn sürdü; bu nedenle aynı pahalı testi çoklu döngüye sokmadan önce code-review ve gerekirse ek seed stratejisi değerlendirilecek. Bu checkpoint henüz commitlenmedi.
+
+### 2026-08-05 — Codex — BULGU-11 kayıt sırası düzeltmesi
+
+Yukarıdaki "BULGU-11 PBT flakiness stabilizasyonu başlatıldı" kaydı, kronolojik olarak kapanış kayıtlarından önce yazılması gereken eski başlangıç notudur ve artık güncel değildir. Append-only kuralı nedeniyle silinmedi.
+
+**Güncel gerçek durum:**
+- Test stabilizasyonu commitlendi: `c9f3a36e` — `test: stabilize ai pipeline property test seeds`
+- İlk checkpoint rapor commit'i alındı: `a84862bd` — `docs: record pbt stabilization checkpoint`
+- Tam backend suite doğrulama rapor commit'i alındı: `4f311dc5` — `docs: record backend suite pbt verification`
+- Tam backend suite sonucu: `116/116 suite`, `1020/1021 passed`, `1 skipped`, `0 failed`
+- `git status --short` temizdir.
+
+**Sonuç:** En güncel ve geçerli BULGU-11/Faz 3.4 durumu, üstteki "tam backend suite ile doğrulandı" kaydıdır: aktif tek repo üzerinde kapalı kabul edilebilir. Push yapılmadı.
