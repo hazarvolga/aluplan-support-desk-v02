@@ -802,6 +802,20 @@ Konsolidasyon sonrası görünen dokümantasyon/generated/lockfile değişiklikl
 
 **Sonraki teknik odak:** BULGU-23'ün kalan kısmı. Restore/konsolide repo'da `apps/backend/src/otel.ts` logger'a taşındı ve `no-console` lint kapısı eklendi; ancak backend production kodunda kalan doğrudan `console.log`/`console.warn`/`console.error` yüzeyi hâlâ kapatılmalıdır. Sıradaki iş bu kalan yüzeyi Nest/Pino logger'a taşımak ve lint/test ile doğrulamaktır.
 
+### 2026-08-05 — Codex — BULGU-23 kalan console yüzeyi kapatıldı
+
+BULGU-23'ün konsolidasyon sonrası kalan kısmı tamamlandı:
+
+- `apps/backend/src/common/utils/cli-logger.ts` eklendi. Tek seferlik CLI/diagnostic/test helper dosyaları artık doğrudan `console.*` çağırmak yerine bu küçük `CliLogger` wrapper'ını kullanıyor.
+- Kapsam özellikle runtime controller/service davranışını değiştirmeden, ham grep tartışmasını da kapatacak şekilde uygulandı: `check-knowledge.ts`, `direct-sync.ts`, `deploy-prep.ts`, `restore-runner.ts`, `src/scripts/*`, `src/ai/tests/*` ve `knowledge-base/utils/test-smart-chunker.ts` içindeki console çağrıları logger wrapper'a taşındı.
+- `apps/backend/src` altında `console.log`, `console.warn`, `console.error`, `console.info`, `console.debug` için ham `rg` taraması **0 sonuç** döndürdü.
+- Backend lint doğrulaması: `pnpm --filter @aluplan/backend lint` → **0 error / warning-only**. Mevcut `any/unused` uyarıları eski tip-hijyen borcu olarak kaldı; `no-console` hatası yok.
+- Backend typecheck doğrulaması: `pnpm --filter @aluplan/backend typecheck` geçti.
+- Focused regression doğrulaması: `pnpm --filter @aluplan/backend test -- gemini.service.spec.ts --runInBand` → **1 suite / 5 test geçti**.
+- Kod inceleme notu: otomatik code-review ajanı başlatıldı ancak iki kez 120 sn içinde çıktı dönmediği için interrupt edildi; diff manuel olarak import path, ham console taraması, lint, typecheck ve focused test ile doğrulandı.
+
+**Durum:** BULGU-23 artık aktif tek repo üzerinde kapalı kabul edilebilir. Kalan backend lint uyarıları `no-console` kapsamı dışındadır ve ayrı tip-hijyen işi olarak sınıflandırılmalıdır.
+
 ### 2026-08-05 — Codex — BULGU-23 console temizliği tamamlandı, doğrulama yeşil
 
 Aktif tek repo üzerinde BULGU-23'ün kalan doğrudan `console.*` yüzeyi kapatıldı.
