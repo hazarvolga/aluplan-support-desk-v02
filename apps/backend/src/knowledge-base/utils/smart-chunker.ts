@@ -102,7 +102,7 @@ export function smartChunk(text: string, options: ChunkerOptions = {}): ChunkRes
 export function hierarchicalChunk(text: string, options: ChunkerOptions = {}): { parent: string, children: string[] }[] {
     let parentMax = RAG_CONFIG.CHUNKING.PARENT_MAX_TOKENS;
     let childMax = RAG_CONFIG.CHUNKING.CHILD_MAX_TOKENS;
-    let overlapAllowed = RAG_CONFIG.CHUNKING.OVERLAP_TOKENS;
+    const overlapAllowed = RAG_CONFIG.CHUNKING.OVERLAP_TOKENS;
 
     const { docType = 'GENERAL', title = 'Bilinmeyen Döküman' } = options;
 

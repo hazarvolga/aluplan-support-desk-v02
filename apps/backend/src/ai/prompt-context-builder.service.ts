@@ -171,7 +171,7 @@ export class PromptContextBuilderService {
         if (messages && messages.length > 0) {
             const pastMessages = messages.slice(0, -1);
             if (pastMessages.length > 0) {
-                let historyPrefix = diagnosis?.isProblemShift
+                const historyPrefix = diagnosis?.isProblemShift
                     ? `### [📢 ÖNEMLİ: KONU DEĞİŞİKLİĞİ] - Aşağıdaki geçmiş mesajlar FARKLI bir konu ile ilgilidir ve teşhis için DİKKATE ALINMAMALIDIR.\n`
                     : '';
 

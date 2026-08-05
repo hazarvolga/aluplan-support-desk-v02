@@ -589,7 +589,7 @@ export class AiQueryService {
                 this.logger.warn(`⚠️ Diagnosis generation timed out or returned empty. Falling back to top matched content.`);
             }
 
-            let rawAnswer = aiResult?.response ?? this.buildDeterministicFallbackAnswer(userQuery, results, lang, {
+            const rawAnswer = aiResult?.response ?? this.buildDeterministicFallbackAnswer(userQuery, results, lang, {
                 showSourceDetails: isStaff,
                 diagnosis,
             });
