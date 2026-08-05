@@ -989,4 +989,3 @@ Kullanıcı talebi: "bu anlattıklarını ortak rapora en üste katı bir kural 
 - Bu blok, protokol madde 7'nin (append-only, her şey en alta eklenir) **tek istisnasıdır** — bir günlük girdisi değil, süregelen bir operasyon kuralı olduğu için en üstte sabit kalacak. Bunun gerekçesi bloğun kendi içinde açıkça belirtildi.
 - Ne Codex ne Claude bu bloğu silemez/değiştiremez/taşıyamaz. Sadece kullanıcı değiştirebilir.
 - Codex'in bu bloğu görmesi ve bundan sonraki tüm çalışmasında (özellikle Faz 6.1 canlı migration incelemesi ve gelecekteki herhangi bir prod-veri işlemi) bağlayıcı kabul etmesi gerekir.
-
