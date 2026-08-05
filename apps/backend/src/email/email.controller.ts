@@ -14,6 +14,7 @@ import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { normalizeEmailLogoUrl } from '../common/utils/public-url.util';
 import { Prisma } from '@aluplan/database';
+import { RedisService } from '../redis/redis.service';
 
 
 import { EmailInboundService } from './email-inbound.service';
@@ -22,6 +23,7 @@ import { EmailInboundService } from './email-inbound.service';
 @Controller('email')
 export class EmailController {
   private readonly logger = new Logger(EmailController.name);
+  private static readonly GMAIL_OAUTH_STATE_TTL_SECONDS = 10 * 60;
 
   private get screensDir() {
     return TemplateService.getScreensDir();
@@ -33,6 +35,7 @@ export class EmailController {
     private readonly gmailProvider: GmailProvider,
     private readonly emailInboundService: EmailInboundService,
     private readonly configService: ConfigService,
+    private readonly redis: RedisService,
   ) { }
 
   @UseGuards(JwtAuthGuard, RbacGuard)
@@ -412,9 +415,34 @@ export class EmailController {
   @UseGuards(JwtAuthGuard, RbacGuard)
   @RequirePermissions('settings:write')
   @Get('gmail/auth-url')
-  async getGmailAuthUrl() {
-    const url = await this.gmailProvider.buildAuthUrl();
+  async getGmailAuthUrl(@Req() req: any) {
+    const state = crypto.randomBytes(32).toString('base64url');
+    await this.redis.set(
+      this.getGmailOAuthStateKey(state),
+      JSON.stringify({
+        userId: req.user?.sub ?? req.user?.id ?? null,
+        createdAt: new Date().toISOString(),
+      }),
+      EmailController.GMAIL_OAUTH_STATE_TTL_SECONDS,
+    );
+
+    const url = await this.gmailProvider.buildAuthUrl(state);
     return { url };
+  }
+
+  private getGmailOAuthStateKey(state: string): string {
+    return `oauth:gmail:state:${state}`;
+  }
+
+  private async consumeGmailOAuthState(state?: string): Promise<boolean> {
+    if (!state || typeof state !== 'string') return false;
+
+    const key = this.getGmailOAuthStateKey(state);
+    const value = await this.redis.get(key);
+    if (!value) return false;
+
+    await this.redis.del(key);
+    return true;
   }
 
   /**
@@ -424,7 +452,7 @@ export class EmailController {
    */
   @Public()
   @Get('gmail/callback')
-  async gmailOAuthCallback(@Query('code') code: string, @Query('error') error: string, @Res() res: Response) {
+  async gmailOAuthCallback(@Query('code') code: string, @Query('error') error: string, @Query('state') state: string, @Res() res: Response) {
     // Frontend URL — settings page
     const frontendBase = process.env.FRONTEND_URL || 'http://localhost:3000';
     const settingsUrl = `${frontendBase}/admin/settings?tab=email`;
@@ -434,6 +462,11 @@ export class EmailController {
     }
 
     try {
+      const stateIsValid = await this.consumeGmailOAuthState(state);
+      if (!stateIsValid) {
+        return res.redirect(`${settingsUrl}&gmail_status=error&gmail_error=invalid_state`);
+      }
+
       const { email } = await this.gmailProvider.handleCallback(code);
       return res.redirect(`${settingsUrl}&gmail_status=success&gmail_email=${encodeURIComponent(email)}`);
     } catch (err: any) {
