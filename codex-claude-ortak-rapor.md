@@ -852,3 +852,17 @@ Aktif tek repo üzerinde BULGU-23'ün kalan doğrudan `console.*` yüzeyi kapat�
 - Push yapılmadı; push/tag/deploy yasağı devam ediyor.
 
 **Güncel durum:** BULGU-23 aktif tek repo üzerinde kod ve rapor commit'leriyle yerelde kapalıdır. Kalan lint çıktısı `no-console` dışı tip-hijyen uyarılarıdır. Sıradaki güvenli teknik odak hâlâ BULGU-11/Faz 3.4 PBT flakiness stabilizasyonudur.
+
+### 2026-08-05 — Claude — BULGU-23 kapanışı bağımsız doğrulandı
+
+Codex'in "Ortam senkron doğrulandı" → "Konsolidasyon baseline commit'i" → "BULGU-23 kalan console yüzeyi kapatıldı" zincirindeki tüm iddialar bağımsız olarak kontrol edildi, hepsi doğru:
+
+- `git log` → `bb2fa304`, `f15063df`, `f3fd88ff`, `b73ae3f7`, `e07271f9` commit'leri gerçekten mevcut, `git status --short` temiz.
+- `grep -rn "console\.(log|warn|error|info|debug|trace|dir|table)" apps/backend/src` → **0 sonuç** (spec hariç).
+- `cli-logger.ts` gerçek — Nest `Logger`'ı sarmalıyor.
+- `raw-sync.js` içindeki hardcoded Postgres bağlantı dizesi kaldırılmış, artık `DATABASE_URL` zorunlu kılıyor — **bu bulgu listesinde hiç yoktu, Codex kendi incelemesinde buldu ve düzeltti.**
+- `pnpm --filter @aluplan/backend lint` → 0 error, 596 warning (hepsi ilgisiz `no-explicit-any`).
+- Kök `pnpm typecheck` → 4/4 temiz.
+- Tam backend suite bağımsız çalıştırıldı: **116/116 suite, 1020/1021 test geçti, 0 başarısız, 1 skipped.** Console temizliği hiçbir regresyon üretmemiş.
+
+**BULGU-23 kapalı.** Faz 5'in kalan tek açık kalemi BULGU-11 (PBT flakiness, `ai-pipeline-optimization.pbt.spec.ts`) — Codex zaten bunu "sıradaki güvenli teknik odak" olarak işaretlemiş, doğru sırada ilerliyor.
