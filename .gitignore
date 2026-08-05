@@ -119,8 +119,11 @@ obj/
 
 # Archives / Backups
 backups/
+.private-data/
 *.zip
 *.sql
+*.dump
+*.backup
 !packages/database/prisma/migrations/**/*.sql
 *.log
 *_err.txt
