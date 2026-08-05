@@ -81,8 +81,11 @@ describe('SlaCronService', () => {
         await service.checkSlaWarnings();
 
         expect(eventEmitter.emit).toHaveBeenCalledWith('sla.warning', {
+            agentName: 'Temsilci',
             agentEmail: 'agent@aluplan.com',
+            ticketId: 'ticket-1',
             ticketNumber: '#TICKET1',
+            ticketStatus: 'OPEN',
             subject: 'Help',
             timeLeft: '30 dakikadan az',
             breachType: 'response'

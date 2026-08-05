@@ -141,7 +141,8 @@ describe('PromptContextBuilderService — Property-Based Tests', () => {
             },
         });
 
-        expect(result).toContain('Lisans Telemetrisi: Yerel lisans dosyası Hotinfo tarafından okunamadı');
+        expect(result).toContain('Lisans Telemetrisi: Yerel lisans dosyası okunamadı');
+        expect(result).toContain('modern Cloud/Wibu lisanslarında bu tek başına lisans/abonelik veya BIMPLUS depolama limiti kanıtı değildir');
         expect(result).toContain('kök neden olarak kullanma');
         expect(result).not.toContain('- Lisans Tipi: ⚠ Lisans dosyası okunamadı');
         expect(result).not.toContain('C:\\ProgramData\\Nemetschek\\Allplan\\2026\\License\\_SEC.NSE');
