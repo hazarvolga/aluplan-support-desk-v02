@@ -9,6 +9,15 @@ import { EmbeddingVersionRegistry } from './embedding-version.registry';
 import { Prisma } from '@aluplan/database';
 import { RAG_CONFIG } from '../config/rag.config';
 
+export interface AiCacheScope {
+    userId: string;
+    audience: 'agent' | 'customer';
+    productId?: string | null;
+    language: string;
+    routeLocale: string;
+    contextFingerprint: string;
+}
+
 /**
  * AI Semantic Cache
  *
@@ -26,7 +35,7 @@ import { RAG_CONFIG } from '../config/rag.config';
  * Guarantees:
  * - Vector DB consistency via EmbeddingNormalizer (canonical space)
  * - TTL-based expiration (configurable)
- * - Tenant isolation
+ * - Requester and audience isolation
  * - Cache hit metrics via Redis counters
  */
 @Injectable()
@@ -34,7 +43,6 @@ export class AiSemanticCache {
     private readonly logger = new Logger(AiSemanticCache.name);
     private readonly SEMANTIC_THRESHOLD = 0.95;
     private readonly DEFAULT_TTL_SECONDS = 3600; // 1 hour
-    private readonly SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000000';
 
     constructor(
         private readonly prisma: PrismaService,
@@ -49,28 +57,24 @@ export class AiSemanticCache {
      */
     async get(
         query: string,
-        tenantId: string,
-        options?: {
-            userId?: string;
-            language?: string;
-            hotinfoContext?: any;
-        },
+        scope: AiCacheScope,
     ): Promise<AiQueryResult | null> {
-        const exactKey = this.buildExactKey(query, tenantId, options);
+        const scopeHash = this.buildScopeHash(scope);
+        const exactKey = this.buildExactKey(query, scopeHash);
 
         // Tier 1: Exact match (Redis)
         const exactCached = await this.getExactMatch(exactKey);
         if (exactCached) {
             await this.recordHit('exact');
-            this.logger.log(`⚡ [Exact Cache Hit] tenant=${tenantId}`);
+            this.logger.log(`⚡ [Exact Cache Hit] audience=${scope.audience}`);
             return exactCached;
         }
 
         // Tier 2: Semantic match (pgvector)
-        const semanticCached = await this.getSemanticMatch(query, tenantId);
+        const semanticCached = await this.getSemanticMatch(query, scopeHash);
         if (semanticCached) {
             await this.recordHit('semantic');
-            this.logger.log(`🔍 [Semantic Cache Hit] tenant=${tenantId}, similarity>${this.SEMANTIC_THRESHOLD}`);
+            this.logger.log(`🔍 [Semantic Cache Hit] audience=${scope.audience}, similarity>${this.SEMANTIC_THRESHOLD}`);
             // Also populate exact cache for next time
             await this.setExact(exactKey, semanticCached);
             return semanticCached;
@@ -85,39 +89,37 @@ export class AiSemanticCache {
      */
     async set(
         query: string,
-        tenantId: string,
+        scope: AiCacheScope,
         result: AiQueryResult,
-        options?: {
-            userId?: string;
-            language?: string;
-            hotinfoContext?: any;
-        },
     ): Promise<void> {
-        const exactKey = this.buildExactKey(query, tenantId, options);
+        const scopeHash = this.buildScopeHash(scope);
+        const exactKey = this.buildExactKey(query, scopeHash);
 
         // Store exact match in Redis
         await this.setExact(exactKey, result);
 
         // Store semantic match in pgvector
-        await this.setSemantic(query, tenantId, result);
+        await this.setSemantic(query, scopeHash, result);
     }
 
     /**
      * Invalidate cache for a tenant (e.g., after KB update).
      */
-    async invalidateTenant(tenantId: string): Promise<void> {
+    async invalidateScope(scope: AiCacheScope): Promise<void> {
+        const scopeHash = this.buildScopeHash(scope);
+        const scopeId = this.scopeHashToUuid(scopeHash);
         // Delete semantic cache entries
-        await this.prisma.$executeRaw`DELETE FROM "ai_response_cache" WHERE "tenant_id" = ${this.resolveSemanticTenantId(tenantId)}::uuid`;
+        await this.prisma.$executeRaw`DELETE FROM "ai_response_cache" WHERE "tenant_id" = ${scopeId}::uuid`;
 
         // Delete exact cache entries (pattern-based)
-        const pattern = `ai:query:cache:*:tenant:${tenantId}:*`;
+        const pattern = `ai:query:cache:*:scope:${scopeHash}:*`;
         await this.redis.getClient().eval(
             `local keys = redis.call('keys', ARGV[1])\nfor i=1,#keys do\n  redis.call('del', keys[i])\nend\nreturn #keys`,
             0,
             pattern,
         );
 
-        this.logger.log(`🗑️ Cache invalidated for tenant ${tenantId}`);
+        this.logger.log(`🗑️ Cache invalidated for audience=${scope.audience}`);
     }
 
     /**
@@ -164,11 +166,11 @@ export class AiSemanticCache {
 
     private async getSemanticMatch(
         query: string,
-        tenantId: string,
+        scopeHash: string,
     ): Promise<AiQueryResult | null> {
         try {
             const config = await this.registry.getActiveVersionConfig();
-            const semanticTenantId = this.resolveSemanticTenantId(tenantId);
+            const scopeId = this.scopeHashToUuid(scopeHash);
             const embedding = await this.embeddingService.embedText(query);
             if (!embedding) return null;
 
@@ -184,7 +186,7 @@ export class AiSemanticCache {
             const results: any[] = await this.prisma.$queryRaw(
                 Prisma.sql`SELECT id, response, "query_embedding" <=> ${vectorCast} AS distance
                  FROM "ai_response_cache"
-                 WHERE "tenant_id" = ${semanticTenantId}::uuid
+                 WHERE "tenant_id" = ${scopeId}::uuid
                    AND "embedding_version" = ${config.version}
                    AND "embedding_dim" = ${config.dimension}
                    AND "expires_at" > NOW()
@@ -209,12 +211,12 @@ export class AiSemanticCache {
 
     private async setSemantic(
         query: string,
-        tenantId: string,
+        scopeHash: string,
         result: AiQueryResult,
     ): Promise<void> {
         try {
             const config = await this.registry.getActiveVersionConfig();
-            const semanticTenantId = this.resolveSemanticTenantId(tenantId);
+            const scopeId = this.scopeHashToUuid(scopeHash);
             const embedding = await this.embeddingService.embedText(query);
             if (!embedding) return;
 
@@ -224,7 +226,7 @@ export class AiSemanticCache {
                 config.dimension,
             );
             const vectorStr = `[${normalized.join(',')}]`;
-            const hash = createHash('sha256').update(query + tenantId).digest('hex');
+            const hash = createHash('sha256').update(query + scopeHash).digest('hex');
             const expiresAt = new Date(Date.now() + this.DEFAULT_TTL_SECONDS * 1000);
 
             const safeVector = this.sanitizeVector(vectorStr);
@@ -238,7 +240,7 @@ export class AiSemanticCache {
                 ) VALUES (
                     ${hash}, ${vectorCast}, ${config.version}, ${config.dimension},
                     ${responseJson},
-                    ${semanticTenantId}::uuid, ${result.confidence},
+                    ${scopeId}::uuid, ${result.confidence},
                     NOW(), ${expiresAt.toISOString()}
                 )
                 ON CONFLICT ("query_hash") DO UPDATE SET
@@ -274,18 +276,28 @@ export class AiSemanticCache {
 
     private buildExactKey(
         query: string,
-        tenantId: string,
-        options?: { userId?: string; language?: string; hotinfoContext?: any },
+        scopeHash: string,
     ): string {
         const hash = createHash('sha256')
-            .update(query + tenantId + (options?.language || '') + JSON.stringify(options?.hotinfoContext || ''))
+            .update(query + scopeHash)
             .digest('hex');
-        return `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:exact:${tenantId}:${hash}`;
+        return `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:exact:scope:${scopeHash}:${hash}`;
     }
 
-    private resolveSemanticTenantId(tenantId: string): string {
-        return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)
-            ? tenantId
-            : this.SYSTEM_TENANT_ID;
+    private buildScopeHash(scope: AiCacheScope): string {
+        return createHash('sha256')
+            .update(JSON.stringify({
+                audience: scope.audience,
+                contextFingerprint: scope.contextFingerprint,
+                language: scope.language,
+                productId: scope.productId ?? null,
+                routeLocale: scope.routeLocale,
+                userId: scope.userId,
+            }))
+            .digest('hex');
+    }
+
+    private scopeHashToUuid(scopeHash: string): string {
+        return `${scopeHash.slice(0, 8)}-${scopeHash.slice(8, 12)}-${scopeHash.slice(12, 16)}-${scopeHash.slice(16, 20)}-${scopeHash.slice(20, 32)}`;
     }
 }

@@ -426,3 +426,10 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - Güven hiyerarşisi, onaylı müşteri görünür FAQ ile otomatik iç FAQ ayrımını açıkça gösterir. `R-S5` korunmuştur.
 - `faq.service.ts`, `faq.cron.service.ts`, Prisma şeması ve migration'larda değişiklik yapılmadı.
 - Faz 1.1 cache izolasyonu, ayrı zorunlu güvenlik işi olarak devam etmektedir.
+
+### 2026-08-05 — Codex — Faz 1.1 yerel cache izolasyonu uygulandı
+
+- Semantik cache'in ortak `'system'` namespace kullanımı kaldırıldı. Requester, audience, ürün, dil, route locale ve history/Hotinfo/channel bağlamından türetilen scope hem Redis exact key'inde hem de semantik DB namespace'inde kullanılıyor; migration gerektirmedi.
+- Kimliği olmayan veya attachment içeren istekler cache'i bypass eder. Eski cache kayıtları yeni anahtarla çakışmaz ve güvenli cache miss olur.
+- Odaklı kanıt: `ai-semantic-cache.service.spec.ts` ve `ai-query.service.spec.ts` ile **3 suite / 76 test geçti**; backend `typecheck` geçti. Testler kullanıcı/audience, ürün, dil, route ve context ayrımını; semantik DB namespace ayrımını kapsıyor.
+- Bağımsız güvenlik incelemesinde bu diff için doğrulanmış cross-user/audience cache sızıntısı bulunmadı. Tam backend suite ve canlı iki-hesap smoke testi, yayın öncesi kapanış kanıtı olmaya devam eder.

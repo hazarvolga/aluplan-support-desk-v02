@@ -168,6 +168,28 @@ describe('AiQueryService', () => {
     });
 
     describe('query — Cache', () => {
+        it('builds different cache keys when requester scope changes', () => {
+            const buildScope = (service as any).buildCacheScope.bind(service);
+            const buildHash = (service as any).buildQueryHash.bind(service);
+            const baseOptions = {
+                userQuery: 'test query',
+                userId: '11111111-1111-4111-8111-111111111111',
+                productId: 'allplan',
+                language: 'tr',
+                routeLocale: 'tr',
+                history: [{ role: 'user' as const, content: 'ilk bağlam' }],
+                hotinfoContext: { version: '2026' },
+            };
+            const baseScope = buildScope(baseOptions, false, 'tr');
+            const changedScope = buildScope({
+                ...baseOptions,
+                userId: '22222222-2222-4222-8222-222222222222',
+                routeLocale: 'en',
+            }, false, 'tr');
+
+            expect(buildHash('test query', baseScope)).not.toEqual(buildHash('test query', changedScope));
+        });
+
         it('should return cached result without hitting DB when cache exists', async () => {
             // Arrange
             const cached: AiQueryResult = {
@@ -177,7 +199,10 @@ describe('AiQueryService', () => {
             mockRedisService.get.mockResolvedValue(JSON.stringify(cached));
 
             // Act
-            const result = await service.query({ userQuery: 'test query' });
+            const result = await service.query({
+                userQuery: 'test query',
+                userId: '11111111-1111-4111-8111-111111111111',
+            });
 
             // Assert
             expect(result.answer).toBe('cached answer');
@@ -1927,7 +1952,10 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             mockRedisService.get.mockResolvedValue('cached stream answer');
 
             const chunks: any[] = [];
-            for await (const c of service.streamQuery({ userQuery: 'test query' })) {
+            for await (const c of service.streamQuery({
+                userQuery: 'test query',
+                userId: '11111111-1111-4111-8111-111111111111',
+            })) {
                 chunks.push(c);
             }
 

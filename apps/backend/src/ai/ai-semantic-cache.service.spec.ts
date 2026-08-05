@@ -57,14 +57,76 @@ describe('AiSemanticCache', () => {
         suggestTicket: false,
         cacheVersion: RAG_CONFIG.CACHE.VERSION,
     };
+    const defaultScope = {
+        userId: '11111111-1111-4111-8111-111111111111',
+        audience: 'customer' as const,
+        productId: 'allplan',
+        language: 'tr',
+        routeLocale: 'tr',
+        contextFingerprint: 'default-context',
+    };
 
     describe('get', () => {
+        it('does not return a cached response to a different requester or audience scope', async () => {
+            const cachedEntries = new Map<string, string>();
+            mockRedisService.get.mockImplementation((key: string) => cachedEntries.get(key) ?? null);
+            mockRedisService.set.mockImplementation((key: string, value: string) => {
+                cachedEntries.set(key, value);
+                return Promise.resolve('OK');
+            });
+            mockEmbeddingService.embedText.mockResolvedValue(null);
+
+            await cache.set('test query', {
+                userId: '11111111-1111-4111-8111-111111111111',
+                audience: 'agent',
+                productId: 'allplan',
+                language: 'tr',
+                routeLocale: 'tr',
+                contextFingerprint: 'staff-context',
+            }, mockResult);
+
+            const customerResult = await cache.get('test query', {
+                userId: '22222222-2222-4222-8222-222222222222',
+                audience: 'customer',
+                productId: 'allplan',
+                language: 'tr',
+                routeLocale: 'tr',
+                contextFingerprint: 'customer-context',
+            });
+
+            expect(customerResult).toBeNull();
+        });
+
+        it.each([
+            ['product', { productId: 'allplan-connect' }],
+            ['route locale', { routeLocale: 'en' }],
+            ['language', { language: 'en' }],
+            ['request context', { contextFingerprint: 'different-context' }],
+        ])('does not reuse an exact cache entry when %s changes', async (_label, changedScope) => {
+            const cachedEntries = new Map<string, string>();
+            mockRedisService.get.mockImplementation((key: string) => cachedEntries.get(key) ?? null);
+            mockRedisService.set.mockImplementation((key: string, value: string) => {
+                cachedEntries.set(key, value);
+                return Promise.resolve('OK');
+            });
+            mockEmbeddingService.embedText.mockResolvedValue(null);
+
+            await cache.set('test query', defaultScope, mockResult);
+
+            const result = await cache.get('test query', {
+                ...defaultScope,
+                ...changedScope,
+            });
+
+            expect(result).toBeNull();
+        });
+
         it('should return exact match from Redis', async () => {
             // Arrange
             mockRedisService.get.mockResolvedValue(JSON.stringify(mockResult));
 
             // Act
-            const result = await cache.get('test query', 'tenant-1');
+            const result = await cache.get('test query', defaultScope);
 
             // Assert
             expect(result).toEqual(mockResult);
@@ -78,7 +140,7 @@ describe('AiSemanticCache', () => {
             mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
 
             // Act
-            const result = await cache.get('test query', 'tenant-1');
+            const result = await cache.get('test query', defaultScope);
 
             // Assert
             expect(result).toBeNull();
@@ -93,21 +155,38 @@ describe('AiSemanticCache', () => {
             ]);
 
             // Act
-            const result = await cache.get('test query', 'tenant-1');
+            const result = await cache.get('test query', defaultScope);
 
             // Assert
             expect(result).toEqual(mockResult);
         });
 
-        it('should normalize non-UUID tenants for semantic cache storage', async () => {
+        it('should use a deterministic isolated namespace for semantic cache storage', async () => {
             mockRedisService.get.mockResolvedValue(null);
             mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
             mockPrismaService.$queryRaw.mockResolvedValue([]);
 
-            await cache.get('test query', 'system');
+            await cache.get('test query', defaultScope);
 
             const sqlCall = mockPrismaService.$queryRaw.mock.calls[0]?.[0];
-            expect(String(sqlCall.values ?? sqlCall)).toContain('00000000-0000-0000-0000-000000000000');
+            expect(String(sqlCall.values ?? sqlCall)).not.toContain('00000000-0000-0000-0000-000000000000');
+        });
+
+        it('uses different semantic database namespaces for different requester scopes', async () => {
+            mockRedisService.get.mockResolvedValue(null);
+            mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
+            mockPrismaService.$queryRaw.mockResolvedValue([]);
+
+            await cache.get('test query', defaultScope);
+            await cache.get('test query', {
+                ...defaultScope,
+                userId: '22222222-2222-4222-8222-222222222222',
+                audience: 'agent',
+            });
+
+            const firstQuery = mockPrismaService.$queryRaw.mock.calls[0]?.[0];
+            const secondQuery = mockPrismaService.$queryRaw.mock.calls[1]?.[0];
+            expect(String(firstQuery.values ?? firstQuery)).not.toEqual(String(secondQuery.values ?? secondQuery));
         });
 
         it('should reject semantic match below threshold', async () => {
@@ -119,7 +198,7 @@ describe('AiSemanticCache', () => {
             ]);
 
             // Act
-            const result = await cache.get('test query', 'tenant-1');
+            const result = await cache.get('test query', defaultScope);
 
             // Assert
             expect(result).toBeNull();
@@ -134,7 +213,7 @@ describe('AiSemanticCache', () => {
             mockRedisService.set.mockResolvedValue('OK');
 
             // Act
-            await cache.set('test query', 'tenant-1', mockResult);
+            await cache.set('test query', defaultScope, mockResult);
 
             // Assert
             expect(mockRedisService.set).toHaveBeenCalled();
@@ -164,8 +243,8 @@ describe('AiSemanticCache', () => {
         });
     });
 
-    describe('invalidateTenant', () => {
-        it('should clear all cache for a tenant', async () => {
+    describe('invalidateScope', () => {
+        it('should clear all cache for a scope', async () => {
             // Arrange
             mockPrismaService.$executeRaw.mockResolvedValue({ count: 5 });
             mockRedisService.getClient.mockReturnValue({
@@ -173,7 +252,7 @@ describe('AiSemanticCache', () => {
             });
 
             // Act
-            await cache.invalidateTenant('tenant-1');
+            await cache.invalidateScope(defaultScope);
 
             // Assert
             expect(mockPrismaService.$executeRaw).toHaveBeenCalled();
