@@ -496,3 +496,12 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - Kapanış kanıtı: `pnpm --filter @aluplan/backend test -- ai-pipeline-optimization.pbt.spec.ts --runInBand` → **1 suite / 4 test geçti**.
 - Tam backend kanıtı: `pnpm --filter @aluplan/backend test -- --runInBand` → **110 suite geçti; 987 passed / 1 skipped / 988 total**.
 - Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Faz 3.4 ürün davranışına dokunmadı; değişiklik test güvenilirliği ve CI kapısının yerel kanıtıyla sınırlı kaldı.
+
+### 2026-08-05 — Codex — Faz 4.1 Gmail OAuth `state` yerel checkpoint
+
+- Gmail OAuth başlatma endpoint'i artık admin isteği için kriptografik `state` üretir, Redis'e 10 dakika TTL ile yazar ve Google auth URL'ine bu state'i ekler.
+- Public Gmail callback artık `state` olmadan veya Redis'te geçerli state bulunmadan `code` exchange yapmaz; `invalid_state` ile admin ayar ekranına hata redirect'i döner.
+- Geçerli state tek kullanımlık tüketilir: callback token exchange öncesi Redis kaydını siler. Bu Gmail refresh token saklama/sending davranışını değiştirmez, yalnızca OAuth CSRF koruması ekler.
+- TDD kanıtı: `email.controller.spec.ts` eklendi; state üretme/saklama, geçersiz state reddi ve geçerli state tüketimi test edildi.
+- Odak doğrulaması: `pnpm --filter @aluplan/backend test -- email.controller.spec.ts gmail.provider.ts email.service.spec.ts --runInBand` → **3 suite / 31 test geçti**.
+- Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Kapanış için yayın öncesi gerçek admin Gmail OAuth smoke testi hâlâ gerekir.
