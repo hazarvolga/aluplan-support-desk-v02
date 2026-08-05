@@ -487,3 +487,12 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - Odak doğrulaması: `pnpm --filter @aluplan/backend test -- ai-query.service.pbt.spec.ts ai-query.service.property.spec.ts ai-pipeline-optimization.pbt.spec.ts prompt-context-builder.service.pbt.spec.ts sla.cron.spec.ts --runInBand` → **5 suite / 22 test geçti**.
 - Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti; `pnpm typecheck` geçti (**4 task successful**) ve shared schemas build/typecheck, backend typecheck, frontend typecheck zinciri yeşil tamamlandı.
 - Graphify CLI kurulu bulundu ancak bu checkout'ta `graphify-out/graph.json` olmadığı için sorgu çalışmadı; üst dizindeki `gelistirme-dosyaları` arşivi yalnızca okuma amaçlı referans olarak tespit edildi. Faz 3 ürün davranışına dokunmadı; değişiklikler test/build güvenilirliğiyle sınırlı kaldı.
+
+### 2026-08-05 — Codex — Faz 3.4 tam backend suite kapısı yerel kapanış
+
+- Mevcut CI dosyaları okundu: `.github/workflows/ci.yml` backend test işinde hedefli altküme değil tam Jest suite'i coverage ile çalıştırıyor; `.github/workflows/backend-test.yml` ayrıca backend `test:cov` ve e2e kapısı içeriyor. Bu nedenle yeni CI workflow'u eklenmedi; mevcut tam-suite kapısı doğrulandı.
+- Tam-suite kapı koşusu ilk denemede `ai-pipeline-optimization.pbt.spec.ts` içindeki fazla geniş `userQuery` generator'ı nedeniyle kırmızıya döndü. Counterexample `0.AA` gibi domain-benzeri anlamsız inputun URL-only/yetersiz-soru guard'ına takılmasıydı; ürün davranışı doğru, property sözleşmesi fazla genişti.
+- PBT generator'ı gerçek destek sorgularına daraltıldı; shift-event payload testi artık URL-only guard'ı değil `problem-shift` Langfuse payload sözleşmesini ölçüyor.
+- Kapanış kanıtı: `pnpm --filter @aluplan/backend test -- ai-pipeline-optimization.pbt.spec.ts --runInBand` → **1 suite / 4 test geçti**.
+- Tam backend kanıtı: `pnpm --filter @aluplan/backend test -- --runInBand` → **110 suite geçti; 987 passed / 1 skipped / 988 total**.
+- Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Faz 3.4 ürün davranışına dokunmadı; değişiklik test güvenilirliği ve CI kapısının yerel kanıtıyla sınırlı kaldı.
