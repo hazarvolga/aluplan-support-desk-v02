@@ -1,9 +1,12 @@
 import { PrismaClient } from '@aluplan/database';
+import { createCliLogger } from './common/utils/cli-logger';
+
+const cliLogger = createCliLogger('FixImportedCustomers');
 
 const prisma = new PrismaClient();
 
 async function fixImportedCustomers() {
-  console.log('🔧 Fixing imported customers without role...');
+  cliLogger.log('🔧 Fixing imported customers without role...');
 
   // Get customer role
   const customerRole = await prisma.role.findUnique({
@@ -11,7 +14,7 @@ async function fixImportedCustomers() {
   });
 
   if (!customerRole) {
-    console.error('❌ Customer role not found!');
+    cliLogger.error('❌ Customer role not found!');
     return;
   }
 
@@ -28,7 +31,7 @@ async function fixImportedCustomers() {
     }
   });
 
-  console.log(`📊 Found ${usersWithoutRole.length} users without role`);
+  cliLogger.log(`📊 Found ${usersWithoutRole.length} users without role`);
 
   // Update them
   for (const user of usersWithoutRole) {
@@ -36,11 +39,11 @@ async function fixImportedCustomers() {
       where: { id: user.id },
       data: { roleId: customerRole.id }
     });
-    console.log(`✅ Fixed user: ${user.email}`);
+    cliLogger.log(`✅ Fixed user: ${user.email}`);
   }
 
-  console.log('✨ Done!');
+  cliLogger.log('✨ Done!');
   await prisma.$disconnect();
 }
 
-fixImportedCustomers().catch(console.error);
+fixImportedCustomers().catch((error) => cliLogger.error(error));

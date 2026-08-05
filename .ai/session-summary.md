@@ -3577,3 +3577,27 @@ Maintenance rule:
 
 - Deploy backend first so `/ai/copilot/draft/:ticketId` returns the `visuals` payload.
 - Deploy frontend after backend so admin ticket detail renders the draft visual evidence cards.
+
+## Follow-up - 2026-08-05 Repo Consolidation Baseline And BULGU-23 Console Cleanup
+
+### What changed
+
+- Active work continued only in `/Users/hazarvolgaekiz/dev/studio/aluplan-support-desk-v02/aluplan-support-desk-v02-main-live-site` after repo consolidation.
+- Recorded the local consolidation baseline commit in `codex-claude-ortak-rapor.md`.
+- Added `apps/backend/src/common/utils/cli-logger.ts` and moved backend CLI/diagnostic helper output from direct `console.*` calls to Nest `Logger` through `createCliLogger(...)`.
+- Replaced remaining direct console calls in helper scripts, including `raw-sync.js`.
+- Removed `raw-sync.js` hardcoded Postgres URL and personal dataset path; the script now requires `DATABASE_URL` and uses `DATASET_DIR` with a relative fallback.
+- Adjusted one RAG utility spec fixture string so raw `console.*` scans do not report a non-call test snippet.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend lint` passed with 0 errors and existing warnings only.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `git diff --check` passed.
+- Direct-call scan for `console.log/warn/error/info/debug/trace/dir/table(` under `apps/backend/src` returned no direct calls.
+- Raw `console.` scan only reports `console.x.ai/billing` URL strings in `generic-openai.service.ts`.
+
+### Notes
+
+- Push remains forbidden unless the user explicitly requests it.
+- Next safe local technical target is stabilizing `ai-pipeline-optimization.pbt.spec.ts` with deterministic seed/failure-seed handling.

@@ -784,3 +784,43 @@ Aktif tek repo senkronu sonrası görünen dört çalışma ağacı değişikli�
 | `pnpm-lock.yaml` | Lockfile hijyeni | `pnpm install` sonrası artık mevcut olmayan `apps/promo-video` workspace importer'ı lockfile'dan temizlenmiş görünüyor. `apps/promo-video` dizini yok; workspace pattern'i `apps/*` olduğu için bu temizlik tutarlı. |
 
 **Karar:** Bu değişiklikler ürün davranışına yeni kod eklemiyor; konsolidasyon sonrası dokümantasyon, generated spec ve lockfile baz çizgisi olarak birlikte commitlenebilir. Commit sonrası temiz git tabanı, bir sonraki teknik faza geçmeden önce tekrar doğrulanmalıdır. Push yasağı devam eder.
+
+### 2026-08-05 — Codex — Konsolidasyon baseline commit'i alındı
+
+Konsolidasyon sonrası görünen dokümantasyon/generated/lockfile değişiklikleri yerel commit ile baz çizgiye alındı:
+
+- Commit: `b73ae3f7` — `chore: record consolidated repo baseline`
+- Branch: `restore/codex-claude-report-20260805`
+- Commit kapsamı:
+  - `codex-claude-ortak-rapor.md` — append-only konsolidasyon ve ortam doğrulama kayıtları
+  - `Aluplan-destek-codex-GAP-raporu.md` — başlangıç Codex GAP raporu referans dokümanı
+  - `apps/backend/openapi.json` — güncel generated API spec
+  - `pnpm-lock.yaml` — artık mevcut olmayan `apps/promo-video` workspace importer temizliği
+- `git diff --check` temiz geçti.
+- Commit sonrası `git status --short` temiz doğrulandı.
+- Push yapılmadı; push/tag/deploy yasağı aynen devam ediyor.
+
+**Sonraki teknik odak:** BULGU-23'ün kalan kısmı. Restore/konsolide repo'da `apps/backend/src/otel.ts` logger'a taşındı ve `no-console` lint kapısı eklendi; ancak backend production kodunda kalan doğrudan `console.log`/`console.warn`/`console.error` yüzeyi hâlâ kapatılmalıdır. Sıradaki iş bu kalan yüzeyi Nest/Pino logger'a taşımak ve lint/test ile doğrulamaktır.
+
+### 2026-08-05 — Codex — BULGU-23 console temizliği tamamlandı, doğrulama yeşil
+
+Aktif tek repo üzerinde BULGU-23'ün kalan doğrudan `console.*` yüzeyi kapatıldı.
+
+**Yapılan değişiklikler:**
+- `apps/backend/src/common/utils/cli-logger.ts` eklendi; CLI/diagnostic helper dosyaları Nest `Logger` üzerinden log yazacak ortak küçük adapter'a taşındı.
+- Backend altındaki CLI/diagnostic helper dosyalarında `console.log`, `console.warn`, `console.error` ve `console.table` kullanımları `createCliLogger(...)` üzerinden `log/warn/error` çağrılarına taşındı.
+- `apps/backend/src/raw-sync.js` içinde kalan CommonJS helper logları Nest `Logger` ile değiştirildi.
+- Aynı `raw-sync.js` dosyasında eski hardcoded Postgres connection string kaldırıldı; script artık `DATABASE_URL` ister. Kişisel hardcoded dataset path'i de `DATASET_DIR || path.resolve(process.cwd(), '../../dataset')` fallback yapısına alındı.
+- `apps/backend/src/ai/utils/rag-improvements.spec.ts` içindeki test fixture string'i ham `console.*` aramasını yanıltmayacak şekilde değiştirildi; test niyeti aynı kaldı.
+
+**Doğrulama:**
+- `pnpm --filter @aluplan/backend lint` → 0 error, mevcut 596 warning aynı sınıfta kaldı.
+- `pnpm --filter @aluplan/backend typecheck` → başarılı.
+- `git diff --check` → temiz.
+- Doğrudan çağrı araması: `rg -n "^\\s*console\\.(log|warn|error|info|debug|trace|dir|table)\\s*\\(" apps/backend/src` → sonuç yok.
+- Ham `console.` araması yalnız `apps/backend/src/ai/generic-openai.service.ts` içindeki `console.x.ai/billing` URL metinlerini gösteriyor; bunlar log çağrısı değil.
+- Hardcoded Postgres URL kontrolünde ürün kodunda yeni sızıntı yok; sadece `env-validation.spec.ts` test fixture'ında dummy `postgresql://user:pass@localhost:5432/db` değeri var.
+
+**Durum:** BULGU-23 backend direct-console hedefi aktif repo için kapalı sayılabilir. Push yapılmadı; değişiklikler yerelde commit bekliyor.
+
+**Sıradaki güvenli teknik odak:** BULGU-11/Faz 3.4 property-based test flakiness. `ai-pipeline-optimization.pbt.spec.ts` için sabit seed veya failure-seed kaydı eklenerek stabilizasyon yapılmalı. Faz 6.1/6.3 üretim migration/RAG kalite işleri kullanıcı bakım penceresi vermeden başlatılmayacak.

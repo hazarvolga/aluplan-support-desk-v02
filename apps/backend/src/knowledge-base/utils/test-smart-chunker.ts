@@ -1,4 +1,7 @@
 import { smartChunk } from './smart-chunker';
+import { createCliLogger } from '../../common/utils/cli-logger';
+
+const cliLogger = createCliLogger('TestSmartChunker');
 
 const massiveText = `
 # Giriş
@@ -29,18 +32,18 @@ Sistem logları için aşağıdaki hata kodları yaygındır:
 Uygulama bu şekilde çalışmalıdır. Eğer büyük dosyalar düzgün ayrılmazsa, modelin kafası karışabilir.
 `;
 
-console.log('--- TEST: SMART CHUNKER ---');
+cliLogger.log('--- TEST: SMART CHUNKER ---');
 const chunks = smartChunk(massiveText, {
     maxTokens: 500, // Small limit to force chunking
     overlap: 100,
     title: 'test_massive_file'
 });
 
-console.log('TOTAL CHUNKS: ' + chunks.length);
+cliLogger.log('TOTAL CHUNKS: ' + chunks.length);
 chunks.forEach((chunk, i) => {
-    console.log('\\n================= CHUNK ' + (i + 1) + ' (Seq: ' + chunk.sequence + ') =================');
-    console.log('Length: ' + chunk.content.length + ' chars');
-    console.log(chunk.content.substring(0, 150) + '...');
-    console.log('...');
-    console.log(chunk.content.slice(-100));
+    cliLogger.log('\\n================= CHUNK ' + (i + 1) + ' (Seq: ' + chunk.sequence + ') =================');
+    cliLogger.log('Length: ' + chunk.content.length + ' chars');
+    cliLogger.log(chunk.content.substring(0, 150) + '...');
+    cliLogger.log('...');
+    cliLogger.log(chunk.content.slice(-100));
 });

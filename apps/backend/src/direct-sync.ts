@@ -2,15 +2,18 @@
 import { PrismaClient } from '@aluplan/database';
 import * as fs from 'fs';
 import * as path from 'path';
+import { createCliLogger } from './common/utils/cli-logger';
+
+const cliLogger = createCliLogger('DirectSync');
 
 const prisma = new PrismaClient();
 
 async function main() {
     const datasetDir = path.resolve(process.cwd(), '../../dataset');
-    console.log(`📂 Scanning dataset directory: ${datasetDir}`);
+    cliLogger.log(`📂 Scanning dataset directory: ${datasetDir}`);
 
     if (!fs.existsSync(datasetDir)) {
-        console.error('❌ Dataset directory not found');
+        cliLogger.error('❌ Dataset directory not found');
         return;
     }
 
@@ -30,7 +33,7 @@ async function main() {
     }
 
     walk(datasetDir);
-    console.log(`📄 Found ${filesToSync.length} files to sync.`);
+    cliLogger.log(`📄 Found ${filesToSync.length} files to sync.`);
 
     for (const filePath of filesToSync) {
         const fileName = path.basename(filePath);
@@ -42,7 +45,7 @@ async function main() {
         if (ext === '.csv') type = 'FILE_CSV';
         if (ext === '.json') type = 'FILE_JSON'; // Added missing JSON type
 
-        console.log(`⏳ Processing: ${fileName}...`);
+        cliLogger.log(`⏳ Processing: ${fileName}...`);
 
         try {
             let _source;
@@ -66,7 +69,7 @@ async function main() {
                     }
                 });
             }
-            console.log(`✅ Synced: ${fileName}`);
+            cliLogger.log(`✅ Synced: ${fileName}`);
         } catch (_e) {
             // Logic for non-unique id dummy
             const existing = await prisma.knowledgeSource.findFirst({
@@ -84,18 +87,18 @@ async function main() {
                         metadata: { useAiPreprocessing: true }
                     }
                 });
-                console.log(`✅ Created: ${fileName}`);
+                cliLogger.log(`✅ Created: ${fileName}`);
             } else {
-                console.log(`⏩ Already exists: ${fileName}`);
+                cliLogger.log(`⏩ Already exists: ${fileName}`);
             }
         }
     }
 
-    console.log('🚀 Bulk creation complete. Next step: Trigger background processing in NestJS.');
+    cliLogger.log('🚀 Bulk creation complete. Next step: Trigger background processing in NestJS.');
 }
 
 main()
-    .catch(e => console.error(e))
+    .catch(e => cliLogger.error(e))
     .finally(async () => {
         await prisma.$disconnect();
     });

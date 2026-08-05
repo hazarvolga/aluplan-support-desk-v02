@@ -2,6 +2,11 @@
 
 ## Active Work
 
+- 2026-08-05 consolidation follow-up:
+  - Active repo is now the git-tracked single working directory at `/Users/hazarvolgaekiz/dev/studio/aluplan-support-desk-v02/aluplan-support-desk-v02-main-live-site`.
+  - `b73ae3f7` recorded the local consolidation baseline; push remains forbidden without explicit user approval.
+  - BULGU-23 backend direct-console cleanup is complete locally: CLI/diagnostic helper output uses Nest `Logger` via `createCliLogger(...)`, direct `console.*(` calls under `apps/backend/src` scan clean, backend lint/typecheck and `git diff --check` pass.
+  - Next safe local technical target is BULGU-11/Faz 3.4 PBT flakiness stabilization for `ai-pipeline-optimization.pbt.spec.ts`.
 - Ticket filter hardening completed locally:
   - tickets page filters now use explicit status chips plus scope and submit-based search instead of the previous status dropdown/fake metric cards.
   - backend list API supports `search` and `includeStatusCounts`; status counters respect scope/search while ignoring only the active status filter.

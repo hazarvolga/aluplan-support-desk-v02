@@ -127,7 +127,7 @@ describe('answer-self-check', () => {
 3. Üçüncü adım
 
 \`\`\`js
-console.log('test');
+const message = 'test';
 \`\`\`
             `, 0.6);
             expect(result.concerns).not.toContain('Answer lacks structure');
