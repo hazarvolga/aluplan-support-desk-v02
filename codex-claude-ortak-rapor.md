@@ -454,3 +454,11 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - Odak doğrulaması: 4 backend suite / 59 test geçti; `pnpm --filter @aluplan/backend typecheck` geçti. Bağımsız kod incelemesi, güncel Faz 2 kapsamında bloklayıcı regresyon bulmadı. Bu yerel checkpoint tam e2e/iki-hesap canlı smoke yerine geçmez.
 - Canlı sistem topolojisi notu: kullanıcı, `Sistem Kaynak Topolojisi` ekranındaki PDF/DOCX/XLS/TXT/MD, admin makale, URL/web ve bilet öğrenimi kaynaklarının birleşik vektör dizinine akışının canlıda iyi çalıştığını teyit etti. Sonraki Faz 2 işleri bu akışı bozmayacak; özellikle `Bilet Öğrenimi` hattında müşteri/personel veri sınırı korunacak.
 - Kapanmamış kapsam: HTTP download/attachment authorization, ticket list/query endpoint düzenlemeleri, permission-temelli özel roller ve frontend UI rol matrisi Faz 2 devam işidir.
+
+### 2026-08-05 — Codex — Faz 2.2 attachment upload yetkisi yerel checkpoint
+
+- `/tr/help` yapısı local koddan okundu ve ürün sözleşmesi olarak kabul edildi: müşteri akışı AI/bilgi bankası/Hotinfo/dosya ekli ticket oluşturma üzerine kurulu; admin akışı ticket havuzu, iç not, AI Co-Pilot, Knowledge Pool, KB onayları, FAQ ve sistem topolojisiyle kaliteyi büyütür. GAP kapatmaları bu çalışan omurgayı bozmayacak.
+- Attachment upload akışı dar kapsamda sertleştirildi: çağıran kullanıcı, dosyanın ekleneceği `messageId` üzerinden ilgili ticket'a erişemiyorsa storage upload, attachment kaydı, Socket event'i ve `hotinfoSnapshot` güncellemesi yapılmaz.
+- `CUSTOMER`/`VIEWER`, kendi ticket'ına erişse bile dahili personele ait `isInternal` mesajlara attachment ekleyemez. Staff rolleri mevcut merkezi `TicketAccessService` kararını kullanır.
+- Odak doğrulaması: Faz 2 backend seti 4 suite / 61 test geçti; `pnpm --filter @aluplan/backend typecheck` geçti. Bu checkpoint canlı iki-hesap attachment smoke testi yerine geçmez.
+- Kapanmamış kapsam: Faz 2.3 alan-seviyesi ticket update allow-list (`assignedTo`, yönetimsel alanlar) sıradaki kod fazıdır.
