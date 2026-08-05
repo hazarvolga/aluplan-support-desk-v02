@@ -505,3 +505,17 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - TDD kanıtı: `email.controller.spec.ts` eklendi; state üretme/saklama, geçersiz state reddi ve geçerli state tüketimi test edildi.
 - Odak doğrulaması: `pnpm --filter @aluplan/backend test -- email.controller.spec.ts gmail.provider.ts email.service.spec.ts --runInBand` → **3 suite / 31 test geçti**.
 - Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Kapanış için yayın öncesi gerçek admin Gmail OAuth smoke testi hâlâ gerekir.
+
+### 2026-08-05 — Codex — `gelistirme-dosyaları` referans arşivi okuma notu
+
+- Üst dizindeki `gelistirme-dosyaları` klasörü aktif kaynak değil, eski bilgisayardan taşınmış yaklaşık 4 GB'lık proje/arşiv referansıdır. İçinde eski `.ai` hafızası, `.aluplan-skill`, RAG/product-flow acceptance kayıtları, Allplan help mirror'ı, datasetler, eski workflows ve hassas olabilecek `.env`/GCP key/SQL backup dosyaları vardır.
+- Secret/backup içerikleri açılmadı ve rapora yazılmadı. Klasör bundan sonra yalnızca okuma amaçlı mimari/domain hafızası olarak kullanılacak.
+- Arşivden alınan ürün yönü: sistem bir chatbot değil, CRM/RAG/Hotinfo destek zekâ platformudur; Hotinfo ticket-specific context olarak kalır, global vendor RAG corpus'una karıştırılmaz; AI tanı ticket açmayı bloklamaz; customer/admin answer parity `SupportAnswerOrchestrator` üzerinden korunmalıdır; single-tenant çizgi ve Gemini 3072/v2_2 embedding izolasyonu korunur.
+
+### 2026-08-05 — Codex — Faz 4.2 CRM inbound webhook public + imza guard yerel checkpoint
+
+- `POST /crm/webhooks/dynamics365` endpoint'i global JWT guard'ı bypass edebilmesi için `@Public()` ile işaretlendi; bu, Dynamics 365 callback'in imza guard'ına ulaşmadan auth tarafından kesilmesini engeller.
+- Aynı route üzerinde `CrmWebhookGuard` korunmuştur. Guard aktif Dynamics bağlantısındaki encrypted `webhookSecret` değerini decrypt eder ve `x-signature` HMAC-SHA256 imzasını timing-safe compare ile doğrular.
+- Controller testi public metadata ile `CrmWebhookGuard` metadata'sının birlikte varlığını kilitler; guard testleri eksik/imzasız/geçersiz imza ve geçerli imza akışlarını doğrular.
+- Odak doğrulaması: `pnpm --filter @aluplan/backend test -- crm-webhook.controller.spec.ts crm-webhook.guard.spec.ts --runInBand` → **2 suite / 11 test geçti**.
+- Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Kapanış için yayın öncesi Dynamics test webhook smoke veya sağlayıcıdan imzalı callback doğrulaması gerekir.
