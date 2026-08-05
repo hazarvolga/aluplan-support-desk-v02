@@ -66,6 +66,11 @@ describe('AiSemanticCache', () => {
         contextFingerprint: 'default-context',
     };
 
+    it('uses centralized cache thresholds from RAG_CONFIG', () => {
+        expect((cache as any).SEMANTIC_THRESHOLD).toBe(RAG_CONFIG.CACHE.SEMANTIC_THRESHOLD);
+        expect((cache as any).DEFAULT_TTL_SECONDS).toBe(RAG_CONFIG.CACHE.DEFAULT_TTL);
+    });
+
     describe('get', () => {
         it('does not return a cached response to a different requester or audience scope', async () => {
             const cachedEntries = new Map<string, string>();

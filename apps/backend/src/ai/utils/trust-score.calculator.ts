@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { RAG_CONFIG } from '../../config/rag.config';
 
 /**
  * Trust Score Calculator based on FAQ_Self_Learing_mimarisi.MD v1.0
@@ -7,23 +8,9 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class TrustScoreCalculator {
     /**
-     * base_score:
-     *   article  → 0.95
-     *   document → 0.85
-     *   url (whitelist) → 0.70
-     *   url (external)  → 0.55
-     *   faq (approved)  → 0.75
-     *   faq (auto)      → 0.50
+     * base_score values are centralized in RAG_CONFIG.TRUST_SCORE.BASE.
      */
-    private readonly BASE_SCORES = {
-        ARTICLE: 0.95,
-        DOCUMENT: 0.85,
-        URL_WHITELIST: 0.70,
-        URL_EXTERNAL: 0.55,
-        FAQ_APPROVED: 0.75,
-        FAQ_AUTO: 0.50,
-        TICKET: 0.10, // Benzer ticketlar
-    };
+    private readonly BASE_SCORES = RAG_CONFIG.TRUST_SCORE.BASE;
 
     calculate(params: {
         sourceType: keyof typeof TrustScoreCalculator.prototype.BASE_SCORES | string;
@@ -33,7 +20,7 @@ export class TrustScoreCalculator {
         negativeFeedbackCount: number;
         isApproved?: boolean;
     }): number {
-        const base = this.BASE_SCORES[params.sourceType as keyof typeof TrustScoreCalculator.prototype.BASE_SCORES] || 0.50;
+        const base = this.BASE_SCORES[params.sourceType as keyof typeof TrustScoreCalculator.prototype.BASE_SCORES] || RAG_CONFIG.TRUST_SCORE.BASE.FAQ_AUTO;
 
         const ageFactor = this.calculateAgeFactor(params.lastUpdatedAt || params.createdAt);
         const feedbackFactor = this.calculateFeedbackFactor(params.positiveFeedbackCount, params.negativeFeedbackCount);
@@ -45,10 +32,10 @@ export class TrustScoreCalculator {
     private calculateAgeFactor(date: Date): number {
         const daysOld = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
 
-        if (daysOld < 30) return 1.00;
-        if (daysOld < 90) return 0.95;
-        if (daysOld < 180) return 0.85;
-        return 0.70;
+        if (daysOld < RAG_CONFIG.TRUST_SCORE.AGE.FRESH_DAYS) return RAG_CONFIG.TRUST_SCORE.AGE.FRESH_FACTOR;
+        if (daysOld < RAG_CONFIG.TRUST_SCORE.AGE.RECENT_DAYS) return RAG_CONFIG.TRUST_SCORE.AGE.RECENT_FACTOR;
+        if (daysOld < RAG_CONFIG.TRUST_SCORE.AGE.STALE_DAYS) return RAG_CONFIG.TRUST_SCORE.AGE.STALE_FACTOR;
+        return RAG_CONFIG.TRUST_SCORE.AGE.OLD_FACTOR;
     }
 
     private calculateFeedbackFactor(pos: number, neg: number): number {
@@ -56,7 +43,6 @@ export class TrustScoreCalculator {
         if (total === 0) return 1.0;
 
         const ratio = pos / total;
-        // logic: 0.8 to 1.2 multiplier
-        return 0.8 + (ratio * 0.4);
+        return RAG_CONFIG.TRUST_SCORE.FEEDBACK.MIN_FACTOR + (ratio * RAG_CONFIG.TRUST_SCORE.FEEDBACK.SPAN);
     }
 }

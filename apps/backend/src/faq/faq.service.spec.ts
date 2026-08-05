@@ -7,6 +7,7 @@ import { EmbeddingService } from '../ai/embedding.service';
 import { EmbeddingVersionRegistry } from '../ai/embedding-version.registry';
 import { SettingsService } from '../settings/settings.service';
 import { mockPrismaService } from '../test/mock.utils';
+import { RAG_CONFIG } from '../config/rag.config';
 
 const mockEmbeddingVersionRegistry = {
     getActiveVersionConfig: jest.fn().mockResolvedValue({ version: 'v3s', dimension: 1536, provider: 'openai', model: 'text-embedding-3-small' }),
@@ -58,6 +59,10 @@ describe('FaqService - Knowledge Base CRUD', () => {
         jest.clearAllMocks();
         mockAiService.embed.mockResolvedValue({ embedding: Array.from({ length: 1536 }, () => 0.1) });
         localMockPrismaService.$executeRaw.mockResolvedValue(1);
+    });
+
+    it('uses centralized FAQ auto-publish threshold from RAG_CONFIG', () => {
+        expect((service as any).AUTO_PUBLISH_THRESHOLD).toBe(RAG_CONFIG.FAQ.AUTO_PUBLISH_THRESHOLD);
     });
 
     describe('findAll', () => {

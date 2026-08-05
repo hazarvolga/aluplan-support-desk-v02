@@ -8,8 +8,7 @@ import { EmbeddingService } from '../ai/embedding.service';
 import { AiService } from '../ai/ai.service';
 import { EmbeddingVersionRegistry } from '../ai/embedding-version.registry';
 import { SettingsService } from '../settings/settings.service';
-
-const AUTO_PUBLISH_THRESHOLD = 0.85; // Sorular %85+ eşleşme → direkt yayınla
+import { RAG_CONFIG } from '../config/rag.config';
 
 export interface ExtractedPattern {
     question: string;
@@ -24,6 +23,7 @@ export interface ExtractedPattern {
 @Injectable()
 export class FaqService {
     private readonly logger = new Logger(FaqService.name);
+    private readonly AUTO_PUBLISH_THRESHOLD = RAG_CONFIG.FAQ.AUTO_PUBLISH_THRESHOLD; // Questions above this confidence are published automatically.
 
     constructor(
         private readonly prisma: PrismaService,
@@ -238,7 +238,7 @@ export class FaqService {
             }
 
             // 3. Create new FAQ entry with embedding
-            const status = pattern.confidenceScore >= AUTO_PUBLISH_THRESHOLD ? 'PUBLISHED' : 'PENDING_REVIEW';
+            const status = pattern.confidenceScore >= this.AUTO_PUBLISH_THRESHOLD ? 'PUBLISHED' : 'PENDING_REVIEW';
 
             let questionEmbedding: number[] | null = null;
             try {

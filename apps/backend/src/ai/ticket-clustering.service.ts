@@ -4,12 +4,13 @@ import { AiService } from './ai.service';
 import { EmbeddingService } from './embedding.service';
 import { FaqService } from '../faq/faq.service';
 import { Cron } from '@nestjs/schedule';
+import { RAG_CONFIG } from '../config/rag.config';
 
 @Injectable()
 export class TicketClusteringService {
     private readonly logger = new Logger(TicketClusteringService.name);
-    private readonly SIMILARITY_THRESHOLD = 0.85;
-    private readonly MIN_CLUSTER_SIZE = 5; // R-T3 uyumu: CLAUDE.md §4.2
+    private readonly SIMILARITY_THRESHOLD = RAG_CONFIG.CLUSTERING.SIMILARITY_THRESHOLD;
+    private readonly MIN_CLUSTER_SIZE = RAG_CONFIG.CLUSTERING.MIN_CLUSTER_SIZE; // R-T3 uyumu: CLAUDE.md §4.2
 
     constructor(
         private readonly prisma: PrismaService,
@@ -133,7 +134,7 @@ Görevin:
                     tags: parsed.tags || [],
                     ticketCount: tickets.length,
                     avgCsat,
-                    consistencyRatio: 1.0, // All members passed similarity threshold (0.85)
+                    consistencyRatio: 1.0, // All members passed configured similarity threshold
                 });
 
                 // Mark tickets as processed

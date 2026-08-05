@@ -30,7 +30,7 @@ export interface AiCacheScope {
  * Tier 2 — Semantic Match (pgvector + cosine similarity):
  *   - Slightly slower (~10-50ms)
  *   - Similar meaning → same response
- *   - Threshold: cosine similarity > 0.95
+ *   - Threshold: configured semantic similarity floor
  *
  * Guarantees:
  * - Vector DB consistency via EmbeddingNormalizer (canonical space)
@@ -41,8 +41,8 @@ export interface AiCacheScope {
 @Injectable()
 export class AiSemanticCache {
     private readonly logger = new Logger(AiSemanticCache.name);
-    private readonly SEMANTIC_THRESHOLD = 0.95;
-    private readonly DEFAULT_TTL_SECONDS = 3600; // 1 hour
+    private readonly SEMANTIC_THRESHOLD = RAG_CONFIG.CACHE.SEMANTIC_THRESHOLD;
+    private readonly DEFAULT_TTL_SECONDS = RAG_CONFIG.CACHE.DEFAULT_TTL;
 
     constructor(
         private readonly prisma: PrismaService,
