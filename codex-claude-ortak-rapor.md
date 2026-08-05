@@ -470,3 +470,11 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - Staff update davranışı korunmuştur; priority değiştiğinde mevcut SLA recalculation akışı devam eder.
 - TDD kanıtı: yeni negatif testler önce kırmızı görüldü, fix sonrası `tickets.service.spec.ts` 25/25 geçti. Faz 2 backend seti 4 suite / 63 test geçti; `pnpm --filter @aluplan/backend typecheck` geçti.
 - Faz 2 nesne/alan yetkilendirme ana kod kapıları bu checkpoint ile yerelde kapatıldı. Kalan doğrulama: canlıya çıkmadan önce iki-hesap smoke testi ve frontend UI rol matrisi.
+
+### 2026-08-05 — Codex — Faz 2.5 AI telemetry sahiplik kontrolü yerel checkpoint
+
+- `POST /ai/interactions/:id/telemetry` artık `req.user.sub` bilgisini servise geçirir; telemetry yazımı yalnızca ilgili `AiInteraction.userId` ile eşleşen kullanıcı için yapılır.
+- Başkasına ait interaction telemetry güncellemesi 403 (`AI_INTERACTION_FORBIDDEN`), var olmayan interaction 404 (`AI_INTERACTION_NOT_FOUND`) döner; bu durumlarda `aiInteraction.update` çağrılmaz.
+- Staff override eklenmedi: telemetry, "bu cevabı ben kabul ettim/düzenledim" olayıdır; admin raporlama/analitik ayrı read-only/aggregate kanallardan yürür. Bu karar mevcut Help/AI çalışma mantığını bozmaz.
+- TDD kanıtı: negatif telemetry testleri önce kırmızı görüldü; fix sonrası `ai-query.service.spec.ts` hedef seti 2 suite / 63 passed / 1 skipped geçti. Faz 2 + telemetry birleşik backend seti 6 suite / 126 passed / 1 skipped geçti; `pnpm --filter @aluplan/backend typecheck` geçti.
+- Faz 2 kod kapsamı yerelde tamamlandı. Kapanış için kalan kanıt: canlıya çıkmadan önce customer/staff iki-hesap smoke testi, attachment download smoke, AI telemetry owner/foreign-user smoke ve frontend UI rol matrisi.
