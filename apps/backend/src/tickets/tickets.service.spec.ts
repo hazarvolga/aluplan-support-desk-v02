@@ -213,6 +213,47 @@ describe('TicketsService', () => {
 
             expect(result.chatStatus).toBe(ChatStatus.LIVE);
         });
+
+        it('should reject customer attempts to assign a ticket via generic update', async () => {
+            const ticket = {
+                id: 'tik1',
+                userId: 'customer1',
+                chatStatus: ChatStatus.NORMAL,
+                creator: { customerProfile: { isVip: true } },
+                messages: [],
+                escalations: [],
+            };
+            prisma.ticket.findFirst.mockResolvedValue(ticket);
+
+            await expect(service.update(
+                'tik1',
+                { assignedTo: '11111111-1111-4111-8111-111111111111' },
+                { id: 'customer1', role: 'CUSTOMER' },
+            )).rejects.toThrow(ForbiddenException);
+
+            expect(prisma.ticket.update).not.toHaveBeenCalled();
+        });
+
+        it('should reject customer attempts to change priority via generic update', async () => {
+            const ticket = {
+                id: 'tik1',
+                userId: 'customer1',
+                chatStatus: ChatStatus.NORMAL,
+                creator: { customerProfile: { isVip: true } },
+                messages: [],
+                escalations: [],
+            };
+            prisma.ticket.findFirst.mockResolvedValue(ticket);
+
+            await expect(service.update(
+                'tik1',
+                { priority: TicketPriority.URGENT },
+                { id: 'customer1', role: 'CUSTOMER' },
+            )).rejects.toThrow(ForbiddenException);
+
+            expect(mockSlaService.calculateDeadlines).not.toHaveBeenCalled();
+            expect(prisma.ticket.update).not.toHaveBeenCalled();
+        });
     });
 
     describe('transition', () => {

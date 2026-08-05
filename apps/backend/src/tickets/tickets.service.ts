@@ -444,6 +444,7 @@ export class TicketsService {
     // =============================================
     async update(id: string, dto: UpdateTicketDto, requester: any) {
         const ticket = await this.findOne(id, requester); // throws if not found or no access
+        this.assertTicketFieldUpdateAllowed(dto, requester);
 
         if (dto.chatStatus) {
             this.assertChatStatusUpdateAllowed(ticket, dto.chatStatus, requester);
@@ -463,10 +464,33 @@ export class TicketsService {
         return this.prisma.ticket.update({
             where: { id },
             data: {
-                ...dto,
+                ...this.buildTicketUpdateData(dto),
                 ...slaUpdate,
             },
         });
+    }
+
+    private buildTicketUpdateData(dto: UpdateTicketDto) {
+        const data: Partial<UpdateTicketDto> = {};
+        if (dto.subject !== undefined) data.subject = dto.subject;
+        if (dto.description !== undefined) data.description = dto.description;
+        if (dto.priority !== undefined) data.priority = dto.priority;
+        if (dto.chatStatus !== undefined) data.chatStatus = dto.chatStatus;
+        if (dto.assignedTo !== undefined) data.assignedTo = dto.assignedTo;
+        if (dto.tags !== undefined) data.tags = dto.tags;
+        return data;
+    }
+
+    private assertTicketFieldUpdateAllowed(dto: UpdateTicketDto, requester: any) {
+        if (!this.isCustomerRole(requester?.role)) return;
+
+        const restrictedFields = ['assignedTo', 'priority', 'teamId', 'departmentId'] as const;
+        const attemptedRestrictedField = restrictedFields.find(
+            (field) => Object.prototype.hasOwnProperty.call(dto, field) && (dto as Record<string, unknown>)[field] !== undefined,
+        );
+        if (attemptedRestrictedField) {
+            throw new ForbiddenException('TICKET_FIELD_AGENT_ONLY');
+        }
     }
 
     private assertChatStatusUpdateAllowed(
@@ -474,10 +498,7 @@ export class TicketsService {
         nextStatus: ChatStatus,
         requester: any,
     ) {
-        const role = String(requester?.role ?? '').toUpperCase();
-        const isCustomer = role === 'CUSTOMER' || role === 'VIEWER';
-
-        if (!isCustomer) return;
+        if (!this.isCustomerRole(requester?.role)) return;
 
         if (nextStatus !== ChatStatus.REQUESTED) {
             throw new ForbiddenException('LIVE_CHAT_AGENT_ONLY');
@@ -487,6 +508,16 @@ export class TicketsService {
         if (!isVip) {
             throw new ForbiddenException('LIVE_CHAT_VIP_REQUIRED');
         }
+    }
+
+    private isCustomerRole(role: unknown): boolean {
+        const roleName = typeof role === 'string'
+            ? role
+            : role && typeof role === 'object' && 'name' in role
+                ? (role as { name?: unknown }).name
+                : undefined;
+        const normalized = typeof roleName === 'string' ? roleName.trim().toUpperCase().replace(/-/g, '_') : '';
+        return normalized === 'CUSTOMER' || normalized === 'VIEWER';
     }
 
     async getAiTrace(id: string, requester: any) {
