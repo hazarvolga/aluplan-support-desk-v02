@@ -1,3 +1,44 @@
+# 🔒 CANLI VERİ GÜVENLİĞİ — DEĞİŞTİRİLEMEZ TEMEL KURAL
+
+> **Bu bölüm kullanıcı tarafından eklenmiştir ve rapordaki her şeyin önünde gelir.**
+> Ne Codex ne Claude bu bölümü silemez, değiştiremez, üzerine yazamaz veya taşıyamaz.
+> Rapor her güncellendiğinde — dondurulmuş orta bölüm de, append-only alt kayıt da dahil —
+> bu blok aynen, en başta kalmalıdır. Append-only kuralının (protokol madde 7) **tek istisnasıdır**:
+> o kural "yeni bilgi en alta eklenir" der, bu blok ise en üstte sabit durur çünkü bir günlük
+> girdisi değil, süregelen bir operasyon kuralıdır.
+
+## Temel ilke
+
+Canlı (production) veri, doğru sırayla ilerlenirse hiçbir şekilde kaybolamaz veya bozulamaz.
+Çünkü local ↔ prod ilişkisi **tek yönlüdür: prod → local, salt-okunur.** Local'den prod'a
+hiçbir yazma işlemi asla yapılmaz.
+
+## 3 altın kural (asla ihlal edilmez)
+
+1. Prod'dan yalnızca `pg_dump` (salt-okunur) alınır. `INSERT/UPDATE/DELETE/DROP/ALTER` prod'a karşı **asla** çalıştırılmaz.
+2. Local backend'in `DATABASE_URL`'i **her zaman** local Docker Postgres'i (`localhost:5432`) gösterir. Hiçbir geliştirme/test senaryosunda prod'un public IP'sine (`167.86.84.107`) çevrilmez.
+3. `prisma migrate deploy/reset/resolve` gibi şema değiştiren komutlar **asla** prod'a karşı çalıştırılmaz — yalnızca local'e.
+
+## Prod verisini local'e taşıma prosedürü
+
+1. Kullanıcı (veya açıkça onaylanmış şekilde Claude) Coolify Terminal / salt-okunur bağlantı üzerinden `pg_dump -Fc` ile anlık görüntü alır.
+2. Dump, local Docker Postgres'e restore edilir.
+3. Restore sonrası entegrasyon secret'ları temizlenir: `CrmConnection.clientSecret` / `webhookSecret` → null, `isActive=false`. Local instance gerçek Dynamics 365'e asla bağlanamaz.
+4. Local `.env`'de gerçek AI key'ler (`GEMINI_API_KEY` vb.) ve `RESEND_API_KEY` boş kalır — local testler prod kotasını tüketmez, gerçek müşterilere mail gitmez.
+5. Dump'ın içindeki gerçek `_prisma_migrations` tablosu, BULGU-10 (migration P3018) sorununu local'de, prod'a hiç dokunmadan incelemek için kullanılabilir.
+6. Anlık görüntü zamanla eskir — periyodik olarak (haftalık veya RAG-kalite testi öncesi) aynı salt-okunur prosedürle yenilenir.
+
+## Kesinlikle yapılmayacaklar
+
+- Local `DATABASE_URL` hiçbir zaman prod'un public IP'sine çevrilmez.
+- Dump dosyası veya secret içeren hiçbir dosya git'e commit edilmez.
+- Prod'a karşı `migrate deploy/reset` çalıştırılmaz.
+- Prod bağlantısı üzerinden herhangi bir yazma/DDL komutu denenmez — istisnasız.
+
+Bu kurallar hem Codex hem Claude için, bu proje üzerindeki tüm gelecekteki çalışmalarda geçerlidir.
+
+---
+
 # Codex + Claude Ortak GAP / Bug Raporu — BİRLEŞTİRİLMİŞ
 
 **Durum:** Birleştirme tamamlandı
@@ -938,3 +979,14 @@ Yukarıdaki "BULGU-11 PBT flakiness stabilizasyonu başlatıldı" kaydı, kronol
 - `git status --short` temizdir.
 
 **Sonuç:** En güncel ve geçerli BULGU-11/Faz 3.4 durumu, üstteki "tam backend suite ile doğrulandı" kaydıdır: aktif tek repo üzerinde kapalı kabul edilebilir. Push yapılmadı.
+
+### 2026-08-05 — Kullanıcı — Değiştirilemez "Canlı Veri Güvenliği" kuralı dosyanın en üstüne eklendi
+
+Kullanıcı talebi: "bu anlattıklarını ortak rapora en üste katı bir kural olarak ekleyebilir misin, sabit kalacak biçimde, rapor güncellendiğinde bunlar kaybolmamalı."
+
+- Dosyanın en başına **"🔒 CANLI VERİ GÜVENLİĞİ — DEĞİŞTİRİLEMEZ TEMEL KURAL"** bloğu eklendi (mevcut başlıktan bile önce).
+- İçerik: temel ilke (prod→local tek yönlü, salt-okunur), 3 altın kural, prod verisini local'e taşıma prosedürü, kesinlikle yapılmayacaklar listesi.
+- Bu blok, protokol madde 7'nin (append-only, her şey en alta eklenir) **tek istisnasıdır** — bir günlük girdisi değil, süregelen bir operasyon kuralı olduğu için en üstte sabit kalacak. Bunun gerekçesi bloğun kendi içinde açıkça belirtildi.
+- Ne Codex ne Claude bu bloğu silemez/değiştiremez/taşıyamaz. Sadece kullanıcı değiştirebilir.
+- Codex'in bu bloğu görmesi ve bundan sonraki tüm çalışmasında (özellikle Faz 6.1 canlı migration incelemesi ve gelecekteki herhangi bir prod-veri işlemi) bağlayıcı kabul etmesi gerekir.
+
