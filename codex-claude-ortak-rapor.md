@@ -478,3 +478,12 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - Staff override eklenmedi: telemetry, "bu cevabı ben kabul ettim/düzenledim" olayıdır; admin raporlama/analitik ayrı read-only/aggregate kanallardan yürür. Bu karar mevcut Help/AI çalışma mantığını bozmaz.
 - TDD kanıtı: negatif telemetry testleri önce kırmızı görüldü; fix sonrası `ai-query.service.spec.ts` hedef seti 2 suite / 63 passed / 1 skipped geçti. Faz 2 + telemetry birleşik backend seti 6 suite / 126 passed / 1 skipped geçti; `pnpm --filter @aluplan/backend typecheck` geçti.
 - Faz 2 kod kapsamı yerelde tamamlandı. Kapanış için kalan kanıt: canlıya çıkmadan önce customer/staff iki-hesap smoke testi, attachment download smoke, AI telemetry owner/foreign-user smoke ve frontend UI rol matrisi.
+
+### 2026-08-05 — Codex — Faz 3 test/build sağlığı yerel checkpoint
+
+- BULGU-11 kapsamında AI property-based test modüllerindeki eksik `SupportAnswerOrchestrator` provider zinciri tamamlandı; `AiQueryService` constructor bağımlılığı test modüllerinde gerçek uygulama wiring'iyle hizalandı.
+- BULGU-19 kapsamında stale test beklentileri güncellendi: Hotinfo legacy lisans telemetrisi testi mevcut düşük-güvenli Cloud/Wibu uyarı metnine, SLA cron testi mevcut `sla.warning` payload alanlarına (`agentName`, `ticketId`, `ticketStatus`) hizalandı.
+- BULGU-12 kapsamında `turbo.json` typecheck zinciri güçlendirildi: dependent package'lar için `^build` artık `^typecheck` ile birlikte çalışıyor. Root typecheck çıktısında `@aluplan/shared-schemas:build` adımının gerçekten koştuğu doğrulandı.
+- Odak doğrulaması: `pnpm --filter @aluplan/backend test -- ai-query.service.pbt.spec.ts ai-query.service.property.spec.ts ai-pipeline-optimization.pbt.spec.ts prompt-context-builder.service.pbt.spec.ts sla.cron.spec.ts --runInBand` → **5 suite / 22 test geçti**.
+- Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti; `pnpm typecheck` geçti (**4 task successful**) ve shared schemas build/typecheck, backend typecheck, frontend typecheck zinciri yeşil tamamlandı.
+- Graphify CLI kurulu bulundu ancak bu checkout'ta `graphify-out/graph.json` olmadığı için sorgu çalışmadı; üst dizindeki `gelistirme-dosyaları` arşivi yalnızca okuma amaçlı referans olarak tespit edildi. Faz 3 ürün davranışına dokunmadı; değişiklikler test/build güvenilirliğiyle sınırlı kaldı.
