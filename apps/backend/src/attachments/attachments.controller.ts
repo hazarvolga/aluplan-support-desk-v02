@@ -46,6 +46,7 @@ export class AttachmentsController {
     )
     async uploadFile(
         @Param('messageId') messageId: string,
+        @Request() req: any,
         @UploadedFile(
             new ParseFilePipe({
                 validators: [
@@ -61,6 +62,8 @@ export class AttachmentsController {
         )
         file: Express.Multer.File,
     ) {
+        await this.attachmentsService.assertCanCreateForMessage(messageId, req.user);
+
         let storageKey = '';
         let uploadError = null;
 
@@ -91,7 +94,7 @@ export class AttachmentsController {
             fileSize: file.size,
             mimeType: file.mimetype,
             url: storageKey || `FAILED_STORAGE_UPLOAD_${Date.now()}`,
-        }, parsedHotinfo);
+        }, parsedHotinfo, req.user);
 
         // If storage failed AND we have no hotinfo fallback, we inform the user it didn't save to cloud
         if (uploadError && !parsedHotinfo) {

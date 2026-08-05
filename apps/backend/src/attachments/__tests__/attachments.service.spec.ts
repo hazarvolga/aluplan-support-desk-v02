@@ -2,7 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AttachmentsService } from '../attachments.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { TicketAccessService } from '../../common/services/ticket-access.service';
 
 describe('AttachmentsService', () => {
     let service: AttachmentsService;
@@ -27,6 +28,9 @@ describe('AttachmentsService', () => {
     const mockEventEmitter = {
         emit: jest.fn(),
     };
+    const mockTicketAccessService = {
+        canAccessTicket: jest.fn().mockResolvedValue(true),
+    };
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -34,12 +38,14 @@ describe('AttachmentsService', () => {
                 AttachmentsService,
                 { provide: PrismaService, useValue: mockPrismaService },
                 { provide: EventEmitter2, useValue: mockEventEmitter },
+                { provide: TicketAccessService, useValue: mockTicketAccessService },
             ],
         }).compile();
 
         service = module.get<AttachmentsService>(AttachmentsService);
         prisma = module.get<PrismaService>(PrismaService);
         eventEmitter = module.get<EventEmitter2>(EventEmitter2);
+        mockTicketAccessService.canAccessTicket.mockResolvedValue(true);
     });
 
     afterEach(() => {
@@ -59,7 +65,12 @@ describe('AttachmentsService', () => {
                 fileSize: 1024,
                 mimeType: 'application/pdf',
                 url: 'https://cdn.example.com/doc.pdf',
-            });
+            }, undefined, { id: 'customer-1', role: 'CUSTOMER' });
+
+            expect(mockTicketAccessService.canAccessTicket).toHaveBeenCalledWith(
+                { id: 'customer-1', role: 'CUSTOMER' },
+                't1',
+            );
 
             expect(prisma.attachment.create).toHaveBeenCalledWith({
                 data: {
@@ -87,28 +98,62 @@ describe('AttachmentsService', () => {
             await service.create({
                 messageId: 'm1', fileName: 'internal.pdf', fileSize: 1024,
                 mimeType: 'application/pdf', url: 'https://cdn.example.com/internal.pdf',
-            });
+            }, undefined, { id: 'agent-1', role: 'AGENT' });
 
             expect(eventEmitter.emit).toHaveBeenCalledWith('attachment.created', expect.objectContaining({
                 ticketId: 't1', messageId: 'm1', isInternal: true,
             }));
         });
 
-        it('should not emit event when message has no ticketId', async () => {
-            const mockAttachment = { id: 'a1', messageId: 'm1', fileName: 'doc.pdf' };
-            mockPrismaService.attachment.create.mockResolvedValue(mockAttachment);
+        it('rejects missing ticket message before creating an attachment', async () => {
             mockPrismaService.ticketMessage.findUnique.mockResolvedValue(null);
 
-            const result = await service.create({
+            await expect(service.create({
                 messageId: 'm1',
                 fileName: 'doc.pdf',
                 fileSize: 1024,
                 mimeType: 'application/pdf',
                 url: 'https://cdn.example.com/doc.pdf',
-            });
+            }, undefined, { id: 'customer-1', role: 'CUSTOMER' })).rejects.toThrow(NotFoundException);
 
+            expect(prisma.attachment.create).not.toHaveBeenCalled();
             expect(eventEmitter.emit).not.toHaveBeenCalled();
-            expect(result).toEqual(mockAttachment);
+        });
+
+        it('rejects unauthorized uploads before creating attachment or updating hotinfo snapshot', async () => {
+            mockPrismaService.ticketMessage.findUnique.mockResolvedValue({ ticketId: 'ticket-b', isInternal: false });
+            mockTicketAccessService.canAccessTicket.mockResolvedValue(false);
+
+            await expect(service.create({
+                messageId: 'message-b',
+                fileName: 'hotinfo.hxl',
+                fileSize: 1024,
+                mimeType: 'application/octet-stream',
+                url: 'https://cdn.example.com/hotinfo.hxl',
+            }, { raw: 'hotinfo' }, { id: 'customer-a', role: 'CUSTOMER' })).rejects.toThrow(ForbiddenException);
+
+            expect(prisma.attachment.create).not.toHaveBeenCalled();
+            expect(prisma.ticket.update).not.toHaveBeenCalled();
+            expect(eventEmitter.emit).not.toHaveBeenCalled();
+        });
+
+        it('rejects customer uploads to internal messages even on an accessible ticket', async () => {
+            mockPrismaService.ticketMessage.findUnique.mockResolvedValue({ ticketId: 'ticket-a', isInternal: true });
+
+            await expect(service.create({
+                messageId: 'internal-message',
+                fileName: 'note.pdf',
+                fileSize: 1024,
+                mimeType: 'application/pdf',
+                url: 'https://cdn.example.com/note.pdf',
+            }, undefined, { id: 'customer-a', role: 'CUSTOMER' })).rejects.toThrow(ForbiddenException);
+
+            expect(mockTicketAccessService.canAccessTicket).toHaveBeenCalledWith(
+                { id: 'customer-a', role: 'CUSTOMER' },
+                'ticket-a',
+            );
+            expect(prisma.attachment.create).not.toHaveBeenCalled();
+            expect(eventEmitter.emit).not.toHaveBeenCalled();
         });
     });
 
