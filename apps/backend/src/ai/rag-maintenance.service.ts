@@ -1,9 +1,9 @@
 /**
  * RAG Maintenance Service
  * =======================
- * Automates infrastructure maintenance tasks on application startup.
+ * Provides explicit infrastructure maintenance tasks.
  * 1. Ensures HNSW vector indexes are optimized.
- * 2. Triggers auto-sync when RAG version increases (e.g. from Faz 1 to Faz 3).
+ * 2. Optionally triggers sync when RAG version increases (e.g. from Faz 1 to Faz 3).
  * 3. Performs periodic VACUUM ANALYZE to maintain performance.
  */
 
@@ -48,18 +48,30 @@ export class RagMaintenanceService implements OnModuleInit {
     ) { }
 
     async onModuleInit() {
-        this.logger.log('🚀 RAG Maintenance Service initializing...');
+        this.logger.log('🛡️ RAG Maintenance Service registered. Boot-time DDL and auto-sync are disabled; run the explicit maintenance command when needed.');
+    }
 
+    async runInfrastructureMaintenance(options: {
+        optimizeIndexes?: boolean;
+        syncKnowledgePool?: boolean;
+    } = {}) {
+        const optimizeIndexes = options.optimizeIndexes ?? true;
+        const syncKnowledgePool = options.syncKnowledgePool ?? false;
+
+        this.logger.log(`🚀 RAG infrastructure maintenance starting (optimizeIndexes=${optimizeIndexes}, syncKnowledgePool=${syncKnowledgePool})...`);
         try {
-            // 1. Database Optimization (HNSW)
-            await this.optimizeIndexes();
+            if (optimizeIndexes) {
+                await this.optimizeIndexes();
+            }
 
-            // 2. Version-based Sync Check
-            await this.checkVersionAndSync();
+            if (syncKnowledgePool) {
+                await this.checkVersionAndSync();
+            }
 
-            this.logger.log('✅ RAG Maintenance complete.');
+            this.logger.log('✅ RAG infrastructure maintenance complete.');
         } catch (err) {
-            this.logger.error(`❌ RAG Maintenance failed: ${err.message}`);
+            this.logger.error(`❌ RAG infrastructure maintenance failed: ${err.message}`);
+            throw err;
         }
     }
 

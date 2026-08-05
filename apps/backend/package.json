@@ -8,6 +8,7 @@
         "start": "node dist/main",
         "start:prod": "prisma migrate deploy && node dist/main",
         "dev": "nest start --watch",
+        "rag:maintenance": "ts-node src/scripts/run-rag-maintenance.ts",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
         "typecheck": "tsc --noEmit",
         "test": "jest",

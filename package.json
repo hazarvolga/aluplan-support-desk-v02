@@ -13,6 +13,7 @@
         "typecheck": "turbo typecheck",
         "db:generate": "turbo db:generate",
         "db:migrate": "turbo db:migrate",
+        "rag:maintenance": "pnpm --filter @aluplan/backend rag:maintenance",
         "i18n:check": "pnpm --filter @aluplan/frontend i18n:check",
         "spec:verify": "node scripts/verify-specs.mjs"
     },

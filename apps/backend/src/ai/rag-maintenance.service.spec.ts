@@ -47,6 +47,44 @@ describe('RagMaintenanceService', () => {
         );
     });
 
+    it('does not run DDL or knowledge sync during application bootstrap', async () => {
+        await service.onModuleInit();
+
+        expect(prisma.$queryRaw).not.toHaveBeenCalled();
+        expect(prisma.$queryRawUnsafe).not.toHaveBeenCalled();
+        expect(prisma.$executeRawUnsafe).not.toHaveBeenCalled();
+        expect(settings.getValue).not.toHaveBeenCalled();
+        expect(poolService.syncLocalDataset).not.toHaveBeenCalled();
+    });
+
+    it('allows explicit maintenance command execution without implicit sync', async () => {
+        const optimizeIndexes = jest
+            .spyOn(service as any, 'optimizeIndexes')
+            .mockResolvedValue(undefined);
+        const checkVersionAndSync = jest
+            .spyOn(service as any, 'checkVersionAndSync')
+            .mockResolvedValue(undefined);
+
+        await service.runInfrastructureMaintenance();
+
+        expect(optimizeIndexes).toHaveBeenCalledTimes(1);
+        expect(checkVersionAndSync).not.toHaveBeenCalled();
+    });
+
+    it('runs knowledge pool sync only when explicit maintenance requests it', async () => {
+        const optimizeIndexes = jest
+            .spyOn(service as any, 'optimizeIndexes')
+            .mockResolvedValue(undefined);
+        const checkVersionAndSync = jest
+            .spyOn(service as any, 'checkVersionAndSync')
+            .mockResolvedValue(undefined);
+
+        await service.runInfrastructureMaintenance({ optimizeIndexes: false, syncKnowledgePool: true });
+
+        expect(optimizeIndexes).not.toHaveBeenCalled();
+        expect(checkVersionAndSync).toHaveBeenCalledTimes(1);
+    });
+
     it('rebuilds non-hnsw vector indexes and keeps valid ones', async () => {
         prisma.$queryRaw.mockResolvedValue([{ extname: 'vector' }]);
         prisma.$queryRawUnsafe
