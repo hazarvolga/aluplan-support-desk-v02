@@ -565,3 +565,12 @@ Bu doküman iki denetçi arasındaki **tek iletişim kanalıdır**. Ayrı rapor 
 - `AiQueryService` adaptive/rerank heuristics bu checkpoint'te bilerek kapsam dışı bırakıldı; ana müşteri/admin cevap akışının yüksek patlama yarıçapı nedeniyle ayrı tuning/acceptance işi olarak ele alınmalıdır.
 - Odak doğrulaması: `pnpm --filter @aluplan/backend test -- trust-score.calculator.spec.ts ticket-clustering.service.spec.ts ai-semantic-cache.service.spec.ts faq.service.spec.ts --runInBand` → **4 suite / 25 test geçti**.
 - Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti. Eski hardcoded eşik kalıpları için hedefli `rg` taraması temiz çıktı.
+
+### 2026-08-05 — Codex — Faz 5.3 BULGU-23 production `console` ve lint kapısı yerel checkpoint
+
+- Runtime production kodunda kalan doğrudan `console` kullanımı kaldırıldı: `apps/backend/src/otel.ts` artık Nest `Logger` kullanır; böylece boot/otel logları uygulamanın logger katmanına hizalanır.
+- Backend ESLint config'e `no-console: error` eklendi. Test, benchmark, bakım ve tek seferlik operasyon script'leri production request path olmadığı için lint ignore kapsamına alındı; uygulama kodu için `console` tekrarını engelleyen kapı aktiftir.
+- Backend lint komutunun çalışabilmesi için eksik `eslint` devDependency bağlantısı `@aluplan/backend` manifest'ine eklendi; lockfile mevcut ESLint sürümüyle hizalandı.
+- Lint'i bloklayan eski mekanik `prefer-const` hataları temizlendi. Dynamic `require` kuralı, mevcut parser fallback davranışını bu fazda refactor etmemek için warning seviyesine indirildi; kalan `any/unused` uyarıları ayrı tip-hijyen borcudur ve bu BULGU'nun güvenlik/logging kapsamını bloke etmez.
+- Odak doğrulaması: `pnpm --filter @aluplan/backend lint` → **0 error / warning-only**; production runtime console taraması → **0 sonuç**.
+- Ek doğrulama: `pnpm --filter @aluplan/backend typecheck` geçti; `pnpm --filter @aluplan/backend test -- ai-query.service.spec.ts prompt-context-builder.service.pbt.spec.ts --runInBand` → **3 suite / 68 passed / 1 skipped**; `pnpm --filter @aluplan/backend test -- hotinfo-parser.service.spec.ts --runInBand` → **1 suite / 11 test geçti**.
