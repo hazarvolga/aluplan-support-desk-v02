@@ -2,6 +2,18 @@
 
 ## Active Work
 
+- 2026-08-05 prod shadow data safety baseline:
+  - Binding rule: all production-data work is one-way `prod -> local`, read-only from production. Never point local `DATABASE_URL` at production IP `167.86.84.107`; never run `prisma migrate deploy/reset/resolve` against production.
+  - A read-only production PostgreSQL dump was taken from Coolify database container `lwk8ok04ocg4w4soog0c888g` (`pgvector/pgvector:pg17`), database `aluplan_support`.
+  - Raw dump is local-only and git-ignored: `.private-data/prod-dumps/aluplan-support-prod-20260805-193338-pg17.dump`, size `132 MB`, SHA-256 `d12371d0b316fdab1e811fa658a0ca890968596c53d02d3b845cc709679d56da`.
+  - Local shadow restore is complete in separate Docker container `aluplan_shadow_postgres_pg17` on `localhost:55432`; existing local `aluplan_postgres` was not overwritten.
+  - Shadow env is local-only: `.private-data/shadow/shadow-postgres.env` with `SHADOW_DATABASE_URL`.
+  - Shadow DB was sanitized: CRM connections inactive, CRM/webhook secrets removed, user refresh token hashes removed, secret/token/API-key settings emptied. Verification counts: `crm_active=0`, `crm_secrets=0`, `webhooks_active=0`, `webhook_secrets=0`, `user_refresh_hashes=0`, `secret_settings_nonempty=0`.
+  - Sanitized reusable snapshot exists locally: `.private-data/prod-dumps/aluplan-support-shadow-sanitized-20260805-194053-pg17.dump`, SHA-256 `2e5f7e09a7e4ffbf61787f978a4a401527be46eae4895a5d7ba26c39ef5d770b`.
+  - Prisma read-only status against the shadow DB passed: `DATABASE_URL="$SHADOW_DATABASE_URL" pnpm exec prisma migrate status --config packages/database/prisma.config.js` -> `Database schema is up to date!`.
+  - Redis was intentionally not copied from production. Keep local Redis empty/ephemeral to avoid replaying live BullMQ jobs, sessions, cache, OAuth state, or throttle counters.
+  - Security cleanup still recommended: remove temporary SSH key line matching `aluplan-codex-dump-20260805` from `/root/.ssh/authorized_keys` on the VPS after no further backup access is needed.
+  - Next safe GAP target remains local-only: use shadow DB for BULGU-02/BULGU-18 auth-token negative tests and BULGU-10 migration-history inspection. No live DB writes.
 - 2026-08-05 consolidation follow-up:
   - Active repo is now the git-tracked single working directory at `/Users/hazarvolgaekiz/dev/studio/aluplan-support-desk-v02/aluplan-support-desk-v02-main-live-site`.
   - `b73ae3f7` recorded the local consolidation baseline; push remains forbidden without explicit user approval.

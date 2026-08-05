@@ -74,3 +74,11 @@ and consequence. Use session summaries for implementation history.
 - Context: Customer ticket-opening AI and admin ANN drafts shared prompt/answer contract logic, but customer query flow could still return `NO_MATCH` before reaching the shared synthesis path. Live ticket SUP-00136 exposed this: customer AI rejected usable context while admin ANN produced a useful draft.
 - Decision: Retrieval-context acceptance for support answers belongs in `SupportAnswerOrchestrator`, not as separate threshold logic in customer query flows.
 - Consequence: Future customer/admin AI quality fixes must update the shared orchestrator decision and its regressions before adding route-specific prompt patches.
+
+## ADR-010 - Production Data Shadowing Is One-Way And Sanitized
+
+- Date: 2026-08-05
+- Status: Accepted
+- Context: GAP remediation needs realistic production-like data to validate authorization, migration history, RAG quality, and support workflows, but the live Aluplan system is already operational and must not be exposed to accidental writes, migrations, queue replays, or external integration calls during development.
+- Decision: Production data may be copied only one-way from production to local through read-only dumps. Local development must never point `DATABASE_URL` at the production IP. Production Prisma migration/restore/reset/resolve commands are forbidden outside an explicit maintenance window and separate operator decision. Local shadow restores must sanitize CRM/webhook secrets, refresh-token hashes, and secret/token/API-key settings before being used by the app. Production Redis is not copied into the local shadow; local Redis remains empty/ephemeral.
+- Consequence: Realistic local testing can use a sanitized Postgres shadow while preventing production data loss, external CRM/mail/WhatsApp/R2 calls, and BullMQ/session/cache replay. Migration-history investigations such as BULGU-10 should use the shadow `_prisma_migrations` table first, not production.

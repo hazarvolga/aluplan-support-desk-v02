@@ -1,5 +1,62 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-08-05 Production Shadow Database Baseline
+
+### What changed
+
+- Established the production-data safety baseline as a binding workflow:
+  - production is read-only,
+  - data only flows `prod -> local`,
+  - local development must never point `DATABASE_URL` at production IP `167.86.84.107`,
+  - production Prisma migration/restore/reset/resolve commands remain forbidden without a separate maintenance decision.
+- Took a read-only PostgreSQL custom-format dump from production Coolify database container `lwk8ok04ocg4w4soog0c888g` (`pgvector/pgvector:pg17`), database `aluplan_support`.
+- Stored the raw dump outside Git at `.private-data/prod-dumps/aluplan-support-prod-20260805-193338-pg17.dump`.
+- Created a separate local shadow Postgres container:
+  - `aluplan_shadow_postgres_pg17`
+  - `pgvector/pgvector:pg17`
+  - `localhost:55432`
+  - database `aluplan_support`
+  - local env file `.private-data/shadow/shadow-postgres.env`
+- Restored the production dump into this separate shadow DB without touching existing local `aluplan_postgres`.
+- Sanitized the shadow DB so local work cannot accidentally call production-like integrations:
+  - CRM connections inactive,
+  - CRM/webhook secrets removed,
+  - user refresh-token hashes removed,
+  - secret/token/API-key/password settings emptied.
+- Created a sanitized reusable local snapshot at `.private-data/prod-dumps/aluplan-support-shadow-sanitized-20260805-194053-pg17.dump`.
+- Intentionally did not copy production Redis. Local Redis should remain empty/ephemeral to avoid replaying live BullMQ jobs, sessions, OAuth state, semantic cache, or throttle counters.
+
+### Evidence
+
+- Raw dump:
+  - size `132 MB` / `138034033` bytes,
+  - SHA-256 `d12371d0b316fdab1e811fa658a0ca890968596c53d02d3b845cc709679d56da`,
+  - archive header: `dbname: aluplan_support`, `TOC Entries: 399`, `Format: CUSTOM`.
+- Shadow DB restore:
+  - public tables: `64`,
+  - database size: approximately `233 MB`,
+  - counts: `users=1282`, `tickets=162`, `ticket_messages=476`, `knowledge_sources=241`, `knowledge_embeddings=77`, `knowledge_pool_embeddings=7745`, `_prisma_migrations=54`.
+- Sanitization verification:
+  - `crm_active=0`,
+  - `crm_secrets=0`,
+  - `webhooks_active=0`,
+  - `webhook_secrets=0`,
+  - `user_refresh_hashes=0`,
+  - `secret_settings_nonempty=0`.
+- Sanitized snapshot:
+  - SHA-256 `2e5f7e09a7e4ffbf61787f978a4a401527be46eae4895a5d7ba26c39ef5d770b`,
+  - `pg_restore --list` produced `399` TOC entries.
+- Prisma shadow verification:
+  - `DATABASE_URL="$SHADOW_DATABASE_URL" pnpm exec prisma migrate status --config packages/database/prisma.config.js`
+  - result: `Database schema is up to date!`
+
+### Notes
+
+- The temporary SSH key `aluplan-codex-dump-20260805` may still be present in `/root/.ssh/authorized_keys` on the VPS. Remove it after no further backup access is needed.
+- `.private-data/`, `*.dump`, and `*.backup` are ignored by Git.
+- Continue GAP remediation locally against the shadow DB. Do not use the production database for tests or migration inspection.
+- Next safe targets: BULGU-02/BULGU-18 auth-token negative tests and BULGU-10 migration-history inspection using the shadow DB.
+
 ## Follow-up - 2026-06-30 Ticket Filter Hardening
 
 ### What changed

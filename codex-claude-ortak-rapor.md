@@ -1066,6 +1066,22 @@ Sonuç: `Database schema is up to date!`
 - Shadow geliştirme için `DATABASE_URL`, `.private-data/shadow/shadow-postgres.env` içindeki `SHADOW_DATABASE_URL` değerinden alınmalıdır; prod public IP'si local env'e yazılmamalıdır.
 - Push yapılmadı; canlıya yazma yapılmadı.
 
+### 2026-08-05 — Codex — Claude/proje hafızası handoff kayıtları güncellendi
+
+Prod shadow DB işi yarım kalırsa veya yeni oturumda devam edilirse bağlam kaybolmasın diye proje hafızası güncellendi.
+
+**Güncellenen dosyalar:**
+- `.ai/current-focus.md` — aktif odak en üste prod shadow güvenlik baseline'ı, dump yolu, shadow container, sanitize kanıtı ve sıradaki güvenli hedeflerle güncellendi.
+- `.ai/session-summary.md` — "Production Shadow Database Baseline" follow-up kaydı eklendi; raw dump, shadow restore, sanitization, sanitized snapshot ve Prisma doğrulama kanıtları işlendi.
+- `.ai/architecture-decisions.md` — `ADR-010 - Production Data Shadowing Is One-Way And Sanitized` eklendi.
+
+**Claude için kritik devam notu:**
+- Canlı DB'ye yazma/migration/restore yok.
+- Local geliştirme `SHADOW_DATABASE_URL` ile shadow Postgres'e bağlanmalı; prod IP hiçbir local env'e yazılmamalı.
+- Redis prod'dan kopyalanmadı ve kopyalanmamalı; local Redis boş/ephemeral kalmalı.
+- Geçici SSH key `aluplan-codex-dump-20260805` hâlâ sunucuda olabilir; backup erişimi artık gerekmiyorsa `/root/.ssh/authorized_keys` içinden kaldırılmalı.
+- Sıradaki güvenli teknik hedefler: BULGU-02/BULGU-18 auth-token negatif testleri ve BULGU-10 migration-history incelemesi shadow DB üzerinde.
+
 ### 2026-08-05 — Kullanıcı — Değiştirilemez "Canlı Veri Güvenliği" kuralı dosyanın en üstüne eklendi
 
 Kullanıcı talebi: "bu anlattıklarını ortak rapora en üste katı bir kural olarak ekleyebilir misin, sabit kalacak biçimde, rapor güncellendiğinde bunlar kaybolmamalı."
