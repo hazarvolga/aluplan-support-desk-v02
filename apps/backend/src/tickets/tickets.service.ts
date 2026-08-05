@@ -21,6 +21,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiQueryService } from '../ai/ai-query.service';
 import { MessageContentFormat } from './dto/add-message.dto';
 import { isRichTextEffectivelyEmpty, sanitizeRichTextHtml } from '../common/utils/rich-text-sanitizer';
+import { TicketAccessService } from '../common/services/ticket-access.service';
 
 const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
     NEW: [TicketStatus.OPEN, TicketStatus.DRAFT, TicketStatus.PENDING_CUSTOMER_REVIEW],
@@ -45,6 +46,7 @@ export class TicketsService {
         @Inject(forwardRef(() => AiQueryService))
         private readonly aiQueryService: AiQueryService,
         private readonly redis: RedisService,
+        private readonly ticketAccess: TicketAccessService,
     ) { }
 
     // =============================================
@@ -325,6 +327,10 @@ export class TicketsService {
     // FIND ONE
     // =============================================
     async findOne(id: string, requester?: any) {
+        const requesterRole = typeof requester?.role === 'string'
+            ? requester.role.trim().toUpperCase().replace(/-/g, '_')
+            : requester?.role?.name?.trim().toUpperCase().replace(/-/g, '_');
+        const isCustomerView = requesterRole === 'CUSTOMER' || requesterRole === 'VIEWER';
         const ticket = await this.prisma.ticket.findFirst({
             where: { id, deletedAt: null },
             include: {
@@ -346,7 +352,7 @@ export class TicketsService {
                 },
                 assignee: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
                 messages: {
-                    where: (requester?.role?.toLowerCase() === 'customer' || requester?.role?.toLowerCase() === 'viewer') ? { isInternal: false } : {},
+                    where: isCustomerView ? { isInternal: false } : {},
                     include: {
                         sender: { select: { id: true, fullName: true, avatarUrl: true } },
                         attachments: true,
@@ -361,8 +367,7 @@ export class TicketsService {
         });
         if (!ticket) throw new NotFoundException(`Ticket not found`);
 
-        // ownership check for customers
-        if ((requester?.role?.toUpperCase() === 'CUSTOMER' || requester?.role?.toUpperCase() === 'VIEWER') && ticket.userId !== requester.id) {
+        if (requester && !(await this.ticketAccess.canAccessTicket(requester, id))) {
             throw new ForbiddenException('You do not have access to this ticket');
         }
 

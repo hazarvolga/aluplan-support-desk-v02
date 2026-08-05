@@ -49,7 +49,7 @@ describe('AttachmentsService', () => {
     describe('create', () => {
         it('should create attachment and emit event when message has a ticketId', async () => {
             const mockAttachment = { id: 'a1', messageId: 'm1', fileName: 'doc.pdf' };
-            const mockMessage = { ticketId: 't1' };
+            const mockMessage = { ticketId: 't1', isInternal: false };
             mockPrismaService.attachment.create.mockResolvedValue(mockAttachment);
             mockPrismaService.ticketMessage.findUnique.mockResolvedValue(mockMessage);
 
@@ -73,9 +73,25 @@ describe('AttachmentsService', () => {
             expect(eventEmitter.emit).toHaveBeenCalledWith('attachment.created', {
                 ticketId: 't1',
                 messageId: 'm1',
+                isInternal: false,
                 attachment: mockAttachment,
             });
             expect(result).toEqual(mockAttachment);
+        });
+
+        it('marks attachments of internal messages as internal in the emitted event', async () => {
+            const mockAttachment = { id: 'a1', messageId: 'm1', fileName: 'internal.pdf' };
+            mockPrismaService.attachment.create.mockResolvedValue(mockAttachment);
+            mockPrismaService.ticketMessage.findUnique.mockResolvedValue({ ticketId: 't1', isInternal: true });
+
+            await service.create({
+                messageId: 'm1', fileName: 'internal.pdf', fileSize: 1024,
+                mimeType: 'application/pdf', url: 'https://cdn.example.com/internal.pdf',
+            });
+
+            expect(eventEmitter.emit).toHaveBeenCalledWith('attachment.created', expect.objectContaining({
+                ticketId: 't1', messageId: 'm1', isInternal: true,
+            }));
         });
 
         it('should not emit event when message has no ticketId', async () => {

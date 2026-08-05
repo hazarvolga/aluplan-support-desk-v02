@@ -6,6 +6,7 @@ import { PiiMaskingService } from '../common/services/pii-masking.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiQueryService } from '../ai/ai-query.service';
 import { RedisService } from '../redis/redis.service';
+import { TicketAccessService } from '../common/services/ticket-access.service';
 import { mockPrismaService } from '../test/mock.utils';
 import { TicketStatus, TicketPriority, ChatStatus, Prisma } from '@aluplan/database';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
@@ -36,6 +37,7 @@ describe('TicketsService', () => {
         get: jest.fn(),
         set: jest.fn(),
     };
+    const mockTicketAccessService = { canAccessTicket: jest.fn().mockResolvedValue(true) };
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -47,6 +49,7 @@ describe('TicketsService', () => {
                 { provide: EventEmitter2, useValue: mockEventEmitter },
                 { provide: AiQueryService, useValue: mockAiQueryService },
                 { provide: RedisService, useValue: mockRedisService },
+                { provide: TicketAccessService, useValue: mockTicketAccessService },
             ],
         }).compile();
 

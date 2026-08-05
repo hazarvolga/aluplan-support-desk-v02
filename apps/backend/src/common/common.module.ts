@@ -9,6 +9,7 @@ import { DocumentParserService } from './services/document-parser.service';
 import { TicketOwnerGuard } from './guards/ticket-owner.guard';
 import { TeamScopeGuard } from './guards/team-scope.guard';
 import { AlertingService } from './services/alerting.service';
+import { TicketAccessService } from './services/ticket-access.service';
 
 @Global()
 @Module({
@@ -22,6 +23,7 @@ import { AlertingService } from './services/alerting.service';
         TicketOwnerGuard,
         TeamScopeGuard,
         AlertingService,
+        TicketAccessService,
     ],
     controllers: [StorageController],
     exports: [
@@ -33,6 +35,7 @@ import { AlertingService } from './services/alerting.service';
         TicketOwnerGuard,
         TeamScopeGuard,
         AlertingService,
+        TicketAccessService,
     ],
 })
 export class CommonModule { }

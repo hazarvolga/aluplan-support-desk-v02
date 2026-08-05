@@ -8,6 +8,7 @@ import { EmailService } from '../email/email.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants';
 import { AiHealthEventService } from '../ai/ai-health-event.service';
+import { TicketAccessService } from '../common/services/ticket-access.service';
 
 describe('NotificationsGateway', () => {
     let gateway: NotificationsGateway;
@@ -18,12 +19,15 @@ describe('NotificationsGateway', () => {
     let mockEmail: any;
     let mockAiHealthEventService: any;
     let mockServer: any;
+    let mockTicketAccess: any;
 
     beforeEach(async () => {
         mockJwtService = { verify: jest.fn() };
         mockConfig = { get: jest.fn().mockReturnValue('secret') };
         mockPrisma = {
             ticket: { findUnique: jest.fn() },
+            ticketMessage: { findFirst: jest.fn() },
+            proactiveChatSession: { findMany: jest.fn().mockResolvedValue([]) },
             notification: { createMany: jest.fn(), create: jest.fn() },
             user: { findMany: jest.fn() }
         };
@@ -41,6 +45,7 @@ describe('NotificationsGateway', () => {
         };
         mockEmail = { cancelEmail: jest.fn() };
         mockAiHealthEventService = { record: jest.fn() };
+        mockTicketAccess = { canAccessTicket: jest.fn().mockResolvedValue(true) };
         mockServer = {
             to: jest.fn().mockReturnThis(),
             emit: jest.fn(),
@@ -55,6 +60,7 @@ describe('NotificationsGateway', () => {
                 { provide: RedisService, useValue: mockRedis },
                 { provide: EmailService, useValue: mockEmail },
                 { provide: AiHealthEventService, useValue: mockAiHealthEventService },
+                { provide: TicketAccessService, useValue: mockTicketAccess },
                 { provide: getQueueToken(PROACTIVE_CHAT_QUEUE), useValue: { add: jest.fn() } },
             ],
         }).compile();
@@ -106,11 +112,105 @@ describe('NotificationsGateway', () => {
 
         it('should deny customer joining someone elses ticket', async () => {
             const customerSocket: any = { data: { userId: 'customer-1', role: 'CUSTOMER' } };
-            mockPrisma.ticket.findUnique.mockResolvedValue({ userId: 'other-user' });
+            mockTicketAccess.canAccessTicket.mockResolvedValueOnce(false);
 
             const result = await gateway.joinTicket(customerSocket, 'tik-1');
 
             expect(result).toEqual({ error: 'Unauthorized' });
+            expect(mockTicketAccess.canAccessTicket).toHaveBeenCalledWith(
+                { id: 'customer-1', role: 'CUSTOMER' },
+                'tik-1',
+            );
+            expect(customerSocket.join).toBeUndefined();
+        });
+    });
+
+    describe('markAsRead', () => {
+        const readerSocket: any = {
+            data: { userId: 'user-1', role: 'CUSTOMER' },
+            to: jest.fn().mockReturnThis(),
+        };
+
+        it('does not cancel an email job when the reader cannot access the ticket', async () => {
+            mockTicketAccess.canAccessTicket.mockResolvedValueOnce(false);
+
+            const result = await gateway.markAsRead(readerSocket, { ticketId: 'ticket-1', messageId: 'message-1' });
+
+            expect(result).toEqual({ error: 'Unauthorized' });
+            expect(mockEmail.cancelEmail).not.toHaveBeenCalled();
+            expect(readerSocket.to).not.toHaveBeenCalled();
+        });
+
+        it('does not cancel an email job when the message belongs to another ticket', async () => {
+            mockPrisma.ticketMessage.findFirst.mockResolvedValueOnce(null);
+
+            const result = await gateway.markAsRead(readerSocket, { ticketId: 'ticket-1', messageId: 'message-2' });
+
+            expect(result).toEqual({ error: 'Message not found' });
+            expect(mockPrisma.ticketMessage.findFirst).toHaveBeenCalledWith({
+                where: { id: 'message-2', ticketId: 'ticket-1' },
+                select: { id: true, isInternal: true },
+            });
+            expect(mockEmail.cancelEmail).not.toHaveBeenCalled();
+        });
+
+        it('does not let a customer cancel an internal-message notification', async () => {
+            mockPrisma.ticketMessage.findFirst.mockResolvedValueOnce({ id: 'message-1', isInternal: true });
+
+            const result = await gateway.markAsRead(readerSocket, { ticketId: 'ticket-1', messageId: 'message-1' });
+
+            expect(result).toEqual({ error: 'Unauthorized' });
+            expect(mockEmail.cancelEmail).not.toHaveBeenCalled();
+            expect(readerSocket.to).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('announceTyping', () => {
+        const typingSocket: any = {
+            data: { userId: 'customer-1', role: 'CUSTOMER' },
+            rooms: new Set(['ticket:ticket-1']),
+            to: jest.fn().mockReturnThis(),
+            emit: jest.fn(),
+        };
+
+        it('does not broadcast when the socket is not authorized for the ticket', async () => {
+            mockTicketAccess.canAccessTicket.mockResolvedValueOnce(false);
+
+            const result = await gateway.announceTyping(typingSocket, { ticketId: 'ticket-1', isTyping: true });
+
+            expect(result).toEqual({ error: 'Unauthorized' });
+            expect(typingSocket.to).not.toHaveBeenCalled();
+        });
+
+        it('does not broadcast when the socket has not joined the ticket room', async () => {
+            const socketWithoutRoom = { ...typingSocket, rooms: new Set(), to: jest.fn().mockReturnThis() };
+
+            const result = await gateway.announceTyping(socketWithoutRoom, { ticketId: 'ticket-1', isTyping: true });
+
+            expect(result).toEqual({ error: 'Unauthorized' });
+            expect(socketWithoutRoom.to).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('ticket event audience', () => {
+        it('does not broadcast an internal message to the customer ticket room', () => {
+            gateway.emitNewMessage('ticket-1', { id: 'message-1', isInternal: true });
+
+            expect(mockServer.to).not.toHaveBeenCalledWith('ticket:ticket-1');
+            expect(mockServer.to).toHaveBeenCalledWith('role:agent');
+            expect(mockServer.to).toHaveBeenCalledWith('role:super-admin');
+            expect(mockServer.to).toHaveBeenCalledWith('role:super_admin');
+            expect(mockServer.emit).toHaveBeenCalledWith('ticket:new_message', expect.any(Object));
+        });
+
+        it('does not broadcast an internal attachment to the customer ticket room', () => {
+            gateway.emitAttachmentAdded({ ticketId: 'ticket-1', messageId: 'message-1', isInternal: true, attachment: { id: 'a1' } });
+
+            expect(mockServer.to).not.toHaveBeenCalledWith('ticket:ticket-1');
+            expect(mockServer.to).toHaveBeenCalledWith('role:agent');
+            expect(mockServer.to).toHaveBeenCalledWith('role:department-manager');
+            expect(mockServer.to).toHaveBeenCalledWith('role:department_manager');
+            expect(mockServer.emit).toHaveBeenCalledWith('ticket:attachment_added', expect.any(Object));
         });
     });
 

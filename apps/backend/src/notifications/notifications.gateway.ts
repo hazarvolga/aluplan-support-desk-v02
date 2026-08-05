@@ -24,6 +24,7 @@ import Redis from 'ioredis';
 import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants';
 import { AiHealthEventService } from '../ai/ai-health-event.service';
 import { AiHealthEventType } from '@aluplan/database';
+import { TicketAccessService } from '../common/services/ticket-access.service';
 
 const resolveAllowedOrigins = (): string[] => {
     const configuredOrigins = [
@@ -62,6 +63,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         private readonly redisService: RedisService,
         private readonly emailService: EmailService,
         private readonly aiHealthEventService: AiHealthEventService,
+        private readonly ticketAccess: TicketAccessService,
         @InjectQueue(PROACTIVE_CHAT_QUEUE) private readonly proactiveChatQueue: Queue,
     ) { }
 
@@ -223,18 +225,11 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     // Subscribe to a specific ticket room
     @SubscribeMessage('ticket:join')
     async joinTicket(@ConnectedSocket() client: Socket, @MessageBody() ticketId: string) {
-        // Authorization check: User must be an agent or the creator of the ticket
-        const ticket = await this.prisma.ticket.findUnique({
-            where: { id: ticketId },
-            select: { userId: true }
-        });
-
-        if (!ticket) return { error: 'Ticket not found' };
-
-        const isCreator = ticket.userId === client.data.userId;
-        const isAgent = client.data.role && client.data.role.toUpperCase() !== 'CUSTOMER';
-
-        if (!isCreator && !isAgent) {
+        const canAccess = await this.ticketAccess.canAccessTicket(
+            { id: client.data.userId, role: client.data.role },
+            ticketId,
+        );
+        if (!canAccess) {
             return { error: 'Unauthorized' };
         }
 
@@ -269,14 +264,34 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     // Live Chat Presence
     @SubscribeMessage('ticket:typing')
     async announceTyping(@ConnectedSocket() client: Socket, @MessageBody() data: { ticketId: string, isTyping: boolean }) {
-        client.to(`ticket:${data.ticketId}`).emit('ticket:typing', {
+        const room = `ticket:${data.ticketId}`;
+        const canAccess = await this.ticketAccess.canAccessTicket(
+            { id: client.data.userId, role: client.data.role },
+            data.ticketId,
+        );
+        if (!canAccess || !client.rooms?.has(room)) return { error: 'Unauthorized' };
+
+        client.to(room).emit('ticket:typing', {
             userId: client.data.userId,
             isTyping: data.isTyping,
         });
+        return { typing: data.isTyping };
     }
 
     @SubscribeMessage('ticket:message_read')
     async markAsRead(@ConnectedSocket() client: Socket, @MessageBody() data: { ticketId: string, messageId: string }) {
+        const canAccess = await this.ticketAccess.canAccessTicket(
+            { id: client.data.userId, role: client.data.role },
+            data.ticketId,
+        );
+        if (!canAccess) return { error: 'Unauthorized' };
+
+        const message = await this.prisma.ticketMessage.findFirst({
+            where: { id: data.messageId, ticketId: data.ticketId },
+            select: { id: true, isInternal: true },
+        });
+        if (!message) return { error: 'Message not found' };
+        if (message.isInternal && this.isCustomerRole(client.data.role)) return { error: 'Unauthorized' };
 
         // Smart Buffer: If message is read via chat, cancel the pending email notification
         const jobId = `email-ntf-msg-${data.messageId}`;
@@ -287,6 +302,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             messageId: data.messageId,
             readerId: client.data.userId,
         });
+
+        return { read: data.messageId };
     }
 
     // ─── Proactive Chat Handlers ─────────────────────────────────────────────────
@@ -459,6 +476,10 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     emitNewMessage(ticketId: string, message: any) {
         if (!this.server) return;
+        if (message?.isInternal) {
+            this.emitToStaff('ticket:new_message', { ticketId, message });
+            return;
+        }
         this.server.to(`ticket:${ticketId}`).emit('ticket:new_message', {
             ticketId,
             message,
@@ -466,9 +487,35 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     }
 
     @OnEvent('attachment.created', { async: true })
-    emitAttachmentAdded(payload: { ticketId: string, messageId: string, attachment: any }) {
+    emitAttachmentAdded(payload: { ticketId: string, messageId: string, isInternal?: boolean, attachment: any }) {
         if (!this.server) return;
+        if (payload.isInternal) {
+            this.emitToStaff('ticket:attachment_added', payload);
+            return;
+        }
         this.server.to(`ticket:${payload.ticketId}`).emit('ticket:attachment_added', payload);
+    }
+
+    private emitToStaff(event: string, payload: unknown) {
+        const staffRoleRooms = [
+            'admin',
+            'super-admin', 'super_admin',
+            'superuser',
+            'department-manager', 'department_manager',
+            'team-lead', 'team_lead',
+            'senior-agent', 'senior_agent',
+            'agent',
+            'support-agent', 'support_agent',
+            'support-manager', 'support_manager',
+        ];
+        for (const role of staffRoleRooms) {
+            this.server.to(`role:${role}`).emit(event, payload);
+        }
+    }
+
+    private isCustomerRole(role: unknown): boolean {
+        const normalized = typeof role === 'string' ? role.trim().toUpperCase().replace(/-/g, '_') : '';
+        return normalized === 'CUSTOMER' || normalized === 'VIEWER';
     }
 
     emitBulkUpdate(ticketIds: string[]) {

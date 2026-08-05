@@ -22,7 +22,7 @@ export class AttachmentsService {
 
         const message = await this.prisma.ticketMessage.findUnique({
             where: { id: data.messageId },
-            select: { ticketId: true }
+            select: { ticketId: true, isInternal: true }
         });
 
         if (message?.ticketId) {
@@ -37,6 +37,7 @@ export class AttachmentsService {
             this.eventEmitter.emit('attachment.created', {
                 ticketId: message.ticketId,
                 messageId: data.messageId,
+                isInternal: message.isInternal,
                 attachment,
             });
         }
