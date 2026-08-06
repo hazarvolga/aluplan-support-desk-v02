@@ -2053,3 +2053,43 @@ Kullanıcının yerel browser smoke testi iki gerçek runtime problemi ortaya ç
 - Bağımsız code-review ve security-review blocker bulmadı; gözlemlenebilirlik filtresinin dar ve güvenli olduğunu doğruladı.
 - Ürün commit'i: `a6468b30` — `fix: silence handled URL duplicate conflicts`.
 - Production/shadow değişikliği, migration, push, tag-push, deploy veya publish yapılmadı.
+
+---
+
+### 2026-08-06 — CODEX — AI çözüm görünürlüğü ve FAQ provenance çalışması başlangıç planı
+
+Kullanıcı, müşterinin bilet oluşturmadan önce AI'dan çözüm istediği akışta “hangi kullanıcı ne sordu ve AI hangi çözümü gösterdi?” bilgisinin personel tarafından görülebilmesini onayladı. Kod izi, `/tr/kb-approvals` ekranının bu ihtiyacı karşılamadığını doğruladı: ekran `FaqEntry.PENDING_REVIEW` yayın taslaklarını gösteriyor; gerçek bilet-öncesi soru ve cevaplar `AiInteraction.userQuery` / `AiInteraction.responseGenerated` alanlarında tutuluyor.
+
+#### İş öncesi yerel güvenlik noktası
+
+- Önceki temiz HEAD: `9181f9bf`.
+- Checkpoint commit: `38a2cc26` — `chore: checkpoint before AI interaction visibility`.
+- Restore tag: `restore/before-ai-interaction-visibility-20260806-38a2cc26`.
+- Bundle: `.private-data/restore-points/pre-ai-interaction-visibility-38a2cc26.bundle`.
+- Bundle SHA-256: `33ed5119ee6594157823193fda355e402b50b6d3e2e2bc775ff63c3d52421f69`.
+- `git bundle verify`: complete history; `git fsck --strict`: yalnız önceden mevcut dangling tree kayıtları.
+
+#### Kapatılacak GAP'ler ve uygulanacak ürün ayrımı
+
+1. `/tr/kb-approvals` FAQ yayın-onay işlevinde kalacak; ham müşteri AI etkileşimleri bu editoryal kuyruğa karıştırılmayacak.
+2. `FaqEntry` provenance kaybı giderilecek: FAQ adayının kaynak türü yanında mümkün olduğunda kaynak ticket veya AI interaction kimliği güvenilir biçimde saklanacak ve kaynak sütunu gerçek ilişki üzerinden çalışacak.
+3. Interaction tabanlı FAQ çıkarımındaki `answer: ''` → boş cevap nedeniyle skip edilen ölü akış düzeltilecek; aday oluşturulacaksa müşteriye gösterilmiş doğrulanmamış ham AI cevabı otomatik yayımlanmayacak, R-T1 gereği admin onayında ve internal kalacak.
+4. Yalnız yetkili personelin erişebildiği, sayfalı ve filtrelenebilir bir **AI Çözüm Geçmişi** görünümü eklenecek. Kapsam: ticket açılan ve açılmayan bilet-öncesi etkileşimler; kullanıcı, soru, müşteriye sunulan tam cevap, tarih, güven seviyesi, kaynak/makale, provider/model ve ticket durumu.
+5. Mevcut ticket detayındaki staff-only AI trace paneli, backend'in zaten döndürdüğü `responseGenerated` değerini güvenli biçimde gösterecek.
+6. Müşteri/Viewer rolleri bu verilere erişemeyecek. Serbest metinler hassas destek içeriği sayılacak; liste endpoint'i prompt/context/attachment veya gereksiz PII dökmeyecek, açık allow-list response kullanacak.
+
+#### Uygulama ve doğrulama sırası
+
+1. GitNexus/Graphify ile `FaqService`, FAQ DTO/controller, `AiInteraction`, ticket AI trace ve frontend navigasyon etki alanı çıkarılacak.
+2. Önce backend/frontend RED regresyon testleri yazılacak: provenance, boş-interaction candidate, pagination/filter/RBAC, ticketed/ticketless kayıtlar ve ticket detail cevap görünümü.
+3. Gerekli Prisma migration yalnız yerel geliştirme DB'sinde uygulanacak; production ve shadow DB'ye yazılmayacak. Migration additive ve rollback planlı olacak; mevcut FAQ kayıtları silinmeyecek veya otomatik eşleştirilmeyecek.
+4. Backend staff-only API ve frontend ekranı küçük, geri alınabilir parçalar halinde uygulanacak; TR/EN/DE metinleri birlikte eklenecek.
+5. Focused testler, tam backend/frontend testleri, typecheck, i18n, Prisma validate/migration status ve browser smoke çalıştırılacak.
+6. Bağımsız code-review ve security-review tamamlandıktan sonra ürün, migration ve dokümantasyon değişiklikleri ayrı commitlenecek; iş sonunda yeni yerel restore tag + bundle alınacak.
+
+#### Değişmez sınırlar
+
+- Production/shadow veri yazımı, production migration, push, tag-push, deploy ve publish yoktur.
+- Mevcut production-derived local dev verisi silinmeyecek, birleştirilmeyecek veya geri yüklenmeyecek.
+- R-T1 korunur: FAQ adayları müşteriye görünür hale gelmeden önce insan/admin onayı gerekir.
+- Bu plan kaydı append-only eklenmiştir; raporun üst bölümleri değiştirilmemiştir.
