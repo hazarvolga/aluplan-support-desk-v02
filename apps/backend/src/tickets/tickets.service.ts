@@ -525,6 +525,9 @@ export class TicketsService {
         if (role === 'CUSTOMER' || role === 'VIEWER') {
             throw new ForbiddenException('AI ticket trace is available to support staff only');
         }
+        if (!(await this.ticketAccess.canAccessTicket(requester, id))) {
+            throw new ForbiddenException('You do not have access to this ticket');
+        }
 
         const ticket = await this.prisma.ticket.findFirst({
             where: { id, deletedAt: null },

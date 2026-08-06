@@ -42,6 +42,8 @@ import { FaqModule } from '../faq/faq.module';
 import { AiHealthEventService } from './ai-health-event.service';
 import { PreReimportInspectService } from './pre-reimport-inspect.service';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
+import { AiInteractionHistoryController } from './ai-interaction-history.controller';
+import { AiInteractionHistoryService } from './ai-interaction-history.service';
 
 @Module({
     imports: [
@@ -67,7 +69,7 @@ import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service
             }
         ),
     ],
-    controllers: [AiController],
+    controllers: [AiController, AiInteractionHistoryController],
     providers: [
         AiService,
         AiProviderRegistry,
@@ -103,6 +105,7 @@ import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service
         AiEvalService,
         AiHealthEventService,
         PreReimportInspectService,
+        AiInteractionHistoryService,
     ],
     exports: [
         AiService,

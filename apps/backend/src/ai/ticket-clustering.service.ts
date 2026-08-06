@@ -135,6 +135,7 @@ Görevin:
                     ticketCount: tickets.length,
                     avgCsat,
                     consistencyRatio: 1.0, // All members passed configured similarity threshold
+                    ticketIds,
                 });
 
                 // Mark tickets as processed
