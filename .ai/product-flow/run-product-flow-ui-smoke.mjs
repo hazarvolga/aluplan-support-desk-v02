@@ -11,11 +11,11 @@ const frontendUrl = process.env.PRODUCT_FLOW_FRONTEND_URL ?? 'http://localhost:3
 const backendUrl = process.env.PRODUCT_FLOW_BACKEND_URL ?? 'http://localhost:4000/api/v1';
 const customer = {
   email: process.env.PRODUCT_FLOW_CUSTOMER_EMAIL ?? 'e2e-customer@aluplan.com',
-  password: process.env.PRODUCT_FLOW_CUSTOMER_PASSWORD ?? 'Vol1872017',
+  password: process.env.PRODUCT_FLOW_CUSTOMER_PASSWORD ?? 'E2E-Only-Not-A-Secret-2026!',
 };
 const admin = {
   email: process.env.PRODUCT_FLOW_ADMIN_EMAIL ?? 'admin@example.com',
-  password: process.env.PRODUCT_FLOW_ADMIN_PASSWORD ?? 'Vol1872017',
+  password: process.env.PRODUCT_FLOW_ADMIN_PASSWORD ?? 'E2E-Only-Not-A-Secret-2026!',
 };
 
 const runId = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);

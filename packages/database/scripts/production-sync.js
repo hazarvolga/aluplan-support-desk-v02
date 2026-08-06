@@ -4,11 +4,27 @@ const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
 async function main() {
-    console.log('🏁 Starting Production Synchronization Loop...');
+    console.log('🏁 Starting explicitly authorized production synchronization...');
+
+    if (process.env.ALLOW_PRODUCTION_DATA_SYNC !== 'true') {
+        throw new Error(
+            'Production data synchronization is disabled. Set ALLOW_PRODUCTION_DATA_SYNC=true only for an approved one-time maintenance run.',
+        );
+    }
 
     if (!process.env.DATABASE_URL) {
-        console.error('❌ DATABASE_URL is missing! Skipping sync.');
-        return;
+        throw new Error('DATABASE_URL is required for production synchronization.');
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL?.trim();
+    if (!adminEmail) {
+        throw new Error('ADMIN_EMAIL is required for production synchronization.');
+    }
+
+    if (process.env.ALLOW_ADMIN_BOOTSTRAP !== 'true') {
+        throw new Error(
+            'Admin bootstrap is disabled. Set ALLOW_ADMIN_BOOTSTRAP=true only for an approved one-time maintenance run.',
+        );
     }
 
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -16,6 +32,8 @@ async function main() {
     const prisma = new PrismaClient({ adapter });
 
     try {
+        await prisma.$transaction(async (tx) => {
+        // BEGIN TRANSACTIONAL SYNC
         // --- 1. Roles & Permissions Enforcement ---
         console.log('📡 Enforcing System Roles & Permissions...');
         const ALL_PERMISSIONS = [
@@ -36,27 +54,27 @@ async function main() {
         ];
 
         for (const permDef of ALL_PERMISSIONS) {
-            await prisma.permission.upsert({
+            await tx.permission.upsert({
                 where: { name: permDef.name },
                 update: { group: permDef.group, description: permDef.description },
                 create: permDef
             });
         }
 
-        let adminRole = await prisma.role.findFirst({ where: { name: 'ADMIN' } });
+        let adminRole = await tx.role.findFirst({ where: { name: 'ADMIN' } });
         if (!adminRole) {
-            adminRole = await prisma.role.create({ data: { name: 'ADMIN', isSystem: true, description: 'Super Administrator' } });
+            adminRole = await tx.role.create({ data: { name: 'ADMIN', isSystem: true, description: 'Super Administrator' } });
         }
 
-        let customerRole = await prisma.role.findFirst({ where: { name: 'CUSTOMER' } });
+        let customerRole = await tx.role.findFirst({ where: { name: 'CUSTOMER' } });
         if (!customerRole) {
-            customerRole = await prisma.role.create({ data: { name: 'CUSTOMER', isSystem: true, description: 'Standard Customer' } });
+            customerRole = await tx.role.create({ data: { name: 'CUSTOMER', isSystem: true, description: 'Standard Customer' } });
         }
 
         // Connect ALL permissions to ADMIN role
-        const perms = await prisma.permission.findMany();
+        const perms = await tx.permission.findMany();
         for (const p of perms) {
-            await prisma.rolePermission.upsert({
+            await tx.rolePermission.upsert({
                 where: {
                     roleId_permissionId: {
                         roleId: adminRole.id,
@@ -72,37 +90,43 @@ async function main() {
         }
 
         // --- 2. Admin User Protection ---
-        const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
         console.log(`👤 Ensuring Admin user integrity (${adminEmail})...`);
-        let adminUser = await prisma.user.findUnique({ where: { email: adminEmail } });
+        let adminUser = await tx.user.findUnique({ where: { email: adminEmail } });
         if (adminUser) {
-            await prisma.user.update({
-                where: { id: adminUser.id },
-                data: { roleId: adminRole.id, status: 'ACTIVE', deletedAt: null }
-            });
+            if (adminUser.deletedAt || adminUser.status !== 'ACTIVE') {
+                throw new Error(
+                    'Refusing to reactivate a deleted or inactive admin account automatically.',
+                );
+            }
+            if (adminUser.roleId !== adminRole.id) {
+                if (process.env.ALLOW_ADMIN_PROMOTION !== 'true') {
+                    throw new Error(
+                        'Refusing to promote an existing account without ALLOW_ADMIN_PROMOTION=true.',
+                    );
+                }
+                adminUser = await tx.user.update({
+                    where: { id: adminUser.id },
+                    data: { roleId: adminRole.id }
+                });
+            }
         } else {
-            const passwordHash = await bcrypt.hash('Vol1872017', 10);
-            adminUser = await prisma.user.create({
+            const adminBootstrapPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD;
+            if (!adminBootstrapPassword) {
+                throw new Error(
+                    'ADMIN_BOOTSTRAP_PASSWORD is required when the admin account does not exist.',
+                );
+            }
+            const passwordHash = await bcrypt.hash(adminBootstrapPassword, 10);
+            adminUser = await tx.user.create({
                 data: {
                     email: adminEmail,
                     passwordHash: passwordHash,
-                    fullName: 'Hazar Volga',
+                    fullName: process.env.ADMIN_BOOTSTRAP_NAME || 'Bootstrap Administrator',
                     roleId: adminRole.id,
                     status: 'ACTIVE'
                 }
             });
             console.log(`✅ Created default admin user: ${adminEmail}`);
-        }
-
-        // --- 3. User Recovery ---
-        console.log('🩹 Running User Recovery...');
-        // ... (rest of user recovery)
-        const recovered = await prisma.user.updateMany({
-            where: { OR: [{ deletedAt: { not: null } }, { status: 'INACTIVE' }] },
-            data: { deletedAt: null, status: 'ACTIVE' }
-        });
-        if (recovered.count > 0) {
-            console.log(`✅ Recovered ${recovered.count} users.`);
         }
 
         // --- 4. Products & Categories Taxonomy (Sync from seed.ts logic) ---
@@ -126,14 +150,14 @@ async function main() {
         ];
 
         for (const prod of taxonomy) {
-            let product = await prisma.product.findFirst({ where: { name: prod.name } });
+            let product = await tx.product.findFirst({ where: { name: prod.name } });
             if (product) {
-                product = await prisma.product.update({
+                product = await tx.product.update({
                     where: { id: product.id },
                     data: { description: prod.description, isActive: true }
                 });
             } else {
-                product = await prisma.product.create({
+                product = await tx.product.create({
                     data: { name: prod.name, description: prod.description, isActive: true }
                 });
             }
@@ -141,16 +165,16 @@ async function main() {
 
             for (const catName of prod.categories) {
                 // Find first because unique is not on name+productId in schema (only id)
-                const existingCat = await prisma.productCategory.findFirst({
+                const existingCat = await tx.productCategory.findFirst({
                     where: { productId: product.id, name: catName }
                 });
 
                 if (!existingCat) {
-                    await prisma.productCategory.create({
+                    await tx.productCategory.create({
                         data: { productId: product.id, name: catName, isActive: true }
                     });
                 } else {
-                    await prisma.productCategory.update({
+                    await tx.productCategory.update({
                         where: { id: existingCat.id },
                         data: { isActive: true }
                     });
@@ -264,9 +288,9 @@ async function main() {
 
         for (const deptDef of DEFAULT_DEPARTMENTS) {
             const { sla, teams, ...deptData } = deptDef;
-            let dept = await prisma.department.findFirst({ where: { slug: deptData.slug } });
+            let dept = await tx.department.findFirst({ where: { slug: deptData.slug } });
             if (dept) {
-                dept = await prisma.department.update({
+                dept = await tx.department.update({
                     where: { id: dept.id },
                     data: {
                         name: deptData.name,
@@ -277,7 +301,7 @@ async function main() {
                     }
                 });
             } else {
-                dept = await prisma.department.create({
+                dept = await tx.department.create({
                     data: {
                         ...deptData,
                         isDefault: true,
@@ -287,9 +311,9 @@ async function main() {
 
             // Seed SLA for this dept
             const slaId = `00000000-0000-0000-0000-${dept.id.substring(dept.id.length - 12)}`;
-            const existingSla = await prisma.slaPolicy.findUnique({ where: { id: slaId } });
+            const existingSla = await tx.slaPolicy.findUnique({ where: { id: slaId } });
             if (existingSla) {
-                await prisma.slaPolicy.update({
+                await tx.slaPolicy.update({
                     where: { id: slaId },
                     data: {
                         name: sla.name,
@@ -299,7 +323,7 @@ async function main() {
                     }
                 });
             } else {
-                await prisma.slaPolicy.create({
+                await tx.slaPolicy.create({
                     data: {
                         id: slaId,
                         name: sla.name,
@@ -315,9 +339,9 @@ async function main() {
             // Seed Teams for this dept
             if (teams) {
                 for (const teamDef of teams) {
-                    const existingTeam = await prisma.team.findFirst({ where: { slug: teamDef.slug } });
+                    const existingTeam = await tx.team.findFirst({ where: { slug: teamDef.slug } });
                     if (existingTeam) {
-                        await prisma.team.update({
+                        await tx.team.update({
                             where: { id: existingTeam.id },
                             data: {
                                 name: teamDef.name,
@@ -325,7 +349,7 @@ async function main() {
                             }
                         });
                     } else {
-                        await prisma.team.create({
+                        await tx.team.create({
                             data: {
                                 name: teamDef.name,
                                 slug: teamDef.slug,
@@ -352,19 +376,19 @@ async function main() {
         ];
 
         for (const setting of mandatorySettings) {
-            const existingSetting = await prisma.setting.findUnique({
+            const existingSetting = await tx.setting.findUnique({
                 where: { key: setting.key },
                 select: { key: true }
             });
 
             if (!existingSetting) {
-                await prisma.setting.create({
+                await tx.setting.create({
                     data: { key: setting.key, value: setting.value, isSecret: false }
                 });
             }
         }
 
-        await prisma.setting.updateMany({
+        await tx.setting.updateMany({
             where: {
                 key: 'ai.gemini.chat_model',
                 value: { in: ['gemini-2.0-flash-exp', 'models/gemini-2.0-flash-exp'] },
@@ -372,13 +396,13 @@ async function main() {
             data: { value: 'gemini-2.5-flash', isSecret: false },
         });
 
-        const currentChatProvider = await prisma.setting.findUnique({
+        const currentChatProvider = await tx.setting.findUnique({
             where: { key: 'ai.chat_provider' },
             select: { value: true },
         });
 
         if (currentChatProvider?.value) {
-            await prisma.setting.upsert({
+            await tx.setting.upsert({
                 where: { key: 'ai.active_provider' },
                 update: { value: currentChatProvider.value, isSecret: false },
                 create: {
@@ -400,7 +424,7 @@ async function main() {
 
         for (const catDef of KB_CATEGORIES) {
             const slug = catDef.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-            await prisma.category.upsert({
+            await tx.category.upsert({
                 where: { slug },
                 update: { description: catDef.description },
                 create: {
@@ -411,38 +435,6 @@ async function main() {
             });
         }
         console.log('✅ Knowledge Base Categories synchronized.');
-
-        // --- 7. Test Customer Account ---
-        console.log('🧪 Ensuring test customer account (droneracingturkey@gmail.com)...');
-        let testCustomer = await prisma.user.findUnique({ where: { email: 'droneracingturkey@gmail.com' } });
-        if (!testCustomer) {
-            const testPassHash = await bcrypt.hash('Test1234!', 10);
-            testCustomer = await prisma.user.create({
-                data: {
-                    email: 'droneracingturkey@gmail.com',
-                    passwordHash: testPassHash,
-                    fullName: 'Test Customer',
-                    roleId: customerRole.id,
-                    status: 'ACTIVE',
-                    customerProfile: {
-                        create: {
-                            firstName: 'Test',
-                            lastName: 'Customer',
-                            customerNo: 'TEST-001',
-                            companyName: 'Drone Racing Turkey',
-                            phoneNumber: '5550000000'
-                        }
-                    }
-                }
-            });
-            console.log('✅ Created test customer account.');
-        } else {
-            // Ensure they have the correct role and are active
-            await prisma.user.update({
-                where: { id: testCustomer.id },
-                data: { roleId: customerRole.id, status: 'ACTIVE', deletedAt: null }
-            });
-        }
 
         // --- 8. Announcement Templates Seeding ---
         console.log('📢 Syncing Announcement Templates...');
@@ -462,7 +454,7 @@ async function main() {
         ];
 
         for (const t of templates) {
-            await prisma.announcementTemplate.upsert({
+            await tx.announcementTemplate.upsert({
                 where: { name: t.name },
                 update: { topic: t.topic, subject: t.subject, contentMjml: t.contentMjml },
                 create: { ...t, createdBy: adminUser.id }
@@ -471,13 +463,31 @@ async function main() {
         console.log('✅ Announcement templates synchronized.');
 
         console.log('🎉 Production Sync completed successfully!');
+        // END TRANSACTIONAL SYNC
+        }, { maxWait: 10_000, timeout: 120_000 });
     } catch (error) {
         console.error('❌ Production Sync FAILED:', error);
-        // We don't exit(1) here because we want the app to try to start anyway
-        // but we log the error clearly.
+        throw error;
     } finally {
-        await prisma.$disconnect();
+        const cleanupResults = await Promise.allSettled([
+            prisma.$disconnect(),
+            pool.end(),
+        ]);
+        for (const result of cleanupResults) {
+            if (result.status === 'rejected') {
+                console.error('❌ Production Sync cleanup failed:', result.reason);
+            }
+        }
     }
 }
 
-main().catch(console.error);
+function handleFatalError(error) {
+    console.error('❌ Production synchronization aborted:', error);
+    process.exitCode = 1;
+}
+
+if (require.main === module) {
+    main().catch(handleFatalError);
+}
+
+module.exports = { main };

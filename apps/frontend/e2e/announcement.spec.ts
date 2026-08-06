@@ -49,8 +49,8 @@ async function apiPatch(url: string, token: string, body: any = {}) {
 
 // ── Credentials ───────────────────────────────────────────────────────────
 
-const ADMIN = { email: 'admin@example.com', password: 'Vol1872017' };
-const CUSTOMER = { email: 'e2e-customer@aluplan.com', password: 'Vol1872017' };
+const ADMIN = { email: 'admin@example.com', password: 'E2E-Only-Not-A-Secret-2026!' };
+const CUSTOMER = { email: 'e2e-customer@aluplan.com', password: 'E2E-Only-Not-A-Secret-2026!' };
 
 // ── Shared setup: broadcast an announcement via API ───────────────────────
 

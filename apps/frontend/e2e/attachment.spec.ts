@@ -35,7 +35,7 @@ async function apiPost(url: string, body: any, token?: string) {
 
 test.describe('Attachment Upload Flow', () => {
     const customerEmail = 'e2e-customer@aluplan.com';
-    const customerPassword = 'Vol1872017';
+    const customerPassword = 'E2E-Only-Not-A-Secret-2026!';
     const testFileName = 'e2e-test-attachment.txt';
     const testFilePath = path.join('/tmp', testFileName);
 

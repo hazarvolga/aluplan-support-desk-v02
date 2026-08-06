@@ -13,6 +13,7 @@
         "typecheck": "turbo typecheck",
         "db:generate": "turbo db:generate",
         "db:migrate": "turbo db:migrate",
+        "db:update:migration-manifest": "node scripts/verify-migration-integrity.mjs --write-manifest",
         "db:verify:migration-files": "node scripts/verify-migration-integrity.mjs --files-only",
         "db:verify:migrations": "node scripts/verify-migration-integrity.mjs",
         "db:verify:schema-parity": "node scripts/verify-schema-parity.mjs",
@@ -22,14 +23,14 @@
         "db:measure:migration-locks": "node scripts/measure-migration-locks.mjs",
         "rag:maintenance": "pnpm --filter @aluplan/backend rag:maintenance",
         "i18n:check": "pnpm --filter @aluplan/frontend i18n:check",
-        "spec:verify": "node scripts/verify-specs.mjs"
+        "spec:verify": "node scripts/verify-specs.mjs",
+        "test:ops-safety": "node --test scripts/verify-migration-integrity.test.mjs scripts/production-boot-safety.test.mjs"
     },
     "devDependencies": {
         "@types/handlebars": "^4.1.0",
         "@types/mjml": "^4.7.4",
         "@types/multer": "^2.0.0",
         "dotenv": "^17.3.1",
-        "pg": "^8.20.0",
         "prettier": "^3.8.1",
         "ts-node": "^10.9.2",
         "turbo": "^2.8.12",
@@ -48,6 +49,7 @@
         "handlebars": "^4.7.8",
         "ioredis": "^5.10.0",
         "mjml": "^4.18.0",
+        "pg": "^8.20.0",
         "prisma": "7.4.2"
     }
 }

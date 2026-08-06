@@ -4,9 +4,8 @@
     "private": true,
     "scripts": {
         "build": "nest build",
-        "prestart:prod": "cd ../../packages/database && npx prisma migrate deploy && pnpm run db:seed",
         "start": "node dist/main",
-        "start:prod": "prisma migrate deploy && node dist/main",
+        "start:prod": "cd ../.. && ./apps/backend/scripts/deploy.sh",
         "dev": "nest start --watch",
         "rag:maintenance": "ts-node src/scripts/run-rag-maintenance.ts",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",

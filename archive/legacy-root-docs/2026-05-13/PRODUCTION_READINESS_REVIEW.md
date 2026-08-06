@@ -56,7 +56,7 @@
 - **57 test discoverable** (was 0). Suite ayağa kalkıyor, 37 dk tam koşumda **10 PASS / 47 fail**.
 - Geçenler: smoke (4), bazı a11y, basic.spec, sanity. Yani **infrastructure çalışıyor** ama auth gerektiren her şey düşüyor.
 - **Çoğu fail auth credential drift** + hidrasyon yarışı kombinasyonundan.
-- `auth.spec.ts:32` hardcoded `e2e-test@aluplan.com / pass123` → bu commit'te env-default `hazarvolga@gmail.com / Vol1872017` olarak güncellendi (helpers ile tutarlı). **Login hâlâ dashboard'a redirect olmuyor** — frontend hidrasyon/cookie sorunu.
+- `auth.spec.ts:32` hardcoded `e2e-test@aluplan.com / pass123` → bu commit'te env-default `hazarvolga@gmail.com / E2E-Only-Not-A-Secret-2026!` olarak güncellendi (helpers ile tutarlı). **Login hâlâ dashboard'a redirect olmuyor** — frontend hidrasyon/cookie sorunu.
 - Diğer spec dosyalarında hâlâ `e2e-customer@aluplan.com` gibi seed'de olmayan credential'lar var.
 
 ### Kök Sorunlar (öncelik sırası)

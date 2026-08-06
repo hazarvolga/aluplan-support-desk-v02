@@ -95,7 +95,7 @@ Task 4.6 (`tasks.md`) hâlâ `[ ]` (tamamlanmadı):
 **Risk: DÜŞÜK-ORTA**
 
 `helpers/auth.ts` içindeki `loginAsAdmin` fonksiyonu `e2e-test@aluplan.com / pass123` kullanıyor.  
-Diğer testler `hazarvolga@gmail.com / Vol1872017` kullanıyor.  
+Diğer testler `hazarvolga@gmail.com / E2E-Only-Not-A-Secret-2026!` kullanıyor.
 Seed'de `e2e-test@aluplan.com` yoksa auth testleri başarısız olur.
 
 ---

@@ -49,5 +49,8 @@
   "20260519000001_add_crm_account_detail_fields": "93502816368ab12cb1468dc2c5e9f628e29873c970045014324f485b3f47cd7d",
   "20260521000001_add_crm_account_deleted_at": "402c96a5ce714d3d17770f7ecc7b2d502c2736849dc8f79ad563e450d219d761",
   "20260806000000_align_schema_parity": "0b097264cdaa492917d6aa513743a42ee797b5c4cb67cf0fd303e938739d72ce",
-  "20260806010000_harden_auth_action_tokens": "ed0deee6284f7cb0c6d5bdfa6eabd6ab80dc8f809b1acb948269461aca2e1784"
+  "20260806010000_harden_auth_action_tokens": "ed0deee6284f7cb0c6d5bdfa6eabd6ab80dc8f809b1acb948269461aca2e1784",
+  "20260806020000_add_faq_provenance_ai_history_permissions": "5d0f7bf2122ab1d80fed34e403f229c54034caf4780e9cb6e08d9eb07be411b4",
+  "20260806021000_grant_faq_review_to_existing_reviewers": "65c9bdf102a4ffcb42649e084633adeff11f1ffb52cf9680b9f342818ce3bb1b",
+  "20260806022000_align_faq_entry_sources_updated_at_default": "4cc424bf1b2e6c400f9841726c22475fece3e33791a04dcdc9322bb0eee2facc"
 }

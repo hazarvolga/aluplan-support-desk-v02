@@ -76,7 +76,7 @@ async function apiPatch(url: string, token: string, body?: any) {
 
 async function loginAsAgent(page: Page) {
     const email = process.env.E2E_ADMIN_EMAIL || 'admin@example.com';
-    const password = process.env.E2E_ADMIN_PASSWORD || 'Vol1872017';
+    const password = process.env.E2E_ADMIN_PASSWORD || 'E2E-Only-Not-A-Secret-2026!';
 
     console.log('--- [AUTH] Agent Login ---');
     await page.goto('/tr/login');
@@ -94,7 +94,7 @@ async function loginAsAgent(page: Page) {
 
 async function loginAsCustomer(page: Page) {
     const email = 'e2e-customer@aluplan.com';
-    const password = 'Vol1872017';
+    const password = 'E2E-Only-Not-A-Secret-2026!';
 
     console.log('--- [AUTH] Customer Login ---');
     await page.goto('/tr/login');
@@ -119,9 +119,9 @@ async function getAuthToken(email: string, password: string): Promise<string> {
 
 test.describe('Proactive Chat E2E Tests', () => {
     const agentEmail = 'admin@example.com';
-    const agentPassword = 'Vol1872017';
+    const agentPassword = 'E2E-Only-Not-A-Secret-2026!';
     const customerEmail = 'e2e-customer@aluplan.com';
-    const customerPassword = 'Vol1872017';
+    const customerPassword = 'E2E-Only-Not-A-Secret-2026!';
 
     test('1. Happy Path: Agent initiates chat → Customer accepts → Messaging → End session', async ({ browser }) => {
         // Create two separate contexts for agent and customer

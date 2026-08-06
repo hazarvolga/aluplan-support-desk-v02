@@ -29,6 +29,9 @@ importers:
       mjml:
         specifier: ^4.18.0
         version: 4.18.0
+      pg:
+        specifier: ^8.20.0
+        version: 8.20.0
       prisma:
         specifier: 7.4.2
         version: 7.4.2(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
@@ -45,9 +48,6 @@ importers:
       dotenv:
         specifier: ^17.3.1
         version: 17.3.1
-      pg:
-        specifier: ^8.20.0
-        version: 8.20.0
       prettier:
         specifier: ^3.8.1
         version: 3.8.1

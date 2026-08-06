@@ -45,7 +45,7 @@ test.describe('Live Chat WebSocket Flow', () => {
     const customerEmail = 'test_customer@aluplan.com';
     const customerPassword = 'Test1234!';
     const adminEmail = 'admin@example.com';
-    const adminPassword = 'Vol1872017';
+    const adminPassword = 'E2E-Only-Not-A-Secret-2026!';
 
     test('should activate live chat session end-to-end', async ({ page }) => {
         // ── SETUP: Create ticket via API ──────────────────────────────────

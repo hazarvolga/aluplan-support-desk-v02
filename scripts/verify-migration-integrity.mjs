@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
@@ -62,6 +62,79 @@ async function loadMigrationChecksums() {
 async function loadChecksumManifest() {
     const manifest = JSON.parse(await readFile(checksumManifestPath, 'utf8'));
     return new Map(Object.entries(manifest));
+}
+
+export function buildUpdatedChecksumManifest(
+    fileChecksums,
+    checksumManifest,
+) {
+    if (fileChecksums.size > 0 && checksumManifest.size === 0) {
+        throw new Error(
+            'Refusing to create a canonical manifest from an empty baseline.',
+        );
+    }
+
+    const validMigrationName = /^(?:0_[a-z0-9_]+|\d{14}_[a-z0-9_]+)$/;
+    for (const migrationName of fileChecksums.keys()) {
+        if (!validMigrationName.test(migrationName)) {
+            throw new Error(
+                `Invalid migration directory name: ${migrationName}`,
+            );
+        }
+    }
+
+    for (const [migrationName, expectedChecksum] of checksumManifest) {
+        const actualChecksum = fileChecksums.get(migrationName);
+        if (!actualChecksum) {
+            throw new Error(
+                `Manifest entry has no migration directory: ${migrationName}`,
+            );
+        }
+        if (actualChecksum !== expectedChecksum) {
+            throw new Error(
+                `Refusing to update manifest because an existing migration changed: ${migrationName}`,
+            );
+        }
+    }
+
+    const canonicalNames = [...checksumManifest.keys()].sort();
+    const canonicalTail = canonicalNames.at(-1);
+    if (canonicalTail) {
+        const nonForwardMigration = [...fileChecksums.keys()]
+            .filter((migrationName) => !checksumManifest.has(migrationName))
+            .sort()
+            .find((migrationName) => migrationName <= canonicalTail);
+        if (nonForwardMigration) {
+            throw new Error(
+                `Refusing to append a non-forward migration older than the canonical tail: ${nonForwardMigration}`,
+            );
+        }
+    }
+
+    return new Map(
+        [...fileChecksums].sort(([leftName], [rightName]) =>
+            leftName.localeCompare(rightName),
+        ),
+    );
+}
+
+export function serializeChecksumManifest(checksumManifest) {
+    return `${JSON.stringify(Object.fromEntries(checksumManifest), null, 2)}\n`;
+}
+
+async function writeChecksumManifest(checksumManifest) {
+    const temporaryPath = `${checksumManifestPath}.${process.pid}.tmp`;
+    try {
+        await writeFile(
+            temporaryPath,
+            serializeChecksumManifest(checksumManifest),
+            { encoding: 'utf8', mode: 0o644 },
+        );
+        await rename(temporaryPath, checksumManifestPath);
+    } catch (error) {
+        await unlink(temporaryPath).catch(() => undefined);
+        throw error;
+    }
 }
 
 function verifyCanonicalChecksums(fileChecksums, checksumManifest) {
@@ -176,6 +249,21 @@ async function verifyRequiredRelations(client) {
 async function main() {
     const fileChecksums = await loadMigrationChecksums();
     const checksumManifest = await loadChecksumManifest();
+
+    if (process.argv.includes('--write-manifest')) {
+        await verifyParityMigrationSafety();
+        const updatedManifest = buildUpdatedChecksumManifest(
+            fileChecksums,
+            checksumManifest,
+        );
+        await writeChecksumManifest(updatedManifest);
+        const addedCount = updatedManifest.size - checksumManifest.size;
+        console.log(
+            `Migration manifest updated: ${updatedManifest.size} entries (${addedCount} added).`,
+        );
+        return;
+    }
+
     verifyCanonicalChecksums(fileChecksums, checksumManifest);
     await verifyParityMigrationSafety();
 
@@ -208,9 +296,16 @@ async function main() {
     );
 }
 
-main().catch((error) => {
-    console.error(
-        error instanceof Error ? error.message : 'Migration verification failed',
-    );
-    process.exitCode = 1;
-});
+if (
+    process.argv[1] &&
+    path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+    main().catch((error) => {
+        console.error(
+            error instanceof Error
+                ? error.message
+                : 'Migration verification failed',
+        );
+        process.exitCode = 1;
+    });
+}

@@ -16,7 +16,7 @@ test.describe('Email Threading Integration', () => {
 
         // Login to get token
         const loginRes = await apiContext.post('/api/v1/auth/login', {
-            data: { email: 'admin@example.com', password: 'Vol1872017' }
+            data: { email: 'admin@example.com', password: 'E2E-Only-Not-A-Secret-2026!' }
         });
         const access_token = extractAccessTokenFromSetCookie(loginRes.headers()['set-cookie']);
 
@@ -67,7 +67,7 @@ test.describe('Email Threading Integration', () => {
 
         await page.goto('/tr/login');
         await page.getByTestId('login-email').fill('admin@example.com');
-        await page.getByTestId('login-password').fill('Vol1872017');
+        await page.getByTestId('login-password').fill('E2E-Only-Not-A-Secret-2026!');
         await page.getByTestId('login-submit').click();
         await page.waitForURL(/.*\/dashboard/);
 

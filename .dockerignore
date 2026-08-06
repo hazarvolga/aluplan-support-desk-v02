@@ -13,3 +13,5 @@ coverage
 .DS_Store
 packages/database/client
 packages/database/generated
+packages/database/scripts/production-sync.js
+extracted_users.json

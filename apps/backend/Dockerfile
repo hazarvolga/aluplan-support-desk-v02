@@ -61,7 +61,7 @@ RUN pnpm config set registry https://registry.npmjs.org/ && \
     pnpm config set fetch-retry-maxtimeout 120000 && \
     pnpm config set fetch-timeout 120000 && \
     pnpm config set network-concurrency 4 && \
-    pnpm install --prod --frozen-lockfile || pnpm install --prod
+    pnpm install --prod --frozen-lockfile
 
 # 3. Copy database package source files (NOT the generated client)
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
@@ -69,6 +69,7 @@ COPY --from=builder /app/packages/database/scripts ./packages/database/scripts
 COPY --from=builder /app/packages/database/prisma.config.ts ./packages/database/
 COPY --from=builder /app/packages/database/prisma.config.js ./packages/database/
 COPY --from=builder /app/packages/database/index.js /app/packages/database/index.d.ts ./packages/database/
+COPY --from=builder /app/scripts/verify-migration-integrity.mjs ./scripts/verify-migration-integrity.mjs
 
 # 4. Generate Prisma client in runner (this creates packages/database/client/)
 RUN cd packages/database && prisma generate --schema ./prisma/schema.prisma
@@ -78,13 +79,11 @@ COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/apps/backend/src/email/templates ./apps/backend/src/email/templates
 COPY --from=builder /app/apps/backend/src/email/locales ./apps/backend/src/email/locales
 
-COPY --from=builder /app/apps/backend/scripts/deploy.sh ./deploy.sh
-COPY --from=builder /app/apps/backend/scripts/grant-admin.js ./apps/backend/scripts/grant-admin.js
-COPY --from=builder /app/apps/backend/scripts/fix-customer-roles.js ./apps/backend/scripts/fix-customer-roles.js
+COPY --from=builder /app/apps/backend/scripts/deploy.sh ./apps/backend/scripts/deploy.sh
 
 # Final permissions and port config
-RUN chmod +x ./deploy.sh
+RUN chmod +x ./apps/backend/scripts/deploy.sh
 EXPOSE 4000
 ENV PORT=4000
 
-CMD ["./deploy.sh"]
+CMD ["./apps/backend/scripts/deploy.sh"]

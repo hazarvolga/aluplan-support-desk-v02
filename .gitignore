@@ -118,6 +118,7 @@ bin/
 obj/
 
 # Archives / Backups
+extracted_users.json
 backups/
 .private-data/
 *.zip

@@ -73,8 +73,8 @@ Comprehensive end-to-end tests for the Proactive Chat feature, covering all majo
    ```
 
 3. **Test users must exist in database:**
-   - Agent: `hazarvolga@gmail.com` / `Vol1872017`
-   - Customer: `e2e-customer@aluplan.com` / `Vol1872017`
+   - Agent: `hazarvolga@gmail.com` / `E2E-Only-Not-A-Secret-2026!`
+   - Customer: `e2e-customer@aluplan.com` / `E2E-Only-Not-A-Secret-2026!`
 
 ### Run All Proactive Chat Tests
 

@@ -11,7 +11,7 @@ test.describe('Omni-channel Integration', () => {
 
     test('should create a ticket from an incoming WhatsApp message', async ({ page, request }) => {
         const adminEmail = 'admin@example.com';
-        const adminPassword = 'Vol1872017';
+        const adminPassword = 'E2E-Only-Not-A-Secret-2026!';
 
         // E2E customer phone number (reconciled in DB)
         const testPhone = '905550009988';
