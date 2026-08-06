@@ -1738,3 +1738,11 @@ BULGU-02 (verify-email token purpose ayrımı), BULGU-18 (query-param JWT extrac
 3. URL `options` timeout davranışını disposable kilit testiyle doğrula; shell `PGOPTIONS` kullanma.
 4. Runbook komutlarını production'a bağlanmadan incele; canlı bakım penceresi uygulaması yapma.
 5. Yeni P1/P2 bulursan bu dokümanın yalnız en altına ekle; üst kayıtları değiştirme.
+
+### Handoff dahil ikinci restore doğrulaması — CODEX
+
+- Handoff rapor commit'i: `f0ced9e5` — `docs: hand off post-faz-7 closure to Claude`.
+- Raporu da içeren local tag: `restore/post-faz7-handoff-20260806-f0ced9e5`.
+- Raporu da içeren bundle: `.private-data/restore-points/post-faz7-handoff-f0ced9e5.bundle`.
+- Bundle SHA-256: `4edcdf56ad24b086cc4293dbd8024742cce3aa02ffce02fbc37227ac73464c46`.
+- `git bundle verify`: complete history ve geçerli bundle. Push/tag-push yapılmadı.
