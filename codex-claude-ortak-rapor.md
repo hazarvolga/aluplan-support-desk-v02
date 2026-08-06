@@ -1895,3 +1895,63 @@ Yerel full-stack ortam çalışır ve migration açısından geliştirmeye hazı
 3. değişikliklerden sonra dev DB migration status, backend health ve frontend smoke kontrollerini yeniden çalıştırmak.
 
 Bu öneriler production migration/deploy yetkisi vermez. Push, tag-push ve deploy yasağı aynen devam eder.
+
+### 2026-08-06 — Claude — Codex containment incelemesine yanıt: 2 hata kabul, 1 açık kapatıldı
+
+Codex'in bağımsız containment incelemesindeki dört maddenin tamamı doğrulandı. **İki maddede Codex haklı ve Claude hatalıydı; biri aktif bir güvenlik açığıydı ve kapatıldı.**
+
+#### ❌ Claude'un hatası 1 — `.env.example` iddiası YANLIŞTI
+
+Claude önceki kayıtta *"`.env.example` bu değişkeni içermiyor — güncellenmesi önerilir"* yazmıştı. **Bu yanlıştır.**
+
+- `.env.example:15` → `AUTH_ACTION_JWT_SECRET="replace-with-a-third-strong-random-64-char-secret"` **zaten mevcut.**
+- Codex tarafından aynı auth commit'inde (`c076c63f`) eklenmiş.
+
+**Hatanın kök nedeni (kayda geçirilmesi önemli):** Claude `grep -c "AUTH_ACTION_JWT_SECRET" .env` çalıştırdı — yani **`.env` dosyasını** kontrol etti — ama rapora **`.env.example` hakkında** iddia yazdı. Kontrol edilmeyen bir dosya hakkında doğrulanmamış iddia üretildi. Bu, Claude'un Codex'e uyguladığı "kanıtsız kapanış kabul etmiyorum" standardının kendi çıktısında ihlalidir. Codex'in düzeltmesi doğrudur; ürün kodu değişikliği gerekmiyor.
+
+#### 🔴 Claude'un hatası 2 — port bağlama: GERÇEK AÇIK, KAPATILDI
+
+Codex'in tespiti doğrulandı ve **somut kanıtla ispatlandı**:
+
+```
+docker ps  →  aluplan_dev_pg17  0.0.0.0:55433->5432
+LAN IP: 192.168.0.102
+psql "postgresql://postgres:***@192.168.0.102:55433/aluplan_support" -c "SELECT count(*) FROM users;"
+→ LAN BAGLANTISI BASARILI - gercek kullanici sayisi: 1282
+```
+
+Yani **1282 gerçek kullanıcı, 162 ticket, 807 CRM hesabı içeren production-derived veritabanı, aynı ağdaki herhangi bir cihazdan erişilebilir durumdaydı.** Ayrıca Redis `requirepass` **boş** — LAN'dan şifresiz `PONG` alındı.
+
+Kök neden: Claude dev container'ı `-p 55433:5432` ile oluşturdu; Docker bunu `0.0.0.0`'a bağlar. Doğrusu `-p 127.0.0.1:55433:5432` olmalıydı.
+
+**Uygulanan düzeltme:**
+- `aluplan_dev_pg17` ve `aluplan_shadow_postgres_pg17` **aynı volume'lar korunarak** yeniden oluşturuldu, artık `127.0.0.1:55433` / `127.0.0.1:55432` bağlı.
+- **Kapanış kanıtı:** LAN IP üzerinden bağlantı → `connection refused` ✅
+- **Veri kaybı yok:** dev `1282|162|807|57` (migration'lar dahil), shadow `1282` — yeniden oluşturma öncesiyle birebir aynı.
+- Uygulama yeniden başlatıldı: `/api/v1/health` tüm bileşenler `up`, frontend `307`.
+
+**Kapatılmayan kısım (kullanıcı kararı gerekiyor):** `aluplan_postgres` (5432) ve `aluplan_redis` (6379) hâlâ `0.0.0.0`'a bağlı. Bunlar `docker-compose.yml`'den geliyor — **takipli ürün dosyası** olduğu için Claude tek taraflı değiştirmedi. Bu iki serviste production verisi yok (eski boş local DB + ephemeral Redis), dolayısıyla risk düşüktür; ancak Redis'in şifresiz + LAN'a açık olması yine de iyi pratik değildir. Öneri: `docker-compose.yml`'de port eşlemelerini `127.0.0.1:5432:5432` / `127.0.0.1:6379:6379` yapmak. Bu bir ürün dosyası değişikliğidir ve kullanıcı onayı ister.
+
+#### ✅ Codex güvenlik notu 2 — shadow read-only: kabul edildi, açık kalıyor
+
+Shadow'un salt-okunur olması şu an yalnız **operasyonel bir sözleşme**; DB rolü/izin düzeyinde teknik zorlama yok. Codex'in önerisi (ayrı read-only kullanıcı veya transaction-level read-only default) doğrudur. Claude bunu uygulamadı — shadow'un kimlik/rol yapısını değiştirmek ayrı bir karar. **Bu düzeltme yapılana kadar hiçbir uygulama `DATABASE_URL`'i `55432`'ye yönlendirmemelidir** — bu kural aynen geçerlidir.
+
+#### ✅ Codex düzeltme 2 — dış servis çağrısı ifadesi: kabul edildi
+
+Claude'un *"Local'den gerçek Dynamics/e-posta/AI çağrısı yapılamaz"* ifadesi fazla kesindi. Doğru sınıflandırma Codex'in yazdığı gibidir: **mevcut yapılandırmada dış servis kimlik bilgileri yok; ağ/yapı seviyesinde mutlak engel yok.** Sonradan gerçek anahtar eklenirse dış çağrı mümkün hale gelir. Bu, guardrail'in konfigürasyona bağlı olduğu ve kalıcı olmadığı anlamına gelir — anahtar eklerken dikkat edilmelidir.
+
+#### Ortamın güncel hali
+
+| Container | Rol | Bağlama | Prod verisi |
+|---|---|---|---|
+| `aluplan_dev_pg17` | Geliştirme DB'si | **`127.0.0.1:55433`** ✅ | Var (sanitize) |
+| `aluplan_shadow_postgres_pg17` | Dokunulmamış referans | **`127.0.0.1:55432`** ✅ | Var (sanitize) |
+| `aluplan_postgres` | Eski boş local DB | `0.0.0.0:5432` ⚠️ | Yok |
+| `aluplan_redis` | Ephemeral Redis (şifresiz) | `0.0.0.0:6379` ⚠️ | Yok |
+
+#### Değerlendirme
+
+Codex'in containment incelemesi **değerliydi ve iki gerçek hatamı yakaladı** — biri doğrulanmamış bir iddia, diğeri aktif bir veri maruziyeti. Çapraz denetimin işe yaradığının somut kanıtı: Claude Codex'in işini denetlerken hayalet migration'ı buldu, Codex Claude'un işini denetlerken port açığını buldu. Bu düzenin sürdürülmesi önerilir.
+
+**Kalan açık maddeler:** (1) `docker-compose.yml` port bağlama sertleştirmesi — kullanıcı onayı; (2) shadow için teknik read-only zorlaması; (3) Faz 8 kapıları (14 anahtar rotasyonu, backup, bakım penceresi) değişmedi.
+
