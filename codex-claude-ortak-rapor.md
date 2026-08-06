@@ -2653,3 +2653,58 @@ Sonuç: **3 gerçek rol** (`ADMIN`, `SUPPORT_AGENT`, `CUSTOMER`) — ekip yapıs
 
 **Not:** Adım 1 ve 2 üretim veritabanında rol/izin değişikliği gerektirir (migration + seed). Bu, canlı yetkilendirmeyi değiştirdiği için **kullanıcı onayı ve dikkatli sıralama** ister: önce `SUPPORT_AGENT` rolü oluşturulup izinleri atanmalı, **sonra** kullanıcılar taşınmalı — aksi halde Meli/Meriç geçici olarak yetkisiz kalır.
 
+### 2026-08-06 — Kullanıcı — SUPPORT_AGENT kapsamı ve yerel çalışma sınırı kararı
+
+Görev ve Onay Merkezi ile RBAC tasarımı için açık kalan iki ürün kararı kullanıcı tarafından onaylandı:
+
+1. `SUPPORT_AGENT`, yalnız okuyup onaylamakla sınırlı olmayacak; makale ve FAQ içeriği yazabilmesi için `kb:write` ve `faq:manage` yetkilerini de alacak.
+2. `SUPPORT_AGENT`, müşteri soruları ve AI yanıtlarını içeren hassas AI Çözüm Geçmişi ekranını görebilecek; bu nedenle `ai-interactions:read` yetkisini alacak.
+
+Bu kararlar kullanıcı yönetimi ve sistem ayarları yetkilerini kapsamaz. `settings:write`, `users:manage` ve `*` yalnız `ADMIN` rolünde kalmalıdır.
+
+#### Değişmez teslimat sınırı
+
+- Kullanıcı açıkça ayrıca izin vermeden hiçbir remote push, tag-push, deploy, publish veya production migration yapılmayacaktır.
+- Ürün değişiklikleri, migration hazırlıkları, testler, rol matrisi doğrulamaları ve UI kontrolleri tamamen yerelde tamamlanacaktır.
+- Yerel kapanış kanıtları kullanıcıya sunulduktan sonra push/deploy kararı ayrıca kullanıcı tarafından verilecektir.
+- Bu kayıt uygulama başlangıç onayı değildir; yalnız ürün ve erişim kapsamı kararını sabitler.
+
+### 2026-08-06 — Claude — Tam proje haritası çıkarıldı (`.ai/PROJECT-MAP.md`)
+
+Kullanıcı haklı bir eleştiri yaptı: Claude'un rol modeli konusunda önce "roller yok" deyip sonra takım yapısını görünce "bu tabloyu değiştiriyor" demesi, **projenin bütününe hakim olmadan parça bilgiyle konuştuğunu** gösterdi. Talep: Codex kod yazarken Claude'un tüm route yapısını, fonksiyonları ve ürün amacını çıkarıp tam bir harita üretmesi.
+
+**Çıktı:** `.ai/PROJECT-MAP.md` — 12 bölüm, tamamı sayılarak/okunarak doğrulanmış, tahmin içermiyor.
+
+#### Haritanın kapsadıkları
+
+| Bölüm | İçerik |
+|---|---|
+| Ürün amacı | Değer zinciri, ayırt edici özellikler, gerçek ölçek rakamları |
+| Mimari | Katman diyagramı, global guard/interceptor zinciri |
+| Backend | **230 route**, 33 controller, 38 modül — modül bazında sorumluluk tablosu |
+| Public yüzey | **17 public route**, her biri koruma mekanizmasıyla |
+| Frontend | **44 sayfa**, tam route ağacı, konvansiyonlar |
+| Veri modeli | **62 Prisma modeli**, 11 domain grubunda |
+| Asenkron | **8 BullMQ kuyruğu**, **9 cron işi** (zaman + servis eşlemesi) |
+| AI/RAG | 30 servis, pipeline akışı, provider stratejisi |
+| Yetkilendirme | Üç paralel rol kaynağı, 16 izin, bilinen 4 sorun |
+| Gözlemlenebilirlik | Log/trace/metrik yığını, CI kapıları |
+| Kalite | Test/migration/typecheck durumu |
+| Açık konular | 8 madde |
+
+#### Metodolojik bulgu — regex tabanlı yetki analizi güvenilmez
+
+Route envanteri önce regex ile çıkarıldı ve **3 yanlış pozitif** üretti: `/auth/me`, `/auth/test-email-config` ve `GET /customers` "public" göründü. Kaynak koddan doğrulandığında üçünün de korumalı olduğu görüldü — `@Public()` dekoratörü **komşu route'tan** sızmıştı (geriye-bakış heuristiği hatası).
+
+Nihai sayılar bu yüzden uygulamanın kendi ürettiği `openapi.json` ile doğrulandı (230 operasyon, 189 path). **Bu, raporda kayıt altına alınmıştır: yetki analizi yapan hiçbir otomatik tarama tek başına kanıt sayılmamalıdır** — Codex'in de gelecekte `@Roles`/`@Public` taraması yaparken bu tuzağa dikkat etmesi önerilir.
+
+#### Haritanın ortaya çıkardığı, daha önce raporlanmamış gözlemler
+
+1. **`/faq`, `/faq-learning`, `/kb-approvals`** — aynı FAQ kuyruğu üç ekranda; Görev Merkezi önerisinin kanonikleştirme kararını destekler.
+2. **Frontend'de 0 API route handler** — tüm veri backend'den geliyor; bu, Görev Merkezi'nin summary endpoint'inin backend'de olması gerektiğini teyit eder.
+3. **8 kuyruk** var, önceki kayıtlarda "~6" deniyordu — `document-parsing`, `embedding-migration`, `kb-summarizer` dahil.
+4. **Yalnız 8 route izin-tabanlı, 40 route rol-tabanlı** — RBAC standardizasyonunun kapsamı bu oranla ölçülebilir.
+5. **Langfuse 52 kod referansıyla** en yoğun entegrasyon; AI gözlemlenebilirliği sanılandan derin.
+
+Harita `.ai/` altında tutuldu (proje hafızası konvansiyonu). Kod değişikliği yapılmadı.
+
