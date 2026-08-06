@@ -3799,3 +3799,27 @@ Maintenance rule:
 - Legacy FAQ provenance was intentionally not guessed. Existing rows remain unchanged and display an explicit unknown-source state.
 - `packages/database/scripts/production-sync.js` remains unmodified and must not be run in production because of a pre-existing hardcoded admin-password/user-reactivation risk tracked outside this feature.
 - Post-feature restore point: commit `348411c5`, tag `restore/after-ai-interaction-visibility-20260806-348411c5`, verified complete-history bundle `.private-data/restore-points/post-ai-interaction-visibility-348411c5.bundle`, SHA-256 `222067a628f8cf5cd2d1817bc5c381a7030aca6e5658a7ed703f2a6eb56fd28a`.
+
+## Follow-up - 2026-08-06 Production Boot And Migration Safety
+
+### What changed
+
+- Added an append-only migration-manifest writer that refuses modified, deleted, malformed, or non-forward migration history; CI retains read-only blocking verification.
+- Added the data-preserving FAQ provenance timestamp-default alignment migration and advanced the canonical manifest to 54 migrations.
+- Replaced divergent production entrypoints with one executable fail-closed deployment script. Normal boot now contains only migration verification/deploy, ledger verification, and API start.
+- Removed automatic production data synchronization, role repair, admin bootstrap, direct DDL, and migration-ledger rewriting from application boot.
+- Made database seed and manual production sync explicit opt-in maintenance operations; production E2E seeding, implicit credentials, mass user reactivation, and legacy admin mutation are blocked.
+- Removed tracked `extracted_users.json` while preserving its ignored local copy, and removed the historical embedded credential from the current tracked tree.
+
+### Verification
+
+- Ops safety 15/15; backend 119/119 suites with 1083 passed and 1 skipped; frontend 28/28 files with 227/227 tests.
+- Backend/frontend and focused seed typechecks, i18n, shell/Node syntax, frozen-lock install, migration manifest 54/54, local ledger/relations, schema parity, and diff checks passed.
+- Local migration counts remained 1282 users / 162 tickets / 259 AI interactions / 29 FAQs / 0 FAQ provenance rows.
+- Independent code, security, and TDD reviews approved with no Critical/High blocker.
+
+### Boundary
+
+- Product/ops commit: `6759b077`.
+- Docker image build remains unproven because registry networking failed before the source build stage; release-environment image smoke is still required.
+- No production/shadow connection, push, tag-push, deploy, publish, or live secret rotation occurred.

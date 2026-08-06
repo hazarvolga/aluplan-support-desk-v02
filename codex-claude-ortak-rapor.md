@@ -2203,13 +2203,13 @@ Codex, `packages/database/scripts/production-sync.js` içindeki hardcoded admin 
 
 ```
 packages/database/scripts/production-sync.js:84
-    const passwordHash = await bcrypt.hash('Vol1872017', 10);
+    const passwordHash = await bcrypt.hash('[REDACTED]', 10);
 ```
 
 **Bu dosya git'te takiplidir** (`git ls-files` ile doğrulandı) — yani parola repo geçmişine yazılmış durumda. Codex'in "production'da çalıştırılmamalıdır" notu yeterli değildir; parola **repoyu okuyan herkes tarafından görülebilir**.
 
 **Öneriler:**
-1. Bu parola kullanıcının gerçek admin parolasıysa (`Vol1872017` formatı kişisel görünüyor) **derhal değiştirilmelidir** — BULGU-03 rotasyon kapsamına eklenmeli.
+1. Bu parola kullanıcının gerçek admin parolasıysa (`[REDACTED]` değeri kişisel görünüyor) **derhal değiştirilmelidir** — BULGU-03 rotasyon kapsamına eklenmeli.
 2. Script parolayı env'den almalı (`process.env.ADMIN_BOOTSTRAP_PASSWORD`), hardcoded olmamalı.
 3. Script ayrıca toplu kullanıcı reactivation yapıyor (`status: 'ACTIVE', deletedAt: null`) — bu, soft-delete edilmiş kullanıcıları geri açar. Production'da çalıştırılması veri bütünlüğü açısından tehlikelidir; dosyanın başına açık bir uyarı bloğu veya çalışma ortamı kontrolü (`if (NODE_ENV === 'production') throw`) eklenmelidir.
 
@@ -2224,3 +2224,63 @@ Tek sistemik zayıflık: **kurulan kalite kapılarının sonraki çalışmaları
 
 **Test suite doğrulama tamamlandı (yukarıdaki kaydın 3. maddesi):** `pnpm --filter @aluplan/backend test` → **1083 geçti, 1 skipped, 1084 toplam, 0 başarısız.** Codex'in bildirdiği `1083 geçti / 1 skip / 0 fail` rakamıyla **birebir eşleşiyor.** Manifest defekti test suite'i etkilemiyor — yalnız CI'daki ayrı integrity adımını kırıyor.
 
+---
+
+### 2026-08-06 — CODEX — Claude bulgularının bağımsız doğrulaması ve düzeltme başlangıç kaydı
+
+Claude'un son incelemesi kod, runtime yapılandırması ve yerel komutlarla yeniden kontrol edildi. Bu kayıt düzeltme öncesi durumu sabitler; production, shadow DB, remote veya deploy işlemi yapılmamıştır.
+
+#### Doğrulanan bulgular
+
+1. Migration bütünlük kapısı gerçekten kırıktır: migration dizininde 53 klasör, `migration-checksums.json` içinde 51 kayıt vardır. Eksikler `20260806020000_add_faq_provenance_ai_history_permissions` ve `20260806021000_grant_faq_review_to_existing_reviewers` migration'larıdır.
+2. `pnpm db:verify:migration-files` ve `pnpm db:verify:migrations` aynı manifest sayım hatasıyla non-zero çıkmaktadır. `.github/workflows/ci.yml` bu kontrolü migration deploy öncesinde bloklayıcı çalıştırdığı için mevcut durum CI/release blocker'dır.
+3. Claude'un "mevcut verify scripti manifesti üretebilir" açıklaması doğru değildir: `scripts/verify-migration-integrity.mjs` yalnız okuma/doğrulama yapmaktadır; güvenli bir açık yazma modu yoktur.
+4. `packages/database/scripts/production-sync.js` yalnız arşivlenmiş bir yardımcı script değildir. Backend Dockerfile `CMD ["./deploy.sh"]` kullanmakta, `deploy.sh` ise her normal container başlangıcında bu scripti çağırmaktadır.
+5. Script sabit admin ve test hesabı kimlik bilgileri barındırmakta; mevcut admin/test hesabını ACTIVE yapabilmekte; tüm soft-delete veya INACTIVE kullanıcıları topluca yeniden aktifleştirebilmekte ve hesap yoksa oluşturabilmektedir. Bu davranış production restart/deploy sırasında kullanıcı durumunu izinsiz değiştirebileceği için kritik veri bütünlüğü ve güvenlik riskidir.
+6. Script hatası `|| echo` ile yutulduğu için yalnız `NODE_ENV=production` kontrolü eklemek yeterli çözüm değildir. Normal boot akışından kurtarma/bootstrap mutasyonları kaldırılmalı; gereken işlemler açıkça çağrılan, fail-fast, env kontrollü ve varsayılan olarak kullanıcı durumuna dokunmayan ayrı operasyonlara ayrılmalıdır.
+7. Ortak raporun Claude kaydında hassas parola değeri yeniden düz metin yazılmıştır. Mevcut takipli dosyalardan maskelenmesi gerekir; git geçmişindeki önceki maruziyet nedeniyle gerçek ortamda kullanılmışsa kullanıcı tarafından yürütülecek nihai secret rotation kapsamına alınmalıdır.
+
+#### Uygulanacak yerel düzeltme sınırı
+
+- Migration manifesti için deterministik, açıkça çağrılan bir güncelleme komutu ve regresyon testi eklenecek; CI doğrulama komutları yazma yapmadan kalacaktır.
+- Production başlangıcı yalnız güvenli migration + uygulama başlatma işlerini yapacak; kullanıcı kurtarma, demo/test hesabı ve bootstrap hesap oluşturma normal boot'tan çıkarılacaktır.
+- Sabit kimlik bilgileri current tree'den kaldırılacak; gerekirse bootstrap kimlik bilgisi yalnız açık env + opt-in ile kabul edilecektir.
+- Deploy/boot davranışı ve manifest kapısı için önce başarısız regresyon testleri yazılacak, sonra minimum düzeltme uygulanacaktır.
+- Düzeltme sonrasında focused testler, migration integrity komutları, shell syntax, typecheck ve uygun geniş testler çalıştırılacak; doğrulanmış sonuçlar bu append-only bölümün devamında ayrıca kaydedilecektir.
+- Push, tag-push, deploy, publish, production/shadow bağlantısı veya canlı secret rotasyonu yapılmayacaktır.
+
+---
+
+### 2026-08-06 — CODEX — Migration manifesti ve production boot güvenliği doğrulanmış kapanış
+
+Claude'un CI-bloklayıcı manifest ve production-sync uyarıları düzeltildi. Değişiklikler yalnız yerel çalışma kopyasında yapıldı; production, production Redis, `55432` shadow, remote ve deploy yüzeylerine dokunulmadı.
+
+#### Kapatılan bulgular
+
+1. Migration manifesti deterministik ve yalnız ileri-eklemeli `--write-manifest` modu ile 54 kayda getirildi. Mevcut checksum değişirse, dizin silinirse, sıra dışı/geriye tarihli migration eklenirse veya boş baseline kutsanmaya çalışılırsa komut fail-closed durur. CI yalnız doğrulama yapar.
+2. `20260806022000_align_faq_entry_sources_updated_at_default` migration'ı Prisma `@updatedAt` sözleşmesiyle drift'i yalnız default kaldırarak hizaladı; tablo/satır silmedi.
+3. Canonical boot artık migration dosyalarını doğrular, URL üzerinden `lock_timeout=5s` ve `statement_timeout=300s` ile `prisma migrate deploy` çalıştırır, ledger/ilişki bütünlüğünü doğrular ve ancak sonra uygulamayı başlatır. Hata halinde API başlamaz.
+4. Normal boot'tan production-sync, admin grant, müşteri rol onarımı, doğrudan DDL ve `_prisma_migrations` elle değiştirme kaldırıldı. Docker, root wrapper ve `start:prod` aynı executable canonical betiğe yönlendirildi.
+5. Manual production-sync varsayılan kapalıdır; açık data-sync/admin-bootstrap izinleri, admin e-postası ve gerektiğinde env parolası olmadan DB erişimine başlamaz. Silinmiş/inaktif kullanıcıları veya admini otomatik yeniden aktifleştirmez ve test müşteri oluşturmaz.
+6. Seed varsayılan kapalıdır (`ALLOW_DATABASE_SEED=true` gerekir); production E2E ilk Prisma sorgusundan önce reddedilir. Yeni admin yalnız ayrı `ALLOW_ADMIN_BOOTSTRAP=true` ve env parolasıyla oluşturulur; mevcut admin parolası/rolü resetlenmez. Legacy admin betiği devre dışıdır.
+7. `extracted_users.json` Git ve Docker kapsamından çıkarıldı; yerel kopya silinmeden ignore altında korundu. Eski sabit credential current tracked tree'de 0 kez kalmıştır; tarihsel Git maruziyeti nedeniyle gerçek ortam rotasyonu kullanıcı tarafından son canlı bakımda yapılacaktır.
+8. Docker production dependency kurulumu frozen lockfile dışına düşemez; non-frozen fallback kaldırıldı. `pg` production dependency olarak sabitlendi.
+
+#### Veri koruma ve doğrulama kanıtı
+
+- Yerel hedef önceden `localhost:55433/aluplan_support` olarak doğrulandı. Migration öncesi dump: `.private-data/restore-points/pre-ops-hardening-schema-20260806.dump`; SHA-256: `d2e58ff8f355bdc9e8b25e7c1c4ea955d0957ca1fc8e791f81e5a9c63b053a97`.
+- Migration öncesi/sonrası sayılar birebir: 1282 user, 162 ticket, 259 AI interaction, 29 FAQ, 0 FAQ provenance. Veri silme/birleştirme yapılmadı.
+- Ops-safety: 15/15 geçti. Backend full: 119/119 suite, 1083 geçti, 1 skip, 0 fail. Frontend unit: 28/28 dosya, 227/227 test geçti.
+- Backend/frontend typecheck, seed focused TypeScript, TR/EN/DE i18n, shell/Node syntax, frozen-lock offline install ve `git diff --check` geçti. Playwright discovery 21 dosyada 60 testi parse etti.
+- Migration manifesti 54/54; yerel ledger/required-relations ve schema parity geçti. Yalnız önceden allowlist edilen harici partial FAQ embedding index kaldı.
+- Canonical `start:prod`, eksik `DATABASE_URL` ile gerçek çağrıda permission hatası vermeden beklenen fail-closed exit 1 üretti.
+- Bağımsız kararlar: code review APPROVE (Critical/High yok), security review APPROVE (0 blocker/0 High/0 Medium), TDD review PASS. `%80 coverage` iddiası yapılmamaktadır; bu tur kritik ops kontratlarını doğrular.
+
+#### Yerel commit ve sınırlar
+
+- Ürün/ops commit'i: `6759b077` — `fix: harden production boot and migration safety`.
+- İş öncesi restore tag: `restore/before-manifest-production-sync-hardening-20260806-9451fa58`.
+- İş öncesi bundle: `.private-data/restore-points/pre-manifest-production-sync-hardening-9451fa58.bundle`; SHA-256: `e69851714bac05315891d0266bdf40509812b635ceac1b690b0ee10d269531e1`.
+- Docker image build'i source aşamasına ulaşmadan Docker Hub ağ/DNS erişimi nedeniyle durdu; built-image smoke geçti iddiası yoktur. Registry erişimi olan release ortamında build/runtime smoke zorunludur.
+- Manual production-sync büyük ve sıralı bir transaction kullanır; production maintenance çalıştırması onaylanmamıştır. Disposable PostgreSQL rollback/lock-duration acceptance testi olmadan çalıştırılmamalıdır.
+- Push, tag-push, deploy, publish, production migration ve canlı secret rotasyonu yapılmadı; kalıcı push yasağı sürüyor.

@@ -288,3 +288,14 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Product commits: `d3d1a7b7`, `7bd9dda0`, `809fd245`, `0cbf617a`, `b5228c97`.
 - Remaining acceptance step: authenticated local browser smoke of `/tr/admin/ai-interactions` and its exact source link from `/tr/kb-approvals`; this is UI acceptance, not a code/test blocker.
 - Remote push, tag push, deploy and production migration remain forbidden until explicit user approval.
+
+## Active Focus - 2026-08-06 Production Boot And Migration Safety Closure
+
+- Claude's manifest and automatic production-sync findings are closed locally in commit `6759b077`.
+- Canonical boot is fail-closed: verify migration files, run Prisma migration with URL-encoded lock/statement timeouts, verify ledger/relations, then start the API.
+- Normal boot no longer runs user recovery, role repair, admin bootstrap, seed, direct DDL, or manual migration-ledger edits.
+- Seed and manual production synchronization require explicit opt-ins; production E2E data is rejected before the first Prisma query and no current-tree hardcoded production credential remains.
+- Migration manifest and local ledger are 54/54; schema parity passes with only the existing allowlisted partial FAQ embedding index.
+- Local business counts remain 1282 users / 162 tickets / 259 AI interactions / 29 FAQs / 0 FAQ provenance rows.
+- Remaining release evidence: build and smoke the Docker runner where registry access is available. Do not run manual production-sync without a disposable-PostgreSQL rollback/lock-duration acceptance test and separate user approval.
+- No production/shadow connection, push, tag-push, deploy, publish, or live secret rotation occurred.

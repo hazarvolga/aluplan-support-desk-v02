@@ -122,3 +122,11 @@ and consequence. Use session summaries for implementation history.
 - Context: FAQ approval candidates and pre-ticket customer AI interactions have different purposes and privacy boundaries. The former is an editorial publication workflow; the latter is sensitive operational evidence of what a customer asked and what the system displayed.
 - Decision: Keep FAQ approval and AI interaction history as separate surfaces and permissions. Store FAQ provenance as normalized source relations. Interaction-derived FAQ candidates use the stored answer but remain pending human review. AI-history responses are allowlisted, audited and restricted to administrator-class roles; ticket traces additionally require ticket access.
 - Consequence: Future learning-pipeline work must not mix raw customer interactions into the publication queue or expose them through public FAQ permissions. Provenance additions must be transactional, legacy source identities must not be inferred, and new history consumers must use the dedicated audited endpoint.
+
+## ADR-016 - Production Boot Is Migration-Only And Fail-Closed
+
+- Date: 2026-08-06
+- Status: Accepted
+- Context: The container boot path previously mixed schema repair, manual migration-ledger edits, admin/role recovery, test-account creation, and broad user reactivation with normal API startup. A missing migration-manifest update also allowed local feature work to diverge from the blocking CI contract.
+- Decision: All production entrypoints delegate to one executable script that verifies canonical migration files, runs only `prisma migrate deploy` with connection-URL lock/statement timeouts, verifies the resulting ledger/required relations, and starts the API only after success. Seed, bootstrap, synchronization, recovery, and direct DDL are explicit maintenance operations with separate opt-ins and must never be normal boot side effects. Manifest updates are explicit, append-only, and refuse changed history; CI remains read-only.
+- Consequence: Restarting or deploying the API cannot silently reactivate users, reset credentials, create test accounts, repair roles, or rewrite migration history. Any migration or verification failure prevents application start. Docker image build/runtime smoke and destructive maintenance acceptance remain separate release gates and do not authorize production activity.
