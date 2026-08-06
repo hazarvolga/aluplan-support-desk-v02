@@ -39,6 +39,19 @@ Bu kurallar hem Codex hem Claude için, bu proje üzerindeki tüm gelecekteki ç
 
 ---
 
+## 🧭 CODEX → CLAUDE ARAÇ KOORDİNASYON NOTU — GitNexus + Graphify (2026-08-06)
+
+> Bu not kullanıcı talebiyle, değiştirilemez **CANLI VERİ GÜVENLİĞİ** bloğunun hemen altında ve ana raporun üstünde tutulur. Ana raporun donmuş içeriğini değiştirmez.
+
+- **Graphify kullanılabilir ve günceldir:** local CLI `graphify 0.9.30`; `graphify update .` ile 835 kod dosyası yeniden işlendi. Güncel grafik **7.338 node / 14.249 edge / 614 community** içeriyor. Curated önceki grafik Graphify tarafından `graphify-out/2026-08-06/` altında yedeklendi; daha küçük grafiği zorla yazma uyarısı oluşmadı.
+- **Graphify doğrulaması:** `RagMaintenanceService` gerçek bakım akışını `run-rag-maintenance.ts`, `optimizeIndexes`, `ensureVectorIndex` ve `ensureVectorColumnIsUnconstrained` bağlantılarıyla doğruladı. `PrismaService` 254 bağlantıyla en yüksek blast-radius merkezi çıktı; DB servis/schema değişiklikleri bundan sonra geniş etki alanı kabul edilmelidir.
+- **Graphify sınırı:** `tree_sitter_sql` kurulu olmadığı için 52 `.sql` migration dosyası yapısal node üretmedi. Faz 7 migration doğruluğu Graphify'a dayanmadı; gerçek PostgreSQL fresh/clone testleri, checksum/parity kapıları ve bağımsız DB review ile kanıtlandı.
+- **GitNexus şu anda kurulu/çalışır değil:** local/global CLI ve `~/.gitnexus` indeksi bulunamadı. `AGENTS.md` içindeki **10.855 symbol / 18.166 relationship / 255 flow** sayıları tarihsel kayıttır, güncel indeks kanıtı değildir.
+- **Kurulum bilinçli olarak durduruldu:** resmi güncel npm paketi `gitnexus 1.6.9`, **PolyForm Noncommercial 1.0.0** lisanslıdır. Aluplan ticari/canlı bir ürün olduğundan ticari kullanım hakkı veya ayrı lisans kanıtlanmadan paket kurulmayacak ve repo indekslenmeyecektir. Claude bu tarihsel GitNexus sayımlarını güncelmiş gibi kullanmamalıdır.
+- **Birlikte kullanım kararı:** Ticari GitNexus hakkı sağlanırsa Graphify genel mimari/topoloji ve doküman ilişkileri için; GitNexus symbol/call-chain/impact/detect-changes için birlikte kullanılabilir. Çakışma beklenmez; `.gitnexusignore` zaten `graphify-out/` dizinini, `.graphifyignore` da üretilmiş/bundled alanları dışlar. Her iki araç da yalnız yerel/read-only code intelligence katmanı olarak kalmalı; MCP `setup`, hook veya AGENTS/CLAUDE otomatik yazımı ayrıca incelenmeden çalıştırılmamalıdır.
+
+---
+
 # Codex + Claude Ortak GAP / Bug Raporu — BİRLEŞTİRİLMİŞ
 
 **Durum:** Birleştirme tamamlandı
@@ -1456,3 +1469,11 @@ Claude'un Faz 7 iş emri uygulanmış, teknik değişiklikler `612706c1` (`fix(d
 - Faz 7 yerel kod/test düzeyinde kapalıdır.
 - Production acceptance kapalı değildir: foundation ve parity migration'ları üretimde hâlâ pending'dir. İndeks/FK işlemleri lock alabileceğinden canlı uygulama yalnız kullanıcı onaylı Faz 8 bakım penceresinde, ön ölçüm ve rollback planıyla ele alınabilir.
 - Push yasağı aynen sürer.
+
+### 2026-08-06 — Codex — Graphify güncellendi, GitNexus lisans kapısında durduruldu
+
+- Graphify 0.9.30 local kod grafiği güncellendi: 835 dosya, 7.338 node, 14.249 edge, 614 community.
+- Graphify çıktısı `RagMaintenanceService` bakım akışını ve `PrismaService` yüksek blast-radius durumunu doğruladı; 52 SQL dosyası SQL parser eklentisi olmadığı için graph kapsamı dışında kaldı.
+- GitNexus CLI/indeksi bu makinede mevcut değil. Resmi paket 1.6.9'un PolyForm Noncommercial lisansı ticari Aluplan geliştirmesinde açık kullanım hakkı vermediği için kurulum yapılmadı.
+- Bu karar ve iki aracın gelecekteki görev ayrımı, Claude'un ilk bakışta görebilmesi için raporun üst kısmına ayrı koordinasyon notu olarak eklendi.
+- Graphify çıktıları git çalışma ağacını kirletmedi; ürün veya production state değişmedi, push yapılmadı.

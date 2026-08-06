@@ -19,6 +19,10 @@
   - The additive parity migration contains no DROP/DML, has lock and statement timeouts, and preserves all 61 business-table/sequence fingerprints on the restored clone.
   - Full backend tests pass: 116/116 suites, 1020 passed, 1 skipped. Final code, database, and security reviews approve the local commit.
   - Production still has both the foundation and parity migrations pending. Faz 8 remains maintenance-window-only and requires explicit user approval; no production connection, migration, deploy, or push occurred.
+- 2026-08-06 code-intelligence tooling boundary:
+  - Graphify 0.9.30 was refreshed locally over 835 code files: 7,338 nodes, 14,249 edges, 614 communities. SQL structural coverage is incomplete because `tree_sitter_sql` is not installed.
+  - GitNexus is not currently installed and no local `~/.gitnexus` index exists. Historical index counts in AGENTS.md are stale evidence only.
+  - Do not install or run current GitNexus for this commercial product until a commercial-use license/right is confirmed; upstream package 1.6.9 is PolyForm Noncommercial 1.0.0.
 - 2026-08-05 consolidation follow-up:
   - Active repo is now the git-tracked single working directory at `/Users/hazarvolgaekiz/dev/studio/aluplan-support-desk-v02/aluplan-support-desk-v02-main-live-site`.
   - `b73ae3f7` recorded the local consolidation baseline; push remains forbidden without explicit user approval.

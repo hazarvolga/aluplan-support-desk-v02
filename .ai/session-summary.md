@@ -25,6 +25,15 @@
 - The dump and shadow env are mode `600` and git-ignored, but the dump must not be treated as secret-free or shared. Create a new clone-only sanitized snapshot before any application runtime or external handoff.
 - No production connection/write/migration, deploy, remote push, or tag push occurred.
 
+## Follow-up - 2026-08-06 Graphify And GitNexus Tooling Audit
+
+- Refreshed the local Graphify 0.9.30 code graph: 835 code files, 7,338 nodes, 14,249 edges, and 614 communities. Graphify retained a dated curated-graph backup and did not emit the smaller-graph overwrite warning.
+- Verified the `RagMaintenanceService` maintenance path and identified `PrismaService` as the largest current graph hub (degree 254).
+- Graphify reported 52 SQL files without structural nodes because the optional SQL parser is not installed; database migration acceptance must continue to rely on PostgreSQL and migration-integrity/parity gates.
+- GitNexus CLI and local index are absent. Historical AGENTS.md index counts are not current verification.
+- Did not install GitNexus: official package 1.6.9 uses PolyForm Noncommercial 1.0.0, so commercial-use rights must be confirmed first for this production product.
+- Added a user-requested top-of-report coordination note explaining tool roles, coexistence, ignore boundaries, and the license gate. No production state or remote changed.
+
 ## Follow-up - 2026-08-05 Production Shadow Database Baseline
 
 ### What changed
