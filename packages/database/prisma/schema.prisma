@@ -530,6 +530,7 @@ model AiInteraction {
   ticket            Ticket?
   trainingQueue     TrainingQueue[]
   shiftDetections   AiShiftDetection[]
+  faqSources        FaqEntrySource[]
 
   @@index([sessionId], map: "idx_ai_session")
   @@index([matchedArticleId], map: "idx_ai_article")
@@ -650,6 +651,7 @@ model Ticket {
   linkedTickets       Ticket[]             @relation("TicketHierarchy")
   product             Product?             @relation(fields: [productId], references: [id])
   creator             User?                @relation("TicketCreatedBy", fields: [userId], references: [id])
+  faqSources          FaqEntrySource[]
 
   @@index([status], map: "idx_tickets_status")
   @@index([assignedTo], map: "idx_tickets_assigned")
@@ -733,10 +735,32 @@ model FaqEntry {
   createdAt         DateTime               @default(now()) @map("created_at")
   updatedAt         DateTime               @updatedAt @map("updated_at")
   deletedAt         DateTime?              @map("deleted_at")
+  sources           FaqEntrySource[]
 
   @@index([status], map: "idx_faq_status")
   @@index([deletedAt], map: "idx_faq_entries_deleted_at")
   @@map("faq_entries")
+}
+
+model FaqEntrySource {
+  id            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  faqEntryId    String             @map("faq_entry_id") @db.Uuid
+  sourceType    FaqEntrySourceType @map("source_type")
+  ticketId      String?            @map("ticket_id") @db.Uuid
+  interactionId String?            @map("interaction_id") @db.Uuid
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  deletedAt     DateTime?          @map("deleted_at")
+  faqEntry      FaqEntry           @relation(fields: [faqEntryId], references: [id], onDelete: Cascade)
+  ticket        Ticket?            @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  interaction   AiInteraction?     @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+
+  @@unique([faqEntryId, ticketId], map: "uq_faq_entry_sources_ticket")
+  @@unique([faqEntryId, interactionId], map: "uq_faq_entry_sources_interaction")
+  @@index([ticketId], map: "idx_faq_entry_sources_ticket")
+  @@index([interactionId], map: "idx_faq_entry_sources_interaction")
+  @@index([deletedAt], map: "idx_faq_entry_sources_deleted_at")
+  @@map("faq_entry_sources")
 }
 
 model AuditLog {
@@ -1148,6 +1172,11 @@ enum FaqStatus {
   PENDING_REVIEW
   PUBLISHED
   DISMISSED
+}
+
+enum FaqEntrySourceType {
+  TICKET
+  AI_INTERACTION
 }
 
 enum TrainingQueueStatus {

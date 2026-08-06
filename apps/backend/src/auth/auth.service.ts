@@ -598,7 +598,7 @@ export class AuthService {
         if (r === 'team-lead') return [...basePermissions, 'ticket:assign', 'reports:read'];
         if (r === 'senior-agent') return [...basePermissions, 'ticket:escalate'];
         if (r === 'agent') return basePermissions;
-        if (r === 'customer') return ['ticket:create', 'ticket:update', 'ticket:read', 'kb:read', 'faq:read'];
+        if (r === 'customer') return ['ticket:create', 'ticket:update', 'ticket:read', 'kb:read'];
 
         return basePermissions;
     }

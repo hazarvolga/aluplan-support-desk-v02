@@ -26,6 +26,10 @@ async function main() {
         { name: 'kb:read', group: 'KNOWLEDGE', description: 'Read knowledge base' },
         { name: 'article:write', group: 'KNOWLEDGE', description: 'Create/Edit articles' },
         { name: 'kb:approve', group: 'KNOWLEDGE', description: 'Approve draft articles' },
+        { name: 'faq:read', group: 'KNOWLEDGE', description: 'Read published FAQs' },
+        { name: 'faq:review', group: 'KNOWLEDGE', description: 'Review internal FAQ candidates and provenance' },
+        { name: 'faq:manage', group: 'KNOWLEDGE', description: 'Approve or dismiss FAQ candidates' },
+        { name: 'ai-interactions:read', group: 'KNOWLEDGE', description: 'View customer AI interaction history' },
         { name: 'settings:read', group: 'ADMIN', description: 'Read system settings' },
         { name: 'settings:write', group: 'ADMIN', description: 'Update system settings' },
         { name: 'users:manage', group: 'ADMIN', description: 'Manage users and roles' },
@@ -45,7 +49,7 @@ async function main() {
         { name: 'ADMIN', isSystem: true, perms: permissions.map(p => p.name) },
         { name: 'AGENT', isSystem: true, perms: ['ticket:create', 'ticket:read', 'ticket:update', 'kb:read', 'faq:read'] },
         { name: 'DEPARTMENT_MANAGER', isSystem: true, perms: ['ticket:create', 'ticket:read', 'ticket:update', 'ticket:assign', 'kb:read', 'kb:approve', 'reports:read'] },
-        { name: 'CUSTOMER', isSystem: true, perms: ['ticket:create', 'ticket:read', 'ticket:update', 'kb:read', 'faq:read'] },
+        { name: 'CUSTOMER', isSystem: true, perms: ['ticket:create', 'ticket:read', 'ticket:update', 'kb:read'] },
     ];
 
     for (const r of sysRoles) {
