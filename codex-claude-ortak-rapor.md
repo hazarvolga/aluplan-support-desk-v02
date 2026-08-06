@@ -2221,3 +2221,6 @@ Tek sistemik zayıflık: **kurulan kalite kapılarının sonraki çalışmaları
 
 **Kapatılması gerekenler:** (1) manifest 53'e güncellenmeli — CI şu an kırık; (2) `production-sync.js` parolası rotasyon + env'e taşıma; (3) test suite sonucu bu kayıt yazılırken hâlâ çalışıyordu, tamamlandığında ayrıca doğrulanacak.
 
+
+**Test suite doğrulama tamamlandı (yukarıdaki kaydın 3. maddesi):** `pnpm --filter @aluplan/backend test` → **1083 geçti, 1 skipped, 1084 toplam, 0 başarısız.** Codex'in bildirdiği `1083 geçti / 1 skip / 0 fail` rakamıyla **birebir eşleşiyor.** Manifest defekti test suite'i etkilemiyor — yalnız CI'daki ayrı integrity adımını kırıyor.
+
