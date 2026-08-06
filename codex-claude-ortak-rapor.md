@@ -2294,3 +2294,46 @@ Claude'un CI-bloklayıcı manifest ve production-sync uyarıları düzeltildi. D
 - `git bundle verify`: complete history ve HEAD `524dc9d3` doğrulandı.
 - `git fsck --strict`: repository bütünlük hatası yok; yalnız önceden mevcut dört dangling tree raporlandı.
 - Tag ve bundle yalnız yereldir; remote tag-push veya push yapılmadı.
+
+### 2026-08-06 — Claude — Codex hardening kapanışının doğrulaması: tüm teknik maddeler geçti
+
+Codex'in CI blocker + production-sync hardening kapanışı bağımsız olarak doğrulandı. **Bildirdiği her teknik madde tuttu; çürütülen iddia yok.**
+
+#### Doğrulanan maddeler
+
+| # | Codex iddiası | Sonuç | Kanıt |
+|---|---|---|---|
+| 1 | CI blocker kapatıldı, manifest 54/54 | ✅ | `pnpm db:verify:migration-files` → *"Migration file integrity verified: **54 files** match the canonical manifest"*. Dosya sayısı 54, manifest 54 |
+| 2 | Eksik iki migration + şema uyumu için üçüncüsü eklendi (53 değil 54) | ✅ | `20260806020000_add_faq_provenance_ai_history_permissions`, `20260806021000_grant_faq_review_to_existing_reviewers`, `20260806022000_align_faq_entry_sources_updated_at_default` |
+| 3 | CI kapanış kapıları eklendi | ✅ | `ci.yml:79` `pnpm test:ops-safety`, `:81` `db:verify:migration-files`, `:87` `db:verify:migrations` — **üçü de mevcut** |
+| 4 | Hardcoded parola kaldırıldı, env'e taşındı | ✅ | `production-sync.js:113` `process.env.ADMIN_BOOTSTRAP_PASSWORD`; `:119` `bcrypt.hash(adminBootstrapPassword, 10)` — hardcoded değer yok |
+| 5 | Çift kapı zorunlu (fail-closed) | ✅ | `:9` `ALLOW_PRODUCTION_DATA_SYNC !== 'true'` → throw; `:24` `ALLOW_ADMIN_BOOTSTRAP !== 'true'` → throw |
+| 6 | Script boot/deploy akışından çıkarıldı | ✅ | `package.json`, `apps/backend/package.json`, `packages/database/package.json`, `deploy.sh`, `Dockerfile`, `docker-compose.yml` → **hiçbirinde referans yok** |
+| 7 | Kullanıcıya dokunan `updateMany` kaldırıldı | ✅ | Dosyada kalan tek `updateMany` → `:391` `tx.setting.updateMany` (AI ayarı). Kullanıcı tablosuna dokunan çağrı yok |
+| 8 | Eski parolanın güncel kod ağacında görülme sayısı sıfır | ✅ | Tüm takipli dosyalarda `grep` → **0 sonuç** |
+| 9 | 15/15 operasyon güvenlik testi | ✅ | `pnpm test:ops-safety` → **tests 15, pass 15, fail 0**. *(Not: tek dosya çalıştırılınca 9 görünüyor; resmi komut iki dosyayı birlikte çalıştırıyor — `production-boot-safety.test.mjs` + `verify-migration-integrity.test.mjs`. İddia doğru.)* |
+| 10 | Git durumu temiz, ana commit `6759b077` | ✅ | Çalışma ağacı temiz; commit mevcut |
+| — | Monorepo typecheck | ✅ | 4/4 task başarılı |
+
+#### 🔴 Doğrulanan ve kullanıcı aksiyonu bekleyen tek konu — parola git geçmişinde
+
+Codex'in kendi uyarısı **somut olarak doğrulandı**:
+
+- Parola **22 commit'te** geçiyor (`git log --all -S` ile sayıldı).
+- Geçmişten **düz metin olarak okunabiliyor**: `git show 4124d4e7:packages/database/scripts/production-sync.js` komutu değeri döndürüyor. *(Doğrulama sırasında değer ekrana yazdırılmadı; yalnız varlığı sayıldı.)*
+
+Yani **koddan kaldırmak mevcut riski ortadan kaldırmıyor.** Repoyu klonlayan veya geçmişe erişebilen herkes parolayı okuyabilir.
+
+**Kullanıcı aksiyonu (Codex doğru şekilde dokunmadı):**
+1. Bu değer gerçekten canlı admin parolası olarak kullanıldıysa/kullanılıyorsa **rotate edilmelidir**. BULGU-03 rotasyon kapsamına dahildir.
+2. Git geçmişi temizliği (`filter-repo` vb.) ayrı ve riskli bir operasyondur; repo tek kişilik ve henüz push edilmemiş olduğundan **rotasyon tek başına yeterli savunmadır** — geçmiş temizliği zorunlu değildir, ancak repo ileride paylaşılacaksa yeniden değerlendirilmelidir.
+3. Codex canlı parolaya, Coolify secret'larına ve production ortamına dokunmadı; git geçmişini yeniden yazmadı; push yapmadı. **Bu davranışlar kullanıcının "canlı secret'ları en son ben rotate edeceğim" talimatına uygundur.**
+
+#### Değerlendirme
+
+Codex bu turda **kendi bulgusunu kendisi genişletti** — Claude yalnızca hardcoded parolayı ve toplu reactivation'ı bildirmişti; Codex ek olarak boot akışından çıkarma, çift env kapısı, fail-closed admin davranışı, test müşteri oluşturmayı kaldırma ve 15 test ile davranış kilitleme yaptı. Ayrıca "koddan kaldırmak geçmişteki riski çözmez" uyarısını kendisi yaptı — bu, denetim dürüstlüğü açısından olumludur.
+
+Önceki turda tespit edilen sistemik zayıflık (**kurulan kalite kapılarının sonraki işlerin rutininde kullanılmaması**) da yapısal olarak kapatıldı: kapılar artık CI'da `test:ops-safety` ile birlikte bloklayıcı adımlar olarak duruyor, yani insan hafızasına değil pipeline'a bağlı.
+
+**Kalan tek açık madde: canlı admin parolasının rotasyonu — kullanıcı işi.**
+
