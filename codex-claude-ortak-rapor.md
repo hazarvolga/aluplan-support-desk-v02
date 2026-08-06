@@ -1546,3 +1546,116 @@ Codex'in Faz 7 testlerinden `aluplan_faz7_test_pg17` container'ı hâlâ ayakta.
 2. **Faz 8 — production acceptance:** foundation + parity migration'larının bakım penceresinde uygulanması. **Zorunlu sıra: önce `migrate deploy`, sonra uygulama başlatma** (hayalet migration bulgusu nedeniyle). Ön ölçüm + rollback planı + lock süresi tahmini gerekli.
 3. **Faz 1.3/1.4/1.5** — auth-token işleri (migration kapısı artık açık).
 
+
+---
+
+## 🎯 SIRADAKİ İŞ EMRİ — Codex uygulayacak, Claude doğrulayacak
+
+Faz 7 kabul edildikten sonra sıradaki kapılar. **Öncelik sırası önerilir; Codex farklı bir sıra tercih ederse gerekçesini rapora yazması yeterlidir.**
+
+### Değiştirilemez sınırlar (hepsi için geçerli)
+
+- Canlı PostgreSQL/Redis'e bağlantı, yazma, migration, restore, DDL **yok**.
+- Remote push, tag push, deploy **yok**.
+- Kalıcı shadow'a (`aluplan_shadow_postgres_pg17`) **yazma yok** — klon al, klonda çalış.
+- Ham dump (`aluplan-support-prod-*.dump`) **klonlama kaynağı olarak kullanılmayacak** — içinde 14 canlı kimlik bilgisi var. Yalnız sanitize dump kullanılacak.
+- Rapor append-only; en üstteki "CANLI VERİ GÜVENLİĞİ" bloğuna dokunulmaz.
+- Her iş öncesi restore point (annotated tag + bundle + `git bundle verify` + `git fsck --strict`).
+
+---
+
+### 📌 İŞ 1 — Felaket kurtarma eşdeğerlik kanıtı (EN ÖNCELİKLİ)
+
+**Neden:** Faz 7'de fresh-DB ve prod-shadow'un *`schema.prisma`'ya olan uzaklığı* eşit çıktı. Bu güçlü bir sinyal ama **dolaylı** bir kanıt. Asıl sorulması gereken soru şu: *"Üretim bugün kaybolsa, migration zincirinden kurduğumuz DB üretimin yapısal ikizi olur mu?"* Bu, BULGU-10'un varlık nedeni ve henüz **doğrudan** ölçülmedi.
+
+**Yapılacak:**
+1. Sanitize dump'tan **disposable klon** oluştur, üzerine foundation + parity migration'larını uygula.
+2. Ayrı bir disposable DB'de **sıfırdan 50 migration** çalıştır.
+3. Bu iki veritabanı arasında **doğrudan yapısal karşılaştırma** yap (yalnız `schema.prisma`'ya karşı değil — **birbirlerine** karşı). Prisma 7'de `--from-config-datasource` / `--to-*` kısıtları nedeniyle gerekirse `pg_dump --schema-only` çıktılarını normalize edip diff'le.
+4. Farkları sınıflandır: (a) beklenen/gerekçeli, (b) fresh'te eksik (felaket kurtarma açığı), (c) üretimde fazla (tarihsel artık).
+5. Tablo/kolon/tip/index/constraint/sequence/default/nullability düzeyinde karşılaştır — yalnız tablo sayısı yetmez.
+
+**Beklediğim sonuç:** İki DB arasında **yapısal fark yok**, veya olan her fark gerekçelendirilmiş. Özellikle **(b) kategorisi boş olmalı** — fresh'te eksik hiçbir şey olmamalı, çünkü o doğrudan felaket kurtarma açığı demektir.
+
+**Nasıl doğrulayacağım:** Aynı iki DB'yi kendim kurup `pg_dump --schema-only` alıp normalize edilmiş diff çalıştıracağım. Codex'in raporladığı fark listesiyle benimki **birebir örtüşmeli**. "Fingerprint eşleşti" tarzı özet kabul etmiyorum — kalem kalem liste isteyeceğim.
+
+---
+
+### 📌 İŞ 2 — Hayalet migration taraması (ledger bütünlüğü)
+
+**Neden:** Claude, Faz 7 doğrulamasında **tesadüfen** bir hayalet migration buldu: `20260315000001_add_customer_no_to_crm_account` ledger'da "başarılı" ama etkisi üretimde yoktu. Bir tane tesadüfen bulunduysa **başkaları da olabilir**. Sistematik tarama yapılmadı.
+
+**Yapılacak:**
+1. 49 tarihsel migration'ın her birinin SQL'ini ayrıştır; yaratması gereken nesneleri çıkar (`CREATE TABLE`, `ADD COLUMN`, `CREATE TYPE`, `ADD VALUE`, `CREATE INDEX`, `ADD CONSTRAINT`).
+2. Her nesnenin prod-shadow'da gerçekten var olup olmadığını **salt-okunur** kontrol et.
+3. "Ledger'da başarılı ama nesne yok" durumlarını listele.
+4. Her bulgu için sınıflandır: (a) parity migration zaten kapatıyor, (b) `schema.prisma` beyan etmiyor → zararsız artık, (c) **hâlâ açık risk** → ayrı düzeltme gerekir.
+5. `IF NOT EXISTS` kullanan migration'lara özel dikkat — sessiz no-op üretebilirler.
+
+**Beklediğim sonuç:** Tam liste. En iyi senaryo "bilinen 3 nesne dışında hayalet yok". Eğer (c) kategorisinde bulgu çıkarsa, düzeltmesi **ayrı ve idempotent** bir migration olmalı, mevcut parity migration'a sonradan ekleme yapılmamalı (checksum manifest'i bozar).
+
+**Nasıl doğrulayacağım:** Rastgele seçeceğim 8-10 migration için aynı kontrolü kendim yapacağım; ayrıca Codex'in "temiz" dediği migration'lardan birkaçını rastgele denetleyeceğim.
+
+---
+
+### 📌 İŞ 3 — Faz 8 production runbook (hazırlık — uygulama YOK)
+
+**Neden:** Foundation + parity migration'ları üretimde pending. Uygulama **yalnız kullanıcı onaylı bakım penceresinde** olur. Ama runbook şimdiden hazırlanmalı ki pencere geldiğinde doğaçlama yapılmasın.
+
+**Yapılacak (hepsi local, üretime dokunmadan):**
+1. **Lock süresi ölçümü:** Sanitize klon üzerinde (üretim boyutunda veri var) her iki migration'ı çalıştırıp gerçek süreyi ve alınan lock tiplerini ölç. `crm_accounts` (807 satır), `knowledge_pool_embeddings` (7745 satır) gibi tablolarda index/FK işlemlerinin süresini raporla.
+2. **Sıralama şartını yaz:** Hayalet migration bulgusu nedeniyle **önce `migrate deploy`, sonra uygulama başlatma** zorunlu. `start:prod` bunu zaten sağlıyor; runbook'ta Coolify deploy akışının bu sırayı bozmadığı doğrulanmalı. Bozuyorsa uyarı olarak yazılmalı.
+3. **Rollback planı:** Her migration için geri alma adımları. `ALTER TYPE ... ADD VALUE` PostgreSQL'de geri alınamaz — bunu açıkça belirt ve etkisini değerlendir.
+4. **Ön/son doğrulama komutları:** Bakım penceresinde çalıştırılacak salt-okunur kontrol listesi (öncesi ve sonrası), beklenen çıktılarıyla.
+5. **Kesinti tahmini + iptal kriteri:** Hangi durumda durdurulup geri alınacağı.
+
+**Beklediğim sonuç:** Kullanıcının okuyup "evet, bu pencereyi açıyorum" diyebileceği, adım adım, beklenen çıktıları yazılmış bir runbook. Tahmin değil **ölçüm** içermeli.
+
+**Nasıl doğrulayacağım:** Runbook'taki her komutu klon üzerinde kendim çalıştırıp beklenen çıktıyı verip vermediğini kontrol edeceğim. Rollback adımlarının gerçekten çalıştığını da klonda test edeceğim.
+
+---
+
+### 📌 İŞ 4 — Ham dump izolasyonu (Codex kısmı)
+
+**Neden:** Ham dump'ta 14 canlı kimlik bilgisi var. Yanlış dosyadan klonlama riski gerçek — Codex'in kendisi de bir noktada bu karışıklığı yaşadı.
+
+**Yapılacak:**
+1. Ham dump'ı ayrı ve adı uyaran bir dizine taşı (örn. `.private-data/prod-dumps/RAW-DO-NOT-CLONE/`), izinleri `600` koru.
+2. `.private-data/prod-dumps/README.md` ekle: hangi dosya sanitize, hangisi değil, hangisinden klonlanır. (Bu dosya git-ignore altında kalır.)
+3. Klonlama yapan tüm script/dokümantasyonda sanitize dump'ın yolunu sabitle.
+4. **Anahtar rotasyonu kullanıcı işidir** — Codex canlıya dokunmaz. Ama rotasyon sonrası sanitize dump'ın yeniden alınması gerekeceğini runbook'a not et.
+
+**Beklediğim sonuç:** Yanlış dosyayı seçmenin zorlaştığı bir düzen. `grep -r "aluplan-support-prod-" --include="*.mjs" --include="*.md"` ile klonlama yollarının ham dump'a işaret etmediğini doğrulayacağım.
+
+---
+
+### 📌 İŞ 5 — Faz 1.3/1.4/1.5 auth-token işleri (bağımsız, paralel yapılabilir)
+
+BULGU-02 (verify-email token purpose ayrımı), BULGU-18 (query-param JWT extractor), BULGU-05 (`JWT_SECRET` rotasyonu). Migration kapısı artık açık — shadow DB var, disposable DB kurulabiliyor, BULGU-10 kapandı.
+
+**Hatırlatma:** Bu iş için gereken "atomik tek-kullanımlık token" kalıcı kayıt gerektiriyorsa yeni migration gerekir. Artık bu güvenle yapılabilir: fresh-install zinciri sağlam, integrity gate var, manifest güncelleniyor.
+
+**Zorunlu testler (iş emrinde zaten tanımlıydı):** T3 (access JWT ile `verify-email` → 401), T4 (`SUSPENDED` hiçbir token'la `ACTIVE` olamaz), T12 (query string ile kimlik doğrulama çalışmaz).
+
+**Beklediğim sonuç:** Üç negatif testin de önce RED görülüp sonra GREEN'e dönmesi (TDD kanıtı), tam suite'in yeşil kalması.
+
+---
+
+### Küçük iş — artık kalan container
+
+`aluplan_faz7_test_pg17` container'ı Faz 7 testlerinden kalmış, hâlâ ayakta. Temizlenmeli. (Claude kendi kurduğu üç disposable container'ı da sildi.)
+
+---
+
+### Önerilen sıra ve gerekçesi
+
+| Sıra | İş | Gerekçe |
+|---|---|---|
+| 1 | **İŞ 1** — felaket kurtarma eşdeğerliği | Faz 8'e girmeden önce "fresh = prod" garantisi olmalı; Faz 8'in tüm anlamı bu |
+| 2 | **İŞ 2** — hayalet migration taraması | Faz 8 runbook'u yazılmadan önce başka sürpriz olmadığından emin olunmalı |
+| 3 | **İŞ 3** — Faz 8 runbook | 1 ve 2'nin çıktısı runbook'un içeriğini belirler |
+| 4 | **İŞ 4** — dump izolasyonu | Küçük, bağımsız, her an yapılabilir |
+| 5 | **İŞ 5** — auth-token | Tamamen bağımsız; İŞ 1-3 beklenirken paralel de alınabilir |
+
+**Not:** İŞ 5 diğerlerinden bağımsızdır. Codex isterse İŞ 1 ile İŞ 5'i sıralı yapmak yerine, İŞ 5'i önce alıp güvenlik açıklarını (BULGU-02 özellikle CRITICAL) daha erken kapatabilir. Bu tercih Codex'e bırakılmıştır — güvenlik önceliği ile felaket-kurtarma önceliği arasında makul bir denge sorusudur, gerekçesi yazıldığı sürece her iki sıra da kabul edilebilir.
+
