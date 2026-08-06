@@ -3798,3 +3798,4 @@ Maintenance rule:
 - Production/shadow DB and production Redis were not contacted or mutated. No push, tag-push, deploy or publish occurred.
 - Legacy FAQ provenance was intentionally not guessed. Existing rows remain unchanged and display an explicit unknown-source state.
 - `packages/database/scripts/production-sync.js` remains unmodified and must not be run in production because of a pre-existing hardcoded admin-password/user-reactivation risk tracked outside this feature.
+- Post-feature restore point: commit `348411c5`, tag `restore/after-ai-interaction-visibility-20260806-348411c5`, verified complete-history bundle `.private-data/restore-points/post-ai-interaction-visibility-348411c5.bundle`, SHA-256 `222067a628f8cf5cd2d1817bc5c381a7030aca6e5658a7ed703f2a6eb56fd28a`.

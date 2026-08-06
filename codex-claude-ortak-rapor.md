@@ -2147,3 +2147,13 @@ Başlangıç planındaki ayrım korundu: `/kb-approvals` editoryal FAQ yayın ku
 4. Provenance FK'leri hard delete halinde cascade eder; uygulamanın normal ticket/FAQ davranışı soft delete'tir. Gelecekte hard-delete/retention politikası açılırsa provenance saklama kararı ayrıca verilmelidir.
 5. `packages/database/scripts/production-sync.js` içindeki önceden mevcut hardcoded admin parolası + toplu kullanıcı reactivation davranışı bu feature'dan çıkarıldı; dosya değiştirilmedi ve production'da çalıştırılmamalıdır. Ayrı kritik teknik borçtur.
 6. Push, tag-push, deploy, publish ve production migration yapılmadı; kalıcı push yasağı aynen sürüyor.
+
+#### İş sonrası restore point
+
+- Restore kapsamı commit'i: `348411c5` — ürün, test, OpenAPI, ortak rapor ve `.ai` proje hafızası dahil.
+- Yerel annotated tag: `restore/after-ai-interaction-visibility-20260806-348411c5`.
+- Bundle: `.private-data/restore-points/post-ai-interaction-visibility-348411c5.bundle`.
+- Bundle SHA-256: `222067a628f8cf5cd2d1817bc5c381a7030aca6e5658a7ed703f2a6eb56fd28a`.
+- `git bundle verify`: complete history ve HEAD `348411c5` doğrulandı.
+- `git fsck --strict`: yalnız önceden mevcut dangling tree kayıtları; repository bütünlük hatası yok.
+- Tag ve bundle yalnız yereldir; remote tag-push yapılmadı.
