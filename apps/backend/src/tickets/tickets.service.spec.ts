@@ -567,6 +567,19 @@ describe('TicketsService', () => {
         });
 
         describe('getAiTrace', () => {
+            it('rejects staff who cannot access the requested ticket before loading trace details', async () => {
+                mockTicketAccessService.canAccessTicket.mockResolvedValueOnce(false);
+
+                await expect(service.getAiTrace('tik-private', { id: 'agent-1', role: 'AGENT' }))
+                    .rejects.toBeInstanceOf(ForbiddenException);
+
+                expect(mockTicketAccessService.canAccessTicket).toHaveBeenCalledWith(
+                    { id: 'agent-1', role: 'AGENT' },
+                    'tik-private',
+                );
+                expect(prisma.ticket.findFirst).not.toHaveBeenCalled();
+            });
+
             it('reconstructs visual evidence from a matched URL source for older interactions', async () => {
                 prisma.ticket.findFirst.mockResolvedValue({
                     id: 'tik1',

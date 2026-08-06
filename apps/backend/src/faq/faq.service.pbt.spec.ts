@@ -48,10 +48,15 @@ describe('FaqService — Property-Based Tests', () => {
                 create: jest.fn().mockResolvedValue({ id: 'new-id' }),
                 count: jest.fn().mockResolvedValue(0),
             },
+            faqEntrySource: {
+                createMany: jest.fn().mockResolvedValue({ count: 1 }),
+            },
+            $transaction: jest.fn(),
             $queryRaw: jest.fn().mockResolvedValue([]),
             $executeRaw: jest.fn().mockResolvedValue(1),
             ticket: { findUnique: jest.fn() },
         };
+        mockPrisma.$transaction.mockImplementation((callback: any) => callback(mockPrisma));
 
         mockEmbeddingService = {
             embedText: jest.fn().mockResolvedValue(Array(1536).fill(0.1)),
@@ -143,7 +148,9 @@ describe('FaqService — Property-Based Tests', () => {
                     process.env.FAQ_SEMANTIC_DEDUP_THRESHOLD = threshold.toString();
                     mockPrisma.faqEntry.findFirst.mockResolvedValue(null);
                     // Return similarity just below threshold — should NOT be duplicate
-                    mockPrisma.$queryRaw.mockResolvedValue([]);
+                    mockPrisma.$queryRaw
+                        .mockResolvedValueOnce([])
+                        .mockResolvedValue([{ id: 'new-id' }]);
 
                     await service.processPatterns([makePattern()]);
 
