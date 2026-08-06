@@ -1847,3 +1847,51 @@ Codex kalıcı shadow'u bilinçli olarak **dokunulmamış referans** bıraktı �
 
 **Faz 8 için kalan kapılar (değişmedi):** (1) kullanıcının 14 canlı API anahtarını rotate etmesi, (2) güncel prod backup + restore-check, (3) kullanıcı onaylı bakım penceresi, (4) runbook'taki migration-before-app sırası.
 
+---
+
+### 2026-08-06 — CODEX — Claude yerel geliştirme DB kaydının bağımsız inceleme notu
+
+Claude'un kurduğu yerel geliştirme veritabanı ve rapor kaydı salt-okunur olarak incelendi. Bu incelemede dosya, container, veritabanı veya canlı sistem değişikliği yapılmadı.
+
+#### Doğrulanan durum
+
+- Git çalışma ağacı temizdi; incelenen Claude commit'i `677e78d4`.
+- `.env`, `apps/backend/.env` ve `packages/database/.env` dev PostgreSQL 17 hedefi `localhost:55433`e yöneliyor.
+- `prisma migrate status`: `51` migration bulundu ve `Database schema is up to date!` sonucu alındı.
+- `aluplan_dev_pg17` aktif, kalıcı volume kullanıyor ve restart policy `unless-stopped`.
+- `aluplan_shadow_postgres_pg17` aktif ve ayrı kalıcı volume kullanıyor.
+- Yerel backend health endpoint'i `200`; frontend `/tr` endpoint'i `200` döndü.
+- İncelenen aktif env dosyalarında Gemini, OpenAI, LLMAPI, Anthropic, Groq, Resend, Dynamics, WhatsApp, storage ve Langfuse erişim anahtarları boş veya yoktu. Hiçbir secret değeri okunmadı ya da rapora yazılmadı.
+
+#### Düzeltme 1 — `.env.example` notu
+
+Claude kaydındaki “`.env.example` bu değişkeni içermiyor” ifadesi güncel repo için doğru değildir. `AUTH_ACTION_JWT_SECRET`, `.env.example:15` içinde zaten placeholder olarak bulunmaktadır. Bu nedenle bu konu için ürün kodu değişikliği gerekmiyor.
+
+#### Güvenlik notu 1 — port bağlama kapsamı
+
+Container portları yalnız loopback'e değil tüm host arayüzlerine publish edilmiş durumda:
+
+- dev PostgreSQL: `0.0.0.0:55433 -> 5432`;
+- referans shadow PostgreSQL: `0.0.0.0:55432 -> 5432`;
+- eski local PostgreSQL: `0.0.0.0:5432 -> 5432`;
+- local Redis: `0.0.0.0:6379 -> 6379`.
+
+Dev DB secret yönünden sanitize edilmiş olsa da gerçek kullanıcı, ticket, CRM ve embedding içeriği barındırır. “Sanitize”, kişisel/operasyonel içeriğin anonimleştirildiği anlamına gelmez. Bu nedenle geliştirmeye başlamadan önce production-derived dev/shadow DB ve Redis portlarının `127.0.0.1` ile sınırlandırılması önerilir. Dump, volume ve env yedekleri gizli veri olarak ele alınmalı; paylaşılmamalı veya repoya eklenmemelidir.
+
+#### Güvenlik notu 2 — shadow read-only sınırı
+
+Shadow için “yazma yapılmamalı” kuralı operasyonel olarak kayıtlıdır ancak mevcut incelemede DB rolü/izinleri düzeyinde salt-okunur zorlaması kanıtlanmamıştır. Shadow'un referans fotoğrafı olma niteliğini korumak için ayrı read-only kullanıcı veya transaction-level read-only varsayılanı eklenmesi önerilir. Bu düzeltme yapılana kadar uygulama `DATABASE_URL` değerleri kesinlikle `55432`ye yöneltilmemelidir.
+
+#### Düzeltme 2 — dış servis çağrısı ifadesi
+
+“Local'den gerçek Dynamics/e-posta/AI çağrısı yapılamaz” ifadesi fazla kesindir. Güncel env'de ilgili erişim anahtarlarının boş olması nedeniyle çağrılar şu anda pratikte yapılamaz; ancak ağ seviyesinde egress engeli yoktur. Daha sonra gerçek anahtar eklenirse dış çağrı mümkün hale gelir. Doğru sınıflandırma: **mevcut yapılandırmada dış servis kimlik bilgileri yok; yapısal/network seviyesinde mutlak engel yok**.
+
+#### Sonuç ve önerilen sonraki adım
+
+Yerel full-stack ortam çalışır ve migration açısından geliştirmeye hazırdır. Bununla birlikte production-derived içerik nedeniyle bir sonraki güvenli yerel adım, uygulama geliştirmesine geçmeden önce aşağıdaki containment sertleştirmesidir:
+
+1. dev/shadow PostgreSQL ve Redis portlarını yalnız `127.0.0.1`e bağlamak;
+2. shadow erişimini teknik olarak read-only yapmak;
+3. değişikliklerden sonra dev DB migration status, backend health ve frontend smoke kontrollerini yeniden çalıştırmak.
+
+Bu öneriler production migration/deploy yetkisi vermez. Push, tag-push ve deploy yasağı aynen devam eder.
