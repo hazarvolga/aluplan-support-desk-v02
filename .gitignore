@@ -41,6 +41,7 @@ packages/database/client/
 # Testing / Coverage
 # ========================
 coverage/
+apps/frontend/playwright-report/
 *.lcov
 .nyc_output/
 # Playwright test artifacts
