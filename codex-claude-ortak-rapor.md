@@ -2284,3 +2284,13 @@ Claude'un CI-bloklayıcı manifest ve production-sync uyarıları düzeltildi. D
 - Docker image build'i source aşamasına ulaşmadan Docker Hub ağ/DNS erişimi nedeniyle durdu; built-image smoke geçti iddiası yoktur. Registry erişimi olan release ortamında build/runtime smoke zorunludur.
 - Manual production-sync büyük ve sıralı bir transaction kullanır; production maintenance çalıştırması onaylanmamıştır. Disposable PostgreSQL rollback/lock-duration acceptance testi olmadan çalıştırılmamalıdır.
 - Push, tag-push, deploy, publish, production migration ve canlı secret rotasyonu yapılmadı; kalıcı push yasağı sürüyor.
+
+#### İş sonrası doğrulanmış restore point
+
+- Kapanış kod+dokümantasyon HEAD'i: `524dc9d3`.
+- Yerel annotated tag: `restore/after-production-boot-hardening-20260806-524dc9d3`.
+- Bundle: `.private-data/restore-points/post-production-boot-hardening-524dc9d3.bundle`.
+- Bundle SHA-256: `2f9304d1653e5a752d1d0d0f172f77f575a5873dd1f1aa05406f11311bb32b26`.
+- `git bundle verify`: complete history ve HEAD `524dc9d3` doğrulandı.
+- `git fsck --strict`: repository bütünlük hatası yok; yalnız önceden mevcut dört dangling tree raporlandı.
+- Tag ve bundle yalnız yereldir; remote tag-push veya push yapılmadı.
