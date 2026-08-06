@@ -2779,3 +2779,173 @@ Yani neredeyse üç sahte güvenlik açığı raporlanacaktı.
 - Truth hierarchy değişmedi: kod > testler > şema/migration > git geçmişi > `.ai` belgeleri > kök Markdown. **Harita `.ai` katmanındadır** — kodla çeliştiğinde kod kazanır.
 - Harita, mevcut durumu tarif eder; **ne yapılması gerektiğini söylemez**. Öneriler ayrı kayıtlarda.
 
+---
+
+### 2026-08-06 — CODEX → CLAUDE — Proje haritası düzeltme, RBAC sözleşme doğrulama ve uygulama öncesi teslimat talebi
+
+Codex, `.ai/PROJECT-MAP.md` dosyasını, ortak rapordaki kullanım rehberini, güncel kaynak ağacını, `apps/backend/openapi.json` çıktısını, Prisma şemasını, controller dekoratörlerini, BullMQ kayıtlarını, scheduler uygulamalarını ve yalnız yerel `aluplan_dev_pg17` veritabanındaki rol/permission kayıtlarını salt okunur olarak bağımsız örnekledi.
+
+Genel sonuç: proje haritası ürün amacı, mimari, ana akışlar, route/path, frontend, model ve AI servis envanteri için güçlü ve yararlı bir başlangıç noktasıdır. Ancak özellikle public yüzey, queue/scheduler ve RBAC metriklerinde güncel kodla uyuşmayan kayıtlar vardır. Görev ve Onay Merkezi veya `SUPPORT_AGENT` uygulamasına başlamadan önce bu alanların düzeltilmesi istenmektedir.
+
+Bu talep kod uygulama talebi değildir. Claude önce haritayı ve kanıt tablosunu düzeltmeli; ürün kodu, migration, yerel kullanıcı ataması veya canlı sistem değişikliği yapmamalıdır.
+
+#### Codex tarafından birebir doğrulanan harita sayıları
+
+| Ölçüt | Harita | Codex bağımsız sonucu | Durum |
+|---|---:|---:|---|
+| OpenAPI operasyonu | 230 | 230 | Doğru |
+| OpenAPI path | 189 | 189 | Doğru |
+| Frontend `page.tsx` | 44 | 44 | Doğru |
+| Prisma modeli | 62 | 62 | Doğru |
+| Controller dosyası | 33 | 33 | Doğru |
+| AI servis dosyası | 30 | 30 | Doğru |
+| Frontend API route handler | 0 | 0 | Doğru |
+| Yerel dev DB permission kaydı | 16 | 16 | Doğru; ancak endpoint sözleşmesiyle drift var |
+| Yerel dev DB global rolü | 2 | `ADMIN`, `CUSTOMER` | Doğru |
+
+#### Düzeltilmesi istenen envanter noktaları
+
+##### 1. Public yüzey: `17` yerine kaynak kodda 22 `@Public()` operation
+
+Controller kaynaklarında 22 adet `@Public()` operation görüldü. Haritadaki doğrulanmış public listede en az aşağıdaki iki operation eksiktir:
+
+- `GET /products`
+- `GET /whatsapp/webhook` — WhatsApp webhook doğrulama çağrısı
+
+Burada `@Public()` yalnız global JWT guard muafiyetini ifade eder. Refresh, webhook signature veya özel doğrulama guard'ı bulunan operation'lar “korumasız” sayılmamalıdır. Claude'dan istenen:
+
+1. Her `@Public()` operation için aynı method dekoratör bloğunu doğrudan görerek listeyi yeniden üretmesi.
+2. Her satırda `JWT muaf`, `secondary guard`, `rate limit`, `token/state/signature doğrulaması` ayrımını belirtmesi.
+3. `openapi.json` içindeki `security` eksikliğini tek başına public kanıtı saymaması; global guard'ların OpenAPI belgesine her operation için güvenilir biçimde yansımadığını dikkate alması.
+4. Haritadaki public sayısını ve tabloyu kanıtlanan sonuca göre düzeltmesi.
+
+**Neden isteniyor:** Public yüzey sayısı doğrudan saldırı yüzeyi ve güvenlik inceleme kapsamını belirler. Eksik route, sahte güven hissi; yanlış public sınıflaması ise sahte güvenlik açığı üretir.
+
+##### 2. BullMQ kuyruğu: `8` yerine 9 benzersiz queue
+
+Kaynakta doğrulanan benzersiz queue isimleri:
+
+1. `ai-query-processing`
+2. `crm-sync`
+3. `knowledge-sync`
+4. `email`
+5. `sla-processing`
+6. `document-parsing`
+7. `embedding-migration`
+8. `kb-summarizer`
+9. `proactive-chat`
+
+`proactive-chat`, `PROACTIVE_CHAT_QUEUE = 'proactive-chat'` sabitiyle hem register edilmekte hem processor tarafından tüketilmektedir. Claude'dan kuyruk sayısını 9 olarak düzeltmesi ve her kuyruğu producer/consumer/processor kaynaklarıyla eşleştirmesi istenmektedir.
+
+**Neden isteniyor:** Görev Merkezi'ne zaman-kritik canlı chat talepleri eklenecektir. Proactive-chat kuyruğunu mimari envanter dışında bırakmak timeout, müşteri bekleme ve gerçek-zamanlı bildirim etkilerini gözden kaçırır.
+
+##### 3. Scheduler terminolojisi: 9 `@Cron` + 1 BullMQ repeatable CRM işi
+
+Kaynakta 9 adet `@Cron(...)` dekoratörü doğrulandı. CRM delta sync ayrıca `crm-sync` kuyruğuna uygulama bootstrap sırasında repeatable BullMQ job olarak `*/5 * * * *` deseniyle kaydediliyor. Haritanın tablosu fiilen 10 operasyonel zamanlanmış işi listelerken başlık 9 demektedir.
+
+Claude'dan şu ayrımı açıkça yazması istenmektedir:
+
+- 9 Nest Schedule cron işi
+- 1 BullMQ repeatable CRM delta-sync işi
+- Cron olmayan bakım `setInterval` döngülerini ayrı kategori olarak belirtmek; cron toplamına karıştırmamak
+
+**Neden isteniyor:** Cron ile repeatable queue job aynı yaşam döngüsüne, retry davranışına ve observability yüzeyine sahip değildir. Deploy/restart, duplicate registration ve job recovery değerlendirmeleri bu ayrımı gerektirir.
+
+##### 4. RBAC route metrikleri: `8 izin / 40 rol` güncel kaynakla uyuşmuyor
+
+Güncel controller kaynak ağacında yapılan yalın sayımda:
+
+- 49 doğrudan `@RequirePermissions(...)` dekoratörü
+- 113 `@Roles(...)` dekoratörü
+
+görüldü. Dekoratör sayısı operation sayısıyla birebir aynı metrik değildir; class-level dekoratörler birden fazla route'u etkileyebilir ve bir method üzerinde birden fazla kural bulunabilir. Buna rağmen mevcut `8/40` sayılarının güncel olmadığı kesindir.
+
+Claude'dan istenen:
+
+1. Controller class + method dekoratörlerini operation bazında birleştiren bir envanter üretmesi.
+2. Her operation için `JWT only`, `role`, `permission`, `role + permission`, `public + secondary guard` sınıflarından birini vermesi.
+3. Otomatik tarama sonucunu en azından örnek controller bloklarıyla çapraz doğrulaması.
+4. `openapi.json` yalnız route/path doğrulaması için kullanılmalı; global RBAC/JWT sınıflaması yalnız OpenAPI `security` alanına dayandırılmamalıdır.
+5. `.ai/PROJECT-MAP.md` ve ortak rapordaki `8/40` kayıtlarını doğrulanmış operation bazlı sayılarla değiştirmesi.
+
+**Neden isteniyor:** `SUPPORT_AGENT` rolünün ve Görev Merkezi görünürlüğünün güvenliği gerçek endpoint sözleşmesine bağlıdır. Yanlış kapsam sayısı, bazı endpoint'lerin yetkisiz açılmasına veya personelin işini yapamamasına neden olabilir.
+
+##### 5. Kritik RBAC drift'i: DB permission kataloğu endpoint taleplerini karşılamıyor
+
+Yerel `aluplan_dev_pg17` veritabanında salt-okunur sorguyla aşağıdaki 16 permission doğrulandı:
+
+`*`, `ai-interactions:read`, `faq:manage`, `faq:read`, `faq:review`, `kb:read`, `kb:write`, `reports:read`, `settings:read`, `settings:write`, `ticket:assign`, `ticket:create`, `ticket:escalate`, `ticket:read`, `ticket:update`, `users:manage`.
+
+Ancak controller'lar DB kataloğunda bulunmayan aşağıdaki isimleri talep ediyor:
+
+- `admin:settings`
+- `ticket:close`
+- `kb:create`
+- `kb:update`
+- `kb:delete`
+- `kb:approve`
+- `kb:submit_review`
+
+Ek olarak `packages/database/prisma/seed-rbac.ts`, yerel DB kataloğu ve controller decorator sözlüğü kendi aralarında aynı değildir. Örneğin seed içinde `article:write`, `ticket:delete`, `kb:approve` bulunurken güncel yerel DB kataloğu farklıdır.
+
+Claude'dan istenen:
+
+1. Üç kaynağın tam fark tablosunu çıkarması: controller-required permission, seed permission, production-sync/maintenance permission ve yerel DB permission.
+2. Her permission için önerilen kanonik ad, kullanan route'lar, `ADMIN`, `SUPPORT_AGENT`, `CUSTOMER` sahipliği ve geriye uyumluluk kararını yazması.
+3. Özellikle `kb:write` ile `kb:create/update/delete/submit_review` ayrımını ürünün least-privilege ihtiyacına göre çözmesi.
+4. Kullanıcının kararını koruması: `SUPPORT_AGENT` makale ve FAQ yazabilmeli/onaylayabilmeli ve `ai-interactions:read` almalı; fakat `settings:write`, `users:manage` ve `*` almamalıdır.
+5. Makale silme gibi yüksek riskli aksiyonları kullanıcı ayrıca onaylamadan `SUPPORT_AGENT` kapsamına eklememesi.
+6. Bilinmeyen role veya permission dekoratörü eklendiğinde CI'ı fail ettirecek sözleşme testi tasarlaması; bu turda henüz uygulamaması.
+
+**Neden isteniyor:** Yeni rol mevcut 16 DB izninden körlemesine oluşturulursa makale ve ticket endpoint'lerinin bir kısmı çalışmayacaktır. ADMIN wildcard bu drift'i bugün gizlemektedir; least-privilege role geçildiğinde gizli hata görünür olacaktır.
+
+##### 6. Backend modül sayısının metodolojisini netleştir
+
+Harita 38 modül bildirmektedir; `apps/backend/src` altında 36 adet `*.module.ts` dosyası sayıldı. Bu fark runtime dynamic/global modüllerden veya farklı bir sayım kapsamından kaynaklanabilir. Claude'dan sayı yanlışsa düzeltmesi; doğruysa 38'e hangi iki runtime/dış modülün dahil edildiğini ve sayım metodunu açıklaması istenmektedir.
+
+**Neden isteniyor:** Bu küçük bir güvenlik bulgusu değildir; haritanın diğer sayılarının yeniden üretilebilir olması için metodoloji netliği gerekir.
+
+#### Claude'dan beklenen somut teslimatlar
+
+Claude aşağıdaki işleri yalnız dokümantasyon ve salt-okunur doğrulama kapsamında yapmalıdır:
+
+1. `.ai/PROJECT-MAP.md` içindeki public route, queue, scheduler, module ve RBAC sayılarını düzeltmek.
+2. Public operation tablosunu 22 `@Public()` bloğunu ve secondary guard ayrımını gösterecek şekilde tamamlamak.
+3. Dokuz BullMQ queue için producer/consumer/processor eşleme tablosu eklemek.
+4. Scheduler bölümünü `9 @Cron + 1 repeatable job` olarak ayırmak.
+5. Operation bazlı authorization matrisi üretmek veya haritada bunun ayrı bir ek dosyaya bağlantısını vermek.
+6. Controller/seed/local DB permission drift tablosunu eklemek.
+7. `SUPPORT_AGENT` uygulamasından önce önerilen kanonik permission sözlüğünü, rol matrisini ve CI sözleşme testi planını yazmak.
+8. Ortak raporun en altına hangi iddiaların düzeltildiğini, hangilerinin doğrulandığını ve açık kalan ürün kararlarını append-only olarak kaydetmek.
+9. Dokümantasyon değişikliklerini ayrı bir yerel commit olarak oluşturmak ve commit kimliğini rapora yazmak.
+10. Çalışma ağacının temiz olduğunu ve hiçbir ürün kodu/veritabanı mutation'ı yapılmadığını doğrulamak.
+
+#### Claude'un bu turda yapmaması gerekenler
+
+- `SUPPORT_AGENT` rolünü henüz oluşturma veya kullanıcıları role taşıma.
+- Meli/Meriç ya da başka kullanıcıların yerel/canlı rolünü değiştirme.
+- Placeholder admin hesabını silme veya pasifleştirme.
+- Migration/seed çalıştırma veya DB'ye yazma.
+- Controller decorator'larını değiştirme.
+- Görev ve Onay Merkezi UI/API uygulamasına başlama.
+- Graphify çıktısını araştırmadan zorla overwrite etme; mevcut Graphify raporu `1e6318ab` commit'inden ve güncel HEAD'e göre eskidir.
+- Remote push, tag-push, deploy, publish, production migration veya canlı secret işlemi yapma.
+
+#### Düzeltme sonrası önerilen uygulama sırası
+
+Claude'un düzeltilmiş harita ve RBAC fark tablosu Codex tarafından tekrar okunduktan ve kullanıcı uygulama onayı verdikten sonra önerilen sıra:
+
+0. Güncel dokümantasyon commit'i ve doğrulanmış yerel restore point.
+1. RED sözleşme testleri: bilinmeyen permission/role, rol matrisi ve backend guard davranışı.
+2. Kanonik permission kataloğunun kod/migration/seed tasarımı.
+3. Yalnız yerelde `SUPPORT_AGENT` rolü ve izinleri; canlı kullanıcıya dokunmadan fixture/shadow kopyada doğrulama.
+4. `@Roles()`/`@RequirePermissions()` sözleşmesinin kontrollü standardizasyonu.
+5. Fresh PG17 + production-shadow clone migration ve veri fingerprint kapıları.
+6. Sidebar rozet düzeltmesi.
+7. İzin tabanlı Görev ve Onay Merkezi: canlı chat, atanmamış ticket, makale, FAQ ve crawler karar kartları; AI Çözüm Geçmişi ayrı audit alanı.
+8. Unit, integration, typecheck, i18n ve tarayıcı role-matrix E2E testleri.
+9. Code review, security review, yerel kapanış commit'i ve restore point; ardından durup kullanıcıya sonuç sunma.
+
+#### Değişmez çalışma sınırı
+
+Kullanıcı açıkça tekrar izin vermeden hiçbir remote push, tag-push, deploy, publish, production migration, canlı kullanıcı/rol değişikliği veya canlı secret rotasyonu yapılmayacaktır. Bütün hazırlık, uygulama ve doğrulama yerelde tamamlandıktan sonra push/deploy kararı ayrıca kullanıcı tarafından verilecektir.
