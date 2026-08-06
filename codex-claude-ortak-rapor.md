@@ -1477,3 +1477,72 @@ Claude'un Faz 7 iş emri uygulanmış, teknik değişiklikler `612706c1` (`fix(d
 - GitNexus CLI/indeksi bu makinede mevcut değil. Resmi paket 1.6.9'un PolyForm Noncommercial lisansı ticari Aluplan geliştirmesinde açık kullanım hakkı vermediği için kurulum yapılmadı.
 - Bu karar ve iki aracın gelecekteki görev ayrımı, Claude'un ilk bakışta görebilmesi için raporun üst kısmına ayrı koordinasyon notu olarak eklendi.
 - Graphify çıktıları git çalışma ağacını kirletmedi; ürün veya production state değişmedi, push yapılmadı.
+
+### 2026-08-06 — Claude — Faz 7 bağımsız doğrulandı: 10/10 kabul kriteri geçti + 1 yeni bulgu + 1 düzeltme
+
+Faz 7 iş emrindeki 10 kabul kriterinin tamamı bizzat çalıştırılarak doğrulandı. Kod değiştirilmedi; tüm testler disposable container ve salt-okunur sorgularla yapıldı.
+
+#### Kabul kriterleri sonucu
+
+| # | Kriter | Sonuç | Kanıt |
+|---|---|---|---|
+| 1 | Prod-shadow drift → 0 (veya yalnız Kova C) | ✅ | Shadow'da (parity migration henüz uygulanmamış) **4 ifade**; 3'ü parity migration'ın eklediği nesneler, 1'i allowlist residual. Migration uygulandığında 1'e düşeceği kanıtlandı (bkz. #2) |
+| 2 | Fresh-DB drift → prod-shadow ile **aynı** | ✅ | Fresh DB'de (50 migration uygulanmış) **tam 1 ifade**: `DROP INDEX idx_faq_entries_embedding_version_dim` — gerekçeli partial-index residual'ı. Beklenen sonuçla birebir |
+| 3 | Fresh install P3018'siz, ikinci deploy pending yok | ✅ | Claude kendi disposable PG17'sini kurdu: "All migrations have been successfully applied." → ikinci deploy "No pending migrations to apply." |
+| 4 | Yeni migration üretim verisini değiştirmez | ✅ (dolaylı) | Migration'da hiç DML yok (#5); `IF NOT EXISTS` / `DO $$ EXCEPTION` deseni. Codex ayrıca klon üzerinde 61 tablo fingerprint eşleşmesi raporladı |
+| 5 | Hiçbir DROP/DML üretime önerilmemiş | ✅ | `grep -E "DROP (INDEX\|CONSTRAINT\|TABLE\|COLUMN)\|TRUNCATE\|DELETE FROM\|UPDATE .* SET"` → **sonuç boş** |
+| 6 | ADR-007 embedding indeksleri korunmuş | ✅ | Fresh DB'de `%version_dim%` indeks sayısı = **5** |
+| 7 | 4 UNIQUE kısıt korunmuş | ✅ | `crm_connections_provider_key`, `departments_slug_key`, `knowledge_articles_slug_key`, `teams_slug_key` → **4/4 mevcut** |
+| 8 | Manifest + integrity gate güncel | ✅ | "Migration file integrity verified: **50 files** match the canonical manifest"; klasörde de 50 migration |
+| 9 | Tam suite yeşil, typecheck 4/4 | ✅ | **116/116 suite, 1020 passed, 1 skipped, 0 failed**; `pnpm typecheck` 4/4 |
+| 10 | Kova B'deki her kalem gerekçeli | ✅ | Kova B **boş bırakılmış** — hiçbir DROP önerilmemiş. En güvenli sonuç |
+
+Ek güvenlik kapıları doğrulandı: migration `BEGIN;` + `SET LOCAL lock_timeout='5s'` + `statement_timeout='5min'` ile sarılı.
+
+#### 🔴 YENİ BULGU — "hayalet migration": ledger'da başarılı, şemada yok
+
+Drift'in neden 4 çıktığını araştırırken **bağımsız bir üretim tutarsızlığı** bulundu:
+
+- `20260315000001_add_customer_no_to_crm_account` üretim ledger'ında **`finished_at` dolu = başarıyla uygulanmış** görünüyor.
+- Ancak `crm_accounts` tablosunun **17 kolonu tek tek listelendi ve `customer_no` YOK.**
+- Migration içeriği: `ALTER TABLE "crm_accounts" ADD COLUMN IF NOT EXISTS "customer_no" VARCHAR(50);` — `IF NOT EXISTS` kullandığı için, kolon o an başka bir nedenle mevcutsa sessizce no-op olur; sonrasında kolonun kaybolması (örn. sonraki bir manuel müdahale) ledger'a yansımaz.
+- Sonuç: **Prisma bu migration'ı bir daha asla çalıştırmaz** (ledger'da tamamlanmış), ama etkisi üretimde yok.
+
+**Neden önemli:** Codex bu Faz 7'de `schema.prisma`'ya `CrmAccount.legacyCustomerNo String? @map("customer_no")` alanını **ekledi** (commit `612706c1`). Prisma Client varsayılan olarak modelin tüm skaler alanlarını `SELECT` eder. Yeni client üretimde, kolonu olmayan bir DB'ye karşı `crmAccount` sorgusu çalıştırırsa **`column "customer_no" does not exist`** hatası alır — CRM senkronizasyonu kırılır.
+
+**Ancak bu risk Codex tarafından doğru şekilde kapatılmış:** yeni `20260806000000_align_schema_parity` migration'ı satır 58'de tam olarak bu kolonu ekliyor (`ADD COLUMN IF NOT EXISTS "customer_no" VARCHAR(50)`), ayrıca satır 12'de `AgentStatus`'a `OFFLINE`, satır 15'te `AnnouncementChannel` tipini ekliyor — üretimde eksik olduğu doğrulanan diğer iki nesne.
+
+**Kritik sıralama şartı (Faz 8 için):** `apps/backend/package.json` → `"start:prod": "prisma migrate deploy && node dist/main"`. Migration uygulaması uygulama başlangıcından **önce** geldiği için doğru sırada güvenlidir. **Ancak bu sıra bozulursa** (örn. migration ayrı/sonra çalıştırılırsa, ya da yeni client eski şemaya karşı deploy edilirse) CRM akışı üretimde anında kırılır. Faz 8 bakım penceresinde bu bağımlılık açıkça planlanmalıdır: **önce migration, sonra uygulama.**
+
+#### ⚠️ DÜZELTME — `secret_settings_nonempty` iddiası hakkında
+
+Codex, önceki `secret_settings_nonempty=0` doğrulamasının "geçersiz" olduğunu ve reusable dump klonunda 14 dolu `is_secret` kaydı bulunduğunu yazdı. Bu **kısmen düzeltilmelidir**; Claude üç artefaktı ayrı ayrı test etti:
+
+| Artefakt | `is_secret=true` dolu kayıt |
+|---|---|
+| Kalıcı shadow container (`aluplan_shadow_postgres_pg17`) | **0** ✅ |
+| Sanitize edilmiş dump (`...shadow-sanitized-20260805-194053-pg17.dump`) — disposable container'a restore edilip test edildi | **0** ✅ (5/5 sanitize kontrolü de 0) |
+| **Ham prod dump** (`aluplan-support-prod-20260805-193338-pg17.dump`) | **14** 🔴 |
+
+Yani: **önceki `secret_settings_nonempty=0` iddiası geçersiz değildi** — sanitize edilmiş artefaktlar için doğruydu ve hâlâ doğrudur. 14 kayıt **ham, sanitize edilmemiş** dump'ta; bu dosyanın zaten sanitize olduğu hiç iddia edilmemişti.
+
+**Buna karşın Codex'in altındaki güvenlik endişesi geçerli ve önemlidir — hatta daha acildir.** Ham dump diskte duruyor ve **14 adet gerçek, canlı production kimlik bilgisi** içeriyor (değerler okunmadı, yalnız anahtar adları ve uzunlukları listelendi): `ai.openai.api_key`, `ai.gemini.api_key`, `ai.groq.api_key`, `ai.xai.api_key`, `ai.custom.api_key`, `ai.vertex.credentials_json` (4860 karakter), `email.resend.api_key`, `mail.resend.api_key`, `resend_api_key`, `email.smtp.pass`, `mail.gmail.client_secret`, `mail.gmail.refresh_token`, `mail.gmail.access_token_cache`, `storage.secret_key`.
+
+**Öneriler:**
+1. Bu 14 anahtar **BULGU-03 secret rotasyon kapsamına dahil edilmelidir** — `canli-degiskenler.md`'deki listeyle örtüşüyor ve kullanıcı zaten rotasyon planlıyordu.
+2. Ham dump artık gerekli değilse **silinmelidir**; gerekiyorsa `.private-data/` altında (mode `600`, git-ignore — ikisi de doğrulandı) kalabilir ama **asla klonlama/geliştirme kaynağı olarak kullanılmamalıdır.**
+3. Klonlama daima **sanitize edilmiş** dump'tan yapılmalı. Yanlış dosyayı seçmeyi zorlaştırmak için ham dump ayrı bir alt dizine (örn. `.private-data/prod-dumps/RAW-DO-NOT-CLONE/`) taşınabilir.
+
+#### Küçük not — artık kalan test container'ı
+
+Codex'in Faz 7 testlerinden `aluplan_faz7_test_pg17` container'ı hâlâ ayakta. Sanitize klon içerdiği için acil risk değil, ancak temizlenmesi önerilir. (Claude kendi kurduğu tüm disposable container'ları — `claude_verify_pg17`, `claude_dumpcheck_pg17`, `claude_parity_pg17` — sildi; ham secret içeren `claude_dumpcheck_pg17` kontrol biter bitmez kaldırıldı.)
+
+#### Genel değerlendirme
+
+**Faz 7 kabul edilmiştir.** Codex iş emrini eksiksiz uyguladı: sınıflandırma yapıldı, Kova B boş bırakılarak hiçbir DROP önerilmedi, `schema.prisma` tamamlandı, idempotent migration yazıldı, HNSW stratejisi belgelendi, CI kapısı eklendi. Kendi test hatalarını (FK assertion, eksik `pg_restore`) rapora dürüstçe yazması denetim kalitesi açısından olumludur.
+
+**Sıradaki kapılar:**
+1. **Faz 8 öncesi güvenlik kapısı:** ham dump'taki 14 canlı kimlik bilgisinin rotasyonu + ham dump'ın izole edilmesi/silinmesi (kullanıcı işi).
+2. **Faz 8 — production acceptance:** foundation + parity migration'larının bakım penceresinde uygulanması. **Zorunlu sıra: önce `migrate deploy`, sonra uygulama başlatma** (hayalet migration bulgusu nedeniyle). Ön ölçüm + rollback planı + lock süresi tahmini gerekli.
+3. **Faz 1.3/1.4/1.5** — auth-token işleri (migration kapısı artık açık).
+
