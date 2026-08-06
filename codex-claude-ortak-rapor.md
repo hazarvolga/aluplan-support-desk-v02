@@ -2012,3 +2012,30 @@ Kullanıcının `/tr/knowledge-pool` sayfasındaki aynı URL'nin birden fazla ke
 3. URL fetch zincirindeki önceden mevcut SSRF riski bu duplicate işinden ayrı tutuldu. Controller/worker için DNS çözümleme, private/reserved IP engeli ve her redirect hop yeniden doğrulaması ayrı güvenlik fazında kapatılmalıdır.
 4. Authenticated browser üzerinden duplicate submit smoke bu checkpoint'te yapılmadı; mevcut production-derived dev DB'ye gereksiz kayıt yazmamak için API/UI kanıtı otomatik testlerle sınırlandı. Kullanıcı isterse mevcut bir URL ile salt-etkili 409 UI smoke yapılabilir.
 5. Push, tag-push, deploy, publish veya production migration yapılmadı. Kalıcı push yasağı devam eder.
+
+---
+
+### 2026-08-06 — CODEX — URL duplicate runtime hotfix (Prisma P2010 + i18n namespace)
+
+Kullanıcının yerel browser smoke testi iki gerçek runtime problemi ortaya çıkardı:
+
+1. `pg_advisory_xact_lock()` PostgreSQL `void` döndürdüğü için Prisma `$queryRaw` sonucu deserialize edemiyor ve `P2010 / Raw query failed` ile HTTP 500 üretiyordu.
+2. Sayfa `useTranslations('admin.knowledge_pool')` kullanırken `crawler.public_notice_title` ve `crawler.public_notice_desc` yalnız başka bir `knowledge_pool` namespace'inde bulunuyordu; bu nedenle TR arayüzünde `MISSING_MESSAGE` oluşuyordu.
+
+#### Uygulanan düzeltme ve kanıt
+
+- Kilit sorgusu `pg_advisory_xact_lock(...) IS NULL AS locked` biçimine getirildi. PostgreSQL volatile lock fonksiyonunu çalıştırmaya devam eder; sonuç Prisma'nın desteklediği `boolean` tipine dönüşür.
+- Prisma.sql parametrelemesi ve lock → duplicate scan → insert sırası değişmedi.
+- Yerel dev PG17 üzerinde gerçek Prisma transaction testi `{ "ok": true, "rowType": "boolean" }` döndürdü; tablo/veri yazılmadı.
+- Aktif `admin.knowledge_pool.crawler` namespace'ine TR/EN/DE public notice anahtarları eklendi.
+- Yeni frontend testi üç locale için tam aktif namespace yolunu doğrular; böylece diller arası eşitlik kontrolünün kaçırdığı yanlış-namespace hatası tekrar yakalanabilir.
+- Focused backend: 2/2 suite, 20/20 test geçti.
+- Focused frontend: 2/2 dosya, 5/5 test geçti.
+- Backend/frontend typecheck ve TR/EN/DE i18n kontrolü geçti.
+- Bağımsız code-review ve security-review: blocker yok, onaylandı.
+- Hotfix commit: `6e280ea8` — `fix: make URL dedup lock Prisma-safe`.
+
+#### Sınır
+
+- Production/shadow bağlantısı veya veri değişikliği, migration, push, tag-push, deploy ya da publish yapılmadı.
+- Kullanıcının sayfayı yenileyip aynı URL ile yeniden denemesi kalan UI kabul kontrolüdür; beklenen sonuç HTTP 409'un yerelleştirilmiş “URL zaten kayıtlı” bildirimi olarak gösterilmesidir.

@@ -3763,3 +3763,12 @@ Maintenance rule:
 - Existing duplicate data was preserved unchanged; no cleanup or migration was run.
 - No production/shadow mutation, push, tag-push, deploy, or publish occurred.
 - Pre-existing SSRF risk remains separately open; indexed canonical identity is a future scalability/migration task.
+
+## Runtime Hotfix - 2026-08-06 Prisma Advisory Lock And Knowledge Pool Messages
+
+- User browser smoke exposed Prisma `P2010`: `pg_advisory_xact_lock()` returned PostgreSQL `void`, which Prisma could not deserialize.
+- The query now projects `pg_advisory_xact_lock(...) IS NULL AS locked`; the blocking transaction lock still executes while Prisma receives a supported boolean value.
+- A real Prisma transaction against local dev PG17 returned `{ok:true,rowType:"boolean"}` without changing application data.
+- Missing `admin.knowledge_pool.crawler.public_notice_title` and `public_notice_desc` keys were added for TR/EN/DE; a namespace regression test now checks all three locales.
+- Focused backend 20/20 and frontend 5/5 tests, backend/frontend typecheck, i18n, and independent code/security reviews passed.
+- Hotfix commit: `6e280ea8`. No production/shadow mutation, push, or deploy occurred.
