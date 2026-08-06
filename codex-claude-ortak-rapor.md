@@ -1271,3 +1271,144 @@ Codex'in "schema drift'i ayrı bir yerel analiz fazında sınıflandıralım" ö
 
 **Not:** Yeni `20260314900000_restore_crm_foundation` migration'ı üretimde **pending** durumdadır ve yalnız kullanıcı onaylı bakım penceresinde uygulanabilir. Idempotent olduğu için üretim verisini değiştirmemesi beklenir, ancak bu ayrı bir onay konusudur ve bu doğrulama kapsamında test edilmemiştir.
 
+
+### 2026-08-06 — Claude — Restore point alındı + Faz 7 iş emri (Codex uygulayacak, Claude doğrulayacak)
+
+Kullanıcı talimatı: "önce mevcut durumu commit et, sonra restore point oluştur, sonra ortak raporu güncelle... Codex'in neler yapması gerektiğini ayrıntılı biçimde belirt, işi Codex yapsın sen yine kontrol et ve nasıl bir sonuç beklediğini de açıkla."
+
+#### Alınan geri dönüş noktası
+
+| | |
+|---|---|
+| Commit | `5792d0fd` — `docs: record bulgu-10 verification and schema drift classification` |
+| Annotated tag | `restore/before-schema-parity-20260806-5792d0fd` |
+| Bundle | `.private-data/restore-points/pre-schema-parity-5792d0fd.bundle` (370 MB) |
+| Bundle SHA-256 | `c8cd6987b94a821431410dbfa1b4acfc879026e9e77db28d887e2a3ff5359fbd` |
+| `git bundle verify` | ✅ "The bundle records a complete history." |
+| `git fsck --strict` | ✅ kritik hata yok |
+| Tag ↔ HEAD | ✅ ikisi de `5792d0fd83e4483a1e1367331a2434cb7b7d1b13` |
+| Bundle git dışında | ✅ `.gitignore:122` (`.private-data/`) |
+| Push | ❌ yapılmadı (yasak aynen geçerli) |
+
+---
+
+## 🎯 FAZ 7 — SCHEMA PARITY (Codex uygulayacak)
+
+### Neden bu iş gerekli — kök tespit
+
+Claude iki yönde `prisma migrate diff` ölçtü ve **çok kritik bir asimetri** buldu:
+
+| Karşılaştırma | Fark |
+|---|---|
+| **Fresh-migration DB** vs `schema.prisma` | **49 ifade** |
+| **Prod-shadow** vs `schema.prisma` | **21 ifade** |
+
+Fresh DB, üretimden **daha fazla** sapıyor. Bunun anlamı: **üretimde, hiçbir migration'ın yaratmadığı nesneler var.** Bunlar zamanla manuel `psql` müdahaleleri ve `RagMaintenanceService` tarafından oluşturulmuş. Yani:
+
+- `schema.prisma` bunları **beyan etmiyor**
+- Migration zinciri bunları **yaratmıyor**
+- Ama üretim bunlara **sahip ve bağımlı**
+
+Bu üçlü uyumsuzluk giderilmezse: fresh install/felaket kurtarma ile kurulan bir sistem, üretimden yapısal olarak farklı olur — BULGU-10 kapandı ama bu ikinci katman açık kalır.
+
+### ⛔ ÖNCE BU: drift ASLA olduğu gibi uygulanmayacak
+
+`prisma migrate diff` çıktısı **ne yapılacağının reçetesi değildir.** Olduğu gibi uygulanırsa üretim şu zararı görür:
+
+| Prisma'nın önerisi | Gerçek sonuç |
+|---|---|
+| 5 × `DROP INDEX ...embedding_version_dim` | **ADR-007 embedding izolasyon indeksleri silinir** → RAG retrieval performansı çöker |
+| 4 × `DROP INDEX ..._key` (`crm_connections_provider_key`, `departments_slug_key`, `knowledge_articles_slug_key`, `teams_slug_key`) | **UNIQUE kısıtlar silinir** → veri bütünlüğü kaybolur |
+| `ALTER TABLE knowledge_pool_embeddings DROP CONSTRAINT ..._parent_id_fkey` | **FK silinir** → referans bütünlüğü kaybolur |
+| 2 × `CREATE INDEX ..._hnsw_idx ON tbl("embedding")` | **btree olarak** yaratılır (adı HNSW olsa da); ayrıca ADR-004 gereği 3072-dim'de pgvector HNSW desteklenmiyor |
+
+**Düzeltmenin yönü terstir: üretim kırpılmayacak, `schema.prisma` tamamlanacak.**
+
+### Yapılacak işler
+
+#### 7.1 — Sınıflandırma (yalnız analiz, kod değişikliği YOK)
+
+21 prod-shadow ifadesinin **her birini** üç kovadan birine ata ve gerekçesini yaz:
+
+- **Kova A — Gerçek üretim nesnesi, `schema.prisma`'ya eklenecek.** (Beklentim: 13 DROP INDEX + 1 FK'nin büyük çoğunluğu buraya düşecek.)
+- **Kova B — Gerçekten gereksiz, kaldırılabilir.** Her biri için "neden güvenli" kanıtı zorunlu. Kanıtsız hiçbir kalem B'ye atılamaz.
+- **Kova C — Prisma modelleyemiyor** (vektör/HNSW). Prisma dışında yönetilecek + belgelenecek.
+
+`ALTER TABLE` kalemleri (`ai_health_events.task`→TEXT, `created_at`/`read_at`→TIMESTAMP(3), 3 × `DROP DEFAULT`) ayrıca değerlendirilmeli: bunlar `schema.prisma`'nın mı yoksa üretimin mi doğru olduğu sorusudur; **veri kaybı riski taşımadıkları doğrulandı** ama yön kararı gerekçelendirilmeli.
+
+#### 7.2 — `schema.prisma` tamamlama
+
+Kova A kalemlerini `schema.prisma`'ya ekle (`@@index`, `@@unique`, ilişki tanımları). Repo konvansiyonuna uy: açık `map:` adları (`@@index([...], map: "idx_...")`), snake_case kolon + camelCase alan.
+
+#### 7.3 — Fresh-install eşitliği için idempotent migration
+
+**Bu adım atlanamaz.** Yalnız `schema.prisma`'yı güncellemek yetmez — fresh install DB'de bu nesneler yok. Yeni bir migration gerekli:
+
+- `20260314900000_restore_crm_foundation` ile **aynı deseni** kullan: `BEGIN;` + `CREATE INDEX IF NOT EXISTS` / `DO $$ ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;`
+- **Tam idempotent olmalı** — üretimde bu nesneler zaten var, migration uygulandığında hiçbir şeyi değiştirmemeli, hata vermemeli.
+- **Hiçbir `DROP` içermemeli.**
+
+#### 7.4 — Vektör/HNSW stratejisinin belgelenmesi
+
+- `CLAUDE.md` §5, HNSW indekslerinin `scripts/migrate-hnsw-indexes.sql`'de tutulduğunu söylüyor. **Bu dosya repoda yok** (Claude doğruladı). Gerçek mekanizma: `RagMaintenanceService` + `pnpm rag:maintenance` (Faz 4.4'te boot'tan çıkarıldı).
+- `CLAUDE.md`'yi gerçekle hizala. ADR-004 gereği 3072-dim'de HNSW'nin neden atlandığı da netleşsin.
+- İki `*_hnsw_idx` indeksinin `schema.prisma`'da nasıl ele alınacağına karar ver (beyan edilmeyip Prisma dışında mı yönetilecek, yoksa `@@ignore` benzeri bir yolla mı) ve gerekçesini yaz.
+
+#### 7.5 — Doğrulama (Codex'in kapanış için sunması gerekenler)
+
+```bash
+# 1. Fresh install — disposable PG17, sıfırdan tüm zincir
+prisma migrate deploy            # beklenen: "All migrations have been successfully applied."
+prisma migrate deploy            # beklenen: "No pending migrations to apply."
+
+# 2. Prod-shadow'a karşı SALT-OKUNUR (uygulama YOK)
+prisma migrate status            # beklenen: "Database schema is up to date!"
+
+# 3. İki yönlü drift — asıl başarı ölçütü
+prisma migrate diff  fresh-DB      -> schema.prisma
+prisma migrate diff  prod-shadow   -> schema.prisma
+
+# 4. Bütünlük kapıları + regresyon
+pnpm db:verify:migration-files   # manifest 50 dosyaya güncellenmeli
+pnpm db:verify:migrations
+pnpm typecheck
+pnpm --filter @aluplan/backend test
+```
+
+### 🎯 Claude'un beklediği sonuç (doğrulama kriterlerim)
+
+Bu fazı **başarılı** sayabilmem için aşağıdakilerin hepsi gerekli:
+
+| # | Beklenen sonuç | Nasıl doğrulayacağım |
+|---|---|---|
+| 1 | **Prod-shadow drift → 0 ifade** (veya yalnız Kova C vektör kalemleri, gerekçeli) | `prisma migrate diff` bizzat çalıştırıp sayacağım |
+| 2 | **Fresh-DB drift → 0 ifade** (veya prod-shadow ile **aynı** kalan kalemler) | Aynı komut, iki DB'nin **aynı** sonucu vermesi kritik |
+| 3 | **Fresh install P3018'siz** tamamlanır, ikinci deploy'da pending yok | Kendi disposable PG17 container'ımı kurup çalıştıracağım |
+| 4 | **Yeni migration üretim verisini değiştirmez** | Prod-shadow klonunda uygulayıp öncesi/sonrası satır sayımları + sanitize kontrolleri (6 kalem) karşılaştıracağım |
+| 5 | **Hiçbir `DROP INDEX` / `DROP CONSTRAINT` üretime önerilmemiş** | Yeni migration'ı ve diff çıktısını `grep -E "DROP (INDEX\|CONSTRAINT\|TABLE\|COLUMN)"` ile tarayacağım — **sonuç boş olmalı** |
+| 6 | **ADR-007 indeksleri korunmuş** | Prod-shadow'da 5 adet `%version_dim%` indeksinin hâlâ var olduğunu sorgulayacağım |
+| 7 | **4 UNIQUE kısıt korunmuş** | `crm_connections_provider_key`, `departments_slug_key`, `knowledge_articles_slug_key`, `teams_slug_key` varlığını sorgulayacağım |
+| 8 | Manifest + integrity gate güncel ve geçiyor | `pnpm db:verify:migration-files` (50 dosya), `db:verify:migrations` |
+| 9 | Tam backend suite yeşil, typecheck 4/4 | Kendim çalıştıracağım |
+| 10 | Kova B'deki her kalem gerekçelendirilmiş | Raporu okuyup gerekçesiz `DROP` var mı bakacağım |
+
+**Kabul etmeyeceğim sonuçlar:** gerekçesiz `DROP` içeren migration; yalnız `schema.prisma` güncellenip fresh-install migration'ı eklenmemesi (o zaman iki DB birbirinden farklı kalır); "drift azaldı ama neden kaldığı açıklanmadı" tarzı kapanış; prod-shadow ile fresh-DB'nin **farklı** drift sonucu vermesi.
+
+### Değiştirilemez sınırlar (Faz 7 boyunca)
+
+- Canlı PostgreSQL/Redis'e bağlantı, yazma, migration, restore, DDL **yok**.
+- Remote push, tag push, deploy **yok**.
+- Tüm test/uygulama yalnız disposable local DB ve sanitize prod-shadow **klonu** üzerinde.
+- Prod-shadow'un kendisine yazma yok — klon al, klonda çalış.
+- Yeni foundation migration (`20260314900000_restore_crm_foundation`) üretimde **hâlâ pending**; Faz 7 bunu değiştirmez, üretime uygulama ayrı bakım penceresi + kullanıcı onayı konusudur.
+- Rapor güncellemeleri append-only; en üstteki "CANLI VERİ GÜVENLİĞİ" bloğuna dokunulmaz.
+
+### Sıralama önerisi (Faz 7 sonrası)
+
+1. **Faz 7** — schema parity (bu iş emri)
+2. **Faz 8** — production acceptance: foundation + parity migration'larının bakım penceresinde üretime uygulanması (kullanıcı onayı şart)
+3. **Faz 1.3/1.4/1.5** — BULGU-02/BULGU-18/BULGU-05 auth-token işleri (artık shadow DB olduğu için migration kapısı kalktı, yapılabilir hale geldi)
+4. **Faz 6.3** — RAG kalite kabul seti 2. tur (gerçek veriyle, shadow üzerinde)
+
+**Not:** Faz 1.3 daha önce "migration kapısı nedeniyle beklemede" idi. Shadow DB ve BULGU-10 kapanışıyla o kapı artık açıldı — Codex isterse Faz 7 yerine önce Faz 1.3'ü de alabilir; ikisi birbirinden bağımsızdır. Sıralama tercihi Codex'e bırakılmıştır, gerekçesini rapora yazması yeterlidir.
+
