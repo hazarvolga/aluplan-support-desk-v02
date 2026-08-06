@@ -88,6 +88,31 @@ export type DiscoverAllplanHelpPayload = {
     dryRun?: boolean;
 };
 
+export type AiInteractionHistoryItem = {
+    id: string;
+    userQuery: string;
+    responseGenerated: string | null;
+    confidenceBand: 'HIGH' | 'MEDIUM' | 'LOW' | null;
+    similarityScore: number | null;
+    autoAnswered: boolean;
+    ticketCreated: boolean;
+    channel: string;
+    provider: string | null;
+    model: string | null;
+    createdAt: string;
+    user: { id: string; fullName: string; email: string; companyName: string | null } | null;
+    ticket: { id: string; ticketNumber: string; subject: string; status: string } | null;
+    matchedArticle: { id: string; title: string } | null;
+};
+
+export type AiInteractionHistoryResponse = {
+    data: AiInteractionHistoryItem[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+};
+
 export type OpsDashboardData = {
     generatedAt: string;
     window: { days: number; todayStart: string; trendStart: string };
@@ -522,6 +547,24 @@ export const api = {
             request<any>(`/ai/interactions/${interactionId}/feedback`, {
                 method: 'POST', body: JSON.stringify({ rating, comment }),
             }),
+        listInteractions: (params: {
+            page?: number;
+            limit?: number;
+            ticketState?: 'ALL' | 'TICKETED' | 'TICKETLESS';
+            confidence?: 'ALL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
+            search?: string;
+            interactionId?: string;
+        } = {}) => {
+            const query = new URLSearchParams();
+            if (params.page) query.set('page', String(params.page));
+            if (params.limit) query.set('limit', String(params.limit));
+            if (params.ticketState && params.ticketState !== 'ALL') query.set('ticketState', params.ticketState);
+            if (params.confidence && params.confidence !== 'ALL') query.set('confidence', params.confidence);
+            if (params.search?.trim()) query.set('search', params.search.trim());
+            if (params.interactionId) query.set('interactionId', params.interactionId);
+            const suffix = query.toString();
+            return request<AiInteractionHistoryResponse>(`/ai/interactions${suffix ? `?${suffix}` : ''}`);
+        },
         status: () => request<any>('/ai/status'),
         getHealthStatus: () => request<{
             status: 'HEALTHY' | 'DEGRADED' | 'DOWN';

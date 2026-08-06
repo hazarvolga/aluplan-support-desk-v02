@@ -40,6 +40,7 @@ import { tr as trLocale, enUS as enLocale, de as deLocale } from 'date-fns/local
 import { toast } from 'sonner';
 import { MacroPicker } from '@/components/macros/macro-picker';
 import { AiVisualEvidence, type AiVisualEvidenceItem } from '@/components/ai/AiVisualEvidence';
+import { AiAnswerContent } from '@/components/ai/ai-answer-content';
 import { useTranslations, useLocale } from 'next-intl';
 import { ContentSanitizer } from '@/lib/content-sanitizer';
 import { markdownToHtml } from '@/lib/markdown-to-html';
@@ -1027,6 +1028,17 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     <p className="mt-1 text-[11px] leading-relaxed text-foreground/85 line-clamp-3">{aiTrace.interaction.userQuery}</p>
                                 </div>
                             )}
+
+                            <div className="pt-2 border-t border-purple-500/15">
+                                <label className="text-[8px] uppercase font-bold text-muted-foreground/70 tracking-[0.1em]">{t('ai_trace_response')}</label>
+                                {aiTrace.interaction?.responseGenerated?.trim() ? (
+                                    <div className="mt-2 max-h-80 overflow-y-auto rounded-md border border-purple-500/15 bg-black/10 p-3">
+                                        <AiAnswerContent content={aiTrace.interaction.responseGenerated} className="text-[11px] text-foreground/85" />
+                                    </div>
+                                ) : (
+                                    <p className="mt-1 text-[11px] text-muted-foreground">{t('ai_trace_no_response')}</p>
+                                )}
+                            </div>
 
                             <AiVisualEvidence
                                 visuals={aiTraceVisuals}

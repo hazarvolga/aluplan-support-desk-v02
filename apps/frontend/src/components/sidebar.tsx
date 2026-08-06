@@ -5,7 +5,7 @@ import {
     LayoutDashboard, Ticket, BookOpen, Bot,
     MessageSquareQuote, Settings, LogOut, ChevronRight, Users, User,
     Brain, Database, Layers, Mail, Link2, Megaphone, HelpCircle, MailCheck,
-    Activity, Bell
+    Activity, Bell, MessagesSquare
 } from 'lucide-react';
 
 import { api } from '@/lib/api';
@@ -45,6 +45,7 @@ const ADMIN_NAV = [
             { href: '/admin/announcements', icon: Megaphone, labelKey: 'announcements' },
             { href: '/admin/emails', icon: Mail, labelKey: 'emails' },
             { href: '/admin/ai-intelligence', icon: Brain, labelKey: 'ai_intelligence' },
+            { href: '/admin/ai-interactions', icon: MessagesSquare, labelKey: 'ai_interactions' },
             { href: '/admin/ai-health', icon: Activity, labelKey: 'ai_health' },
             { href: '/admin/email-validation', icon: MailCheck, labelKey: 'email_validation' },
 
@@ -216,4 +217,3 @@ export function Sidebar({ onNavClick }: SidebarProps) {
         </aside>
     );
 }
-
