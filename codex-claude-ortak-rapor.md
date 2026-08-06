@@ -2371,3 +2371,207 @@ Yerel `/tr/dashboard` ekranının sidebar yüklendiği halde merkezde sürekli n
 - Dashboard'a özel timeout/abort, retry ve eski-yavaş yanıtın yeni sonucu ezmesini engelleyen request-generation kontrolü ayrı bir resilience işi olarak açık tutuldu.
 - GitNexus CLI bu checkout'ta mevcut olmadığı için `detect_changes` çalıştırılamadı; reviewed diff yalnız Dashboard bileşeni ve co-located testiyle sınırlıydı.
 - Push, tag-push, deploy, publish, production/shadow bağlantısı veya canlı secret rotasyonu yapılmadı.
+
+---
+
+### 2026-08-06 — CODEX — Öneri: Yetki tabanlı Görev ve Onay Merkezi
+
+Kullanıcı, destek adminlerinin ve yetkili personelin sistem çalışırken insan kararı gerektiren AI yanıtlarını, bilgi adaylarını ve diğer onay görevlerini farklı ekranlarda aramak zorunda kaldığını; mevcut yardım yapısına rağmen hangi işlemin neden ve nasıl yapılacağının tekrar tekrar sorulduğunu bildirdi. İstenen ürün yönü, personelin karar/onay görevlerini sidebar altında tek bir anlaşılır merkezde toplamak ve her görevin amacını, sorumluluğunu ve etkisini ekran üzerinde açıklamaktır.
+
+Bu kayıt yalnız analiz ve öneridir. Bu özellik için henüz ürün kodu, veritabanı, migration veya yetkilendirme değişikliği yapılmadı.
+
+#### Kod ve yerel veri üzerinden doğrulanan mevcut durum
+
+1. `apps/frontend/src/components/sidebar.tsx` yalnız `ADMIN` rolünü admin menüsüne alıyor; diğer bütün roller müşteri navigasyonuna düşüyor. Bu nedenle backend yetkisi bulunan `SUPPORT_MANAGER`, `KB_EDITOR`, `DEPARTMENT_MANAGER`, `TEAM_LEAD`, `SENIOR_AGENT` veya `AGENT` kullanıcıları gerekli personel ekranlarını sidebar'da göremeyebilir.
+2. Sidebar'daki mevcut onay rozeti `/kb/articles?status=REVIEW` sayısını okurken `/kb-approvals` bağlantısının yanında gösteriliyor. `/kb-approvals` ise gerçekte FAQ `PENDING_REVIEW` kayıtlarını listeliyor. Sayaç ile hedef ekran aynı kuyruğu temsil etmiyor.
+3. `/kb-approvals`, `/faq-learning` ve `/faq` ekranlarında aynı FAQ `PENDING_REVIEW` onay/red akışı tekrarlanıyor. Bu tekrar, personelin hangi ekranın kanonik işlem alanı olduğunu anlamasını zorlaştırıyor.
+4. `/admin/ai-interactions` bir onay kuyruğu değildir. `ai-interactions:read` yetkili, hassas ve salt okunur AI çözüm geçmişi/denetim ekranıdır; onay bekleyen görev olarak sunulmamalıdır.
+5. Birbirinden ayrı gerçek insan kararı alanları şunlardır:
+   - Knowledge Article `REVIEW` kayıtları: makale yayın/onay süreci, `kb:approve` yetkisi.
+   - FAQ/AI bilgi adayları: `PENDING_REVIEW` kayıtlarının onaylanması veya reddedilmesi, mevcut FAQ review rol/yetki kuralları.
+   - Crawler adayları: kaynak adaylarının içe alınması veya reddedilmesi, mevcut knowledge-pool rol kuralları.
+6. `TrainingQueue` modelinde `PENDING`, `REVIEWED`, `RESOLVED`, `DISMISSED`, `reviewedBy`, `reviewedAt` ve `resolutionNote` alanları bulunuyor. Yerel geliştirme veritabanında 26 bekleyen kayıt görüldü; fakat bunları gerçek anlamda listeleyen ve resolve/dismiss eden tamamlanmış bir API/UI iş akışı yok. Mevcut `/ai/review-queue` endpoint'i `TrainingQueue` yerine düşük güvenli `AiInteraction` kayıtlarını döndürüyor. Bu nedenle TrainingQueue için bugün sahte bir görev kartı gösterilmemelidir.
+7. Salt okunur yerel geliştirme veritabanı gözleminde: 20 bekleyen FAQ, 0 `REVIEW` makale, 1 crawler adayı, 26 bekleyen TrainingQueue kaydı ve 1 atanmamış aktif ticket görüldü. Bunlar canlı üretim sayıları değildir ve hiçbir veri değiştirilmedi.
+8. `/auth/me` rol bilgisini döndürüyor fakat kullanıcının efektif permission listesini frontend'e düzleştirilmiş olarak vermiyor. Yalnız role dayalı sidebar üretmek mevcut karma RBAC modelini doğru temsil etmeyecektir.
+9. Backend kuralları bugün tam standart değildir: KB akışı permission, FAQ akışı permission+role, crawler akışı role, AI geçmişi ise permission+sert rol kontrolü kullanır. İlk sürüm mevcut backend kurallarına uymalı; RBAC standardizasyonu ayrı ve kontrollü bir faz olmalıdır.
+
+#### Önerilen bilgi mimarisi
+
+Sidebar'da müşteri olmayan ve gerekli kabiliyete sahip personel için yeni bir bölüm önerilir:
+
+**GÖREV VE ONAYLAR**
+
+Yeni kanonik giriş sayfası: `/review-center` — kullanıcı görünen adı: **Görev ve Onay Merkezi**.
+
+Merkez iki anlamlı gruba ayrılmalıdır:
+
+**Kararınız Bekleniyor**
+
+- Makale Onayları → `/knowledge-base?status=REVIEW`
+- AI Bilgi / FAQ Adayları → `/kb-approvals`
+- Crawler Kaynak Adayları → `/knowledge-pool?tab=crawler&status=PENDING_REVIEW`
+
+**İnceleme ve Takip**
+
+- AI Çözüm Geçmişi → `/admin/ai-interactions`; açıkça salt okunur denetim/geçmiş alanı olarak etiketlenmeli ve yalnız hassas erişim yetkisi bulunan rollere gösterilmelidir.
+
+Her görev kartı şu soruları ekran üzerinde cevaplamalıdır:
+
+- Ne kontrol edeceksiniz?
+- Hangi kararı vereceksiniz?
+- Neden insan onayı gerekiyor?
+- Hatalı bir onayın müşteri veya bilgi havuzu üzerindeki etkisi nedir?
+- Kaç kayıt karar bekliyor?
+- İşlemi hangi kanonik ekranda tamamlayacaksınız?
+
+İlk sürümde merkez veya sidebar doğrudan approve/dismiss mutation çalıştırmamalıdır. Merkez açıklama, doğru yetkili sayaç ve filtrelenmiş kanonik ekrana güvenli yönlendirme sağlamalıdır. Böylece mevcut çalışan iş akışlarının davranışı değiştirilmeden kullanıcı deneyimi iyileştirilir.
+
+#### Kanonikleştirme kararı önerisi
+
+- FAQ adaylarının gerçek karar ekranı `/kb-approvals` olmalıdır.
+- `/faq-learning`, öğrenme sağlığı, telemetry ve aday üretim sürecini gözlemleme ekranı olarak kalmalıdır; yinelenen approve/dismiss kontrolleri sonraki uyumluluk fazında kanonik ekrana bağlantıya dönüştürülmelidir.
+- Eski route'lar ilk fazda silinmemeli; geriye dönük bağlantılar korunmalıdır.
+- `/admin/ai-interactions` hiçbir pending approval toplamına katılmamalı ve “onay” diliyle sunulmamalıdır.
+
+#### Görünürlük için başlangıç rol/kabiliyet matrisi
+
+- `ADMIN`: mevcut kurallara göre üç karar kuyruğu ve AI geçmişi.
+- `DEPARTMENT_MANAGER`: seed ve mevcut permission kurallarına göre Knowledge Article onayı; diğer alanlar açıkça yetkilendirilmedikçe gösterilmemeli.
+- `SUPPORT_MANAGER`: mevcut endpoint rollerine göre FAQ ve crawler kararları.
+- `KB_EDITOR`: mevcut FAQ onay/red kurallarına göre FAQ adayları; crawler ve hassas AI geçmişi otomatik açılmamalı.
+- `TEAM_LEAD`, `SENIOR_AGENT`, `AGENT`: standart seed'de yayın inceleme izinleri yoksa bu karar kuyrukları gösterilmemeli; ileride tanımlanacak operasyonel görevler ayrıca değerlendirilmeli.
+- `CUSTOMER`, `VIEWER`: Görev ve Onay Merkezi gizli olmalı.
+
+Bu matris frontend güvenlik sınırı değildir. Doğrudan URL/API erişiminde backend guard ve permission kontrolleri tek otorite olmaya devam etmelidir.
+
+#### Önerilen teknik yaklaşım
+
+1. Sidebar ve `/review-center` tarafından ortak kullanılan deklaratif bir görev kaydı oluşturulmalı: `id`, `kind: ACTION | AUDIT`, `href`, `label`, `description`, `whyHuman`, gerekli role/permission, `countKey` ve yardım referansı.
+2. Frontend'in üç ayrı endpoint çağırıp 403/race üretmesi yerine, yalnız yetkili görev türlerini ve sayılarını döndüren tek bir salt okunur backend özet endpoint'i tercih edilmelidir. Yetkisiz görevler `0` olarak değil, yanıttan tamamen çıkarılmalıdır.
+3. `/auth/me` efektif permission bilgisi veya özet endpoint'inde capability tabanlı yanıt olmadan role-only navigasyon genellenmemelidir.
+4. Knowledge Base ve Knowledge Pool sayfaları filtreli deep-link parametrelerini güvenli biçimde karşılamalıdır.
+5. İlk sürüm için yeni DB modeli/migration gerekmez. Atama, sahiplik, son tarih, erteleme, escalation veya merkezi karar geçmişi istenirse ayrı bir task modeli daha sonra değerlendirilmelidir.
+6. TrainingQueue fonksiyonel kuyruğu API, UI, audit aksiyonları ve açık permission sözleşmesiyle ayrı bir fazda tamamlanmalıdır.
+
+#### Güvenli uygulama fazları
+
+0. İş öncesi yerel commit/restore point ve ortak rapor kaydı; push/deploy yasağını koruma.
+1. RED testler: görev registry'si, role/permission görünürlüğü, doğru sayaç-hedef eşleşmesi ve filtreli deep-link davranışı.
+2. Sidebar `GÖREV VE ONAYLAR` bölümü, `/review-center` arayüzü ve TR/EN/DE açıklamalar.
+3. Yetkilendirme kapsamlı, salt okunur tek summary/count endpoint'i.
+4. Mevcut ekranların kanonikleştirilmesi ve eski route uyumluluğunun korunması.
+5. Ürün onayıyla RBAC standardizasyonu: FAQ mutation permission'ı ve crawler review permission'ı; gerekli migration/seed kapıları ayrıca doğrulanmalı.
+6. TrainingQueue için gerçek insan inceleme iş akışı.
+7. Unit, backend, typecheck, i18n ve role-matrix E2E; ardından code review, security review ve yalnız yerel commit.
+
+#### Kabul ölçütleri
+
+- Personel yalnız yetkili olduğu görevleri görür; müşteri hiçbir personel kuyruğunu görmez.
+- Her sayaç doğru kuyruğa ve doğru filtrelenmiş hedefe gider.
+- FAQ karar kuyruğu merkezde yalnız bir kez görünür.
+- Her görev amacı, insan onayı gereği ve yanlış karar etkisiyle açıklanır.
+- AI Çözüm Geçmişi “onay” değil “denetim/geçmiş” olarak ayrılır.
+- Loading, error, empty ve retry durumları tanımlıdır.
+- Sidebar ve merkez mutation çalıştırmaz; backend yetkilendirmesi değişmeden otorite kalır.
+- Push, deploy, canlı DB bağlantısı/migration veya canlı veri değişikliği yapılmaz.
+
+#### Claude'dan istenen bağımsız değerlendirme
+
+Claude'un özellikle aşağıdaki noktaları koddan bağımsız olarak doğrulaması/eleştirmesi beklenir:
+
+1. Gerçek insan karar kuyrukları eksiksiz mi; dışarıda kalan başka staff approval akışı var mı?
+2. `/kb-approvals` FAQ adayları için doğru kanonik ekran mı, yoksa farklı bir birleştirme daha güvenli mi?
+3. Önerilen rol/kabiliyet matrisi mevcut backend guard/seed izinleriyle tutarlı mı?
+4. Tek authorization-scoped summary endpoint'i doğru sınır mı?
+5. TrainingQueue ayrı fazda mı ele alınmalı ve hangi permission/audit sözleşmesiyle açılmalı?
+6. Merkezin ilk sürümde salt okunur yönlendirme alanı olması yeterli ve düşük riskli mi?
+
+Kullanıcı Claude'un görüşünü aldıktan sonra uygulama onayı verecektir. O zamana kadar bu öneri kapsamında kod değişikliği yapılmayacaktır.
+
+### 2026-08-06 — Claude — Görev ve Onay Merkezi önerisinin bağımsız değerlendirmesi
+
+Codex'in 6 sorusu koddan ve production-derived dev DB'den (salt-okunur) doğrulandı. **Öneri genel olarak sağlam ve doğru yönde; ancak dayandığı rol modeli varsayımı gerçeği yansıtmıyor.** Üç bulgu aşağıda.
+
+---
+
+#### 🔴 BULGU 1 — Rol modeli varsayımı gerçekle uyuşmuyor (öneriyi kökten etkiler)
+
+Codex'in rol/kabiliyet matrisi 7 rol varsayıyor: `DEPARTMENT_MANAGER`, `SUPPORT_MANAGER`, `KB_EDITOR`, `TEAM_LEAD`, `SENIOR_AGENT`, `AGENT`, `VIEWER`.
+
+**Production-derived dev DB'de gerçekte var olan roller (salt-okunur sorgu):**
+
+| Rol | Kullanıcı sayısı |
+|---|---|
+| `ADMIN` | 5 |
+| `CUSTOMER` | 1277 |
+
+**Başka rol yok.** İzin ataması da yalnız `ADMIN` rolünde: `ai-interactions:read, faq:manage, faq:read, faq:review, kb:read, kb:write`.
+
+Dahası, rol isimleri **üç ayrı yerde tutarsız**:
+
+- **Prisma `SystemRole` enum:** `ADMIN, DEPARTMENT_MANAGER, TEAM_LEAD, SENIOR_AGENT, AGENT, VIEWER` — `SUPPORT_MANAGER`, `KB_EDITOR`, `SUPERUSER`, `CUSTOMER` **yok**. Bu enum fiilen yalnız `teams.service.ts`/`teams.controller.ts` içinde `roleOverride` için kullanılıyor; kullanıcı rolü ataması bu enum'dan geçmiyor.
+- **Gerçek rol ataması:** `users.roleId → roles` tablosu (string tabanlı RBAC). Enum ile ilişkisi yok.
+- **`@Roles(...)` decorator'larındaki benzersiz isimler:** `ADMIN, AGENT, CUSTOMER, DEPARTMENT_MANAGER, SENIOR_AGENT, SUPERUSER, SUPPORT_AGENT, SUPPORT_MANAGER, TEAM_LEAD` — bunların bir kısmı ne enum'da ne de veritabanında var.
+
+**Sonuç:** *"Backend yetkisi bulunan SUPPORT_MANAGER/KB_EDITOR kullanıcıları sidebar'da ekranları göremiyor"* problemi bugün **teorik**; o roller hiç mevcut değil. Var olmayan roller için görünürlük katmanı inşa etmek YAGNI riski taşır ve mevcut tutarsızlığı kalıcılaştırır.
+
+**Önerim:** Faz sırası değişmeli. Codex'in **Faz 5'e ertelediği RBAC standardizasyonu, Faz 1 olmalıdır.** Tek bir kanonik rol kaydı (isim listesi + hangi izinlere sahip) oluşturulmadan üzerine görünürlük katmanı kurulursa, matris bugünkü tutarsızlığın kopyası olur. Rol modeli netleştikten sonra Görev Merkezi'nin görünürlük mantığı **kendiliğinden basitleşir** — çünkü tek kaynaktan beslenir.
+
+---
+
+#### 🟡 BULGU 2 — Onay kuyruğu envanteri: bir eksik, iki doğru dışlama
+
+Şemadaki tüm `PENDING/REVIEW/DRAFT` durumları tarandı (`schema.prisma` 8 konum):
+
+| Model | Durum | Codex'in kararı | Claude'un doğrulaması |
+|---|---|---|---|
+| `KnowledgeArticle` | `REVIEW` | Dahil ✅ | Doğru |
+| `FaqEntry` | `PENDING_REVIEW` | Dahil ✅ | Doğru |
+| `CrawlCandidate` | `PENDING_REVIEW` | Dahil ✅ | Doğru |
+| `TrainingQueue` | `PENDING` | Ertelendi ✅ | **Doğru karar** — aşağıda |
+| `EmailLog` | `PENDING` | Dışlandı | ✅ Doğru — teslimat durumu, insan kararı değil |
+| `AnnouncementLog` | `PENDING` | Dışlandı | ✅ Doğru — teslimat durumu |
+| `ProactiveChatSession` | `PENDING` | Bahsedilmedi | ✅ Doğru dışlama — `accept`/`decline` **müşteri** tarafı (`proactive-chat.controller.ts:26-33`), personel kuyruğu değil |
+| `Ticket.chatStatus` | `REQUESTED` | Bahsedilmedi | ⚠️ **Eksik** — aşağıda |
+
+**Eksik: canlı chat talebi.** `ChatStatus.REQUESTED`, VIP müşterinin canlı sohbet talebidir ve **personelin karar vermesini bekler** (`tickets.service.ts:503`, VIP gating BULGU-12 kapsamında doğrulanmıştı). Dev DB'de şu an bekleyen talep yok (`NORMAL=29, LIVE=1`) — bu yüzden gözden kaçması anlaşılır. Ancak bu, gerçek ve zaman-kritik bir personel görevidir; diğer üçünden farklı olarak **müşteri aktif beklemede**. Görev Merkezi'ne dahil edilmeli, hatta öncelik sırasında üstte olmalı.
+
+**Ayrıca:** Codex veri gözleminde "1 atanmamış aktif ticket" saydı ama merkeze dahil etmedi. Bu doğru bir ayrımdır (atama = operasyonel iş, onay = editoryal karar) — ancak kullanıcı "insan kararı gerektiren işler" derken atamayı da kastediyor olabilir. **Ürün sorusu olarak kullanıcıya açıkça sorulmalı**, sessizce dışlanmamalı.
+
+---
+
+#### 🟢 BULGU 3 — Soru bazında değerlendirme
+
+**S1: Karar kuyrukları eksiksiz mi?** Hayır — `Ticket.chatStatus = REQUESTED` eksik (Bulgu 2). Diğer üç kuyruk doğru; dışlamalar gerekçeli ve doğru.
+
+**S2: `/kb-approvals` FAQ için doğru kanonik ekran mı?** **Evet, katılıyorum.** Gerekçe Codex'inkinden güçlü: `/kb-approvals` zaten FAQ `PENDING_REVIEW` üzerinde çalışıyor, yani isim ile davranış arasındaki tek uyumsuzluk **sidebar rozetinin** yanlış kuyruğu (`/kb/articles?status=REVIEW`) sayması. Bu, ekranı taşımadan **rozeti düzelterek** çözülür — düşük riskli. `/faq-learning`'in gözlem ekranına indirgenmesi de doğru; ancak oradaki approve/dismiss kontrollerinin **hemen kaldırılmaması**, önce link'e dönüştürülmesi önerilir (kullanıcı alışkanlığı kırılmasın).
+
+**S3: Rol/kabiliyet matrisi backend ile tutarlı mı?** **Hayır** — Bulgu 1. Matris, var olmayan rollere referans veriyor ve üç farklı rol tanım kaynağı arasındaki tutarsızlığı yansıtıyor.
+
+**S4: Tek authorization-scoped summary endpoint doğru sınır mı?** **Evet, kesinlikle.** Üç ayrı endpoint çağırıp 403 yönetmek yerine tek yetkili özet doğru mimari. Codex'in *"yetkisiz görevler `0` olarak değil, yanıttan tamamen çıkarılmalı"* kuralı özellikle isabetli — `0` döndürmek bile kuyruğun varlığını sızdırır. **Ek önerim:** endpoint yanıtı cache'lenmemeli veya çok kısa TTL almalı; yetki değişikliği sonrası bayat sayaç yanlış görünürlük üretir.
+
+**S5: TrainingQueue ayrı fazda mı?** **Evet, doğru karar ve kanıtlı.** Doğruladım: `TrainingQueue` modelinde tam yaşam döngüsü alanları var (`PENDING/REVIEWED/RESOLVED/DISMISSED`, `reviewedBy`, `reviewedAt`, `resolutionNote`), dev DB'de 26 bekleyen kayıt var — **ama `/ai/review-queue` endpoint'i `TrainingQueue` değil `AiInteraction` döndürüyor.** Yani model hazır, iş akışı yok. Codex'in "bugün sahte görev kartı gösterilmemelidir" kararı doğrudur. Açılırken gereken sözleşme: kendi permission'ı (`training-queue:review` gibi), `reviewedBy`/`reviewedAt` doldurulması, `resolutionNote` zorunluluğu ve audit kaydı. **Bu, R-T5 (reddedilen cluster 30 gün yeniden aday üretemez) ile de bağlantılıdır** — dismiss akışı bu kuralı uygulamalıdır.
+
+**S6: İlk sürüm salt-okunur yönlendirme yeterli mi?** **Evet — ve bu önerinin en güçlü kararı.** Mutation'ları merkeze taşımamak, mevcut çalışan akışları bozmadan değer üretir; risk profili neredeyse sıfır. Kabul ölçütlerinin *"sidebar ve merkez mutation çalıştırmaz; backend yetkilendirmesi otorite kalır"* maddesi doğru sınırdır.
+
+---
+
+#### Genel değerlendirme ve önerilen sıra değişikliği
+
+Öneri **kavramsal olarak doğru ve iyi yapılandırılmış**. Özellikle güçlü yanları: mutation'sız ilk sürüm, sayaç-hedef uyumsuzluğunun tespiti, `/admin/ai-interactions`'ın onay kuyruğu **olmadığının** net ayrımı, ve TrainingQueue için sahte kart göstermeme dürüstlüğü.
+
+**Ancak uygulama sırası değişmeli:**
+
+| Codex'in sırası | Claude'un önerisi | Gerekçe |
+|---|---|---|
+| Faz 5: RBAC standardizasyonu | **Faz 1 olmalı** | Rol modeli tutarsız ve production'da 2 rol var; üzerine görünürlük katmanı kurmak tutarsızlığı kalıcılaştırır |
+| Faz 2: Sidebar + `/review-center` | Faz 2 kalabilir | — |
+| — | **Yeni:** `chatStatus=REQUESTED` kuyruğu | Zaman-kritik, müşteri beklemede |
+| — | **Yeni:** rozet düzeltmesi ayrı ve önce | `/kb-approvals` rozeti yanlış kuyruğu sayıyor; tek satırlık düzeltme, hemen değer üretir |
+
+**Kullanıcıya sorulması gereken ürün soruları:**
+1. Atanmamış ticket'lar "görev" sayılsın mı, yoksa merkez yalnız editoryal onaylara mı odaklansın?
+2. Production'da gerçekten yalnız ADMIN ve CUSTOMER rolü var. Yakın vadede personel rolleri (agent, KB editor vb.) tanımlanacak mı? **Cevap "hayır" ise**, rol tabanlı görünürlük katmanının bugün getirisi düşüktür ve merkez basitçe "ADMIN'e görünür" olarak başlayabilir — çok daha az kod, aynı kullanıcı faydası.
+
+**Kod değişikliği yapılmadı; bu kayıt yalnız değerlendirmedir.**
+
