@@ -195,7 +195,7 @@ Ticket kapanır
 - Prisma `driverAdapters` preview + `@prisma/adapter-pg`
 - Client: `packages/database/client/` → import: `@aluplan/database`
 - `binaryTargets: ["native", "linux-musl-openssl-3.0.x"]` (Coolify/Alpine)
-- **HNSW index'leri** schema'da değil, `scripts/migrate-hnsw-indexes.sql`'da. Büyük migration sonrası yeniden çalıştır.
+- **HNSW index'leri** Prisma schema tarafından yönetilmez. Gerçek bakım yolu `pnpm rag:maintenance` → `RagMaintenanceService`'tir. Aktif embedding boyutu 2000'i aşıyorsa (Gemini `3072/v2_2`) pgvector `vector` HNSW sınırı nedeniyle indeks oluşturulmaz/varsa kaldırılır ve exact search kullanılır. `embedding_version + embedding_dim` B-tree izolasyon indeksleri migration/schema tarafından yönetilmeye devam eder.
 
 ### Prisma Modelleri
 

@@ -90,3 +90,11 @@ and consequence. Use session summaries for implementation history.
 - Context: A historical migration was mutated after production application, so production stayed healthy while fresh installs failed with P3018. The production-shadow ledger also contains one explicit `manual-psql-fix` marker.
 - Decision: Applied migration files must match a versioned full-file SHA-256 manifest and must not be edited after application. Known non-SHA ledger markers require a named, narrow ledger-only verifier exception. The file manifest must pass before any CI deploy. Every new database migration must then pass a fresh PG17 deploy and a sanitized production-shadow clone integrity check before production promotion.
 - Consequence: CI blocks on fresh deploy, status, canonical checksum/ledger consistency, orphan detection, and required foundational relations. Passing these local gates does not authorize production deployment; production migration remains a separate maintenance-window decision. Full schema drift outside the targeted migration remains a separate remediation phase.
+
+## ADR-012 - Schema Parity Uses An Additive Compatibility Union
+
+- Date: 2026-08-06
+- Status: Accepted
+- Context: Fresh migration output, the production-derived shadow, and `schema.prisma` had different indexes, constraints, compatibility columns/enums, defaults, and vector-index declarations. Applying Prisma's raw drift output would have removed production integrity/performance objects and created misleading B-tree indexes named as HNSW.
+- Decision: Converge fresh and production-derived schemas through an additive compatibility union. Preserve production-proven unique/index/FK objects, retain harmless historical fresh-install compatibility types/columns, forbid DROP and data mutation in the parity migration, and allowlist only the partial FAQ embedding index that Prisma cannot model. HNSW lifecycle stays under `RagMaintenanceService`, not Prisma.
+- Consequence: Every future schema migration must pass canonical checksum, fresh PG17, migrated shadow-clone parity, and data-fingerprint gates. The comparator is local/clone-only. Production promotion remains a separate, explicitly approved maintenance-window operation with lock/time preflight.

@@ -8,12 +8,17 @@
   - Raw dump is local-only and git-ignored: `.private-data/prod-dumps/aluplan-support-prod-20260805-193338-pg17.dump`, size `132 MB`, SHA-256 `d12371d0b316fdab1e811fa658a0ca890968596c53d02d3b845cc709679d56da`.
   - Local shadow restore is complete in separate Docker container `aluplan_shadow_postgres_pg17` on `localhost:55432`; existing local `aluplan_postgres` was not overwritten.
   - Shadow env is local-only: `.private-data/shadow/shadow-postgres.env` with `SHADOW_DATABASE_URL`.
-  - Shadow DB was sanitized: CRM connections inactive, CRM/webhook secrets removed, user refresh token hashes removed, secret/token/API-key settings emptied. Verification counts: `crm_active=0`, `crm_secrets=0`, `webhooks_active=0`, `webhook_secrets=0`, `user_refresh_hashes=0`, `secret_settings_nonempty=0`.
+  - Shadow DB sanitization is **partial**: CRM connections are inactive, CRM/webhook secrets are removed, and user refresh-token hashes are removed. Faz 7 re-verification found 14 non-empty rows with `settings.is_secret=true` in the supposedly sanitized snapshot. Do not start the app against this shadow or treat it as secret-free until a clone-only sanitizer empties those values and a new dump is created. The existing dump/env remain local-only, mode `600`, and git-ignored.
   - Sanitized reusable snapshot exists locally: `.private-data/prod-dumps/aluplan-support-shadow-sanitized-20260805-194053-pg17.dump`, SHA-256 `2e5f7e09a7e4ffbf61787f978a4a401527be46eae4895a5d7ba26c39ef5d770b`.
   - Prisma read-only status against the shadow DB passed: `DATABASE_URL="$SHADOW_DATABASE_URL" pnpm exec prisma migrate status --config packages/database/prisma.config.js` -> `Database schema is up to date!`.
   - Redis was intentionally not copied from production. Keep local Redis empty/ephemeral to avoid replaying live BullMQ jobs, sessions, cache, OAuth state, or throttle counters.
   - Security cleanup still recommended: remove temporary SSH key line matching `aluplan-codex-dump-20260805` from `/root/.ssh/authorized_keys` on the VPS after no further backup access is needed.
   - Next safe GAP target remains local-only: use shadow DB for BULGU-02/BULGU-18 auth-token negative tests and BULGU-10 migration-history inspection. No live DB writes.
+- 2026-08-06 Faz 7 schema parity is complete locally in technical commit `612706c1`:
+  - Fresh PG17 and a restored production-shadow clone now converge on the same Prisma schema, with only the explicitly allowlisted externally managed partial FAQ embedding index remaining.
+  - The additive parity migration contains no DROP/DML, has lock and statement timeouts, and preserves all 61 business-table/sequence fingerprints on the restored clone.
+  - Full backend tests pass: 116/116 suites, 1020 passed, 1 skipped. Final code, database, and security reviews approve the local commit.
+  - Production still has both the foundation and parity migrations pending. Faz 8 remains maintenance-window-only and requires explicit user approval; no production connection, migration, deploy, or push occurred.
 - 2026-08-05 consolidation follow-up:
   - Active repo is now the git-tracked single working directory at `/Users/hazarvolgaekiz/dev/studio/aluplan-support-desk-v02/aluplan-support-desk-v02-main-live-site`.
   - `b73ae3f7` recorded the local consolidation baseline; push remains forbidden without explicit user approval.

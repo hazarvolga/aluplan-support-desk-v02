@@ -1412,3 +1412,47 @@ Bu fazı **başarılı** sayabilmem için aşağıdakilerin hepsi gerekli:
 
 **Not:** Faz 1.3 daha önce "migration kapısı nedeniyle beklemede" idi. Shadow DB ve BULGU-10 kapanışıyla o kapı artık açıldı — Codex isterse Faz 7 yerine önce Faz 1.3'ü de alabilir; ikisi birbirinden bağımsızdır. Sıralama tercihi Codex'e bırakılmıştır, gerekçesini rapora yazması yeterlidir.
 
+### 2026-08-06 — Codex — Faz 7 schema parity tamamlandı (yerel, canlıya dokunulmadı)
+
+Claude'un Faz 7 iş emri uygulanmış, teknik değişiklikler `612706c1` (`fix(database): align fresh and shadow schema parity`) yerel commit'iyle sabitlenmiştir. Canlı PostgreSQL/Redis'e bağlantı, migration, DDL, deploy, remote push veya tag push yapılmamıştır.
+
+#### 7.1 — 21 drift ifadesinin sınıflandırması
+
+- **Kova A:** Üretimde doğrulanmış 4 UNIQUE indeks, normal/embedding-version indeksleri, `knowledge_pool_embeddings.parent_id` self-FK'si ve 6 fiziksel tip/default hizalaması `schema.prisma` ile yeni additive migration'a alınmıştır.
+- **Kova B:** Boş bırakılmıştır. Kaldırılması güvenli kanıtlanmış hiçbir üretim nesnesi yoktur; hiçbir DROP önerilmemiştir.
+- **Kova C:** Partial FAQ embedding izolasyon indeksi Prisma'nın partial-index modelleme sınırı nedeniyle harici yönetilir. İki yanıltıcı `*_hnsw_idx` Prisma deklarasyonu kaldırılmıştır; gerçek HNSW yaşam döngüsü `pnpm rag:maintenance` → `RagMaintenanceService` altındadır. Gemini 3072-dim aktifken HNSW oluşturulmaz/varsa kaldırılır ve exact search kullanılır.
+
+#### Uygulama ve güvenlik kapıları
+
+- Yeni migration: `20260806000000_align_schema_parity`; explicit transaction, `lock_timeout=5s`, `statement_timeout=5min`, duplicate/orphan precheck, hiçbir DROP/TRUNCATE/INSERT/UPDATE/DELETE yok.
+- `provider/model` uzunluk sapmaları yalnız tip adına değil gerçek `character_maximum_length` değerine göre fail-fast kontrol edilir.
+- Canonical manifest 50 migration'a çıkarıldı; parity migration SHA-256: `0b097264cdaa492917d6aa513743a42ee797b5c4cb67cf0fd303e938739d72ce`.
+- CI'a blocking schema-parity kapısı eklendi. Yalnız `idx_faq_entries_embedding_version_dim` partial indeksi birebir allowlist residual olarak kabul edilir.
+- Veri karşılaştırıcı aynı kaynak/hedef DB'yi reddeder, iki session'ı read-only yapar ve tablo fingerprint'lerini sunucu tarafında hesaplar. Bu araç yalnız yerel/sanitize klonlarda kullanılacaktır; canlıda çalıştırılmayacaktır.
+
+#### Tekrarlanmış yerel kanıt
+
+- Fresh disposable PG17: 50/50 migration uygulandı; ikinci deploy `No pending migrations`; migration integrity ve schema parity geçti.
+- Sanitize dump'tan yeniden kurulan ayrı klon: yalnız beklenen foundation + parity migration'ları uygulandı; ikinci deploy'da pending yok.
+- Kalıcı shadow ile klon, migration öncesi ve sonrası 61 public business tablo + sequence fingerprint'inde eşleşti.
+- Fresh ve klon aynı parity sonucunu verdi: yalnız gerekçeli partial FAQ index residual'ı.
+- Prisma validate, backend/frontend typecheck, i18n, migration-files, Node syntax ve `git diff --check` geçti.
+- Tam backend: **116/116 suite**, **1020 passed**, **1 skipped**, **0 failed**.
+- Nihai code review: APPROVE, P0-P3 yok. Database review: APPROVE, P0-P2 blocker yok. Security review: APPROVE, P0/P1 blocker yok.
+
+#### Test sırasında dürüst hata kaydı
+
+- İlk parity RED koşusunda FK assertion'ı tarihsel `ON UPDATE NO ACTION` gerçeğini yanlışlıkla `CASCADE` bekledi; transaction tamamen rollback oldu. Schema ve assertion tarihsel gerçekle hizalandı, disposable DB sıfırdan kuruldu ve tüm kapılar yeniden yeşil geçti.
+- Son sertleştirme tekrarında host'ta `pg_restore` bulunmadığı için ilk klon boş kaldı; yanlış disposable klon silinip konteyner içindeki PG17 `pg_restore` ile yeniden oluşturuldu. Kalıcı shadow ve canlı etkilenmedi.
+
+#### Yeni sanitizasyon sapması — açık güvenlik işi
+
+- CRM aktif bağlantıları/secret'ları, webhook aktifliği/secret'ları ve kullanıcı refresh-token hash'leri klonda sıfırdır.
+- Buna karşın reusable dump klonunda `settings.is_secret=true` olan **14 kayıt doludur**. Değerler okunmadı veya yazdırılmadı. Bu nedenle önceki `secret_settings_nonempty=0` iddiası geçersizdir.
+- Dump ve shadow env mode `600`, `.private-data/` altında git-ignore'dır; yine de dump **secret-free sayılamaz, paylaşılamaz ve uygulama runtime'ında kullanılmamalıdır**. Ayrı clone-only sanitizasyon + yeni dump işi Faz 8 öncesi güvenlik kapısıdır.
+
+#### Kapanış ve sıradaki kapı
+
+- Faz 7 yerel kod/test düzeyinde kapalıdır.
+- Production acceptance kapalı değildir: foundation ve parity migration'ları üretimde hâlâ pending'dir. İndeks/FK işlemleri lock alabileceğinden canlı uygulama yalnız kullanıcı onaylı Faz 8 bakım penceresinde, ön ölçüm ve rollback planıyla ele alınabilir.
+- Push yasağı aynen sürer.

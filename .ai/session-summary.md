@@ -1,5 +1,30 @@
 # Session Summary - 2026-05-13
 
+## Follow-up - 2026-08-06 Faz 7 Schema Parity
+
+### What changed
+
+- Added the additive, no-DROP `20260806000000_align_schema_parity` migration and aligned `schema.prisma` with production-proven indexes, four unique constraints, the Knowledge Pool parent FK, and physical type/default truth.
+- Removed two misleading Prisma B-tree declarations named as HNSW indexes. HNSW lifecycle remains external under `RagMaintenanceService`; 3072-dimensional embeddings use exact search.
+- Added blocking schema-parity, migration-safety, and source/target data-fingerprint tooling. The comparator rejects identical databases, opens read-only sessions, and is restricted operationally to local/sanitized clones.
+- Technical commit: `612706c1` (`fix(database): align fresh and shadow schema parity`).
+
+### Verification
+
+- Fresh disposable PG17: all 50 migrations applied; second deploy had no pending migrations; integrity and schema-parity gates passed.
+- Restored production-shadow clone: only the expected foundation + parity migrations applied; second deploy had no pending migrations.
+- Source shadow versus restored clone fingerprints matched across 61 public business tables and sequences both before and after clone migrations.
+- Both fresh and clone parity gates retain exactly one documented residual: externally managed partial index `idx_faq_entries_embedding_version_dim`.
+- Prisma validate, backend/frontend typecheck, i18n, migration file gate, Node syntax, and `git diff --check` passed.
+- Full backend suite: 116/116 suites passed; 1020 tests passed, 1 skipped, 0 failed.
+- Final code review, database review, and security review approved the local commit with no P0-P2 blocker.
+
+### Safety correction
+
+- The reusable snapshot previously described as fully sanitized still contains 14 non-empty rows marked `settings.is_secret=true`. Values were not printed or inspected. CRM/webhook secrets, active integration flags, and user refresh-token hashes remain zero.
+- The dump and shadow env are mode `600` and git-ignored, but the dump must not be treated as secret-free or shared. Create a new clone-only sanitized snapshot before any application runtime or external handoff.
+- No production connection/write/migration, deploy, remote push, or tag push occurred.
+
 ## Follow-up - 2026-08-05 Production Shadow Database Baseline
 
 ### What changed
