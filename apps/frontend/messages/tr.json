@@ -3385,6 +3385,8 @@
         "dataset_scan_desc": "Dataset klasörü taranıyor...",
         "dataset_sync_success": "Akıllı Eşitleme Başarılı",
         "url_added": "URL kaynağı eklendi",
+        "url_duplicate": "URL zaten kayıtlı",
+        "url_duplicate_desc": "Bu URL veya eşdeğer biçimi Bilgi Havuzunda zaten bulunuyor.",
         "logs_error": "Günlükler yüklenemedi",
         "publish_success": "{count} makale yayınlandı"
       }

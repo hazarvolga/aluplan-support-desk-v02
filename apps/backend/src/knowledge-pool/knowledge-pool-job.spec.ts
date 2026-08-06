@@ -5,7 +5,7 @@ import { StorageService } from '../common/services/storage.service';
 import { Queue } from 'bullmq';
 import { getQueueToken } from '@nestjs/bullmq';
 import { mockPrismaService } from '../test/mock.utils';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
 
 describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
@@ -21,8 +21,11 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
         knowledgeSource: {
             create: jest.fn(),
             findUnique: jest.fn(),
+            findMany: jest.fn(),
             update: jest.fn(),
-        }
+        },
+        $queryRaw: jest.fn(),
+        $transaction: jest.fn((callback: any) => callback(localMockPrismaService)),
     };
 
     beforeEach(async () => {
@@ -39,6 +42,7 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
         syncQueue = module.get(getQueueToken('knowledge-sync'));
 
         jest.clearAllMocks();
+        localMockPrismaService.knowledgeSource.findMany.mockResolvedValue([]);
     });
 
     describe('triggerSync', () => {
@@ -132,6 +136,119 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
                         sourceName: 'License server manual add article',
                         ingestionMode: 'bulk-safe',
                         useAiPreprocessing: false,
+                    }),
+                }),
+            });
+        });
+
+        it('stores a canonical URL without retaining the raw submitted URL', async () => {
+            const canonicalUrl = 'https://example.com/docs?a=1&b=2';
+            const source = {
+                id: 'source-canonical',
+                name: 'Canonical source',
+                type: KnowledgeSourceType.URL,
+                url: canonicalUrl,
+                metadata: { ingestionMode: 'bulk-safe' },
+            };
+            localMockPrismaService.knowledgeSource.findMany.mockResolvedValue([]);
+            localMockPrismaService.knowledgeSource.create.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue({
+                ...source,
+                status: KnowledgeSourceStatus.SYNCING,
+            });
+
+            await service.createSource({
+                name: 'Canonical source',
+                type: KnowledgeSourceType.URL,
+                url: ' HTTPS://Example.COM:443/docs/?b=2&a=1#install ',
+            });
+
+            expect(localMockPrismaService.knowledgeSource.create).toHaveBeenCalledWith({
+                data: expect.objectContaining({
+                    url: canonicalUrl,
+                    metadata: expect.objectContaining({
+                        sourceUrl: canonicalUrl,
+                    }),
+                }),
+            });
+            expect(localMockPrismaService.knowledgeSource.create.mock.calls[0][0].data.metadata)
+                .not.toHaveProperty('submittedUrl');
+        });
+
+        it('rejects a canonical-equivalent duplicate without inserting or enqueueing', async () => {
+            localMockPrismaService.knowledgeSource.findMany.mockResolvedValue([
+                { id: 'existing-source', url: 'https://example.com/docs?b=2&a=1#old' },
+            ]);
+
+            await expect(service.createSource({
+                name: 'Duplicate',
+                type: KnowledgeSourceType.URL,
+                url: 'https://EXAMPLE.com:443/docs/?a=1&b=2&utm_source=test',
+            })).rejects.toThrow(ConflictException);
+
+            expect(localMockPrismaService.knowledgeSource.create).not.toHaveBeenCalled();
+            expect(mockQueue.add).not.toHaveBeenCalled();
+        });
+
+        it('takes a transaction-scoped URL identity lock before checking and creating', async () => {
+            const source = {
+                id: 'source-locked',
+                name: 'Locked source',
+                type: KnowledgeSourceType.URL,
+                url: 'https://example.com/locked',
+                metadata: { ingestionMode: 'bulk-safe' },
+            };
+            localMockPrismaService.knowledgeSource.findMany.mockResolvedValue([]);
+            localMockPrismaService.knowledgeSource.create.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue(source);
+
+            await service.createSource({
+                name: 'Locked source',
+                type: KnowledgeSourceType.URL,
+                url: 'https://example.com/locked',
+            });
+
+            expect(localMockPrismaService.$queryRaw).toHaveBeenCalledTimes(1);
+            expect(localMockPrismaService.$transaction).toHaveBeenCalledTimes(1);
+            expect(localMockPrismaService.$queryRaw.mock.invocationCallOrder[0])
+                .toBeLessThan(localMockPrismaService.knowledgeSource.findMany.mock.invocationCallOrder[0]);
+            expect(localMockPrismaService.knowledgeSource.findMany.mock.invocationCallOrder[0])
+                .toBeLessThan(localMockPrismaService.knowledgeSource.create.mock.invocationCallOrder[0]);
+        });
+
+        it('keeps canonical identity metadata authoritative for crawler imports', async () => {
+            const source = {
+                id: 'source-imported',
+                name: 'Imported source',
+                type: KnowledgeSourceType.URL,
+                url: 'https://example.com/imported',
+                metadata: { ingestionMode: 'bulk-safe' },
+            };
+            localMockPrismaService.knowledgeSource.create.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue(source);
+
+            await service.createImportedUrlSource({
+                name: 'Imported source',
+                type: KnowledgeSourceType.URL,
+                url: 'https://EXAMPLE.com/imported/#section',
+            }, {
+                metadata: {
+                    source: 'crawler',
+                    sourceUrl: 'https://EXAMPLE.com/imported/#section',
+                    ingestionMode: 'crawler-override',
+                },
+            });
+
+            expect(localMockPrismaService.knowledgeSource.create).toHaveBeenCalledWith({
+                data: expect.objectContaining({
+                    url: 'https://example.com/imported',
+                    metadata: expect.objectContaining({
+                        source: 'crawler',
+                        sourceUrl: 'https://example.com/imported',
+                        ingestionMode: 'bulk-safe',
                     }),
                 }),
             });

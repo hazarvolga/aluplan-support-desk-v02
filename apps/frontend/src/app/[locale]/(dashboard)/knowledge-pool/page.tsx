@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { api, CrawlCandidate, LearnNowCrawlFormat } from '@/lib/api';
+import { isDuplicateKnowledgeSourceUrlError } from '@/lib/knowledge-source-errors';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -286,8 +287,10 @@ export default function KnowledgePoolPage() {
     };
 
     const handleAddUrl = async () => {
-        if (!urlName || !urlAddress) return;
-        if (isLearnNowCourseUrl(urlAddress)) {
+        const submittedName = urlName.trim();
+        const submittedUrl = urlAddress.trim();
+        if (!submittedName || !submittedUrl) return;
+        if (isLearnNowCourseUrl(submittedUrl)) {
             toast({
                 title: t('logs.error'),
                 description: t('crawler.toasts.course_url_blocked'),
@@ -298,19 +301,19 @@ export default function KnowledgePoolPage() {
         setIsUrlSubmitting(true);
         try {
             if (urlIngestionMode === 'crawl') {
-                const isHelpSource = isAllplanHelpUrl(urlAddress);
+                const isHelpSource = isAllplanHelpUrl(submittedUrl);
                 const result = isHelpSource
                     ? await api.pool.discoverAllplanHelp({
-                        name: urlName,
-                        startUrl: urlAddress,
+                        name: submittedName,
+                        startUrl: submittedUrl,
                         mode: 'subtree',
                         maxCandidates: 50,
                         includeHidden: false,
                         dryRun: false,
                     })
                     : await api.pool.discoverGenericWeb({
-                        name: urlName,
-                        startUrl: urlAddress,
+                        name: submittedName,
+                        startUrl: submittedUrl,
                         maxDepth: 2,
                         maxCandidates: 50,
                         sameDomainOnly: true,
@@ -324,7 +327,7 @@ export default function KnowledgePoolPage() {
                 setCrawlSourceFilter(isHelpSource ? 'allplan_help' : 'generic_web');
                 setCrawlStatusFilter('PENDING_REVIEW');
             } else {
-                await api.pool.addUrl(urlName, urlAddress);
+                await api.pool.addUrl(submittedName, submittedUrl);
                 toast({ title: t('logs.success'), description: t('toasts.url_added') });
                 loadSources();
             }
@@ -332,7 +335,14 @@ export default function KnowledgePoolPage() {
             setUrlName(''); setUrlAddress('');
             setUrlIngestionMode('single');
         } catch (err: any) {
-            toast({ title: t('logs.error'), description: err.message, variant: 'destructive' });
+            if (isDuplicateKnowledgeSourceUrlError(err)) {
+                toast({
+                    title: t('toasts.url_duplicate'),
+                    description: t('toasts.url_duplicate_desc'),
+                });
+            } else {
+                toast({ title: t('logs.error'), description: err.message, variant: 'destructive' });
+            }
         } finally {
             setIsUrlSubmitting(false);
         }
@@ -631,7 +641,7 @@ export default function KnowledgePoolPage() {
                                         </div>
                                         <div className="space-y-2">
                                             <Label>{t('dialogs.url_label')}</Label>
-                                            <Input value={urlAddress} onChange={e => setUrlAddress(e.target.value)} placeholder="https://example.com/docs" />
+                                            <Input type="url" value={urlAddress} onChange={e => setUrlAddress(e.target.value)} placeholder="https://example.com/docs" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
                                             {[

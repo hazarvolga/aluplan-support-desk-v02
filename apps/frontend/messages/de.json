@@ -3385,6 +3385,8 @@
         "dataset_scan_desc": "Datensatzordner wird gescannt...",
         "dataset_sync_success": "Smart Sync erfolgreich",
         "url_added": "URL-Quelle hinzugefügt",
+        "url_duplicate": "URL bereits vorhanden",
+        "url_duplicate_desc": "Diese URL oder eine gleichwertige Form ist bereits im Wissenspool vorhanden.",
         "logs_error": "Protokolle konnten nicht geladen werden",
         "publish_success": "{count} Artikel veröffentlicht"
       }

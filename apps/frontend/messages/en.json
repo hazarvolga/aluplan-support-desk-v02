@@ -3385,6 +3385,8 @@
         "dataset_scan_desc": "Scanning dataset folder...",
         "dataset_sync_success": "Smart Sync Successful",
         "url_added": "URL source added",
+        "url_duplicate": "URL already exists",
+        "url_duplicate_desc": "This URL or an equivalent form is already in the Knowledge Pool.",
         "logs_error": "Could not load logs",
         "publish_success": "{count} articles published"
       }
