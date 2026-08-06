@@ -112,7 +112,7 @@ export class KnowledgePoolService {
 
         return this.prisma.$transaction(async (tx) => {
             await tx.$queryRaw(Prisma.sql`
-                SELECT pg_advisory_xact_lock(hashtextextended(${canonicalUrl}, 0))
+                SELECT pg_advisory_xact_lock(hashtextextended(${canonicalUrl}, 0)) IS NULL AS locked
             `);
 
             // Legacy rows predate canonical storage. Compare their normalized forms under

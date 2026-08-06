@@ -212,6 +212,8 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
 
             expect(localMockPrismaService.$queryRaw).toHaveBeenCalledTimes(1);
             expect(localMockPrismaService.$transaction).toHaveBeenCalledTimes(1);
+            const advisoryLockQuery = localMockPrismaService.$queryRaw.mock.calls[0][0];
+            expect(advisoryLockQuery.strings.join(' ')).toContain('IS NULL AS locked');
             expect(localMockPrismaService.$queryRaw.mock.invocationCallOrder[0])
                 .toBeLessThan(localMockPrismaService.knowledgeSource.findMany.mock.invocationCallOrder[0]);
             expect(localMockPrismaService.knowledgeSource.findMany.mock.invocationCallOrder[0])

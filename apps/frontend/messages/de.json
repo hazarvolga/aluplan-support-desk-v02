@@ -3284,6 +3284,8 @@
         "title": "CRAWLER-KANDIDATEN",
         "subtitle": "Web- und Learn-Now-Inhalte vor dem Import in den Knowledge Pool prüfen.",
         "search_placeholder": "Suchbegriff oder leer lassen",
+        "public_notice_title": "Öffentliche Learn-Now-Suche",
+        "public_notice_desc": "Der automatische Crawler übernimmt nur öffentliche How-To-Artikel, PDFs und transkriptgestützte Inhalte, die keine Anmeldung oder Einschreibung erfordern.",
         "dry_run_title": "DRY-RUN VORSCHAU",
         "discovered": "{count} KANDIDATEN",
         "no_candidates": "Keine Crawler-Kandidaten gefunden",
