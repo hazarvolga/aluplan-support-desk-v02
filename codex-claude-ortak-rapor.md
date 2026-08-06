@@ -2039,3 +2039,17 @@ Kullanıcının yerel browser smoke testi iki gerçek runtime problemi ortaya ç
 
 - Production/shadow bağlantısı veya veri değişikliği, migration, push, tag-push, deploy ya da publish yapılmadı.
 - Kullanıcının sayfayı yenileyip aynı URL ile yeniden denemesi kalan UI kabul kontrolüdür; beklenen sonuç HTTP 409'un yerelleştirilmiş “URL zaten kayıtlı” bildirimi olarak gösterilmesidir.
+
+---
+
+### 2026-08-06 — CODEX — Duplicate UI kabulü ve beklenen 409 konsol temizliği
+
+- Kullanıcı yerel arayüzden aynı URL'yi yeniden gönderdi ve yerelleştirilmiş duplicate uyarısının doğru gösterildiğini doğruladı. Böylece URL duplicate iş kuralının browser kabulü geçti.
+- API'nin beklenen `409 KNOWLEDGE_SOURCE_URL_DUPLICATE` yanıtı frontend tarafından doğru işlenmesine rağmen ortak API istemcisi bunu `console.error` ile yazdığı için Next.js geliştirme konsolunda hata olarak görünüyordu.
+- API istemcisi yalnız `status === 409` ve exact `KNOWLEDGE_SOURCE_URL_DUPLICATE` code/message birleşimini konsolda sessize alacak şekilde daraltıldı.
+- Hata hâlâ throw edilir; Knowledge Pool sayfası aynı yerelleştirilmiş bilgilendirme akışını çalıştırır. Diğer 409 yanıtları, 500'ler, auth ve network hataları loglanmaya devam eder.
+- RED regresyon testi önce mevcut `console.error` çağrısını yakaladı; düzeltme sonrası focused frontend 3/3 dosya ve 16/16 test geçti.
+- Frontend typecheck, TR/EN/DE i18n ve `git diff --check` geçti.
+- Bağımsız code-review ve security-review blocker bulmadı; gözlemlenebilirlik filtresinin dar ve güvenli olduğunu doğruladı.
+- Ürün commit'i: `a6468b30` — `fix: silence handled URL duplicate conflicts`.
+- Production/shadow değişikliği, migration, push, tag-push, deploy veya publish yapılmadı.
