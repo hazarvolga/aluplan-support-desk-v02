@@ -114,3 +114,11 @@ and consequence. Use session summaries for implementation history.
 - Context: A disposable PostgreSQL 17 lock test showed that the Prisma migration engine did not inherit shell `PGOPTIONS`; it waited for the lock and then applied migrations. The same test with PostgreSQL `options` encoded in `DATABASE_URL` exited non-zero in 5.946 seconds under a confirmed `AccessExclusiveLock`.
 - Decision: One-shot and application-gated Prisma migration commands must derive a non-logged migration URL that sets `lock_timeout=5s` and `statement_timeout=300s` through its `options` query parameter. Migration failure must prevent application startup.
 - Consequence: Faz 8 must use the runbook's derived migration URL and must not treat shell `PGOPTIONS` as a safety control. This is local disposable-clone evidence only and does not authorize a production migration.
+
+## ADR-015 - Separate AI Interaction Evidence From FAQ Publication
+
+- Date: 2026-08-06
+- Status: Accepted
+- Context: FAQ approval candidates and pre-ticket customer AI interactions have different purposes and privacy boundaries. The former is an editorial publication workflow; the latter is sensitive operational evidence of what a customer asked and what the system displayed.
+- Decision: Keep FAQ approval and AI interaction history as separate surfaces and permissions. Store FAQ provenance as normalized source relations. Interaction-derived FAQ candidates use the stored answer but remain pending human review. AI-history responses are allowlisted, audited and restricted to administrator-class roles; ticket traces additionally require ticket access.
+- Consequence: Future learning-pipeline work must not mix raw customer interactions into the publication queue or expose them through public FAQ permissions. Provenance additions must be transactional, legacy source identities must not be inferred, and new history consumers must use the dedicated audited endpoint.

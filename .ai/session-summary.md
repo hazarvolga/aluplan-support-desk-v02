@@ -3772,3 +3772,29 @@ Maintenance rule:
 - Missing `admin.knowledge_pool.crawler.public_notice_title` and `public_notice_desc` keys were added for TR/EN/DE; a namespace regression test now checks all three locales.
 - Focused backend 20/20 and frontend 5/5 tests, backend/frontend typecheck, i18n, and independent code/security reviews passed.
 - Hotfix commit: `6e280ea8`. No production/shadow mutation, push, or deploy occurred.
+
+## Follow-up - 2026-08-06 AI Solution History And FAQ Provenance
+
+### What changed
+
+- Preserved `/kb-approvals` as the FAQ publication queue and added a separate `/admin/ai-interactions` history for the exact customer question and AI solution shown before ticket creation.
+- Added paginated ticketed/ticketless, confidence, free-text and exact UUID filters; raw context, attachments, token/cost fields and unused customer text are excluded from FAQ provenance responses.
+- Added dedicated `ai-interactions:read` and `faq:review` permissions. Customer/Viewer access is denied; existing Support Manager/KB Editor FAQ-review behavior is preserved without granting AI-history access.
+- Added normalized FAQ provenance for tickets and AI interactions. Duplicate updates plus provenance writes are transactional and interaction-derived FAQ candidates cannot auto-publish.
+- Added safe Markdown/HTML rendering for stored AI answers and exposed the same answer in the staff-only ticket AI trace after ticket-scope authorization.
+- Added privacy-safe read audit records and capped FAQ pagination at 100.
+
+### Verification
+
+- Backend full suite: 119/119 suites, 1083 passed, 1 skipped, 0 failed.
+- Frontend unit suite: 28/28 files, 227/227 tests passed.
+- Final focused checks: backend 22/22 and frontend 4/4 passed after data-minimization changes.
+- Backend/frontend typecheck, TR/EN/DE i18n, Prisma validate, migration status and `git diff --check` passed.
+- Pre-migration local dump restored into a disposable PG17 DB; all 53 migrations applied and counts stayed 1282 users / 162 tickets / 259 AI interactions / 29 FAQs / 0 inferred legacy provenance rows.
+- Independent code and security re-reviews approved with no remaining Critical/High blocker in this feature diff.
+
+### Boundary
+
+- Production/shadow DB and production Redis were not contacted or mutated. No push, tag-push, deploy or publish occurred.
+- Legacy FAQ provenance was intentionally not guessed. Existing rows remain unchanged and display an explicit unknown-source state.
+- `packages/database/scripts/production-sync.js` remains unmodified and must not be run in production because of a pre-existing hardcoded admin-password/user-reactivation risk tracked outside this feature.

@@ -276,3 +276,15 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Existing production-derived duplicate rows were not merged, deleted, re-indexed, or modified. Legacy comparison is intentionally read-only and O(N) until an approved canonical identity/index migration is designed.
 - Pre-existing SSRF hardening remains a separate high-priority security task: URL fetches need resolved-IP and redirect-chain validation before production release of further URL-ingestion changes.
 - Product commit: `a960b73d`. No push, deploy, production connection, schema migration, or shadow write occurred.
+
+## Active Focus - 2026-08-06 AI Solution Visibility And FAQ Provenance
+
+- `/admin/ai-interactions` is now the dedicated admin surface for pre-ticket AI interactions; `/kb-approvals` remains the editorial FAQ review queue.
+- AI history returns an explicit allowlist only, supports exact opaque interaction IDs, ticket/confidence/search filters and pagination, and records privacy-safe read audit events.
+- FAQ candidates now retain normalized ticket/interaction provenance through `FaqEntrySource`; duplicate frequency updates and source attachment are transactional.
+- Interaction-derived candidates use the stored customer-visible AI response and always remain `PENDING_REVIEW`; blank answers cannot be approved.
+- Anonymous/customer FAQ reads no longer inherit staff visibility, FAQ list limits are capped, and ticket AI trace now checks actual ticket access before returning details.
+- Local dev and a disposable dump-restored PG17 copy both applied all 53 migrations with business row counts unchanged. Production and shadow were not touched.
+- Product commits: `d3d1a7b7`, `7bd9dda0`, `809fd245`, `0cbf617a`, `b5228c97`.
+- Remaining acceptance step: authenticated local browser smoke of `/tr/admin/ai-interactions` and its exact source link from `/tr/kb-approvals`; this is UI acceptance, not a code/test blocker.
+- Remote push, tag push, deploy and production migration remain forbidden until explicit user approval.

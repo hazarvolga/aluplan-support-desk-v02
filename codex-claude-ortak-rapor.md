@@ -2093,3 +2093,57 @@ Kullanıcı, müşterinin bilet oluşturmadan önce AI'dan çözüm istediği ak
 - Mevcut production-derived local dev verisi silinmeyecek, birleştirilmeyecek veya geri yüklenmeyecek.
 - R-T1 korunur: FAQ adayları müşteriye görünür hale gelmeden önce insan/admin onayı gerekir.
 - Bu plan kaydı append-only eklenmiştir; raporun üst bölümleri değiştirilmemiştir.
+
+---
+
+### 2026-08-06 — CODEX — AI çözüm görünürlüğü ve FAQ provenance tamamlandı (yerel-only)
+
+Başlangıç planındaki ayrım korundu: `/kb-approvals` editoryal FAQ yayın kuyruğu olarak kaldı; müşterinin bilet açmadan önce sorduğu soru ve kendisine gösterilen gerçek cevap için ayrı `/tr/admin/ai-interactions` ekranı oluşturuldu.
+
+#### Kapatılan GAP'ler
+
+1. `AiInteraction.userQuery` ve `responseGenerated` artık admin sınıfı roller için sayfalı, aranabilir ve ticketed/ticketless + güven seviyesi filtreli ayrı geçmiş ekranında görülebiliyor.
+2. History endpoint'i `ai-interactions:read`, JWT, RBAC, throttling ve ek admin-role savunmasıyla korunuyor. Customer, Viewer ve varsayılan Support Manager erişimi reddediliyor.
+3. Endpoint yalnız gerekli alanları döndürüyor; `userContext`, attachment/hotinfo, edited response, token ve maliyet alanları dışarı verilmiyor. Hassas history okumaları ham soru/cevabı kaydetmeyen audit satırı oluşturuyor.
+4. FAQ adaylarına çoklu kaynak taşıyabilen `FaqEntrySource` modeli eklendi. Ticket ve AI interaction provenance kayıtları FK/check/unique indexlerle doğrulanıyor; duplicate frequency güncellemesi ile kaynak ekleme aynı transaction içinde.
+5. Interaction tabanlı öğrenme artık boş `answer` üretmiyor; müşteriye gerçekten gösterilen saklı AI cevabını kullanıyor. Boş cevaplar aday olmaz ve boş soru/cevap onaylanamaz.
+6. Interaction kaynaklı adaylar güven skoru ne olursa olsun `PENDING_REVIEW` kalıyor; otomatik yayınlanmıyor. FAQ auto-publish ürün kararı ticket kaynakları için değiştirilmedi.
+7. FAQ list/detail provenance cevabı veri minimizasyonu uyguluyor: ticket için yalnız ID/numara, interaction için yalnız opaque ID/tarih. Müşteri sorusu URL query'sine yazılmıyor; exact UUID filter kullanılıyor.
+8. Anonim isteğin yanlışlıkla staff sayılıp internal FAQ görebilmesi kapatıldı. FAQ sayfa limiti 100 ile sınırlandı ve mevcut Support Manager/KB Editor review sözleşmesi ayrı izin migration'ıyla korundu.
+9. Ticket detayındaki staff-only AI trace gerçek `responseGenerated` cevabını güvenli renderer ile gösteriyor ve yalnız rol değil gerçek ticket erişimini de denetliyor.
+
+#### Migration ve veri koruma kanıtı
+
+- İş öncesi dump: `.private-data/restore-points/pre-ai-interaction-visibility-db-38a2cc26.dump`.
+- Dump SHA-256: `a3d4488991840b990744bed82c47d6e71936a1d0a318cd216c164114b788e67c`.
+- Migration yalnız `localhost:55433/aluplan_support` geliştirme DB'sine uygulandı; hedef host/port/name önce doğrulandı.
+- İş öncesi ve sonrası business sayıları değişmedi: 1282 user, 162 ticket, 259 AI interaction, 29 FAQ.
+- Legacy FAQ kaynakları güvenilir biçimde türetilemediği için uydurma backfill yapılmadı; yeni `faq_entry_sources` başlangıçta 0 satırdır.
+- Aynı pre-migration dump ayrı `aluplan_ai_visibility_migration_test` PG17 DB'sine restore edildi; 53/53 migration uygulandı, sayılar birebir korundu ve geçici DB kaldırıldı.
+- Production, production Redis ve `55432` shadow DB'ye bağlanılmadı/yazılmadı.
+
+#### TDD, inceleme ve doğrulama
+
+- RED testleri önce eksik history servisini, kaybolan FAQ provenance'ı, boş interaction cevabını, boş FAQ onayını ve yanlış review iznini kanıtladı.
+- Backend full: 119/119 suite, 1083 geçti, 1 skip, 0 fail.
+- Frontend unit: 28/28 dosya, 227/227 test geçti.
+- Son data-minimization/API doc değişikliklerinden sonra focused backend 22/22 ve frontend 4/4 tekrar geçti.
+- Backend/frontend typecheck, TR/EN/DE i18n, Prisma validate/status, clean-dump migration testi ve `git diff --check` geçti.
+- Bağımsız code-review ve security-review ilk turda iki HIGH privacy/RBAC-link bulgusunu yakaladı; düzeltmeler sonrası ikinci turda bu feature diff'i için CRITICAL/HIGH blocker kalmadığını onayladı.
+
+#### Yerel commitler
+
+- `d3d1a7b7` — `feat: add FAQ provenance permissions`
+- `7bd9dda0` — `feat: expose audited AI solution history`
+- `809fd245` — `feat: add admin AI solution history UI`
+- `0cbf617a` — `test: cover AI history and FAQ provenance`
+- `b5228c97` — `docs: update AI history API schema`
+
+#### Bilinçli kalan sınırlar
+
+1. Authenticated browser kabulü henüz yapılmadı. Yerel admin ile `/tr/admin/ai-interactions`, ticketed/ticketless filtreleri ve `/tr/kb-approvals` exact interaction linki bir sonraki güvenli UI kontrolüdür.
+2. History serbest metin araması büyüyen veri hacminde trigram/full-text index isteyebilir; mevcut 259 kayıt için ölçüsüz schema optimizasyonu yapılmadı.
+3. Audit satırı her history fetch'te büyür; genel audit retention/partition politikası ayrı operasyonel karardır.
+4. Provenance FK'leri hard delete halinde cascade eder; uygulamanın normal ticket/FAQ davranışı soft delete'tir. Gelecekte hard-delete/retention politikası açılırsa provenance saklama kararı ayrıca verilmelidir.
+5. `packages/database/scripts/production-sync.js` içindeki önceden mevcut hardcoded admin parolası + toplu kullanıcı reactivation davranışı bu feature'dan çıkarıldı; dosya değiştirilmedi ve production'da çalıştırılmamalıdır. Ayrı kritik teknik borçtur.
+6. Push, tag-push, deploy, publish ve production migration yapılmadı; kalıcı push yasağı aynen sürüyor.
