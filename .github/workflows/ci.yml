@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: pgvector/pgvector:pg16
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -63,7 +63,6 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aluplan_ci
-      SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aluplan_shadow
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v3
@@ -76,28 +75,14 @@ jobs:
       - run: pnpm install
       - name: Prisma Generate
         run: npx prisma generate
-      - name: Create Prisma shadow database
-        run: |
-          node - <<'NODE'
-          const { Client } = require('pg');
-
-          async function main() {
-            const client = new Client({ connectionString: process.env.DATABASE_URL });
-            await client.connect();
-            const exists = await client.query("SELECT 1 FROM pg_database WHERE datname = 'aluplan_shadow'");
-            if (exists.rowCount === 0) {
-              await client.query('CREATE DATABASE aluplan_shadow');
-            }
-            await client.end();
-          }
-
-          main().catch((error) => {
-            console.error(error);
-            process.exit(1);
-          });
-          NODE
-      - name: Prisma Migration Check (blocking)
-        run: cd packages/database && pnpm exec prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --script --exit-code
+      - name: Prisma Migration File Integrity (blocking)
+        run: pnpm db:verify:migration-files
+      - name: Prisma Fresh Migration Deploy (blocking)
+        run: pnpm exec prisma migrate deploy --config packages/database/prisma.config.js
+      - name: Prisma Migration Status (blocking)
+        run: pnpm exec prisma migrate status --config packages/database/prisma.config.js
+      - name: Prisma Migration Integrity (blocking)
+        run: pnpm db:verify:migrations
       - name: Build Backend
         run: cd apps/backend && pnpm run build
       - name: Build Frontend

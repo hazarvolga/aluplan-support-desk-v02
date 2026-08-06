@@ -1,0 +1,193 @@
+import { createHash } from 'node:crypto';
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import pg from 'pg';
+
+const { Client } = pg;
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+const projectDirectory = path.resolve(scriptDirectory, '..');
+const migrationsDirectory = path.join(
+    projectDirectory,
+    'packages/database/prisma/migrations',
+);
+const checksumManifestPath = path.join(
+    projectDirectory,
+    'packages/database/prisma/migration-checksums.json',
+);
+
+const acceptedLedgerMarkers = new Map([
+    ['20260426202926_add_proactive_chat', new Set(['manual-psql-fix'])],
+]);
+
+const requiredRelations = Object.freeze([
+    'public.ticket_number_seq',
+    'public.roles',
+    'public.permissions',
+    'public.role_permissions',
+    'public.crm_accounts',
+    'public.crm_connections',
+    'public.crm_sync_logs',
+    'public.ai_response_cache',
+]);
+
+function sha256(content) {
+    return createHash('sha256').update(content).digest('hex');
+}
+
+async function loadMigrationChecksums() {
+    const directoryEntries = await readdir(migrationsDirectory, {
+        withFileTypes: true,
+    });
+    const migrationNames = directoryEntries
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+        .sort();
+
+    const checksumEntries = await Promise.all(
+        migrationNames.map(async (migrationName) => {
+            const migrationPath = path.join(
+                migrationsDirectory,
+                migrationName,
+                'migration.sql',
+            );
+            const migrationSql = await readFile(migrationPath);
+            return [migrationName, sha256(migrationSql)];
+        }),
+    );
+
+    return new Map(checksumEntries);
+}
+
+async function loadChecksumManifest() {
+    const manifest = JSON.parse(await readFile(checksumManifestPath, 'utf8'));
+    return new Map(Object.entries(manifest));
+}
+
+function verifyCanonicalChecksums(fileChecksums, checksumManifest) {
+    if (fileChecksums.size !== checksumManifest.size) {
+        throw new Error(
+            `Migration manifest count mismatch: files=${fileChecksums.size}, manifest=${checksumManifest.size}`,
+        );
+    }
+
+    for (const [migrationName, expectedChecksum] of checksumManifest) {
+        const actualChecksum = fileChecksums.get(migrationName);
+        if (actualChecksum !== expectedChecksum) {
+            throw new Error(
+                `Canonical migration checksum mismatch: ${migrationName}`,
+            );
+        }
+    }
+}
+
+async function loadLedger(client) {
+    const result = await client.query(
+        `SELECT migration_name, checksum, finished_at, rolled_back_at
+         FROM _prisma_migrations
+         ORDER BY started_at`,
+    );
+    return result.rows;
+}
+
+function verifyLedger(fileChecksums, ledgerRows) {
+    const successfulRows = ledgerRows.filter(
+        (row) => row.finished_at !== null && row.rolled_back_at === null,
+    );
+    const successfulNames = new Set(
+        successfulRows.map((row) => row.migration_name),
+    );
+
+    if (successfulNames.size !== fileChecksums.size) {
+        throw new Error(
+            `Migration count mismatch: files=${fileChecksums.size}, successful=${successfulNames.size}`,
+        );
+    }
+
+    const checksumMismatches = [...fileChecksums].filter(
+        ([migrationName, fileChecksum]) => {
+            const acceptedMarkers =
+                acceptedLedgerMarkers.get(migrationName) ?? new Set();
+            return !successfulRows.some(
+                (row) =>
+                    row.migration_name === migrationName &&
+                    (row.checksum === fileChecksum ||
+                        acceptedMarkers.has(row.checksum)),
+            );
+        },
+    );
+    if (checksumMismatches.length > 0) {
+        throw new Error(
+            `No successful ledger checksum match: ${checksumMismatches
+                .map(([migrationName]) => migrationName)
+                .join(', ')}`,
+        );
+    }
+
+    const orphanedLedgerNames = [...successfulNames].filter(
+        (migrationName) => !fileChecksums.has(migrationName),
+    );
+    if (orphanedLedgerNames.length > 0) {
+        throw new Error(
+            `Successful ledger entries have no migration file: ${orphanedLedgerNames.join(', ')}`,
+        );
+    }
+}
+
+async function verifyRequiredRelations(client) {
+    const result = await client.query(
+        `SELECT relation_name, to_regclass(relation_name) IS NOT NULL AS exists
+         FROM unnest($1::text[]) AS relation_name`,
+        [requiredRelations],
+    );
+    const missingRelations = result.rows
+        .filter((row) => !row.exists)
+        .map((row) => row.relation_name);
+
+    if (missingRelations.length > 0) {
+        throw new Error(
+            `Required migration relations are missing: ${missingRelations.join(', ')}`,
+        );
+    }
+}
+
+async function main() {
+    const fileChecksums = await loadMigrationChecksums();
+    const checksumManifest = await loadChecksumManifest();
+    verifyCanonicalChecksums(fileChecksums, checksumManifest);
+
+    if (process.argv.includes('--files-only')) {
+        console.log(
+            `Migration file integrity verified: ${fileChecksums.size} files match the canonical manifest.`,
+        );
+        return;
+    }
+
+    if (!process.env.DATABASE_URL) {
+        throw new Error('DATABASE_URL is required for migration verification');
+    }
+
+    const client = new Client({
+        connectionString: process.env.DATABASE_URL,
+    });
+
+    await client.connect();
+    try {
+        const ledgerRows = await loadLedger(client);
+        verifyLedger(fileChecksums, ledgerRows);
+        await verifyRequiredRelations(client);
+    } finally {
+        await client.end();
+    }
+
+    console.log(
+        `Migration integrity verified: ${fileChecksums.size} files, canonical checksums and required relations are valid.`,
+    );
+}
+
+main().catch((error) => {
+    console.error(
+        error instanceof Error ? error.message : 'Migration verification failed',
+    );
+    process.exitCode = 1;
+});
