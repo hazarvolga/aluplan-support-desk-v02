@@ -1091,3 +1091,71 @@ Kullanıcı talebi: "bu anlattıklarını ortak rapora en üste katı bir kural 
 - Bu blok, protokol madde 7'nin (append-only, her şey en alta eklenir) **tek istisnasıdır** — bir günlük girdisi değil, süregelen bir operasyon kuralı olduğu için en üstte sabit kalacak. Bunun gerekçesi bloğun kendi içinde açıkça belirtildi.
 - Ne Codex ne Claude bu bloğu silemez/değiştiremez/taşıyamaz. Sadece kullanıcı değiştirebilir.
 - Codex'in bu bloğu görmesi ve bundan sonraki tüm çalışmasında (özellikle Faz 6.1 canlı migration incelemesi ve gelecekteki herhangi bir prod-veri işlemi) bağlayıcı kabul etmesi gerekir.
+
+### 2026-08-05 — Claude — Prod-shadow çalışması 14 maddede bağımsız doğrulandı
+
+Kullanıcının 14 maddelik kontrol listesi tamamen salt-okunur şekilde, canlıya hiç dokunmadan doğrulandı:
+
+| # | Kontrol | Sonuç |
+|---|---|---|
+| 1 | Git durumu temiz | ✅ `git status --short` boş |
+| 2 | Commit `e12848ec` | ✅ `docs: record production shadow handoff`, yalnız 4 doküman dosyası, 93 satır — dump/secret girmemiş |
+| 3 | Üstteki "CANLI VERİ GÜVENLİĞİ" kuralı | ✅ yerinde |
+| 4 | Rapor sonu prod-shadow kaydı | ✅ 3 başlık altında tutarlı |
+| 5 | `.ai/*` güncellemesi | ✅ mtime commit ile eşleşiyor |
+| 6 | ADR-010 | ✅ tam içerik doğru |
+| 7 | `.gitignore` kapsamı | ✅ `.private-data/`, `*.dump`, `*.backup` mevcut |
+| 8 | Shadow container | ✅ `aluplan_shadow_postgres_pg17`, `pgvector/pgvector:pg17`, `55432→5432`, sağlıklı |
+| 9 | `shadow-postgres.env` | ✅ var, izin `600`, git dışında |
+| 10 | Sanitize (6 kalem) | ✅ **6/6** — bizzat SQL sorgusuyla doğrulandı, hepsi `0` |
+| 11 | Veri sayımları (5 kalem) | ✅ **5/5 tam eşleşme** — `users=1282, tickets=162, ticket_messages=476, knowledge_pool_embeddings=7745, _prisma_migrations=54`, public tablo=64 |
+| 12 | Prisma migrate status | ✅ bizzat çalıştırıldı: `Database schema is up to date!` |
+| 13 | Prod Redis kopyalanmamış | ✅ yalnız local `aluplan_redis` var |
+| 14 | Geçici SSH key riski | ⚠️ **Doğrulanamaz** — sunucu tarafı durum, kural gereği prod'a bağlanılmadı. Local'de key kopyası yok. Kullanıcıya risk notu verildi: backup erişimi gerekmiyorsa `aluplan-codex-dump-20260805` sunucudaki `authorized_keys`'den kullanıcı tarafından kaldırılmalı. |
+
+**Ek gözlem:** Shadow `_prisma_migrations` 54 kayıt, local `prisma/migrations/` klasörü 48 dosya içeriyor — Prisma yine de "up to date" diyor. Bu 6 kayıtlık fark BULGU-10 (P3018) incelemesinin tam olarak nerede olduğunu gösterebilir; sıradaki güvenli adım bu farkın shadow DB üzerinden analiz edilmesi olmalı.
+
+**Sonuç: 13/14 tam doğrulandı, 1/14 (SSH key) doğası gereği yalnızca risk notu olarak verilebildi.** Codex'in prod-shadow çalışması güvenilir ve rapordaki iddialarla birebir örtüşüyor.
+
+
+### 2026-08-06 — Claude — BULGU-10 kök nedeni shadow DB üzerinden çözüldü
+
+Kullanıcı sordu: "54 vs 48 farkını nasıl çözeceğiz, amacımız deploy ettiğimizde sistem çökmesin." Shadow DB'nin `_prisma_migrations` tablosu tam olarak incelendi (`docker exec aluplan_shadow_postgres_pg17 psql ... SELECT migration_name, started_at, finished_at, rolled_back_at FROM _prisma_migrations ORDER BY started_at`).
+
+**Bulgu 1 — 54 vs 48 farkı kayıp dosya değil, retry-duplikasyonu:**
+6 migration adı ledger'da **iki kez** görünüyor: bir kez `rolled_back_at` dolu (başarısız deneme), bir kez `finished_at` dolu (başarılı tekrar deneme). Etkilenenler: `20260224151811_finalize_agent_status`, `20260303120000_add_announcement_models`, `20260303123000_add_chat_status_to_tickets`, `20260303210000_fix_diverged_schema`, `20260305205500_add_ai_telemetry`, `20260511000000_add_embedding_versioning`. Benzersiz migration adı sayısı = 54 − 6 = **48**, `packages/database/prisma/migrations/` klasöründeki dosya sayısıyla birebir eşleşiyor. **Kayıp/orphan migration yok.**
+
+**Bulgu 2 — BULGU-10'un gerçek kök nedeni netleşti:**
+`0_add_ticket_number_seq` ve `20260219151110_init_reset`, prod'da **2026-02-24 15:15:40**'ta, 9 milisaniye arayla, **ikisi de sorunsuz** çalışmış (ikisinde de `finished_at` dolu, `rolled_back_at` boş). Bu, Claude'un daha önce boş bir local DB'de aynı iki migration'ı denediğinde aldığı `P3018 — type "UserStatus" already exists` hatasıyla doğrudan çelişiyor.
+
+Tek tutarlı açıklama: **`packages/database/prisma/migrations/0_add_ticket_number_seq/migration.sql` dosyasının içeriği, prod'a uygulandıktan SONRA repo'da değiştirilmiş.** O tarihte muhtemelen adıyla uyumlu, küçük bir migration'dı (yalnızca ticket number sequence ekliyordu). Sonradan biri — muhtemelen fresh-install/local kurulum sorununu çözmek isterken — bu dosyanın içeriğini tüm şemanın baseline'ı (1190 satır) haline getirip **aynı migration adıyla** commit'lemiş. Prisma zaten `finished_at` dolu migration'ları asla yeniden çalıştırmadığı için prod bu değişikliği hiç görmedi/hissetmedi — ama boş bir DB'den (fresh install / disaster recovery) kurulum yapan herkes `0_add_ticket_number_seq`'in GÜNCEL (değiştirilmiş) içeriğiyle karşılaşıp `init_reset` ile çakışıyor.
+
+**Risk değerlendirmesi (kullanıcının asıl sorusuna cevap):**
+- **Normal deploy'lar (mevcut prod üzerine yeni migration eklemek): RİSK YOK.** Prisma yalnızca `_prisma_migrations` tablosunda kaydı olmayan (pending) migration'ları çalıştırır; `0_add_ticket_number_seq` prod'da zaten "tamamlandı" işaretli, bir daha asla dokunulmaz.
+- **Risk yalnızca felaket kurtarma / sıfırdan kurulum senaryosunda** — DB kaybolup migration dosyalarından yeniden inşa edilmeye çalışılırsa, aynı P3018 hatası prod'u da vuracaktır. Bu, BULGU-10'un zaten işaret ettiği risk; şimdi kök nedeni kanıtlandı.
+
+**Önerilen kalıcı süreç kuralı (kullanıcı onayı bekleniyor, henüz uygulanmadı):**
+Bundan sonra yazılacak her yeni Prisma migration'ı, prod'a hiç dokunmadan önce **shadow DB'ye karşı test edilmeli** (`prisma migrate dev`/`deploy` shadow DB'ye karşı). Shadow DB artık prod'un ledger+şema açısından birebir aynısı olduğu için, orada sorunsuz uygulanan bir migration prod'da da sorunsuz uygulanır — bu ADR-010'a doğal bir ek kural olur. Ayrıca `0_add_ticket_number_seq` dosyasının tarihi bozukluğu, önce yalnızca shadow DB'de denenerek (prod'a hiç yazmadan) düzeltilebilir; gerçek prod'a uygulanması ayrı bir bakım penceresi kararı (Faz 6.1 kapsamında) olarak kalır.
+
+**Codex'e not:** BULGU-10 üzerinde çalışırken bu ledger analizini baz alın — migration dosyalarına dokunmadan önce mutlaka shadow DB `_prisma_migrations` tablosuyla çapraz kontrol edin, boş/fresh bir DB varsayımıyla ilerlemeyin.
+
+### 2026-08-06 — Codex — BULGU-10 güvenli uygulama planı ve çalışma sınırı
+
+Kullanıcının onayıyla BULGU-10 için aşağıdaki kanıt kapılı çalışma başlatılacaktır. Bu kayıt yalnız yapılacakları açıklar; bu aşamada migration veya ürün kodu değiştirilmemiştir.
+
+**Değiştirilemez çalışma sınırı:**
+- Canlı PostgreSQL'e ve canlı Redis'e bağlantı/yazma/migration/restore/DDL yapılmayacak.
+- Remote push, tag push, deploy veya yayın yapılmayacak.
+- İnceleme yalnız Git geçmişi, sanitize edilmiş local shadow PostgreSQL ve gerektiğinde sıfırdan oluşturulacak disposable local PostgreSQL üzerinde yürütülecek.
+- Tarihsel migration dosyası tahminle değiştirilmeyecek; önce shadow `_prisma_migrations.checksum` değeriyle Git geçmişindeki dosya sürümleri birebir eşleştirilecek.
+
+**Codex uygulama sırası:**
+1. Bu plan ve Claude'un son BULGU-10 analizi yerel dokümantasyon commit'i olarak sabitlenecek.
+2. Commit'e işaret eden yerel restore tag'i ve `.private-data/restore-points/` altında Git bundle alınacak; `git fsck --strict`, tag çözümleme ve `git bundle verify` ile geri dönüş noktasının sağlamlığı kanıtlanacak.
+3. `0_add_ticket_number_seq/migration.sql` dosyasının Git geçmişindeki tüm sürümleri SHA-256 olarak hesaplanacak ve local shadow ledger'daki başarılı migration checksum'ı ile karşılaştırılacak.
+4. Yalnız checksum eşleşmesi gerçek prod'a uygulanmış tarihsel içeriği kanıtlarsa, en küçük düzeltme hazırlanacak. Eşleşme bulunamazsa migration dosyası değiştirilmeyecek ve bulgu açık bırakılacak.
+5. Kanıtlanan aday önce disposable, boş bir local PostgreSQL veritabanında tüm migration zinciriyle test edilecek. Ardından mevcut local shadow üzerinde yalnız salt-okunur `prisma migrate status` ve şema/ledger karşılaştırmaları yapılacak.
+6. Prisma schema doğrulaması, ilgili migration/fresh-install testleri, typecheck ve gerekli regresyon kontrolleri çalıştırılacak. Code review ve güvenlik incelemesi tamamlanmadan kapanış yapılmayacak.
+7. Sonuçlar ortak raporun en altına append-only olarak, `.ai` handoff/ADR kayıtlarına ise yalnız gerçekten yeni ve kalıcı karar oluşursa yazılacak; kod ve doküman değişiklikleri ayrı yerel commitlerde tutulacak.
+
+**Başarı ölçütü:** Normal deploy güvenliği korunurken, boş DB/felaket kurtarma kurulumunda migration zinciri P3018 olmadan tamamlanmalı; mevcut shadow ledger ile dosya checksum bütünlüğü açıklanabilir ve tekrar üretilebilir olmalıdır.
