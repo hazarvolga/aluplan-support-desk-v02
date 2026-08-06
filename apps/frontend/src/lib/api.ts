@@ -266,8 +266,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
             } else {
                 errStr = `Error Detail Missing (Status ${res.status})`;
             }
-            // Suppress noisy 401 logs for auth-check endpoints (handled gracefully by AuthProvider)
-            if (!(res.status === 401 && path.includes('/auth/me'))) {
+            const isHandledKnowledgeUrlDuplicate = res.status === 409
+                && (errBody.code === 'KNOWLEDGE_SOURCE_URL_DUPLICATE'
+                    || errBody.message === 'KNOWLEDGE_SOURCE_URL_DUPLICATE');
+            // Suppress errors that are deliberately handled as normal UI states.
+            if (!(res.status === 401 && path.includes('/auth/me')) && !isHandledKnowledgeUrlDuplicate) {
                 console.error(`API Error [${res.status}]:`, errBody);
             }
         } catch (e) {
